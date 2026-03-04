@@ -380,7 +380,11 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-[#00A4E4] text-white text-center py-1.5 text-xs font-medium" data-testid="banner-beta">
+        Beta — Early Access &middot; We're actively building. Your feedback shapes the product.
+      </div>
+
+      <header className="fixed top-[30px] left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
@@ -418,7 +422,7 @@ export default function Landing() {
       </header>
 
       <main>
-        <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
+        <section className="pt-36 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-8">
@@ -877,7 +881,7 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <a href="/login">
+                  <a href="/signup">
                     <Button className="w-full" variant="outline" data-testid="button-plan-free">
                       Get Started Free
                     </Button>
@@ -904,7 +908,7 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <a href="/login">
+                  <a href="/signup">
                     <Button className="w-full bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-plan-premium">
                       Upgrade Now
                       <ArrowRight className="ml-2 h-4 w-4" />

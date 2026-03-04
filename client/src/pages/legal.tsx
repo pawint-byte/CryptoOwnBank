@@ -106,9 +106,73 @@ export default function Legal() {
             </div>
 
             <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Limitation of Liability</h2>
+              <p className="text-foreground leading-relaxed">
+                To the maximum extent permitted by applicable law, CryptoOwnBank, its operators, affiliates, and
+                contributors shall not be liable for any indirect, incidental, special, consequential, or punitive
+                damages, or any loss of profits, revenue, data, or goodwill, arising out of or in connection with
+                your use of this site, wallet connections, blockchain transactions, third-party protocols, or any
+                content provided herein — whether based on contract, tort, strict liability, or any other legal
+                theory, even if we have been advised of the possibility of such damages.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Indemnification</h2>
+              <p className="text-foreground leading-relaxed">
+                You agree to indemnify, defend, and hold harmless CryptoOwnBank, its operators, affiliates,
+                employees, and agents from and against any claims, liabilities, damages, losses, and expenses
+                (including reasonable attorneys' fees) arising out of or in any way connected with your access
+                to or use of the site, your violation of these terms, or your violation of any rights of any
+                third party.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Eligibility &amp; Age Requirement</h2>
+              <p className="text-foreground leading-relaxed">
+                You must be at least 18 years of age (or the age of majority in your jurisdiction) to use
+                this site. By using CryptoOwnBank, you represent and warrant that you meet this requirement
+                and that you are not prohibited from using cryptocurrency services under the laws of your
+                jurisdiction.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Prohibited Use</h2>
+              <p className="text-foreground leading-relaxed">
+                You agree not to use CryptoOwnBank for any unlawful purpose, including but not limited to
+                money laundering, terrorist financing, fraud, or any activity that violates applicable local,
+                state, national, or international laws or regulations. We reserve the right to terminate access
+                to any user we reasonably suspect of engaging in prohibited activities.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Regulatory Compliance</h2>
+              <p className="text-foreground leading-relaxed">
+                CryptoOwnBank operates as a non-custodial software interface. We do not transmit money, hold
+                customer funds, or facilitate the exchange of fiat currency and digital assets. Users are
+                solely responsible for ensuring their use of this site complies with all applicable laws and
+                regulations in their jurisdiction. Cryptocurrency regulations vary by location — it is your
+                responsibility to understand and comply with local requirements.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Intellectual Property</h2>
+              <p className="text-foreground leading-relaxed">
+                All content, branding, logos, and software on this site are the property of CryptoOwnBank
+                or its licensors. You may not reproduce, distribute, modify, or create derivative works
+                without prior written consent.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
               <h2 className="text-xl font-semibold mb-3 text-foreground">Changes to This Page</h2>
               <p className="text-foreground leading-relaxed">
-                We may update this page from time to time. Continued use after changes constitutes acceptance.
+                We may update this page from time to time. Material changes will be highlighted on the site.
+                Continued use after changes constitutes acceptance of the revised terms.
               </p>
             </div>
 
