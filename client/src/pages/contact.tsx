@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, Send, CheckCircle2, ArrowLeft } from "lucide-react";
+import { MessageSquare, Send, CheckCircle2, ArrowLeft, Paperclip, X } from "lucide-react";
 import { Link } from "wouter";
 
 const FEEDBACK_TYPES = [
@@ -23,14 +23,49 @@ const FEEDBACK_TYPES = [
   { value: "security", label: "Security Concern" },
 ];
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILES = 3;
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf", "text/plain", "text/csv"];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function Contact() {
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [type, setType] = useState("");
   const [message, setMessage] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    const valid: File[] = [];
+    for (const file of selected) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({ title: `${file.name}: unsupported file type`, variant: "destructive" });
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: `${file.name}: exceeds 5 MB limit`, variant: "destructive" });
+        continue;
+      }
+      valid.push(file);
+    }
+    const combined = [...files, ...valid].slice(0, MAX_FILES);
+    setFiles(combined);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,10 +75,17 @@ export default function Contact() {
     }
     setSending(true);
     try {
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("type", type);
+      formData.append("message", message);
+      for (const file of files) {
+        formData.append("files", file);
+      }
       const res = await fetch("/api/feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, type, message }),
+        body: formData,
       });
       if (!res.ok) {
         const data = await res.json();
@@ -158,6 +200,64 @@ export default function Contact() {
                 <p className="text-xs text-muted-foreground text-right">
                   {message.length}/5000
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Attachments (optional)</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={files.length >= MAX_FILES}
+                    data-testid="button-attach-file"
+                  >
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    {files.length >= MAX_FILES ? "Max files reached" : "Attach File"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Up to {MAX_FILES} files, 5 MB each. PNG, JPG, GIF, PDF, TXT, CSV.
+                  </p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.csv"
+                  multiple
+                  onChange={handleFileChange}
+                  data-testid="input-file-upload"
+                />
+                {files.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {files.map((file, i) => (
+                      <div
+                        key={`${file.name}-${i}`}
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                        data-testid={`file-attachment-${i}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{file.name}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            ({formatFileSize(file.size)})
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 shrink-0"
+                          onClick={() => removeFile(i)}
+                          data-testid={`button-remove-file-${i}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Button

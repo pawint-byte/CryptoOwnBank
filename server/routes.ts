@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./repli
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { sendFeedbackNotification } from "./email";
+import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -682,7 +683,16 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/feedback", async (req, res) => {
+  const feedbackUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 3 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf", "text/plain", "text/csv"];
+      cb(null, allowed.includes(file.mimetype));
+    },
+  });
+
+  app.post("/api/feedback", feedbackUpload.array("files", 3), async (req: any, res) => {
     try {
       const { name, email, type, message } = req.body;
       if (!name || !email || !type || !message) {
@@ -691,7 +701,11 @@ export async function registerRoutes(
       if (message.length > 5000) {
         return res.status(400).json({ message: "Message too long (max 5000 characters)" });
       }
-      await sendFeedbackNotification(name, email, type, message);
+      const attachments = (req.files || []).map((f: any) => ({
+        filename: f.originalname,
+        content: f.buffer,
+      }));
+      await sendFeedbackNotification(name, email, type, message, attachments);
       res.json({ success: true });
     } catch (error) {
       console.error("Feedback error:", error);

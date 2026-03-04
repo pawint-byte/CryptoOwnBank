@@ -47,15 +47,19 @@ async function getResendClient() {
 
 const FROM_EMAIL = "notification@pawint-app.com";
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, attachments?: { filename: string; content: Buffer }[]) {
   try {
     const { client } = await getResendClient();
-    await client.emails.send({
+    const emailData: any = {
       from: FROM_EMAIL,
       to,
       subject,
       html,
-    });
+    };
+    if (attachments && attachments.length > 0) {
+      emailData.attachments = attachments;
+    }
+    await client.emails.send(emailData);
     console.log(`Email sent to ${to}: ${subject}`);
   } catch (error) {
     console.error("Failed to send email:", error);
@@ -228,7 +232,8 @@ export async function sendFeedbackNotification(
   senderName: string,
   senderEmail: string,
   feedbackType: string,
-  message: string
+  message: string,
+  attachments?: { filename: string; content: Buffer }[]
 ) {
   const adminEmail = "pawint@me.com";
   const html = `
@@ -250,7 +255,11 @@ export async function sendFeedbackNotification(
       </div>
     </div>
   `;
-  await sendEmail(adminEmail, `[CryptoOwnBank Feedback] ${feedbackType} from ${senderName}`, html);
+  const attachmentInfo = attachments && attachments.length > 0
+    ? `<tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Attachments</td><td style="padding: 8px 0; font-weight: 600;">${attachments.length} file(s) attached</td></tr>`
+    : "";
+  const finalHtml = html.replace("</table>", `${attachmentInfo}</table>`);
+  await sendEmail(adminEmail, `[CryptoOwnBank Feedback] ${feedbackType} from ${senderName}`, finalHtml, attachments);
 }
 
 export async function sendPremiumWelcomeEmail(to: string, plan: string) {
