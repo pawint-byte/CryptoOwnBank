@@ -1,0 +1,32 @@
+Does Interest Compound in Soil Vaults If I Don’t Withdraw It?
+Yes — if you do not withdraw your earned interest, it automatically compounds and continues to earn additional yield on the growing balance.
+How Compounding Works in Soil
+
+Interest accrues on your deposited RLUSD position (fixed 5–8% APR, depending on the vault).
+Accrued interest is added directly to your vault position (daily or per vault rules).
+If left unwithdrawn, it becomes part of your effective principal — future interest is calculated on the larger amount (original deposit + accumulated interest).
+This creates automatic compounding — no manual "reinvest" step needed.
+
+Example
+
+You deposit $10,000 RLUSD into a 6% APR vault.
+After one month, ~$50 interest is earned → new position ≈ $10,050.
+Next month’s interest is calculated on ~$10,050 → you earn slightly more than $50.
+Over time, the effective annual yield exceeds the nominal 6% due to compounding.
+
+Key Benefits in Your Setup
+
+Higher effective returns than custodial platforms like Uphold (~3.75%): Soil’s 5–8% + compounding can significantly outpace it.
+Set it and forget it: Leave interest in the vault — your balance grows passively while staying non-custodial (your keys, your control).
+Withdraw only when you want: Use the "Withdraw Interest Only" button to pull just the earnings (principal + prior interest stays to keep compounding). Premium members get auto-scheduling for weekly/monthly withdrawals.
+Principal stays protected: The original deposit remains locked per vault rules (e.g., notice periods), but interest continues earning during notice/cooldown phases.
+
+Important Notes
+
+Yields are fixed but not guaranteed — past performance is not indicative of future results.
+Vaults have withdrawal notice/cooldown periods (e.g., short for Treasury, longer for credit vaults) — interest continues accruing during notice.
+Always DYOR — crypto and yield protocols carry risks.
+
+Ready to start compounding?
+Connect your cold wallet (Ledger, ELLIPAL, etc.) — transfer RLUSD from Uphold or an exchange — deposit to a Soil vault, and let your balance grow automatically.
+This FAQ educates users, highlights the advantage over Uphold, and ties back to your site's features (interest-only withdrawals, Premium auto-scheduling). It also encourages action (connect wallet, transfer, deposit).
