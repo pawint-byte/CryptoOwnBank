@@ -5,7 +5,7 @@ let xummInstance: Xumm | null = null;
 function getXumm(): Xumm {
   if (!xummInstance) {
     const apiKey = import.meta.env.VITE_XUMM_API_KEY || "xumm-api-key-placeholder";
-    xummInstance = new Xumm(apiKey);
+    xummInstance = new Xumm(apiKey, window.location.origin as any);
   }
   return xummInstance;
 }
