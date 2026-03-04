@@ -36,6 +36,7 @@ import {
   X,
   Sparkles,
   ArrowRight,
+  Share2,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 
@@ -163,14 +164,15 @@ export default function OwnBankDashboard() {
     }
   }
 
+  const SITE_DOMAIN = "https://cryptoownbank.com";
   const referralLink = referralCode
-    ? `${window.location.origin}/?ref=${referralCode}`
+    ? `${SITE_DOMAIN}/?ref=${referralCode}`
     : null;
 
   const handleCopyReferral = async () => {
     if (!referralLink) {
       const code = generateReferralCode();
-      const link = `${window.location.origin}/?ref=${code}`;
+      const link = `${SITE_DOMAIN}/?ref=${code}`;
       await navigator.clipboard.writeText(link);
     } else {
       await navigator.clipboard.writeText(referralLink);
@@ -565,14 +567,14 @@ export default function OwnBankDashboard() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Share your referral link and earn bonus points when friends deposit into vaults.
+            Share this link with friends — when they sign up and deposit RLUSD, you both earn bonus SEED points.
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <code
               className="flex-1 min-w-0 truncate rounded-md bg-muted px-3 py-2 text-sm font-mono"
               data-testid="text-referral-link"
             >
-              {referralLink || `${window.location.origin}/?ref=...`}
+              {referralLink || `${SITE_DOMAIN}/?ref=...`}
             </code>
             <Button
               variant="outline"
@@ -587,6 +589,16 @@ export default function OwnBankDashboard() {
               )}
               {copied ? "Copied" : "Copy"}
             </Button>
+            <a
+              href={`https://x.com/intent/tweet?text=${encodeURIComponent("Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.\n\n")}${encodeURIComponent(referralLink || `${SITE_DOMAIN}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm" data-testid="button-share-x">
+                <Share2 className="h-4 w-4 mr-1" />
+                Share on X
+              </Button>
+            </a>
           </div>
         </CardContent>
       </Card>

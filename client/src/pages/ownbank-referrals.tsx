@@ -86,8 +86,8 @@ export default function OwnBankReferrals() {
     }
   }, [user, referralCode, generateReferralCode]);
 
-  const siteUrl = window.location.origin;
-  const referralLink = referralCode ? `${siteUrl}/?ref=${referralCode}` : null;
+  const SITE_DOMAIN = "https://cryptoownbank.com";
+  const referralLink = referralCode ? `${SITE_DOMAIN}/?ref=${referralCode}` : null;
 
   const handleCopyLink = async () => {
     if (!referralLink) return;
@@ -185,6 +185,16 @@ export default function OwnBankReferrals() {
                 )}
                 {copied ? "Copied" : "Copy Link"}
               </Button>
+              <a
+                href={`https://x.com/intent/tweet?text=${encodeURIComponent("Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.\n\n")}${encodeURIComponent(referralLink)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" data-testid="button-share-x">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share on X
+                </Button>
+              </a>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
