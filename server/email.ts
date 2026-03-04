@@ -161,6 +161,69 @@ export async function sendWithdrawalConfirmation(
   await sendEmail(to, `Interest Withdrawn: ${amount.toFixed(4)} RLUSD`, html);
 }
 
+export async function sendEmailVerification(to: string, firstName: string, verifyUrl: string) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Verify Your Email</h2>
+        <p style="color: #555;">Hey ${firstName},</p>
+        <p style="color: #555; line-height: 1.6;">
+          Thanks for signing up! Please verify your email address by clicking the button below:
+        </p>
+        <a href="${verifyUrl}"
+           style="display: inline-block; background: #00A4E4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">
+          Verify Email
+        </a>
+        <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link:</p>
+        <p style="color: #666; font-size: 12px; word-break: break-all;">${verifyUrl}</p>
+        <p style="margin-top: 30px; color: #666; font-size: 12px;">
+          If you didn't create an account, you can safely ignore this email.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, "Verify your email - CryptoOwnBank", html);
+}
+
+export async function sendPasswordReset(to: string, firstName: string, resetUrl: string) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Reset Your Password</h2>
+        <p style="color: #555;">Hey ${firstName},</p>
+        <p style="color: #555; line-height: 1.6;">
+          We received a request to reset your password. Click the button below to create a new one:
+        </p>
+        <a href="${resetUrl}"
+           style="display: inline-block; background: #00A4E4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">
+          Reset Password
+        </a>
+        <p style="color: #666; font-size: 14px;">This link expires in 1 hour.</p>
+        <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link:</p>
+        <p style="color: #666; font-size: 12px; word-break: break-all;">${resetUrl}</p>
+        <p style="margin-top: 30px; color: #666; font-size: 12px;">
+          If you didn't request this, you can safely ignore this email.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, "Reset your password - CryptoOwnBank", html);
+}
+
 export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
