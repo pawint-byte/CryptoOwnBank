@@ -240,6 +240,26 @@ export default function OwnBankDashboard() {
           </CardContent>
         </Card>
 
+        <Card className="border-dashed" data-testid="card-connect-guide">
+          <CardContent className="py-6">
+            <h3 className="text-base font-semibold mb-4 flex items-center gap-2" data-testid="heading-connect-guide">
+              <Shield className="h-4 w-4 text-[#00A4E4]" />
+              How to Connect Your Wallet (30 seconds)
+            </h3>
+            <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+              <li data-testid="text-guide-step-1">Open <span className="font-medium text-foreground">Xaman</span> on your iPhone (or have <span className="font-medium text-foreground">Ledger Nano X</span> ready).</li>
+              <li data-testid="text-guide-step-2">On this page, click <span className="font-medium text-foreground">Connect Xumm</span> or <span className="font-medium text-foreground">Connect Ledger</span> above.</li>
+              <li data-testid="text-guide-step-3">Approve the connection in Xaman (or on Ledger device).</li>
+              <li data-testid="text-guide-step-4">Your XRPL address appears — you're now connected.</li>
+            </ol>
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <p className="text-xs text-muted-foreground" data-testid="text-guide-security">
+                Your keys never leave your hardware. The site only reads public data and asks you to sign actions. No KYC. No seed phrases. Ever.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <XrplDisclaimer />
       </div>
     );
