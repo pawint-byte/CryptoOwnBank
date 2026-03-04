@@ -659,6 +659,108 @@ export default function Landing() {
         </section>
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-sm font-medium mb-4" data-testid="badge-broker">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Smart Assistant
+                </div>
+                <h2 className="text-3xl font-bold mb-4" data-testid="heading-broker">
+                  Your Personal On-Chain Broker — Without Giving Up Control
+                </h2>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  We built CryptoOwnBank to give you the best of both worlds:
+                  you remain the sole owner of your assets (cold wallet only),
+                  and we act as your smart assistant that handles the boring parts.
+                </p>
+                <p className="text-foreground font-medium mb-6">
+                  Think of us like a personal broker who:
+                </p>
+                <div className="space-y-3 mb-8">
+                  {[
+                    { icon: TrendingUp, text: "Shows you the best yield opportunities in real time" },
+                    { icon: Zap, text: "Pre-builds every transaction so you just click \u201CSign\u201D" },
+                    { icon: RefreshCw, text: "Automates interest withdrawals on your schedule" },
+                    { icon: ArrowRight, text: "Guides you from exchange \u2192 wallet \u2192 vault in one smooth flow" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3" data-testid={`text-broker-point-${i}`}>
+                      <div className="h-8 w-8 rounded-md bg-[#00A4E4]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <item.icon className="h-4 w-4 text-[#00A4E4]" />
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed pt-1">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 mb-6">
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">You never lose control.</span>{" "}
+                    Every single action still requires your cold wallet signature.
+                    We just remove the friction so "being your own bank" actually feels good instead of painful.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <Card className="overflow-hidden" data-testid="card-broker-why-switching">
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-3">Why Thousands Are Switching</h3>
+                    <p className="text-muted-foreground leading-relaxed mb-4">
+                      They keep 100% ownership and security, but finally get the convenience they've been missing.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "Ownership", value: "100%" },
+                        { label: "Keys Stored", value: "Zero" },
+                        { label: "Yield", value: "5\u20138%" },
+                        { label: "Friction", value: "None" },
+                      ].map((stat, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-muted/60 text-center">
+                          <p className="text-lg font-bold text-[#00A4E4]">{stat.value}</p>
+                          <p className="text-xs text-muted-foreground">{stat.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="overflow-hidden border-[#00A4E4]/30" data-testid="card-broker-premium">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+                      <h3 className="font-semibold text-lg">The Full Broker Experience</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Premium members get everything a personal broker would offer:
+                    </p>
+                    <div className="space-y-2">
+                      {[
+                        "Auto-scheduled interest withdrawals",
+                        "One-click exchange \u2192 vault flows",
+                        "Tax-ready CSV reports",
+                        "Priority alerts for new vaults",
+                        "XLS-66 lending early access",
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <a href="#pricing" className="block mt-4">
+                      <Button className="w-full bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-broker-upgrade">
+                        Upgrade to Premium
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </a>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
               <h2 className="text-3xl font-bold mb-4" data-testid="heading-why-now">Why Members Are Joining Right Now</h2>
