@@ -293,6 +293,10 @@ const faqs = [
     a: "Yes \u2014 if you don\u2019t withdraw, accrued interest is added to your vault position and future interest is calculated on the larger balance (original deposit + accumulated interest), creating automatic compounding with no manual reinvest step. Example: $10,000 at 6% APR earns ~$50/month \u2192 next month\u2019s interest is on ~$10,050, and so on. This means your effective annual yield exceeds the nominal APR over time. You can leave it to grow passively (set-and-forget) or use \u201CWithdraw Interest Only\u201D to pull just the earnings while principal + prior interest keeps compounding. Premium members can auto-schedule weekly/monthly withdrawals. Interest continues accruing even during vault notice/cooldown periods.",
   },
   {
+    q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
+    a: "Banks offer 0.01\u20134.5% yield but you\u2019re an unsecured creditor \u2014 they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5\u20138% fixed APR with automatic compounding, and you own 100% \u2014 keys stay on your cold wallet, every action requires your signature. Other advantages: no KYC on our end, no bank linking, low XRPL fees (~0.0001 XRP vs $15\u201330 wire fees), interest-only withdrawals so principal keeps earning, and future XLS-66 XRP lending from the same dashboard. Banks and exchanges are convenient but take custody and pay less. CryptoOwnBank flips the script: full control, higher yields, complete transparency.",
+  },
+  {
     q: "What is RLUSD and how do the yield vaults work?",
     a: "RLUSD is Ripple\u2019s regulated stablecoin, pegged 1:1 to the US Dollar and backed by cash and cash equivalents. The yield comes from Soil Protocol, which lends your RLUSD to institutional borrowers \u2014 similar to how traditional banks make money, except the interest goes to you. The Treasury Vault (5.2% APR) is backed by US government securities. The Private Credit Vault (7.8% APR) is backed by diversified private credit pools.",
   },
