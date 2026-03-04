@@ -308,7 +308,7 @@ export default function Landing() {
                 FAQ
               </a>
               <ThemeToggle />
-              <a href="/api/login">
+              <a href="/login">
                 <Button data-testid="button-login">Sign In</Button>
               </a>
             </div>
@@ -340,7 +340,7 @@ export default function Landing() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <a href="/api/login">
+                  <a href="/login">
                     <Button size="lg" className="w-full sm:w-auto bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-get-started">
                       Connect Wallet — Free
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -674,7 +674,7 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <a href="/api/login">
+                  <a href="/login">
                     <Button className="w-full" variant="outline" data-testid="button-plan-free">
                       Get Started Free
                     </Button>
@@ -701,7 +701,7 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <a href="/api/login">
+                  <a href="/login">
                     <Button className="w-full bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-plan-premium">
                       Upgrade Now
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -793,7 +793,7 @@ export default function Landing() {
               all while keeping full control of your keys. No bank required.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/api/login">
+              <a href="/login">
                 <Button size="lg" variant="secondary" className="w-full sm:w-auto" data-testid="button-cta-start">
                   Start Earning Now — Free
                   <ArrowRight className="ml-2 h-4 w-4" />

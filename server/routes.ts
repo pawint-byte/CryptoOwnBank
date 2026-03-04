@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { db } from "./db";

@@ -221,12 +221,20 @@ export function registerAuthRoutes(app: Express): void {
       }
 
       const [dbUser] = await db
-        .select({ id: users.id })
+        .select({ id: users.id, passwordResetExpires: users.passwordResetExpires })
         .from(users)
         .where(eq(users.passwordResetToken, token));
 
       if (!dbUser) {
         return res.status(400).json({ message: "Invalid or expired reset link. Please request a new one." });
+      }
+
+      if (dbUser.passwordResetExpires && new Date() > dbUser.passwordResetExpires) {
+        await db
+          .update(users)
+          .set({ passwordResetToken: null, passwordResetExpires: null })
+          .where(eq(users.id, dbUser.id));
+        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
       }
 
       const hashedPassword = await hashPassword(password);

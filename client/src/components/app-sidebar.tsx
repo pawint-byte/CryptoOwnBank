@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -13,6 +14,7 @@ import {
   History,
   Users,
   Zap,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,7 +51,11 @@ const ownbankItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
+    queryKey: ["/api/admin/status"],
+    enabled: !!user,
+  });
 
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
@@ -138,6 +144,32 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {adminStatus?.isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <span className="flex items-center gap-2">
+                <Shield className="h-3 w-3 text-amber-500" />
+                Admin
+              </span>
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === "/admin/users"}
+                    data-testid="nav-admin-users"
+                  >
+                    <Link href="/admin/users">
+                      <Users className="h-4 w-4 text-amber-500" />
+                      <span>User Management</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center justify-between gap-3">
@@ -155,11 +187,11 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          <a href="/api/logout" data-testid="button-logout">
+          <button onClick={() => logout()} data-testid="button-logout">
             <SidebarMenuButton size="sm" className="h-8 w-8 p-0">
               <LogOut className="h-4 w-4" />
             </SidebarMenuButton>
-          </a>
+          </button>
         </div>
       </SidebarFooter>
     </Sidebar>

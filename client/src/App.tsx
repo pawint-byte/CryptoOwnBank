@@ -17,6 +17,11 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
+import VerifyEmail from "@/pages/verify-email";
 import Dashboard from "@/pages/dashboard";
 import Transactions from "@/pages/transactions";
 import Portfolio from "@/pages/portfolio";
@@ -28,6 +33,7 @@ import OwnBankVaults from "@/pages/ownbank-vaults";
 import OwnBankWithdraw from "@/pages/ownbank-withdraw";
 import OwnBankHistory from "@/pages/ownbank-history";
 import OwnBankReferrals from "@/pages/ownbank-referrals";
+import AdminUsers from "@/pages/admin-users";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -68,6 +74,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/withdraw" component={OwnBankWithdraw} />
         <Route path="/ownbank/history" component={OwnBankHistory} />
         <Route path="/ownbank/referrals" component={OwnBankReferrals} />
+        <Route path="/admin/users" component={AdminUsers} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>
@@ -93,6 +100,11 @@ function Router() {
       <Switch>
         <Route path="/legal" component={Legal} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/login" component={Login} />
+        <Route path="/signup" component={Signup} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password/:token" component={ResetPassword} />
+        <Route path="/verify-email/:token" component={VerifyEmail} />
         <Route component={Landing} />
       </Switch>
     );
@@ -102,6 +114,9 @@ function Router() {
     <Switch>
       <Route path="/legal" component={Legal} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route><AuthenticatedRoutes /></Route>
     </Switch>
   );

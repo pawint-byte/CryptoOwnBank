@@ -35,12 +35,15 @@ Preferred communication style: Simple, everyday language.
 - **Client-side Storage**: Zustand with localStorage persistence for XRPL wallet state, vault deposits, referral data
 
 ### Authentication
-- **Provider**: Replit Auth (OpenID Connect)
-- **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple
+- **Provider**: Email/password auth (primary), legacy Replit Auth (OIDC) still supported
+- **Email Auth**: Signup with email verification, login, forgot/reset password flows
+- **Password Security**: scrypt hashing with random salt, 8+ chars with uppercase/lowercase/number requirements
+- **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple (7-day TTL)
+- **Admin System**: isAdmin flag on users table, admin dashboard at /admin/users for user management and auth migration
 - **XRPL Wallets**: Non-custodial — Xumm and Ledger hardware wallet connections (no keys stored server-side)
 
 ### Key Data Models (PostgreSQL)
-- **Users**: Managed through Replit Auth integration
+- **Users**: id (UUID), email, firstName, lastName, passwordHash, emailVerified, emailVerifyToken, passwordResetToken, passwordResetExpires, authProvider, isAdmin, createdAt, updatedAt
 - **API Credentials**: Encrypted storage for exchange API keys (Binance, Coinbase, etc.)
 - **Accounts**: Linked exchange/brokerage accounts
 - **Transactions**: Buy/sell records with quantity, price, and date
@@ -82,6 +85,18 @@ Preferred communication style: Simple, everyday language.
 - `client/src/lib/xrpl-client.ts` — XRPL mainnet client (balances, transactions, prices)
 - `client/src/lib/xumm-connector.ts` — Xumm wallet connection and signing
 - `client/src/lib/ledger-connector.ts` — Ledger hardware wallet via WebUSB
+
+### Auth System
+- `server/replit_integrations/auth/routes.ts` — Auth API routes (signup, login, verify-email, forgot-password, reset-password, logout, admin endpoints)
+- `server/replit_integrations/auth/replitAuth.ts` — Session setup, isAuthenticated/isAdmin middleware
+- `server/replit_integrations/auth/storage.ts` — User CRUD operations
+- `server/services/email-auth.ts` — Password hashing (scrypt), token generation, validation
+- `client/src/pages/login.tsx` — Email/password login
+- `client/src/pages/signup.tsx` — Registration with email verification
+- `client/src/pages/forgot-password.tsx` — Password reset request
+- `client/src/pages/reset-password.tsx` — Set new password via token
+- `client/src/pages/verify-email.tsx` — Email verification handler
+- `client/src/pages/admin-users.tsx` — Admin user management dashboard
 
 ### Stripe Integration
 - `server/stripe.ts` — Stripe checkout session creation, plan config
@@ -138,7 +153,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Email Notifications (Resend)
 - `server/email.ts` — Resend integration via Replit connector (not manual API key)
-- Templates: Welcome, Deposit Confirmation, Withdrawal Confirmation, Premium Welcome
+- Templates: Welcome, Deposit Confirmation, Withdrawal Confirmation, Premium Welcome, Email Verification, Password Reset
 - Sender: notification@pawint-app.com (verified domain)
 
 ## Core Rules (OwnBank)
