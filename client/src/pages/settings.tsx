@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,13 +25,25 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { User, Settings2, Moon, Sun, Monitor } from "lucide-react";
+import { useXrplStore } from "@/lib/xrpl-store";
+import {
+  User,
+  Settings2,
+  Moon,
+  Sun,
+  Monitor,
+  Wallet,
+  Crown,
+  Check,
+  ExternalLink,
+} from "lucide-react";
 import type { UserSettings } from "@shared/schema";
 
 const settingsFormSchema = z.object({
@@ -42,14 +54,29 @@ const settingsFormSchema = z.object({
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 
-export default function Settings() {
+export default function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
+  const { spendingWallet, setSpendingWallet, subscriptionTier } = useXrplStore();
+  const [walletInput, setWalletInput] = useState(spendingWallet);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
   });
+
+  const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
+    queryKey: ["/api/subscription"],
+  });
+
+  useEffect(() => {
+    if (subscriptionData?.tier === "premium" && subscriptionTier !== "premium") {
+      useXrplStore.getState().setSubscriptionTier("premium");
+    } else if (subscriptionData?.tier === "free" && subscriptionTier !== "free") {
+      useXrplStore.getState().setSubscriptionTier("free");
+    }
+  }, [subscriptionData]);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -69,6 +96,21 @@ export default function Settings() {
     }
   }, [settings, form]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("subscription") === "success") {
+      toast({ title: "Welcome to Premium!", description: "Your subscription is now active." });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("subscription");
+      window.history.replaceState({}, "", url.pathname);
+    } else if (params.get("subscription") === "cancelled") {
+      toast({ title: "Checkout cancelled", description: "No changes were made." });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("subscription");
+      window.history.replaceState({}, "", url.pathname);
+    }
+  }, []);
+
   const updateMutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
       return apiRequest("PUT", "/api/settings", values);
@@ -84,6 +126,36 @@ export default function Settings() {
 
   const onSubmit = (values: SettingsFormValues) => {
     updateMutation.mutate(values);
+  };
+
+  const handleSaveSpendingWallet = () => {
+    if (walletInput && !walletInput.startsWith("r")) {
+      toast({
+        title: "Invalid XRPL Address",
+        description: "XRPL addresses must start with 'r'.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSpendingWallet(walletInput);
+    toast({ title: "Spending wallet saved" });
+  };
+
+  const handleUpgrade = async (plan: "monthly" | "yearly") => {
+    setCheckoutLoading(plan);
+    try {
+      const res = await apiRequest("POST", "/api/stripe/create-checkout", { plan });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({ title: "Failed to start checkout", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to start checkout", variant: "destructive" });
+    } finally {
+      setCheckoutLoading(null);
+    }
   };
 
   const getInitials = () => {
@@ -124,9 +196,7 @@ export default function Settings() {
               <User className="h-5 w-5" />
               Profile
             </CardTitle>
-            <CardDescription>
-              Your account information
-            </CardDescription>
+            <CardDescription>Your account information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
@@ -143,9 +213,7 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-
             <Separator />
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Email</Label>
@@ -173,9 +241,7 @@ export default function Settings() {
               <Settings2 className="h-5 w-5" />
               Appearance
             </CardTitle>
-            <CardDescription>
-              Customize how the app looks
-            </CardDescription>
+            <CardDescription>Customize how the app looks</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -210,6 +276,122 @@ export default function Settings() {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="border-[#00A4E4]/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-[#00A4E4]" />
+              OwnBank Spending Wallet
+            </CardTitle>
+            <CardDescription>
+              Set an XRPL address where interest withdrawals will be sent
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="spending-wallet">XRPL Wallet Address</Label>
+              <Input
+                id="spending-wallet"
+                placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                value={walletInput}
+                onChange={(e) => setWalletInput(e.target.value)}
+                data-testid="input-spending-wallet"
+              />
+              <p className="text-xs text-muted-foreground">
+                Must be a valid XRPL address (starts with 'r'). Can be a cold wallet, exchange, or any XRPL address.
+              </p>
+            </div>
+            <Button
+              onClick={handleSaveSpendingWallet}
+              className="bg-[#00A4E4] hover:bg-[#0090cc] text-white"
+              data-testid="button-save-spending-wallet"
+            >
+              Save Spending Wallet
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-500/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-500" />
+              Subscription
+            </CardTitle>
+            <CardDescription>
+              Your current plan and upgrade options
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Badge
+                variant={subscriptionTier === "premium" ? "default" : "secondary"}
+                className={subscriptionTier === "premium" ? "bg-amber-500" : ""}
+                data-testid="badge-subscription-tier"
+              >
+                {subscriptionTier === "premium" ? "Premium" : "Free"}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {subscriptionTier === "premium"
+                  ? "Full access to all features"
+                  : "Basic features included"}
+              </span>
+            </div>
+
+            {subscriptionTier === "free" && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Upgrade to Premium</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex flex-col h-auto py-4 gap-1 border-amber-500/30 hover:border-amber-500"
+                      onClick={() => handleUpgrade("monthly")}
+                      disabled={checkoutLoading !== null}
+                      data-testid="button-upgrade-monthly"
+                    >
+                      <span className="text-lg font-bold">$9</span>
+                      <span className="text-xs text-muted-foreground">/month</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex flex-col h-auto py-4 gap-1 border-amber-500/30 hover:border-amber-500 relative"
+                      onClick={() => handleUpgrade("yearly")}
+                      disabled={checkoutLoading !== null}
+                      data-testid="button-upgrade-yearly"
+                    >
+                      <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
+                        Save $29
+                      </Badge>
+                      <span className="text-lg font-bold">$79</span>
+                      <span className="text-xs text-muted-foreground">/year</span>
+                    </Button>
+                  </div>
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Auto-withdraw interest weekly
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Tax CSV export & year-end reports
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Priority vault alerts
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      XLS-66 lending early access
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1,0 +1,70 @@
+Here's everything you need. I've organized it into two parts — the setup and the reusable code.
+
+How Resend Email Works in This App
+There are two pieces:
+
+1. Resend Integration (Replit manages this)
+The Resend integration is installed through Replit's integration system. It provides the API key automatically — you don't store it as a manual secret. Each Replit app needs its own Resend integration installed.
+
+In your other Replit app:
+
+Go to the Tools panel and find Integrations
+Search for Resend and install it
+Connect it to your Resend account
+That gives your app access to the API key through Replit's connector system.
+
+2. The Sender Domain (Resend Dashboard)
+The sender email notification@pawint-app.com works because:
+
+The domain pawint-app.com is verified in the Resend Dashboard
+DNS records (DKIM, SPF, DMARC) were added in Squarespace for that domain
+For your other app, you can either:
+
+Use the same domain — just keep sending from notification@pawint-app.com (or add another address like notifications@pawint-app.com). Since the whole domain is verified, any @pawint-app.com address works.
+Use a different domain — verify it in Resend Dashboard and add the DNS records to that domain's registrar.
+3. The Reusable Email Code
+The core pattern from server/lib/email.ts that you can copy into your other app is this credential-fetching function — it talks to Replit's connector system to get the Resend API key:
+
+import { Resend } from 'resend';
+async function getCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found');
+  }
+  const connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+  if (!connectionSettings || !connectionSettings.settings.api_key) {
+    throw new Error('Resend not connected');
+  }
+  return {
+    apiKey: connectionSettings.settings.api_key, 
+    fromEmail: connectionSettings.settings.from_email
+  };
+}
+async function getResendClient() {
+  const { apiKey } = await getCredentials();
+  return new Resend(apiKey);
+}
+Then to send:
+
+export async function sendEmail(to: string, subject: string, html: string) {
+  const client = await getResendClient();
+  await client.emails.send({
+    from: 'notification@pawint-app.com',  // or your verified sender
+    to,
+    subject,
+    html
+  });
+}

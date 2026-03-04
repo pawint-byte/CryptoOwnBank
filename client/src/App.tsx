@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -9,6 +10,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useXrplStore } from "@/lib/xrpl-store";
+import { useToast } from "@/hooks/use-toast";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -18,6 +21,11 @@ import Portfolio from "@/pages/portfolio";
 import TaxReports from "@/pages/tax-reports";
 import Integrations from "@/pages/integrations";
 import Settings from "@/pages/settings";
+import OwnBankDashboard from "@/pages/ownbank-dashboard";
+import OwnBankVaults from "@/pages/ownbank-vaults";
+import OwnBankWithdraw from "@/pages/ownbank-withdraw";
+import OwnBankHistory from "@/pages/ownbank-history";
+import OwnBankReferrals from "@/pages/ownbank-referrals";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -53,6 +61,11 @@ function AuthenticatedRoutes() {
         <Route path="/tax-reports" component={TaxReports} />
         <Route path="/integrations" component={Integrations} />
         <Route path="/settings" component={Settings} />
+        <Route path="/ownbank" component={OwnBankDashboard} />
+        <Route path="/ownbank/vaults" component={OwnBankVaults} />
+        <Route path="/ownbank/withdraw" component={OwnBankWithdraw} />
+        <Route path="/ownbank/history" component={OwnBankHistory} />
+        <Route path="/ownbank/referrals" component={OwnBankReferrals} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>
@@ -80,11 +93,35 @@ function Router() {
   return <AuthenticatedRoutes />;
 }
 
+function ReferralDetector() {
+  const { referredBy, setReferredBy } = useXrplStore();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get("ref");
+    if (refCode && !referredBy) {
+      setReferredBy(refCode);
+      toast({
+        title: "Welcome via referral!",
+        description:
+          "Thanks for coming via referral! Your referrer gets bonus points when you deposit.",
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("ref");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }
+  }, []);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="cryptobroker-theme">
         <TooltipProvider>
+          <ReferralDetector />
           <Toaster />
           <Router />
         </TooltipProvider>

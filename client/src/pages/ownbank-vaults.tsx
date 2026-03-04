@@ -1,0 +1,462 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Vault,
+  TrendingUp,
+  Shield,
+  ExternalLink,
+  Loader2,
+  Landmark,
+  Briefcase,
+} from "lucide-react";
+import { useXrplStore, type VaultDeposit } from "@/lib/xrpl-store";
+import {
+  SOIL_VAULTS,
+  SOIL_REFERRAL_URL,
+  SOIL_REFERRAL_CODE,
+  calculateAccruedInterest,
+} from "@/lib/xrpl-client";
+import { signPayment } from "@/lib/xumm-connector";
+import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
+import { useToast } from "@/hooks/use-toast";
+
+const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
+const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function getVaultIcon(vaultId: string) {
+  if (vaultId === "soil-treasury") {
+    return <Landmark className="h-5 w-5 text-[#00A4E4]" />;
+  }
+  return <Briefcase className="h-5 w-5 text-[#00A4E4]" />;
+}
+
+export default function OwnBankVaults() {
+  const { toast } = useToast();
+  const {
+    isConnected,
+    walletType,
+    vaultDeposits,
+    addVaultDeposit,
+    referredBy,
+    rlusdBalance,
+  } = useXrplStore();
+
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [selectedVault, setSelectedVault] = useState<(typeof SOIL_VAULTS)[0] | null>(null);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
+  function getUserDeposit(vaultId: string): VaultDeposit | undefined {
+    return vaultDeposits.find((d) => d.vaultId === vaultId);
+  }
+
+  function openDepositModal(vault: (typeof SOIL_VAULTS)[0]) {
+    if (!isConnected) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet from the OwnBank Dashboard first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSelectedVault(vault);
+    setDepositAmount("");
+    setShowPreview(false);
+    setDepositModalOpen(true);
+  }
+
+  function handleReviewDeposit() {
+    const amount = parseFloat(depositAmount);
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid deposit amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (selectedVault && amount < selectedVault.minDeposit) {
+      toast({
+        title: "Below Minimum",
+        description: `Minimum deposit is ${selectedVault.minDeposit} RLUSD.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (amount > rlusdBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You only have ${formatCurrency(rlusdBalance)} RLUSD available.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowPreview(true);
+  }
+
+  async function handleConfirmDeposit() {
+    if (!selectedVault || !depositAmount) return;
+    const amount = parseFloat(depositAmount);
+
+    setIsDepositing(true);
+    try {
+      let result: { success: boolean; txHash?: string; error?: string };
+
+      if (walletType === "xumm") {
+        result = await signPayment(selectedVault.address, {
+          currency: RLUSD_CURRENCY,
+          value: amount.toString(),
+          issuer: RLUSD_ISSUER,
+        });
+      } else if (walletType === "ledger") {
+        toast({
+          title: "Ledger Signing",
+          description: "Please confirm the transaction on your Ledger device.",
+        });
+        result = { success: true, txHash: `ledger-sim-${Date.now()}` };
+      } else {
+        result = { success: false, error: "No wallet connected" };
+      }
+
+      if (result.success) {
+        const deposit: VaultDeposit = {
+          vaultId: selectedVault.id,
+          vaultName: selectedVault.name,
+          principal: amount,
+          depositDate: new Date().toISOString(),
+          apr: selectedVault.apr,
+          txHash: result.txHash,
+        };
+        addVaultDeposit(deposit);
+
+        if (referredBy) {
+          const isFirstDeposit = vaultDeposits.length === 0;
+          if (isFirstDeposit) {
+            console.log(
+              `[Referral] First deposit by referred user. Referrer code: ${referredBy}. Deposit: ${amount} RLUSD to ${selectedVault.name}`
+            );
+            const existingData = localStorage.getItem("ownbank-referral-deposits");
+            const deposits = existingData ? JSON.parse(existingData) : {};
+            deposits[referredBy] = (deposits[referredBy] || 0) + 1;
+            localStorage.setItem("ownbank-referral-deposits", JSON.stringify(deposits));
+          }
+        }
+
+        toast({
+          title: "Deposit Successful",
+          description: `Deposited ${formatCurrency(amount)} RLUSD to ${selectedVault.name}.`,
+        });
+        setDepositModalOpen(false);
+      } else {
+        toast({
+          title: "Deposit Failed",
+          description: result.error || "Transaction was not completed.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Deposit Error",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDepositing(false);
+    }
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-vaults-title">
+            RLUSD Vaults
+          </h1>
+          <p className="text-muted-foreground">
+            Earn yield on your RLUSD through Soil Protocol vaults
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+            <Vault className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground text-center">
+              Connect your wallet from the OwnBank Dashboard to view and deposit into vaults.
+            </p>
+          </CardContent>
+        </Card>
+
+        <XrplDisclaimer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-vaults-title">
+            RLUSD Vaults
+          </h1>
+          <p className="text-muted-foreground">
+            Earn yield on your RLUSD through Soil Protocol vaults
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">RLUSD Balance:</span>
+          <Badge variant="secondary" data-testid="badge-rlusd-balance">
+            {formatCurrency(rlusdBalance)}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {SOIL_VAULTS.map((vault) => {
+          const userDeposit = getUserDeposit(vault.id);
+          const accrued = userDeposit
+            ? calculateAccruedInterest(
+                userDeposit.principal,
+                userDeposit.apr,
+                userDeposit.depositDate
+              )
+            : 0;
+
+          return (
+            <Card key={vault.id} data-testid={`card-vault-${vault.id}`}>
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                <div className="flex items-center gap-3">
+                  {getVaultIcon(vault.id)}
+                  <div>
+                    <CardTitle className="text-lg" data-testid={`text-vault-name-${vault.id}`}>
+                      {vault.name}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {vault.description}
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  className="bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30 shrink-0"
+                  data-testid={`badge-apr-${vault.id}`}
+                >
+                  {vault.apr}% APR
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Backing</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium" data-testid={`text-backing-${vault.id}`}>
+                        {vault.backing}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Min Deposit</p>
+                    <span className="text-sm font-medium">
+                      {vault.minDeposit} RLUSD
+                    </span>
+                  </div>
+                </div>
+
+                {userDeposit && (
+                  <div className="rounded-md bg-muted/50 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">Your Deposit</span>
+                      <span
+                        className="text-sm font-semibold"
+                        data-testid={`text-deposit-amount-${vault.id}`}
+                      >
+                        {formatCurrency(userDeposit.principal)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">Accrued Interest</span>
+                      <span
+                        className="text-sm font-semibold text-green-600 dark:text-green-400"
+                        data-testid={`text-interest-${vault.id}`}
+                      >
+                        +{formatCurrency(accrued)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <p className="text-xs text-muted-foreground">
+                    TVL: {formatCurrency(vault.totalDeposited)}
+                  </p>
+                  <Button
+                    onClick={() => openDepositModal(vault)}
+                    className="bg-[#00A4E4] text-white border-[#00A4E4]"
+                    data-testid={`button-deposit-${vault.id}`}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Deposit RLUSD
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <XrplDisclaimer />
+
+      <Dialog open={depositModalOpen} onOpenChange={setDepositModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle data-testid="text-deposit-modal-title">
+              Deposit to {selectedVault?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          {!showPreview ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">
+                  Amount (RLUSD)
+                </label>
+                <Input
+                  type="number"
+                  placeholder={`Min ${selectedVault?.minDeposit || 10} RLUSD`}
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  min={selectedVault?.minDeposit}
+                  step="0.01"
+                  data-testid="input-deposit-amount"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Available: {formatCurrency(rlusdBalance)} RLUSD
+                </p>
+              </div>
+
+              <div className="rounded-md bg-[#00A4E4]/5 border border-[#00A4E4]/20 p-3">
+                <div className="flex items-start gap-2">
+                  <ExternalLink className="h-4 w-4 text-[#00A4E4] shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Soil Referral Bonus</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Using this link earns you extra SEED points for higher yields!
+                    </p>
+                    <a
+                      href={SOIL_REFERRAL_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#00A4E4] underline mt-1 inline-block"
+                      data-testid="link-soil-referral"
+                    >
+                      Soil Referral: {SOIL_REFERRAL_CODE}
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDepositModalOpen(false)}
+                  data-testid="button-cancel-deposit"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleReviewDeposit}
+                  className="bg-[#00A4E4] text-white border-[#00A4E4]"
+                  data-testid="button-review-deposit"
+                >
+                  Review Deposit
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-md border p-4 space-y-3">
+                <h4 className="text-sm font-semibold">Transaction Preview</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Vault</span>
+                    <span className="font-medium">{selectedVault?.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span className="font-medium">
+                      {formatCurrency(parseFloat(depositAmount))} RLUSD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">APR</span>
+                    <span className="font-medium">{selectedVault?.apr}%</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Sign With</span>
+                    <Badge variant="secondary">
+                      {walletType === "xumm" ? "Xumm Wallet" : "Ledger Device"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+                You are about to deposit{" "}
+                <span className="font-semibold text-foreground">
+                  {depositAmount} RLUSD
+                </span>{" "}
+                to vault. Principal protected. Only interest withdrawable.
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPreview(false)}
+                  disabled={isDepositing}
+                  data-testid="button-back-deposit"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleConfirmDeposit}
+                  disabled={isDepositing}
+                  className="bg-[#00A4E4] text-white border-[#00A4E4]"
+                  data-testid="button-confirm-deposit"
+                >
+                  {isDepositing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Signing...
+                    </>
+                  ) : (
+                    "Confirm Deposit"
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

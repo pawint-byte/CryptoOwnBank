@@ -112,6 +112,9 @@ export const userSettings = pgTable("user_settings", {
   taxMethod: varchar("tax_method", { length: 10 }).default("FIFO"),
   defaultCurrency: varchar("default_currency", { length: 10 }).default("USD"),
   taxYear: integer("tax_year"),
+  subscriptionTier: varchar("subscription_tier", { length: 20 }).default("free"),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

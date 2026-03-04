@@ -2,7 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable } from "@shared/schema";
+import { createCheckoutSession, PLANS } from "./stripe";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -554,6 +557,127 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Export tax report error:", error);
       res.status(500).json({ message: "Failed to export tax report" });
+    }
+  });
+
+  app.post("/api/stripe/create-checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { plan } = req.body;
+
+      if (!plan || !["monthly", "yearly"].includes(plan)) {
+        return res.status(400).json({ message: "Invalid plan. Use 'monthly' or 'yearly'." });
+      }
+
+      const host = req.headers.host || "localhost:5000";
+      const protocol = req.headers["x-forwarded-proto"] || "http";
+      const baseUrl = `${protocol}://${host}`;
+
+      const session = await createCheckoutSession(
+        userId,
+        plan as "monthly" | "yearly",
+        `${baseUrl}/settings?subscription=success`,
+        `${baseUrl}/settings?subscription=cancelled`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Stripe checkout error:", error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/stripe/webhook", async (req: any, res) => {
+    try {
+      const sig = req.headers["stripe-signature"];
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+      if (!webhookSecret) {
+        const event = req.body;
+        if (event.type === "checkout.session.completed") {
+          const session = event.data.object;
+          const userId = session.metadata?.userId;
+          if (userId) {
+            const existing = await storage.getUserSettings(userId);
+            await storage.upsertUserSettings({
+              userId,
+              taxMethod: existing?.taxMethod || "FIFO",
+              defaultCurrency: existing?.defaultCurrency || "USD",
+              subscriptionTier: "premium",
+              stripeCustomerId: session.customer,
+              stripeSubscriptionId: session.subscription,
+            });
+          }
+        } else if (
+          event.type === "customer.subscription.deleted" ||
+          event.type === "customer.subscription.updated"
+        ) {
+          const subscription = event.data.object;
+          const status = subscription.status;
+          const customerId = subscription.customer;
+          if (status === "canceled" || status === "unpaid") {
+            const allSettings = await db
+              .select()
+              .from(userSettingsTable)
+              .where(eq(userSettingsTable.stripeCustomerId, customerId as string));
+            for (const s of allSettings) {
+              await storage.upsertUserSettings({
+                userId: s.userId,
+                taxMethod: s.taxMethod || "FIFO",
+                defaultCurrency: s.defaultCurrency || "USD",
+                subscriptionTier: "free",
+                stripeCustomerId: s.stripeCustomerId,
+                stripeSubscriptionId: s.stripeSubscriptionId,
+              });
+            }
+          }
+        }
+        return res.json({ received: true });
+      }
+
+      const { stripe } = await import("./stripe");
+      const event = stripe.webhooks.constructEvent(
+        JSON.stringify(req.body),
+        sig,
+        webhookSecret
+      );
+
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as any;
+        const userId = session.metadata?.userId;
+        if (userId) {
+          const existing = await storage.getUserSettings(userId);
+          await storage.upsertUserSettings({
+            userId,
+            taxMethod: existing?.taxMethod || "FIFO",
+            defaultCurrency: existing?.defaultCurrency || "USD",
+            subscriptionTier: "premium",
+            stripeCustomerId: session.customer,
+            stripeSubscriptionId: session.subscription,
+          });
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Stripe webhook error:", error);
+      res.status(400).json({ message: "Webhook error" });
+    }
+  });
+
+  app.get("/api/stripe/plans", (_req, res) => {
+    res.json(PLANS);
+  });
+
+  app.get("/api/subscription", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      res.json({ tier, status: "active" });
+    } catch (error) {
+      console.error("Subscription check error:", error);
+      res.status(500).json({ message: "Failed to check subscription" });
     }
   });
 
