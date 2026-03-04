@@ -313,6 +313,10 @@ const faqs = [
     a: "Currently focused on XRPL-native assets (XRP, RLUSD, Soil positions). You can also connect exchange accounts (Coinbase, Kraken, Binance) to track your full crypto portfolio \u2014 Bitcoin, Ethereum, altcoins, and more. Future updates will add multi-chain support so you can manage more from one dashboard \u2014 still signing from your cold wallet.",
   },
   {
+    q: "Can CryptoOwnBank connect to other blockchains and protocols in the future?",
+    a: "Yes \u2014 and that\u2019s exactly the vision. CryptoOwnBank is built to be your personal on-chain control center \u2014 not just for XRPL today, but for any blockchain or smart contract that offers yield, lending, staking, or tokenized assets. We plug into new protocols the same non-custodial way: reading public blockchain data, building ready-to-sign transactions, and letting your cold wallet approve. You stay the owner; we become your smart assistant \u2014 one beautiful dashboard instead of scattered apps, one-click actions instead of copy-pasting addresses, and automation without giving up sovereignty. When XLS-66 XRP lending activates or new RWA protocols launch, we add them \u2014 you get instant access without switching tools. Coming soon: native XRP lending, more XRPL protocols, and multi-chain support \u2014 all while keeping you in 100% control.",
+  },
+  {
     q: "What wallets are supported?",
     a: "For XRPL yield vaults, we support Xumm (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via WebUSB). Both are cold wallet solutions that keep your private keys completely offline or on a secure device. For portfolio tracking, you connect exchange accounts via API keys.",
   },

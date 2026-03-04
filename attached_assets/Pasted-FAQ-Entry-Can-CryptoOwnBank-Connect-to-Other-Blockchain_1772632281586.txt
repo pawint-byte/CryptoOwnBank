@@ -1,0 +1,34 @@
+FAQ Entry: Can CryptoOwnBank Connect to Other Blockchains and Protocols in the Future?
+Yes — and that’s exactly the vision.
+CryptoOwnBank is built to be your personal on-chain control center — not just for XRPL today, but for any blockchain or smart contract that offers valuable capabilities (yield, lending, staking, tokenized assets, etc.).
+How it works (and why it’s safe)
+Whenever a new protocol or blockchain exposes features through smart contracts or on-chain rules, we can plug in by:
+
+Reading public blockchain data (balances, yields, positions) via open RPC nodes or indexers
+Building ready-to-sign transactions that your cold wallet (Ledger or Xumm) approves
+You sign and broadcast directly — we never touch your keys or funds
+
+This is the same non-custodial model we use today for RLUSD → Soil vaults. It keeps you in full control while we handle the complexity.
+Why this is the future of “being your own bank”
+In the old world, banks controlled everything: your money, the interface, the rules.
+In the blockchain world, you control the money — but the raw experience is still clunky (manual transaction building, multiple wallets, confusing explorers).
+We bridge that gap:
+
+One beautiful dashboard instead of scattered apps and command lines
+One-click actions instead of copy-pasting addresses
+Automation (auto-withdraw interest, alerts, scheduled moves) without giving up sovereignty
+Future-proof expansion: When XLS-66 XRP lending activates, or when new RWA protocols launch on XRPL (or even multi-chain), we add them — you get instant access without switching tools
+
+You stay the owner. We become your smart assistant — making self-custody powerful, convenient, and actually enjoyable.
+The need we solve
+Most people want:
+
+Full control (cold wallet only)
+Real yield & utility (without selling principal)
+Simplicity (no PhD in blockchain required)
+
+CryptoOwnBank delivers exactly that.
+We don’t replace your keys — we make them work harder for you.
+As more protocols go on-chain (XLS-66, tokenized real-world assets, cross-chain bridges), your dashboard becomes the central hub — not another walled garden.
+Coming soon: Native XRP lending (XLS-66), more XRPL protocols, and multi-chain support — all while keeping you in 100% control.
+Your bank. Your rules. Your future.
