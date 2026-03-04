@@ -207,5 +207,5 @@ export const AFFILIATE_LINKS = {
   kraken: "https://proinvite.kraken.com/9f1e/oya30ft6",
   coinbase: "https://coinbase.com/join/TT3HJ4K?src=ios-link",
   cryptoCom: "https://crypto.com/app/24csm6d4km",
-  uphold: "",
+  uphold: "https://wallet.uphold.com/signup?referral=6dacaf8d55&campaign=uw_p_d_w_acq_raf&utm_source=raf&utm_medium=referafriend",
 };
