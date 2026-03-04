@@ -415,30 +415,37 @@ export default function OwnBankDashboard() {
                 Buy RLUSD on a supported exchange, withdraw to your connected XRPL wallet, then return here to deposit into a Soil vault for 5.2–7.8% APR yield.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:min-w-[240px]">
-              <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer">
-                <Button
-                  className="w-full bg-[#00A4E4] text-white border-[#00A4E4]"
-                  data-testid="button-get-rlusd"
-                >
-                  Get RLUSD & Start Earning
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </a>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-3 sm:min-w-[280px]">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Buy RLUSD on:</p>
+              <div className="grid grid-cols-2 gap-2">
+                <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full bg-[#F0B90B] text-black hover:bg-[#F0B90B]/90" size="sm" data-testid="link-buy-binance">
+                    Binance <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
                 <a href={AFFILIATE_LINKS.kraken} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" data-testid="link-buy-kraken">
+                  <Button className="w-full bg-[#7B61FF] text-white hover:bg-[#7B61FF]/90" size="sm" data-testid="link-buy-kraken">
                     Kraken <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </a>
                 <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" data-testid="link-buy-coinbase">
+                  <Button className="w-full bg-[#0052FF] text-white hover:bg-[#0052FF]/90" size="sm" data-testid="link-buy-coinbase">
                     Coinbase <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+                <a href={AFFILIATE_LINKS.cryptoCom} target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full bg-[#002D74] text-white hover:bg-[#002D74]/90" size="sm" data-testid="link-buy-cryptocom">
+                    Crypto.com <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+                <a href={AFFILIATE_LINKS.uphold} target="_blank" rel="noopener noreferrer" className="col-span-2">
+                  <Button variant="outline" className="w-full" size="sm" data-testid="link-buy-uphold">
+                    Uphold <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </a>
               </div>
               <p className="text-[11px] text-muted-foreground leading-tight">
-                Affiliate link — we may earn a referral reward at no extra cost to you.
+                Affiliate links — we may earn a referral reward at no extra cost to you.
               </p>
             </div>
           </div>
@@ -513,16 +520,11 @@ export default function OwnBankDashboard() {
               </Link>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No RLUSD detected yet.{" "}
-                <a
-                  href={AFFILIATE_LINKS.binance}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#00A4E4] underline"
-                  data-testid="link-buy-binance-fallback"
-                >
-                  Buy on Binance →
-                </a>
+                No RLUSD detected yet. Buy on{" "}
+                <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline" data-testid="link-buy-binance-fallback">Binance</a>,{" "}
+                <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline" data-testid="link-buy-coinbase-fallback">Coinbase</a>,{" "}
+                <a href={AFFILIATE_LINKS.uphold} target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline" data-testid="link-buy-uphold-fallback">Uphold</a>{" "}
+                or scroll up for all options.
               </p>
             )}
           </CardContent>
