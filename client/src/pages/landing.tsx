@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Shield,
@@ -1147,6 +1148,123 @@ export default function Landing() {
                 </a>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="signing" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-signing">
+                Signing Options — Choose Your Security Level
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                CryptoOwnBank is 100% non-custodial. We never see or store your
+                private keys. Every action requires your approval. Here are your
+                options:
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="border-[#00A4E4]/40" data-testid="card-signing-landing-0">
+                <CardContent className="p-8 space-y-4">
+                  <Badge className="bg-[#00A4E4] text-white">Most Secure</Badge>
+                  <h3 className="text-xl font-semibold leading-tight">
+                    Full Hardware Signing
+                    <br />
+                    <span className="text-sm font-normal text-muted-foreground">
+                      (Ledger Nano X + Xaman)
+                    </span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Xaman builds the transaction and forwards it to your Ledger.
+                    You approve on the hardware device (keys never leave Ledger).
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      Highest security
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      Keys stay offline
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      Industry standard
+                    </li>
+                  </ul>
+                  <p className="text-xs text-[#00A4E4] font-medium pt-2">
+                    Recommended for most users
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-signing-landing-1">
+                <CardContent className="p-8 space-y-4">
+                  <Badge variant="secondary">Most Convenient</Badge>
+                  <h3 className="text-xl font-semibold leading-tight">
+                    Xaman-Only Signing
+                    <br />
+                    <span className="text-sm font-normal text-muted-foreground">
+                      (Phone Only)
+                    </span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Approve transactions directly in the Xaman app on your phone
+                    (PIN or biometrics). No Ledger needed for small actions.
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      Fastest
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      Phone-only
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      Still non-custodial
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-signing-landing-2">
+                <CardContent className="p-8 space-y-4">
+                  <Badge variant="secondary">Flexible</Badge>
+                  <h3 className="text-xl font-semibold leading-tight">
+                    Hybrid Approach
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use Ledger for large or important transactions. Switch to
+                    Xaman-only for quick daily actions.
+                  </p>
+                  <p className="text-sm text-muted-foreground pt-4">
+                    Best of both worlds. Most users end up here.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="mt-10">
+              <CardContent className="p-8 text-center">
+                <p className="text-lg font-medium mb-3">Our Recommendation</p>
+                <p className="text-muted-foreground max-w-lg mx-auto text-sm">
+                  Start with{" "}
+                  <span className="text-[#00A4E4] font-medium">
+                    Full Hardware Signing (Ledger Nano X + Xaman)
+                  </span>
+                  . This is the safest and most trusted way. You can always add
+                  Xaman-only signing later for convenience.
+                </p>
+              </CardContent>
+            </Card>
+
+            <p className="text-xs text-muted-foreground text-center mt-8">
+              No matter which option you choose, you remain in full control. We
+              never see your keys.
+            </p>
           </div>
         </section>
 

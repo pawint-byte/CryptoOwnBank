@@ -1,0 +1,65 @@
+<section className="max-w-4xl mx-auto py-12 px-6">
+  <h2 className="text-3xl font-bold mb-8 text-center">
+    Signing Options — Choose Your Security Level
+  </h2>
+  
+  <p className="text-center text-gray-400 mb-10 max-w-2xl mx-auto">
+    CryptoOwnBank is 100% non-custodial. We never see or store your private keys. 
+    Every action requires your approval. Here are your options:
+  </p>
+
+  <div className="grid md:grid-cols-3 gap-6">
+    
+    {/* Option 1 - Recommended */}
+    <div className="bg-gray-900 border border-blue-600 rounded-2xl p-8">
+      <div className="text-blue-400 text-sm font-medium mb-3">MOST SECURE</div>
+      <h3 className="text-2xl font-semibold mb-4">Full Hardware Signing<br />(Ledger Nano X + Xaman)</h3>
+      <p className="text-gray-400 mb-6">
+        Xaman builds the transaction and forwards it to your Ledger. You approve on the hardware device (keys never leave Ledger).
+      </p>
+      <ul className="space-y-3 text-sm">
+        <li className="flex items-start gap-3">✅ Highest security</li>
+        <li className="flex items-start gap-3">✅ Keys stay offline</li>
+        <li className="flex items-start gap-3">✅ Industry standard</li>
+      </ul>
+      <p className="text-xs text-blue-400 mt-8">Recommended for most users</p>
+    </div>
+
+    {/* Option 2 */}
+    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8">
+      <div className="text-gray-400 text-sm font-medium mb-3">MOST CONVENIENT</div>
+      <h3 className="text-2xl font-semibold mb-4">Xaman-Only Signing<br />(Phone Only)</h3>
+      <p className="text-gray-400 mb-6">
+        Approve transactions directly in the Xaman app on your iPhone (PIN or biometrics). No Ledger needed for small actions.
+      </p>
+      <ul className="space-y-3 text-sm">
+        <li className="flex items-start gap-3">✅ Fastest</li>
+        <li className="flex items-start gap-3">✅ Phone-only</li>
+        <li className="flex items-start gap-3">✅ Still non-custodial</li>
+      </ul>
+    </div>
+
+    {/* Option 3 */}
+    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8">
+      <div className="text-gray-400 text-sm font-medium mb-3">FLEXIBLE</div>
+      <h3 className="text-2xl font-semibold mb-4">Hybrid Approach</h3>
+      <p className="text-gray-400 mb-6">
+        Use Ledger for large or important transactions. Switch to Xaman-only for quick daily actions.
+      </p>
+      <p className="text-sm text-gray-400">Best of both worlds. Most users end up here.</p>
+    </div>
+
+  </div>
+
+  <div className="mt-12 bg-gray-900 border border-gray-700 rounded-2xl p-8 text-center">
+    <p className="text-lg font-medium mb-4">Our Recommendation</p>
+    <p className="text-gray-400 max-w-md mx-auto">
+      Start with <span className="text-blue-400 font-medium">Full Hardware Signing (Ledger Nano X + Xaman)</span>. 
+      This is the safest and most trusted way. You can always add Xaman-only signing later for convenience.
+    </p>
+  </div>
+
+  <p className="text-xs text-gray-500 text-center mt-10">
+    No matter which option you choose, you remain in full control. We never see your keys.
+  </p>
+</section>
