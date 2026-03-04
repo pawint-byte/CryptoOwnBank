@@ -35,6 +35,7 @@ import OwnBankWithdraw from "@/pages/ownbank-withdraw";
 import OwnBankHistory from "@/pages/ownbank-history";
 import OwnBankReferrals from "@/pages/ownbank-referrals";
 import AdminUsers from "@/pages/admin-users";
+import AdminMetrics from "@/pages/admin-metrics";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -81,6 +82,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/history" component={OwnBankHistory} />
         <Route path="/ownbank/referrals" component={OwnBankReferrals} />
         <Route path="/admin/users" component={AdminUsers} />
+        <Route path="/admin/metrics" component={AdminMetrics} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>

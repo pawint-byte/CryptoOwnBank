@@ -39,7 +39,8 @@ Preferred communication style: Simple, everyday language.
 - **Email Auth**: Signup with email verification, login, forgot/reset password flows
 - **Password Security**: scrypt hashing with random salt, 8+ chars with uppercase/lowercase/number requirements
 - **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple (7-day TTL)
-- **Admin System**: isAdmin flag on users table, admin dashboard at /admin/users for user management and auth migration
+- **Admin System**: isAdmin flag on users table, auto-admin for ADMIN_EMAILS list (pawint@me.com, andrew.wint@gmail.com)
+- **Admin Dashboard**: /admin/metrics (site metrics, revenue, signup trends, user directory), /admin/users (user management, auth migration)
 - **XRPL Wallets**: Non-custodial — Xumm and Ledger hardware wallet connections (no keys stored server-side)
 
 ### Key Data Models (PostgreSQL)
@@ -97,6 +98,7 @@ Preferred communication style: Simple, everyday language.
 - `client/src/pages/reset-password.tsx` — Set new password via token
 - `client/src/pages/verify-email.tsx` — Email verification handler
 - `client/src/pages/admin-users.tsx` — Admin user management dashboard
+- `client/src/pages/admin-metrics.tsx` — Admin metrics dashboard (users, revenue, signup trends, contact directory)
 
 ### Stripe Integration
 - `server/stripe.ts` — Stripe checkout session creation, plan config

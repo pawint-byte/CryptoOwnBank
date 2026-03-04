@@ -15,6 +15,7 @@ import {
   Users,
   Zap,
   Shield,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -154,6 +155,18 @@ export function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === "/admin/metrics"}
+                    data-testid="nav-admin-metrics"
+                  >
+                    <Link href="/admin/metrics">
+                      <BarChart3 className="h-4 w-4 text-amber-500" />
+                      <span>Metrics</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild

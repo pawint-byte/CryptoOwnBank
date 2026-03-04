@@ -386,6 +386,50 @@ export function registerAuthRoutes(app: Express): void {
           };
         });
 
+      let revenue = {
+        mrr: 0,
+        arr: 0,
+        totalRevenue: 0,
+        activeSubscriptions: 0,
+        monthlySubscribers: 0,
+        yearlySubscribers: 0,
+        recentCharges: [] as { amount: number; email: string | null; date: string; status: string }[],
+      };
+
+      try {
+        const { stripe } = await import("../../stripe");
+        if (process.env.STRIPE_SECRET_KEY) {
+          const subscriptions = await stripe.subscriptions.list({ status: "active", limit: 100 });
+          revenue.activeSubscriptions = subscriptions.data.length;
+          for (const sub of subscriptions.data) {
+            const amount = sub.items.data[0]?.price?.unit_amount || 0;
+            const interval = sub.items.data[0]?.price?.recurring?.interval;
+            if (interval === "month") {
+              revenue.monthlySubscribers++;
+              revenue.mrr += amount;
+            } else if (interval === "year") {
+              revenue.yearlySubscribers++;
+              revenue.mrr += Math.round(amount / 12);
+            }
+          }
+          revenue.arr = revenue.mrr * 12;
+
+          const charges = await stripe.charges.list({ limit: 20 });
+          revenue.totalRevenue = 0;
+          revenue.recentCharges = charges.data.map(c => {
+            if (c.status === "succeeded") revenue.totalRevenue += c.amount;
+            return {
+              amount: c.amount,
+              email: c.billing_details?.email || null,
+              date: new Date(c.created * 1000).toISOString(),
+              status: c.status || "unknown",
+            };
+          });
+        }
+      } catch (stripeErr) {
+        console.error("Stripe metrics fetch error:", stripeErr);
+      }
+
       res.json({
         overview: {
           totalUsers,
@@ -402,6 +446,7 @@ export function registerAuthRoutes(app: Express): void {
           email: emailAuthCount,
           legacy: legacyAuthCount,
         },
+        revenue,
         signupTrend,
         users: userList,
       });
