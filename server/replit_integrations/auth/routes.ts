@@ -16,6 +16,8 @@ import {
   sendPasswordReset,
 } from "../../email";
 
+const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
+
 export function registerAuthRoutes(app: Express): void {
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
