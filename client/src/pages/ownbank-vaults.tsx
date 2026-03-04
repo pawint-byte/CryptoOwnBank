@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -19,14 +24,18 @@ import {
   Loader2,
   Landmark,
   Briefcase,
+  Sparkles,
+  X,
 } from "lucide-react";
 import { useXrplStore, type VaultDeposit } from "@/lib/xrpl-store";
 import {
   SOIL_VAULTS,
   SOIL_REFERRAL_URL,
   SOIL_REFERRAL_CODE,
+  AFFILIATE_LINKS,
   calculateAccruedInterest,
 } from "@/lib/xrpl-client";
+import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
 import { signPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +69,8 @@ export default function OwnBankVaults() {
     referredBy,
     rlusdBalance,
   } = useXrplStore();
+
+  const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
 
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [selectedVault, setSelectedVault] = useState<(typeof SOIL_VAULTS)[0] | null>(null);
@@ -231,6 +242,49 @@ export default function OwnBankVaults() {
         </div>
       </div>
 
+      {showDepositPrompt && (
+        <Alert className="border-emerald-500/40 bg-emerald-500/5">
+          <Sparkles className="h-4 w-4 text-emerald-500" />
+          <AlertTitle data-testid="text-vault-balance-detected">
+            New RLUSD detected! Ready to deposit?
+          </AlertTitle>
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2">
+            <span className="text-sm">
+              +{formatCurrency(balanceIncrease || 0)} RLUSD received. Choose a vault below to start earning yield.
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={dismissPrompt}
+              data-testid="button-vault-dismiss-prompt"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!showDepositPrompt && rlusdBalance === 0 && vaultDeposits.length === 0 && (
+        <Alert className="border-[#00A4E4]/30 bg-[#00A4E4]/5">
+          <Sparkles className="h-4 w-4 text-[#00A4E4]" />
+          <AlertTitle>No RLUSD detected yet</AlertTitle>
+          <AlertDescription className="mt-2">
+            <span className="text-sm">
+              Buy RLUSD on an exchange and withdraw to your connected wallet to get started.{" "}
+              <a
+                href={AFFILIATE_LINKS.binance}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#00A4E4] underline font-medium"
+                data-testid="link-vault-buy-binance"
+              >
+                Buy on Binance →
+              </a>
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         {SOIL_VAULTS.map((vault) => {
           const userDeposit = getUserDeposit(vault.id);
@@ -340,15 +394,26 @@ export default function OwnBankVaults() {
                 <label className="text-sm font-medium mb-1.5 block">
                   Amount (RLUSD)
                 </label>
-                <Input
-                  type="number"
-                  placeholder={`Min ${selectedVault?.minDeposit || 10} RLUSD`}
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  min={selectedVault?.minDeposit}
-                  step="0.01"
-                  data-testid="input-deposit-amount"
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder={`Min ${selectedVault?.minDeposit || 10} RLUSD`}
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    min={selectedVault?.minDeposit}
+                    step="0.01"
+                    data-testid="input-deposit-amount"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDepositAmount(rlusdBalance.toString())}
+                    disabled={rlusdBalance === 0}
+                    data-testid="button-max-amount"
+                  >
+                    Max
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Available: {formatCurrency(rlusdBalance)} RLUSD
                 </p>
@@ -420,12 +485,17 @@ export default function OwnBankVaults() {
                 </div>
               </div>
 
-              <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-                You are about to deposit{" "}
-                <span className="font-semibold text-foreground">
-                  {depositAmount} RLUSD
-                </span>{" "}
-                to vault. Principal protected. Only interest withdrawable.
+              <div className="rounded-md bg-muted/50 p-3 space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  You are about to deposit{" "}
+                  <span className="font-semibold text-foreground">
+                    {depositAmount} RLUSD
+                  </span>{" "}
+                  to vault. Principal protected. Only interest withdrawable.
+                </p>
+                <p className="text-xs text-muted-foreground/80">
+                  You are signing with your cold wallet — we never see your keys.
+                </p>
               </div>
 
               <DialogFooter>

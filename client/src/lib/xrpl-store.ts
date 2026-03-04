@@ -25,6 +25,9 @@ interface XrplState {
   spendingWallet: string;
   xrpBalance: number;
   rlusdBalance: number;
+  previousRlusdBalance: number | null;
+  balanceIncrease: number | null;
+  balancePromptDismissed: boolean;
   vaultDeposits: VaultDeposit[];
   referralCode: string | null;
   referrals: Referral[];
@@ -43,6 +46,7 @@ interface XrplState {
   setReferredBy: (code: string) => void;
   addPremiumCredit: () => void;
   setSubscriptionTier: (tier: "free" | "premium") => void;
+  dismissBalancePrompt: () => void;
 }
 
 function generateShortId(): string {
@@ -58,6 +62,9 @@ export const useXrplStore = create<XrplState>()(
       spendingWallet: "",
       xrpBalance: 0,
       rlusdBalance: 0,
+      previousRlusdBalance: null,
+      balanceIncrease: null,
+      balancePromptDismissed: false,
       vaultDeposits: [],
       referralCode: null,
       referrals: [],
@@ -80,12 +87,26 @@ export const useXrplStore = create<XrplState>()(
           walletType: null,
           xrpBalance: 0,
           rlusdBalance: 0,
+          previousRlusdBalance: null,
+          balanceIncrease: null,
+          balancePromptDismissed: false,
         }),
 
       setSpendingWallet: (address) => set({ spendingWallet: address }),
 
-      updateBalances: (xrp, rlusd) =>
-        set({ xrpBalance: xrp, rlusdBalance: rlusd }),
+      updateBalances: (xrp, rlusd) => {
+        const currentBalance = get().rlusdBalance;
+        const prevStored = get().previousRlusdBalance;
+        const baseline = prevStored !== null ? prevStored : currentBalance;
+        const increase = rlusd - baseline > 1 ? rlusd - baseline : null;
+        set({
+          xrpBalance: xrp,
+          rlusdBalance: rlusd,
+          previousRlusdBalance: baseline,
+          balanceIncrease: increase,
+          balancePromptDismissed: increase ? false : get().balancePromptDismissed,
+        });
+      },
 
       addVaultDeposit: (deposit) =>
         set((state) => {
@@ -131,6 +152,8 @@ export const useXrplStore = create<XrplState>()(
         })),
 
       setSubscriptionTier: (tier) => set({ subscriptionTier: tier }),
+
+      dismissBalancePrompt: () => set({ balancePromptDismissed: true, balanceIncrease: null }),
     }),
     {
       name: "ownbank-xrpl-storage",

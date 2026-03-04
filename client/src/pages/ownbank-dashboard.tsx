@@ -3,6 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
@@ -14,6 +19,7 @@ import {
 } from "@/lib/xrpl-client";
 import { connectXumm } from "@/lib/xumm-connector";
 import { connectLedger } from "@/lib/ledger-connector";
+import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
 import { Link } from "wouter";
 import {
   Wallet,
@@ -27,6 +33,9 @@ import {
   Users,
   RefreshCw,
   Shield,
+  X,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 
@@ -132,6 +141,8 @@ export default function OwnBankDashboard() {
     disconnect();
     toast({ title: "Wallet Disconnected" });
   };
+
+  const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
 
   const portfolioValue = xrpBalance * xrpPrice + rlusdBalance;
 
@@ -355,6 +366,96 @@ export default function OwnBankDashboard() {
         </Card>
       </div>
 
+      {showDepositPrompt && (
+        <Alert className="border-emerald-500/40 bg-emerald-500/5">
+          <Sparkles className="h-4 w-4 text-emerald-500" />
+          <AlertTitle data-testid="text-balance-detected">
+            Detected new RLUSD in your wallet!
+          </AlertTitle>
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2">
+            <span className="text-sm">
+              +{formatCurrency(balanceIncrease || 0)} RLUSD received. Ready to start earning yield?
+            </span>
+            <div className="flex items-center gap-2">
+              <Link href="/ownbank/vaults">
+                <Button
+                  size="sm"
+                  className="bg-[#00A4E4] text-white border-[#00A4E4]"
+                  data-testid="button-deposit-now"
+                >
+                  Deposit to Soil Vault Now
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={dismissPrompt}
+                data-testid="button-dismiss-prompt"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="border-[#00A4E4]/30 bg-gradient-to-br from-[#00A4E4]/5 to-transparent">
+        <CardContent className="py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3 flex-1">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-xs font-medium">
+                <Sparkles className="h-3 w-3" />
+                Step 1: Get RLUSD
+              </div>
+              <h3 className="text-xl font-bold" data-testid="text-get-rlusd-heading">
+                Get RLUSD & Start Earning
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-lg">
+                Buy RLUSD on a supported exchange, withdraw to your connected XRPL wallet, then return here to deposit into a Soil vault for 5.2–7.8% APR yield.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:min-w-[240px]">
+              <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer">
+                <Button
+                  className="w-full bg-[#00A4E4] text-white border-[#00A4E4]"
+                  data-testid="button-get-rlusd"
+                >
+                  Get RLUSD & Start Earning
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </a>
+              <div className="flex items-center gap-2">
+                <a href={AFFILIATE_LINKS.kraken} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" data-testid="link-buy-kraken">
+                    Kraken <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+                <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" data-testid="link-buy-coinbase">
+                    Coinbase <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Affiliate link — we may earn a referral reward at no extra cost to you.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Already have RLUSD?
+            </p>
+            <Link href="/ownbank/vaults">
+              <Button variant="link" size="sm" className="text-[#00A4E4] p-0 h-auto" data-testid="link-go-to-vaults">
+                Go to Vaults & Deposit
+                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -381,29 +482,49 @@ export default function OwnBankDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Buy RLUSD</CardTitle>
+            <CardTitle className="text-base">
+              <RefreshCw className="h-4 w-4 inline mr-2" />
+              RLUSD Balance
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Purchase RLUSD on a supported exchange, then deposit to a Soil vault for yield.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" data-testid="link-buy-binance">
-                  Binance <ExternalLink className="h-3 w-3 ml-1" />
-                </Button>
-              </a>
-              <a href={AFFILIATE_LINKS.kraken} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" data-testid="link-buy-kraken">
-                  Kraken <ExternalLink className="h-3 w-3 ml-1" />
-                </Button>
-              </a>
-              <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" data-testid="link-buy-coinbase">
-                  Coinbase <ExternalLink className="h-3 w-3 ml-1" />
-                </Button>
-              </a>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold font-mono" data-testid="text-rlusd-prominent">
+                {formatCurrency(rlusdBalance)}
+              </span>
+              <span className="text-sm text-muted-foreground">RLUSD</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { fetchBalances(); }}
+                disabled={loadingBalances}
+                className="ml-auto"
+                data-testid="button-refresh-rlusd"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loadingBalances ? "animate-spin" : ""}`} />
+              </Button>
             </div>
+            {rlusdBalance > 0 ? (
+              <Link href="/ownbank/vaults">
+                <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700" data-testid="button-deposit-rlusd">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Deposit to Vault & Earn Yield
+                </Button>
+              </Link>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No RLUSD detected yet.{" "}
+                <a
+                  href={AFFILIATE_LINKS.binance}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#00A4E4] underline"
+                  data-testid="link-buy-binance-fallback"
+                >
+                  Buy on Binance →
+                </a>
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

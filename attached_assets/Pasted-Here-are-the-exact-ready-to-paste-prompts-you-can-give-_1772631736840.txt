@@ -1,0 +1,76 @@
+Here are the exact, ready-to-paste prompts you can give to Replit (or any AI coding agent) to add the "One-Click Buy → Deposit" flow to your CryptoOwnBank.com site.
+These prompts assume:
+
+You're using Next.js (App Router), TypeScript, Tailwind, shadcn/ui, xrpl.js, @xumm/sdk, Zustand (as per earlier setup).
+You already have wallet connection (Xumm/Ledger) working.
+You have your Binance referral link (replace the placeholder with your real one).
+The flow is: User clicks a big button → opens Binance in new tab with referral → after purchase, user manually withdraws RLUSD to their connected XRPL address → site detects balance increase and offers one-click deposit to Soil.
+
+Prompt 1: Add the "Get RLUSD & Start Earning" Button (Main Entry Point)
+Paste this into Replit:
+textAdd a prominent "Get RLUSD & Start Earning" section / button to the homepage hero or a new "Get Started" section.
+
+Requirements:
+- Use shadcn/ui Button component (primary blue).
+- Button text: "Get RLUSD & Start Earning →"
+- When clicked: open a new tab to your Binance referral link (use this placeholder for now: https://www.binance.com/en/register?ref=YOUR_BINANCE_REF_CODE — replace with real link later).
+- Add a small disclosure text below the button: "Affiliate link — we may earn a referral reward if you use it, at no extra cost to you. Buy RLUSD on Binance, withdraw to your connected XRPL wallet, then return here to deposit."
+- Place it below the "Connect Wallet" button, or in a new card/section titled "Step 1: Get RLUSD".
+- Make it responsive and mobile-friendly.
+- After the button, add a secondary message: "Already have RLUSD? Skip to Deposit →" with a link or button that scrolls to the Vaults section (use smooth scroll if possible).
+- Use Tailwind classes for layout (flex, gap-4, etc.).
+
+Generate the JSX component (e.g., GetStarted.tsx) and show where to import/use it in the homepage (page.tsx or layout).
+Prompt 2: Add Balance Detection & "Deposit Now" Prompt (After Purchase)
+This one adds the "smart detection" part — site notices RLUSD balance increase and prompts to deposit.
+Paste this:
+textAdd logic to detect when RLUSD balance increases after user buys on exchange, and show a helpful "Ready to Deposit?" prompt.
+
+In the dashboard or Vaults page:
+1. Use xrpl.js Client to poll the connected wallet's RLUSD balance every 30 seconds (only when connected and on mainnet).
+2. Store previous balance in Zustand state.
+3. If new balance > previous balance by >1 RLUSD (to avoid noise), show a toast or card:
+   - Message: "Detected new RLUSD in your wallet! Ready to start earning yield?"
+   - Button: "Deposit to Soil Vault Now" (primary button)
+   - Clicking opens the Soil deposit flow (pre-fill amount = new balance increase, or full RLUSD balance).
+4. Add a dismiss button on the prompt.
+5. Include fallback text if no increase: "No new RLUSD detected yet? Buy on Binance → [affiliate link]"
+6. Use shadcn/ui Toast or Alert component for the notification.
+7. Make polling stop when disconnected or on unmount.
+8. Show current RLUSD balance prominently in the dashboard with a refresh icon.
+
+Generate the Zustand store update + polling hook + JSX for the prompt.
+Prompt 3: One-Click Deposit to Soil (Transaction Builder)
+This builds the actual signed deposit transaction.
+Paste this:
+textAdd one-click deposit to Soil vaults from the dashboard or Vaults page.
+
+Requirements:
+- Assume user is connected (Xumm or Ledger).
+- Show list of Soil vaults (hardcode two for now):
+  - Treasury Vault: 5.2% APR, address: [insert real Soil Treasury vault XRPL address when known]
+  - Private Credit Vault: 7.8% APR, address: [insert real address]
+- User selects vault + amount (default to full RLUSD balance or input field).
+- Button: "Deposit to [Vault Name]" (blue, disabled if amount=0 or not connected).
+- On click:
+  - Build XRPL transaction using xrpl.js:
+    - TrustSet (if needed for the vault token)
+    - Payment to vault address with RLUSD amount
+  - Use @xumm/sdk or Ledger to request signature (show transaction preview: "Send X RLUSD to vault address").
+  - On success: show toast "Deposit successful! Yield earning started."
+  - Refresh balance & accrued interest display.
+- Add loading state and error handling (e.g., insufficient balance, network error).
+- Disclosure: "You are signing with your cold wallet — we never see your keys."
+
+Generate the DepositButton component + xrpl transaction builder function.
+How to Use These Prompts in Replit
+
+Paste Prompt 1 first → get the button added.
+Paste Prompt 2 next → add balance detection + prompt.
+Paste Prompt 3 last → add the actual deposit signing.
+
+After adding:
+
+Replace placeholder addresses/links with real ones (get Soil vault addresses from xrpl.soil.co or their docs).
+Test with tiny testnet RLUSD first if possible.
+Publish → test the full flow: click buy link → simulate purchase → return → see prompt → deposit.
