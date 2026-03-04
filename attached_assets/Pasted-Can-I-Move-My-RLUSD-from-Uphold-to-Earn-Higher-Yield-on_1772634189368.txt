@@ -1,0 +1,41 @@
+Can I Move My RLUSD from Uphold to Earn Higher Yield on Soil?
+Yes — you can easily transfer RLUSD from Uphold to your own XRPL wallet (such as Ledger Nano X + Xaman/Xumm) and start earning higher fixed yields through Soil Protocol vaults — all while keeping full control.
+1. Why Move from Uphold?
+
+Uphold currently offers ~3.75% on RLUSD holdings (as of March 2026), but it's custodial — Uphold controls the keys, and you're limited to their platform.
+Soil Protocol (native to XRPL) offers 5–8% fixed APR (real yield from U.S. Treasuries, private credit, and market-neutral strategies) — higher than Uphold in most cases.
+With Soil + your site: You stay non-custodial (your keys, your control), earn more, and withdraw only interest without selling principal.
+
+2. How to Transfer RLUSD from Uphold
+
+Log in to Uphold (app or web).
+Go to Withdraw or Send → select RLUSD.
+Choose Crypto network (XRPL).
+Enter your XRPL wallet address (from Xaman or Ledger — make sure you've already set up the RLUSD trust line).
+Confirm low XRPL network fees (~0.0001 XRP).
+Submit — funds arrive in seconds to minutes.
+Tip: Test with a small amount first (1–10 RLUSD) to avoid mistakes.
+
+
+Before transferring: Add the RLUSD trust line in Xaman (or your wallet app): "+" → Add Token → RLUSD → Setup Trust Line → sign on your hardware wallet.
+3. How Does Soil Work with CryptoOwnBank?
+Soil is a compliant, real-world-asset (RWA) yield protocol built directly on the XRP Ledger — your site integrates with it automatically using public XRPL data and standard transactions.
+Here's the flow on your dashboard:
+
+Connect your cold wallet (Ledger/Xaman) — site reads your RLUSD balance on-chain.
+View Soil vaults (e.g., Treasury 5.2% APR, Private Credit 7.8% APR) — real-time APRs and backing assets shown.
+Deposit RLUSD → site builds the transaction → you sign on your hardware wallet.
+Earn fixed yield — principal stays locked in the vault (per rules: short notice for Treasury, longer for credit vaults).
+Withdraw interest only → site calculates accrued earnings → you sign a transaction that sends only the interest (principal remains untouched).
+Premium members get auto-scheduling for weekly interest withdrawals.
+
+
+Everything is on-chain, transparent, and signed by you — no middleman, no custody by us or Soil.
+Why it's better:
+
+Higher yield than Uphold's 3.75%.
+True ownership (your keys, your assets).
+Full control via your dashboard — no need to switch apps.
+
+Risk note: Yields are not guaranteed — past performance is not indicative of future results. Always DYOR. Vaults have notice periods for withdrawals (interest continues during notice).
+Ready to move? Transfer a small test amount from Uphold → connect your wallet here → start earning more today.

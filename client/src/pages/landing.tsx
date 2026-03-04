@@ -285,6 +285,10 @@ const faqs = [
     a: "1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a Soil vault (Treasury-backed at 5.2% or Private Credit at 7.8%). 4) Earn fixed yield immediately \u2014 your principal stays locked. 5) Withdraw only the accrued interest whenever you want (manual or auto for Premium users). No KYC on our end, no bank linking required.",
   },
   {
+    q: "Can I move my RLUSD from Uphold to earn higher yield on Soil?",
+    a: "Yes \u2014 Uphold currently offers ~3.75% on RLUSD (custodial), while Soil Protocol offers 5\u20138% fixed APR (non-custodial, your keys). To transfer: 1) Set up the RLUSD trust line in Xaman first (see /setup-guide). 2) In Uphold, go to Withdraw/Send \u2192 select RLUSD \u2192 choose XRPL network \u2192 enter your wallet address \u2192 confirm (fees are ~0.0001 XRP). 3) Funds arrive in seconds. 4) Connect your wallet here and deposit into a Soil vault. Tip: test with a small amount first (1\u201310 RLUSD). You get higher yield, true ownership, and full control via your dashboard \u2014 no middleman.",
+  },
+  {
     q: "What is RLUSD and how do the yield vaults work?",
     a: "RLUSD is Ripple\u2019s regulated stablecoin, pegged 1:1 to the US Dollar and backed by cash and cash equivalents. The yield comes from Soil Protocol, which lends your RLUSD to institutional borrowers \u2014 similar to how traditional banks make money, except the interest goes to you. The Treasury Vault (5.2% APR) is backed by US government securities. The Private Credit Vault (7.8% APR) is backed by diversified private credit pools.",
   },
