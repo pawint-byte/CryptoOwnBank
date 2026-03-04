@@ -63,6 +63,8 @@ export function registerAuthRoutes(app: Express): void {
       const hashedPassword = await hashPassword(password);
       const verifyToken = generateToken();
 
+      const isAdminEmail = ADMIN_EMAILS.includes(email.toLowerCase());
+
       const [newUser] = await db
         .insert(users)
         .values({
@@ -70,11 +72,28 @@ export function registerAuthRoutes(app: Express): void {
           firstName,
           lastName: lastName || null,
           passwordHash: hashedPassword,
-          emailVerified: false,
-          emailVerifyToken: verifyToken,
+          emailVerified: isAdminEmail ? true : false,
+          emailVerifyToken: isAdminEmail ? null : verifyToken,
           authProvider: "email",
+          isAdmin: isAdminEmail,
         })
         .returning();
+
+      if (isAdminEmail) {
+        const user = { claims: { sub: newUser.id }, authProvider: "email" };
+        return (req as any).login(user, (err: any) => {
+          if (err) {
+            return res.status(201).json({
+              message: "Admin account created. You can log in now.",
+              requiresVerification: false,
+            });
+          }
+          res.status(201).json({
+            message: "Admin account created and logged in.",
+            requiresVerification: false,
+          });
+        });
+      }
 
       const protocol = req.headers["x-forwarded-proto"] || req.protocol;
       const appUrl = `${protocol}://${req.hostname}`;
@@ -132,6 +151,10 @@ export function registerAuthRoutes(app: Express): void {
           message: "Please verify your email before logging in. Check your inbox for the verification link.",
           code: "EMAIL_NOT_VERIFIED",
         });
+      }
+
+      if (ADMIN_EMAILS.includes(dbUser.email?.toLowerCase() || "") && !dbUser.isAdmin) {
+        await db.update(users).set({ isAdmin: true, updatedAt: new Date() }).where(eq(users.id, dbUser.id));
       }
 
       const user = { claims: { sub: dbUser.id }, authProvider: "email" };
