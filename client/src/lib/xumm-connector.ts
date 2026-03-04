@@ -5,7 +5,7 @@ let xummInstance: Xumm | null = null;
 function getXumm(): Xumm {
   if (!xummInstance) {
     const apiKey = import.meta.env.VITE_XUMM_API_KEY || "xumm-api-key-placeholder";
-    xummInstance = new Xumm(apiKey, window.location.origin as any);
+    xummInstance = new Xumm(apiKey);
   }
   return xummInstance;
 }
@@ -19,8 +19,17 @@ export interface XummSignResult {
 
 export async function connectXumm(): Promise<XummSignResult> {
   try {
+    window.history.replaceState(null, "", window.location.origin + "/");
+    
+    xummInstance = null;
+    if ((window as any)._XummPkce) {
+      delete (window as any)._XummPkce;
+    }
+    
     const xumm = getXumm();
     await xumm.authorize();
+
+    window.history.replaceState(null, "", "/ownbank");
 
     const account = await xumm.user.account;
     if (account) {
@@ -28,6 +37,7 @@ export async function connectXumm(): Promise<XummSignResult> {
     }
     return { success: false, error: "No account returned from Xumm" };
   } catch (error: any) {
+    window.history.replaceState(null, "", "/ownbank");
     return { success: false, error: error.message || "Failed to connect Xumm" };
   }
 }
