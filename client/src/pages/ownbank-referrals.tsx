@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { useAuth } from "@/hooks/use-auth";
-import { AFFILIATE_LINKS } from "@/lib/xrpl-client";
+import { AFFILIATE_LINKS, WALLET_AFFILIATE_LINKS } from "@/lib/xrpl-client";
 import {
   Users,
   Link as LinkIcon,
@@ -17,6 +17,7 @@ import {
   Coins,
   ExternalLink,
   Share2,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -285,6 +286,86 @@ export default function OwnBankReferrals() {
           )}
         </CardContent>
       </Card>
+
+      {WALLET_AFFILIATE_LINKS.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-[#00A4E4]" />
+              Get a Cold Wallet — Affiliate Links
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              A cold wallet keeps your private keys offline and fully in your
+              control. Share these links so friends can get set up with
+              self-custody hardware.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {WALLET_AFFILIATE_LINKS.map((wallet) => (
+                <Card
+                  key={wallet.name}
+                  className={`border ${wallet.color}`}
+                  data-testid={`card-wallet-${wallet.name.toLowerCase()}`}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full ${wallet.color}`}
+                      >
+                        <ShieldCheck className={`h-4 w-4 ${wallet.iconColor}`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{wallet.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {wallet.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        asChild
+                        data-testid={`button-shop-${wallet.name.toLowerCase()}`}
+                      >
+                        <a
+                          href={wallet.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Shop {wallet.name}
+                        </a>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleCopyExchange(wallet.name, wallet.url)
+                        }
+                        data-testid={`button-copy-wallet-${wallet.name.toLowerCase()}`}
+                      >
+                        {copiedExchange === wallet.name ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Affiliate link — we may earn a reward if used.
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>

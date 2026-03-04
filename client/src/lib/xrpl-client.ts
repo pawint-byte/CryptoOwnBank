@@ -209,3 +209,20 @@ export const AFFILIATE_LINKS = {
   cryptoCom: "https://crypto.com/app/24csm6d4km",
   uphold: "https://wallet.uphold.com/signup?referral=6dacaf8d55&campaign=uw_p_d_w_acq_raf&utm_source=raf&utm_medium=referafriend",
 };
+
+export const WALLET_AFFILIATE_LINKS = [
+  {
+    name: "Cypherock",
+    url: "https://cypherock.com/store/?ref=PETER.WINT",
+    color: "bg-orange-500/10 border-orange-500/20",
+    iconColor: "text-orange-600 dark:text-orange-400",
+    description: "Seedless, keyless hardware wallet with card-based backup",
+  },
+  {
+    name: "ELLIPAL",
+    url: "https://www.ellipal.com/?rfsn=9012773.864657d",
+    color: "bg-slate-500/10 border-slate-500/20",
+    iconColor: "text-slate-600 dark:text-slate-400",
+    description: "Air-gapped cold wallet with large touchscreen",
+  },
+];
