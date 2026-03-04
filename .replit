@@ -40,3 +40,8 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_database:1.0.0", "javascript_stripe:1.0.0", "resend:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+VITE_XUMM_API_KEY = "f7532863-a66a-4ac6-ac2e-0ddd4bd6620c"
