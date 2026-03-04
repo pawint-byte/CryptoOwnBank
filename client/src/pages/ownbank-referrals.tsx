@@ -297,9 +297,9 @@ export default function OwnBankReferrals() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              A cold wallet keeps your private keys offline and fully in your
-              control. Share these links so friends can get set up with
-              self-custody hardware.
+              To use CryptoOwnBank, you need a cold wallet to sign transactions
+              and keep your XRP and RLUSD safe. Both wallets below support XRP
+              and XRPL tokens — they just protect your keys differently.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -316,12 +316,18 @@ export default function OwnBankReferrals() {
                       >
                         <ShieldCheck className={`h-4 w-4 ${wallet.iconColor}`} />
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm">{wallet.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {wallet.description}
-                        </p>
-                      </div>
+                      <p className="font-semibold text-sm">{wallet.name}</p>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      {wallet.description}
+                    </p>
+
+                    <div className="rounded-md bg-muted/30 border border-muted px-3 py-2">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">Safety:</span>{" "}
+                        {wallet.safety}
+                      </p>
                     </div>
 
                     <div className="flex gap-2">

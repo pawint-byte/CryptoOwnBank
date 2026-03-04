@@ -216,13 +216,15 @@ export const WALLET_AFFILIATE_LINKS = [
     url: "https://cypherock.com/store/?ref=PETER.WINT",
     color: "bg-orange-500/10 border-orange-500/20",
     iconColor: "text-orange-600 dark:text-orange-400",
-    description: "Seedless, keyless hardware wallet with card-based backup",
+    description: "Supports XRP & XRPL tokens (RLUSD). No seed phrase — keys split across 4 cards + 1 vault. If you lose a card, you can still recover with any 2 of the 5 pieces.",
+    safety: "No seed phrase to steal or lose",
   },
   {
     name: "ELLIPAL",
     url: "https://www.ellipal.com/?rfsn=9012773.864657d",
     color: "bg-slate-500/10 border-slate-500/20",
     iconColor: "text-slate-600 dark:text-slate-400",
-    description: "Air-gapped cold wallet with large touchscreen",
+    description: "Supports XRP & XRPL tokens (RLUSD). 100% air-gapped — no USB, WiFi, or Bluetooth connection. Signs transactions via QR code only, so your keys never touch the internet.",
+    safety: "Fully air-gapped — zero online exposure",
   },
 ];
