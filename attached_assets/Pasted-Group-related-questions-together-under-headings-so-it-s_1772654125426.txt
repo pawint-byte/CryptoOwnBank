@@ -1,0 +1,24 @@
+Group related questions together under headings so it’s easy to scan. Here’s a starter set based on our entire conversation — copy-paste ready. Add these to your /faq page (or create sub-sections).
+Wallet & Security Basics
+Why do I need a cold wallet to use CryptoOwnBank?
+To keep you in full control. We are 100% non-custodial — your private keys never leave your Ledger, ELLIPAL, Arculus, SafePal, etc. The site only reads public data and builds transactions for you to sign.
+Do Ledger Nano X and Xaman show the same address for RLUSD?
+Yes — when you pair Ledger Nano X with Xaman, Xaman displays the exact XRPL address controlled by your Ledger device. There is only one address. Xaman is the bridge that sends signing requests to Ledger — the keys stay on Ledger.
+Does every transaction require Ledger signing even if I use Xaman?
+Yes. Xaman builds the transaction and forwards it to your paired Ledger for offline approval. You physically confirm on the Ledger device every time. This is the security model — no keys ever leave hardware.
+Do I need a destination tag/memo when transferring RLUSD?
+No — RLUSD on XRPL does not require tags or memos (unlike XLM on Stellar). Just send to your correct XRPL address (starts with “r…”). Always double-check the address before sending.
+Yield & Soil Mechanics
+Does interest in Soil vaults compound if I don’t withdraw it?
+Yes — if you leave earned interest in the vault, it automatically becomes part of your position and starts earning more interest. This creates compounding without any manual step. Withdrawing only pulls the accrued earnings; principal + prior interest stays to keep growing.
+How does Soil compare to Uphold’s 3.75% yield?
+Soil offers 5–8% fixed APR (real RWA-backed yield from Treasuries and private credit) + automatic compounding — usually higher than Uphold. Plus you get full self-custody (your keys) instead of Uphold holding everything.
+Why can’t I withdraw my full principal from Soil vaults anytime?
+Soil vaults are backed by real-world assets with notice/cooldown periods for stability (e.g., short notice for Treasury vaults, 90-day notice + 10-day cooldown for credit vaults). Interest continues earning during notice. This is standard for fixed-yield RWA protocols.
+Getting Started & Transfers
+Can I transfer RLUSD from Uphold to my cold wallet?
+Yes — Uphold supports XRPL withdrawals. Go to Withdraw → RLUSD → XRPL network → paste your wallet address. Test with a small amount first. Make sure your trust line to RLUSD is set in Xaman/Ledger before sending.
+Should I route through Binance/Kraken to earn referral rewards on my own transfer?
+Not worth it for your own funds. Referral commissions only trigger for new users signing up via your link — self-referral usually doesn’t pay and adds extra fees/risk. Transfer directly from Uphold to your wallet, then use your referral links to help others buy RLUSD.
+Which exchange should I recommend for buying RLUSD?
+Binance usually offers the best liquidity and lowest fees for RLUSD. Kraken is great for low-cost XRPL withdrawals. Crypto.com and Uphold are beginner-friendly. Use the referral links on the site to help others — you may earn rewards when they buy.
