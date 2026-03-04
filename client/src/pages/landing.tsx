@@ -26,6 +26,11 @@ import {
   BarChart3,
   RefreshCw,
   Star,
+  DollarSign,
+  Link as LinkIcon,
+  Ban,
+  Fingerprint,
+  ArrowDownUp,
 } from "lucide-react";
 
 const heroStats = [
@@ -205,6 +210,67 @@ const premiumFeatures = [
   "XLS-66 lending early access",
 ];
 
+const onChainReasons = [
+  {
+    icon: Lock,
+    title: "Maximum Security & True Ownership",
+    points: [
+      "When you connect your cold wallet (Ledger or Xumm), your private keys never leave your device.",
+      "We never see them, store them, or have any ability to move your funds.",
+      "Direct bank integrations require someone to handle your fiat and personal banking details \u2014 introducing KYC requirements, potential data breaches, and counterparty risk.",
+    ],
+    highlight: "Your assets stay in your control, not ours or anyone else\u2019s. That\u2019s what \u201Cbe your own bank\u201D really means.",
+  },
+  {
+    icon: Ban,
+    title: "No Regulatory Overload = Faster, Simpler Experience",
+    points: [
+      "No ID, proof of address, or banking info required to use the site.",
+      "Instant onboarding in seconds \u2014 not days or weeks.",
+      "No hidden compliance fees or account freezes.",
+    ],
+    highlight: "We keep things non-custodial and permissionless \u2014 exactly how the blockchain was designed to work.",
+  },
+  {
+    icon: DollarSign,
+    title: "Lower Costs & Better Yields for You",
+    points: [
+      "Every layer of fiat handling adds fees (bank wires, ACH, compliance overhead, partner cuts).",
+      "By keeping everything on-chain (RLUSD \u2192 Soil vaults \u2192 interest withdrawals), we avoid those costs entirely.",
+      "You keep more of your 5\u20138% fixed yield with no hidden \u201Cprocessing\u201D or \u201Cwithdrawal\u201D fees from us.",
+    ],
+    highlight: "The system stays lean so we can focus on features like auto-withdrawals and XLS-66 lending \u2014 not compliance paperwork.",
+  },
+];
+
+const onChainSteps = [
+  {
+    step: 1,
+    icon: Coins,
+    title: "Buy RLUSD",
+    description: "Use any trusted exchange (Binance, Kraken, Coinbase, etc.). Buy RLUSD and withdraw it directly to your XRPL wallet address.",
+    note: "We provide affiliate links so you may earn rewards for using them \u2014 disclosed transparently.",
+  },
+  {
+    step: 2,
+    icon: Fingerprint,
+    title: "Connect Your Cold Wallet",
+    description: "Scan with Xumm or plug in Ledger. Takes seconds \u2014 no forms, no ID, no waiting.",
+  },
+  {
+    step: 3,
+    icon: Landmark,
+    title: "Deposit to Soil Vaults",
+    description: "Choose a vault (Treasury-backed 5.2% or Private Credit 7.8%). Sign the transaction with your cold wallet. Your RLUSD is now earning fixed yield.",
+  },
+  {
+    step: 4,
+    icon: ArrowDownUp,
+    title: "Withdraw Only the Interest",
+    description: "When earnings accrue, click \u201CWithdraw Interest Only.\u201D Your principal never moves. Repeat forever.",
+  },
+];
+
 const faqs = [
   {
     q: "What is CryptoOwnBank?",
@@ -300,6 +366,9 @@ export default function Landing() {
               </a>
               <a href="#features" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Features
+              </a>
+              <a href="#on-chain" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-on-chain">
+                Why On-Chain
               </a>
               <a href="#pricing" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Pricing
@@ -761,6 +830,101 @@ export default function Landing() {
                   <div className="text-3xl font-bold text-[#00A4E4]">0</div>
                   <div className="text-sm text-muted-foreground mt-1">Keys Stored by Us</div>
                 </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="on-chain" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-sm font-medium mb-4">
+                <LinkIcon className="h-3.5 w-3.5" />
+                100% On-Chain
+              </div>
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-on-chain">
+                Why We Don't Connect to Banks (And Why That's Great for You)
+              </h2>
+              <p className="text-muted-foreground max-w-3xl mx-auto">
+                We never touch fiat, never link to your bank account, and never act as a middleman.
+                Here's why that matters — and why it puts you in the strongest possible position.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              {onChainReasons.map((reason, index) => (
+                <Card key={index} className="overflow-hidden" data-testid={`card-onchain-reason-${index}`}>
+                  <CardContent className="p-6">
+                    <div className="h-12 w-12 rounded-lg bg-[#00A4E4]/10 flex items-center justify-center mb-4">
+                      <reason.icon className="h-6 w-6 text-[#00A4E4]" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-4" data-testid={`text-onchain-reason-title-${index}`}>{reason.title}</h3>
+                    <ul className="space-y-3 mb-5">
+                      {reason.points.map((point, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="p-3 rounded-lg bg-[#00A4E4]/5 border border-[#00A4E4]/10">
+                      <p className="text-sm font-medium text-foreground">{reason.highlight}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-2xl font-bold text-center mb-2" data-testid="heading-how-it-actually-works">
+                How It Actually Works (Simple & Safe)
+              </h3>
+              <p className="text-center text-muted-foreground mb-10">
+                No banks. No middlemen. No permission needed. Just you, your keys, and the XRPL.
+              </p>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                {onChainSteps.map((step) => (
+                  <div key={step.step} className="flex gap-4 p-5 rounded-lg border bg-card" data-testid={`card-onchain-step-${step.step}`}>
+                    <div className="flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-[#00A4E4] text-white flex items-center justify-center font-bold text-sm">
+                        {step.step}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <step.icon className="h-4 w-4 text-[#00A4E4]" />
+                        <h4 className="font-semibold">{step.title}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{step.description}</p>
+                      {"note" in step && step.note && (
+                        <p className="text-xs text-muted-foreground/70 mt-2 italic">{step.note}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-12 text-center">
+                <div className="inline-block p-6 rounded-xl bg-muted/50 border max-w-2xl" data-testid="text-onchain-bottom-line">
+                  <p className="font-semibold text-lg mb-2">Bottom Line</p>
+                  <p className="text-muted-foreground">
+                    We don't connect to banks because you don't need us to.
+                    You already have full control — and that's exactly how we want to keep it.
+                  </p>
+                  <p className="text-sm text-[#00A4E4] font-medium mt-3">
+                    Your keys. Your funds. Your bank.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+                <a href="/signup">
+                  <Button size="lg" className="w-full sm:w-auto bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-onchain-cta">
+                    Connect Your Wallet — Free, No KYC, No Bank Needed
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
               </div>
             </div>
           </div>
