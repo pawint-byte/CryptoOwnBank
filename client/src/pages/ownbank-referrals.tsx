@@ -47,6 +47,24 @@ const exchangeCards = [
     iconColor: "text-blue-600 dark:text-blue-400",
     description: "Beginner-friendly, regulated platform",
   },
+  {
+    name: "Crypto.com",
+    url: AFFILIATE_LINKS.cryptoCom,
+    color: "bg-indigo-500/10 border-indigo-500/20",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
+    description: "Popular app with Visa card rewards",
+  },
+  ...(AFFILIATE_LINKS.uphold
+    ? [
+        {
+          name: "Uphold",
+          url: AFFILIATE_LINKS.uphold,
+          color: "bg-emerald-500/10 border-emerald-500/20",
+          iconColor: "text-emerald-600 dark:text-emerald-400",
+          description: "Easy RLUSD on/off-ramp with yield",
+        },
+      ]
+    : []),
 ];
 
 export default function OwnBankReferrals() {

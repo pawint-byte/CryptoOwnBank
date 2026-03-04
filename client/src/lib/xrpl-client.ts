@@ -206,4 +206,6 @@ export const AFFILIATE_LINKS = {
   binance: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196",
   kraken: "https://proinvite.kraken.com/9f1e/oya30ft6",
   coinbase: "https://coinbase.com/join/TT3HJ4K?src=ios-link",
+  cryptoCom: "https://crypto.com/app/24csm6d4km",
+  uphold: "",
 };
