@@ -301,6 +301,10 @@ const faqs = [
     a: "RLUSD is Ripple\u2019s regulated stablecoin, pegged 1:1 to the US Dollar and backed by cash and cash equivalents. The yield comes from Soil Protocol, which lends your RLUSD to institutional borrowers \u2014 similar to how traditional banks make money, except the interest goes to you. The Treasury Vault (5.2% APR) is backed by US government securities. The Private Credit Vault (7.8% APR) is backed by diversified private credit pools.",
   },
   {
+    q: "Which vault should I choose \u2014 Treasury (5.2%) or Private Credit (7.8%)?",
+    a: "It depends on your risk tolerance and how soon you might need your funds. The Treasury Vault (5.2% APR) is backed by US government securities \u2014 essentially the safest asset class in the world. It has a short 3-day rolling withdrawal period, so you can access your funds quickly. Best for: stability and liquidity. The Private Credit Vault (7.8% APR) is backed by diversified private credit pools (institutional lending). It pays more but requires a 90-day notice + 10-day cooldown to withdraw, and carries higher default risk than Treasuries. Best for: users willing to lock funds longer for bigger returns. You can also split your RLUSD across both vaults \u2014 for example, put some in Treasury for quick access and some in Private Credit for higher yield. The vault cards on the Vaults page show risk level, withdrawal terms, and a \u201CBest for\u201D recommendation to help you decide at a glance.",
+  },
+  {
     q: "Why can\u2019t I withdraw my full principal anytime?",
     a: "Soil vaults are lending pools backed by real-world assets (U.S. Treasuries, private credit, etc.). Withdrawal rules depend on the vault: Liquid/Treasury vaults have a 3-day rolling period. Credit vaults require a 90-day notice + 10-day cooldown (interest continues during notice). Your funds earn during notice periods, but the lock-up aligns with underlying assets for stability. This is standard for fixed-yield RWA protocols \u2014 check each vault\u2019s details on the site.",
   },

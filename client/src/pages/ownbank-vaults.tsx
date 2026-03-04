@@ -26,6 +26,9 @@ import {
   Briefcase,
   Sparkles,
   X,
+  Clock,
+  AlertTriangle,
+  Target,
 } from "lucide-react";
 import { useXrplStore, type VaultDeposit } from "@/lib/xrpl-store";
 import {
@@ -329,10 +332,37 @@ export default function OwnBankVaults() {
                     </div>
                   </div>
                   <div>
+                    <p className="text-xs text-muted-foreground">Risk Level</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <AlertTriangle className={`h-3.5 w-3.5 ${vault.id === "soil-treasury" ? "text-green-500" : "text-amber-500"}`} />
+                      <span className="text-sm font-medium" data-testid={`text-risk-${vault.id}`}>
+                        {vault.riskLevel}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Withdrawal</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium" data-testid={`text-withdrawal-${vault.id}`}>
+                        {vault.withdrawalTerms}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
                     <p className="text-xs text-muted-foreground">Min Deposit</p>
                     <span className="text-sm font-medium">
                       {vault.minDeposit} RLUSD
                     </span>
+                  </div>
+                </div>
+
+                <div className="rounded-md bg-muted/30 border border-muted px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <Target className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${vault.id === "soil-treasury" ? "text-green-500" : "text-amber-500"}`} />
+                    <p className="text-xs text-muted-foreground" data-testid={`text-bestfor-${vault.id}`}>
+                      <span className="font-medium text-foreground">Best for:</span> {vault.bestFor}
+                    </p>
                   </div>
                 </div>
 
