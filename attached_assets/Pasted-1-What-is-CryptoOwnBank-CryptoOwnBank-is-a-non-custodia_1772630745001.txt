@@ -1,0 +1,53 @@
+1. What is CryptoOwnBank?
+CryptoOwnBank is a non-custodial dashboard that lets you track your XRP & RLUSD portfolio and earn fixed yield on RLUSD through Soil Protocol vaults — all while keeping full control via your cold wallet (Ledger or Xumm).
+We help you "be your own bank": deposit RLUSD, earn 5–8% fixed APR, withdraw only the interest, and leave your principal locked and protected forever — without ever selling your base holdings.
+2. Is this a wallet or does it hold my funds?
+No — we are 100% non-custodial.
+We never hold, control, or have access to your funds or private keys. All actions (deposits, withdrawals) are signed directly from your own cold wallet. The dashboard is just a secure interface to view balances and interact with XRPL + Soil. Your keys stay on your Ledger or Xumm device at all times.
+3. How do I start earning yield on RLUSD?
+
+Buy RLUSD on a trusted exchange (Binance, Kraken, etc.) and withdraw it to your XRPL wallet.
+Connect your cold wallet to the dashboard.
+Deposit RLUSD into a Soil vault (e.g., Treasury-backed at 5.2% or Private Credit at 7.8%).
+Earn fixed yield immediately — your principal stays locked in the vault.
+Withdraw only the accrued interest whenever you want (manual or auto for Premium users).
+
+No KYC on our end, no bank linking required.
+4. Why can't I withdraw my full principal anytime?
+Soil vaults are lending pools backed by real-world assets (U.S. Treasuries, private credit, etc.). Withdrawal rules depend on the vault:
+
+Liquid/Treasury vaults: 3-day rolling period.
+Credit vaults: 90-day notice + 10-day cooldown (interest continues during notice).
+Your funds earn during notice periods, but the lock-up aligns with underlying assets for stability. This is standard for fixed-yield RWA protocols — check each vault's details on the site.
+
+5. Why don't you connect directly to my bank account for deposits/withdrawals?
+We deliberately stay on-chain only to keep things simple, secure, and non-custodial.
+Bank integrations would require us to handle fiat, trigger money transmitter rules (federal MSB registration + state licenses), and force KYC/AML on users — adding delays, fees, and risks.
+By skipping banks, we avoid all that: no middleman, no data collection, no compliance overhead. You buy RLUSD on exchanges, deposit on-chain, and manage everything from your wallet — faster, cheaper, and truly in your control.
+6. How safe is my principal?
+Your principal is 100% protected in two ways:
+
+Non-custodial design: keys never leave your cold wallet.
+Soil vaults: backed by real-world assets (Treasuries, credit funds) with institutional-grade underwriting.
+Yields are fixed and predictable, but crypto/blockchain always carries risks (smart contract bugs, protocol changes, market events). We display real-time data but never guarantee returns. Always DYOR.
+
+7. What happens to my principal if Soil or XRPL has issues?
+Soil is a compliant RWA protocol on XRPL — funds are loaned to Soil Ltd. (backed by real assets), not algorithmic or high-risk DeFi.
+If issues arise (rare), withdrawals follow vault rules (notice periods). XRPL itself is battle-tested and decentralized.
+Your assets stay on-chain in your wallet — we can't access or lose them.
+8. Can I use this for other cryptos besides XRP/RLUSD?
+Currently focused on XRPL-native assets (XRP, RLUSD, Soil positions).
+Future updates will add multi-chain support (Ethereum, Base, etc.) so you can track/manage more from one dashboard — still signing from your cold wallet.
+9. How do you make money?
+
+Free tier forever (basic tracking + manual withdrawals).
+Premium subscription ($9/mo or $79/yr) for auto-withdrawals, tax exports, family views, etc.
+Affiliate referrals (e.g., when you buy RLUSD via our Binance/Kraken links or join Soil via our referral — we may earn rewards; disclosed transparently).
+We never take fees from your yields or principal.
+
+10. Is this financial advice?
+No — this is not financial, investment, or tax advice.
+Crypto and yield protocols involve risk of loss. Past performance isn't indicative of future results. Always do your own research (DYOR) and consider your own situation. We provide tools and information only.
+11. What if I have more questions or issues?
+Use the in-site contact form or join XRPL community channels.
+We can't help with wallet recovery or fund issues (since we're non-custodial — only you control your keys).
