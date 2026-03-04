@@ -197,7 +197,7 @@ export const SOIL_REFERRAL_CODE = "OWNBANK2026";
 export const SOIL_REFERRAL_URL = `https://xrpl.soil.co/?af=${SOIL_REFERRAL_CODE}`;
 
 export const AFFILIATE_LINKS = {
-  binance: "https://www.binance.com/en/register?ref=YOUR_BINANCE_REF",
+  binance: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196",
   kraken: "https://www.kraken.com/sign-up?ref=YOUR_KRAKEN_REF",
   coinbase: "https://www.coinbase.com/join/YOUR_COINBASE_REF",
 };

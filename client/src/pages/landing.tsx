@@ -850,7 +850,7 @@ export default function Landing() {
               {[
                 { name: "Coinbase", url: "https://www.coinbase.com" },
                 { name: "Kraken", url: "https://www.kraken.com" },
-                { name: "Binance", url: "https://www.binance.com" },
+                { name: "Binance", url: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196" },
               ].map((exchange) => (
                 <a
                   key={exchange.name}
