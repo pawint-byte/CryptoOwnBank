@@ -48,6 +48,7 @@ const ownbankItems = [
   { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine },
   { title: "History", url: "/ownbank/history", icon: History },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users },
+  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield },
 ];
 
 export function AppSidebar() {

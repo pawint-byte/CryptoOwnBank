@@ -34,6 +34,7 @@ import OwnBankVaults from "@/pages/ownbank-vaults";
 import OwnBankWithdraw from "@/pages/ownbank-withdraw";
 import OwnBankHistory from "@/pages/ownbank-history";
 import OwnBankReferrals from "@/pages/ownbank-referrals";
+import SigningOptions from "@/pages/signing-options";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
 
@@ -81,6 +82,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/withdraw" component={OwnBankWithdraw} />
         <Route path="/ownbank/history" component={OwnBankHistory} />
         <Route path="/ownbank/referrals" component={OwnBankReferrals} />
+        <Route path="/ownbank/signing-options" component={SigningOptions} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
         <Route component={NotFound} />
@@ -109,6 +111,7 @@ function Router() {
         <Route path="/legal" component={Legal} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/setup-guide" component={SetupGuide} />
+        <Route path="/signing-options" component={SigningOptions} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -124,6 +127,7 @@ function Router() {
       <Route path="/legal" component={Legal} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/setup-guide" component={SetupGuide} />
+      <Route path="/signing-options" component={SigningOptions} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />

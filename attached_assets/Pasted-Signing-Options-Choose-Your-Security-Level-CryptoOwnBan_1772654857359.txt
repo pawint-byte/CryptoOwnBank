@@ -1,0 +1,75 @@
+Signing Options – Choose Your Security Level
+CryptoOwnBank is 100% non-custodial. We never see, store, or control your private keys. Every transaction (deposit to Soil, withdraw interest, etc.) must be signed by you using your own hardware or app.
+We give you three flexible signing options so you can balance convenience and maximum security. Here’s how each works, the benefits, risks, and our recommendation.
+Option 1: Full Hardware Signing (Ledger Nano X + Xaman) – Most Trusted & Recommended
+How it works
+
+Xaman (on your iPhone) builds the transaction.
+It automatically sends the request to your paired Ledger Nano X.
+You physically approve on the Ledger device (PIN + buttons).
+Ledger signs offline and returns the signed transaction to Xaman, which broadcasts it to the XRPL network.
+
+Benefits
+
+Highest security — private keys never leave the hardware device.
+Industry-standard for serious self-custody users.
+Full protection against phone compromise.
+
+Risks / Caveats
+
+Requires Ledger + phone nearby for every transaction.
+Slightly slower (Bluetooth/USB step).
+
+Best for: Long-term holders, larger amounts, or anyone who prioritizes maximum safety.
+Option 2: Xaman-Only Signing (Phone App Only)
+How it works
+
+Enable “Xaman signing” in the app settings.
+Site sends transaction to Xaman via deep link or QR.
+You approve directly on your iPhone (PIN or biometrics).
+Xaman signs and broadcasts — no Ledger needed.
+
+Benefits
+
+Fastest and most convenient (phone-only).
+Great for small/regular interest withdrawals.
+Still fully non-custodial (keys stay encrypted in Xaman).
+
+Risks / Caveats
+
+Phone-level security only (if your iPhone is compromised, keys could be at risk).
+Not as secure as hardware for large amounts.
+
+Best for: Everyday small actions or users who want maximum convenience.
+Option 3: Hybrid (Recommended for Most Users)
+How it works
+
+Use Ledger + Xaman for large deposits or important actions.
+Switch to Xaman-only signing for small/routine interest withdrawals.
+You control the choice every time.
+
+Benefits
+
+Best of both worlds: maximum security when it matters most + convenience for daily use.
+Flexible as your needs change.
+
+Risks / Caveats
+
+Requires you to be disciplined about when to use each method.
+
+Best for: Most people — including you.
+Our Recommendation: Start with Full Hardware Signing (Ledger Nano X + Xaman)
+This is the most trusted and safest way to use CryptoOwnBank.
+Your private keys stay completely offline on the Ledger device at all times. This is the same security model used by serious long-term holders and institutions.
+Once you’re comfortable, you can gradually enable Xaman-only signing for smaller actions if you want more convenience.
+Important: No matter which option you choose, you always remain in full control. The site only builds the transaction — you must approve every single action.
+Security Reminder
+We never see your keys. We never hold your funds. All signing happens on your device. This is how we stay protected under the GENIUS Act and future CLARITY Act rules.
+
+How to Add This to Your Site
+
+Paste the entire block above into a new page called /security or /signing-options.
+Link it from the main navigation or the disclaimer box.
+Add a small note at the top: “Choose the security level that feels right for you.”
+
+This write-up educates every type of user (cautious, convenient, hybrid), clearly states the safest path, and reinforces your non-custodial promise.
