@@ -658,6 +658,32 @@ export default function Landing() {
           </div>
         </section>
 
+        <section id="why" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <h2 className="text-3xl font-bold" data-testid="heading-why">
+              Why CryptoOwnBank Exists
+            </h2>
+            <div className="space-y-4 text-muted-foreground text-base leading-relaxed">
+              <p>
+                Most dashboards today are either multi-chain tools that treat XRPL as
+                an afterthought, or they're built around centralized platforms that hold
+                your keys.
+              </p>
+              <p className="text-foreground font-medium">
+                We built CryptoOwnBank differently.
+              </p>
+              <p>
+                It's a focused, non-custodial dashboard made specifically for XRPL users
+                who want to earn real yield on RLUSD through Soil vaults — while keeping
+                full control with their own cold wallet.
+              </p>
+              <p className="text-foreground font-medium italic">
+                Simple, secure, and built for people who actually want to be their own bank.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section id="how-it-works" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
