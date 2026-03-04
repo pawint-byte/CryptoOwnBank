@@ -299,6 +299,118 @@ export function registerAuthRoutes(app: Express): void {
     res.json({ isAdmin: user?.isAdmin || false });
   });
 
+  app.get("/api/admin/metrics", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allUsers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          createdAt: users.createdAt,
+          isAdmin: users.isAdmin,
+          emailVerified: users.emailVerified,
+          authProvider: users.authProvider,
+        })
+        .from(users);
+
+      const { userSettings } = await import("@shared/schema");
+      const allSettings = await db.select().from(userSettings);
+      const settingsMap = new Map(allSettings.map(s => [s.userId, s]));
+
+      const totalUsers = allUsers.length;
+      const verifiedUsers = allUsers.filter(u => u.emailVerified).length;
+      const unverifiedUsers = totalUsers - verifiedUsers;
+      const adminUsers = allUsers.filter(u => u.isAdmin).length;
+
+      const emailAuthCount = allUsers.filter(u => u.authProvider === "email").length;
+      const legacyAuthCount = allUsers.filter(u => u.authProvider !== "email").length;
+
+      let premiumCount = 0;
+      let freeCount = 0;
+      for (const s of allSettings) {
+        if (s.subscriptionTier === "premium") premiumCount++;
+        else freeCount++;
+      }
+      const noSettingsCount = totalUsers - allSettings.length;
+      freeCount += noSettingsCount;
+
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      const signupsToday = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= todayStart).length;
+      const signups7d = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= sevenDaysAgo).length;
+      const signups30d = allUsers.filter(u => u.createdAt && new Date(u.createdAt) >= thirtyDaysAgo).length;
+
+      const signupsByDay: Record<string, number> = {};
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split("T")[0];
+        signupsByDay[key] = 0;
+      }
+      for (const u of allUsers) {
+        if (u.createdAt) {
+          const key = new Date(u.createdAt).toISOString().split("T")[0];
+          if (signupsByDay[key] !== undefined) {
+            signupsByDay[key]++;
+          }
+        }
+      }
+      const signupTrend = Object.entries(signupsByDay).map(([date, count]) => ({
+        date,
+        count,
+      }));
+
+      const userList = allUsers
+        .sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db2 - da;
+        })
+        .map(u => {
+          const settings = settingsMap.get(u.id);
+          return {
+            id: u.id,
+            email: u.email,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            createdAt: u.createdAt,
+            isAdmin: u.isAdmin,
+            emailVerified: u.emailVerified,
+            authProvider: u.authProvider,
+            subscriptionTier: settings?.subscriptionTier || "free",
+            stripeCustomerId: settings?.stripeCustomerId || null,
+          };
+        });
+
+      res.json({
+        overview: {
+          totalUsers,
+          verifiedUsers,
+          unverifiedUsers,
+          adminUsers,
+          premiumCount,
+          freeCount,
+          signupsToday,
+          signups7d,
+          signups30d,
+        },
+        authBreakdown: {
+          email: emailAuthCount,
+          legacy: legacyAuthCount,
+        },
+        signupTrend,
+        users: userList,
+      });
+    } catch (error) {
+      console.error("Admin metrics error:", error);
+      res.status(500).json({ message: "Failed to load admin metrics" });
+    }
+  });
+
   app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const search = ((req.query.search as string) || "").trim().toLowerCase();
