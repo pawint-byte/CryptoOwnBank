@@ -318,7 +318,11 @@ const faqs = [
   },
   {
     q: "What wallets are supported?",
-    a: "For XRPL yield vaults, we support Xumm (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via WebUSB). Both are cold wallet solutions that keep your private keys completely offline or on a secure device. For portfolio tracking, you connect exchange accounts via API keys.",
+    a: "For XRPL yield vaults, we support Xumm/Xaman (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). Both are cold wallet solutions that keep your private keys completely offline or on a secure device. For portfolio tracking, you connect exchange accounts via API keys. See our step-by-step Setup Guide at /setup-guide for detailed instructions.",
+  },
+  {
+    q: "How do I connect my Ledger Nano X with Xaman?",
+    a: "1) Install Xaman (App Store/Google Play) and Ledger Live. 2) Open Xaman \u2192 Settings \u2192 Hardware Wallets \u2192 Ledger \u2192 enable Bluetooth \u2192 unlock Ledger \u2192 open XRP app \u2192 pairs automatically. 3) Add RLUSD trust line: tap \u201C+\u201D Add Token \u2192 RLUSD \u2192 Setup Trust Line \u2192 sign on Ledger. 4) On CryptoOwnBank, click \u201CConnect Wallet\u201D \u2192 Xumm/Xaman \u2192 approve in Xaman (Ledger confirms if needed). Done \u2014 deposit RLUSD to Soil vaults and sign with your Ledger/Xaman combo. Full guide: /setup-guide",
   },
   {
     q: "What\u2019s the difference between Free and Premium?",
@@ -1124,7 +1128,9 @@ export default function Landing() {
             <p className="text-sm text-center">
               &copy; {new Date().getFullYear()} CryptoOwnBank. All rights reserved.
             </p>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm flex-wrap justify-center">
+              <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Setup Guide</a>
+              <span>&middot;</span>
               <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Legal &amp; Disclaimers</a>
               <span>&middot;</span>
               <a href="/privacy" className="hover:text-[#00A4E4] transition-colors" data-testid="link-privacy">Privacy Policy</a>

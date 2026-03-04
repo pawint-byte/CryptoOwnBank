@@ -17,6 +17,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
+import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import ForgotPassword from "@/pages/forgot-password";
@@ -105,6 +106,7 @@ function Router() {
       <Switch>
         <Route path="/legal" component={Legal} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/setup-guide" component={SetupGuide} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -119,6 +121,7 @@ function Router() {
     <Switch>
       <Route path="/legal" component={Legal} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/setup-guide" component={SetupGuide} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
