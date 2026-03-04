@@ -1,11 +1,13 @@
+import { XummPkce } from "xumm-oauth2-pkce";
 import { Xumm } from "xumm";
+
+const XUMM_API_KEY = import.meta.env.VITE_XUMM_API_KEY || "xumm-api-key-placeholder";
 
 let xummInstance: Xumm | null = null;
 
 function getXumm(): Xumm {
   if (!xummInstance) {
-    const apiKey = import.meta.env.VITE_XUMM_API_KEY || "xumm-api-key-placeholder";
-    xummInstance = new Xumm(apiKey);
+    xummInstance = new Xumm(XUMM_API_KEY);
   }
   return xummInstance;
 }
@@ -18,34 +20,52 @@ export interface XummSignResult {
 }
 
 export async function connectXumm(): Promise<XummSignResult> {
-  try {
-    window.history.replaceState(null, "", window.location.origin + "/");
-    
-    xummInstance = null;
-    if ((window as any)._XummPkce) {
-      delete (window as any)._XummPkce;
-    }
-    
-    const xumm = getXumm();
-    await xumm.authorize();
+  return new Promise((resolve) => {
+    try {
+      if ((window as any)._XummPkce) {
+        delete (window as any)._XummPkce;
+      }
 
-    window.history.replaceState(null, "", "/ownbank");
+      const pkce = new XummPkce(XUMM_API_KEY, {
+        redirectUrl: window.location.origin + "/",
+        implicit: true,
+      } as any);
 
-    const account = await xumm.user.account;
-    if (account) {
-      return { success: true, address: account };
+      pkce.on("error", (err: any) => {
+        resolve({ success: false, error: err?.message || "Xumm connection error" });
+      });
+
+      pkce.on("success", async () => {
+        try {
+          const state = await pkce.state();
+          if (state?.me?.account) {
+            resolve({ success: true, address: state.me.account });
+          } else {
+            resolve({ success: false, error: "No account returned from Xumm" });
+          }
+        } catch (e: any) {
+          resolve({ success: false, error: e.message || "Failed to get account" });
+        }
+      });
+
+      pkce.authorize();
+    } catch (error: any) {
+      resolve({ success: false, error: error.message || "Failed to connect Xumm" });
     }
-    return { success: false, error: "No account returned from Xumm" };
-  } catch (error: any) {
-    window.history.replaceState(null, "", "/ownbank");
-    return { success: false, error: error.message || "Failed to connect Xumm" };
-  }
+  });
 }
 
 export async function disconnectXumm(): Promise<void> {
   try {
-    const xumm = getXumm();
-    await xumm.logout();
+    if ((window as any)._XummPkce) {
+      const pkce = (window as any)._XummPkce;
+      if (pkce.logout) await pkce.logout();
+      delete (window as any)._XummPkce;
+    }
+    if (xummInstance) {
+      await xummInstance.logout();
+      xummInstance = null;
+    }
   } catch {
   }
 }
