@@ -198,6 +198,6 @@ export const SOIL_REFERRAL_URL = `https://xrpl.soil.co/?af=${SOIL_REFERRAL_CODE}
 
 export const AFFILIATE_LINKS = {
   binance: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196",
-  kraken: "https://www.kraken.com/sign-up?ref=YOUR_KRAKEN_REF",
+  kraken: "https://proinvite.kraken.com/9f1e/oya30ft6",
   coinbase: "https://coinbase.com/join/TT3HJ4K?src=ios-link",
 };

@@ -849,7 +849,7 @@ export default function Landing() {
             <div className="flex flex-wrap justify-center gap-4 mt-8">
               {[
                 { name: "Coinbase", url: "https://coinbase.com/join/TT3HJ4K?src=ios-link" },
-                { name: "Kraken", url: "https://www.kraken.com" },
+                { name: "Kraken", url: "https://proinvite.kraken.com/9f1e/oya30ft6" },
                 { name: "Binance", url: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196" },
               ].map((exchange) => (
                 <a
