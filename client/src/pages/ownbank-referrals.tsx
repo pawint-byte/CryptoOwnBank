@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { useAuth } from "@/hooks/use-auth";
+import { AFFILIATE_LINKS } from "@/lib/xrpl-client";
 import {
   Users,
   Link as LinkIcon,
@@ -14,7 +15,9 @@ import {
   Crown,
   UserPlus,
   Coins,
+  ExternalLink,
 } from "lucide-react";
+import { SiBinance, SiCoinbase } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
 function truncateAddress(address: string): string {
@@ -24,6 +27,7 @@ function truncateAddress(address: string): string {
 
 export default function OwnBankReferrals() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const {
     isConnected,
     walletAddress,
@@ -33,19 +37,18 @@ export default function OwnBankReferrals() {
     generateReferralCode,
   } = useXrplStore();
   const [copied, setCopied] = useState(false);
+  const [copiedAffiliate, setCopiedAffiliate] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && !referralCode) {
+      generateReferralCode();
+    }
+  }, [user, referralCode, generateReferralCode]);
 
   const siteUrl = window.location.origin;
   const referralLink = referralCode
     ? `${siteUrl}/?ref=${referralCode}`
     : null;
-
-  const handleGenerateCode = () => {
-    generateReferralCode();
-    toast({
-      title: "Referral code generated",
-      description: "Your unique referral link is ready to share.",
-    });
-  };
 
   const handleCopyLink = async () => {
     if (!referralLink) return;
@@ -66,6 +69,24 @@ export default function OwnBankReferrals() {
     }
   };
 
+  const handleCopyAffiliate = async (name: string, url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedAffiliate(name);
+      toast({
+        title: `${name} link copied`,
+        description: `Your ${name} affiliate link has been copied.`,
+      });
+      setTimeout(() => setCopiedAffiliate(null), 2000);
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy link.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const totalReferrals = referrals.length;
   const referralsWithDeposits = referrals.filter(
     (r) => r.depositCount > 0
@@ -78,30 +99,11 @@ export default function OwnBankReferrals() {
     (r) => r.upgradedToPremium
   ).length;
 
-  if (!isConnected) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-referrals-title">
-            My Referrals
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Connect your wallet to access the referral program
-          </p>
-        </div>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
-            <Users className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Please connect your wallet from the OwnBank Dashboard to view your
-              referral program.
-            </p>
-          </CardContent>
-        </Card>
-        <XrplDisclaimer />
-      </div>
-    );
-  }
+  const affiliateLinks = [
+    { name: "Binance", url: AFFILIATE_LINKS.binance, color: "text-yellow-500" },
+    { name: "Coinbase", url: AFFILIATE_LINKS.coinbase, color: "text-blue-500" },
+    { name: "Kraken", url: AFFILIATE_LINKS.kraken, color: "text-purple-500" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -110,7 +112,7 @@ export default function OwnBankReferrals() {
           My Referrals
         </h1>
         <p className="text-muted-foreground mt-1">
-          Invite friends and earn rewards when they deposit
+          Share your links and earn rewards
         </p>
       </div>
 
@@ -118,11 +120,11 @@ export default function OwnBankReferrals() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LinkIcon className="h-5 w-5 text-[#00A4E4]" />
-            Your Referral Link
+            Your CryptoOwnBank Referral Link
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {referralCode ? (
+          {referralLink ? (
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div
                 className="flex-1 rounded-md border bg-muted/50 px-4 py-2.5 text-sm font-mono break-all"
@@ -146,21 +148,73 @@ export default function OwnBankReferrals() {
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
               <p className="text-muted-foreground text-sm text-center">
-                Generate your unique referral link to start inviting friends.
+                Generating your referral link...
               </p>
-              <Button
-                onClick={handleGenerateCode}
-                data-testid="button-generate-referral"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Generate Referral Link
-              </Button>
             </div>
           )}
           <p className="text-xs text-muted-foreground">
             Share this link with friends. When they sign up and make their first
-            RLUSD deposit, you both earn bonus SEED points.
+            RLUSD deposit, you both earn bonus SEED points. If they upgrade to
+            Premium, you get 1 free month.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ExternalLink className="h-5 w-5 text-[#00A4E4]" />
+            Your Exchange Affiliate Links
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            These are your personal affiliate links for crypto exchanges. When
+            someone signs up through your link, you earn a commission from the
+            exchange.
+          </p>
+          <div className="space-y-2">
+            {affiliateLinks.map((link) => (
+              <div
+                key={link.name}
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-md border p-3"
+                data-testid={`row-affiliate-${link.name.toLowerCase()}`}
+              >
+                <div className="flex items-center gap-2 min-w-[100px]">
+                  <span className="font-medium text-sm">{link.name}</span>
+                </div>
+                <div className="flex-1 rounded bg-muted/50 px-3 py-1.5 text-xs font-mono break-all text-muted-foreground">
+                  {link.url}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleCopyAffiliate(link.name, link.url)}
+                    data-testid={`button-copy-${link.name.toLowerCase()}`}
+                  >
+                    {copiedAffiliate === link.name ? (
+                      <Check className="h-3 w-3 mr-1" />
+                    ) : (
+                      <Copy className="h-3 w-3 mr-1" />
+                    )}
+                    {copiedAffiliate === link.name ? "Copied" : "Copy"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    asChild
+                    data-testid={`button-open-${link.name.toLowerCase()}`}
+                  >
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Open
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -271,25 +325,15 @@ export default function OwnBankReferrals() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-[#00A4E4]" />
-            Referred Users
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {referrals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-3">
-              <UserPlus className="h-10 w-10 text-muted-foreground" />
-              <p
-                className="text-muted-foreground text-sm text-center"
-                data-testid="text-no-referrals"
-              >
-                No referrals yet. Share your link to get started.
-              </p>
-            </div>
-          ) : (
+      {referrals.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#00A4E4]" />
+              Referred Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-3">
               {referrals.map((referral, index) => (
                 <div
@@ -338,9 +382,9 @@ export default function OwnBankReferrals() {
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <XrplDisclaimer />
     </div>
