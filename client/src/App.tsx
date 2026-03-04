@@ -35,6 +35,7 @@ import OwnBankWithdraw from "@/pages/ownbank-withdraw";
 import OwnBankHistory from "@/pages/ownbank-history";
 import OwnBankReferrals from "@/pages/ownbank-referrals";
 import SigningOptions from "@/pages/signing-options";
+import Contact from "@/pages/contact";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
 
@@ -112,6 +113,7 @@ function Router() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/setup-guide" component={SetupGuide} />
         <Route path="/signing-options" component={SigningOptions} />
+        <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -128,6 +130,7 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/setup-guide" component={SetupGuide} />
       <Route path="/signing-options" component={SigningOptions} />
+      <Route path="/contact" component={Contact} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />

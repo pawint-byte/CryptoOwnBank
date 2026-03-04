@@ -1366,6 +1366,8 @@ export default function Landing() {
               <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Legal &amp; Disclaimers</a>
               <span>&middot;</span>
               <a href="/privacy" className="hover:text-[#00A4E4] transition-colors" data-testid="link-privacy">Privacy Policy</a>
+              <span>&middot;</span>
+              <a href="/contact" className="hover:text-[#00A4E4] transition-colors" data-testid="link-contact">Contact & Feedback</a>
             </div>
             <p className="text-xs text-center max-w-2xl leading-relaxed">
               Non-custodial dashboard &middot; We never hold your funds or keys &middot; Not financial advice &middot; DYOR

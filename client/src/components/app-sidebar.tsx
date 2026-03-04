@@ -16,6 +16,7 @@ import {
   Zap,
   Shield,
   BarChart3,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -184,6 +185,24 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/contact"}
+                  data-testid="nav-contact"
+                >
+                  <Link href="/contact">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Contact & Feedback</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center justify-between gap-3">

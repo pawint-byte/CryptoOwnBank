@@ -224,6 +224,35 @@ export async function sendPasswordReset(to: string, firstName: string, resetUrl:
   await sendEmail(to, "Reset your password - CryptoOwnBank", html);
 }
 
+export async function sendFeedbackNotification(
+  senderName: string,
+  senderEmail: string,
+  feedbackType: string,
+  message: string
+) {
+  const adminEmail = "pawint@me.com";
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">New Feedback Received</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <div style="background: #f8f8f8; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #666; vertical-align: top;">From</td><td style="padding: 8px 0; font-weight: 600;">${senderName}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Email</td><td style="padding: 8px 0;"><a href="mailto:${senderEmail}" style="color: #00A4E4;">${senderEmail}</a></td></tr>
+            <tr><td style="padding: 8px 0; color: #666; vertical-align: top;">Type</td><td style="padding: 8px 0; font-weight: 600;">${feedbackType}</td></tr>
+            <tr style="border-top: 1px solid #ddd;"><td style="padding: 12px 0; color: #666; vertical-align: top;">Message</td><td style="padding: 12px 0; white-space: pre-wrap;">${message}</td></tr>
+          </table>
+        </div>
+        <p style="color: #666; font-size: 13px;">You can reply directly to <a href="mailto:${senderEmail}" style="color: #00A4E4;">${senderEmail}</a></p>
+      </div>
+    </div>
+  `;
+  await sendEmail(adminEmail, `[CryptoOwnBank Feedback] ${feedbackType} from ${senderName}`, html);
+}
+
 export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

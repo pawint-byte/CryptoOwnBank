@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
+import { sendFeedbackNotification } from "./email";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -678,6 +679,23 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Subscription check error:", error);
       res.status(500).json({ message: "Failed to check subscription" });
+    }
+  });
+
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const { name, email, type, message } = req.body;
+      if (!name || !email || !type || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      if (message.length > 5000) {
+        return res.status(400).json({ message: "Message too long (max 5000 characters)" });
+      }
+      await sendFeedbackNotification(name, email, type, message);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Feedback error:", error);
+      res.status(500).json({ message: "Failed to send feedback" });
     }
   });
 
