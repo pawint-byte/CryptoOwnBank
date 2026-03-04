@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import Legal from "@/pages/legal";
+import Privacy from "@/pages/privacy";
 import Dashboard from "@/pages/dashboard";
 import Transactions from "@/pages/transactions";
 import Portfolio from "@/pages/portfolio";
@@ -87,10 +89,22 @@ function Router() {
   }
 
   if (!user) {
-    return <Landing />;
+    return (
+      <Switch>
+        <Route path="/legal" component={Legal} />
+        <Route path="/privacy" component={Privacy} />
+        <Route component={Landing} />
+      </Switch>
+    );
   }
 
-  return <AuthenticatedRoutes />;
+  return (
+    <Switch>
+      <Route path="/legal" component={Legal} />
+      <Route path="/privacy" component={Privacy} />
+      <Route><AuthenticatedRoutes /></Route>
+    </Switch>
+  );
 }
 
 function ReferralDetector() {
