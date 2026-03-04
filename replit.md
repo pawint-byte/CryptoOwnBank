@@ -128,6 +128,19 @@ Preferred communication style: Simple, everyday language.
 - **Soil Referral**: Embedded referral code in deposit flow for SEED points
 - **User Referrals**: Invite friends, earn premium credits
 
+## Landing Page
+- Full marketing site at `/` for unauthenticated users
+- Sections: Hero, How It Works (4 steps), Features (6 cards), Member Stories (4 benefit stories), What is RLUSD, Pricing (Free vs Premium), Security, FAQ (12 questions), CTA
+- Header nav links: How It Works, FAQ, Pricing (smooth scroll anchors)
+- CryptoOwnBank branding with XRPL blue (#00A4E4)
+- Exchange links: Coinbase, Kraken, Binance for buying RLUSD
+- Legal disclaimer in footer
+
+## Email Notifications (Resend)
+- `server/email.ts` — Resend integration via Replit connector (not manual API key)
+- Templates: Welcome, Deposit Confirmation, Withdrawal Confirmation, Premium Welcome
+- Sender: notification@pawint-app.com (verified domain)
+
 ## Core Rules (OwnBank)
 - 100% non-custodial: never store private keys
 - All transactions signed client-side via Xumm or Ledger
