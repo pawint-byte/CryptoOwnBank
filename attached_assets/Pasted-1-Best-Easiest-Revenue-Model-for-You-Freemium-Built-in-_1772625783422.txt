@@ -1,0 +1,56 @@
+1. Best & Easiest Revenue Model for You: Freemium + Built-in Affiliates (Start Here)
+Free tier (draws users in):
+
+Basic portfolio tracking
+Manual Soil deposit button
+View accrued interest
+
+Premium tier ($9–19/month or $99/year — this is what users happily pay):
+
+Auto “Withdraw Interest Only” every week (via XRPL Escrow — you code it once)
+Tax CSV export + year-end reports
+Family / multi-account view (perfect for your “help others be their own bank” goal)
+Priority new vault alerts + XLS-66 lending when it launches
+Ad-free + custom themes
+
+How to implement in Replit (copy-paste ready):
+Add Stripe (free to set up). In your Next.js code, add a simple “Upgrade to Premium” button that uses Stripe Checkout. Many Replit AI builders can add this in one prompt.
+2. Profit Built Directly Into the Movement of Money (Affiliate/Referral Layer)
+Every time a user clicks “Deposit to Soil” or “Buy RLUSD,” you earn:
+
+Soil SEED Points Referral (already live on xrpl.soil.co):
+Users earn SEED loyalty points for referrals (gives them fee discounts, priority vaults, governance).
+You add your referral link/code in the deposit flow. When users sign up/deposit through your app, they get bonus SEED → they love you and stay. Soil doesn’t pay cash yet, but SEED drives more TVL and keeps users in your ecosystem.
+Exchange Affiliates (real cash):
+Add “Buy RLUSD” button → Binance or Kraken affiliate link.
+You earn $10–$50+ per referred user who deposits (Binance pays ongoing trading volume too). Same for Coinbase, Kraken, etc.
+This is passive income every time someone funds their vault.
+Future protocols (XLS-66, more RWA vaults): Same pattern — referral links built in.
+
+You literally profit when users move money (buy RLUSD → deposit to Soil → earn yield), but you never hold or control anything.
+3. Other High-Profit Streams You Can Add Later
+
+White-label version: Sell the dashboard to other XRPL projects or financial advisors ($499–$2k one-time + monthly).
+XRPL Grants / Ripple FinTech Builder Program (2026): Apply for non-dilutive funding to build this exact tool (they’re pushing institutional DeFi dashboards right now).
+One-time “Setup Service”: Charge $99–$299 to help users set up their cold wallet + premium (you do it remotely via screen share — still non-custodial).
+
+How to Attract Customers (Draw the Crowd)
+
+Free marketing channels (start today):
+Post in XRP Reddit, Discord, X (Twitter) with “I built the easiest way to earn 5–8% on RLUSD without selling — cold wallet only.”
+Ripple/XRPL Telegram groups and XRP Community Day channels.
+Make short videos: “How I live off RLUSD interest without touching my XRP stack.”
+
+SEO & Growth:
+Title your site “OwnBank XRPL – Earn Real Yield on RLUSD & XRP (Cold Wallet Only)”
+Blog posts inside the app: “How to Become Your Own Bank in 2026”
+
+Viral loop:
+Built-in referral button: “Share this dashboard with a friend → both get 1 month premium free.”
+
+
+Exact Next Step for You (Do This Today)
+Go back to your Replit project and paste this prompt:
+“Add a Premium subscription using Stripe (monthly $12, yearly $99). Create a simple Upgrade button in the OwnBank tab. Also add affiliate referral links for Soil (use your referral code) and Binance for buying RLUSD. Make the free tier limited and premium unlock auto-withdraw interest + tax export. Keep everything non-custodial.”
+Then test it live.
+This model fits you perfectly: You stay true to “never sell, protect principal, be your own bank,” while the site quietly makes money every time users do exactly what you want them to do — move money into yield.

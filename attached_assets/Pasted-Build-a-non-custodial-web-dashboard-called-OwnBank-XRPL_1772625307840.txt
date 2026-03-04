@@ -1,0 +1,65 @@
+Build a non-custodial web dashboard called “OwnBank XRPL” using Next.js 15 (App Router), TypeScript, Tailwind CSS, and shadcn/ui components.
+
+The app lets users connect ONLY cold wallets (Ledger Nano X/S or Xumm/Xaman) to the XRP Ledger mainnet, view their XRP and RLUSD balances, deposit RLUSD into Soil Protocol yield vaults (RWA-backed fixed-yield pools), see real-time accrued interest, and withdraw ONLY the earned interest to a user-defined spending wallet — while the principal remains 100% locked and protected forever in the vault. Never sell or move the base principal.
+
+Core rules that must NEVER be broken:
+- 100% non-custodial: never store, request, or handle private keys, seeds, or hot wallets
+- All transactions must be signed client-side via Xumm SDK or Ledger hardware
+- Principal protection is the #1 priority: users can only withdraw accrued interest, not the deposited amount
+- Mobile-first, dark theme (black background + XRPL blue accents #00A4E4)
+- Clear disclaimers on every page: “This is not financial advice. Not a bank. You control your keys and funds at all times.”
+
+Tech stack (install these):
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS + shadcn/ui
+- xrpl.js (for XRPL client interactions)
+- @xumm/sdk (for Xumm wallet connection & signing)
+- @ledgerhq/hw-app-xrpl + @ledgerhq/hw-transport-webusb (for Ledger hardware)
+- zustand (lightweight state management)
+- lucide-react (icons)
+- axios or fetch (for any external price APIs)
+
+Required pages / sections:
+
+1. Home / Dashboard
+   - Connect Wallet buttons: “Connect Xumm” (QR + deep link) and “Connect Ledger” (WebUSB)
+   - After connection: show truncated address, XRP balance, RLUSD balance (fetch via xrpl.js Client)
+   - Simple portfolio value (use free Coingecko public API for XRP & RLUSD prices)
+   - Display total earned interest this month / all-time (poll or calculate from vault data)
+   - Big prominent “Withdraw Interest Only” button
+
+2. Vaults Page
+   - List available Soil Protocol vaults for RLUSD (hardcode known vault addresses or fetch from public Soil API if available)
+   - For each vault: show name, current fixed APR (e.g. 5–8%), backing assets (Treasuries/private credit), total deposited, user’s deposited amount & accrued interest
+   - “Deposit RLUSD” flow: input amount → build & sign transaction (TrustSet if needed + Payment/Offer) via Xumm or Ledger
+   - “Withdraw Interest Only” flow: calculate accrued interest → create & sign transaction that sends ONLY the interest amount to user’s predefined spending wallet address
+
+3. Settings / Spending Wallet
+   - Input field to set a spending wallet address (any XRPL address — can be another cold wallet or exchange)
+   - Save in localStorage or zustand (not on server)
+
+4. Transaction History
+   - Fetch and display user’s recent XRPL transactions related to deposits/withdrawals (use xrpl.js account_tx)
+
+5. Future-proof placeholders (visible but disabled/greyed out)
+   - Tab: “XLS-66 Native Lending” (show message: “Coming Q2 2026 – native on-ledger XRP lending”)
+
+Security & UX must-haves:
+- Every transaction shows clear preview before signing: “You are about to deposit X RLUSD to vault. Principal protected. Only interest withdrawable.”
+- Transaction success/failure toasts
+- Loading states & error handling
+- Responsive design (mobile priority)
+- Dark mode default
+- Environment variables for any API keys (Coingecko, etc.)
+
+Start by building:
+1. Project setup + wallet connection (Xumm & Ledger)
+2. Balance fetching & dashboard display
+3. Soil vault list & deposit flow
+4. Interest calculation & withdraw-only-interest logic
+5. Polish with shadcn/ui components & Tailwind
+
+After MVP, suggest next steps: auto-withdraw via XRPL Escrow, family read-only view, tax CSV export.
+
+Generate the full project structure and show code step-by-step starting with Phase 1 (wallet connection).
