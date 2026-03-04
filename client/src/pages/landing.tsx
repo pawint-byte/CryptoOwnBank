@@ -812,23 +812,23 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="border-t py-8 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-gray-900 dark:bg-gray-950 text-gray-400 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-[#00A4E4]" />
-              <span className="font-semibold">CryptoOwnBank</span>
+              <span className="font-semibold text-gray-200">CryptoOwnBank</span>
             </div>
-            <p className="text-sm text-muted-foreground text-center">
-              &copy; {new Date().getFullYear()} CryptoOwnBank. Not a bank. Not financial advice. All rights reserved.
+            <p className="text-sm text-center">
+              &copy; {new Date().getFullYear()} CryptoOwnBank. All rights reserved.
             </p>
-          </div>
-          <div className="mt-4 pt-4 border-t text-center">
-            <p className="text-xs text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              CryptoOwnBank is a non-custodial dashboard. We never hold your funds or keys. All transactions are signed directly from your cold wallet.
-              Yield is not guaranteed — past performance is not indicative of future results.
-              This is not financial advice. Crypto involves risk. DYOR. You are responsible for your own security and taxes.
-              Made for the crypto community by someone who's been in it since day one.
+            <div className="flex items-center gap-2 text-sm">
+              <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Legal &amp; Disclaimers</a>
+              <span>&middot;</span>
+              <a href="/privacy" className="hover:text-[#00A4E4] transition-colors" data-testid="link-privacy">Privacy Policy</a>
+            </div>
+            <p className="text-xs text-center max-w-2xl leading-relaxed">
+              Non-custodial dashboard &middot; We never hold your funds or keys &middot; Not financial advice &middot; DYOR
             </p>
           </div>
         </div>

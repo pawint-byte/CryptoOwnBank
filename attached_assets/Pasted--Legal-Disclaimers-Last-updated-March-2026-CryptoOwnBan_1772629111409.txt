@@ -1,0 +1,31 @@
+# Legal & Disclaimers
+
+**Last updated: March 2026**
+
+CryptoOwnBank.com is a **non-custodial**, open-source-inspired web dashboard that helps users interact with public blockchains (primarily the XRP Ledger) and third-party protocols such as Soil. We do **not**:
+
+- Hold, control, custody, or have access to your funds or private keys
+- Act as a bank, exchange, broker, money transmitter, investment adviser, or custodian
+- Execute transactions on your behalf
+- Provide personalized financial, investment, tax, or legal advice
+
+**All interactions** (wallet connections, deposits, withdrawals, etc.) are signed directly from **your own cold wallet** (Ledger, Xumm, etc.). We never receive or store your private keys, seed phrases, or any sensitive information.
+
+**No Financial Advice**  
+The information, tools, and features on this site are for informational and convenience purposes only. Any references to yields, APRs, vaults, or protocols (including Soil) are based on publicly available data and are **not guarantees** of future performance. Cryptocurrency, blockchain protocols, and yield opportunities involve significant risk, including total loss of principal. Past performance is not indicative of future results. You are solely responsible for your own decisions, research (DYOR), security practices, and any tax or legal obligations in your jurisdiction.
+
+**Third-Party Protocols & Links**  
+Links to Soil, exchanges (Binance, Kraken, etc.), or other services are provided for convenience. We may earn referral rewards or SEED points if you use them — this is clearly disclosed where applicable. We do not control, endorse, or guarantee the safety, performance, or availability of any third-party service. Use them at your own risk.
+
+**No Warranty**  
+This site is provided “as is” without warranties of any kind, express or implied. We are not liable for any losses, damages, or issues arising from your use of the site, wallet connections, blockchain transactions, or third-party protocols.
+
+**Jurisdiction & Governing Law**  
+This site is operated from the United States. By using it, you agree that any disputes will be governed by the laws of the Commonwealth of Virginia, without regard to conflict of law principles.
+
+**Changes to This Page**  
+We may update this page from time to time. Continued use after changes constitutes acceptance.
+
+If you have questions about these terms, contact us via the site (no support for wallet recovery or fund issues — we cannot assist with those).
+
+Thank you for using CryptoOwnBank responsibly.
