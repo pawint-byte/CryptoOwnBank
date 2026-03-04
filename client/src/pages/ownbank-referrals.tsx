@@ -16,8 +16,8 @@ import {
   UserPlus,
   Coins,
   ExternalLink,
+  Share2,
 } from "lucide-react";
-import { SiBinance, SiCoinbase } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
 function truncateAddress(address: string): string {
@@ -25,19 +25,41 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+const exchangeCards = [
+  {
+    name: "Binance",
+    url: AFFILIATE_LINKS.binance,
+    color: "bg-yellow-500/10 border-yellow-500/20",
+    iconColor: "text-yellow-600 dark:text-yellow-400",
+    description: "Global exchange with deep RLUSD liquidity",
+  },
+  {
+    name: "Kraken",
+    url: AFFILIATE_LINKS.kraken,
+    color: "bg-purple-500/10 border-purple-500/20",
+    iconColor: "text-purple-600 dark:text-purple-400",
+    description: "Trusted exchange with low fees",
+  },
+  {
+    name: "Coinbase",
+    url: AFFILIATE_LINKS.coinbase,
+    color: "bg-blue-500/10 border-blue-500/20",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    description: "Beginner-friendly, regulated platform",
+  },
+];
+
 export default function OwnBankReferrals() {
   const { toast } = useToast();
   const { user } = useAuth();
   const {
-    isConnected,
-    walletAddress,
     referralCode,
     referrals,
     premiumCreditMonths,
     generateReferralCode,
   } = useXrplStore();
   const [copied, setCopied] = useState(false);
-  const [copiedAffiliate, setCopiedAffiliate] = useState<string | null>(null);
+  const [copiedExchange, setCopiedExchange] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !referralCode) {
@@ -46,9 +68,7 @@ export default function OwnBankReferrals() {
   }, [user, referralCode, generateReferralCode]);
 
   const siteUrl = window.location.origin;
-  const referralLink = referralCode
-    ? `${siteUrl}/?ref=${referralCode}`
-    : null;
+  const referralLink = referralCode ? `${siteUrl}/?ref=${referralCode}` : null;
 
   const handleCopyLink = async () => {
     if (!referralLink) return;
@@ -69,15 +89,15 @@ export default function OwnBankReferrals() {
     }
   };
 
-  const handleCopyAffiliate = async (name: string, url: string) => {
+  const handleCopyExchange = async (name: string, url: string) => {
     try {
       await navigator.clipboard.writeText(url);
-      setCopiedAffiliate(name);
+      setCopiedExchange(name);
       toast({
         title: `${name} link copied`,
-        description: `Your ${name} affiliate link has been copied.`,
+        description: `Your ${name} referral link has been copied.`,
       });
-      setTimeout(() => setCopiedAffiliate(null), 2000);
+      setTimeout(() => setCopiedExchange(null), 2000);
     } catch {
       toast({
         title: "Copy failed",
@@ -89,38 +109,40 @@ export default function OwnBankReferrals() {
 
   const totalReferrals = referrals.length;
   const referralsWithDeposits = referrals.filter(
-    (r) => r.depositCount > 0
+    (r) => r.depositCount > 0,
   ).length;
   const totalEstimatedSeed = referrals.reduce(
     (sum, r) => sum + r.estimatedSeed,
-    0
+    0,
   );
   const premiumUpgrades = referrals.filter(
-    (r) => r.upgradedToPremium
+    (r) => r.upgradedToPremium,
   ).length;
 
-  const affiliateLinks = [
-    { name: "Binance", url: AFFILIATE_LINKS.binance, color: "text-yellow-500" },
-    { name: "Coinbase", url: AFFILIATE_LINKS.coinbase, color: "text-blue-500" },
-    { name: "Kraken", url: AFFILIATE_LINKS.kraken, color: "text-purple-500" },
-  ];
+  const hasAffiliateLinks =
+    AFFILIATE_LINKS.binance && AFFILIATE_LINKS.kraken && AFFILIATE_LINKS.coinbase;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold" data-testid="text-referrals-title">
-          My Referrals
+        <h1
+          className="text-2xl font-bold"
+          data-testid="text-referrals-title"
+        >
+          Your Referral Links — Earn Rewards When Others Join
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Share your links and earn rewards
+        <p className="text-muted-foreground mt-1 max-w-2xl">
+          Share these links with friends. When they sign up, buy RLUSD, or join
+          Soil via your link, you may earn rewards (affiliate commissions or SEED
+          points). At no extra cost to them.
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="h-5 w-5 text-[#00A4E4]" />
-            Your CryptoOwnBank Referral Link
+            <Share2 className="h-5 w-5 text-[#00A4E4]" />
+            Invite Friends to CryptoOwnBank
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -142,7 +164,7 @@ export default function OwnBankReferrals() {
                 ) : (
                   <Copy className="h-4 w-4 mr-2" />
                 )}
-                {copied ? "Copied" : "Copy"}
+                {copied ? "Copied" : "Copy Link"}
               </Button>
             </div>
           ) : (
@@ -153,9 +175,8 @@ export default function OwnBankReferrals() {
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Share this link with friends. When they sign up and make their first
-            RLUSD deposit, you both earn bonus SEED points. If they upgrade to
-            Premium, you get 1 free month.
+            When friends sign up and deposit RLUSD, you both earn bonus SEED
+            points. If they upgrade to Premium, you get 1 free month.
           </p>
         </CardContent>
       </Card>
@@ -164,57 +185,86 @@ export default function OwnBankReferrals() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ExternalLink className="h-5 w-5 text-[#00A4E4]" />
-            Your Exchange Affiliate Links
+            Invite via Exchange — Your Affiliate Links
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            These are your personal affiliate links for crypto exchanges. When
-            someone signs up through your link, you earn a commission from the
-            exchange.
+            Share these links so friends can sign up on an exchange, buy RLUSD,
+            and get started. You earn a commission when they join through your
+            link.
           </p>
-          <div className="space-y-2">
-            {affiliateLinks.map((link) => (
-              <div
-                key={link.name}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-md border p-3"
-                data-testid={`row-affiliate-${link.name.toLowerCase()}`}
-              >
-                <div className="flex items-center gap-2 min-w-[100px]">
-                  <span className="font-medium text-sm">{link.name}</span>
-                </div>
-                <div className="flex-1 rounded bg-muted/50 px-3 py-1.5 text-xs font-mono break-all text-muted-foreground">
-                  {link.url}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopyAffiliate(link.name, link.url)}
-                    data-testid={`button-copy-${link.name.toLowerCase()}`}
-                  >
-                    {copiedAffiliate === link.name ? (
-                      <Check className="h-3 w-3 mr-1" />
-                    ) : (
-                      <Copy className="h-3 w-3 mr-1" />
-                    )}
-                    {copiedAffiliate === link.name ? "Copied" : "Copy"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    asChild
-                    data-testid={`button-open-${link.name.toLowerCase()}`}
-                  >
-                    <a href={link.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Open
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {hasAffiliateLinks ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {exchangeCards.map((exchange) => (
+                <Card
+                  key={exchange.name}
+                  className={`border ${exchange.color}`}
+                  data-testid={`card-affiliate-${exchange.name.toLowerCase()}`}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full ${exchange.color}`}
+                      >
+                        <LinkIcon className={`h-4 w-4 ${exchange.iconColor}`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{exchange.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {exchange.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        asChild
+                        data-testid={`button-invite-${exchange.name.toLowerCase()}`}
+                      >
+                        <a
+                          href={exchange.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Invite via {exchange.name}
+                        </a>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleCopyExchange(exchange.name, exchange.url)
+                        }
+                        data-testid={`button-copy-${exchange.name.toLowerCase()}`}
+                      >
+                        {copiedExchange === exchange.name ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Affiliate/referral link — we may earn a reward if used.
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <LinkIcon className="h-10 w-10 text-muted-foreground" />
+              <p className="text-muted-foreground text-sm">
+                Referral links coming soon — check back after setup.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
