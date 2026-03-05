@@ -18,10 +18,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
 import {
   getAccountTransactions,
+  getXrpPrice,
   SOIL_VAULTS,
   type XrplTransaction,
 } from "@/lib/xrpl-client";
@@ -37,9 +46,43 @@ import {
   Link2,
   AlertCircle,
   XCircle,
+  SlidersHorizontal,
 } from "lucide-react";
 
 type TxFilter = "all" | "vault" | "payment" | "swap" | "trustset";
+
+type ColumnKey = "hash" | "type" | "direction" | "amount" | "usdValue" | "fee" | "address" | "date" | "status";
+
+const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: "hash", label: "Tx Hash" },
+  { key: "type", label: "Type" },
+  { key: "direction", label: "Direction" },
+  { key: "amount", label: "Amount" },
+  { key: "usdValue", label: "USD Value" },
+  { key: "fee", label: "Fee" },
+  { key: "address", label: "Address" },
+  { key: "date", label: "Date" },
+  { key: "status", label: "Status" },
+];
+
+const DEFAULT_COLUMNS: ColumnKey[] = ["hash", "type", "direction", "amount", "usdValue", "fee", "address", "date", "status"];
+
+const STORAGE_KEY = "xrpl-history-columns";
+
+function loadColumnPrefs(): ColumnKey[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as ColumnKey[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return DEFAULT_COLUMNS;
+}
+
+function saveColumnPrefs(cols: ColumnKey[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cols));
+}
 
 function truncateHash(hash: string): string {
   if (!hash) return "";
@@ -87,6 +130,42 @@ function getDirectionIcon(tx: XrplTransaction, walletAddress: string) {
   return <Link2 className="h-4 w-4 text-muted-foreground" />;
 }
 
+function getUsdValue(
+  amount: string,
+  currency: string,
+  xrpPrice: number,
+  amount2?: string,
+  currency2?: string,
+): { primary: number; secondary?: number; total: number } | null {
+  if (!amount || !currency) return null;
+
+  const toUsd = (val: string, cur: string) => {
+    const num = Math.abs(Number(val));
+    if (isNaN(num) || num === 0) return 0;
+    if (cur === "XRP") return num * xrpPrice;
+    if (cur === "RLUSD" || cur === "USD") return num;
+    return 0;
+  };
+
+  const primary = toUsd(amount, currency);
+  if (amount2 && currency2) {
+    const secondary = toUsd(amount2, currency2);
+    return { primary, secondary, total: Math.max(primary, secondary) };
+  }
+  return { primary, total: primary };
+}
+
+function formatUsd(value: number): string {
+  if (value === 0) return "$0.00";
+  if (value < 0.01) return "<$0.01";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function getTypeVariant(type: string): "default" | "secondary" | "outline" {
   switch (type) {
     case "Payment":
@@ -104,14 +183,33 @@ export default function OwnBankHistory() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TxFilter>("all");
+  const [xrpPrice, setXrpPrice] = useState<number>(0);
+  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(loadColumnPrefs);
+
+  const toggleColumn = (col: ColumnKey) => {
+    setVisibleColumns((prev) => {
+      const next = prev.includes(col)
+        ? prev.filter((c) => c !== col)
+        : [...prev, col];
+      if (next.length === 0) return prev;
+      saveColumnPrefs(next);
+      return next;
+    });
+  };
+
+  const isColumnVisible = (col: ColumnKey) => visibleColumns.includes(col);
 
   const fetchTransactions = useCallback(async () => {
     if (!walletAddress) return;
     setIsLoading(true);
     setError(null);
     try {
-      const txs = await getAccountTransactions(walletAddress, 50);
+      const [txs, price] = await Promise.all([
+        getAccountTransactions(walletAddress, 50),
+        getXrpPrice(),
+      ]);
       setTransactions(txs);
+      setXrpPrice(price);
     } catch {
       setError("Failed to fetch transactions from XRPL. Please try again.");
     } finally {
@@ -201,6 +299,31 @@ export default function OwnBankHistory() {
             Transactions
           </CardTitle>
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" data-testid="button-column-picker">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Columns
+                  <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
+                    {visibleColumns.length}/{ALL_COLUMNS.length}
+                  </Badge>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ALL_COLUMNS.map((col) => (
+                  <DropdownMenuCheckboxItem
+                    key={col.key}
+                    checked={isColumnVisible(col.key)}
+                    onCheckedChange={() => toggleColumn(col.key)}
+                    data-testid={`toggle-col-${col.key}`}
+                  >
+                    {col.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select
               value={filter}
@@ -269,13 +392,15 @@ export default function OwnBankHistory() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tx Hash</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Direction</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
+                    {isColumnVisible("hash") && <TableHead>Tx Hash</TableHead>}
+                    {isColumnVisible("type") && <TableHead>Type</TableHead>}
+                    {isColumnVisible("direction") && <TableHead>Direction</TableHead>}
+                    {isColumnVisible("amount") && <TableHead>Amount</TableHead>}
+                    {isColumnVisible("usdValue") && <TableHead className="text-right">USD Value</TableHead>}
+                    {isColumnVisible("fee") && <TableHead className="text-right">Fee</TableHead>}
+                    {isColumnVisible("address") && <TableHead>Address</TableHead>}
+                    {isColumnVisible("date") && <TableHead>Date</TableHead>}
+                    {isColumnVisible("status") && <TableHead>Status</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -289,104 +414,156 @@ export default function OwnBankHistory() {
                         key={tx.hash || index}
                         data-testid={`row-tx-${tx.hash || index}`}
                       >
-                        <TableCell>
-                          <a
-                            href={`https://xrplscan.com/tx/${tx.hash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-mono text-sm text-[#00A4E4] hover:underline"
-                            data-testid={`link-tx-hash-${tx.hash || index}`}
-                          >
-                            {truncateHash(tx.hash)}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getTypeVariant(tx.type)} data-testid={`badge-tx-type-${tx.hash || index}`}>
-                            {tx.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {tx.type === "OfferCreate" ? (
-                              <>
-                                <ArrowLeftRight className="h-4 w-4 text-[#00A4E4]" />
-                                <span className="text-sm text-muted-foreground">Swap</span>
-                              </>
-                            ) : tx.type === "TrustSet" ? (
-                              <>
-                                <Link2 className="h-4 w-4 text-amber-500" />
-                                <span className="text-sm text-muted-foreground">Trust Line</span>
-                              </>
-                            ) : tx.type === "OfferCancel" ? (
-                              <>
-                                <XCircle className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">Cancel</span>
-                              </>
-                            ) : (
-                              <>
-                                {getDirectionIcon(tx, walletAddress)}
-                                <span className="text-sm text-muted-foreground">
-                                  {isSent ? "Sent" : "Received"}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-mono text-sm" data-testid={`text-tx-amount-${tx.hash || index}`}>
-                            {tx.type === "OfferCreate" && tx.amount2 ? (
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-red-500">
-                                  -{Number(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency}
-                                </span>
-                                <span className="text-emerald-600">
-                                  +{Number(tx.amount2).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency2}
-                                </span>
-                              </div>
-                            ) : tx.type === "TrustSet" ? (
-                              <span className="text-muted-foreground">
-                                {tx.currency || "—"} trust line
-                              </span>
-                            ) : tx.type === "OfferCancel" ? (
-                              <span className="text-muted-foreground">—</span>
-                            ) : (
-                              <span>
-                                {Number(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {counterparty ? (
+                        {isColumnVisible("hash") && (
+                          <TableCell>
                             <a
-                              href={`https://xrplscan.com/account/${counterparty}`}
+                              href={`https://xrplscan.com/tx/${tx.hash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="font-mono text-sm text-muted-foreground hover:underline"
-                              data-testid={`link-tx-address-${tx.hash || index}`}
+                              className="flex items-center gap-1 font-mono text-sm text-[#00A4E4] hover:underline"
+                              data-testid={`link-tx-hash-${tx.hash || index}`}
                             >
-                              {truncateAddress(counterparty)}
+                              {truncateHash(tx.hash)}
+                              <ExternalLink className="h-3 w-3" />
                             </a>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              --
+                          </TableCell>
+                        )}
+                        {isColumnVisible("type") && (
+                          <TableCell>
+                            <Badge variant={getTypeVariant(tx.type)} data-testid={`badge-tx-type-${tx.hash || index}`}>
+                              {tx.type}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        {isColumnVisible("direction") && (
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {tx.type === "OfferCreate" ? (
+                                <>
+                                  <ArrowLeftRight className="h-4 w-4 text-[#00A4E4]" />
+                                  <span className="text-sm text-muted-foreground">Swap</span>
+                                </>
+                              ) : tx.type === "TrustSet" ? (
+                                <>
+                                  <Link2 className="h-4 w-4 text-amber-500" />
+                                  <span className="text-sm text-muted-foreground">Trust Line</span>
+                                </>
+                              ) : tx.type === "OfferCancel" ? (
+                                <>
+                                  <XCircle className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">Cancel</span>
+                                </>
+                              ) : (
+                                <>
+                                  {getDirectionIcon(tx, walletAddress)}
+                                  <span className="text-sm text-muted-foreground">
+                                    {isSent ? "Sent" : "Received"}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                        {isColumnVisible("amount") && (
+                          <TableCell>
+                            <div className="font-mono text-sm" data-testid={`text-tx-amount-${tx.hash || index}`}>
+                              {tx.type === "OfferCreate" && tx.amount2 ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-red-500">
+                                    -{Number(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency}
+                                  </span>
+                                  <span className="text-emerald-600">
+                                    +{Number(tx.amount2).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency2}
+                                  </span>
+                                </div>
+                              ) : tx.type === "TrustSet" ? (
+                                <span className="text-muted-foreground">
+                                  {tx.currency || "—"} trust line
+                                </span>
+                              ) : tx.type === "OfferCancel" ? (
+                                <span className="text-muted-foreground">—</span>
+                              ) : (
+                                <span>
+                                  {Number(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                        {isColumnVisible("usdValue") && (
+                          <TableCell className="text-right">
+                            {(() => {
+                              if (tx.type === "TrustSet" || tx.type === "OfferCancel") {
+                                return <span className="text-muted-foreground font-mono text-sm">—</span>;
+                              }
+                              const usd = getUsdValue(tx.amount, tx.currency, xrpPrice, tx.amount2, tx.currency2);
+                              if (!usd || usd.total === 0) {
+                                return <span className="text-muted-foreground font-mono text-sm">—</span>;
+                              }
+                              if (tx.type === "OfferCreate" && usd.secondary !== undefined) {
+                                return (
+                                  <div className="flex flex-col gap-0.5 font-mono text-sm" data-testid={`text-tx-usd-${tx.hash || index}`}>
+                                    <span className="text-red-500">{formatUsd(usd.primary)}</span>
+                                    <span className="text-emerald-600">{formatUsd(usd.secondary)}</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <span
+                                  className={`font-mono text-sm ${isSent ? "text-red-500" : "text-emerald-600"}`}
+                                  data-testid={`text-tx-usd-${tx.hash || index}`}
+                                >
+                                  {formatUsd(usd.total)}
+                                </span>
+                              );
+                            })()}
+                          </TableCell>
+                        )}
+                        {isColumnVisible("fee") && (
+                          <TableCell className="text-right">
+                            <span className="font-mono text-xs text-muted-foreground" data-testid={`text-tx-fee-${tx.hash || index}`}>
+                              {tx.fee && Number(tx.fee) > 0
+                                ? `${Number(tx.fee).toFixed(6)} XRP`
+                                : "—"}
                             </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground" data-testid={`text-tx-date-${tx.hash || index}`}>
-                            {formatDate(tx.date)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={tx.status === "Success" ? "outline" : "destructive"}
-                            data-testid={`badge-tx-status-${tx.hash || index}`}
-                          >
-                            {tx.status}
-                          </Badge>
-                        </TableCell>
+                          </TableCell>
+                        )}
+                        {isColumnVisible("address") && (
+                          <TableCell>
+                            {counterparty ? (
+                              <a
+                                href={`https://xrplscan.com/account/${counterparty}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-sm text-muted-foreground hover:underline"
+                                data-testid={`link-tx-address-${tx.hash || index}`}
+                              >
+                                {truncateAddress(counterparty)}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                --
+                              </span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isColumnVisible("date") && (
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground" data-testid={`text-tx-date-${tx.hash || index}`}>
+                              {formatDate(tx.date)}
+                            </span>
+                          </TableCell>
+                        )}
+                        {isColumnVisible("status") && (
+                          <TableCell>
+                            <Badge
+                              variant={tx.status === "Success" ? "outline" : "destructive"}
+                              data-testid={`badge-tx-status-${tx.hash || index}`}
+                            >
+                              {tx.status}
+                            </Badge>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -396,6 +573,12 @@ export default function OwnBankHistory() {
           )}
         </CardContent>
       </Card>
+
+      {xrpPrice > 0 && isColumnVisible("usdValue") && (
+        <p className="text-xs text-muted-foreground text-right" data-testid="text-xrp-price-note">
+          USD values based on current XRP price: ${xrpPrice.toFixed(4)}
+        </p>
+      )}
 
       <XrplDisclaimer />
     </div>
