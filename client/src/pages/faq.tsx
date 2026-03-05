@@ -137,8 +137,12 @@ const faqGroups = [
         a: "The process is similar for all exchanges: go to your account's API settings, create a new key with READ-ONLY permissions, and copy the credentials. For KuCoin, Bybit, and OKX you may also need to set an API passphrase — save this separately as you'll need it. When you select any exchange on our Integrations page, we show you the exact steps and a direct link to that exchange's API settings page.",
       },
       {
-        q: "Can I connect Robinhood or Fidelity?",
-        a: "Robinhood and Fidelity do not currently offer public APIs for third-party portfolio tracking. You can manually add your holdings or export your transaction history as CSV files from their apps/websites and import them into CryptoOwnBank. We're monitoring both platforms for future API availability.",
+        q: "How do I get a Nexo API key?",
+        a: "Log in to Nexo at nexo.com, go to Settings (gear icon) > API, and click 'Create API Key'. Label it 'CryptoOwnBank', set permissions to 'Read Only' (do NOT enable withdrawals or trading), complete 2FA, and copy your API Key and Secret Key immediately — the Secret is only shown once. Paste both into CryptoOwnBank's Integrations page.",
+      },
+      {
+        q: "Can I connect Webull, eToro, Robinhood, or Fidelity?",
+        a: "These platforms do not currently offer public APIs for third-party portfolio tracking. You can manually add your holdings on CryptoOwnBank, or export your transaction history as a CSV file from their apps/websites. For Webull: Account > Statements & History > Download. For eToro: Settings > Account Statement > Download. For Robinhood: Account > Statements & History. For Fidelity: Accounts > Activity & Orders > Download. We're monitoring all four platforms for future API availability.",
       },
       {
         q: "Is it safe to give CryptoOwnBank my API key?",

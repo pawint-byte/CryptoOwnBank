@@ -539,7 +539,7 @@ export async function registerRoutes(
       const validProviders = [
         "binance", "binance_us", "coinbase", "kraken", "crypto_com", "uphold",
         "gemini", "kucoin", "bybit", "okx", "bitfinex", "bitstamp", "gate_io",
-        "robinhood", "fidelity",
+        "nexo", "webull", "etoro", "robinhood", "fidelity",
       ];
       if (!validProviders.includes(provider)) {
         return res.status(400).json({ message: "Invalid provider" });

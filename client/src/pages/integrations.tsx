@@ -52,6 +52,9 @@ const EXCHANGE_OPTIONS = [
   { value: "bitfinex", label: "Bitfinex", icon: null },
   { value: "bitstamp", label: "Bitstamp", icon: null },
   { value: "gate_io", label: "Gate.io", icon: null },
+  { value: "nexo", label: "Nexo", icon: null },
+  { value: "webull", label: "Webull", icon: null },
+  { value: "etoro", label: "eToro", icon: null },
   { value: "robinhood", label: "Robinhood", icon: null },
   { value: "fidelity", label: "Fidelity", icon: null },
 ];
@@ -108,6 +111,18 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
   gate_io: {
     steps: "Log in to Gate.io > Profile > API Management > Create API Key > label it 'CryptoOwnBank' > check ONLY 'Spot/Margin Read' and 'Wallet Read' > copy your API Key and Secret Key.",
     url: "https://www.gate.io/myaccount/apikeys",
+  },
+  nexo: {
+    steps: "1) Log in to Nexo at nexo.com. 2) Go to Settings (gear icon) > API. 3) Click 'Create API Key' > label it 'CryptoOwnBank'. 4) Set permissions to 'Read Only' — do NOT enable withdrawals or trading. 5) Complete 2FA verification. 6) Copy your API Key and Secret Key immediately (Secret is shown once). 7) Paste both into CryptoOwnBank.",
+    url: "https://platform.nexo.com/api-keys",
+  },
+  webull: {
+    steps: "Webull does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings on CryptoOwnBank, or export your transaction history from the Webull app: Account > Menu (three dots) > Statements & History > Download CSV.",
+    url: "https://www.webull.com/",
+  },
+  etoro: {
+    steps: "eToro does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings on CryptoOwnBank, or export your transaction history from eToro: Settings > Account Statement > select date range > Download as Excel/CSV.",
+    url: "https://www.etoro.com/settings/account",
   },
   robinhood: {
     steps: "Robinhood does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings or export your transaction history as a CSV file from the Robinhood app (Account > Statements & History > Download).",
