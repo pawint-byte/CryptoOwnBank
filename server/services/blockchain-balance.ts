@@ -22,6 +22,64 @@ const COINGECKO_IDS: Record<string, string> = {
   AVAX: "avalanche-2",
   MATIC: "matic-network",
   RLUSD: "usd",
+  LINK: "chainlink",
+  UNI: "uniswap",
+  AAVE: "aave",
+  MKR: "maker",
+  SNX: "havven",
+  COMP: "compound-governance-token",
+  CRV: "curve-dao-token",
+  LDO: "lido-dao",
+  RPL: "rocket-pool",
+  ENS: "ethereum-name-service",
+  GRT: "the-graph",
+  FET: "fetch-ai",
+  RNDR: "render-token",
+  IMX: "immutable-x",
+  ARB: "arbitrum",
+  OP: "optimism",
+  PEPE: "pepe",
+  SHIB: "shiba-inu",
+  APE: "apecoin",
+  SAND: "the-sandbox",
+  MANA: "decentraland",
+  AXS: "axie-infinity",
+  SUSHI: "sushi",
+  "1INCH": "1inch",
+  BAT: "basic-attention-token",
+  ZRX: "0x",
+  ANKR: "ankr",
+  CHZ: "chiliz",
+  GALA: "gala",
+  JASMY: "jasmycoin",
+  BLUR: "blur",
+  DYDX: "dydx-chain",
+  STX: "blockstack",
+  FIL: "filecoin",
+  ATOM: "cosmos",
+  NEAR: "near",
+  ALGO: "algorand",
+  XLM: "stellar",
+  HBAR: "hedera-hashgraph",
+  VET: "vechain",
+  WBTC: "wrapped-bitcoin",
+  STETH: "staked-ether",
+  RETH: "rocket-pool-eth",
+  CBETH: "coinbase-wrapped-staked-eth",
+  WETH: "weth",
+  DAI: "dai",
+  CRO: "crypto-com-chain",
+  LEO: "leo-token",
+  OKB: "okb",
+  QNT: "quant-network",
+  WSOL: "solana",
+  JUP: "jupiter-exchange-solana",
+  BONK: "bonk",
+  MSOL: "msol",
+  RAY: "raydium",
+  ORCA: "orca",
+  PYTH: "pyth-network",
+  JTO: "jito-governance-token",
 };
 
 async function fetchJson(url: string, options?: RequestInit): Promise<any> {
@@ -84,6 +142,8 @@ export async function getBitcoinBalance(address: string): Promise<ChainBalance[]
 }
 
 export async function getEthereumBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+
   try {
     const data = await fetchJson(
       `https://eth.llamarpc.com`, {
@@ -99,27 +159,166 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
     );
 
     const hexBalance = data.result;
-    if (!hexBalance || hexBalance === "0x0") return [];
-
-    const wei = BigInt(hexBalance);
-    const eth = Number(wei) / 1e18;
-    if (eth <= 0) return [];
-
-    const prices = await getPrices(["ETH"]);
-    return [{
-      symbol: "ETH",
-      balance: eth,
-      usdValue: eth * (prices.ETH || 0),
-    }];
+    if (hexBalance && hexBalance !== "0x0") {
+      const wei = BigInt(hexBalance);
+      const eth = Number(wei / 10n ** 12n) / 1e6;
+      if (eth > 0) {
+        const prices = await getPrices(["ETH"]);
+        balances.push({
+          symbol: "ETH",
+          balance: eth,
+          usdValue: eth * (prices.ETH || 0),
+        });
+      }
+    }
   } catch (err) {
-    console.error("Ethereum balance fetch error:", err);
-    return [];
+    console.error("Ethereum native balance fetch error:", err);
   }
+
+  try {
+    const apiKey = process.env.ETHERSCAN_API_KEY || "";
+    const keyParam = apiKey ? `&apikey=${apiKey}` : "";
+    const tokenData = await fetchJson(
+      `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&page=1&offset=1&sort=desc${keyParam}`
+    );
+
+    if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
+      let tokenBalances: any[] = [];
+
+      let usedTokenList = false;
+      try {
+        const tokenBalUrl = `https://api.etherscan.io/api?module=account&action=tokenlist&address=${address}${keyParam}`;
+        const tokenBalData = await fetchJson(tokenBalUrl);
+        if (tokenBalData.status === "1" && Array.isArray(tokenBalData.result) && tokenBalData.result.length > 0) {
+          tokenBalances = tokenBalData.result;
+          usedTokenList = true;
+        }
+      } catch {}
+
+      if (!usedTokenList) {
+        const seenContracts = new Map<string, { symbol: string; decimals: number; name: string }>();
+        let page = 1;
+        while (page <= 5) {
+          try {
+            const txData = await fetchJson(
+              `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&page=${page}&offset=100&sort=desc${keyParam}`
+            );
+            if (txData.status !== "1" || !Array.isArray(txData.result) || txData.result.length === 0) break;
+            for (const tx of txData.result) {
+              if (tx.contractAddress && tx.tokenSymbol && !seenContracts.has(tx.contractAddress.toLowerCase())) {
+                seenContracts.set(tx.contractAddress.toLowerCase(), {
+                  symbol: tx.tokenSymbol,
+                  decimals: parseInt(tx.tokenDecimal || "18"),
+                  name: tx.tokenName || tx.tokenSymbol,
+                });
+              }
+            }
+            if (txData.result.length < 100) break;
+            page++;
+          } catch { break; }
+        }
+
+        for (const [contractAddr, info] of seenContracts) {
+          try {
+            const balData = await fetchJson(
+              `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddr}&address=${address}&tag=latest${keyParam}`
+            );
+            if (balData.status === "1" && balData.result && balData.result !== "0") {
+              const rawBal = BigInt(balData.result);
+              let bal: number;
+              if (info.decimals <= 6) {
+                bal = Number(rawBal) / Math.pow(10, info.decimals);
+              } else {
+                bal = Number(rawBal / (10n ** BigInt(info.decimals - 6))) / 1e6;
+              }
+              if (bal > 0) {
+                tokenBalances.push({
+                  TokenSymbol: info.symbol,
+                  TokenName: info.name,
+                  balance: balData.result,
+                  TokenDecimal: info.decimals.toString(),
+                });
+              }
+            }
+          } catch { continue; }
+        }
+      }
+
+      const tokenSymbols: string[] = [];
+      const tokenEntries: Array<{ symbol: string; balance: number }> = [];
+
+      for (const token of tokenBalances) {
+        const symbol = (token.TokenSymbol || token.tokenSymbol || "").toUpperCase();
+        const decimals = parseInt(token.TokenDecimal || token.tokenDecimal || "18");
+        const rawBalance = token.balance || "0";
+
+        if (!symbol || rawBalance === "0") continue;
+
+        const rawBal = BigInt(rawBalance);
+        let bal: number;
+        if (decimals <= 6) {
+          bal = Number(rawBal) / Math.pow(10, decimals);
+        } else {
+          bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+        }
+
+        if (bal > 0.000001) {
+          tokenSymbols.push(symbol);
+          tokenEntries.push({ symbol, balance: bal });
+        }
+      }
+
+      if (tokenEntries.length > 0) {
+        const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
+        const ids = tokenSymbols
+          .filter(s => !stablecoins.has(s))
+          .map(s => COINGECKO_IDS[s])
+          .filter(Boolean);
+
+        let tokenPrices: Record<string, number> = {};
+        if (ids.length > 0) {
+          try {
+            const priceData = await fetchJson(
+              `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd`
+            );
+            for (const sym of tokenSymbols) {
+              const id = COINGECKO_IDS[sym];
+              if (id && priceData[id]?.usd) {
+                tokenPrices[sym] = priceData[id].usd;
+              }
+            }
+          } catch {}
+        }
+
+        for (const entry of tokenEntries) {
+          let usdValue = 0;
+          if (stablecoins.has(entry.symbol)) {
+            usdValue = entry.balance;
+          } else if (tokenPrices[entry.symbol]) {
+            usdValue = entry.balance * tokenPrices[entry.symbol];
+          }
+
+          balances.push({
+            symbol: entry.symbol,
+            balance: entry.balance,
+            usdValue,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("ERC-20 token scan error:", err);
+  }
+
+  return balances;
 }
 
 export async function getSolanaBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  const RPC_URL = "https://api.mainnet-beta.solana.com";
+
   try {
-    const data = await fetchJson("https://api.mainnet-beta.solana.com", {
+    const data = await fetchJson(RPC_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -132,18 +331,111 @@ export async function getSolanaBalance(address: string): Promise<ChainBalance[]>
 
     const lamports = data.result?.value || 0;
     const sol = lamports / 1e9;
-    if (sol <= 0) return [];
-
-    const prices = await getPrices(["SOL"]);
-    return [{
-      symbol: "SOL",
-      balance: sol,
-      usdValue: sol * (prices.SOL || 0),
-    }];
+    if (sol > 0) {
+      const prices = await getPrices(["SOL"]);
+      balances.push({
+        symbol: "SOL",
+        balance: sol,
+        usdValue: sol * (prices.SOL || 0),
+      });
+    }
   } catch (err) {
-    console.error("Solana balance fetch error:", err);
-    return [];
+    console.error("Solana native balance fetch error:", err);
   }
+
+  try {
+    const tokenData = await fetchJson(RPC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "getTokenAccountsByOwner",
+        params: [
+          address,
+          { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+          { encoding: "jsonParsed" },
+        ],
+      }),
+    });
+
+    const tokenAccounts = tokenData.result?.value || [];
+    if (tokenAccounts.length > 0) {
+      const SPL_TOKEN_MAP: Record<string, { symbol: string; decimals: number; coingeckoId?: string }> = {
+        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": { symbol: "USDC", decimals: 6 },
+        "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": { symbol: "USDT", decimals: 6 },
+        "So11111111111111111111111111111111111111112": { symbol: "WSOL", decimals: 9, coingeckoId: "solana" },
+        "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN": { symbol: "JUP", decimals: 6, coingeckoId: "jupiter-exchange-solana" },
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263": { symbol: "BONK", decimals: 5, coingeckoId: "bonk" },
+        "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs": { symbol: "ETH", decimals: 8, coingeckoId: "ethereum" },
+        "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So": { symbol: "mSOL", decimals: 9, coingeckoId: "msol" },
+        "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj": { symbol: "stSOL", decimals: 9, coingeckoId: "lido-staked-sol" },
+        "RLBxxFkseAZ4RgJH3Sqn8jXxhmGoz9jWxDNJMh8pL7a": { symbol: "RLSOL", decimals: 9 },
+        "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R": { symbol: "RAY", decimals: 6, coingeckoId: "raydium" },
+        "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE": { symbol: "ORCA", decimals: 6, coingeckoId: "orca" },
+        "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3": { symbol: "PYTH", decimals: 6, coingeckoId: "pyth-network" },
+        "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL": { symbol: "JTO", decimals: 9, coingeckoId: "jito-governance-token" },
+        "WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk": { symbol: "WEN", decimals: 5, coingeckoId: "wen-4" },
+        "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof": { symbol: "RNDR", decimals: 8, coingeckoId: "render-token" },
+      };
+
+      const stablecoins = new Set(["USDC", "USDT"]);
+
+      const parsedTokens: Array<{ symbol: string; balance: number; coingeckoId?: string }> = [];
+      for (const account of tokenAccounts) {
+        try {
+          const parsed = account.account?.data?.parsed?.info;
+          if (!parsed) continue;
+
+          const mint = parsed.mint;
+          const amount = parsed.tokenAmount;
+          if (!amount || amount.uiAmount <= 0) continue;
+
+          const tokenInfo = SPL_TOKEN_MAP[mint];
+          const symbol = tokenInfo?.symbol || `SPL:${mint.slice(0, 6)}`;
+          if (amount.uiAmount > 0.000001) {
+            parsedTokens.push({
+              symbol,
+              balance: amount.uiAmount,
+              coingeckoId: tokenInfo?.coingeckoId,
+            });
+          }
+        } catch { continue; }
+      }
+
+      const idsToFetch = [...new Set(
+        parsedTokens
+          .filter(t => !stablecoins.has(t.symbol) && t.coingeckoId)
+          .map(t => t.coingeckoId!)
+      )];
+
+      let splPrices: Record<string, number> = {};
+      if (idsToFetch.length > 0) {
+        try {
+          const priceData = await fetchJson(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${idsToFetch.join(",")}&vs_currencies=usd`
+          );
+          for (const [id, val] of Object.entries(priceData)) {
+            if ((val as any)?.usd) splPrices[id] = (val as any).usd;
+          }
+        } catch {}
+      }
+
+      for (const token of parsedTokens) {
+        let usdValue = 0;
+        if (stablecoins.has(token.symbol)) {
+          usdValue = token.balance;
+        } else if (token.coingeckoId && splPrices[token.coingeckoId]) {
+          usdValue = token.balance * splPrices[token.coingeckoId];
+        }
+        balances.push({ symbol: token.symbol, balance: token.balance, usdValue });
+      }
+    }
+  } catch (err) {
+    console.error("Solana SPL token scan error:", err);
+  }
+
+  return balances;
 }
 
 export async function getXrpBalance(address: string): Promise<ChainBalance[]> {

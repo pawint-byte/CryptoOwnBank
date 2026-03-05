@@ -629,15 +629,30 @@ export default function Wallets() {
                     <div className="rounded-lg border bg-muted/50 p-3 flex gap-3" data-testid="info-chain-details">
                       <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                       <div className="text-sm text-muted-foreground">
-                        {(selectedChain === "bitcoin" || selectedChain === "ethereum") ? (
+                        {selectedChain === "ethereum" ? (
+                          <span>
+                            <strong className="text-foreground">ETH + all ERC-20 tokens + transaction history.</strong>{" "}
+                            We'll pull your native ETH balance plus every ERC-20 token (USDT, USDC, LINK, UNI, etc.), import transaction history, calculate historical cost basis, and add everything to your portfolio and tax reports.
+                          </span>
+                        ) : selectedChain === "bitcoin" ? (
                           <span>
                             <strong className="text-foreground">Balance + full transaction history.</strong>{" "}
-                            We'll import all transactions from the {selectedChain === "bitcoin" ? "Bitcoin" : "Ethereum"} blockchain, calculate historical cost basis for each, and add them to your portfolio and tax reports.
+                            We'll import all transactions from the Bitcoin blockchain, calculate historical cost basis for each, and add them to your portfolio and tax reports.
+                          </span>
+                        ) : selectedChain === "solana" ? (
+                          <span>
+                            <strong className="text-foreground">SOL + SPL tokens.</strong>{" "}
+                            We'll pull your native SOL balance plus SPL tokens (USDC, USDT, JUP, BONK, RAY, etc.) with current prices.
+                          </span>
+                        ) : selectedChain === "xrp" ? (
+                          <span>
+                            <strong className="text-foreground">XRP + issued currencies.</strong>{" "}
+                            We'll pull your native XRP balance plus any trust line tokens (RLUSD, etc.) from the XRP Ledger.
                           </span>
                         ) : (
                           <span>
                             <strong className="text-foreground">Balance tracking.</strong>{" "}
-                            We'll pull your current {CHAIN_LABELS[selectedChain]} balance. Transaction history import is coming soon for this network.
+                            We'll pull your current {CHAIN_LABELS[selectedChain]} balance. Token scanning and transaction history import are coming soon for this network.
                           </span>
                         )}
                       </div>
