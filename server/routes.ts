@@ -2186,6 +2186,36 @@ export async function registerRoutes(
         }
       }
 
+      if (imported > 0) {
+        try {
+          const allPositions = await storage.getPositionsByUser(userId);
+          const uniqueSymbols = [...new Set(allPositions.map(p => p.assetSymbol))];
+          const prices = await fetchCurrentPrices(uniqueSymbols);
+          let pricesUpdated = 0;
+          for (const [symbol, price] of Object.entries(prices)) {
+            if (price > 0) {
+              const existingAsset = await storage.getAsset(symbol);
+              if (existingAsset) {
+                await storage.updateAssetPrice(symbol, price.toString());
+              } else {
+                const cgId = COINGECKO_ASSET_MAP[symbol.toUpperCase()];
+                await storage.createAsset({
+                  symbol,
+                  name: symbol,
+                  assetType: "crypto",
+                  currentPrice: price.toString(),
+                  coingeckoId: cgId || undefined,
+                });
+              }
+              pricesUpdated++;
+            }
+          }
+          console.log(`Updated prices for ${pricesUpdated} assets after CSV import`);
+        } catch (priceErr) {
+          console.error("Price update after import failed (non-critical):", priceErr);
+        }
+      }
+
       res.json({
         imported,
         skipped,
@@ -2219,6 +2249,82 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   ATOM: "cosmos",
   LTC: "litecoin",
   RLUSD: "rlusd",
+  HBAR: "hedera-hashgraph",
+  XLM: "stellar",
+  ALGO: "algorand",
+  TRX: "tron",
+  VET: "vechain",
+  XTZ: "tezos",
+  EOS: "eos",
+  AAVE: "aave",
+  COMP: "compound-governance-token",
+  MKR: "maker",
+  SNX: "synthetix-network-token",
+  SUSHI: "sushi",
+  YFI: "yearn-finance",
+  CRV: "curve-dao-token",
+  FTM: "fantom",
+  NEAR: "near",
+  ICP: "internet-computer",
+  FIL: "filecoin",
+  GRT: "the-graph",
+  SAND: "the-sandbox",
+  MANA: "decentraland",
+  APE: "apecoin",
+  LDO: "lido-dao",
+  ARB: "arbitrum",
+  OP: "optimism",
+  SUI: "sui",
+  SEI: "sei-network",
+  INJ: "injective-protocol",
+  RNDR: "render-token",
+  FET: "fetch-ai",
+  JASMY: "jasmycoin",
+  EGLD: "elrond-erd-2",
+  QNT: "quant-network",
+  SHIB: "shiba-inu",
+  PEPE: "pepe",
+  FLOKI: "floki",
+  BCH: "bitcoin-cash",
+  ETC: "ethereum-classic",
+  XMR: "monero",
+  ZEC: "zcash",
+  DASH: "dash",
+  NEO: "neo",
+  IOTA: "iota",
+  THETA: "theta-token",
+  KAVA: "kava",
+  ONE: "harmony",
+  CELO: "celo",
+  FLOW: "flow",
+  ENJ: "enjincoin",
+  BAT: "basic-attention-token",
+  ZIL: "zilliqa",
+  ICX: "icon",
+  QTUM: "qtum",
+  OMG: "omisego",
+  WAVES: "waves",
+  ANKR: "ankr",
+  CRO: "crypto-com-chain",
+  CHZ: "chiliz",
+  ENS: "ethereum-name-service",
+  GALA: "gala",
+  AXS: "axie-infinity",
+  IMX: "immutable-x",
+  GMT: "stepn",
+  APT: "aptos",
+  ROSE: "oasis-network",
+  KSM: "kusama",
+  BAND: "band-protocol",
+  STORJ: "storj",
+  SKL: "skale",
+  COTI: "coti",
+  RVN: "ravencoin",
+  USDT: "tether",
+  USDC: "usd-coin",
+  DAI: "dai",
+  BUSD: "binance-usd",
+  TUSD: "true-usd",
 };
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
