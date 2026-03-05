@@ -13,6 +13,20 @@ import { Client } from "xrpl";
 
 const SOIL_VAULT_ADDRESS = "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX";
 const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
+const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
+
+async function getEffectiveTier(userId: string): Promise<{ tier: string; billingCycle: string }> {
+  const settings = await storage.getUserSettings(userId);
+  const tier = settings?.subscriptionTier || "free";
+  const billingCycle = settings?.subscriptionBillingCycle || "monthly";
+
+  const [user] = await db.select({ email: users.email, isAdmin: users.isAdmin }).from(users).where(eq(users.id, userId));
+  if (user?.isAdmin || ADMIN_EMAILS.includes(user?.email?.toLowerCase() || "")) {
+    return { tier: "premium", billingCycle: "yearly" };
+  }
+
+  return { tier, billingCycle };
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -344,8 +358,7 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       let txns = await storage.getTransactionsByUser(userId);
 
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
+      const { tier } = await getEffectiveTier(userId);
       if (tier === "free") {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -615,9 +628,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Missing required fields: provider, apiKey, apiSecret" });
       }
 
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
-      if (tier === "free") {
+      const { tier: credTier } = await getEffectiveTier(userId);
+      if (credTier === "free") {
         const existingCreds = await storage.getApiCredentialsByUser(userId);
         if (existingCreds.length >= 1) {
           return res.status(403).json({ message: "Free users can connect 1 exchange. Upgrade to Premium for unlimited exchange connections." });
@@ -848,10 +860,8 @@ export async function registerRoutes(
   app.get("/api/tax-report", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
-      const billingCycle = settings?.subscriptionBillingCycle;
-      if (tier === "free" || billingCycle !== "yearly") {
+      const { tier: taxTier, billingCycle: taxCycle } = await getEffectiveTier(userId);
+      if (taxTier === "free" || taxCycle !== "yearly") {
         return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
@@ -905,10 +915,8 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
 
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
-      const billingCycle = settings?.subscriptionBillingCycle;
-      if (tier === "free" || billingCycle !== "yearly") {
+      const { tier: calcTier, billingCycle: calcCycle } = await getEffectiveTier(userId);
+      if (calcTier === "free" || calcCycle !== "yearly") {
         return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
@@ -978,10 +986,8 @@ export async function registerRoutes(
   app.get("/api/tax-report/export", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
-      const billingCycle = settings?.subscriptionBillingCycle;
-      if (tier === "free" || billingCycle !== "yearly") {
+      const { tier: exportTier, billingCycle: exportCycle } = await getEffectiveTier(userId);
+      if (exportTier === "free" || exportCycle !== "yearly") {
         return res.status(403).json({ message: "Tax report exports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
@@ -1358,9 +1364,7 @@ export async function registerRoutes(
   app.get("/api/subscription/limits", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
-      const billingCycle = settings?.subscriptionBillingCycle || null;
+      const { tier, billingCycle } = await getEffectiveTier(userId);
 
       const credentials = await storage.getApiCredentialsByUser(userId);
       const userWallets = await storage.getWalletsByUser(userId);
@@ -1532,11 +1536,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Target price must be a positive number" });
       }
 
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
+      const { tier: alertTier } = await getEffectiveTier(userId);
       const activeCount = await storage.countActiveAlertsByUser(userId);
 
-      if (tier === "free" && activeCount >= 3) {
+      if (alertTier === "free" && activeCount >= 3) {
         return res.status(403).json({
           message: "Free users can have up to 3 active alerts. Upgrade to Premium for unlimited alerts.",
           limit: 3,
@@ -1611,9 +1614,8 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
 
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
-      if (tier === "free") {
+      const { tier: walletTier } = await getEffectiveTier(userId);
+      if (walletTier === "free") {
         const existingWallets = await storage.getWalletsByUser(userId);
         if (existingWallets.length >= 1) {
           return res.status(403).json({ message: "Free users can track 1 blockchain address. Upgrade to Premium for unlimited address tracking." });
@@ -1829,8 +1831,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
 
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
+      const { tier } = await getEffectiveTier(userId);
       if (tier === "free") {
         return res.status(403).json({ message: "CSV import is a Premium feature. Upgrade to import from Yahoo Finance and other platforms." });
       }
@@ -1866,21 +1867,32 @@ export async function registerRoutes(
       const hasGenericFormat = headers.some((h) => h.includes("asset") || h.includes("coin") || h.includes("ticker")) &&
         headers.some((h) => h.includes("amount") || h.includes("quantity") || h.includes("qty"));
 
-      if (!hasYahooFormat && !hasCoinTracker && !hasGenericFormat) {
+      const hasLedgerLive = headers.some((h) => h.includes("operation date")) &&
+        headers.some((h) => h.includes("currency ticker") || h.includes("currency name")) &&
+        headers.some((h) => h.includes("operation type") || h.includes("operation amount"));
+
+      if (!hasYahooFormat && !hasCoinTracker && !hasGenericFormat && !hasLedgerLive) {
         return res.status(400).json({
-          message: "Unrecognized CSV format. Supported formats: Yahoo Finance, CoinTracker, or generic CSV with columns: Symbol/Asset, Quantity, Purchase Price, Trade Date",
+          message: "Unrecognized CSV format. Supported formats: Ledger Live, Yahoo Finance, CoinTracker, or generic CSV with columns: Symbol/Asset, Quantity, Purchase Price, Trade Date",
           detectedHeaders: Object.keys(records[0]),
         });
       }
 
+      let importProvider = "yahoo_import";
+      let importAccountName = "Yahoo Finance Import";
+      if (hasLedgerLive) {
+        importProvider = "ledger_live_import";
+        importAccountName = "Ledger Live Import";
+      }
+
       const existingAccounts = await storage.getAccountsByUser(userId);
-      let importAccount = existingAccounts.find((a) => a.provider === "yahoo_import");
+      let importAccount = existingAccounts.find((a) => a.provider === importProvider);
       if (!importAccount) {
         importAccount = await storage.createAccount({
           userId,
           credentialId: null,
-          provider: "yahoo_import",
-          accountName: "Yahoo Finance Import",
+          provider: importProvider,
+          accountName: importAccountName,
           accountType: "import",
         });
       }
@@ -1910,13 +1922,46 @@ export async function registerRoutes(
       for (let i = 0; i < records.length; i++) {
         const row = records[i];
         try {
-          let symbol = findCol(row, "symbol", "ticker", "asset", "coin", "currency name");
-          let quantity = findCol(row, "quantity", "shares", "amount", "qty", "received quantity");
-          let price = findCol(row, "purchase price", "cost basis per unit", "price per unit", "price", "cost/unit", "buy price");
-          let dateStr = findCol(row, "trade date", "date", "purchase date", "acquired date", "transaction date");
-          let fee = findCol(row, "commission", "fee", "fees");
-          let totalCost = findCol(row, "cost basis", "total cost", "total", "cost basis total");
-          let txType = findCol(row, "type", "transaction type", "side", "action");
+          let symbol: string | null;
+          let quantity: string | null;
+          let price: string | null;
+          let dateStr: string | null;
+          let fee: string | null;
+          let totalCost: string | null;
+          let txType: string | null;
+          let externalHash: string | null = null;
+
+          if (hasLedgerLive) {
+            symbol = findCol(row, "currency ticker");
+            if (!symbol) {
+              const currName = findCol(row, "currency name");
+              if (currName) {
+                const nameToTicker: Record<string, string> = {
+                  "bitcoin": "BTC", "ethereum": "ETH", "xrp": "XRP", "solana": "SOL",
+                  "cardano": "ADA", "dogecoin": "DOGE", "litecoin": "LTC", "polkadot": "DOT",
+                  "stellar": "XLM", "algorand": "ALGO", "tron": "TRX", "hedera": "HBAR",
+                  "avalanche": "AVAX", "polygon": "MATIC", "cosmos": "ATOM", "near": "NEAR",
+                  "tezos": "XTZ", "vechain": "VET", "elrond": "EGLD", "filecoin": "FIL",
+                };
+                symbol = nameToTicker[currName.toLowerCase()] || currName.toUpperCase().slice(0, 10);
+              }
+            }
+            quantity = findCol(row, "operation amount");
+            price = findCol(row, "countervalue at operation date");
+            dateStr = findCol(row, "operation date");
+            fee = findCol(row, "operation fees");
+            totalCost = findCol(row, "countervalue at csv export");
+            txType = findCol(row, "operation type");
+            externalHash = findCol(row, "operation hash");
+          } else {
+            symbol = findCol(row, "symbol", "ticker", "asset", "coin", "currency name");
+            quantity = findCol(row, "quantity", "shares", "amount", "qty", "received quantity");
+            price = findCol(row, "purchase price", "cost basis per unit", "price per unit", "price", "cost/unit", "buy price");
+            dateStr = findCol(row, "trade date", "date", "purchase date", "acquired date", "transaction date");
+            fee = findCol(row, "commission", "fee", "fees");
+            totalCost = findCol(row, "cost basis", "total cost", "total", "cost basis total");
+            txType = findCol(row, "type", "transaction type", "side", "action");
+          }
 
           if (!symbol) {
             errors.push(`Row ${i + 2}: Missing symbol`);
@@ -1932,8 +1977,23 @@ export async function registerRoutes(
             continue;
           }
 
-          const qty = parseFloat(String(quantity || "0").replace(/,/g, ""));
+          let rawQty = parseFloat(String(quantity || "0").replace(/,/g, ""));
+
+          if (hasLedgerLive && txType) {
+            const opType = txType.toLowerCase();
+            if (opType === "out" || opType === "fees") {
+              rawQty = Math.abs(rawQty);
+            } else {
+              rawQty = Math.abs(rawQty);
+            }
+          }
+
+          const qty = rawQty;
           if (!qty || qty <= 0 || isNaN(qty)) {
+            if (hasLedgerLive && txType && txType.toLowerCase() === "fees") {
+              skipped++;
+              continue;
+            }
             errors.push(`Row ${i + 2}: Invalid quantity for ${symbol}`);
             skipped++;
             continue;
@@ -1954,10 +2014,24 @@ export async function registerRoutes(
             continue;
           }
 
-          let unitPrice = parseFloat(String(price || "0").replace(/[$,]/g, ""));
-          if ((!unitPrice || isNaN(unitPrice)) && totalCost) {
-            const tc = parseFloat(String(totalCost).replace(/[$,]/g, ""));
-            if (tc && !isNaN(tc)) unitPrice = tc / qty;
+          let unitPrice = 0;
+          if (hasLedgerLive) {
+            const counterValue = parseFloat(String(price || "0").replace(/[$,]/g, ""));
+            if (counterValue && !isNaN(counterValue) && counterValue > 0 && qty > 0) {
+              unitPrice = Math.abs(counterValue) / qty;
+            }
+            if ((!unitPrice || unitPrice <= 0) && totalCost) {
+              const exportValue = parseFloat(String(totalCost).replace(/[$,]/g, ""));
+              if (exportValue && !isNaN(exportValue) && exportValue > 0 && qty > 0) {
+                unitPrice = Math.abs(exportValue) / qty;
+              }
+            }
+          } else {
+            unitPrice = parseFloat(String(price || "0").replace(/[$,]/g, ""));
+            if ((!unitPrice || isNaN(unitPrice)) && totalCost) {
+              const tc = parseFloat(String(totalCost).replace(/[$,]/g, ""));
+              if (tc && !isNaN(tc)) unitPrice = tc / qty;
+            }
           }
           if (!unitPrice || isNaN(unitPrice) || unitPrice < 0) unitPrice = 0;
 
@@ -1973,10 +2047,33 @@ export async function registerRoutes(
           let transactionType = "buy";
           if (txType) {
             const lt = txType.toLowerCase();
-            if (lt.includes("sell") || lt.includes("sold")) transactionType = "sell";
-            else if (lt.includes("income") || lt.includes("interest") || lt.includes("reward") || lt.includes("staking")) transactionType = "income";
+            if (hasLedgerLive) {
+              if (lt === "out" || lt === "send") transactionType = "sell";
+              else if (lt === "in" || lt === "receive") transactionType = "buy";
+              else if (lt === "reward" || lt === "staking") transactionType = "income";
+              else if (lt === "fees") {
+                skipped++;
+                continue;
+              }
+              else if (lt === "nft_in" || lt === "nft_out" || lt === "approve" || lt === "delegate" || lt === "undelegate") {
+                skipped++;
+                continue;
+              }
+            } else {
+              if (lt.includes("sell") || lt.includes("sold")) transactionType = "sell";
+              else if (lt.includes("income") || lt.includes("interest") || lt.includes("reward") || lt.includes("staking")) transactionType = "income";
+            }
           }
 
+          if (hasLedgerLive && externalHash) {
+            const existingByHash = existingTxns.find(t => t.externalId === externalHash && t.accountId === importAccount!.id);
+            if (existingByHash) {
+              skipped++;
+              continue;
+            }
+          }
+
+          const importSource = hasLedgerLive ? "Ledger Live" : "Yahoo Finance";
           const transaction = await storage.createTransaction({
             userId,
             accountId: importAccount.id,
@@ -1987,7 +2084,8 @@ export async function registerRoutes(
             totalValue: totalVal.toFixed(2),
             fee: (feeVal || 0).toFixed(2),
             transactionDate,
-            notes: `Imported from Yahoo Finance CSV (row ${i + 1})`,
+            externalId: externalHash || undefined,
+            notes: `Imported from ${importSource} CSV (row ${i + 1})`,
           });
 
           if (transactionType === "buy" || transactionType === "income") {

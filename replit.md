@@ -50,6 +50,8 @@ Preferred communication style: Simple, everyday language.
 - **Pro** (future): Everything in Premium Annual + XLS-66 XRPL lending.
 - **Billing cycle stored**: `subscriptionBillingCycle` column in user_settings tracks "monthly" or "yearly" from Stripe checkout metadata.
 - **Gating**: Server-side enforced limits with 403 responses. Frontend shows `UpgradePrompt` component (supports `variant="premium"` or `variant="annual"` for different messaging). Gated endpoints: POST /api/credentials, POST /api/wallets, GET /api/transactions, POST /api/import/yahoo, GET /api/tax-report, POST /api/tax-report/calculate, GET /api/tax-report/export, POST /api/alerts.
+- **Admin Bypass**: `getEffectiveTier(userId)` in `server/routes.ts` returns `{tier:"premium", billingCycle:"yearly"}` for ADMIN_EMAILS (`pawint@me.com`, `andrew.wint@gmail.com`). All tier-gated endpoints use this helper so admins can test all features without paying. The `/api/subscription/limits` endpoint also uses it so the frontend shows everything unlocked for admins.
+- **CSV Import**: Supports Ledger Live (auto-detected by headers: operation date, currency ticker, operation type), Yahoo Finance, CoinTracker, and generic CSV formats. Ledger Live maps IN→buy, OUT→sell, REWARD→income, deduplicates by operation hash.
 - **Affiliate/Referral**: Links for buying RLUSD, embedded Soil referral code, user referral program for premium credits.
 
 ## External Dependencies

@@ -591,7 +591,7 @@ export default function Integrations() {
             Import Transaction History
           </CardTitle>
           <CardDescription>
-            Import your purchase history from Yahoo Finance, CoinTracker, or any CSV file
+            Import your transaction history from Ledger Live, Yahoo Finance, CoinTracker, or any CSV file
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -599,6 +599,10 @@ export default function Integrations() {
             <div className="space-y-3">
               <p className="text-sm font-medium">Supported Formats</p>
               <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="default" className="text-xs">Ledger Live</Badge>
+                  <span className="text-muted-foreground">Operation history CSV (all accounts)</span>
+                </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Badge variant="secondary" className="text-xs">Yahoo Finance</Badge>
                   <span className="text-muted-foreground">Portfolio export CSV</span>
@@ -613,11 +617,11 @@ export default function Integrations() {
                 </div>
               </div>
               <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
-                <p className="font-medium text-foreground">How to export from Yahoo Finance:</p>
+                <p className="font-medium text-foreground">How to export from Ledger Live:</p>
                 <ol className="list-decimal ml-4 space-y-0.5">
-                  <li>Go to finance.yahoo.com and open your portfolio</li>
-                  <li>Click the "Export" or download button (top right)</li>
-                  <li>Save the .csv file and upload it here</li>
+                  <li>Open Ledger Live and go to Settings &gt; Accounts</li>
+                  <li>Click "Operation history" and select all accounts</li>
+                  <li>Click "Save" to download the CSV and upload it here</li>
                 </ol>
               </div>
             </div>
