@@ -68,6 +68,15 @@ const COINGECKO_IDS: Record<string, string> = {
   KRL: "kryll",
   RADAR: "dappradar",
   MXC: "mxc",
+  SPELL: "spell-token",
+  ONDO: "ondo-finance",
+  BTT: "bittorrent",
+  INJ: "injective-protocol",
+  BLZ: "bluzelle",
+  UMA: "uma",
+  TON: "the-open-network",
+  WOJAK: "wojak",
+  NCT: "polyswarm",
   STX: "blockstack",
   FIL: "filecoin",
   ATOM: "cosmos",
@@ -190,82 +199,31 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
   }
 
   try {
-    const apiKey = process.env.ETHERSCAN_API_KEY || "";
-    const keyParam = apiKey ? `&apikey=${apiKey}` : "";
-    const etherscanBase = `https://api.etherscan.io/v2/api?chainid=1`;
-    const tokenData = await fetchJson(
-      `${etherscanBase}&module=account&action=tokentx&address=${address}&page=1&offset=1&sort=desc${keyParam}`
-    );
+    const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
+    const tokenEntries: Array<{ symbol: string; balance: number }> = [];
+    const blockscoutUrl = `https://eth.blockscout.com/api/v2/addresses/${address}/tokens?type=ERC-20`;
 
-    if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
-      let tokenBalances: any[] = [];
+    let nextPageParams: any = null;
+    let pageCount = 0;
 
-      let usedTokenList = false;
-      try {
-        const tokenBalUrl = `${etherscanBase}&module=account&action=tokenlist&address=${address}${keyParam}`;
-        const tokenBalData = await fetchJson(tokenBalUrl);
-        if (tokenBalData.status === "1" && Array.isArray(tokenBalData.result) && tokenBalData.result.length > 0) {
-          tokenBalances = tokenBalData.result;
-          usedTokenList = true;
+    do {
+      let url = blockscoutUrl;
+      if (nextPageParams) {
+        const params = new URLSearchParams();
+        for (const [k, v] of Object.entries(nextPageParams)) {
+          params.set(k, String(v));
         }
-      } catch {}
-
-      if (!usedTokenList) {
-        const seenContracts = new Map<string, { symbol: string; decimals: number; name: string }>();
-        let page = 1;
-        while (page <= 5) {
-          try {
-            const txData = await fetchJson(
-              `${etherscanBase}&module=account&action=tokentx&address=${address}&page=${page}&offset=100&sort=desc${keyParam}`
-            );
-            if (txData.status !== "1" || !Array.isArray(txData.result) || txData.result.length === 0) break;
-            for (const tx of txData.result) {
-              if (tx.contractAddress && tx.tokenSymbol && !seenContracts.has(tx.contractAddress.toLowerCase())) {
-                seenContracts.set(tx.contractAddress.toLowerCase(), {
-                  symbol: tx.tokenSymbol,
-                  decimals: parseInt(tx.tokenDecimal || "18"),
-                  name: tx.tokenName || tx.tokenSymbol,
-                });
-              }
-            }
-            if (txData.result.length < 100) break;
-            page++;
-          } catch { break; }
-        }
-
-        for (const [contractAddr, info] of seenContracts) {
-          try {
-            const balData = await fetchJson(
-              `${etherscanBase}&module=account&action=tokenbalance&contractaddress=${contractAddr}&address=${address}&tag=latest${keyParam}`
-            );
-            if (balData.status === "1" && balData.result && balData.result !== "0") {
-              const rawBal = BigInt(balData.result);
-              let bal: number;
-              if (info.decimals <= 6) {
-                bal = Number(rawBal) / Math.pow(10, info.decimals);
-              } else {
-                bal = Number(rawBal / (10n ** BigInt(info.decimals - 6))) / 1e6;
-              }
-              if (bal > 0) {
-                tokenBalances.push({
-                  TokenSymbol: info.symbol,
-                  TokenName: info.name,
-                  balance: balData.result,
-                  TokenDecimal: info.decimals.toString(),
-                });
-              }
-            }
-          } catch { continue; }
-        }
+        url += `&${params.toString()}`;
       }
 
-      const tokenSymbols: string[] = [];
-      const tokenEntries: Array<{ symbol: string; balance: number }> = [];
+      const tokenData = await fetchJson(url);
+      const items = tokenData.items || [];
 
-      for (const token of tokenBalances) {
-        const symbol = (token.TokenSymbol || token.tokenSymbol || "").toUpperCase();
-        const decimals = parseInt(token.TokenDecimal || token.tokenDecimal || "18");
-        const rawBalance = token.balance || "0";
+      for (const item of items) {
+        const token = item.token || {};
+        const symbol = (token.symbol || "").toUpperCase();
+        const decimals = parseInt(token.decimals || "18");
+        const rawBalance = item.value || "0";
 
         if (!symbol || rawBalance === "0") continue;
 
@@ -278,51 +236,56 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
         }
 
         if (bal > 0.000001) {
-          tokenSymbols.push(symbol);
           tokenEntries.push({ symbol, balance: bal });
         }
       }
 
-      if (tokenEntries.length > 0) {
-        const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
-        const ids = tokenSymbols
-          .filter(s => !stablecoins.has(s))
-          .map(s => COINGECKO_IDS[s])
-          .filter(Boolean);
+      nextPageParams = tokenData.next_page_params || null;
+      pageCount++;
+    } while (nextPageParams && pageCount < 10);
 
-        let tokenPrices: Record<string, number> = {};
-        if (ids.length > 0) {
-          try {
-            const priceData = await fetchJson(
-              `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd`
-            );
-            for (const sym of tokenSymbols) {
-              const id = COINGECKO_IDS[sym];
-              if (id && priceData[id]?.usd) {
-                tokenPrices[sym] = priceData[id].usd;
-              }
+    if (tokenEntries.length > 0) {
+      const tokenSymbols = tokenEntries.map(e => e.symbol);
+      const ids = tokenSymbols
+        .filter(s => !stablecoins.has(s))
+        .map(s => COINGECKO_IDS[s])
+        .filter(Boolean);
+
+      let tokenPrices: Record<string, number> = {};
+      if (ids.length > 0) {
+        try {
+          const uniqueIds = [...new Set(ids)];
+          const priceData = await fetchJson(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${uniqueIds.join(",")}&vs_currencies=usd`
+          );
+          for (const sym of tokenSymbols) {
+            const id = COINGECKO_IDS[sym];
+            if (id && priceData[id]?.usd) {
+              tokenPrices[sym] = priceData[id].usd;
             }
-          } catch {}
-        }
-
-        for (const entry of tokenEntries) {
-          let usdValue = 0;
-          if (stablecoins.has(entry.symbol)) {
-            usdValue = entry.balance;
-          } else if (tokenPrices[entry.symbol]) {
-            usdValue = entry.balance * tokenPrices[entry.symbol];
           }
+        } catch {}
+      }
 
-          balances.push({
-            symbol: entry.symbol,
-            balance: entry.balance,
-            usdValue,
-          });
+      for (const entry of tokenEntries) {
+        let usdValue = 0;
+        if (stablecoins.has(entry.symbol)) {
+          usdValue = entry.balance;
+        } else if (tokenPrices[entry.symbol]) {
+          usdValue = entry.balance * tokenPrices[entry.symbol];
         }
+
+        balances.push({
+          symbol: entry.symbol,
+          balance: entry.balance,
+          usdValue,
+        });
       }
     }
+
+    console.log(`Blockscout ERC-20 scan: found ${tokenEntries.length} tokens for ${address}`);
   } catch (err) {
-    console.error("ERC-20 token scan error:", err);
+    console.error("ERC-20 token scan error (Blockscout):", err);
   }
 
   return balances;
