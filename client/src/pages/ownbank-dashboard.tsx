@@ -16,6 +16,7 @@ import {
   getXrpPrice,
   calculateAccruedInterest,
   AFFILIATE_LINKS,
+  SOIL_REFERRAL_URL,
 } from "@/lib/xrpl-client";
 import { connectXumm } from "@/lib/xumm-connector";
 import { connectLedger } from "@/lib/ledger-connector";
@@ -552,6 +553,43 @@ export default function OwnBankDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+        <CardHeader>
+          <CardTitle className="text-base">
+            <TrendingUp className="h-4 w-4 inline mr-2" />
+            Soil Vault Positions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Your vault deposits and yield are managed directly by Soil Protocol on the XRPL. View your commitment, accrued interest, and SEED rewards on Soil's dashboard.
+          </p>
+          <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
+            <Button className="w-full bg-purple-600 text-white hover:bg-purple-700" data-testid="button-view-soil-dashboard">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Vault Positions on Soil
+            </Button>
+          </a>
+          <div className="grid grid-cols-2 gap-2">
+            <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="w-full" data-testid="button-soil-yield">
+                <DollarSign className="h-3.5 w-3.5 mr-1" />
+                Check Yield
+              </Button>
+            </a>
+            <a href={SOIL_REFERRAL_URL} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="w-full" data-testid="button-soil-deposit-more">
+                <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                Deposit More
+              </Button>
+            </a>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Interest accrues daily. Check back after 24 hours to see your first yield.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
