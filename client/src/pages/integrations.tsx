@@ -74,7 +74,7 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://www.kraken.com/u/security/api",
   },
   crypto_com: {
-    steps: "Log in to Crypto.com Exchange > click your profile icon (top right) > User Center > API > Create a new API Key > complete 2FA (SMS + Google Authenticator). Default permission is 'Can Read' only — that's what you need. IMPORTANT: The Secret Key is only shown ONCE when you first create the key — copy it immediately before closing the dialog. If you missed it, delete the key and create a new one.",
+    steps: "1) Log in to the Crypto.com Exchange website. 2) Click your profile icon (top right) > scroll down to 'Account Management' > click the 'API Management' tab. 3) Click 'Create a New API Key' > enter a label (e.g. 'CryptoOwnBank'). 4) If prompted, set up 2FA — scan the QR code with Google Authenticator, click 'Send SMS OTP', enter both codes, then click 'Set Up Now'. 5) After creation, the API Secret Key is shown ONCE — copy it to a safe place immediately. 6) To get the API Key, click 'Edit' on your newly created key — the API Key is displayed there. 7) Paste both the API Key and Secret Key into CryptoOwnBank. Leave Withdrawal and Trading set to 'Off' (read-only).",
     url: "https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#generating-the-api-key",
   },
   uphold: {
