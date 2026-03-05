@@ -5,6 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Users,
   Crown,
   Shield,
@@ -18,6 +25,8 @@ import {
   BarChart3,
   Calendar,
   ArrowUpRight,
+  ExternalLink,
+  Filter,
 } from "lucide-react";
 
 interface MetricsData {
@@ -48,6 +57,11 @@ interface MetricsData {
       email: string | null;
       date: string;
       status: string;
+      description: string | null;
+      source: string;
+      currency: string;
+      customer: string | null;
+      receiptUrl: string | null;
     }[];
   };
   signupTrend: { date: string; count: number }[];
@@ -108,6 +122,7 @@ function formatCurrency(cents: number) {
 
 export default function AdminMetrics() {
   const [userSearch, setUserSearch] = useState("");
+  const [chargeSourceFilter, setChargeSourceFilter] = useState("all");
 
   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
@@ -344,13 +359,43 @@ export default function AdminMetrics() {
         </Card>
       </div>
 
-      {revenue.recentCharges.length > 0 && (
+      {revenue.recentCharges.length > 0 && (() => {
+        const sourceOptions = Array.from(new Set(revenue.recentCharges.map(c => c.source)));
+        const filteredCharges = chargeSourceFilter === "all"
+          ? revenue.recentCharges
+          : revenue.recentCharges.filter(c => c.source === chargeSourceFilter);
+        const cryptoOwnBankTotal = revenue.recentCharges
+          .filter(c => c.source === "CryptoOwnBank" && c.status === "succeeded")
+          .reduce((sum, c) => sum + c.amount, 0);
+
+        return (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-[#00A4E4]" />
-              Recent Charges
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-[#00A4E4]" />
+                Recent Charges ({filteredCharges.length})
+                {cryptoOwnBankTotal > 0 && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    CryptoOwnBank: {formatCurrency(cryptoOwnBankTotal)}
+                  </span>
+                )}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                <Select value={chargeSourceFilter} onValueChange={setChargeSourceFilter}>
+                  <SelectTrigger className="w-[180px] h-8 text-xs" data-testid="select-charge-source">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    {sourceOptions.map(src => (
+                      <SelectItem key={src} value={src}>{src}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -364,28 +409,55 @@ export default function AdminMetrics() {
                       Email
                     </th>
                     <th className="text-left p-3 text-xs font-medium text-muted-foreground">
+                      Source / App
+                    </th>
+                    <th className="text-left p-3 text-xs font-medium text-muted-foreground">
+                      Description
+                    </th>
+                    <th className="text-left p-3 text-xs font-medium text-muted-foreground">
                       Amount
                     </th>
                     <th className="text-left p-3 text-xs font-medium text-muted-foreground">
                       Status
                     </th>
+                    <th className="text-left p-3 text-xs font-medium text-muted-foreground">
+                      Receipt
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {revenue.recentCharges.map((charge, idx) => (
+                  {filteredCharges.map((charge, idx) => (
                     <tr
                       key={idx}
                       className="border-b last:border-0 hover:bg-muted/30"
                       data-testid={`row-charge-${idx}`}
                     >
-                      <td className="p-3 text-sm">
-                        {new Date(charge.date).toLocaleDateString()}
+                      <td className="p-3 text-sm whitespace-nowrap">
+                        {new Date(charge.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </td>
                       <td className="p-3 text-sm text-muted-foreground">
                         {charge.email || "—"}
                       </td>
-                      <td className="p-3 text-sm font-medium">
+                      <td className="p-3">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${charge.source === "CryptoOwnBank" ? "border-[#00A4E4] text-[#00A4E4]" : ""}`}
+                        >
+                          {charge.source}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-sm text-muted-foreground max-w-[200px] truncate" title={charge.description || ""}>
+                        {charge.description || "—"}
+                      </td>
+                      <td className="p-3 text-sm font-medium whitespace-nowrap">
                         {formatCurrency(charge.amount)}
+                        {charge.currency !== "usd" && (
+                          <span className="text-xs text-muted-foreground ml-1 uppercase">{charge.currency}</span>
+                        )}
                       </td>
                       <td className="p-3">
                         <Badge
@@ -399,6 +471,22 @@ export default function AdminMetrics() {
                           {charge.status}
                         </Badge>
                       </td>
+                      <td className="p-3">
+                        {charge.receiptUrl ? (
+                          <a
+                            href={charge.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#00A4E4] hover:underline inline-flex items-center gap-1 text-xs"
+                            data-testid={`link-receipt-${idx}`}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            View
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -406,7 +494,8 @@ export default function AdminMetrics() {
             </div>
           </CardContent>
         </Card>
-      )}
+        );
+      })()}
 
       <Card>
         <CardHeader className="pb-2">

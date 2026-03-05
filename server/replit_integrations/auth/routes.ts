@@ -393,7 +393,7 @@ export function registerAuthRoutes(app: Express): void {
         activeSubscriptions: 0,
         monthlySubscribers: 0,
         yearlySubscribers: 0,
-        recentCharges: [] as { amount: number; email: string | null; date: string; status: string }[],
+        recentCharges: [] as { amount: number; email: string | null; date: string; status: string; description: string | null; source: string; currency: string; customer: string | null; receiptUrl: string | null }[],
       };
 
       try {
@@ -414,15 +414,42 @@ export function registerAuthRoutes(app: Express): void {
           }
           revenue.arr = revenue.mrr * 12;
 
-          const charges = await stripe.charges.list({ limit: 20 });
+          const charges = await stripe.charges.list({ limit: 50, expand: ["data.invoice"] });
           revenue.totalRevenue = 0;
           revenue.recentCharges = charges.data.map(c => {
             if (c.status === "succeeded") revenue.totalRevenue += c.amount;
+
+            let source = "Other";
+            const desc = c.description || "";
+            const invoiceObj = c.invoice as any;
+            const productDesc = invoiceObj?.lines?.data?.[0]?.description || "";
+            const metadata = c.metadata || {};
+
+            if (desc.toLowerCase().includes("cryptoownbank") || desc.toLowerCase().includes("crypto") ||
+                productDesc.toLowerCase().includes("cryptoownbank") || productDesc.toLowerCase().includes("premium") ||
+                metadata.app === "cryptoownbank" || metadata.source === "cryptoownbank") {
+              source = "CryptoOwnBank";
+            } else if (invoiceObj?.subscription) {
+              const subDesc = productDesc || desc;
+              if (subDesc) {
+                source = subDesc.length > 30 ? subDesc.slice(0, 30) + "..." : subDesc;
+              } else {
+                source = "Subscription";
+              }
+            } else if (desc) {
+              source = desc.length > 40 ? desc.slice(0, 40) + "..." : desc;
+            }
+
             return {
               amount: c.amount,
-              email: c.billing_details?.email || null,
+              email: c.billing_details?.email || c.receipt_email || null,
               date: new Date(c.created * 1000).toISOString(),
               status: c.status || "unknown",
+              description: c.description || productDesc || null,
+              source,
+              currency: c.currency || "usd",
+              customer: typeof c.customer === "string" ? c.customer : null,
+              receiptUrl: c.receipt_url || null,
             };
           });
         }
