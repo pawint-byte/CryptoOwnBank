@@ -114,7 +114,9 @@ async function syncBinance(apiKey: string, apiSecret: string, isUS: boolean = fa
 }
 
 async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncResult> {
-  const signRequest = (baseUrl: string, method: string, id: number, params: any = {}) => {
+  const baseUrl = "https://api.crypto.com/exchange/v1";
+
+  const signRequest = (method: string, id: number, params: any = {}) => {
     const nonce = Date.now();
     const paramsString = Object.keys(params).sort().reduce((a: string, b: string) => {
       return a + b + params[b];
@@ -124,38 +126,56 @@ async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncRes
     return { id, method, params, api_key: apiKey, sig, nonce };
   };
 
-  const tryApi = async (baseUrl: string, balanceMethod: string, tradeMethod: string): Promise<SyncResult> => {
-    const balanceReq = signRequest(baseUrl, balanceMethod, 1);
-    const balanceData = await fetchJson(`${baseUrl}/${balanceMethod}`, {
+  const callApi = async (method: string, id: number, params: any = {}): Promise<any> => {
+    const reqBody = signRequest(method, id, params);
+    const res = await fetch(`${baseUrl}/${method}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(balanceReq),
+      body: JSON.stringify(reqBody),
     });
 
-    const balances: ExchangeBalance[] = [];
+    const data = await res.json();
 
-    if (balanceMethod === "private/get-account-summary") {
-      const accounts = balanceData?.result?.accounts || [];
-      for (const acct of accounts) {
-        const qty = parseFloat(acct.available || acct.balance || "0");
+    if (data.code && data.code !== 0) {
+      const errorMsg = data.message || data.msg || `Error code ${data.code}`;
+      throw new Error(`Crypto.com API: ${errorMsg} (code: ${data.code})`);
+    }
+
+    if (!res.ok) {
+      throw new Error(`Crypto.com API HTTP ${res.status}`);
+    }
+
+    return data;
+  };
+
+  try {
+    const balanceData = await callApi("private/user-balance", 1);
+
+    const balances: ExchangeBalance[] = [];
+    const positionBalances = balanceData?.result?.data || [];
+    for (const item of positionBalances) {
+      for (const bal of item.position_balances || []) {
+        const qty = parseFloat(bal.quantity || "0");
         if (qty > 0) {
           balances.push({
-            asset: acct.currency || "",
+            asset: bal.instrument_name || "",
             free: qty,
-            locked: parseFloat(acct.stake || acct.order || "0"),
+            locked: parseFloat(bal.reserved_qty || "0"),
           });
         }
       }
-    } else {
-      const positionBalances = balanceData?.result?.data || [];
-      for (const item of positionBalances) {
-        for (const bal of item.position_balances || []) {
-          const qty = parseFloat(bal.quantity || "0");
-          if (qty > 0) {
+    }
+
+    if (balances.length === 0) {
+      const accounts = balanceData?.result?.accounts || balanceData?.result?.data || [];
+      if (Array.isArray(accounts)) {
+        for (const acct of accounts) {
+          const qty = parseFloat(acct.available || acct.balance || acct.quantity || "0");
+          if (qty > 0 && (acct.currency || acct.instrument_name)) {
             balances.push({
-              asset: bal.instrument_name || "",
+              asset: acct.currency || acct.instrument_name || "",
               free: qty,
-              locked: parseFloat(bal.reserved_qty || "0"),
+              locked: parseFloat(acct.stake || acct.order || acct.reserved_qty || "0"),
             });
           }
         }
@@ -164,13 +184,7 @@ async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncRes
 
     const trades: ExchangeTrade[] = [];
     try {
-      const tradeReq = signRequest(baseUrl, tradeMethod, 2, {});
-      const tradeData = await fetchJson(`${baseUrl}/${tradeMethod}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tradeReq),
-      });
-
+      const tradeData = await callApi("private/get-trades", 2);
       const tradeList = tradeData?.result?.data || tradeData?.result?.trade_list || [];
       for (const t of tradeList) {
         const pair = t.instrument_name || "";
@@ -186,29 +200,24 @@ async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncRes
           date: new Date(t.create_time || t.update_time || Date.now()),
         });
       }
-    } catch {
-      // trade history might fail, balances still useful
+    } catch (tradeError: any) {
+      console.warn("Crypto.com trade history fetch failed (balances still usable):", tradeError.message);
     }
 
     return { balances, trades };
-  };
-
-  try {
-    return await tryApi(
-      "https://api.crypto.com/exchange/v1",
-      "private/user-balance",
-      "private/get-trades"
-    );
-  } catch {
-    try {
-      return await tryApi(
-        "https://api.crypto.com/v2",
-        "private/get-account-summary",
-        "private/get-trades"
-      );
-    } catch (error: any) {
-      return { balances: [], trades: [], error: `Crypto.com API error: ${error.message}` };
+  } catch (error: any) {
+    console.error("Crypto.com sync failed:", error.message);
+    let userMessage = error.message;
+    if (error.message.includes("10007") || error.message.includes("NONCE")) {
+      userMessage = "Invalid API key or clock sync issue. Make sure you're using Crypto.com Exchange API keys (not App keys).";
+    } else if (error.message.includes("10004") || error.message.includes("INVALID_SIGNATURE")) {
+      userMessage = "Invalid API secret. Make sure you copied the full secret key from Crypto.com Exchange.";
+    } else if (error.message.includes("10002") || error.message.includes("UNAUTHORIZED")) {
+      userMessage = "API key unauthorized. Make sure you're using keys from Crypto.com Exchange (not the mobile app).";
+    } else if (error.message.includes("IP")) {
+      userMessage = "IP address not whitelisted. Remove IP restrictions from your Crypto.com Exchange API key, or add this server's IP.";
     }
+    return { balances: [], trades: [], error: userMessage };
   }
 }
 
