@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import FAQ from "@/pages/faq";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import SetupGuide from "@/pages/setup-guide";
@@ -84,6 +85,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/history" component={OwnBankHistory} />
         <Route path="/ownbank/referrals" component={OwnBankReferrals} />
         <Route path="/ownbank/signing-options" component={SigningOptions} />
+        <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
         <Route component={NotFound} />
@@ -114,6 +116,7 @@ function Router() {
         <Route path="/setup-guide" component={SetupGuide} />
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
+        <Route path="/faq" component={FAQ} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />

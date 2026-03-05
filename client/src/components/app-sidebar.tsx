@@ -17,6 +17,7 @@ import {
   Shield,
   BarChart3,
   MessageSquare,
+  HelpCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -188,6 +189,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/faq"}
+                  data-testid="nav-faq"
+                >
+                  <Link href="/faq">
+                    <HelpCircle className="h-4 w-4" />
+                    <span>FAQ</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
