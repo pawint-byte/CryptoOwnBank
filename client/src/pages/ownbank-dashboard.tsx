@@ -191,17 +191,26 @@ export default function OwnBankDashboard() {
       if (data.success) {
         setSoilSummary(data.summary);
         setSoilSynced(true);
+        if (data.newlyImported > 0) {
+          toast({
+            title: "Soil Activity Synced",
+            description: `Found ${data.summary.deposits} deposit(s) and ${data.summary.interestPayments} interest payment(s). ${data.newlyImported} new transaction(s) imported.`,
+          });
+        }
+      }
+    } catch (err: any) {
+      let errorMsg = "";
+      try {
+        if (err?.message) errorMsg = err.message;
+      } catch {}
+      if (errorMsg.includes("No wallet connected") || errorMsg.includes("wallet")) {
+        setSoilSynced(true);
+      } else {
         toast({
-          title: "Soil Activity Synced",
-          description: `Found ${data.summary.deposits} deposit(s) and ${data.summary.interestPayments} interest payment(s). ${data.newlyImported} new transaction(s) imported.`,
+          title: "Soil sync issue",
+          description: "Could not scan XRPL right now. You can try the refresh button later.",
         });
       }
-    } catch {
-      toast({
-        title: "Sync failed",
-        description: "Could not scan XRPL for Soil transactions. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setSyncingSoil(false);
     }
