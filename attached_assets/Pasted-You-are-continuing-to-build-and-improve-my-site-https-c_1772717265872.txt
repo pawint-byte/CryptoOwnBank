@@ -1,0 +1,37 @@
+You are continuing to build and improve my site: https://cryptoownbank.com (Next.js, TypeScript, Tailwind, shadcn/ui, xrpl.js, @xumm/sdk, Zustand, lucide-react).
+
+Current state:
+- Logged-in dashboard with sidebar navigation (Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings, OwnBank with sub-items: Dashboard, Vaults, Withdraw Interest, History, My Referrals, XLS-66 Lending (Q2 2026 placeholder), Admin, User Management, Metrics)
+- OwnBank section has "Connect Your Wallet" screen with Connect Xumm and Connect Ledger buttons
+- Soil vaults are displayed (Treasury 5.2% APR US Treasury-backed, Private Credit 7.8% APR private credit-backed) with example deposits
+- Earned interest example (+$76.44) and "Withdraw Interest" button
+- Beta banner at top
+- My Referrals page with main site referral link + Binance, Coinbase, Kraken affiliate links (Copy/Open buttons)
+- Referral metrics cards (Total Referrals 0, etc.)
+- Premium Referral Bonus section
+- Strong non-custodial disclaimers everywhere
+
+Goal:
+Non-custodial XRPL yield dashboard for RLUSD via Soil vaults. Users connect cold wallet (Ledger/Xaman preferred), deposit RLUSD, earn 5–8% fixed APR, withdraw interest only (principal locked). Add referral monetization (Binance/Kraken/Coinbase/Crypto.com/Uphold/Gemini). Future: XLS-66 XRP lending, Doppler Finance vaults, XRPL AMM liquidity pools.
+
+Tasks to complete / improve:
+1. Fix main referral link on My Referrals page: change from Replit URL to https://cryptoownbank.com/?ref=EAU62U51 (or your actual code)
+2. Add exchange icons/logos next to affiliate links (Binance, Coinbase, Kraken, Crypto.com, Uphold, Gemini if added)
+3. Add disclosure under every referral link: "Affiliate/referral link — we may earn a reward if used, at no extra cost to you."
+4. Make sure "Connect Xumm" and "Connect Ledger" buttons work (WebUSB for Ledger, deep link/QR for Xaman)
+5. Add "How to Connect Your Wallet" guide near connect buttons
+6. Add "Signing Options – Choose Your Security Level" section (full hardware vs Xaman-only vs hybrid)
+7. Add FAQ entries (all the ones we created):
+   - Why Was CryptoOwnBank Created?
+   - Can I Move My RLUSD from Uphold to Earn Higher Yield on Soil?
+   - Does Interest in Soil Vaults Compound If I Don’t Withdraw It?
+   - How Does CryptoOwnBank Compare to Traditional Banks and Crypto Exchanges?
+   - Do I Need a Specific Wallet to Use CryptoOwnBank?
+   - (Add any others we discussed)
+8. Add "Why We Stay 100% On-Chain (And Why You’ll Love It)" section explaining no bank connections
+9. Add browser/setup guide (Chrome/Edge recommended, Ledger Connect Kit optional, WebUSB flags, etc.)
+10. Keep Beta banner and strong disclaimers visible
+
+Keep all existing code intact. Improve layout, add missing disclosures/icons, make sure referral links use custom domain, and ensure UI is mobile-responsive.
+
+Generate the updated components/pages and show me the key changes.
