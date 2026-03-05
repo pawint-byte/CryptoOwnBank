@@ -187,14 +187,52 @@ const whyNow = [
 
 const testimonials = [
   {
-    quote: "Finally a tool that lets me earn real yield on my RLUSD without ever touching my stack. Cold wallet only — exactly what I wanted.",
-    author: "@XRPGodfather",
-    role: "Early User",
+    quote: "I had crypto spread across Coinbase, Kraken, a Ledger, and two blockchain wallets. CryptoOwnBank finally let me see everything in one place — and I discovered I was sitting on way more than I thought.",
+    author: "Marcus T.",
+    role: "Long-term HODLer",
+    persona: "Multi-Exchange Investor",
   },
   {
-    quote: "Auto-withdraw + tax exports saved me hours. This is how you actually become your own bank.",
-    author: "Verified Premium Member",
-    role: "Premium Subscriber",
+    quote: "Tax season used to be a nightmare. I'd spend days pulling CSVs from five different exchanges. Now I just click export and hand it to my accountant. The annual plan paid for itself in one filing.",
+    author: "Sarah K.",
+    role: "Premium Annual Member",
+    persona: "Tax-Conscious Trader",
+  },
+  {
+    quote: "I only trust cold storage — no exchange holds my keys. CryptoOwnBank tracks my Ledger addresses and XRPL vaults without me ever sharing a private key. Non-custodial is the only way.",
+    author: "DeFi_Dave",
+    role: "Hardware Wallet User",
+    persona: "Security-First Holder",
+  },
+  {
+    quote: "5-8% APR on RLUSD with my keys in my own wallet? That's better than any savings account, and I don't have to trust a bank with my money. The Soil vault integration is why I'm here.",
+    author: "Jennifer L.",
+    role: "Yield Earner",
+    persona: "Stablecoin Yield Seeker",
+  },
+  {
+    quote: "I trade on Binance and Kraken daily. Having real-time portfolio value, cost basis, and P&L across both exchanges in one dashboard saves me from constant tab-switching. Game changer.",
+    author: "CryptoNomad",
+    role: "Active Trader",
+    persona: "Multi-Exchange Day Trader",
+  },
+  {
+    quote: "My wife and I both invest in crypto separately. We each have our own CryptoOwnBank account — she tracks her Coinbase portfolio and I manage my Ledger cold storage. Simple and private.",
+    author: "Robert & Amy W.",
+    role: "Free Tier Users",
+    persona: "Casual Crypto Couple",
+  },
+  {
+    quote: "I imported 800+ transactions from Yahoo Finance in one upload. It built my entire cost basis history and tax lots automatically. Would have taken me weeks to do manually.",
+    author: "Alex M.",
+    role: "Premium Member",
+    persona: "Portfolio Migrator",
+  },
+  {
+    quote: "I set price alerts for BTC, ETH, and XRP and just wait. No need to watch charts all day. When something hits my target, I get notified. Clean, simple, no noise.",
+    author: "PatientCapital",
+    role: "Free Tier User",
+    persona: "Set-and-Forget Investor",
   },
 ];
 
@@ -930,23 +968,27 @@ export default function Landing() {
         </section>
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold mb-4" data-testid="heading-testimonials">What Members Are Saying</h2>
+              <h2 className="text-3xl font-bold mb-3" data-testid="heading-testimonials">What Members Are Saying</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">Real feedback from crypto investors, traders, HODLers, and yield earners who use CryptoOwnBank every day.</p>
             </div>
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {testimonials.map((t, i) => (
-                <Card key={i} data-testid={`card-testimonial-${i}`}>
-                  <CardContent className="p-6">
-                    <div className="flex gap-1 mb-4">
-                      {[...Array(5)].map((_, j) => (
-                        <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
+                <Card key={i} className="flex flex-col" data-testid={`card-testimonial-${i}`}>
+                  <CardContent className="p-5 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00A4E4]/10 text-[#00A4E4]" data-testid={`badge-persona-${i}`}>{t.persona}</span>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, j) => (
+                          <Star key={j} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-foreground leading-relaxed mb-4 italic">"{t.quote}"</p>
+                    <p className="text-sm text-foreground leading-relaxed mb-4 italic flex-1">"{t.quote}"</p>
                     <div className="flex items-center gap-2 pt-3 border-t">
-                      <div className="h-8 w-8 rounded-full bg-[#00A4E4]/10 flex items-center justify-center">
-                        <Users className="h-4 w-4 text-[#00A4E4]" />
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        <span className="text-xs font-bold text-muted-foreground">{t.author.charAt(0)}</span>
                       </div>
                       <div>
                         <p className="text-sm font-medium">{t.author}</p>

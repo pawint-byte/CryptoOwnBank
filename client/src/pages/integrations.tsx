@@ -678,21 +678,33 @@ export default function Integrations() {
           </div>
 
           {importResult && (
-            <Alert className={importResult.imported > 0 ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20" : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"}>
+            <Alert className={importResult.imported > 0 ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20" : (importResult.skipped > 0 && importResult.imported === 0) ? "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20" : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"}>
               {importResult.imported > 0 ? (
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              ) : (importResult.skipped > 0 && importResult.imported === 0) ? (
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
               ) : (
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
               )}
               <AlertDescription className="text-sm">
-                <p className="font-medium" data-testid="text-import-result">{importResult.message}</p>
-                {importResult.errors.length > 0 && (
+                <p className="font-medium" data-testid="text-import-result">
+                  {importResult.imported > 0 
+                    ? importResult.message
+                    : (importResult.skipped > 0 && importResult.imported === 0)
+                      ? `All ${importResult.total} rows were already imported — no duplicates created. Your data is up to date.`
+                      : importResult.message
+                  }
+                </p>
+                {importResult.errors.length > 0 && importResult.imported > 0 && (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    <p className="font-medium">Issues:</p>
+                    <p className="font-medium">Notes:</p>
                     <ul className="list-disc ml-4">
-                      {importResult.errors.map((e, i) => (
+                      {importResult.errors.slice(0, 10).map((e: string, i: number) => (
                         <li key={i}>{e}</li>
                       ))}
+                      {importResult.errors.length > 10 && (
+                        <li>...and {importResult.errors.length - 10} more</li>
+                      )}
                     </ul>
                   </div>
                 )}
