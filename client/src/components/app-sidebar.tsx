@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 
 const trackerItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
   { title: "Portfolio", url: "/portfolio", icon: PieChart },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText },
@@ -48,7 +48,7 @@ const trackerItems = [
 ];
 
 const ownbankItems = [
-  { title: "Dashboard", url: "/ownbank", icon: Landmark },
+  { title: "Wallet & Yield", url: "/ownbank", icon: Landmark },
   { title: "Vaults", url: "/ownbank/vaults", icon: Vault },
   { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine },
   { title: "History", url: "/ownbank/history", icon: History },
@@ -82,14 +82,14 @@ export function AppSidebar() {
             <PieChart className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">CryptoBroker</span>
-            <span className="text-xs text-muted-foreground">Tracker</span>
+            <span className="text-sm font-semibold">CryptoOwnBank</span>
+            <span className="text-xs text-muted-foreground">Portfolio & Yield</span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Tracker</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {trackerItems.map((item) => (
