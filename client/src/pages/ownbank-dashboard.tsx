@@ -105,12 +105,35 @@ export default function OwnBankDashboard() {
     }
   }, [isConnected, walletAddress, fetchBalances, fetchPrice]);
 
+  useEffect(() => {
+    if (!isConnected) {
+      fetch("/api/wallet", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.walletAddress) {
+            connect(data.walletAddress, data.walletType || "xumm");
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const saveWalletToServer = (address: string, type: string) => {
+    fetch("/api/wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ walletAddress: address, walletType: type }),
+    }).catch(() => {});
+  };
+
   const handleConnectXumm = async () => {
     setConnectingXumm(true);
     try {
       const result = await connectXumm();
       if (result.success && result.address) {
         connect(result.address, "xumm");
+        saveWalletToServer(result.address, "xumm");
         toast({ title: "Wallet Connected", description: `Connected via Xumm: ${truncateAddress(result.address)}` });
       } else {
         toast({ title: "Connection Failed", description: result.error || "Could not connect Xumm wallet.", variant: "destructive" });
@@ -128,6 +151,7 @@ export default function OwnBankDashboard() {
       const result = await connectLedger();
       if (result.success && result.address) {
         connect(result.address, "ledger");
+        saveWalletToServer(result.address, "ledger");
         toast({ title: "Wallet Connected", description: `Connected via Ledger: ${truncateAddress(result.address)}` });
       } else {
         toast({ title: "Connection Failed", description: result.error || "Could not connect Ledger.", variant: "destructive" });
@@ -141,6 +165,7 @@ export default function OwnBankDashboard() {
 
   const handleDisconnect = () => {
     disconnect();
+    saveWalletToServer("", "");
     toast({ title: "Wallet Disconnected" });
   };
 

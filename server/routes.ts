@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { sendFeedbackNotification } from "./email";
 import multer from "multer";
@@ -16,6 +16,37 @@ export async function registerRoutes(
 ): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  app.get("/api/wallet", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select({
+        xrplWalletAddress: users.xrplWalletAddress,
+        xrplWalletType: users.xrplWalletType,
+      }).from(users).where(eq(users.id, userId));
+      if (user?.xrplWalletAddress) {
+        res.json({ walletAddress: user.xrplWalletAddress, walletType: user.xrplWalletType });
+      } else {
+        res.json({ walletAddress: null, walletType: null });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to load wallet" });
+    }
+  });
+
+  app.post("/api/wallet", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { walletAddress, walletType } = req.body;
+      await db.update(users).set({
+        xrplWalletAddress: walletAddress || null,
+        xrplWalletType: walletType || null,
+      }).where(eq(users.id, userId));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to save wallet" });
+    }
+  });
 
   app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
     try {

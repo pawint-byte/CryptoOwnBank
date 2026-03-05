@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   passwordResetExpires: timestamp("password_reset_expires"),
   authProvider: varchar("auth_provider", { length: 20 }).default("email").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  xrplWalletAddress: varchar("xrpl_wallet_address"),
+  xrplWalletType: varchar("xrpl_wallet_type", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
