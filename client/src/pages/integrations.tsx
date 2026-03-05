@@ -288,23 +288,38 @@ export default function Integrations() {
     return EXCHANGE_OPTIONS.find((e) => e.value === provider)?.label || provider;
   };
 
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+
   const csvImportMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/import/yahoo", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Import failed" }));
-        throw new Error(err.message);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600000);
+      try {
+        const res = await fetch("/api/import/yahoo", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ message: "Import failed" }));
+          throw new Error(err.message);
+        }
+        return res.json();
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === "AbortError") {
+          throw new Error("Import timed out. The file may be too large — try splitting it into smaller files.");
+        }
+        throw err;
       }
-      return res.json();
     },
     onSuccess: (data) => {
       setImportResult(data);
+      setImportFileName(null);
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
@@ -313,6 +328,7 @@ export default function Integrations() {
       toast({ title: data.message });
     },
     onError: (error: any) => {
+      setImportFileName(null);
       toast({
         title: "Import failed",
         description: error.message || "Could not process the CSV file",

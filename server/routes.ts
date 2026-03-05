@@ -1828,6 +1828,8 @@ export async function registerRoutes(
   });
 
   app.post("/api/import/yahoo", isAuthenticated, csvUpload.single("file"), async (req: any, res) => {
+    req.setTimeout(600000);
+    res.setTimeout(600000);
     try {
       const userId = req.user.claims.sub;
 
