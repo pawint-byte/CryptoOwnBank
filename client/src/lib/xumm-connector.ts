@@ -1,16 +1,4 @@
-import { XummPkce } from "xumm-oauth2-pkce";
-import { Xumm } from "xumm";
-
-const XUMM_API_KEY = import.meta.env.VITE_XUMM_API_KEY || "xumm-api-key-placeholder";
-
-let xummInstance: Xumm | null = null;
-
-function getXumm(): Xumm {
-  if (!xummInstance) {
-    xummInstance = new Xumm(XUMM_API_KEY);
-  }
-  return xummInstance;
-}
+import { apiRequest } from "./queryClient";
 
 export interface XummSignResult {
   success: boolean;
@@ -19,55 +7,93 @@ export interface XummSignResult {
   error?: string;
 }
 
+export interface XummSignInPayload {
+  uuid: string;
+  qrUrl: string;
+  deepLink: string;
+}
+
+export async function createXummSignIn(): Promise<XummSignInPayload> {
+  const res = await apiRequest("POST", "/api/xumm/signin");
+  return res.json();
+}
+
+export async function checkXummStatus(uuid: string): Promise<{ resolved: boolean; signed: boolean; account: string | null }> {
+  const res = await fetch(`/api/xumm/status/${uuid}`);
+  return res.json();
+}
+
 export async function connectXumm(): Promise<XummSignResult> {
-  return new Promise((resolve) => {
-    try {
-      if ((window as any)._XummPkce) {
-        delete (window as any)._XummPkce;
+  try {
+    const payload = await createXummSignIn();
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = payload.deepLink;
+      return { success: false, error: "Redirecting to Xaman..." };
+    }
+
+    return new Promise((resolve) => {
+      const popup = window.open("", "XummSignIn", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
+      if (popup) {
+        popup.document.write(`
+          <!DOCTYPE html>
+          <html><head><title>Sign in with Xaman</title>
+          <style>
+            body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
+            img { width:280px; height:280px; border-radius:12px; margin-bottom:16px; }
+            h3 { margin:0 0 8px; font-size:18px; }
+            p { margin:0; font-size:14px; color:#999; }
+          </style></head><body>
+            <h3>Scan with Xaman</h3>
+            <img src="${payload.qrUrl}" alt="QR Code" />
+            <p>Open Xaman app → Scan QR code</p>
+          </body></html>
+        `);
       }
 
-      const pkce = new XummPkce(XUMM_API_KEY, {
-        redirectUrl: window.location.origin + "/",
-        implicit: true,
-      } as any);
-
-      pkce.on("error", (err: any) => {
-        resolve({ success: false, error: err?.message || "Xumm connection error" });
-      });
-
-      pkce.on("success", async () => {
+      const pollInterval = setInterval(async () => {
         try {
-          const state = await pkce.state();
-          if (state?.me?.account) {
-            resolve({ success: true, address: state.me.account });
-          } else {
-            resolve({ success: false, error: "No account returned from Xumm" });
+          const status = await checkXummStatus(payload.uuid);
+          if (status.resolved) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            if (status.signed && status.account) {
+              resolve({ success: true, address: status.account });
+            } else {
+              resolve({ success: false, error: "Sign-in was declined" });
+            }
           }
-        } catch (e: any) {
-          resolve({ success: false, error: e.message || "Failed to get account" });
+        } catch {
+          clearInterval(pollInterval);
+          if (popup && !popup.closed) popup.close();
+          resolve({ success: false, error: "Failed to check sign-in status" });
         }
-      });
+      }, 2000);
 
-      pkce.authorize();
-    } catch (error: any) {
-      resolve({ success: false, error: error.message || "Failed to connect Xumm" });
-    }
-  });
+      if (popup) {
+        const popupCheck = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(popupCheck);
+            setTimeout(() => {
+              clearInterval(pollInterval);
+            }, 5000);
+          }
+        }, 1000);
+      }
+
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (popup && !popup.closed) popup.close();
+        resolve({ success: false, error: "Sign-in timed out. Please try again." });
+      }, 120000);
+    });
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to connect Xumm" };
+  }
 }
 
 export async function disconnectXumm(): Promise<void> {
-  try {
-    if ((window as any)._XummPkce) {
-      const pkce = (window as any)._XummPkce;
-      if (pkce.logout) await pkce.logout();
-      delete (window as any)._XummPkce;
-    }
-    if (xummInstance) {
-      await xummInstance.logout();
-      xummInstance = null;
-    }
-  } catch {
-  }
 }
 
 export async function signPayment(
@@ -75,29 +101,62 @@ export async function signPayment(
   amount: string | { currency: string; value: string; issuer: string }
 ): Promise<XummSignResult> {
   try {
-    const xumm = getXumm();
-    const payload = await xumm.payload?.createAndSubscribe(
-      {
-        TransactionType: "Payment",
-        Destination: destination,
-        Amount: amount,
-      },
-      (event: any) => {
-        if (event.data.signed === true) return event.data;
-        if (event.data.signed === false) return false;
-      }
-    );
+    const res = await apiRequest("POST", "/api/xumm/payload", {
+      TransactionType: "Payment",
+      Destination: destination,
+      Amount: amount,
+    });
+    const payload = await res.json();
 
-    if (payload?.resolved) {
-      const result = await payload.resolved;
-      if (result) {
-        return {
-          success: true,
-          txHash: (result as any).txid || (result as any).hash,
-        };
-      }
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = payload.deepLink;
     }
-    return { success: false, error: "Transaction was rejected" };
+
+    return new Promise((resolve) => {
+      const popup = window.open("", "XummPayment", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
+      if (popup) {
+        popup.document.write(`
+          <!DOCTYPE html>
+          <html><head><title>Approve Transaction</title>
+          <style>
+            body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
+            img { width:280px; height:280px; border-radius:12px; margin-bottom:16px; }
+            h3 { margin:0 0 8px; font-size:18px; }
+            p { margin:0; font-size:14px; color:#999; }
+          </style></head><body>
+            <h3>Approve in Xaman</h3>
+            <img src="${payload.qrUrl}" alt="QR Code" />
+            <p>Scan to approve this transaction</p>
+          </body></html>
+        `);
+      }
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await checkXummStatus(payload.uuid);
+          if (status.resolved) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            if (status.signed) {
+              resolve({ success: true, txHash: payload.uuid });
+            } else {
+              resolve({ success: false, error: "Transaction was declined" });
+            }
+          }
+        } catch {
+          clearInterval(pollInterval);
+          if (popup && !popup.closed) popup.close();
+          resolve({ success: false, error: "Failed to check transaction status" });
+        }
+      }, 2000);
+
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (popup && !popup.closed) popup.close();
+        resolve({ success: false, error: "Transaction timed out" });
+      }, 120000);
+    });
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to sign transaction" };
   }
@@ -109,29 +168,61 @@ export async function signTrustSet(
   limit: string = "1000000000"
 ): Promise<XummSignResult> {
   try {
-    const xumm = getXumm();
-    const payload = await xumm.payload?.createAndSubscribe(
-      {
-        TransactionType: "TrustSet",
-        LimitAmount: {
-          currency,
-          issuer,
-          value: limit,
-        },
-      },
-      (event: any) => {
-        if (event.data.signed === true) return event.data;
-        if (event.data.signed === false) return false;
-      }
-    );
+    const res = await apiRequest("POST", "/api/xumm/payload", {
+      TransactionType: "TrustSet",
+      LimitAmount: { currency, issuer, value: limit },
+    });
+    const payload = await res.json();
 
-    if (payload?.resolved) {
-      const result = await payload.resolved;
-      if (result) {
-        return { success: true, txHash: (result as any).txid };
-      }
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = payload.deepLink;
     }
-    return { success: false, error: "TrustSet was rejected" };
+
+    return new Promise((resolve) => {
+      const popup = window.open("", "XummTrustSet", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
+      if (popup) {
+        popup.document.write(`
+          <!DOCTYPE html>
+          <html><head><title>Set Trust Line</title>
+          <style>
+            body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
+            img { width:280px; height:280px; border-radius:12px; margin-bottom:16px; }
+            h3 { margin:0 0 8px; font-size:18px; }
+            p { margin:0; font-size:14px; color:#999; }
+          </style></head><body>
+            <h3>Approve Trust Line</h3>
+            <img src="${payload.qrUrl}" alt="QR Code" />
+            <p>Scan to approve this trust line</p>
+          </body></html>
+        `);
+      }
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await checkXummStatus(payload.uuid);
+          if (status.resolved) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            if (status.signed) {
+              resolve({ success: true, txHash: payload.uuid });
+            } else {
+              resolve({ success: false, error: "Trust line was declined" });
+            }
+          }
+        } catch {
+          clearInterval(pollInterval);
+          if (popup && !popup.closed) popup.close();
+          resolve({ success: false, error: "Failed to check trust line status" });
+        }
+      }, 2000);
+
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (popup && !popup.closed) popup.close();
+        resolve({ success: false, error: "Trust line timed out" });
+      }, 120000);
+    });
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to sign TrustSet" };
   }

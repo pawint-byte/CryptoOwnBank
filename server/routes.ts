@@ -8,6 +8,7 @@ import { sendFeedbackNotification } from "./email";
 import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { XummSdk } from "xumm-sdk";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -710,6 +711,93 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Feedback error:", error);
       res.status(500).json({ message: "Failed to send feedback" });
+    }
+  });
+
+  const xummApiKey = process.env.VITE_XUMM_API_KEY;
+  const xummApiSecret = process.env.XUMM_API_SECRET;
+  let xummSdk: XummSdk | null = null;
+
+  if (xummApiKey && xummApiSecret) {
+    xummSdk = new XummSdk(xummApiKey, xummApiSecret);
+  }
+
+  app.post("/api/xumm/signin", async (_req, res) => {
+    try {
+      if (!xummSdk) {
+        return res.status(500).json({ message: "Xumm SDK not configured" });
+      }
+      console.log("Creating Xumm SignIn payload...");
+      let payload;
+      try {
+        payload = await xummSdk.payload.create({
+          TransactionType: "SignIn" as any,
+        } as any, true);
+      } catch (createErr: any) {
+        console.log("Xumm payload.create threw:", createErr?.message, JSON.stringify(createErr, Object.getOwnPropertyNames(createErr)));
+        return res.status(500).json({ message: createErr?.message || "Xumm API error" });
+      }
+      console.log("Xumm payload result:", JSON.stringify(payload));
+      if (!payload) {
+        return res.status(500).json({ message: "Failed to create Xumm payload (null result)" });
+      }
+      res.json({
+        uuid: payload.uuid,
+        qrUrl: payload.refs.qr_png,
+        deepLink: payload.next.always,
+        mobileLink: payload.refs.websocket_status,
+      });
+    } catch (error: any) {
+      console.log("Xumm signin outer error:", error?.message, JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      res.status(500).json({ message: error.message || "Failed to create sign-in request" });
+    }
+  });
+
+  app.get("/api/xumm/status/:uuid", async (req, res) => {
+    try {
+      if (!xummSdk) {
+        return res.status(500).json({ message: "Xumm SDK not configured" });
+      }
+      const payload = await xummSdk.payload.get(req.params.uuid);
+      if (!payload) {
+        return res.status(404).json({ message: "Payload not found" });
+      }
+      const resolved = payload.meta.resolved;
+      const signed = payload.meta.signed;
+      const account = payload.response?.account || null;
+      res.json({ resolved, signed, account });
+    } catch (error: any) {
+      console.error("Xumm status error:", error);
+      res.status(500).json({ message: error.message || "Failed to check status" });
+    }
+  });
+
+  app.post("/api/xumm/payload", async (req, res) => {
+    try {
+      if (!xummSdk) {
+        return res.status(500).json({ message: "Xumm SDK not configured" });
+      }
+      const { TransactionType, Destination, Amount, LimitAmount } = req.body;
+      if (!TransactionType) {
+        return res.status(400).json({ message: "TransactionType is required" });
+      }
+      const txJson: any = { TransactionType };
+      if (Destination) txJson.Destination = Destination;
+      if (Amount) txJson.Amount = Amount;
+      if (LimitAmount) txJson.LimitAmount = LimitAmount;
+
+      const payload = await xummSdk.payload.create({ txjson: txJson } as any);
+      if (!payload) {
+        return res.status(500).json({ message: "Failed to create payload" });
+      }
+      res.json({
+        uuid: payload.uuid,
+        qrUrl: payload.refs.qr_png,
+        deepLink: payload.next.always,
+      });
+    } catch (error: any) {
+      console.error("Xumm payload error:", error);
+      res.status(500).json({ message: error.message || "Failed to create payload" });
     }
   });
 
