@@ -778,7 +778,7 @@ export async function registerRoutes(
       if (Amount) txJson.Amount = Amount;
       if (LimitAmount) txJson.LimitAmount = LimitAmount;
 
-      const payload = await xummSdk.payload.create({ txjson: txJson } as any);
+      const payload = await xummSdk.payload.create(txJson as any, true);
       if (!payload) {
         return res.status(500).json({ message: "Failed to create payload" });
       }
@@ -788,7 +788,7 @@ export async function registerRoutes(
         deepLink: payload.next.always,
       });
     } catch (error: any) {
-      console.error("Xumm payload error:", error);
+      console.error("Xumm payload error:", error?.message);
       res.status(500).json({ message: error.message || "Failed to create payload" });
     }
   });
