@@ -75,7 +75,7 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
   },
   crypto_com: {
     steps: "Log in to Crypto.com Exchange > go to the API documentation page (exchange-docs.crypto.com) > click 'Create API Key' in the top nav > OR go to your Profile (top right) > Security > API Keys > Create a new API Key > label it 'CryptoOwnBank' > enable ONLY 'Read' permissions > complete 2FA > copy your API Key and Secret Key. Note: Your identity must be verified before API access is available.",
-    url: "https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#create-api-key",
+    url: "https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#generating-the-api-key",
   },
   uphold: {
     steps: "Log in to Uphold > Menu > Developer > API Keys > Create Token > name it 'CryptoOwnBank' > select 'Read' scope > copy your API Key and Secret.",
