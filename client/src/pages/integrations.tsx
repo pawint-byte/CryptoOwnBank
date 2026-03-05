@@ -34,7 +34,8 @@ import { IntegrationCard } from "@/components/integration-card";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { SiBinance, SiCoinbase } from "react-icons/si";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,7 @@ const EXCHANGE_OPTIONS = [
   { value: "coinbase", label: "Coinbase", icon: SiCoinbase },
   { value: "kraken", label: "Kraken", icon: null },
   { value: "crypto_com", label: "Crypto.com", icon: null },
-  { value: "uphold", label: "Uphold", icon: null },
+  { value: "uphold", label: "Uphold (CSV only)", icon: null },
   { value: "gemini", label: "Gemini", icon: null },
   { value: "kucoin", label: "KuCoin", icon: null },
   { value: "bybit", label: "Bybit", icon: null },
@@ -90,11 +91,11 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://www.kraken.com/u/security/api",
   },
   crypto_com: {
-    steps: "IMPORTANT: You need the Crypto.com Exchange (not the mobile app). The regular Crypto.com App does not have an API. If you only use the app, you'll need to sign up at crypto.com/exchange first and transfer your assets there.\n\n1) Log in to the Crypto.com Exchange website (crypto.com/exchange). 2) Click your profile icon (top right) > scroll down to 'Account Management' > click the 'API Management' tab. 3) Click 'Create a New API Key' > enter a label (e.g. 'CryptoOwnBank'). 4) If prompted, set up 2FA — scan the QR code with Google Authenticator, click 'Send SMS OTP', enter both codes, then click 'Set Up Now'. 5) After creation, the API Secret Key is shown ONCE — copy it to a safe place immediately. 6) To get the API Key, click 'Edit' on your newly created key — the API Key is displayed there. 7) Remove any IP whitelist restrictions (or add your server's IP). 8) Paste both the API Key and Secret Key into CryptoOwnBank. Leave Withdrawal and Trading set to 'Off' (read-only).",
+    steps: "Crypto.com has 3 separate products — make sure you're using the right one:\n\n• Crypto.com Exchange (crypto.com/exchange): This is the ONLY one with API keys. Follow the steps below to connect it.\n• Crypto.com App (the regular mobile app): No API available. Use CSV export instead (Settings > Export Data), or find your deposit address under 'Receive' and add it on the Cold Wallets page.\n• Crypto.com Onchain (DeFi wallet): This is a self-custody wallet — go to Cold Wallets page and paste your public address to track it.\n\nFor Crypto.com Exchange API keys:\n1) Log in at crypto.com/exchange. 2) Profile icon (top right) > Account Management > API Management. 3) Create a New API Key > label it 'CryptoOwnBank'. 4) Set up 2FA if prompted. 5) Copy the API Secret Key immediately (shown only once). 6) Click 'Edit' on your key to find the API Key. 7) Remove IP whitelist restrictions. 8) Leave Withdrawal and Trading set to 'Off'. Paste both keys below.",
     url: "https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#generating-the-api-key",
   },
   uphold: {
-    steps: "Log in to Uphold > Menu > Developer > API Keys > Create Token > name it 'CryptoOwnBank' > select 'Read' scope > copy your API Key and Secret.",
+    steps: "Uphold no longer offers personal API keys — their API is now restricted to enterprise partners only. To track your Uphold holdings in CryptoOwnBank, you have two options:\n\n1) CSV Import: In the Uphold app, go to Activity > click the download/export icon > download your transaction history as CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you hold XRP on Uphold, go to your XRP wallet in the Uphold app, tap 'Transact' > 'Send to crypto network' to find your XRP address. Add that address on the Cold Wallets page to track your balance.",
     url: "https://uphold.com/dashboard",
   },
   gemini: {
@@ -130,28 +131,37 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://platform.nexo.com/api-keys",
   },
   webull: {
-    steps: "Webull does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings on CryptoOwnBank, or export your transaction history from the Webull app: Account > Menu (three dots) > Statements & History > Download CSV.",
+    steps: "Webull does not offer a public API. To track your Webull crypto in CryptoOwnBank:\n\n1) CSV Import: In the Webull app, go to Account > Menu (three dots) > Statements & History > Download CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've withdrawn crypto to your own wallet, add that wallet address on the Cold Wallets page to track it automatically.",
     url: "https://www.webull.com/",
   },
   etoro: {
-    steps: "eToro does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings on CryptoOwnBank, or export your transaction history from eToro: Settings > Account Statement > select date range > Download as Excel/CSV.",
+    steps: "eToro does not offer a public API. To track your eToro crypto in CryptoOwnBank:\n\n1) CSV Import: In eToro, go to Settings > Account Statement > select your date range > Download as Excel/CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've transferred crypto to the eToro Money wallet or your own wallet, add the public address on the Cold Wallets page.",
     url: "https://www.etoro.com/settings/account",
   },
   robinhood: {
-    steps: "Robinhood does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings or export your transaction history as a CSV file from the Robinhood app (Account > Statements & History > Download).",
+    steps: "Robinhood does not offer a public API. To track your Robinhood crypto in CryptoOwnBank:\n\n1) CSV Import: In the Robinhood app, go to Account > Statements & History > Download your transaction history as CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've transferred crypto out to your own wallet, add that wallet address on the Cold Wallets page to track it automatically.",
     url: "https://robinhood.com/account",
   },
   fidelity: {
-    steps: "Fidelity does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings or export your transaction history as a CSV file from NetBenefits or the Fidelity website (Accounts > Activity & Orders > Download).",
+    steps: "Fidelity does not offer a public API for crypto. To track your Fidelity crypto in CryptoOwnBank:\n\n1) CSV Import: On the Fidelity website, go to Accounts > Activity & Orders > Download your transaction history. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've withdrawn crypto to your own wallet, add the public address on the Cold Wallets page.",
     url: "https://www.fidelity.com/",
   },
 };
 
+const NO_API_EXCHANGES = ["uphold", "webull", "etoro", "robinhood", "fidelity"];
+
 const connectFormSchema = z.object({
   provider: z.string().min(1, "Select a provider"),
-  apiKey: z.string().min(1, "API key is required"),
-  apiSecret: z.string().min(1, "API secret is required"),
-});
+  apiKey: z.string().optional(),
+  apiSecret: z.string().optional(),
+}).refine((data) => {
+  if (NO_API_EXCHANGES.includes(data.provider)) return true;
+  return data.apiKey && data.apiKey.length > 0;
+}, { message: "API key is required", path: ["apiKey"] })
+.refine((data) => {
+  if (NO_API_EXCHANGES.includes(data.provider)) return true;
+  return data.apiSecret && data.apiSecret.length > 0;
+}, { message: "API secret is required", path: ["apiSecret"] });
 
 type ConnectFormValues = z.infer<typeof connectFormSchema>;
 
@@ -380,10 +390,17 @@ export default function Integrations() {
                 />
 
                 {form.watch("provider") && API_KEY_GUIDES[form.watch("provider")] && (
-                  <Alert className="bg-muted/50 border-primary/20">
+                  <Alert className={cn(
+                    "border-primary/20",
+                    NO_API_EXCHANGES.includes(form.watch("provider")) ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800" : "bg-muted/50"
+                  )}>
                     <Info className="h-4 w-4" />
-                    <AlertDescription className="text-xs leading-relaxed">
-                      <span className="font-semibold block mb-1">How to get your {EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label} API Key:</span>
+                    <AlertDescription className="text-xs leading-relaxed whitespace-pre-line">
+                      <span className="font-semibold block mb-1">
+                        {NO_API_EXCHANGES.includes(form.watch("provider"))
+                          ? `${EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label?.replace(" (CSV only)", "")} — No API Available`
+                          : `How to get your ${EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label} API Key:`}
+                      </span>
                       {API_KEY_GUIDES[form.watch("provider")].steps}
                       <a
                         href={API_KEY_GUIDES[form.watch("provider")].url}
@@ -392,85 +409,91 @@ export default function Integrations() {
                         className="flex items-center gap-1 mt-2 text-primary hover:underline font-medium"
                         data-testid="link-exchange-api-guide"
                       >
-                        Open {EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label} API Settings <ExternalLink className="h-3 w-3" />
+                        {NO_API_EXCHANGES.includes(form.watch("provider"))
+                          ? `Open ${EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label?.replace(" (CSV only)", "")}`
+                          : `Open ${EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label} API Settings`} <ExternalLink className="h-3 w-3" />
                       </a>
                     </AlertDescription>
                   </Alert>
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="apiKey"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>API Key</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showApiKey ? "text" : "password"}
-                            placeholder="Enter your API key"
-                            {...field}
-                            data-testid="input-api-key"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full"
-                            onClick={() => setShowApiKey(!showApiKey)}
-                          >
-                            {showApiKey ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Find this in your exchange's API settings
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {!NO_API_EXCHANGES.includes(form.watch("provider")) && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="apiKey"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>API Key</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showApiKey ? "text" : "password"}
+                                placeholder="Enter your API key"
+                                {...field}
+                                data-testid="input-api-key"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full"
+                                onClick={() => setShowApiKey(!showApiKey)}
+                              >
+                                {showApiKey ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Find this in your exchange's API settings
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="apiSecret"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>API Secret</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showApiSecret ? "text" : "password"}
-                            placeholder="Enter your API secret"
-                            {...field}
-                            data-testid="input-api-secret"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full"
-                            onClick={() => setShowApiSecret(!showApiSecret)}
-                          >
-                            {showApiSecret ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Your secret is encrypted and never exposed
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="apiSecret"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>API Secret</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showApiSecret ? "text" : "password"}
+                                placeholder="Enter your API secret"
+                                {...field}
+                                data-testid="input-api-secret"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full"
+                                onClick={() => setShowApiSecret(!showApiSecret)}
+                              >
+                                {showApiSecret ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Your secret is encrypted and never exposed
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
@@ -478,15 +501,17 @@ export default function Integrations() {
                     variant="outline"
                     onClick={() => setIsDialogOpen(false)}
                   >
-                    Cancel
+                    {NO_API_EXCHANGES.includes(form.watch("provider")) ? "Close" : "Cancel"}
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={connectMutation.isPending}
-                    data-testid="button-submit-integration"
-                  >
-                    {connectMutation.isPending ? "Connecting..." : "Connect"}
-                  </Button>
+                  {!NO_API_EXCHANGES.includes(form.watch("provider")) && (
+                    <Button
+                      type="submit"
+                      disabled={connectMutation.isPending}
+                      data-testid="button-submit-integration"
+                    >
+                      {connectMutation.isPending ? "Connecting..." : "Connect"}
+                    </Button>
+                  )}
                 </div>
               </form>
             </Form>
