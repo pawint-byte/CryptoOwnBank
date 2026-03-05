@@ -74,7 +74,7 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://www.kraken.com/u/security/api",
   },
   crypto_com: {
-    steps: "Log in to Crypto.com Exchange > click your profile icon (top right) > User Center > API > Create a new API Key. Default permission is 'Can Read' only — that's exactly what you need (do NOT enable trading or withdrawals). Copy your API Key and Secret Key. Note: Your identity must be verified before API access is available.",
+    steps: "Log in to Crypto.com Exchange > click your profile icon (top right) > User Center > API > Create a new API Key > complete 2FA (SMS + Google Authenticator). Default permission is 'Can Read' only — that's what you need. IMPORTANT: The Secret Key is only shown ONCE when you first create the key — copy it immediately before closing the dialog. If you missed it, delete the key and create a new one.",
     url: "https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#generating-the-api-key",
   },
   uphold: {
