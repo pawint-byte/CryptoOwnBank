@@ -106,6 +106,43 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Exchange API Keys",
+    items: [
+      {
+        q: "How do I get an API key from my exchange?",
+        a: "Each exchange has its own process, but the general steps are: 1) Log in to your exchange account. 2) Go to Account Settings or Security. 3) Find the 'API' or 'API Management' section. 4) Create a new API key and label it 'CryptoOwnBank'. 5) IMPORTANT: Only enable READ-ONLY permissions (never enable trading or withdrawal). 6) Copy the API Key and Secret. 7) Paste them into the Integrations page on CryptoOwnBank. When you select an exchange on our Integrations page, we show you step-by-step instructions specific to that exchange.",
+      },
+      {
+        q: "How do I get a Binance API key?",
+        a: "Log in to Binance > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA verification > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key. Direct link: binance.com/en/my/settings/api-management",
+      },
+      {
+        q: "How do I get a Coinbase API key?",
+        a: "Log in to Coinbase > Settings > API > New API Key > select all 'View' permissions only (wallet:accounts:read, wallet:transactions:read, etc.) > complete 2FA > copy your API Key and API Secret. Direct link: coinbase.com/settings/api",
+      },
+      {
+        q: "How do I get a Kraken API key?",
+        a: "Log in to Kraken > Security > API > Add Key > name it 'CryptoOwnBank' > under Permissions check ONLY 'Query Funds' and 'Query Open Orders & Trades' > Generate Key > copy your API Key and Private Key. Direct link: kraken.com/u/security/api",
+      },
+      {
+        q: "How do I get a Crypto.com API key?",
+        a: "Log in to Crypto.com Exchange > Settings > API Keys > Create a new API Key > label it 'CryptoOwnBank' > enable ONLY 'Read' permissions > complete 2FA > copy your API Key and Secret Key. Direct link: crypto.com/exchange/personal/api-management",
+      },
+      {
+        q: "How do I get API keys for KuCoin, Bybit, OKX, or other exchanges?",
+        a: "The process is similar for all exchanges: go to your account's API settings, create a new key with READ-ONLY permissions, and copy the credentials. For KuCoin, Bybit, and OKX you may also need to set an API passphrase — save this separately as you'll need it. When you select any exchange on our Integrations page, we show you the exact steps and a direct link to that exchange's API settings page.",
+      },
+      {
+        q: "Can I connect Robinhood or Fidelity?",
+        a: "Robinhood and Fidelity do not currently offer public APIs for third-party portfolio tracking. You can manually add your holdings or export your transaction history as CSV files from their apps/websites and import them into CryptoOwnBank. We're monitoring both platforms for future API availability.",
+      },
+      {
+        q: "Is it safe to give CryptoOwnBank my API key?",
+        a: "Yes — we take several precautions: 1) All API keys are encrypted using AES-256 before storage. 2) We only request read-only access — we cannot trade, transfer, or withdraw anything from your exchange account. 3) You can disconnect (revoke access) anytime from our Integrations page. 4) For extra safety, most exchanges let you restrict API keys by IP address. Always create keys with the minimum permissions needed (read-only).",
+      },
+    ],
+  },
+  {
     heading: "Getting Started & Transfers",
     items: [
       {

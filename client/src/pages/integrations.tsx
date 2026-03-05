@@ -33,17 +33,86 @@ import {
 import { IntegrationCard } from "@/components/integration-card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Link2, Eye, EyeOff } from "lucide-react";
+import { Plus, Link2, Eye, EyeOff, ExternalLink, Info } from "lucide-react";
 import { SiBinance, SiCoinbase } from "react-icons/si";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ApiCredential } from "@shared/schema";
 
 const EXCHANGE_OPTIONS = [
   { value: "binance", label: "Binance", icon: SiBinance },
   { value: "coinbase", label: "Coinbase", icon: SiCoinbase },
   { value: "kraken", label: "Kraken", icon: null },
+  { value: "crypto_com", label: "Crypto.com", icon: null },
+  { value: "uphold", label: "Uphold", icon: null },
+  { value: "gemini", label: "Gemini", icon: null },
+  { value: "kucoin", label: "KuCoin", icon: null },
+  { value: "bybit", label: "Bybit", icon: null },
+  { value: "okx", label: "OKX", icon: null },
+  { value: "bitfinex", label: "Bitfinex", icon: null },
+  { value: "bitstamp", label: "Bitstamp", icon: null },
+  { value: "gate_io", label: "Gate.io", icon: null },
   { value: "robinhood", label: "Robinhood", icon: null },
   { value: "fidelity", label: "Fidelity", icon: null },
 ];
+
+const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
+  binance: {
+    steps: "Log in to Binance > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key.",
+    url: "https://www.binance.com/en/my/settings/api-management",
+  },
+  coinbase: {
+    steps: "Log in to Coinbase > Settings > API > New API Key > select all 'View' permissions only (wallet:accounts:read, wallet:transactions:read, etc.) > complete 2FA > copy your API Key and API Secret.",
+    url: "https://www.coinbase.com/settings/api",
+  },
+  kraken: {
+    steps: "Log in to Kraken > Security > API > Add Key > name it 'CryptoOwnBank' > under Permissions check ONLY 'Query Funds' and 'Query Open Orders & Trades' > Generate Key > copy your API Key and Private Key.",
+    url: "https://www.kraken.com/u/security/api",
+  },
+  crypto_com: {
+    steps: "Log in to Crypto.com Exchange > Settings > API Keys > Create a new API Key > label it 'CryptoOwnBank' > enable ONLY 'Read' permissions > complete 2FA > copy your API Key and Secret Key.",
+    url: "https://crypto.com/exchange/personal/api-management",
+  },
+  uphold: {
+    steps: "Log in to Uphold > Menu > Developer > API Keys > Create Token > name it 'CryptoOwnBank' > select 'Read' scope > copy your API Key and Secret.",
+    url: "https://uphold.com/dashboard",
+  },
+  gemini: {
+    steps: "Log in to Gemini > Account > Settings > API > Create a New API Key > select 'Primary' scope > check ONLY 'Fund Management (Read)' and 'Order History' > copy your API Key and API Secret.",
+    url: "https://exchange.gemini.com/settings/api",
+  },
+  kucoin: {
+    steps: "Log in to KuCoin > Profile > API Management > Create API > name it 'CryptoOwnBank' > set a passphrase (you'll need this) > enable ONLY 'General' permission > copy your API Key, Secret Key, and Passphrase.",
+    url: "https://www.kucoin.com/account/api",
+  },
+  bybit: {
+    steps: "Log in to Bybit > Account & Security > API Management > Create New Key > select 'System-generated API Keys' > name it 'CryptoOwnBank' > check ONLY 'Read-Only' > copy your API Key and Secret Key.",
+    url: "https://www.bybit.com/app/user/api-management",
+  },
+  okx: {
+    steps: "Log in to OKX > Profile icon > API > Create API Key > label it 'CryptoOwnBank' > set passphrase > select 'Read Only' permission > complete 2FA > copy your API Key, Secret Key, and Passphrase.",
+    url: "https://www.okx.com/account/my-api",
+  },
+  bitfinex: {
+    steps: "Log in to Bitfinex > Account > API Keys > Create New Key > label it 'CryptoOwnBank' > enable ONLY 'Get account balance' and 'Get account history' > Generate Key > copy your API Key and API Key Secret.",
+    url: "https://setting.bitfinex.com/api",
+  },
+  bitstamp: {
+    steps: "Log in to Bitstamp > Account > Security > API Access > New API Key > enable ONLY 'Account balance' and 'User transactions' > Activate > confirm via email > copy your API Key and Secret.",
+    url: "https://www.bitstamp.net/account/security/api/",
+  },
+  gate_io: {
+    steps: "Log in to Gate.io > Profile > API Management > Create API Key > label it 'CryptoOwnBank' > check ONLY 'Spot/Margin Read' and 'Wallet Read' > copy your API Key and Secret Key.",
+    url: "https://www.gate.io/myaccount/apikeys",
+  },
+  robinhood: {
+    steps: "Robinhood does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings or export your transaction history as a CSV file from the Robinhood app (Account > Statements & History > Download).",
+    url: "https://robinhood.com/account",
+  },
+  fidelity: {
+    steps: "Fidelity does not currently offer a public API for third-party portfolio tracking. You can manually add your holdings or export your transaction history as a CSV file from NetBenefits or the Fidelity website (Accounts > Activity & Orders > Download).",
+    url: "https://www.fidelity.com/",
+  },
+};
 
 const connectFormSchema = z.object({
   provider: z.string().min(1, "Select a provider"),
@@ -155,12 +224,12 @@ export default function Integrations() {
               Add Integration
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Connect Exchange</DialogTitle>
               <DialogDescription>
-                Enter your API credentials to connect your exchange account.
-                Your keys are encrypted and stored securely.
+                Enter your read-only API credentials to connect your exchange account.
+                Your keys are encrypted with AES-256 and stored securely. We only need read-only access.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -192,6 +261,25 @@ export default function Integrations() {
                     </FormItem>
                   )}
                 />
+
+                {form.watch("provider") && API_KEY_GUIDES[form.watch("provider")] && (
+                  <Alert className="bg-muted/50 border-primary/20">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs leading-relaxed">
+                      <span className="font-semibold block mb-1">How to get your {EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label} API Key:</span>
+                      {API_KEY_GUIDES[form.watch("provider")].steps}
+                      <a
+                        href={API_KEY_GUIDES[form.watch("provider")].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 mt-2 text-primary hover:underline font-medium"
+                        data-testid="link-exchange-api-guide"
+                      >
+                        Open {EXCHANGE_OPTIONS.find(e => e.value === form.watch("provider"))?.label} API Settings <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <FormField
                   control={form.control}
