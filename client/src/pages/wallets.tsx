@@ -76,6 +76,7 @@ import {
   Check,
   X,
   Star,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
@@ -478,6 +479,8 @@ export default function Wallets() {
     { value: "cardano", label: "Cardano (ADA)" },
   ];
 
+  const selectedChain = form.watch("chain");
+
   const allUserAssets: Array<{ symbol: string; usdValue: number; source: string; onExchange: boolean }> = [];
 
   if (fullPortfolio?.positions) {
@@ -521,7 +524,7 @@ export default function Wallets() {
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-wallets-title">Cold Wallets</h1>
           <p className="text-muted-foreground">
-            Track balances across all your wallets — no keys needed, read-only
+            Paste any public wallet address to automatically pull balances and transaction history — read-only, no keys needed
           </p>
         </div>
         <div className="flex gap-2">
@@ -548,7 +551,7 @@ export default function Wallets() {
               <DialogHeader>
                 <DialogTitle>Add Cold Wallet</DialogTitle>
                 <DialogDescription>
-                  Enter a public wallet address to track its balances. We never need your private keys.
+                  Paste your public wallet address below. We'll pull your current balance and, for Bitcoin and Ethereum, your full transaction history with cost basis. We never need your private keys.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -558,11 +561,11 @@ export default function Wallets() {
                     name="chain"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Blockchain</FormLabel>
+                        <FormLabel>Network</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-chain">
-                              <SelectValue placeholder="Select blockchain" />
+                              <SelectValue placeholder="Select network" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -588,14 +591,17 @@ export default function Wallets() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Wallet Address</FormLabel>
+                        <FormLabel>Public Address</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter public wallet address"
+                            placeholder="Paste your public wallet address here"
                             {...field}
                             data-testid="input-wallet-address"
                           />
                         </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Find this in your wallet app (Ledger Live, MetaMask, Trust Wallet, etc.) under "Receive"
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -618,6 +624,25 @@ export default function Wallets() {
                       </FormItem>
                     )}
                   />
+
+                  {selectedChain && (
+                    <div className="rounded-lg border bg-muted/50 p-3 flex gap-3" data-testid="info-chain-details">
+                      <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="text-sm text-muted-foreground">
+                        {(selectedChain === "bitcoin" || selectedChain === "ethereum") ? (
+                          <span>
+                            <strong className="text-foreground">Balance + full transaction history.</strong>{" "}
+                            We'll import all transactions from the {selectedChain === "bitcoin" ? "Bitcoin" : "Ethereum"} blockchain, calculate historical cost basis for each, and add them to your portfolio and tax reports.
+                          </span>
+                        ) : (
+                          <span>
+                            <strong className="text-foreground">Balance tracking.</strong>{" "}
+                            We'll pull your current {CHAIN_LABELS[selectedChain]} balance. Transaction history import is coming soon for this network.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -692,9 +717,9 @@ export default function Wallets() {
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Wallet className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium">No wallets connected</h3>
+            <h3 className="text-lg font-medium">No wallets added yet</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-md">
-              Add your cold wallet addresses to see balances here. We only need your public address — never your private keys.
+              Paste a public address from your Ledger, Trezor, MetaMask, or any wallet. We'll pull your balances and transaction history directly from the blockchain — no API keys or logins needed.
             </p>
             <Button
               className="mt-4"
