@@ -64,6 +64,20 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             </header>
             <main className="flex-1 overflow-auto p-4 lg:p-6">
               {children}
+              <footer className="mt-8 pt-4 border-t text-center space-y-1" data-testid="footer-app">
+                <p className="text-xs text-muted-foreground">
+                  &copy; {new Date().getFullYear()} CryptoOwnBank. All rights reserved.
+                  {" "}&middot;{" "}
+                  <a href="/legal" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Legal</a>
+                  {" "}&middot;{" "}
+                  <a href="/privacy" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Privacy</a>
+                  {" "}&middot;{" "}
+                  <a href="/contact" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Contact</a>
+                </p>
+                <p className="text-[10px] text-muted-foreground/60 max-w-2xl mx-auto leading-relaxed">
+                  Non-custodial dashboard. We never hold your funds or keys. Not financial, tax, or legal advice. Crypto carries risk including loss of principal. DYOR.
+                </p>
+              </footer>
             </main>
           </div>
         </div>

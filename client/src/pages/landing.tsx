@@ -1434,29 +1434,47 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="bg-gray-900 dark:bg-gray-950 text-gray-400 py-8 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-gray-900 dark:bg-gray-950 text-gray-400 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-[#00A4E4]" />
-              <span className="font-semibold text-gray-200">CryptoOwnBank</span>
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Wallet className="h-5 w-5 text-[#00A4E4]" />
+                <span className="font-semibold text-gray-200">CryptoOwnBank</span>
+              </div>
+              <p className="text-xs leading-relaxed">
+                Your non-custodial crypto command center. Track portfolios, earn yield on RLUSD, and manage taxes — all without giving up your keys.
+              </p>
             </div>
-            <p className="text-sm text-center">
-              &copy; {new Date().getFullYear()} CryptoOwnBank. All rights reserved.
+            <div>
+              <p className="text-sm font-medium text-gray-200 mb-3">Resources</p>
+              <div className="flex flex-col gap-2 text-sm">
+                <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Setup Guide</a>
+                <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
+                <a href="/faq" className="hover:text-[#00A4E4] transition-colors" data-testid="link-faq-footer">FAQ</a>
+                <a href="/contact" className="hover:text-[#00A4E4] transition-colors" data-testid="link-contact">Contact &amp; Feedback</a>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-200 mb-3">Legal</p>
+              <div className="flex flex-col gap-2 text-sm">
+                <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Terms &amp; Disclaimers</a>
+                <a href="/privacy" className="hover:text-[#00A4E4] transition-colors" data-testid="link-privacy">Privacy Policy</a>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-6 space-y-3">
+            <p className="text-xs text-center leading-relaxed max-w-4xl mx-auto">
+              CryptoOwnBank is a non-custodial portfolio tracking and yield dashboard. We never hold, control, or have access to your funds, private keys, or seed phrases. All on-chain transactions are signed locally on your device using your own wallet (Xumm or Ledger). CryptoOwnBank is not a bank, broker, exchange, or financial institution.
             </p>
-            <div className="flex items-center gap-2 text-sm flex-wrap justify-center">
-              <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Setup Guide</a>
-              <span>&middot;</span>
-              <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
-              <span>&middot;</span>
-              <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Legal &amp; Disclaimers</a>
-              <span>&middot;</span>
-              <a href="/privacy" className="hover:text-[#00A4E4] transition-colors" data-testid="link-privacy">Privacy Policy</a>
-              <span>&middot;</span>
-              <a href="/contact" className="hover:text-[#00A4E4] transition-colors" data-testid="link-contact">Contact & Feedback</a>
-            </div>
-            <p className="text-xs text-center max-w-2xl leading-relaxed">
-              Non-custodial dashboard &middot; We never hold your funds or keys &middot; Not financial advice &middot; DYOR
+            <p className="text-xs text-center leading-relaxed max-w-4xl mx-auto">
+              Nothing on this site constitutes financial, investment, tax, or legal advice. Cryptocurrency investments carry significant risk, including the potential loss of principal. Past performance is not indicative of future results. Yield rates shown are estimates provided by third-party protocols (Soil Protocol) and are not guaranteed by CryptoOwnBank. Always do your own research (DYOR) and consult a qualified professional before making financial decisions.
+            </p>
+            <p className="text-xs text-center leading-relaxed max-w-4xl mx-auto">
+              Tax report features are provided for informational purposes only and should not be considered tax advice. Consult a licensed tax professional for your specific situation. CryptoOwnBank is not responsible for the accuracy of third-party exchange data, blockchain data, or price feeds.
+            </p>
+            <p className="text-xs text-center mt-4">
+              &copy; {new Date().getFullYear()} CryptoOwnBank. All rights reserved.
             </p>
           </div>
         </div>
