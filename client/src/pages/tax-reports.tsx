@@ -31,7 +31,8 @@ import {
   TrendingUp,
   TrendingDown,
   Crown,
-  Lock
+  Lock,
+  Info
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -78,7 +79,7 @@ export default function TaxReports() {
     },
   });
 
-  const handleExport = async (format: "csv" | "pdf") => {
+  const handleExport = async (format: "csv" | "pdf" | "turbotax") => {
     try {
       const response = await fetch(
         `/api/tax-report/export?year=${selectedYear}&method=${taxMethod}&format=${format}`
@@ -98,12 +99,15 @@ export default function TaxReports() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tax-report-${selectedYear}.${format}`;
+      const ext = format === "pdf" ? "pdf" : "csv";
+      const prefix = format === "turbotax" ? "cryptoownbank-turbotax" : "tax-report";
+      a.download = `${prefix}-${selectedYear}.${ext}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast({ title: `Tax report exported as ${format.toUpperCase()}` });
+      const label = format === "turbotax" ? "TurboTax CSV" : format.toUpperCase();
+      toast({ title: `Tax report exported as ${label}` });
     } catch {
       toast({ title: "Failed to export report", variant: "destructive" });
     }
@@ -210,7 +214,7 @@ export default function TaxReports() {
                 Using {taxMethod} calculation method
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -219,6 +223,15 @@ export default function TaxReports() {
               >
                 <Download className="h-4 w-4 mr-2" />
                 CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport("turbotax")}
+                data-testid="button-export-turbotax"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                TurboTax
               </Button>
               <Button
                 variant="outline"
@@ -408,6 +421,48 @@ export default function TaxReports() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            IRS Filing Guide
+          </CardTitle>
+          <CardDescription>
+            How to use this report when filing your taxes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="p-4 rounded-lg border space-y-2">
+              <h4 className="font-medium" data-testid="text-form-8949-title">Form 8949 — Capital Gains</h4>
+              <p className="text-sm text-muted-foreground">
+                Report each sale from the Gain/Loss Events table on IRS Form 8949 (Sales and Dispositions of Capital Assets). Short-term trades go in Part I, long-term in Part II.
+              </p>
+            </div>
+            <div className="p-4 rounded-lg border space-y-2">
+              <h4 className="font-medium" data-testid="text-schedule-d-title">Schedule D — Totals</h4>
+              <p className="text-sm text-muted-foreground">
+                Transfer the totals from Form 8949 to Schedule D of your Form 1040. This is where your net short-term and long-term capital gains/losses are summarized.
+              </p>
+            </div>
+            <div className="p-4 rounded-lg border space-y-2">
+              <h4 className="font-medium" data-testid="text-schedule-1-title">Schedule 1 — Soil Interest Income</h4>
+              <p className="text-sm text-muted-foreground">
+                Soil vault interest payments are taxable as ordinary income in the year received. Report on Schedule 1 (Additional Income), Line 8z as "Other income."
+              </p>
+            </div>
+            <div className="p-4 rounded-lg border space-y-2">
+              <h4 className="font-medium" data-testid="text-turbotax-title">TurboTax Import</h4>
+              <p className="text-sm text-muted-foreground">
+                Click the "TurboTax" export button above to download a CSV formatted for direct import into TurboTax. In TurboTax, go to Investment Income, then select "Upload CSV" and choose the downloaded file.
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4 italic" data-testid="text-tax-disclaimer">
+            This information is for educational purposes only and does not constitute tax advice. Tax laws vary by jurisdiction and individual circumstances. Always consult a qualified tax professional for guidance specific to your situation.
+          </p>
         </CardContent>
       </Card>
     </div>

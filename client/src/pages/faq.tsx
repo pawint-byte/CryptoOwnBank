@@ -201,6 +201,35 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Tax Reporting & Filing",
+    items: [
+      {
+        q: "Can I use the CryptoOwnBank tax report directly for IRS filing?",
+        a: "Our tax report is a detailed worksheet — not the actual IRS form itself. It gives you all the data you need (dates, proceeds, cost basis, gains/losses) organized to map directly to IRS Form 8949 and Schedule D. You can hand it to your accountant, import the TurboTax CSV into tax software, or use the numbers to fill in the forms manually.",
+      },
+      {
+        q: "Which IRS forms do I need for crypto taxes?",
+        a: "Capital gains and losses from selling or trading crypto go on IRS Form 8949 (Sales and Dispositions of Capital Assets), with totals transferring to Schedule D of your Form 1040. Soil vault interest income is taxable as ordinary income — report it on Schedule 1 (Additional Income), Line 8z as 'Other income.' Our reports break everything down by short-term vs long-term to match these forms.",
+      },
+      {
+        q: "How do I import my tax report into TurboTax?",
+        a: "On the Tax Reports page, click the 'TurboTax' export button to download a CSV formatted specifically for TurboTax import. In TurboTax, navigate to Investment Income, select 'Upload CSV,' and choose the downloaded file. The column format (Currency Name, Purchase Date, Date Sold, Proceeds, Cost Basis, Gain/Loss) matches what TurboTax expects.",
+      },
+      {
+        q: "Does the report combine exchange data and Soil vault activity?",
+        a: "Yes — the tax report pulls from all sources into one unified output. This includes trades from connected exchanges (Binance, Coinbase, Kraken, etc.), Soil vault deposits and interest payments synced from the XRPL blockchain, and any manually entered transactions. You get one complete picture across all your crypto activity in a single downloadable file.",
+      },
+      {
+        q: "How is Soil vault interest taxed?",
+        a: "Soil vault interest payments are classified as ordinary income, taxable in the year you receive them. Each interest payment from the Soil vault address to your wallet is recorded with the exact amount, date, and transaction hash from the XRPL blockchain. Depositing RLUSD into a Soil vault is a capital movement (not a taxable event). Only the interest you actually receive is reported as income — accrued but unpaid interest is not included.",
+      },
+      {
+        q: "Do I still need the tax forms from my exchanges?",
+        a: "Our report is designed to be your single source for all crypto tax data. However, exchanges like Coinbase and Kraken also issue their own tax forms (1099-MISC, 1099-B). It's good practice to cross-reference, but you don't need to report the same transactions twice. Our system deduplicates — exchange API data and on-chain Soil data are separate transaction sets with no overlap.",
+      },
+    ],
+  },
+  {
     heading: "Safety & Disclaimers",
     items: [
       {

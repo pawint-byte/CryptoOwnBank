@@ -743,34 +743,61 @@ export async function registerRoutes(
       
       const events = await storage.getGainEventsByYear(userId, year);
       
-      if (format === "csv") {
-        const headers = [
-          "Date Sold",
-          "Date Acquired",
-          "Asset",
-          "Quantity",
-          "Proceeds",
-          "Cost Basis",
-          "Gain/Loss",
-          "Type",
-          "Method",
-        ];
-        const rows = events.map((e) => [
-          new Date(e.soldDate).toISOString().split("T")[0],
-          new Date(e.acquiredDate).toISOString().split("T")[0],
-          e.assetSymbol,
-          e.quantity,
-          e.proceeds,
-          e.costBasis,
-          e.gainLoss,
-          e.isLongTerm ? "Long-term" : "Short-term",
-          e.taxMethod,
-        ]);
+      if (format === "csv" || format === "turbotax") {
+        let csv: string;
+        let filename: string;
 
-        const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+        if (format === "turbotax") {
+          const ttHeaders = [
+            "Currency Name",
+            "Purchase Date",
+            "Date Sold",
+            "Proceeds",
+            "Cost Basis",
+            "Gain/Loss",
+          ];
+          const ttRows = events.map((e) => {
+            const escapeField = (val: string) => val.includes(",") ? `"${val}"` : val;
+            return [
+              escapeField(e.assetSymbol),
+              new Date(e.acquiredDate).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }),
+              new Date(e.soldDate).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }),
+              parseFloat(e.proceeds).toFixed(2),
+              parseFloat(e.costBasis).toFixed(2),
+              parseFloat(e.gainLoss).toFixed(2),
+            ];
+          });
+          csv = [ttHeaders.join(","), ...ttRows.map((r) => r.join(","))].join("\n");
+          filename = `cryptoownbank-turbotax-${year}.csv`;
+        } else {
+          const headers = [
+            "Date Sold",
+            "Date Acquired",
+            "Asset",
+            "Quantity",
+            "Proceeds",
+            "Cost Basis",
+            "Gain/Loss",
+            "Type",
+            "Method",
+          ];
+          const rows = events.map((e) => [
+            new Date(e.soldDate).toISOString().split("T")[0],
+            new Date(e.acquiredDate).toISOString().split("T")[0],
+            e.assetSymbol,
+            e.quantity,
+            e.proceeds,
+            e.costBasis,
+            e.gainLoss,
+            e.isLongTerm ? "Long-term" : "Short-term",
+            e.taxMethod,
+          ]);
+          csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+          filename = `tax-report-${year}.csv`;
+        }
         
         res.setHeader("Content-Type", "text/csv");
-        res.setHeader("Content-Disposition", `attachment; filename=tax-report-${year}.csv`);
+        res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
         res.send(csv);
       } else if (format === "pdf") {
         const settings = await storage.getUserSettings(userId);
@@ -792,6 +819,17 @@ export async function registerRoutes(
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.text(`Calculation Method: ${method} | Generated: ${new Date().toLocaleDateString("en-US")}`, 14, 28);
+        doc.setTextColor(0);
+
+        doc.setFontSize(9);
+        doc.setTextColor(60);
+        const filingY = 34;
+        doc.text("IRS Filing Guide:", 14, filingY);
+        doc.setFontSize(8);
+        doc.text("• Capital gains/losses below → IRS Form 8949 (Sales and Dispositions of Capital Assets)", 14, filingY + 4);
+        doc.text("• Totals transfer to Schedule D (Capital Gains and Losses) of your Form 1040", 14, filingY + 8);
+        doc.text("• Soil vault interest income → Schedule 1 (Additional Income), Line 8z — Other income", 14, filingY + 12);
+        doc.text("• TurboTax users: export the TurboTax-format CSV from CryptoOwnBank and import directly", 14, filingY + 16);
         doc.setTextColor(0);
 
         let shortTermGains = 0;
@@ -817,7 +855,7 @@ export async function registerRoutes(
         const fmtCurrency = (v: number) =>
           new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
 
-        const summaryY = 36;
+        const summaryY = 56;
         doc.setFontSize(12);
         doc.text("Summary", 14, summaryY);
 
