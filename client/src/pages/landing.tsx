@@ -213,11 +213,17 @@ const premiumFeatures = [
   "Unlimited cold wallets",
   "Full transaction history (all time)",
   "CSV import (Yahoo Finance, CoinTracker)",
-  "Complete tax reports (CSV + PDF + TurboTax)",
   "Unlimited price alerts",
   "Auto-withdrawal from Soil vaults",
   "Portfolio analytics across all sources",
   "Priority support",
+];
+
+const annualBonusFeatures = [
+  "Complete tax reports (CSV + PDF + TurboTax)",
+  "Capital gains & losses calculation",
+  "IRS Form 8949 / Schedule D guidance",
+  "Save $29/yr vs monthly billing",
 ];
 
 const onChainReasons = [
@@ -1033,8 +1039,8 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$9</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-6">or $79/yr — Save $29</p>
-                  <ul className="space-y-3 mb-6">
+                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $79/yr — Save $29</p>
+                  <ul className="space-y-3 mb-4">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
@@ -1042,6 +1048,17 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
+                  <div className="border-t border-amber-200 dark:border-amber-800 pt-3 mb-4">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-2">Annual plan bonus</p>
+                    <ul className="space-y-2">
+                      {annualBonusFeatures.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   <a href="/signup">
                     <Button className="w-full bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-plan-premium">
                       Go Premium

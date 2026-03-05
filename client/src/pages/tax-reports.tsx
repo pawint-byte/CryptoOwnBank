@@ -41,6 +41,7 @@ import type { GainEvent, UserSettings } from "@shared/schema";
 
 interface SubscriptionLimits {
   tier: string;
+  billingCycle: string | null;
   exchanges: { limit: number | null; used: number };
   wallets: { limit: number | null; used: number };
   alerts: { limit: number | null; used: number };
@@ -78,10 +79,17 @@ export default function TaxReports() {
     queryKey: ["/api/subscription/limits"],
   });
 
-  const taxReportsLocked = limits?.taxReports === false;
+  const limitsLoaded = !!limits;
+  const taxReportsLocked = limitsLoaded && limits.taxReports === false;
+  const isMonthlyPremium = limits?.tier === "premium" && limits?.billingCycle === "monthly";
+  const upgradeVariant = isMonthlyPremium ? "annual" as const : "premium" as const;
+  const taxLockedMessage = isMonthlyPremium
+    ? "Tax reports are available on the Annual plan ($79/yr). Switch to annual billing to unlock full tax calculations, PDF exports, and TurboTax-ready downloads."
+    : "Tax reports require an Annual Premium plan ($79/yr). Upgrade to calculate capital gains, generate IRS-ready reports, and export for TurboTax.";
 
   const { data: taxData, isLoading, refetch } = useQuery<TaxSummary>({
     queryKey: ["/api/tax-report", selectedYear, taxMethod],
+    enabled: !taxReportsLocked,
   });
 
   const calculateMutation = useMutation({
@@ -107,8 +115,8 @@ export default function TaxReports() {
       );
       if (response.status === 403) {
         toast({
-          title: "Premium Feature",
-          description: "PDF export is available for Premium subscribers. Upgrade to access this feature.",
+          title: "Annual Plan Required",
+          description: "Tax report exports require an Annual Premium plan ($79/yr). Switch to annual billing for full access.",
           variant: "destructive",
         });
         return;
@@ -213,7 +221,7 @@ export default function TaxReports() {
             </div>
 
             {taxReportsLocked ? (
-              <UpgradePrompt feature="Tax reports are a Premium feature. Upgrade to calculate and export your crypto taxes." />
+              <UpgradePrompt feature={taxLockedMessage} variant={upgradeVariant} />
             ) : (
               <Button
                 className="w-full"
@@ -283,7 +291,7 @@ export default function TaxReports() {
           </CardHeader>
           <CardContent>
             {taxReportsLocked ? (
-              <UpgradePrompt feature="Tax reports are a Premium feature. Upgrade to calculate and export your crypto taxes." />
+              <UpgradePrompt feature={taxLockedMessage} variant={upgradeVariant} />
             ) : isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-24" />

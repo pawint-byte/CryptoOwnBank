@@ -41,8 +41,13 @@ Preferred communication style: Simple, everyday language.
 - **Client-side Storage (Zustand)**: Wallet state, XRPL balances, Vault Deposits, Referral System data, Spending Wallet, Subscription Tier.
 
 ### Monetization (Freemium)
-- **Tiers**: Free, Premium ($9/month, $79/year), and future Pro tier.
-- **Gating**: Server-side enforced limits on features like number of exchanges/wallets, transaction history depth, tax reports, and auto-withdrawal. Frontend prompts for upgrades.
+- **Tiers**: Free, Premium ($9/month or $79/year), and future Pro tier.
+- **Free**: 1 exchange, 1 wallet, 3 alerts, 30-day history, Soil vault access, yield calculator.
+- **Premium Monthly** ($9/mo): Unlimited exchanges/wallets/alerts, full history, CSV import, auto-withdraw. No tax reports.
+- **Premium Annual** ($79/yr): Everything in monthly + complete tax reports (CSV, PDF, TurboTax). Tax reports are annual-plan exclusive to prevent one-month gaming at tax time.
+- **Pro** (future): Everything in Premium Annual + XLS-66 XRPL lending.
+- **Billing cycle stored**: `subscriptionBillingCycle` column in user_settings tracks "monthly" or "yearly" from Stripe checkout metadata.
+- **Gating**: Server-side enforced limits with 403 responses. Frontend shows `UpgradePrompt` component (supports `variant="premium"` or `variant="annual"` for different messaging). Gated endpoints: POST /api/credentials, POST /api/wallets, GET /api/transactions, POST /api/import/yahoo, GET /api/tax-report, POST /api/tax-report/calculate, GET /api/tax-report/export, POST /api/alerts.
 - **Affiliate/Referral**: Links for buying RLUSD, embedded Soil referral code, user referral program for premium credits.
 
 ## External Dependencies

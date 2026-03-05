@@ -19,7 +19,7 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($9/mo or $79/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
+        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription: monthly ($9/mo) for unlimited portfolio management, or annual ($79/yr) which adds complete tax reports. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
         q: "Can CryptoOwnBank connect to other blockchains and protocols in the future?",
@@ -188,7 +188,7 @@ const faqGroups = [
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited cold wallets, complete transaction history, CSV import from Yahoo Finance and CoinTracker, full tax reports with PDF and TurboTax export, unlimited price alerts, and auto-withdrawal from Soil vaults. Everything you need to manage your entire crypto footprint from one place.",
+        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited cold wallets, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, and auto-withdrawal from Soil vaults. Choose monthly ($9/mo) for portfolio management, or go annual ($79/yr) to also unlock complete tax reports with PDF and TurboTax export.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -212,7 +212,11 @@ const faqGroups = [
       },
       {
         q: "Can I export my tax report as a PDF?",
-        a: "Yes \u2014 Premium users can download a professionally formatted PDF tax report with a summary of short-term and long-term gains/losses, a full table of all gain events, and a disclaimer footer. Free users can still export CSV files. Go to Tax Reports, select your year and method, then click the PDF button.",
+        a: "Yes \u2014 Annual Premium subscribers ($79/yr) can download professionally formatted PDF tax reports, CSV exports, and TurboTax-ready files. Tax reports are exclusive to the annual plan. Go to Tax Reports, select your year and method, then click the export button.",
+      },
+      {
+        q: "Why are tax reports only on the annual plan?",
+        a: "Tax season comes once a year, so the annual plan makes the most sense for tax reporting. At $79/yr (vs $108 if you paid monthly), you save money and get full access to capital gains calculations, IRS Form 8949 data, PDF and TurboTax exports, and income tracking for staking and yield \u2014 all year round.",
       },
       {
         q: "How does the referral program work?",

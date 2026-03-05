@@ -849,8 +849,10 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const settings = await storage.getUserSettings(userId);
-      if (!settings || settings.subscriptionTier === "free" || !settings.subscriptionTier) {
-        return res.status(403).json({ message: "Tax reports are a Premium feature. Upgrade to view your crypto tax summary and gain/loss events." });
+      const tier = settings?.subscriptionTier || "free";
+      const billingCycle = settings?.subscriptionBillingCycle;
+      if (tier === "free" || billingCycle !== "yearly") {
+        return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
       const year = parseInt(req.query.year as string) || new Date().getFullYear();
@@ -905,8 +907,9 @@ export async function registerRoutes(
 
       const settings = await storage.getUserSettings(userId);
       const tier = settings?.subscriptionTier || "free";
-      if (tier === "free") {
-        return res.status(403).json({ message: "Tax reports are a Premium feature. Upgrade to calculate and export your crypto taxes." });
+      const billingCycle = settings?.subscriptionBillingCycle;
+      if (tier === "free" || billingCycle !== "yearly") {
+        return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
       const { year, method } = req.body;
@@ -976,8 +979,10 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const settings = await storage.getUserSettings(userId);
-      if (!settings || settings.subscriptionTier === "free" || !settings.subscriptionTier) {
-        return res.status(403).json({ message: "Tax report exports are a Premium feature. Upgrade to download CSV, TurboTax, and PDF reports." });
+      const tier = settings?.subscriptionTier || "free";
+      const billingCycle = settings?.subscriptionBillingCycle;
+      if (tier === "free" || billingCycle !== "yearly") {
+        return res.status(403).json({ message: "Tax report exports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
       const year = parseInt(req.query.year as string) || new Date().getFullYear();
@@ -1223,6 +1228,7 @@ export async function registerRoutes(
         if (event.type === "checkout.session.completed") {
           const session = event.data.object;
           const userId = session.metadata?.userId;
+          const billingCycle = session.metadata?.plan || "monthly";
           if (userId) {
             const existing = await storage.getUserSettings(userId);
             await storage.upsertUserSettings({
@@ -1230,6 +1236,7 @@ export async function registerRoutes(
               taxMethod: existing?.taxMethod || "FIFO",
               defaultCurrency: existing?.defaultCurrency || "USD",
               subscriptionTier: "premium",
+              subscriptionBillingCycle: billingCycle,
               stripeCustomerId: session.customer,
               stripeSubscriptionId: session.subscription,
             });
@@ -1252,6 +1259,7 @@ export async function registerRoutes(
                 taxMethod: s.taxMethod || "FIFO",
                 defaultCurrency: s.defaultCurrency || "USD",
                 subscriptionTier: "free",
+                subscriptionBillingCycle: null,
                 stripeCustomerId: s.stripeCustomerId,
                 stripeSubscriptionId: s.stripeSubscriptionId,
               });
@@ -1271,6 +1279,7 @@ export async function registerRoutes(
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as any;
         const userId = session.metadata?.userId;
+        const billingCycle = session.metadata?.plan || "monthly";
         if (userId) {
           const existing = await storage.getUserSettings(userId);
           await storage.upsertUserSettings({
@@ -1278,6 +1287,7 @@ export async function registerRoutes(
             taxMethod: existing?.taxMethod || "FIFO",
             defaultCurrency: existing?.defaultCurrency || "USD",
             subscriptionTier: "premium",
+            subscriptionBillingCycle: billingCycle,
             stripeCustomerId: session.customer,
             stripeSubscriptionId: session.subscription,
           });
@@ -1313,7 +1323,6 @@ export async function registerRoutes(
     alerts: number | null;
     transactionHistoryDays: number | null;
     csvImport: boolean;
-    taxReports: boolean;
     autoWithdraw: boolean;
     xls66Lending: boolean;
   }> = {
@@ -1323,7 +1332,6 @@ export async function registerRoutes(
       alerts: 3,
       transactionHistoryDays: 30,
       csvImport: false,
-      taxReports: false,
       autoWithdraw: false,
       xls66Lending: false,
     },
@@ -1333,7 +1341,6 @@ export async function registerRoutes(
       alerts: null,
       transactionHistoryDays: null,
       csvImport: true,
-      taxReports: true,
       autoWithdraw: true,
       xls66Lending: false,
     },
@@ -1343,7 +1350,6 @@ export async function registerRoutes(
       alerts: null,
       transactionHistoryDays: null,
       csvImport: true,
-      taxReports: true,
       autoWithdraw: true,
       xls66Lending: true,
     },
@@ -1354,21 +1360,25 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const settings = await storage.getUserSettings(userId);
       const tier = settings?.subscriptionTier || "free";
+      const billingCycle = settings?.subscriptionBillingCycle || null;
 
       const credentials = await storage.getApiCredentialsByUser(userId);
       const userWallets = await storage.getWalletsByUser(userId);
       const activeAlerts = await storage.countActiveAlertsByUser(userId);
 
       const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+      const hasAnnualPlan = billingCycle === "yearly";
+      const taxReportsUnlocked = tier !== "free" && hasAnnualPlan;
 
       res.json({
         tier,
+        billingCycle,
         exchanges: { limit: limits.exchanges, used: credentials.length },
         wallets: { limit: limits.wallets, used: userWallets.length },
         alerts: { limit: limits.alerts, used: activeAlerts },
         transactionHistoryDays: limits.transactionHistoryDays,
         csvImport: limits.csvImport,
-        taxReports: limits.taxReports,
+        taxReports: taxReportsUnlocked,
         autoWithdraw: limits.autoWithdraw,
         xls66Lending: limits.xls66Lending,
       });

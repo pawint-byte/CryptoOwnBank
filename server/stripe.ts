@@ -9,13 +9,13 @@ export const PLANS = {
     name: "OwnBank Premium Monthly",
     amount: 900,
     interval: "month" as const,
-    description: "$9/month — Auto-withdraw, tax export, priority vaults",
+    description: "$9/month — Unlimited exchanges, wallets, alerts, auto-withdraw",
   },
   yearly: {
-    name: "OwnBank Premium Yearly",
+    name: "OwnBank Premium Annual",
     amount: 7900,
     interval: "year" as const,
-    description: "$79/year — Save $29 vs monthly",
+    description: "$79/year — Everything in monthly + tax reports, save $29",
   },
 };
 
