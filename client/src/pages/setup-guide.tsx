@@ -76,10 +76,10 @@ const steps = [
     number: 5,
     icon: Shield,
     title: "Deposit RLUSD & Start Earning",
-    description: "Deposit RLUSD into a Soil vault and start earning 5.2–7.8% APR yield.",
+    description: "Deposit RLUSD into a Soil vault and start earning 5.2–8.0% APR yield.",
     details: [
       "Go to OwnBank \u2192 Vaults",
-      "Choose a vault: Treasury (5.2% APR) or Private Credit (7.8% APR)",
+      "Choose a vault: Treasury (5.2% APR) or CREDIT+ (8.0% APR)",
       "Enter the amount of RLUSD you want to deposit",
       "Review the transaction preview — we pre-build everything for you",
       "Sign the deposit transaction in Xaman (Ledger confirms on device)",

@@ -435,7 +435,7 @@ export default function OwnBankDashboard() {
                 Get RLUSD & Start Earning
               </h3>
               <p className="text-sm text-muted-foreground max-w-lg">
-                Buy RLUSD on a supported exchange, withdraw to your connected XRPL wallet, then return here to deposit into a Soil vault for 5.2–7.8% APR yield.
+                Buy RLUSD on a supported exchange, withdraw to your connected XRPL wallet, then return here to deposit into a Soil vault for 5.2–8.0% APR yield.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:min-w-[280px]">

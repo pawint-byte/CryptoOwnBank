@@ -185,10 +185,10 @@ export const SOIL_VAULTS = [
     totalDeposited: 2_450_000,
   },
   {
-    id: "soil-private-credit",
-    name: "Soil Private Credit Vault",
+    id: "soil-credit-plus",
+    name: "Soil CREDIT+ Vault",
     description: "Private credit RWA-backed yield",
-    apr: 7.8,
+    apr: 8.0,
     backing: "Private Credit",
     riskLevel: "Higher risk",
     withdrawalTerms: "90-day notice + 10-day cooldown",
