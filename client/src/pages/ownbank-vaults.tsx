@@ -129,7 +129,21 @@ export default function OwnBankVaults() {
     setShowPreview(true);
   }
 
-  async function handleConfirmDeposit() {
+  function handleConfirmDeposit() {
+    if (!selectedVault) return;
+
+    window.open(SOIL_REFERRAL_URL, "_blank", "noopener,noreferrer");
+
+    toast({
+      title: "Redirecting to Soil Protocol",
+      description: `Complete your ${selectedVault.name} deposit on Soil's website. Your wallet will sign the transaction there.`,
+    });
+    setDepositModalOpen(false);
+    setShowPreview(false);
+    setDepositAmount("");
+  }
+
+  async function handleConfirmDepositLegacy() {
     if (!selectedVault || !depositAmount) return;
     const amount = parseFloat(depositAmount);
 
@@ -490,7 +504,7 @@ export default function OwnBankVaults() {
           ) : (
             <div className="space-y-4">
               <div className="rounded-md border p-4 space-y-3">
-                <h4 className="text-sm font-semibold">Transaction Preview</h4>
+                <h4 className="text-sm font-semibold">Deposit Summary</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-muted-foreground">Vault</span>
@@ -507,24 +521,27 @@ export default function OwnBankVaults() {
                     <span className="font-medium">{selectedVault?.apr}%</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Sign With</span>
+                    <span className="text-muted-foreground">Deposit Via</span>
                     <Badge variant="secondary">
-                      {walletType === "xumm" ? "Xumm Wallet" : "Ledger Device"}
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Soil Protocol
                     </Badge>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-md bg-muted/50 p-3 space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  You are about to deposit{" "}
-                  <span className="font-semibold text-foreground">
+              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 space-y-2">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  You will be redirected to{" "}
+                  <span className="font-semibold">Soil Protocol</span>{" "}
+                  to complete your deposit of{" "}
+                  <span className="font-semibold">
                     {depositAmount} RLUSD
-                  </span>{" "}
-                  to vault. Principal protected. Only interest withdrawable.
+                  </span>.
+                  Sign the transaction directly with your cold wallet on Soil's site.
                 </p>
-                <p className="text-xs text-muted-foreground/80">
-                  You are signing with your cold wallet — we never see your keys.
+                <p className="text-xs text-blue-700/80 dark:text-blue-400/80">
+                  Principal protected. Only interest withdrawable. We never see your keys.
                 </p>
               </div>
 
@@ -532,25 +549,17 @@ export default function OwnBankVaults() {
                 <Button
                   variant="outline"
                   onClick={() => setShowPreview(false)}
-                  disabled={isDepositing}
                   data-testid="button-back-deposit"
                 >
                   Back
                 </Button>
                 <Button
                   onClick={handleConfirmDeposit}
-                  disabled={isDepositing}
                   className="bg-[#00A4E4] text-white border-[#00A4E4]"
                   data-testid="button-confirm-deposit"
                 >
-                  {isDepositing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Signing...
-                    </>
-                  ) : (
-                    "Confirm Deposit"
-                  )}
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Deposit on Soil
                 </Button>
               </DialogFooter>
             </div>
