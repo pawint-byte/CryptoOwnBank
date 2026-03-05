@@ -69,7 +69,19 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import type { Transaction, Account } from "@shared/schema";
+
+interface SubscriptionLimits {
+  tier: string;
+  exchanges: { limit: number | null; used: number };
+  wallets: { limit: number | null; used: number };
+  alerts: { limit: number | null; used: number };
+  transactionHistoryDays: number | null;
+  csvImport: boolean;
+  taxReports: boolean;
+  autoWithdraw: boolean;
+}
 
 const transactionFormSchema = z.object({
   accountId: z.string().min(1, "Select an account"),
@@ -259,6 +271,12 @@ export default function Transactions() {
     queryKey: ["/api/accounts"],
   });
 
+  const { data: limits } = useQuery<SubscriptionLimits>({
+    queryKey: ["/api/subscription/limits"],
+  });
+
+  const isHistoryLimited = limits?.transactionHistoryDays === 30;
+
   const fetchXrplTxs = useCallback(async () => {
     if (!walletAddress || !isConnected) return;
     setXrplLoading(true);
@@ -406,6 +424,12 @@ export default function Transactions() {
 
   return (
     <div className="space-y-6">
+      {isHistoryLimited && (
+        <UpgradePrompt
+          compact
+          feature="Showing last 30 days of transactions. Upgrade to Premium for complete history."
+        />
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Transactions</h1>

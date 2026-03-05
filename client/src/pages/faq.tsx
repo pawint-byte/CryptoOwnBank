@@ -180,11 +180,27 @@ const faqGroups = [
     ],
   },
   {
-    heading: "Premium, Referrals & Features",
+    heading: "Pricing & Plans",
     items: [
       {
-        q: "What\u2019s the difference between Free and Premium?",
-        a: "Free gives you full access to portfolio tracking, wallet connection, vault deposits, manual interest withdrawal, tax reports (CSV export), 3 price alerts, and the yield calculator. Premium ($9/month or $79/year) adds automatic weekly interest withdrawals, PDF tax report exports, unlimited price alerts, priority vault alerts, XLS-66 lending early access, and premium referral bonuses.",
+        q: "What's included in the free plan?",
+        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 cold wallet, basic dashboard, yield calculator, 3 price alerts, and 30 days of transaction history. Enough to get started and see the value.",
+      },
+      {
+        q: "What do I get with Premium?",
+        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited cold wallets, complete transaction history, CSV import from Yahoo Finance and CoinTracker, full tax reports with PDF and TurboTax export, unlimited price alerts, and auto-withdrawal from Soil vaults. Everything you need to manage your entire crypto footprint from one place.",
+      },
+      {
+        q: "Can I use Soil vaults without Premium?",
+        a: "Yes. Connecting your XRPL wallet, depositing into Soil vaults, and manually withdrawing interest are all free. Premium adds auto-withdrawal for convenience.",
+      },
+      {
+        q: "Why should I upgrade to Premium?",
+        a: "If your crypto is spread across multiple exchanges, wallets, and DeFi protocols, Premium gives you one cockpit to see everything. Instead of logging into Binance, Coinbase, Ledger Live, and Yahoo Finance separately, you see your entire portfolio, tax liability, and yield earnings in a single dashboard.",
+      },
+      {
+        q: "Can I cancel Premium anytime?",
+        a: "Yes. You can cancel your subscription at any time. You'll keep Premium access until the end of your current billing period. No penalties, no questions asked.",
       },
       {
         q: "How do Price Alerts work?",

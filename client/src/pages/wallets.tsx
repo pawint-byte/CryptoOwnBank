@@ -78,7 +78,19 @@ import {
   Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
+
+interface SubscriptionLimits {
+  tier: string;
+  exchanges: { limit: number | null; used: number };
+  wallets: { limit: number | null; used: number };
+  alerts: { limit: number | null; used: number };
+  transactionHistoryDays: number | null;
+  csvImport: boolean;
+  taxReports: boolean;
+  autoWithdraw: boolean;
+}
 
 const CHAIN_LABELS: Record<string, string> = {
   bitcoin: "BTC",
@@ -320,6 +332,12 @@ export default function Wallets() {
     queryKey: ["/api/portfolio"],
   });
 
+  const { data: limits } = useQuery<SubscriptionLimits>({
+    queryKey: ["/api/subscription/limits"],
+  });
+
+  const walletAtLimit = limits?.wallets.limit !== null && limits?.wallets.used !== undefined && limits.wallets.used >= (limits.wallets.limit ?? Infinity);
+
   const form = useForm<WalletFormValues>({
     resolver: zodResolver(walletFormSchema),
     defaultValues: {
@@ -510,7 +528,7 @@ export default function Wallets() {
           )}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" data-testid="button-add-wallet">
+              <Button size="sm" data-testid="button-add-wallet" disabled={walletAtLimit}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Wallet
               </Button>
@@ -608,6 +626,13 @@ export default function Wallets() {
           </Dialog>
         </div>
       </div>
+
+      {walletAtLimit && (
+        <UpgradePrompt
+          compact
+          feature="Free users can track 1 cold wallet. Upgrade to Premium for unlimited wallet tracking."
+        />
+      )}
 
       {userWallets.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">

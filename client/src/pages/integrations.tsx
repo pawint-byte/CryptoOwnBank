@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IntegrationCard } from "@/components/integration-card";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -38,6 +39,17 @@ import { SiBinance, SiCoinbase } from "react-icons/si";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import type { ApiCredential } from "@shared/schema";
+
+interface SubscriptionLimits {
+  tier: string;
+  exchanges: { limit: number | null; used: number };
+  wallets: { limit: number | null; used: number };
+  alerts: { limit: number | null; used: number };
+  transactionHistoryDays: number | null;
+  csvImport: boolean;
+  taxReports: boolean;
+  autoWithdraw: boolean;
+}
 
 const EXCHANGE_OPTIONS = [
   { value: "binance_us", label: "Binance.US", icon: SiBinance },
@@ -159,6 +171,13 @@ export default function Integrations() {
   const { data: credentials = [], isLoading } = useQuery<ApiCredential[]>({
     queryKey: ["/api/credentials"],
   });
+
+  const { data: limits } = useQuery<SubscriptionLimits>({
+    queryKey: ["/api/subscription/limits"],
+  });
+
+  const exchangeAtLimit = limits?.exchanges.limit !== null && limits?.exchanges.used !== undefined && limits.exchanges.used >= (limits.exchanges.limit ?? Infinity);
+  const csvImportLocked = limits?.csvImport === false;
 
   const form = useForm<ConnectFormValues>({
     resolver: zodResolver(connectFormSchema),
@@ -317,7 +336,7 @@ export default function Integrations() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-integration">
+            <Button data-testid="button-add-integration" disabled={exchangeAtLimit}>
               <Plus className="h-4 w-4 mr-2" />
               Add Integration
             </Button>
@@ -475,6 +494,13 @@ export default function Integrations() {
         </Dialog>
       </div>
 
+      {exchangeAtLimit && (
+        <UpgradePrompt
+          compact
+          feature="Free users can connect 1 exchange. Upgrade to Premium for unlimited exchange connections."
+        />
+      )}
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -570,36 +596,40 @@ export default function Integrations() {
                 </ol>
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-sm font-medium mb-1">
-                {csvImportMutation.isPending ? "Importing..." : "Upload CSV File"}
-              </p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Max 10 MB. Your data creates transactions and tax lots automatically.
-              </p>
-              <label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  disabled={csvImportMutation.isPending}
-                  data-testid="input-csv-upload"
-                />
-                <Button
-                  variant="default"
-                  size="sm"
-                  disabled={csvImportMutation.isPending}
-                  asChild
-                >
-                  <span data-testid="button-upload-csv">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {csvImportMutation.isPending ? "Processing..." : "Choose File"}
-                  </span>
-                </Button>
-              </label>
-            </div>
+            {csvImportLocked ? (
+              <UpgradePrompt feature="CSV import is a Premium feature. Upgrade to import from Yahoo Finance, CoinTracker, and other platforms." />
+            ) : (
+              <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 text-center">
+                <Upload className="h-8 w-8 text-muted-foreground mb-3" />
+                <p className="text-sm font-medium mb-1">
+                  {csvImportMutation.isPending ? "Importing..." : "Upload CSV File"}
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Max 10 MB. Your data creates transactions and tax lots automatically.
+                </p>
+                <label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={csvImportMutation.isPending}
+                    data-testid="input-csv-upload"
+                  />
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={csvImportMutation.isPending}
+                    asChild
+                  >
+                    <span data-testid="button-upload-csv">
+                      <Upload className="h-4 w-4 mr-2" />
+                      {csvImportMutation.isPending ? "Processing..." : "Choose File"}
+                    </span>
+                  </Button>
+                </label>
+              </div>
+            )}
           </div>
 
           {importResult && (

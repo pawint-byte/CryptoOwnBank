@@ -36,7 +36,19 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import type { GainEvent, UserSettings } from "@shared/schema";
+
+interface SubscriptionLimits {
+  tier: string;
+  exchanges: { limit: number | null; used: number };
+  wallets: { limit: number | null; used: number };
+  alerts: { limit: number | null; used: number };
+  transactionHistoryDays: number | null;
+  csvImport: boolean;
+  taxReports: boolean;
+  autoWithdraw: boolean;
+}
 
 interface TaxSummary {
   shortTermGains: number;
@@ -61,6 +73,12 @@ export default function TaxReports() {
   const { data: settings } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
   });
+
+  const { data: limits } = useQuery<SubscriptionLimits>({
+    queryKey: ["/api/subscription/limits"],
+  });
+
+  const taxReportsLocked = limits?.taxReports === false;
 
   const { data: taxData, isLoading, refetch } = useQuery<TaxSummary>({
     queryKey: ["/api/tax-report", selectedYear, taxMethod],
@@ -194,15 +212,19 @@ export default function TaxReports() {
               </RadioGroup>
             </div>
 
-            <Button
-              className="w-full"
-              onClick={() => calculateMutation.mutate()}
-              disabled={calculateMutation.isPending}
-              data-testid="button-calculate-taxes"
-            >
-              <Calculator className="h-4 w-4 mr-2" />
-              {calculateMutation.isPending ? "Calculating..." : "Calculate Taxes"}
-            </Button>
+            {taxReportsLocked ? (
+              <UpgradePrompt feature="Tax reports are a Premium feature. Upgrade to calculate and export your crypto taxes." />
+            ) : (
+              <Button
+                className="w-full"
+                onClick={() => calculateMutation.mutate()}
+                disabled={calculateMutation.isPending}
+                data-testid="button-calculate-taxes"
+              >
+                <Calculator className="h-4 w-4 mr-2" />
+                {calculateMutation.isPending ? "Calculating..." : "Calculate Taxes"}
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -217,48 +239,52 @@ export default function TaxReports() {
                 Using {taxMethod} calculation method
               </CardDescription>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport("csv")}
-                data-testid="button-export-csv"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport("turbotax")}
-                data-testid="button-export-turbotax"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                TurboTax
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport("pdf")}
-                data-testid="button-export-pdf"
-              >
-                {isPremium ? (
+            {!taxReportsLocked && (
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport("csv")}
+                  data-testid="button-export-csv"
+                >
                   <Download className="h-4 w-4 mr-2" />
-                ) : (
-                  <Lock className="h-4 w-4 mr-2" />
-                )}
-                PDF
-                {!isPremium && (
-                  <Badge variant="secondary" className="ml-1">
-                    <Crown className="h-3 w-3 mr-1" />
-                    Pro
-                  </Badge>
-                )}
-              </Button>
-            </div>
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport("turbotax")}
+                  data-testid="button-export-turbotax"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  TurboTax
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport("pdf")}
+                  data-testid="button-export-pdf"
+                >
+                  {isPremium ? (
+                    <Download className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Lock className="h-4 w-4 mr-2" />
+                  )}
+                  PDF
+                  {!isPremium && (
+                    <Badge variant="secondary" className="ml-1">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Pro
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {taxReportsLocked ? (
+              <UpgradePrompt feature="Tax reports are a Premium feature. Upgrade to calculate and export your crypto taxes." />
+            ) : isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-24" />
                 <Skeleton className="h-24" />
@@ -364,6 +390,7 @@ export default function TaxReports() {
         </Card>
       </div>
 
+      {!taxReportsLocked && (
       <Card>
         <CardHeader>
           <CardTitle>Gain/Loss Events</CardTitle>
@@ -446,6 +473,7 @@ export default function TaxReports() {
           )}
         </CardContent>
       </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -342,7 +342,16 @@ export async function registerRoutes(
   app.get("/api/transactions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const txns = await storage.getTransactionsByUser(userId);
+      let txns = await storage.getTransactionsByUser(userId);
+
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      if (tier === "free") {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        txns = txns.filter(t => new Date(t.transactionDate) >= thirtyDaysAgo);
+      }
+
       res.json(txns);
     } catch (error) {
       console.error("Transactions error:", error);
@@ -606,6 +615,15 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Missing required fields: provider, apiKey, apiSecret" });
       }
 
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      if (tier === "free") {
+        const existingCreds = await storage.getApiCredentialsByUser(userId);
+        if (existingCreds.length >= 1) {
+          return res.status(403).json({ message: "Free users can connect 1 exchange. Upgrade to Premium for unlimited exchange connections." });
+        }
+      }
+
       const validProviders = [
         "binance", "binance_us", "coinbase", "kraken", "crypto_com", "uphold",
         "gemini", "kucoin", "bybit", "okx", "bitfinex", "bitstamp", "gate_io",
@@ -830,6 +848,11 @@ export async function registerRoutes(
   app.get("/api/tax-report", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      if (!settings || settings.subscriptionTier === "free" || !settings.subscriptionTier) {
+        return res.status(403).json({ message: "Tax reports are a Premium feature. Upgrade to view your crypto tax summary and gain/loss events." });
+      }
+
       const year = parseInt(req.query.year as string) || new Date().getFullYear();
       
       const events = await storage.getGainEventsByYear(userId, year);
@@ -879,6 +902,13 @@ export async function registerRoutes(
   app.post("/api/tax-report/calculate", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      if (tier === "free") {
+        return res.status(403).json({ message: "Tax reports are a Premium feature. Upgrade to calculate and export your crypto taxes." });
+      }
+
       const { year, method } = req.body;
       
       const startDate = new Date(year, 0, 1);
@@ -945,6 +975,11 @@ export async function registerRoutes(
   app.get("/api/tax-report/export", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      if (!settings || settings.subscriptionTier === "free" || !settings.subscriptionTier) {
+        return res.status(403).json({ message: "Tax report exports are a Premium feature. Upgrade to download CSV, TurboTax, and PDF reports." });
+      }
+
       const year = parseInt(req.query.year as string) || new Date().getFullYear();
       const format = req.query.format as string || "csv";
       
@@ -1272,6 +1307,77 @@ export async function registerRoutes(
     }
   });
 
+  const TIER_LIMITS: Record<string, {
+    exchanges: number | null;
+    wallets: number | null;
+    alerts: number | null;
+    transactionHistoryDays: number | null;
+    csvImport: boolean;
+    taxReports: boolean;
+    autoWithdraw: boolean;
+    xls66Lending: boolean;
+  }> = {
+    free: {
+      exchanges: 1,
+      wallets: 1,
+      alerts: 3,
+      transactionHistoryDays: 30,
+      csvImport: false,
+      taxReports: false,
+      autoWithdraw: false,
+      xls66Lending: false,
+    },
+    premium: {
+      exchanges: null,
+      wallets: null,
+      alerts: null,
+      transactionHistoryDays: null,
+      csvImport: true,
+      taxReports: true,
+      autoWithdraw: true,
+      xls66Lending: false,
+    },
+    pro: {
+      exchanges: null,
+      wallets: null,
+      alerts: null,
+      transactionHistoryDays: null,
+      csvImport: true,
+      taxReports: true,
+      autoWithdraw: true,
+      xls66Lending: true,
+    },
+  };
+
+  app.get("/api/subscription/limits", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+
+      const credentials = await storage.getApiCredentialsByUser(userId);
+      const userWallets = await storage.getWalletsByUser(userId);
+      const activeAlerts = await storage.countActiveAlertsByUser(userId);
+
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+      res.json({
+        tier,
+        exchanges: { limit: limits.exchanges, used: credentials.length },
+        wallets: { limit: limits.wallets, used: userWallets.length },
+        alerts: { limit: limits.alerts, used: activeAlerts },
+        transactionHistoryDays: limits.transactionHistoryDays,
+        csvImport: limits.csvImport,
+        taxReports: limits.taxReports,
+        autoWithdraw: limits.autoWithdraw,
+        xls66Lending: limits.xls66Lending,
+      });
+    } catch (error) {
+      console.error("Subscription limits error:", error);
+      res.status(500).json({ message: "Failed to load subscription limits" });
+    }
+  });
+
   const feedbackUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024, files: 3 },
@@ -1494,6 +1600,16 @@ export async function registerRoutes(
   app.post("/api/wallets", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      if (tier === "free") {
+        const existingWallets = await storage.getWalletsByUser(userId);
+        if (existingWallets.length >= 1) {
+          return res.status(403).json({ message: "Free users can track 1 cold wallet. Upgrade to Premium for unlimited wallet tracking." });
+        }
+      }
+
       const parsed = insertWalletSchema.parse({ ...req.body, userId });
 
       const existing = await storage.getWalletsByUser(userId);
@@ -1607,6 +1723,13 @@ export async function registerRoutes(
   app.post("/api/import/yahoo", isAuthenticated, csvUpload.single("file"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      if (tier === "free") {
+        return res.status(403).json({ message: "CSV import is a Premium feature. Upgrade to import from Yahoo Finance and other platforms." });
+      }
+
       if (!req.file) {
         return res.status(400).json({ message: "No CSV file uploaded" });
       }

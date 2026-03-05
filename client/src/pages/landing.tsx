@@ -101,9 +101,9 @@ const howItWorks = [
 const features = [
   {
     icon: PieChart,
-    title: "Multi-Exchange Portfolio",
+    title: "One Cockpit for Everything",
     description:
-      "Connect Coinbase, Kraken, Binance, and more. See your entire crypto portfolio — BTC, ETH, XRP, altcoins — in one real-time dashboard.",
+      "Connect all your exchanges, cold wallets, and yield vaults. See your entire crypto footprint — BTC, ETH, XRP, altcoins — in one real-time dashboard instead of logging into five different apps.",
   },
   {
     icon: TrendingUp,
@@ -115,7 +115,7 @@ const features = [
     icon: FileText,
     title: "Tax Reports (FIFO/LIFO)",
     description:
-      "Auto-calculate capital gains across all your holdings. Export IRS-ready CSV or PDF reports with one click. Huge time saver.",
+      "Auto-calculate capital gains across all your holdings. Export IRS-ready CSV, PDF, or TurboTax-compatible reports with one click.",
   },
   {
     icon: Shield,
@@ -199,26 +199,25 @@ const testimonials = [
 ];
 
 const freeTierFeatures = [
-  "Real-time crypto balances (all exchanges)",
-  "Soil vault deposits & interest tracking",
-  "Manual interest withdrawals",
-  "Full transaction history (XRPL + exchanges)",
-  "FIFO/LIFO tax calculations + CSV export",
-  "3 price alerts with email notifications",
+  "Connect 1 exchange (Coinbase, Kraken, Binance, etc.)",
+  "Track 1 cold wallet",
+  "Soil vault access (deposit + manual withdraw)",
   "Yield calculator for projected earnings",
-  "Referral program (earn bonus SEED points)",
-  "Connect unlimited exchanges",
+  "3 price alerts with email notifications",
+  "30-day transaction history",
+  "Basic dashboard with real-time balances",
 ];
 
 const premiumFeatures = [
-  "Everything in Free, plus:",
-  "Auto \"Withdraw Interest Only\" every week",
-  "PDF tax reports (professional, downloadable)",
+  "Unlimited exchange connections",
+  "Unlimited cold wallets",
+  "Full transaction history (all time)",
+  "CSV import (Yahoo Finance, CoinTracker)",
+  "Complete tax reports (CSV + PDF + TurboTax)",
   "Unlimited price alerts",
-  "Priority alerts for new vaults & XLS-66",
-  "Premium referral bonuses (free months)",
-  "Priority support & future feature votes",
-  "XLS-66 lending early access",
+  "Auto-withdrawal from Soil vaults",
+  "Portfolio analytics across all sources",
+  "Priority support",
 ];
 
 const onChainReasons = [
@@ -745,9 +744,9 @@ export default function Landing() {
         <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4" data-testid="heading-features">Features That Actually Matter</h2>
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-features">Your Complete Crypto Cockpit</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Track your entire crypto portfolio, earn yield on RLUSD, generate tax reports, and manage it all from one place.
+                Stop jumping between Coinbase, Kraken, Ledger Live, and Yahoo Finance. Manage every exchange, wallet, vault, and tax report from a single dashboard.
               </p>
             </div>
 
@@ -993,9 +992,10 @@ export default function Landing() {
         <section id="pricing" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4" data-testid="heading-pricing">Start Free — No Credit Card Needed</h2>
+              <p className="text-[#00A4E4] font-medium mb-2" data-testid="text-pricing-tagline">Your crypto is everywhere. Your cockpit is here.</p>
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-pricing">One Dashboard to Rule Them All</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Go Premium to unlock the full "own bank" experience with auto-withdrawals and advanced features.
+                Start free with enough to see the value. Go Premium to unlock the full cockpit — manage every exchange, wallet, and yield source from one place.
               </p>
             </div>
 
@@ -1017,7 +1017,7 @@ export default function Landing() {
                   </ul>
                   <a href="/signup">
                     <Button className="w-full" variant="outline" data-testid="button-plan-free">
-                      Get Started Free
+                      Start Free
                     </Button>
                   </a>
                 </CardContent>
@@ -1033,7 +1033,7 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$9</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-6">or $79/year (save 27%)</p>
+                  <p className="text-sm text-[#00A4E4] font-medium mb-6">or $79/yr — Save $29</p>
                   <ul className="space-y-3 mb-6">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
@@ -1044,7 +1044,7 @@ export default function Landing() {
                   </ul>
                   <a href="/signup">
                     <Button className="w-full bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-plan-premium">
-                      Upgrade Now
+                      Go Premium
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </a>
