@@ -46,3 +46,4 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_database:1.0.
 [userenv.shared]
 VITE_XUMM_API_KEY = "f7532863-a6ea-4ac6-ac2e-0ddd4bd6620c"
 XUMM_API_KEY = "f7532863-a6ea-4ac6-ac2e-0ddd4bd6620c"
+VITE_GA_MEASUREMENT_ID = "G-QS2GXGNT8Y"
