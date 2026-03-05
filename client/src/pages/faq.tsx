@@ -139,7 +139,19 @@ const faqGroups = [
     items: [
       {
         q: "What\u2019s the difference between Free and Premium?",
-        a: "Free gives you full access to portfolio tracking, wallet connection, vault deposits, manual interest withdrawal, and tax reports. Premium ($9/month or $79/year) adds automatic weekly interest withdrawals, priority vault alerts, advanced tax CSV exports, XLS-66 lending early access, and premium referral bonuses.",
+        a: "Free gives you full access to portfolio tracking, wallet connection, vault deposits, manual interest withdrawal, tax reports (CSV export), 3 price alerts, and the yield calculator. Premium ($9/month or $79/year) adds automatic weekly interest withdrawals, PDF tax report exports, unlimited price alerts, priority vault alerts, XLS-66 lending early access, and premium referral bonuses.",
+      },
+      {
+        q: "How do Price Alerts work?",
+        a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users can have up to 3 active alerts; Premium users get unlimited alerts.",
+      },
+      {
+        q: "What is the Yield Calculator?",
+        a: "The Yield Calculator is a free public tool (no login required) that lets you estimate how much you\u2019d earn by depositing RLUSD into Soil vaults. Enter any amount, choose Treasury (5.2% APR) or CREDIT+ (8.0% APR), and toggle between simple and compound interest to see projected daily, weekly, monthly, and yearly earnings. Try it at /yield-calculator.",
+      },
+      {
+        q: "Can I export my tax report as a PDF?",
+        a: "Yes \u2014 Premium users can download a professionally formatted PDF tax report with a summary of short-term and long-term gains/losses, a full table of all gain events, and a disclaimer footer. Free users can still export CSV files. Go to Tax Reports, select your year and method, then click the PDF button.",
       },
       {
         q: "How does the referral program work?",
