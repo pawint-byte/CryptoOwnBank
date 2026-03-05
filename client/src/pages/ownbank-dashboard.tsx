@@ -306,98 +306,72 @@ export default function OwnBankDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">XRP Balance</CardTitle>
-            <div className="h-8 w-8 rounded-md bg-[#00A4E4]/10 flex items-center justify-center">
-              <SiRipple className="h-4 w-4 text-[#00A4E4]" />
+      <Card className="border-[#00A4E4]/20 bg-gradient-to-br from-[#00A4E4]/5 to-transparent">
+        <CardContent className="py-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold" data-testid="text-wallet-balances-heading">Wallet Balances</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { fetchBalances(); fetchPrice(); }}
+              disabled={loadingBalances}
+              data-testid="button-refresh-balances"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loadingBalances ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">XRP Balance</p>
+              {loadingBalances ? (
+                <Skeleton className="h-6 w-24" />
+              ) : (
+                <div className="text-lg font-bold font-mono" data-testid="text-xrp-balance">
+                  {xrpBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} XRP
+                </div>
+              )}
+              {!loadingBalances && xrpPrice > 0 && (
+                <p className="text-xs text-muted-foreground" data-testid="text-xrp-usd">
+                  {formatCurrency(xrpBalance * xrpPrice)}
+                </p>
+              )}
             </div>
-          </CardHeader>
-          <CardContent>
-            {loadingBalances ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <div className="text-2xl font-bold font-mono" data-testid="text-xrp-balance">
-                {xrpBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} XRP
-              </div>
-            )}
-            {!loadingBalances && xrpPrice > 0 && (
-              <p className="text-xs text-muted-foreground mt-1" data-testid="text-xrp-usd">
-                {formatCurrency(xrpBalance * xrpPrice)}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">RLUSD Balance</CardTitle>
-            <div className="h-8 w-8 rounded-md bg-[#00A4E4]/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-[#00A4E4]" />
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">RLUSD Available</p>
+              {loadingBalances ? (
+                <Skeleton className="h-6 w-24" />
+              ) : (
+                <div className="text-lg font-bold font-mono" data-testid="text-rlusd-balance">
+                  {formatCurrency(rlusdBalance)}
+                </div>
+              )}
+              {rlusdBalance > 0 && (
+                <Link href="/ownbank/vaults">
+                  <span className="text-xs text-[#00A4E4] hover:underline cursor-pointer" data-testid="link-move-to-soil">
+                    Move to Soil →
+                  </span>
+                </Link>
+              )}
             </div>
-          </CardHeader>
-          <CardContent>
-            {loadingBalances ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <div className="text-2xl font-bold font-mono" data-testid="text-rlusd-balance">
-                {formatCurrency(rlusdBalance)}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Portfolio Value</CardTitle>
-            <div className="h-8 w-8 rounded-md bg-[#00A4E4]/10 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-[#00A4E4]" />
+          </div>
+          {!loadingPrice && xrpPrice > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Portfolio (wallet)</span>
+              <span className="text-sm font-semibold font-mono" data-testid="text-portfolio-value">{formatCurrency(portfolioValue)}</span>
             </div>
-          </CardHeader>
-          <CardContent>
-            {loadingBalances || loadingPrice ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <div className="text-2xl font-bold font-mono" data-testid="text-portfolio-value">
-                {formatCurrency(portfolioValue)}
-              </div>
-            )}
-            {!loadingPrice && xrpPrice > 0 && (
-              <p className="text-xs text-muted-foreground mt-1" data-testid="text-xrp-price">
-                XRP: {formatCurrency(xrpPrice)}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Earned Interest</CardTitle>
-            <div className="h-8 w-8 rounded-md bg-[#00A4E4]/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-[#00A4E4]" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono" data-testid="text-total-interest">
-              {formatCurrency(allTimeInterest)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1" data-testid="text-month-interest">
-              This month: {formatCurrency(thisMonthInterest)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {showDepositPrompt && (
         <Alert className="border-emerald-500/40 bg-emerald-500/5">
           <Sparkles className="h-4 w-4 text-emerald-500" />
           <AlertTitle data-testid="text-balance-detected">
-            Detected new RLUSD in your wallet!
+            New RLUSD detected in your wallet
           </AlertTitle>
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2">
             <span className="text-sm">
-              +{formatCurrency(balanceIncrease || 0)} RLUSD received. Ready to start earning yield?
+              +{formatCurrency(balanceIncrease || 0)} RLUSD received. Ready to deposit to Soil?
             </span>
             <div className="flex items-center gap-2">
               <Link href="/ownbank/vaults">
@@ -406,7 +380,7 @@ export default function OwnBankDashboard() {
                   className="bg-[#00A4E4] text-white border-[#00A4E4]"
                   data-testid="button-deposit-now"
                 >
-                  Deposit to Soil Vault Now
+                  Deposit to Soil
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </Link>
@@ -423,159 +397,31 @@ export default function OwnBankDashboard() {
         </Alert>
       )}
 
-      <Card className="border-[#00A4E4]/30 bg-gradient-to-br from-[#00A4E4]/5 to-transparent">
-        <CardContent className="py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-3 flex-1">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-xs font-medium">
-                <Sparkles className="h-3 w-3" />
-                Step 1: Get RLUSD
-              </div>
-              <h3 className="text-xl font-bold" data-testid="text-get-rlusd-heading">
-                Get RLUSD & Start Earning
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-lg">
-                Buy RLUSD on a supported exchange, withdraw to your connected XRPL wallet, then return here to deposit into a Soil vault for 5.2–8.0% APR yield.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:min-w-[280px]">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Buy RLUSD on:</p>
-              <div className="grid grid-cols-2 gap-2">
-                <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full bg-[#F0B90B] text-black hover:bg-[#F0B90B]/90" size="sm" data-testid="link-buy-binance">
-                    Binance <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-                <a href={AFFILIATE_LINKS.kraken} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full bg-[#7B61FF] text-white hover:bg-[#7B61FF]/90" size="sm" data-testid="link-buy-kraken">
-                    Kraken <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-                <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full bg-[#0052FF] text-white hover:bg-[#0052FF]/90" size="sm" data-testid="link-buy-coinbase">
-                    Coinbase <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-                <a href={AFFILIATE_LINKS.cryptoCom} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full bg-[#002D74] text-white hover:bg-[#002D74]/90" size="sm" data-testid="link-buy-cryptocom">
-                    Crypto.com <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-                <a href={AFFILIATE_LINKS.uphold} target="_blank" rel="noopener noreferrer" className="col-span-2">
-                  <Button variant="outline" className="w-full" size="sm" data-testid="link-buy-uphold">
-                    Uphold <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-tight">
-                Affiliate links — we may earn a referral reward at no extra cost to you.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Already have RLUSD?
-            </p>
-            <Link href="/ownbank/vaults">
-              <Button variant="link" size="sm" className="text-[#00A4E4] p-0 h-auto" data-testid="link-go-to-vaults">
-                Go to Vaults & Deposit
-                <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Link href="/ownbank/withdraw">
-              <Button
-                className="w-full bg-[#00A4E4] border-[#00A4E4] text-white"
-                data-testid="button-withdraw-interest"
-              >
-                <ArrowDownToLine className="h-4 w-4 mr-2" />
-                Withdraw Interest Only
-              </Button>
-            </Link>
-            <Link href="/ownbank/vaults">
-              <Button variant="outline" className="w-full" data-testid="button-view-vaults">
-                <DollarSign className="h-4 w-4 mr-2" />
-                View Vaults
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <RefreshCw className="h-4 w-4 inline mr-2" />
-              RLUSD Balance
+      <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-transparent">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              <TrendingUp className="h-5 w-5 inline mr-2 text-purple-500" />
+              Your Soil Vault
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono" data-testid="text-rlusd-prominent">
-                {formatCurrency(rlusdBalance)}
-              </span>
-              <span className="text-sm text-muted-foreground">RLUSD</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { fetchBalances(); }}
-                disabled={loadingBalances}
-                className="ml-auto"
-                data-testid="button-refresh-rlusd"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${loadingBalances ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
-            {rlusdBalance > 0 ? (
-              <Link href="/ownbank/vaults">
-                <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700" data-testid="button-deposit-rlusd">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Deposit to Vault & Earn Yield
-                </Button>
-              </Link>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No RLUSD detected yet. Buy on{" "}
-                <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline" data-testid="link-buy-binance-fallback">Binance</a>,{" "}
-                <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline" data-testid="link-buy-coinbase-fallback">Coinbase</a>,{" "}
-                <a href={AFFILIATE_LINKS.uphold} target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline" data-testid="link-buy-uphold-fallback">Uphold</a>{" "}
-                or scroll up for all options.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
-        <CardHeader>
-          <CardTitle className="text-base">
-            <TrendingUp className="h-4 w-4 inline mr-2" />
-            Soil Vault Positions
-          </CardTitle>
+            <Badge variant="secondary" className="text-xs">5.2–8.0% APR</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            View your deposits, accrued yield, and SEED rewards directly on Soil Protocol.
+          </p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Your vault deposits and yield are managed directly by Soil Protocol on the XRPL. View your commitment, accrued interest, and SEED rewards on Soil's dashboard.
-          </p>
           <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-purple-600 text-white hover:bg-purple-700" data-testid="button-view-soil-dashboard">
+            <Button className="w-full bg-purple-600 text-white hover:bg-purple-700" size="lg" data-testid="button-view-soil-dashboard">
               <ExternalLink className="h-4 w-4 mr-2" />
-              View Vault Positions on Soil
+              View Vault & Yield on Soil
             </Button>
           </a>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="w-full" data-testid="button-soil-yield">
                 <DollarSign className="h-3.5 w-3.5 mr-1" />
-                Check Yield
+                Yield
               </Button>
             </a>
             <a href={SOIL_REFERRAL_URL} target="_blank" rel="noopener noreferrer">
@@ -584,12 +430,60 @@ export default function OwnBankDashboard() {
                 Deposit More
               </Button>
             </a>
+            <Link href="/ownbank/withdraw">
+              <Button variant="outline" size="sm" className="w-full" data-testid="button-withdraw-interest">
+                <ArrowDownToLine className="h-3.5 w-3.5 mr-1" />
+                Withdraw
+              </Button>
+            </Link>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Interest accrues daily. Check back after 24 hours to see your first yield.
+            Interest accrues daily on Soil. Your principal stays locked and protected.
           </p>
         </CardContent>
       </Card>
+
+      {rlusdBalance === 0 && xrpBalance < 1 && (
+        <Card className="border-border/50">
+          <CardContent className="py-5">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <h3 className="text-base font-semibold" data-testid="text-get-rlusd-heading">
+                  Get RLUSD to Start Earning
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-lg">
+                  Buy RLUSD on an exchange, withdraw to your wallet, then deposit into a Soil vault for 5.2–8.0% APR.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-[#F0B90B] text-black hover:bg-[#F0B90B]/90" size="sm" data-testid="link-buy-binance">
+                    Binance <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+                <a href={AFFILIATE_LINKS.kraken} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-[#7B61FF] text-white hover:bg-[#7B61FF]/90" size="sm" data-testid="link-buy-kraken">
+                    Kraken <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+                <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-[#0052FF] text-white hover:bg-[#0052FF]/90" size="sm" data-testid="link-buy-coinbase">
+                    Coinbase <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+                <a href={AFFILIATE_LINKS.uphold} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" data-testid="link-buy-uphold">
+                    Uphold <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Affiliate links — we may earn a referral reward at no extra cost to you.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
