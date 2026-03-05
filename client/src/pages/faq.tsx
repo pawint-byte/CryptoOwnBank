@@ -130,7 +130,7 @@ const faqGroups = [
       },
       {
         q: "How do I get a Crypto.com API key?",
-        a: "Log in to Crypto.com Exchange, then go to the API documentation page at exchange-docs.crypto.com and click 'Create API Key' in the top navigation. Alternatively, go to your Profile (top right) > Security > API Keys. Create a new API Key, label it 'CryptoOwnBank', enable ONLY 'Read' permissions, complete 2FA, and copy your API Key and Secret Key. Note: This is for the Crypto.com Exchange (crypto.com/exchange) — the Crypto.com mobile App does not offer API keys. Your identity must be verified before API access is available.",
+        a: "Log in to the Crypto.com Exchange website, click your profile icon (top right), go to User Center > API, and create a new API Key. The default permission is 'Can Read' only — that's exactly what CryptoOwnBank needs (do NOT enable trading or withdrawals). Copy your API Key and Secret Key. Note: This is for the Crypto.com Exchange (crypto.com/exchange) — the Crypto.com mobile App does not offer API keys for third-party tracking. Your identity must be verified before API access is available. See the official guide at exchange-docs.crypto.com.",
       },
       {
         q: "How do I get API keys for KuCoin, Bybit, OKX, or other exchanges?",
