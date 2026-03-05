@@ -29,7 +29,9 @@ import {
   Calculator,
   Calendar,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Crown,
+  Lock
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -81,6 +83,17 @@ export default function TaxReports() {
       const response = await fetch(
         `/api/tax-report/export?year=${selectedYear}&method=${taxMethod}&format=${format}`
       );
+      if (response.status === 403) {
+        toast({
+          title: "Premium Feature",
+          description: "PDF export is available for Premium subscribers. Upgrade to access this feature.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -95,6 +108,8 @@ export default function TaxReports() {
       toast({ title: "Failed to export report", variant: "destructive" });
     }
   };
+
+  const isPremium = settings?.subscriptionTier === "premium";
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -211,8 +226,18 @@ export default function TaxReports() {
                 onClick={() => handleExport("pdf")}
                 data-testid="button-export-pdf"
               >
-                <Download className="h-4 w-4 mr-2" />
+                {isPremium ? (
+                  <Download className="h-4 w-4 mr-2" />
+                ) : (
+                  <Lock className="h-4 w-4 mr-2" />
+                )}
                 PDF
+                {!isPremium && (
+                  <Badge variant="secondary" className="ml-1">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Pro
+                  </Badge>
+                )}
               </Button>
             </div>
           </CardHeader>

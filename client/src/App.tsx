@@ -39,6 +39,8 @@ import SigningOptions from "@/pages/signing-options";
 import Contact from "@/pages/contact";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
+import YieldCalculator from "@/pages/yield-calculator";
+import PriceAlerts from "@/pages/price-alerts";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -85,6 +87,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/history" component={OwnBankHistory} />
         <Route path="/ownbank/referrals" component={OwnBankReferrals} />
         <Route path="/ownbank/signing-options" component={SigningOptions} />
+        <Route path="/price-alerts" component={PriceAlerts} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
@@ -117,6 +120,7 @@ function Router() {
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />

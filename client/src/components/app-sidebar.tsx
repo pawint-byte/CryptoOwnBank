@@ -18,6 +18,8 @@ import {
   BarChart3,
   MessageSquare,
   HelpCircle,
+  Calculator,
+  Bell,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +43,7 @@ const trackerItems = [
   { title: "Portfolio", url: "/portfolio", icon: PieChart },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText },
   { title: "Integrations", url: "/integrations", icon: Link2 },
+  { title: "Price Alerts", url: "/price-alerts", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -189,6 +192,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/yield-calculator"}
+                  data-testid="nav-yield-calculator"
+                >
+                  <Link href="/yield-calculator">
+                    <Calculator className="h-4 w-4" />
+                    <span>Yield Calculator</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

@@ -44,14 +44,15 @@ Preferred communication style: Simple, everyday language.
 - **XRPL Wallets**: Non-custodial — Xumm and Ledger hardware wallet connections (no keys stored server-side)
 
 ### Key Data Models (PostgreSQL)
-- **Users**: id (UUID), email, firstName, lastName, passwordHash, emailVerified, emailVerifyToken, passwordResetToken, passwordResetExpires, authProvider, isAdmin, createdAt, updatedAt
+- **Users**: id (UUID), email, firstName, lastName, passwordHash, emailVerified, emailVerifyToken, passwordResetToken, passwordResetExpires, authProvider, isAdmin, xrplWalletAddress, xrplWalletType, createdAt, updatedAt
 - **API Credentials**: Encrypted storage for exchange API keys (Binance, Coinbase, etc.)
 - **Accounts**: Linked exchange/brokerage accounts
 - **Transactions**: Buy/sell records with quantity, price, and date
 - **Positions**: Aggregated holdings with cost basis tracking
 - **Tax Lots & Gain Events**: For FIFO/LIFO tax calculations
 - **Assets**: Cryptocurrency/stock metadata with price tracking
-- **User Settings**: Tax method, currency preferences
+- **User Settings**: Tax method, currency preferences, subscription tier, Stripe IDs
+- **Price Alerts**: userId, asset, targetPrice, direction (above/below), isActive, triggered, triggeredAt — background checker every 60s sends email via Resend
 
 ### Key Data Models (Client-side Zustand)
 - **Wallet State**: walletAddress, walletType (xumm/ledger), connection status
@@ -67,7 +68,8 @@ Preferred communication style: Simple, everyday language.
 - Dashboard: Portfolio overview with metrics, charts, and recent transactions
 - Transactions: Full transaction history with manual entry support
 - Portfolio: Detailed position breakdown with allocation visualization
-- Tax Reports: Capital gains calculations with FIFO/LIFO support and CSV export
+- Tax Reports: Capital gains calculations with FIFO/LIFO support, CSV export, and PDF export (Premium)
+- Price Alerts: Email notifications when crypto hits target price (Free: 3 alerts, Premium: unlimited)
 - Integrations: Exchange API key management
 - Settings: User preferences, spending wallet, subscription management
 
@@ -145,13 +147,15 @@ Preferred communication style: Simple, everyday language.
 - **Soil Referral**: Embedded referral code in deposit flow for SEED points
 - **User Referrals**: Invite friends, earn premium credits
 
-## Landing Page
-- Full marketing site at `/` for unauthenticated users
-- Sections: Hero, How It Works (4 steps), Features (6 cards), Member Stories (4 benefit stories), What is RLUSD, Pricing (Free vs Premium), Security, FAQ (12 questions), CTA
-- Header nav links: How It Works, FAQ, Pricing (smooth scroll anchors)
-- CryptoOwnBank branding with XRPL blue (#00A4E4)
-- Exchange links: Coinbase, Kraken, Binance for buying RLUSD
-- Legal disclaimer in footer
+### Public Pages
+- Landing Page (`/`): Hero, How It Works, Features, Member Stories, RLUSD explainer, Pricing, Security, FAQ, CTA
+- Yield Calculator (`/yield-calculator`): Public page for calculating projected Soil vault earnings (no login required, SEO-friendly)
+- Setup Guide (`/setup-guide`): 9-step onboarding for XRPL + Soil flow
+- FAQ, Legal, Privacy, Contact pages
+
+### Analytics
+- Google Analytics 4 (GA4) integration via `VITE_GA_MEASUREMENT_ID` env var
+- Loads conditionally only when measurement ID is set
 
 ## Email Notifications (Resend)
 - `server/email.ts` — Resend integration via Replit connector (not manual API key)

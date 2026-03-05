@@ -8,6 +8,7 @@ import {
   userSettings,
   assets,
   priceHistory,
+  priceAlerts,
   type ApiCredential,
   type InsertApiCredential,
   type Account,
@@ -24,6 +25,8 @@ import {
   type InsertUserSettings,
   type Asset,
   type InsertAsset,
+  type PriceAlert,
+  type InsertPriceAlert,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -88,6 +91,14 @@ export interface IStorage {
   getAsset(symbol: string): Promise<Asset | undefined>;
   updateAssetPrice(symbol: string, price: string): Promise<void>;
   getAllAssets(): Promise<Asset[]>;
+
+  createPriceAlert(alert: InsertPriceAlert): Promise<PriceAlert>;
+  getPriceAlertsByUser(userId: string): Promise<PriceAlert[]>;
+  getPriceAlert(id: number): Promise<PriceAlert | undefined>;
+  deletePriceAlert(id: number): Promise<void>;
+  getActivePriceAlerts(): Promise<PriceAlert[]>;
+  markPriceAlertTriggered(id: number): Promise<void>;
+  countActiveAlertsByUser(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -316,6 +327,56 @@ export class DatabaseStorage implements IStorage {
 
   async getAllAssets(): Promise<Asset[]> {
     return db.select().from(assets);
+  }
+
+  async createPriceAlert(alert: InsertPriceAlert): Promise<PriceAlert> {
+    const [result] = await db.insert(priceAlerts).values(alert).returning();
+    return result;
+  }
+
+  async getPriceAlertsByUser(userId: string): Promise<PriceAlert[]> {
+    return db
+      .select()
+      .from(priceAlerts)
+      .where(eq(priceAlerts.userId, userId))
+      .orderBy(desc(priceAlerts.createdAt));
+  }
+
+  async getPriceAlert(id: number): Promise<PriceAlert | undefined> {
+    const [result] = await db.select().from(priceAlerts).where(eq(priceAlerts.id, id));
+    return result;
+  }
+
+  async deletePriceAlert(id: number): Promise<void> {
+    await db.delete(priceAlerts).where(eq(priceAlerts.id, id));
+  }
+
+  async getActivePriceAlerts(): Promise<PriceAlert[]> {
+    return db
+      .select()
+      .from(priceAlerts)
+      .where(and(eq(priceAlerts.isActive, true), eq(priceAlerts.triggered, false)));
+  }
+
+  async markPriceAlertTriggered(id: number): Promise<void> {
+    await db
+      .update(priceAlerts)
+      .set({ triggered: true, isActive: false, triggeredAt: new Date() })
+      .where(eq(priceAlerts.id, id));
+  }
+
+  async countActiveAlertsByUser(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(priceAlerts)
+      .where(
+        and(
+          eq(priceAlerts.userId, userId),
+          eq(priceAlerts.isActive, true),
+          eq(priceAlerts.triggered, false)
+        )
+      );
+    return result[0]?.count || 0;
   }
 }
 

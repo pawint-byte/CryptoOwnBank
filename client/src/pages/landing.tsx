@@ -495,6 +495,9 @@ export default function Landing() {
               <a href="#faq" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
                 FAQ
               </a>
+              <a href="/yield-calculator" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-yield-calculator">
+                Yield Calculator
+              </a>
               <ThemeToggle />
               <a href="/login">
                 <Button data-testid="button-login">Sign In</Button>
@@ -1362,6 +1365,8 @@ export default function Landing() {
             </p>
             <div className="flex items-center gap-2 text-sm flex-wrap justify-center">
               <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Setup Guide</a>
+              <span>&middot;</span>
+              <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
               <span>&middot;</span>
               <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Legal &amp; Disclaimers</a>
               <span>&middot;</span>

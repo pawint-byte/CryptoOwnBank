@@ -262,6 +262,43 @@ export async function sendFeedbackNotification(
   await sendEmail(adminEmail, `[CryptoOwnBank Feedback] ${feedbackType} from ${senderName}`, finalHtml, attachments);
 }
 
+export async function sendPriceAlertEmail(
+  to: string,
+  asset: string,
+  targetPrice: string,
+  currentPrice: string,
+  direction: string
+) {
+  const directionText = direction === "above" ? "risen above" : "fallen below";
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Price Alert Triggered</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Price Alert: ${asset}</h2>
+        <p style="color: #555; line-height: 1.6;">
+          The price of <strong>${asset}</strong> has ${directionText} your target of <strong>$${targetPrice}</strong>.
+        </p>
+        <div style="background: #f8f8f8; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #666;">Asset</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${asset}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Target Price</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">$${targetPrice}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Current Price</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: #22c55e;">$${currentPrice}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Direction</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${direction === "above" ? "Above" : "Below"}</td></tr>
+          </table>
+        </div>
+        <p style="color: #999; font-size: 13px;">This alert has been automatically deactivated. Create a new alert from your dashboard if needed.</p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Price Alert: ${asset} ${directionText} $${targetPrice}`, html);
+}
+
 export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

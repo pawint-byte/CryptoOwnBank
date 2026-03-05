@@ -2,9 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
-import { sendFeedbackNotification } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
 import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -585,8 +585,118 @@ export async function registerRoutes(
         res.setHeader("Content-Type", "text/csv");
         res.setHeader("Content-Disposition", `attachment; filename=tax-report-${year}.csv`);
         res.send(csv);
+      } else if (format === "pdf") {
+        const settings = await storage.getUserSettings(userId);
+        if (!settings || settings.subscriptionTier !== "premium") {
+          return res.status(403).json({ message: "PDF export is a Premium feature. Please upgrade to access." });
+        }
+
+        const { jsPDF } = await import("jspdf");
+        const autoTableModule = await import("jspdf-autotable");
+        const autoTable = autoTableModule.default;
+
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+        const method = (req.query.method as string) || "FIFO";
+
+        doc.setFontSize(18);
+        doc.text(`CryptoOwnBank Tax Report — ${year}`, 14, 20);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Calculation Method: ${method} | Generated: ${new Date().toLocaleDateString("en-US")}`, 14, 28);
+        doc.setTextColor(0);
+
+        let shortTermGains = 0;
+        let shortTermLosses = 0;
+        let longTermGains = 0;
+        let longTermLosses = 0;
+
+        for (const event of events) {
+          const gl = parseFloat(event.gainLoss);
+          if (event.isLongTerm) {
+            if (gl >= 0) longTermGains += gl;
+            else longTermLosses += Math.abs(gl);
+          } else {
+            if (gl >= 0) shortTermGains += gl;
+            else shortTermLosses += Math.abs(gl);
+          }
+        }
+
+        const netShortTerm = shortTermGains - shortTermLosses;
+        const netLongTerm = longTermGains - longTermLosses;
+        const totalNet = netShortTerm + netLongTerm;
+
+        const fmtCurrency = (v: number) =>
+          new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
+
+        const summaryY = 36;
+        doc.setFontSize(12);
+        doc.text("Summary", 14, summaryY);
+
+        autoTable(doc, {
+          startY: summaryY + 4,
+          head: [["Category", "Gains", "Losses", "Net"]],
+          body: [
+            ["Short-Term (< 1 year)", fmtCurrency(shortTermGains), fmtCurrency(shortTermLosses), fmtCurrency(netShortTerm)],
+            ["Long-Term (>= 1 year)", fmtCurrency(longTermGains), fmtCurrency(longTermLosses), fmtCurrency(netLongTerm)],
+            ["Total", fmtCurrency(shortTermGains + longTermGains), fmtCurrency(shortTermLosses + longTermLosses), fmtCurrency(totalNet)],
+          ],
+          theme: "grid",
+          headStyles: { fillColor: [41, 128, 185] },
+          styles: { fontSize: 9 },
+          margin: { left: 14 },
+        });
+
+        const afterSummaryY = (doc as any).lastAutoTable?.finalY || summaryY + 40;
+
+        doc.setFontSize(12);
+        doc.text("Gain/Loss Events", 14, afterSummaryY + 10);
+
+        const tableRows = events.map((e) => [
+          new Date(e.soldDate).toLocaleDateString("en-US"),
+          new Date(e.acquiredDate).toLocaleDateString("en-US"),
+          e.assetSymbol,
+          parseFloat(e.quantity).toFixed(6),
+          fmtCurrency(parseFloat(e.proceeds)),
+          fmtCurrency(parseFloat(e.costBasis)),
+          fmtCurrency(parseFloat(e.gainLoss)),
+          e.isLongTerm ? "Long-term" : "Short-term",
+        ]);
+
+        autoTable(doc, {
+          startY: afterSummaryY + 14,
+          head: [["Date Sold", "Date Acquired", "Asset", "Quantity", "Proceeds", "Cost Basis", "Gain/Loss", "Type"]],
+          body: tableRows,
+          theme: "striped",
+          headStyles: { fillColor: [41, 128, 185] },
+          styles: { fontSize: 8 },
+          margin: { left: 14 },
+        });
+
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(7);
+          doc.setTextColor(130);
+          doc.text(
+            "This report is for informational purposes only. Consult a tax professional.",
+            14,
+            doc.internal.pageSize.getHeight() - 8
+          );
+          doc.text(
+            `Page ${i} of ${pageCount}`,
+            doc.internal.pageSize.getWidth() - 30,
+            doc.internal.pageSize.getHeight() - 8
+          );
+        }
+
+        const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=tax-report-${year}.pdf`);
+        res.send(pdfBuffer);
       } else {
-        res.status(400).json({ message: "Unsupported format. Use csv." });
+        res.status(400).json({ message: "Unsupported format. Use csv or pdf." });
       }
     } catch (error) {
       console.error("Export tax report error:", error);
@@ -824,5 +934,194 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/alerts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const alerts = await storage.getPriceAlertsByUser(userId);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Get alerts error:", error);
+      res.status(500).json({ message: "Failed to load alerts" });
+    }
+  });
+
+  app.post("/api/alerts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { asset, targetPrice, direction, isActive } = req.body;
+
+      if (!asset || !targetPrice || !direction) {
+        return res.status(400).json({ message: "Missing required fields: asset, targetPrice, direction" });
+      }
+
+      if (!["above", "below"].includes(direction)) {
+        return res.status(400).json({ message: "Direction must be 'above' or 'below'" });
+      }
+
+      const supportedAssets = Object.keys(COINGECKO_ASSET_MAP);
+      if (!supportedAssets.includes(asset.toUpperCase())) {
+        return res.status(400).json({
+          message: `Unsupported asset. Supported: ${supportedAssets.join(", ")}`,
+        });
+      }
+
+      if (isNaN(parseFloat(targetPrice)) || parseFloat(targetPrice) <= 0) {
+        return res.status(400).json({ message: "Target price must be a positive number" });
+      }
+
+      const settings = await storage.getUserSettings(userId);
+      const tier = settings?.subscriptionTier || "free";
+      const activeCount = await storage.countActiveAlertsByUser(userId);
+
+      if (tier === "free" && activeCount >= 3) {
+        return res.status(403).json({
+          message: "Free users can have up to 3 active alerts. Upgrade to Premium for unlimited alerts.",
+          limit: 3,
+          current: activeCount,
+        });
+      }
+
+      const alert = await storage.createPriceAlert({
+        userId,
+        asset: asset.toUpperCase(),
+        targetPrice: targetPrice.toString(),
+        direction,
+        isActive: isActive !== undefined ? isActive : true,
+      });
+
+      res.json(alert);
+    } catch (error) {
+      console.error("Create alert error:", error);
+      res.status(500).json({ message: "Failed to create alert" });
+    }
+  });
+
+  app.delete("/api/alerts/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid alert ID" });
+      }
+
+      const alert = await storage.getPriceAlert(id);
+      if (!alert) {
+        return res.status(404).json({ message: "Alert not found" });
+      }
+      if (alert.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to delete this alert" });
+      }
+
+      await storage.deletePriceAlert(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete alert error:", error);
+      res.status(500).json({ message: "Failed to delete alert" });
+    }
+  });
+
+  startPriceAlertChecker();
+
   return httpServer;
+}
+
+const COINGECKO_ASSET_MAP: Record<string, string> = {
+  XRP: "ripple",
+  BTC: "bitcoin",
+  ETH: "ethereum",
+  SOL: "solana",
+  ADA: "cardano",
+  DOT: "polkadot",
+  DOGE: "dogecoin",
+  AVAX: "avalanche-2",
+  MATIC: "matic-network",
+  LINK: "chainlink",
+  UNI: "uniswap",
+  ATOM: "cosmos",
+  LTC: "litecoin",
+  RLUSD: "rlusd",
+};
+
+async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
+  const coingeckoIds = assets
+    .map((a) => COINGECKO_ASSET_MAP[a.toUpperCase()])
+    .filter(Boolean);
+
+  if (coingeckoIds.length === 0) return {};
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error("CoinGecko API error:", response.status);
+      return {};
+    }
+    const data = await response.json();
+    const prices: Record<string, number> = {};
+    for (const [symbol, cgId] of Object.entries(COINGECKO_ASSET_MAP)) {
+      if (data[cgId]?.usd !== undefined) {
+        prices[symbol] = data[cgId].usd;
+      }
+    }
+    return prices;
+  } catch (error) {
+    console.error("Failed to fetch prices from CoinGecko:", error);
+    return {};
+  }
+}
+
+function startPriceAlertChecker() {
+  setInterval(async () => {
+    try {
+      const activeAlerts = await storage.getActivePriceAlerts();
+      if (activeAlerts.length === 0) return;
+
+      const uniqueAssets = Array.from(new Set(activeAlerts.map((a) => a.asset)));
+      const prices = await fetchCurrentPrices(uniqueAssets);
+
+      if (Object.keys(prices).length === 0) return;
+
+      for (const alert of activeAlerts) {
+        const currentPrice = prices[alert.asset.toUpperCase()];
+        if (currentPrice === undefined) continue;
+
+        const target = parseFloat(alert.targetPrice);
+        let triggered = false;
+
+        if (alert.direction === "above" && currentPrice >= target) {
+          triggered = true;
+        } else if (alert.direction === "below" && currentPrice <= target) {
+          triggered = true;
+        }
+
+        if (triggered) {
+          await storage.markPriceAlertTriggered(alert.id);
+
+          try {
+            const [user] = await db
+              .select({ email: users.email })
+              .from(users)
+              .where(eq(users.id, alert.userId));
+
+            if (user?.email) {
+              await sendPriceAlertEmail(
+                user.email,
+                alert.asset,
+                alert.targetPrice,
+                currentPrice.toFixed(4),
+                alert.direction
+              );
+            }
+          } catch (emailError) {
+            console.error("Failed to send price alert email:", emailError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Price alert checker error:", error);
+    }
+  }, 60000);
+
+  console.log("Price alert checker started (runs every 60 seconds)");
 }

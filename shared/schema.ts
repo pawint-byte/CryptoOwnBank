@@ -165,6 +165,21 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
   updatedAt: true,
 });
 
+export const priceAlerts = pgTable("price_alerts", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull(),
+  asset: varchar("asset", { length: 20 }).notNull(),
+  targetPrice: decimal("target_price", { precision: 18, scale: 8 }).notNull(),
+  direction: varchar("direction", { length: 10 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  triggered: boolean("triggered").default(false).notNull(),
+  triggeredAt: timestamp("triggered_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_price_alerts_user").on(table.userId),
+  index("idx_price_alerts_active").on(table.isActive),
+]);
+
 export const insertAssetSchema = createInsertSchema(assets).omit({
   id: true,
 });
@@ -190,5 +205,15 @@ export type GainEvent = typeof gainEvents.$inferSelect;
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type UserSettings = typeof userSettings.$inferSelect;
 
+export const insertPriceAlertSchema = createInsertSchema(priceAlerts).omit({
+  id: true as never,
+  triggered: true as never,
+  triggeredAt: true as never,
+  createdAt: true as never,
+});
+
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type Asset = typeof assets.$inferSelect;
+
+export type InsertPriceAlert = z.infer<typeof insertPriceAlertSchema>;
+export type PriceAlert = typeof priceAlerts.$inferSelect;
