@@ -23,7 +23,7 @@ export async function getEthTransactions(address: string): Promise<BlockchainTra
     while (results.length < MAX_TRANSACTIONS) {
       const apiKey = process.env.ETHERSCAN_API_KEY || "";
       const keyParam = apiKey ? `&apikey=${apiKey}` : "";
-      const url = `https://api.etherscan.io/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&page=${page}&offset=${pageSize}&sort=asc${keyParam}`;
+      const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&page=${page}&offset=${pageSize}&sort=asc${keyParam}`;
 
       const res = await fetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) {

@@ -54,6 +54,20 @@ const COINGECKO_IDS: Record<string, string> = {
   JASMY: "jasmycoin",
   BLUR: "blur",
   DYDX: "dydx-chain",
+  QSP: "quantstamp",
+  ELON: "dogelon-mars",
+  HEX: "hex",
+  RSR: "reserve-rights-token",
+  AMP: "amp-token",
+  ACH: "alchemy-pay",
+  ALI: "artificial-liquid-intelligence",
+  XYO: "xyo-network",
+  XPR: "proton",
+  OOKI: "ooki",
+  IQ: "everipedia",
+  KRL: "kryll",
+  RADAR: "dappradar",
+  MXC: "mxc",
   STX: "blockstack",
   FIL: "filecoin",
   ATOM: "cosmos",
@@ -178,8 +192,9 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
   try {
     const apiKey = process.env.ETHERSCAN_API_KEY || "";
     const keyParam = apiKey ? `&apikey=${apiKey}` : "";
+    const etherscanBase = `https://api.etherscan.io/v2/api?chainid=1`;
     const tokenData = await fetchJson(
-      `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&page=1&offset=1&sort=desc${keyParam}`
+      `${etherscanBase}&module=account&action=tokentx&address=${address}&page=1&offset=1&sort=desc${keyParam}`
     );
 
     if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
@@ -187,7 +202,7 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
 
       let usedTokenList = false;
       try {
-        const tokenBalUrl = `https://api.etherscan.io/api?module=account&action=tokenlist&address=${address}${keyParam}`;
+        const tokenBalUrl = `${etherscanBase}&module=account&action=tokenlist&address=${address}${keyParam}`;
         const tokenBalData = await fetchJson(tokenBalUrl);
         if (tokenBalData.status === "1" && Array.isArray(tokenBalData.result) && tokenBalData.result.length > 0) {
           tokenBalances = tokenBalData.result;
@@ -201,7 +216,7 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
         while (page <= 5) {
           try {
             const txData = await fetchJson(
-              `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&page=${page}&offset=100&sort=desc${keyParam}`
+              `${etherscanBase}&module=account&action=tokentx&address=${address}&page=${page}&offset=100&sort=desc${keyParam}`
             );
             if (txData.status !== "1" || !Array.isArray(txData.result) || txData.result.length === 0) break;
             for (const tx of txData.result) {
@@ -221,7 +236,7 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
         for (const [contractAddr, info] of seenContracts) {
           try {
             const balData = await fetchJson(
-              `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddr}&address=${address}&tag=latest${keyParam}`
+              `${etherscanBase}&module=account&action=tokenbalance&contractaddress=${contractAddr}&address=${address}&tag=latest${keyParam}`
             );
             if (balData.status === "1" && balData.result && balData.result !== "0") {
               const rawBal = BigInt(balData.result);
