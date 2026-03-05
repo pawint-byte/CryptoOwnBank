@@ -225,8 +225,12 @@ export default function Integrations() {
       if (data?.pricesUpdated > 0) parts.push(`${data.pricesUpdated} prices updated`);
       toast({ title: parts.length > 0 ? `Synced: ${parts.join(", ")}` : "Sync complete — no new data" });
     },
-    onError: () => {
-      toast({ title: "Failed to sync", variant: "destructive" });
+    onError: async (error: any) => {
+      let message = "Failed to sync";
+      try {
+        if (error?.message) message = error.message;
+      } catch {}
+      toast({ title: message, variant: "destructive" });
     },
   });
 

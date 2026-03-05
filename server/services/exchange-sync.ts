@@ -99,14 +99,22 @@ async function syncBinance(apiKey: string, apiSecret: string, isUS: boolean = fa
 
     return { balances, trades };
   } catch (error: any) {
-    return { balances: [], trades: [], error: error.message };
+    const msg = error.message || "";
+    if (msg.includes("451") || msg.includes("restricted location")) {
+      return {
+        balances: [],
+        trades: [],
+        error: isUS
+          ? "Binance.US API rejected the request. Please verify your API key and permissions."
+          : "Binance Global is blocked from US servers. Please disconnect and reconnect using 'Binance.US' instead, with API keys from binance.us",
+      };
+    }
+    return { balances: [], trades: [], error: msg };
   }
 }
 
 async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncResult> {
-  const baseUrl = "https://api.crypto.com/exchange/v1";
-
-  const signRequest = (method: string, id: number, params: any = {}) => {
+  const signRequest = (baseUrl: string, method: string, id: number, params: any = {}) => {
     const nonce = Date.now();
     const paramsString = Object.keys(params).sort().reduce((a: string, b: string) => {
       return a + b + params[b];
@@ -116,50 +124,66 @@ async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncRes
     return { id, method, params, api_key: apiKey, sig, nonce };
   };
 
-  try {
-    const balanceReq = signRequest("private/user-balance", 1);
-    const balanceData = await fetchJson(`${baseUrl}/private/user-balance`, {
+  const tryApi = async (baseUrl: string, balanceMethod: string, tradeMethod: string): Promise<SyncResult> => {
+    const balanceReq = signRequest(baseUrl, balanceMethod, 1);
+    const balanceData = await fetchJson(`${baseUrl}/${balanceMethod}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(balanceReq),
     });
 
     const balances: ExchangeBalance[] = [];
-    const positionBalances = balanceData?.result?.data || [];
-    for (const item of positionBalances) {
-      for (const bal of item.position_balances || []) {
-        const qty = parseFloat(bal.quantity || "0");
+
+    if (balanceMethod === "private/get-account-summary") {
+      const accounts = balanceData?.result?.accounts || [];
+      for (const acct of accounts) {
+        const qty = parseFloat(acct.available || acct.balance || "0");
         if (qty > 0) {
           balances.push({
-            asset: bal.instrument_name || "",
+            asset: acct.currency || "",
             free: qty,
-            locked: parseFloat(bal.reserved_qty || "0"),
+            locked: parseFloat(acct.stake || acct.order || "0"),
           });
+        }
+      }
+    } else {
+      const positionBalances = balanceData?.result?.data || [];
+      for (const item of positionBalances) {
+        for (const bal of item.position_balances || []) {
+          const qty = parseFloat(bal.quantity || "0");
+          if (qty > 0) {
+            balances.push({
+              asset: bal.instrument_name || "",
+              free: qty,
+              locked: parseFloat(bal.reserved_qty || "0"),
+            });
+          }
         }
       }
     }
 
     const trades: ExchangeTrade[] = [];
     try {
-      const tradeReq = signRequest("private/get-trades", 2, { page_size: "200" });
-      const tradeData = await fetchJson(`${baseUrl}/private/get-trades`, {
+      const tradeReq = signRequest(baseUrl, tradeMethod, 2, {});
+      const tradeData = await fetchJson(`${baseUrl}/${tradeMethod}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(tradeReq),
       });
 
-      for (const t of tradeData?.result?.data || []) {
+      const tradeList = tradeData?.result?.data || tradeData?.result?.trade_list || [];
+      for (const t of tradeList) {
         const pair = t.instrument_name || "";
         const parts = pair.split("_");
         trades.push({
-          externalId: `crypto_com-${t.trade_id}`,
+          externalId: `crypto_com-${t.trade_id || t.order_id || Date.now()}`,
           asset: parts[0] || pair,
-          type: t.side === "BUY" ? "buy" : "sell",
-          quantity: parseFloat(t.traded_quantity || "0"),
-          price: parseFloat(t.traded_price || "0"),
+          type: (t.side === "BUY" || t.direction === "BUY") ? "buy" : "sell",
+          quantity: parseFloat(t.traded_quantity || t.quantity || "0"),
+          price: parseFloat(t.traded_price || t.price || "0"),
           fee: parseFloat(t.fee || "0"),
-          feeCurrency: t.fee_instrument_name || "USD",
-          date: new Date(t.create_time || Date.now()),
+          feeCurrency: t.fee_instrument_name || t.fee_currency || "USD",
+          date: new Date(t.create_time || t.update_time || Date.now()),
         });
       }
     } catch {
@@ -167,8 +191,24 @@ async function syncCryptoCom(apiKey: string, apiSecret: string): Promise<SyncRes
     }
 
     return { balances, trades };
-  } catch (error: any) {
-    return { balances: [], trades: [], error: error.message };
+  };
+
+  try {
+    return await tryApi(
+      "https://api.crypto.com/exchange/v1",
+      "private/user-balance",
+      "private/get-trades"
+    );
+  } catch {
+    try {
+      return await tryApi(
+        "https://api.crypto.com/v2",
+        "private/get-account-summary",
+        "private/get-trades"
+      );
+    } catch (error: any) {
+      return { balances: [], trades: [], error: `Crypto.com API error: ${error.message}` };
+    }
   }
 }
 
