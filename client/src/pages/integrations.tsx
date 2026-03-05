@@ -39,7 +39,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ApiCredential } from "@shared/schema";
 
 const EXCHANGE_OPTIONS = [
-  { value: "binance", label: "Binance", icon: SiBinance },
+  { value: "binance_us", label: "Binance.US", icon: SiBinance },
+  { value: "binance", label: "Binance (Global)", icon: SiBinance },
   { value: "coinbase", label: "Coinbase", icon: SiCoinbase },
   { value: "kraken", label: "Kraken", icon: null },
   { value: "crypto_com", label: "Crypto.com", icon: null },
@@ -56,8 +57,12 @@ const EXCHANGE_OPTIONS = [
 ];
 
 const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
+  binance_us: {
+    steps: "Log in to Binance.US > click your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA > IMPORTANT: only enable 'Can Read' (disable trading/withdrawals) > copy your API Key and Secret Key. Note: Binance.US is the only Binance platform available to US residents.",
+    url: "https://www.binance.us/settings/api-management",
+  },
   binance: {
-    steps: "Log in to Binance > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key.",
+    steps: "Log in to Binance (Global) > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key. Note: This is the global Binance platform — US residents should use Binance.US instead.",
     url: "https://www.binance.com/en/my/settings/api-management",
   },
   coinbase: {

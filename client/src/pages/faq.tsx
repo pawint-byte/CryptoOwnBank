@@ -113,8 +113,12 @@ const faqGroups = [
         a: "Each exchange has its own process, but the general steps are: 1) Log in to your exchange account. 2) Go to Account Settings or Security. 3) Find the 'API' or 'API Management' section. 4) Create a new API key and label it 'CryptoOwnBank'. 5) IMPORTANT: Only enable READ-ONLY permissions (never enable trading or withdrawal). 6) Copy the API Key and Secret. 7) Paste them into the Integrations page on CryptoOwnBank. When you select an exchange on our Integrations page, we show you step-by-step instructions specific to that exchange.",
       },
       {
-        q: "How do I get a Binance API key?",
-        a: "Log in to Binance > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA verification > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key. Direct link: binance.com/en/my/settings/api-management",
+        q: "How do I get a Binance.US API key? (US residents)",
+        a: "Log in to Binance.US > click your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA verification > IMPORTANT: only enable 'Can Read' (disable trading/withdrawals) > copy your API Key and Secret Key. Direct link: binance.us/settings/api-management. Note: US residents must use Binance.US — the global Binance platform (binance.com) is not available to US users.",
+      },
+      {
+        q: "How do I get a Binance (Global) API key?",
+        a: "Log in to Binance > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA verification > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key. Direct link: binance.com/en/my/settings/api-management. Note: This is the global Binance platform — US residents should use Binance.US instead.",
       },
       {
         q: "How do I get a Coinbase API key?",
