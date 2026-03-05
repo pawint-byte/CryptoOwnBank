@@ -19,6 +19,7 @@ import {
   Share2,
   ShieldCheck,
 } from "lucide-react";
+import { SiBinance, SiCoinbase, SiUphold } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 
 function truncateAddress(address: string): string {
@@ -33,6 +34,7 @@ const exchangeCards = [
     color: "bg-yellow-500/10 border-yellow-500/20",
     iconColor: "text-yellow-600 dark:text-yellow-400",
     description: "Global exchange with deep RLUSD liquidity",
+    icon: SiBinance,
   },
   {
     name: "Kraken",
@@ -40,6 +42,7 @@ const exchangeCards = [
     color: "bg-purple-500/10 border-purple-500/20",
     iconColor: "text-purple-600 dark:text-purple-400",
     description: "Trusted exchange with low fees",
+    icon: null,
   },
   {
     name: "Coinbase",
@@ -47,6 +50,7 @@ const exchangeCards = [
     color: "bg-blue-500/10 border-blue-500/20",
     iconColor: "text-blue-600 dark:text-blue-400",
     description: "Beginner-friendly, regulated platform",
+    icon: SiCoinbase,
   },
   {
     name: "Crypto.com",
@@ -54,6 +58,7 @@ const exchangeCards = [
     color: "bg-indigo-500/10 border-indigo-500/20",
     iconColor: "text-indigo-600 dark:text-indigo-400",
     description: "Popular app with Visa card rewards",
+    icon: null,
   },
   ...(AFFILIATE_LINKS.uphold
     ? [
@@ -63,6 +68,7 @@ const exchangeCards = [
           color: "bg-emerald-500/10 border-emerald-500/20",
           iconColor: "text-emerald-600 dark:text-emerald-400",
           description: "Easy RLUSD on/off-ramp with yield",
+          icon: SiUphold,
         },
       ]
     : []),
@@ -237,7 +243,13 @@ export default function OwnBankReferrals() {
                       <div
                         className={`flex h-8 w-8 items-center justify-center rounded-full ${exchange.color}`}
                       >
-                        <LinkIcon className={`h-4 w-4 ${exchange.iconColor}`} />
+                        {exchange.icon ? (
+                          <exchange.icon className={`h-4 w-4 ${exchange.iconColor}`} />
+                        ) : (
+                          <span className={`text-sm font-bold ${exchange.iconColor}`}>
+                            {exchange.name.charAt(0)}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold text-sm">{exchange.name}</p>
