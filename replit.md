@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Core Functionality**:
     - **Authentication**: Email/password auth (scrypt hashing, email verification, password reset), legacy Replit Auth. PostgreSQL-backed sessions. Admin roles with dashboard.
     - **Data Sync**: Exchange API key management (encrypted), automatic/manual sync of balances and transactions from exchanges (Binance, Coinbase, etc.). Public blockchain API integrations for wallet balance tracking (BTC, ETH, SOL, XRP, DOGE, LTC, ADA).
-    - **Token Scanning**: Ethereum addresses pull native ETH + all ERC-20 tokens via Etherscan `tokenlist`/`tokenbalance` APIs (with `tokentx` fallback). Solana addresses pull native SOL + all SPL tokens via `getTokenAccountsByOwner` RPC. XRP addresses pull native XRP + trust line tokens (RLUSD, etc.) via `account_lines`. 70+ tokens mapped to CoinGecko IDs for automatic price lookup.
+    - **Token Scanning**: Ethereum addresses pull native ETH (via llamarpc) + all ERC-20 tokens via Blockscout API (`/api/v2/addresses/{addr}/tokens?type=ERC-20`) with pagination — free, no API key needed. Solana addresses pull native SOL + all SPL tokens via `getTokenAccountsByOwner` RPC. XRP addresses pull native XRP + trust line tokens (RLUSD, etc.) via `account_lines`. 100+ tokens mapped to CoinGecko IDs for automatic price lookup.
     - **Blockchain Transaction Import**: When syncing ETH or BTC wallets, pulls full transaction history from Etherscan (ETH) and blockchain.info (BTC). Classifies receive→buy, send→sell. Looks up historical USD price per transaction date via CoinGecko and creates tax lots for acquisitions. Deduplicates by tx hash. Services: `server/services/blockchain-transactions.ts` (tx fetching), `server/services/historical-prices.ts` (price lookup with in-memory cache).
     - **XRPL Scanner**: Scans XRPL ledger for transactions between user wallets and Soil vault address for deposits and interest payments, storing them for tax integration.
     - **Email Notifications**: Resend integration for various transactional emails.
@@ -90,3 +90,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Analytics
 - Google Analytics 4 (GA4)
+
+## Roadmap / To Do
+
+### Grant Opportunities
+1. **XRPL Grant Application** — Prepare and submit to Ripple's XRPL Grants program. Highlight Soil vault integration, XRP wallet tracking, RLUSD support, non-custodial architecture, and multi-chain portfolio aggregation. Typical grant range: $10K–$50K.
+2. **Deeper XRPL Features (strengthens grant case)**:
+   - XRPL DEX trading pair viewer
+   - AMM pool tracking and yield display
+   - Trustline management UI
+   - XRPL transaction history with token-level detail
+3. **Additional Grant Programs**:
+   - Stellar Community Fund (we already support Stellar wallet scanning)
+   - Ethereum Foundation ecosystem grants (Blockscout-powered ERC-20 scanning)
+   - Solana Foundation grants (we have Solana wallet + SPL token support)
+4. **Usage Metrics & Analytics** — Track and surface active users, wallets connected, transactions processed, and other KPIs to strengthen grant proposals and demonstrate traction.
