@@ -91,11 +91,11 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://www.kraken.com/u/security/api",
   },
   crypto_com: {
-    steps: "Crypto.com has 3 separate products — make sure you're using the right one:\n\n• Crypto.com Exchange (crypto.com/exchange): This is the ONLY one with API keys. Follow the steps below to connect it.\n• Crypto.com App (the regular mobile app): No API available. Use CSV export instead (Settings > Export Data), or find your deposit address under 'Receive' and add it on the Cold Wallets page.\n• Crypto.com Onchain (DeFi wallet): This is a self-custody wallet — go to Cold Wallets page and paste your public address to track it.\n\nFor Crypto.com Exchange API keys:\n1) Log in at crypto.com/exchange. 2) Profile icon (top right) > Account Management > API Management. 3) Create a New API Key > label it 'CryptoOwnBank'. 4) Set up 2FA if prompted. 5) Copy the API Secret Key immediately (shown only once). 6) Click 'Edit' on your key to find the API Key. 7) Remove IP whitelist restrictions. 8) Leave Withdrawal and Trading set to 'Off'. Paste both keys below.",
+    steps: "Crypto.com has 3 separate products — make sure you're using the right one:\n\n• Crypto.com Exchange (crypto.com/exchange): This is the ONLY one with API keys. Follow the steps below to connect it.\n• Crypto.com App (the regular mobile app): No API available. Use CSV export instead (Settings > Export Data), or find your deposit address under 'Receive' and add it on the Blockchain Addresses page.\n• Crypto.com Onchain (DeFi wallet): This is a self-custody wallet — go to the Blockchain Addresses page and paste your public address to track it.\n\nFor Crypto.com Exchange API keys:\n1) Log in at crypto.com/exchange. 2) Profile icon (top right) > Account Management > API Management. 3) Create a New API Key > label it 'CryptoOwnBank'. 4) Set up 2FA if prompted. 5) Copy the API Secret Key immediately (shown only once). 6) Click 'Edit' on your key to find the API Key. 7) Remove IP whitelist restrictions. 8) Leave Withdrawal and Trading set to 'Off'. Paste both keys below.",
     url: "https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#generating-the-api-key",
   },
   uphold: {
-    steps: "Uphold no longer offers personal API keys — their API is now restricted to enterprise partners only. To track your Uphold holdings in CryptoOwnBank, you have two options:\n\n1) CSV Import: In the Uphold app, go to Activity > click the download/export icon > download your transaction history as CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you hold XRP on Uphold, go to your XRP wallet in the Uphold app, tap 'Transact' > 'Send to crypto network' to find your XRP address. Add that address on the Cold Wallets page to track your balance.",
+    steps: "Uphold no longer offers personal API keys — their API is now restricted to enterprise partners only. To track your Uphold holdings in CryptoOwnBank, you have two options:\n\n1) CSV Import: In the Uphold app, go to Activity > click the download/export icon > download your transaction history as CSV. Then import it on the Transactions page.\n\n2) Blockchain Address Tracking: If you hold XRP on Uphold, go to your XRP wallet in the Uphold app, tap 'Transact' > 'Send to crypto network' to find your public address. Add that address on the Blockchain Addresses page.",
     url: "https://uphold.com/dashboard",
   },
   gemini: {
@@ -131,19 +131,19 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://platform.nexo.com/api-keys",
   },
   webull: {
-    steps: "Webull does not offer a public API. To track your Webull crypto in CryptoOwnBank:\n\n1) CSV Import: In the Webull app, go to Account > Menu (three dots) > Statements & History > Download CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've withdrawn crypto to your own wallet, add that wallet address on the Cold Wallets page to track it automatically.",
+    steps: "Webull does not offer a public API. To track your Webull crypto in CryptoOwnBank:\n\n1) CSV Import: In the Webull app, go to Account > Menu (three dots) > Statements & History > Download CSV. Then import it on the Transactions page.\n\n2) Blockchain Address Tracking: If you've withdrawn crypto to your own wallet, add that public address on the Blockchain Addresses page to track it automatically.",
     url: "https://www.webull.com/",
   },
   etoro: {
-    steps: "eToro does not offer a public API. To track your eToro crypto in CryptoOwnBank:\n\n1) CSV Import: In eToro, go to Settings > Account Statement > select your date range > Download as Excel/CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've transferred crypto to the eToro Money wallet or your own wallet, add the public address on the Cold Wallets page.",
+    steps: "eToro does not offer a public API. To track your eToro crypto in CryptoOwnBank:\n\n1) CSV Import: In eToro, go to Settings > Account Statement > select your date range > Download as Excel/CSV. Then import it on the Transactions page.\n\n2) Blockchain Address Tracking: If you've transferred crypto to the eToro Money wallet or your own wallet, add the public address on the Blockchain Addresses page.",
     url: "https://www.etoro.com/settings/account",
   },
   robinhood: {
-    steps: "Robinhood does not offer a public API. To track your Robinhood crypto in CryptoOwnBank:\n\n1) CSV Import: In the Robinhood app, go to Account > Statements & History > Download your transaction history as CSV. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've transferred crypto out to your own wallet, add that wallet address on the Cold Wallets page to track it automatically.",
+    steps: "Robinhood does not offer a public API. To track your Robinhood crypto in CryptoOwnBank:\n\n1) CSV Import: In the Robinhood app, go to Account > Statements & History > Download your transaction history as CSV. Then import it on the Transactions page.\n\n2) Blockchain Address Tracking: If you've transferred crypto out to your own wallet, add that public address on the Blockchain Addresses page to track it automatically.",
     url: "https://robinhood.com/account",
   },
   fidelity: {
-    steps: "Fidelity does not offer a public API for crypto. To track your Fidelity crypto in CryptoOwnBank:\n\n1) CSV Import: On the Fidelity website, go to Accounts > Activity & Orders > Download your transaction history. Then import it on the Transactions page.\n\n2) Cold Wallet Tracking: If you've withdrawn crypto to your own wallet, add the public address on the Cold Wallets page.",
+    steps: "Fidelity does not offer a public API for crypto. To track your Fidelity crypto in CryptoOwnBank:\n\n1) CSV Import: On the Fidelity website, go to Accounts > Activity & Orders > Download your transaction history. Then import it on the Transactions page.\n\n2) Blockchain Address Tracking: If you've withdrawn crypto to your own wallet, add the public address on the Blockchain Addresses page.",
     url: "https://www.fidelity.com/",
   },
 };

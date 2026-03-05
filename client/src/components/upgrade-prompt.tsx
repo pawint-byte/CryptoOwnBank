@@ -11,7 +11,7 @@ interface UpgradePromptProps {
 
 const PREMIUM_BENEFITS = [
   "Unlimited exchange connections",
-  "Unlimited cold wallets",
+  "Unlimited blockchain addresses",
   "Full transaction history (all time)",
   "CSV import (Yahoo Finance, CoinTracker)",
   "Unlimited price alerts",

@@ -522,9 +522,9 @@ export default function Wallets() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-wallets-title">Cold Wallets</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-wallets-title">Blockchain Addresses</h1>
           <p className="text-muted-foreground">
-            Paste any public wallet address to automatically pull balances and transaction history — read-only, no keys needed
+            Paste any public address to automatically pull on-chain balances and transaction history — read-only, no keys needed
           </p>
         </div>
         <div className="flex gap-2">
@@ -544,14 +544,14 @@ export default function Wallets() {
             <DialogTrigger asChild>
               <Button size="sm" data-testid="button-add-wallet" disabled={walletAtLimit}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Wallet
+                Add Address
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Add Cold Wallet</DialogTitle>
+                <DialogTitle>Track a Blockchain Address</DialogTitle>
                 <DialogDescription>
-                  Paste your public wallet address below. We'll pull your current balance and, for Bitcoin and Ethereum, your full transaction history with cost basis. We never need your private keys.
+                  Paste a public address from any blockchain below. We'll pull the current balance and, for Bitcoin and Ethereum, your full transaction history with cost basis. We never need your private keys.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -717,9 +717,9 @@ export default function Wallets() {
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Wallet className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium">No wallets added yet</h3>
+            <h3 className="text-lg font-medium">No addresses tracked yet</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-md">
-              Paste a public address from your Ledger, Trezor, MetaMask, or any wallet. We'll pull your balances and transaction history directly from the blockchain — no API keys or logins needed.
+              Paste any public blockchain address — from a Ledger, Trezor, MetaMask, exchange deposit address, or any on-chain wallet. We'll pull balances and transaction history directly from the blockchain.
             </p>
             <Button
               className="mt-4"
@@ -727,7 +727,7 @@ export default function Wallets() {
               data-testid="button-add-wallet-empty"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Your First Wallet
+              Add Your First Address
             </Button>
           </CardContent>
         </Card>

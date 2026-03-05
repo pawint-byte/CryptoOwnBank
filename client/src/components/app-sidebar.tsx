@@ -42,7 +42,7 @@ const trackerItems = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
   { title: "Portfolio", url: "/portfolio", icon: PieChart },
-  { title: "Cold Wallets", url: "/wallets", icon: Wallet },
+  { title: "Blockchain Addresses", url: "/wallets", icon: Wallet },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText },
   { title: "Integrations", url: "/integrations", icon: Link2 },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell },

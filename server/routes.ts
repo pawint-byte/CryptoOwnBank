@@ -1616,7 +1616,7 @@ export async function registerRoutes(
       if (tier === "free") {
         const existingWallets = await storage.getWalletsByUser(userId);
         if (existingWallets.length >= 1) {
-          return res.status(403).json({ message: "Free users can track 1 cold wallet. Upgrade to Premium for unlimited wallet tracking." });
+          return res.status(403).json({ message: "Free users can track 1 blockchain address. Upgrade to Premium for unlimited address tracking." });
         }
       }
 
