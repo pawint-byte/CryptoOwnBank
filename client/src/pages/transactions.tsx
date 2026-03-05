@@ -53,6 +53,7 @@ export default function Transactions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const { toast } = useToast();
 
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
@@ -95,10 +96,41 @@ export default function Transactions() {
     },
   });
 
+  const sourceOptions = (() => {
+    const sources = new Set<string>();
+    transactions.forEach((tx) => {
+      const account = accounts.find((a) => a.id === tx.accountId);
+      sources.add(account?.provider || "manual");
+    });
+    return Array.from(sources);
+  })();
+
+  const getProviderLabel = (provider: string) => {
+    const labels: Record<string, string> = {
+      binance: "Binance",
+      binance_us: "Binance.US",
+      coinbase: "Coinbase",
+      crypto_com: "Crypto.com",
+      kraken: "Kraken",
+      uphold: "Uphold",
+      gemini: "Gemini",
+      kucoin: "KuCoin",
+      bybit: "Bybit",
+      okx: "OKX",
+      nexo: "Nexo",
+      "soil-xrpl": "Soil Protocol",
+      manual: "Manual Entry",
+    };
+    return labels[provider] || provider;
+  };
+
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch = tx.assetSymbol.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === "all" || tx.transactionType === typeFilter;
-    return matchesSearch && matchesType;
+    const account = accounts.find((a) => a.id === tx.accountId);
+    const txSource = account?.provider || "manual";
+    const matchesSource = sourceFilter === "all" || txSource === sourceFilter;
+    return matchesSearch && matchesType && matchesSource;
   });
 
   const onSubmit = (values: TransactionFormValues) => {
@@ -129,7 +161,7 @@ export default function Transactions() {
         <div>
           <h1 className="text-2xl font-bold">Transactions</h1>
           <p className="text-muted-foreground">
-            View and manage all your trades
+            All trades across your connected exchanges, Soil vaults, and manual entries
           </p>
         </div>
         <div className="flex gap-2">
@@ -346,8 +378,25 @@ export default function Transactions() {
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="buy">Buy</SelectItem>
                   <SelectItem value="sell">Sell</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="transfer_out">Transfer</SelectItem>
                 </SelectContent>
               </Select>
+              {sourceOptions.length > 1 && (
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="w-[150px]" data-testid="select-source-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    {sourceOptions.map((src) => (
+                      <SelectItem key={src} value={src}>
+                        {getProviderLabel(src)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </CardHeader>

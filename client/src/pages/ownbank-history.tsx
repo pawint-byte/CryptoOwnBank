@@ -141,10 +141,10 @@ export default function OwnBankHistory() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-history-title">
-            XRPL Transaction History
+            XRPL Wallet History
           </h1>
           <p className="text-muted-foreground">
-            View your on-chain transaction history
+            On-chain activity from your connected XRPL wallet
           </p>
         </div>
         <Card>
@@ -154,8 +154,8 @@ export default function OwnBankHistory() {
               Wallet Not Connected
             </h2>
             <p className="text-muted-foreground text-center max-w-md">
-              Connect your XRPL wallet from the OwnBank Dashboard to view your
-              transaction history.
+              Connect your XRPL wallet from the Wallet & Yield page to view your
+              on-chain transaction history.
             </p>
           </CardContent>
         </Card>
@@ -169,7 +169,7 @@ export default function OwnBankHistory() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-history-title">
-            XRPL Transaction History
+            XRPL Wallet History
           </h1>
           <p className="text-muted-foreground">
             On-chain transactions for{" "}
