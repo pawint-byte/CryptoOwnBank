@@ -227,4 +227,12 @@ export const WALLET_AFFILIATE_LINKS = [
     description: "Supports XRP & XRPL tokens (RLUSD). 100% air-gapped — no USB, WiFi, or Bluetooth connection. Signs transactions via QR code only, so your keys never touch the internet.",
     safety: "Fully air-gapped — zero online exposure",
   },
+  {
+    name: "Ledger",
+    url: "https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4",
+    color: "bg-blue-500/10 border-blue-500/20",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    description: "Supports XRP & XRPL tokens (RLUSD). Industry-leading hardware wallet with Bluetooth (Nano X) or USB (Nano S Plus). Pairs with Xaman for seamless XRPL transaction signing.",
+    safety: "Secure Element chip — keys never leave the device",
+  },
 ];
