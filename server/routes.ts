@@ -394,7 +394,7 @@ export async function registerRoutes(
         data.assetSymbol.toUpperCase()
       );
 
-      if (data.transactionType === "buy") {
+      if (data.transactionType === "buy" || data.transactionType === "income") {
         if (existingPosition) {
           const existingQty = parseFloat(existingPosition.quantity);
           const existingCostBasis = parseFloat(existingPosition.totalCostBasis);
@@ -807,6 +807,13 @@ export async function registerRoutes(
         }
       }
 
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      const allTxns = await storage.getTransactionsByDateRange(userId, startDate, endDate);
+      const incomeTxns = allTxns.filter(t => t.transactionType === "income");
+      const totalIncome = incomeTxns.reduce((sum, t) => sum + parseFloat(t.totalValue), 0);
+      const totalFees = allTxns.reduce((sum, t) => sum + parseFloat(t.fee || "0"), 0);
+
       res.json({
         shortTermGains,
         shortTermLosses,
@@ -815,6 +822,9 @@ export async function registerRoutes(
         netShortTerm: shortTermGains - shortTermLosses,
         netLongTerm: longTermGains - longTermLosses,
         totalNetGainLoss: shortTermGains - shortTermLosses + longTermGains - longTermLosses,
+        totalIncome,
+        totalFees,
+        incomeTransactions: incomeTxns.length,
         gainEvents: events,
       });
     } catch (error) {
@@ -1006,6 +1016,13 @@ export async function registerRoutes(
         const netLongTerm = longTermGains - longTermLosses;
         const totalNet = netShortTerm + netLongTerm;
 
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year, 11, 31, 23, 59, 59);
+        const allTxns = await storage.getTransactionsByDateRange(userId, startDate, endDate);
+        const incomeTxns = allTxns.filter(t => t.transactionType === "income");
+        const totalIncome = incomeTxns.reduce((sum, t) => sum + parseFloat(t.totalValue), 0);
+        const totalFees = allTxns.reduce((sum, t) => sum + parseFloat(t.fee || "0"), 0);
+
         const fmtCurrency = (v: number) =>
           new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
 
@@ -1013,14 +1030,22 @@ export async function registerRoutes(
         doc.setFontSize(12);
         doc.text("Summary", 14, summaryY);
 
+        const summaryBody: string[][] = [
+          ["Short-Term (< 1 year)", fmtCurrency(shortTermGains), fmtCurrency(shortTermLosses), fmtCurrency(netShortTerm)],
+          ["Long-Term (>= 1 year)", fmtCurrency(longTermGains), fmtCurrency(longTermLosses), fmtCurrency(netLongTerm)],
+          ["Total Capital Gains", fmtCurrency(shortTermGains + longTermGains), fmtCurrency(shortTermLosses + longTermLosses), fmtCurrency(totalNet)],
+        ];
+        if (totalIncome > 0) {
+          summaryBody.push([`Ordinary Income (${incomeTxns.length} events)`, fmtCurrency(totalIncome), "—", fmtCurrency(totalIncome)]);
+        }
+        if (totalFees > 0) {
+          summaryBody.push(["Total Transaction Fees", "—", fmtCurrency(totalFees), `(${fmtCurrency(totalFees)})`]);
+        }
+
         autoTable(doc, {
           startY: summaryY + 4,
           head: [["Category", "Gains", "Losses", "Net"]],
-          body: [
-            ["Short-Term (< 1 year)", fmtCurrency(shortTermGains), fmtCurrency(shortTermLosses), fmtCurrency(netShortTerm)],
-            ["Long-Term (>= 1 year)", fmtCurrency(longTermGains), fmtCurrency(longTermLosses), fmtCurrency(netLongTerm)],
-            ["Total", fmtCurrency(shortTermGains + longTermGains), fmtCurrency(shortTermLosses + longTermLosses), fmtCurrency(totalNet)],
-          ],
+          body: summaryBody,
           theme: "grid",
           headStyles: { fillColor: [41, 128, 185] },
           styles: { fontSize: 9 },

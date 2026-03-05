@@ -171,8 +171,15 @@ Preferred communication style: Simple, everyday language.
 - FAQ, Legal, Privacy, Contact pages
 
 ### Analytics
-- Google Analytics 4 (GA4) integration via `VITE_GA_MEASUREMENT_ID` env var
-- Loads conditionally only when measurement ID is set
+- Google Analytics 4 (GA4) with measurement ID `G-QS2GXGNT8Y`
+- Only loads on production domains (cryptoownbank.com, www.cryptoownbank.com)
+
+### Tax System
+- **Capital gains**: Buy/sell trades create tax lots, FIFO/LIFO calculation, gain events
+- **Income tracking**: Soil interest and staking rewards create tax lots at FMV (for future cost basis)
+- **Fees**: All transaction fees tracked and displayed on tax report as deductible
+- **Exports**: CSV, TurboTax CSV (free), PDF report (Premium)
+- **IRS guide**: Form 8949 (gains), Schedule D (totals), Schedule 1 Line 8z (income)
 
 ## Email Notifications (Resend)
 - `server/email.ts` — Resend integration via Replit connector (not manual API key)

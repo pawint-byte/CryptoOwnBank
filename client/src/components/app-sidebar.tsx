@@ -248,11 +248,14 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          <button onClick={() => logout()} data-testid="button-logout">
-            <SidebarMenuButton size="sm" className="h-8 w-8 p-0">
-              <LogOut className="h-4 w-4" />
-            </SidebarMenuButton>
-          </button>
+          <SidebarMenuButton
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => logout()}
+            data-testid="button-logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </SidebarMenuButton>
         </div>
       </SidebarFooter>
     </Sidebar>

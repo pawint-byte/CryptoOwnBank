@@ -46,6 +46,9 @@ interface TaxSummary {
   netShortTerm: number;
   netLongTerm: number;
   totalNetGainLoss: number;
+  totalIncome: number;
+  totalFees: number;
+  incomeTransactions: number;
   gainEvents: GainEvent[];
 }
 
@@ -322,7 +325,7 @@ export default function TaxReports() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-muted">
+                <div className="p-4 rounded-lg bg-muted space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Total Net Capital Gain/Loss</span>
                     <span
@@ -330,10 +333,30 @@ export default function TaxReports() {
                         "text-xl font-bold font-mono",
                         (taxData?.totalNetGainLoss || 0) >= 0 ? "text-chart-2" : "text-destructive"
                       )}
+                      data-testid="text-total-gain-loss"
                     >
                       {formatCurrency(taxData?.totalNetGainLoss || 0)}
                     </span>
                   </div>
+                  {(taxData?.totalIncome || 0) > 0 && (
+                    <div className="flex items-center justify-between border-t pt-2">
+                      <span className="text-sm text-muted-foreground">
+                        Ordinary Income (Interest / Staking)
+                        <span className="text-xs ml-1">({taxData?.incomeTransactions || 0} events)</span>
+                      </span>
+                      <span className="font-mono font-medium text-chart-2" data-testid="text-total-income">
+                        {formatCurrency(taxData?.totalIncome || 0)}
+                      </span>
+                    </div>
+                  )}
+                  {(taxData?.totalFees || 0) > 0 && (
+                    <div className="flex items-center justify-between border-t pt-2">
+                      <span className="text-sm text-muted-foreground">Total Transaction Fees (deductible)</span>
+                      <span className="font-mono text-sm" data-testid="text-total-fees">
+                        {formatCurrency(taxData?.totalFees || 0)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
