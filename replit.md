@@ -45,10 +45,10 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Data Models (PostgreSQL)
 - **Users**: id (UUID), email, firstName, lastName, passwordHash, emailVerified, emailVerifyToken, passwordResetToken, passwordResetExpires, authProvider, isAdmin, xrplWalletAddress, xrplWalletType, createdAt, updatedAt
-- **API Credentials**: Encrypted storage for exchange API keys (Binance, Coinbase, etc.)
+- **API Credentials**: Encrypted storage for exchange API keys (Binance, Coinbase, etc.) — keys decrypted only during sync
 - **Accounts**: Linked exchange/brokerage accounts
-- **Transactions**: Buy/sell records with quantity, price, and date
-- **Positions**: Aggregated holdings with cost basis tracking
+- **Transactions**: Buy/sell records with quantity, price, and date — auto-imported from exchanges
+- **Positions**: Aggregated holdings with cost basis tracking — auto-updated from exchange sync
 - **Tax Lots & Gain Events**: For FIFO/LIFO tax calculations
 - **Assets**: Cryptocurrency/stock metadata with price tracking
 - **User Settings**: Tax method, currency preferences, subscription tier, Stripe IDs
@@ -65,12 +65,12 @@ Preferred communication style: Simple, everyday language.
 ### Application Pages
 
 #### CryptoBroker Section
-- Dashboard: Portfolio overview with metrics, charts, and recent transactions
-- Transactions: Full transaction history with manual entry support
-- Portfolio: Detailed position breakdown with allocation visualization
-- Tax Reports: Capital gains calculations with FIFO/LIFO support, CSV export, and PDF export (Premium)
+- Dashboard: Portfolio overview with metrics, charts, and recent transactions (auto-populated from exchange sync)
+- Transactions: Full transaction history with manual entry + auto-imported trades from exchanges
+- Portfolio: Detailed position breakdown with allocation visualization (live prices via CoinGecko)
+- Tax Reports: Capital gains calculations with FIFO/LIFO support, CSV export, TurboTax CSV, and PDF export (Premium)
 - Price Alerts: Email notifications when crypto hits target price (Free: 3 alerts, Premium: unlimited)
-- Integrations: Exchange API key management
+- Integrations: Exchange API key management with real data sync (Binance, Binance.US, Coinbase, Crypto.com, Kraken, Uphold)
 - Settings: User preferences, spending wallet, subscription management
 
 #### OwnBank XRPL Section
@@ -110,6 +110,14 @@ Preferred communication style: Simple, everyday language.
 - `client/src/pages/verify-email.tsx` — Email verification handler
 - `client/src/pages/admin-users.tsx` — Admin user management dashboard
 - `client/src/pages/admin-metrics.tsx` — Admin metrics dashboard (users, revenue, signup trends, contact directory)
+
+### Exchange Data Sync
+- `server/services/exchange-sync.ts` — Exchange API clients that fetch real balances and trade history
+- **Supported exchanges**: Binance, Binance.US, Coinbase, Crypto.com, Kraken, Uphold
+- **Auto-sync**: Triggers automatically when user connects an exchange (after saving API keys)
+- **Manual sync**: Sync button on Integrations page triggers `POST /api/credentials/:id/sync`
+- **Data flow**: Decrypt API keys → fetch balances/trades from exchange → import transactions (deduplicated by externalId) → update positions → fetch live prices from CoinGecko → populate dashboard/portfolio/tax reports
+- **Price mapping**: Uses CoinGecko IDs for 23+ major cryptocurrencies (BTC, ETH, XRP, SOL, ADA, DOGE, etc.)
 
 ### Stripe Integration
 - `server/stripe.ts` — Stripe checkout session creation, plan config

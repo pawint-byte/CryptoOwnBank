@@ -303,6 +303,33 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/positions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const positionsData = await storage.getPositionsByUser(userId);
+      const enriched = [];
+      for (const pos of positionsData) {
+        const asset = await storage.getAsset(pos.assetSymbol);
+        const currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+        const qty = parseFloat(pos.quantity);
+        const value = qty * currentPrice;
+        const costBasis = parseFloat(pos.totalCostBasis);
+        const gainLoss = value - costBasis;
+        enriched.push({
+          ...pos,
+          currentPrice: currentPrice.toFixed(2),
+          currentValue: value.toFixed(2),
+          gainLoss: gainLoss.toFixed(2),
+          gainLossPercent: costBasis > 0 ? ((gainLoss / costBasis) * 100).toFixed(2) : "0",
+        });
+      }
+      res.json(enriched);
+    } catch (error) {
+      console.error("Positions error:", error);
+      res.status(500).json({ message: "Failed to load positions" });
+    }
+  });
+
   app.get("/api/transactions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -586,12 +613,135 @@ export async function registerRoutes(
 
   app.post("/api/credentials/:id/sync", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { id } = req.params;
+
+      const credential = await storage.getApiCredential(id);
+      if (!credential || credential.userId !== userId) {
+        return res.status(404).json({ message: "Credential not found" });
+      }
+
+      const { syncExchange } = await import("./services/exchange-sync");
+      const result = await syncExchange(credential.provider, credential.apiKey, credential.apiSecret);
+
+      if (result.error) {
+        return res.status(400).json({ message: `Sync failed: ${result.error}` });
+      }
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let account = existingAccounts.find(a => a.credentialId === id);
+      if (!account) {
+        account = await storage.createAccount({
+          userId,
+          credentialId: id,
+          provider: credential.provider,
+          accountName: `${credential.provider} Account`,
+          accountType: "exchange",
+        });
+      }
+
+      const existingTxns = await storage.getTransactionsByUser(userId);
+      const existingExternalIds = new Set(
+        existingTxns.filter(t => t.externalId && t.accountId === account!.id).map(t => t.externalId)
+      );
+
+      let importedTrades = 0;
+      for (const trade of result.trades) {
+        if (existingExternalIds.has(trade.externalId)) continue;
+
+        const totalValue = trade.quantity * trade.price;
+        await storage.createTransaction({
+          userId,
+          accountId: account.id,
+          assetSymbol: trade.asset,
+          transactionType: trade.type,
+          quantity: trade.quantity.toString(),
+          pricePerUnit: trade.price.toString(),
+          totalValue: totalValue.toFixed(2),
+          fee: trade.fee.toString(),
+          transactionDate: trade.date,
+          externalId: trade.externalId,
+          notes: `Imported from ${credential.provider}`,
+        });
+        importedTrades++;
+      }
+
+      for (const balance of result.balances) {
+        if (balance.asset === "USD" || balance.asset === "USDT" || balance.asset === "BUSD" || balance.asset === "USDC") continue;
+        const totalQty = balance.free + balance.locked;
+        if (totalQty <= 0) continue;
+
+        const existing = await storage.getPositionByUserAndAsset(userId, account.id, balance.asset);
+        if (existing) {
+          await storage.updatePosition(existing.id, {
+            quantity: totalQty.toString(),
+            updatedAt: new Date(),
+          });
+        } else {
+          await storage.createPosition({
+            userId,
+            accountId: account.id,
+            assetSymbol: balance.asset,
+            quantity: totalQty.toString(),
+            averageCost: "0",
+            totalCostBasis: "0",
+          });
+        }
+      }
+
+      let assetPricesUpdated = 0;
+      for (const balance of result.balances) {
+        if (balance.asset === "USD" || balance.asset === "USDT" || balance.asset === "BUSD" || balance.asset === "USDC") continue;
+        try {
+          const coingeckoMap: Record<string, string> = {
+            BTC: "bitcoin", ETH: "ethereum", XRP: "ripple", SOL: "solana",
+            ADA: "cardano", DOGE: "dogecoin", DOT: "polkadot", AVAX: "avalanche-2",
+            MATIC: "matic-network", LINK: "chainlink", UNI: "uniswap", LTC: "litecoin",
+            ATOM: "cosmos", ALGO: "algorand", FIL: "filecoin", NEAR: "near",
+            APT: "aptos", ARB: "arbitrum", OP: "optimism", CRO: "crypto-com-chain",
+            SHIB: "shiba-inu", PEPE: "pepe", RLUSD: "rlusd",
+          };
+          const coingeckoId = coingeckoMap[balance.asset];
+          if (coingeckoId) {
+            const priceData = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoId}&vs_currencies=usd`);
+            if (priceData.ok) {
+              const prices = await priceData.json();
+              const price = prices[coingeckoId]?.usd;
+              if (price) {
+                const existingAsset = await storage.getAsset(balance.asset);
+                if (existingAsset) {
+                  await storage.updateAssetPrice(balance.asset, price.toString());
+                } else {
+                  await storage.createAsset({
+                    symbol: balance.asset,
+                    name: balance.asset,
+                    assetType: "crypto",
+                    currentPrice: price.toString(),
+                    coingeckoId,
+                  });
+                }
+                assetPricesUpdated++;
+              }
+            }
+          }
+        } catch {
+          // price fetch might fail, not critical
+        }
+      }
+
       await storage.updateApiCredential(id, { lastSyncAt: new Date() });
-      res.json({ success: true, message: "Sync completed" });
-    } catch (error) {
+
+      res.json({
+        success: true,
+        message: "Sync completed",
+        balances: result.balances.length,
+        tradesImported: importedTrades,
+        totalTrades: result.trades.length,
+        pricesUpdated: assetPricesUpdated,
+      });
+    } catch (error: any) {
       console.error("Sync error:", error);
-      res.status(500).json({ message: "Failed to sync" });
+      res.status(500).json({ message: "Failed to sync: " + (error.message || "Unknown error") });
     }
   });
 

@@ -163,14 +163,32 @@ export default function Integrations() {
 
   const connectMutation = useMutation({
     mutationFn: async (values: ConnectFormValues) => {
-      return apiRequest("POST", "/api/credentials", values);
+      const res = await apiRequest("POST", "/api/credentials", values);
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
       queryClient.invalidateQueries({ queryKey: ["/api/accounts"] });
-      toast({ title: "Exchange connected successfully" });
+      toast({ title: "Exchange connected! Syncing your data..." });
       setIsDialogOpen(false);
       form.reset();
+
+      if (data?.id) {
+        try {
+          const syncRes = await apiRequest("POST", `/api/credentials/${data.id}/sync`);
+          const syncData = await syncRes.json();
+          queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+          const parts = [];
+          if (syncData.balances > 0) parts.push(`${syncData.balances} assets`);
+          if (syncData.tradesImported > 0) parts.push(`${syncData.tradesImported} trades`);
+          toast({ title: parts.length > 0 ? `Imported ${parts.join(" and ")}` : "Sync complete — no new data found" });
+        } catch {
+          toast({ title: "Connected but sync failed — try the Sync button", variant: "destructive" });
+        }
+      }
     },
     onError: () => {
       toast({ title: "Failed to connect exchange", variant: "destructive" });
@@ -193,13 +211,19 @@ export default function Integrations() {
 
   const syncMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("POST", `/api/credentials/${id}/sync`);
+      const res = await apiRequest("POST", `/api/credentials/${id}/sync`);
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/credentials"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Sync completed successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      const parts = [];
+      if (data?.balances > 0) parts.push(`${data.balances} assets`);
+      if (data?.tradesImported > 0) parts.push(`${data.tradesImported} new trades`);
+      if (data?.pricesUpdated > 0) parts.push(`${data.pricesUpdated} prices updated`);
+      toast({ title: parts.length > 0 ? `Synced: ${parts.join(", ")}` : "Sync complete — no new data" });
     },
     onError: () => {
       toast({ title: "Failed to sync", variant: "destructive" });
