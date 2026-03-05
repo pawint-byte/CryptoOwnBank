@@ -714,7 +714,7 @@ export async function registerRoutes(
     }
   });
 
-  const xummApiKey = process.env.VITE_XUMM_API_KEY;
+  const xummApiKey = process.env.VITE_XUMM_API_KEY || process.env.XUMM_API_KEY;
   const xummApiSecret = process.env.XUMM_API_SECRET;
   let xummSdk: XummSdk | null = null;
 
