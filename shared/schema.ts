@@ -212,8 +212,50 @@ export const insertPriceAlertSchema = createInsertSchema(priceAlerts).omit({
   createdAt: true as never,
 });
 
+export const wallets = pgTable("wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  chain: varchar("chain", { length: 20 }).notNull(),
+  address: varchar("address", { length: 255 }).notNull(),
+  label: varchar("label", { length: 100 }),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_wallets_user").on(table.userId),
+]);
+
+export const walletBalances = pgTable("wallet_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  assetSymbol: varchar("asset_symbol", { length: 20 }).notNull(),
+  balance: decimal("balance", { precision: 28, scale: 12 }).notNull(),
+  usdValue: decimal("usd_value", { precision: 18, scale: 2 }),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_wallet_balances_wallet").on(table.walletId),
+  index("idx_wallet_balances_user").on(table.userId),
+]);
+
+export const insertWalletSchema = createInsertSchema(wallets).omit({
+  id: true,
+  lastSyncAt: true,
+  createdAt: true,
+});
+
+export const insertWalletBalanceSchema = createInsertSchema(walletBalances).omit({
+  id: true,
+  updatedAt: true,
+});
+
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type Asset = typeof assets.$inferSelect;
 
 export type InsertPriceAlert = z.infer<typeof insertPriceAlertSchema>;
 export type PriceAlert = typeof priceAlerts.$inferSelect;
+
+export type Wallet = typeof wallets.$inferSelect;
+export type InsertWallet = z.infer<typeof insertWalletSchema>;
+
+export type WalletBalance = typeof walletBalances.$inferSelect;
+export type InsertWalletBalance = z.infer<typeof insertWalletBalanceSchema>;

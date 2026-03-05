@@ -9,6 +9,8 @@ import {
   assets,
   priceHistory,
   priceAlerts,
+  wallets,
+  walletBalances,
   type ApiCredential,
   type InsertApiCredential,
   type Account,
@@ -27,6 +29,10 @@ import {
   type InsertAsset,
   type PriceAlert,
   type InsertPriceAlert,
+  type Wallet,
+  type InsertWallet,
+  type WalletBalance,
+  type InsertWalletBalance,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -99,6 +105,17 @@ export interface IStorage {
   getActivePriceAlerts(): Promise<PriceAlert[]>;
   markPriceAlertTriggered(id: number): Promise<void>;
   countActiveAlertsByUser(userId: string): Promise<number>;
+
+  createWallet(wallet: InsertWallet): Promise<Wallet>;
+  getWalletsByUser(userId: string): Promise<Wallet[]>;
+  getWallet(id: string): Promise<Wallet | undefined>;
+  deleteWallet(id: string): Promise<void>;
+  updateWalletSyncTime(id: string): Promise<void>;
+
+  upsertWalletBalance(balance: InsertWalletBalance): Promise<WalletBalance>;
+  getWalletBalances(walletId: string): Promise<WalletBalance[]>;
+  getWalletBalancesByUser(userId: string): Promise<WalletBalance[]>;
+  deleteWalletBalances(walletId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -377,6 +394,65 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return result[0]?.count || 0;
+  }
+
+  async createWallet(wallet: InsertWallet): Promise<Wallet> {
+    const [result] = await db.insert(wallets).values(wallet).returning();
+    return result;
+  }
+
+  async getWalletsByUser(userId: string): Promise<Wallet[]> {
+    return db.select().from(wallets).where(eq(wallets.userId, userId)).orderBy(desc(wallets.createdAt));
+  }
+
+  async getWallet(id: string): Promise<Wallet | undefined> {
+    const [result] = await db.select().from(wallets).where(eq(wallets.id, id));
+    return result;
+  }
+
+  async deleteWallet(id: string): Promise<void> {
+    await db.delete(walletBalances).where(eq(walletBalances.walletId, id));
+    await db.delete(wallets).where(eq(wallets.id, id));
+  }
+
+  async updateWalletSyncTime(id: string): Promise<void> {
+    await db.update(wallets).set({ lastSyncAt: new Date() }).where(eq(wallets.id, id));
+  }
+
+  async upsertWalletBalance(balance: InsertWalletBalance): Promise<WalletBalance> {
+    const existing = await db
+      .select()
+      .from(walletBalances)
+      .where(
+        and(
+          eq(walletBalances.walletId, balance.walletId),
+          eq(walletBalances.assetSymbol, balance.assetSymbol)
+        )
+      );
+
+    if (existing.length > 0) {
+      const [result] = await db
+        .update(walletBalances)
+        .set({ balance: balance.balance, usdValue: balance.usdValue, updatedAt: new Date() })
+        .where(eq(walletBalances.id, existing[0].id))
+        .returning();
+      return result;
+    }
+
+    const [result] = await db.insert(walletBalances).values(balance).returning();
+    return result;
+  }
+
+  async getWalletBalances(walletId: string): Promise<WalletBalance[]> {
+    return db.select().from(walletBalances).where(eq(walletBalances.walletId, walletId));
+  }
+
+  async getWalletBalancesByUser(userId: string): Promise<WalletBalance[]> {
+    return db.select().from(walletBalances).where(eq(walletBalances.userId, userId));
+  }
+
+  async deleteWalletBalances(walletId: string): Promise<void> {
+    await db.delete(walletBalances).where(eq(walletBalances.walletId, walletId));
   }
 }
 

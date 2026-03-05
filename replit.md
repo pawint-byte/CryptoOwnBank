@@ -53,6 +53,8 @@ Preferred communication style: Simple, everyday language.
 - **Assets**: Cryptocurrency/stock metadata with price tracking
 - **User Settings**: Tax method, currency preferences, subscription tier, Stripe IDs
 - **Price Alerts**: userId, asset, targetPrice, direction (above/below), isActive, triggered, triggeredAt — background checker every 60s sends email via Resend
+- **Wallets**: userId, chain (bitcoin/ethereum/solana/xrp/dogecoin/litecoin/cardano), address, label, lastSyncAt — read-only cold wallet tracking
+- **Wallet Balances**: walletId, userId, assetSymbol, balance, usdValue — synced from public blockchain APIs
 
 ### Key Data Models (Client-side Zustand)
 - **Wallet State**: walletAddress, walletType (xumm/ledger), connection status
@@ -65,9 +67,10 @@ Preferred communication style: Simple, everyday language.
 ### Application Pages
 
 #### CryptoBroker Section
-- Dashboard: Portfolio overview with metrics, charts, and recent transactions (auto-populated from exchange sync)
-- Transactions: Full transaction history with manual entry + auto-imported trades from exchanges
-- Portfolio: Detailed position breakdown with allocation visualization (live prices via CoinGecko)
+- Dashboard: Portfolio overview with metrics, charts, and recent transactions (auto-populated from exchange sync + cold wallets)
+- Transactions: Unified transaction history (exchange trades, XRPL on-chain, manual entries) with column picker and source filter
+- Portfolio: Detailed position breakdown with source badges (Exchange vs wallet labels), allocation visualization
+- Cold Wallets (`/wallets`): Read-only wallet tracker for BTC, ETH, SOL, XRP, DOGE, LTC, ADA — three views: By Source (grouped by wallet with pie chart), By Asset (aggregated exposure per coin), All Holdings (detailed table). Balances synced from public blockchain APIs.
 - Tax Reports: Capital gains calculations with FIFO/LIFO support, CSV export, TurboTax CSV, and PDF export (Premium)
 - Price Alerts: Email notifications when crypto hits target price (Free: 3 alerts, Premium: unlimited)
 - Integrations: Exchange API key management with real data sync (Binance, Binance.US, Coinbase, Crypto.com, Kraken, Uphold)
@@ -110,6 +113,11 @@ Preferred communication style: Simple, everyday language.
 - `client/src/pages/verify-email.tsx` — Email verification handler
 - `client/src/pages/admin-users.tsx` — Admin user management dashboard
 - `client/src/pages/admin-metrics.tsx` — Admin metrics dashboard (users, revenue, signup trends, contact directory)
+
+### Cold Wallet Balance Sync
+- `server/services/blockchain-balance.ts` — Public blockchain API clients for balance lookups (Bitcoin via blockchain.info, Ethereum via etherscan, Solana via RPC, XRP via xrplcluster, Dogecoin via dogechain.info, Litecoin via litecoinspace.org, Cardano via blockfrost)
+- No API keys required — uses free public endpoints
+- Wallet balances integrated into Portfolio and Dashboard totals
 
 ### Exchange Data Sync
 - `server/services/exchange-sync.ts` — Exchange API clients that fetch real balances and trade history

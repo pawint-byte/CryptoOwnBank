@@ -12,6 +12,7 @@ interface PositionWithMarket extends Position {
   currentValue?: number;
   gainLoss?: number;
   gainLossPercent?: number;
+  source?: string;
 }
 
 interface PortfolioData {
@@ -161,7 +162,14 @@ export default function Portfolio() {
                         </span>
                       </div>
                       <div>
-                        <div className="font-semibold">{position.assetSymbol}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{position.assetSymbol}</span>
+                          {position.source && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {position.source}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-sm text-muted-foreground font-mono">
                           {parseFloat(position.quantity).toFixed(6)} units
                         </div>

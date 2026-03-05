@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -31,10 +33,42 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { TransactionsTable } from "@/components/transactions-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Search, Filter, Download } from "lucide-react";
+import { useXrplStore } from "@/lib/xrpl-store";
+import {
+  getAccountTransactions,
+  getXrpPrice,
+  type XrplTransaction,
+} from "@/lib/xrpl-client";
+import {
+  Plus,
+  Search,
+  Filter,
+  Download,
+  ExternalLink,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowLeftRight,
+  SlidersHorizontal,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Transaction, Account } from "@shared/schema";
 
 const transactionFormSchema = z.object({
@@ -49,12 +83,173 @@ const transactionFormSchema = z.object({
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
+interface UnifiedTransaction {
+  id: string;
+  date: Date;
+  type: string;
+  asset: string;
+  quantity: number;
+  price: number;
+  total: number;
+  fee: number;
+  source: string;
+  direction: "sent" | "received" | "swap" | "trust" | "cancel" | "buy" | "sell" | "income" | "transfer";
+  hash?: string;
+  usdValue?: number;
+  amount2?: string;
+  currency2?: string;
+}
+
+type ColumnKey = "date" | "type" | "direction" | "asset" | "quantity" | "price" | "total" | "usdValue" | "fee" | "source" | "hash";
+
+const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: "date", label: "Date" },
+  { key: "type", label: "Type" },
+  { key: "direction", label: "Direction" },
+  { key: "asset", label: "Asset" },
+  { key: "quantity", label: "Quantity" },
+  { key: "price", label: "Price" },
+  { key: "total", label: "Total" },
+  { key: "usdValue", label: "USD Value" },
+  { key: "fee", label: "Fee" },
+  { key: "source", label: "Source" },
+  { key: "hash", label: "Tx Link" },
+];
+
+const DEFAULT_COLUMNS: ColumnKey[] = ["date", "type", "direction", "asset", "quantity", "price", "total", "fee", "source"];
+
+const STORAGE_KEY = "transactions-columns";
+
+function loadColumnPrefs(): ColumnKey[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as ColumnKey[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return DEFAULT_COLUMNS;
+}
+
+function saveColumnPrefs(cols: ColumnKey[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cols));
+}
+
+function formatUsd(value: number): string {
+  if (value === 0) return "$0.00";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+const getProviderLabel = (provider: string) => {
+  const labels: Record<string, string> = {
+    binance: "Binance",
+    binance_us: "Binance.US",
+    coinbase: "Coinbase",
+    crypto_com: "Crypto.com",
+    kraken: "Kraken",
+    uphold: "Uphold",
+    gemini: "Gemini",
+    kucoin: "KuCoin",
+    bybit: "Bybit",
+    okx: "OKX",
+    nexo: "Nexo",
+    "soil-xrpl": "Soil Protocol",
+    manual: "Manual Entry",
+    xrpl: "XRPL Wallet",
+  };
+  return labels[provider] || provider;
+};
+
+function xrplTxToUnified(tx: XrplTransaction, walletAddress: string, xrpPrice: number): UnifiedTransaction | null {
+  if (tx.type === "TrustSet" || tx.type === "OfferCancel") return null;
+
+  const isSent = tx.source.toLowerCase() === walletAddress.toLowerCase();
+  const amount = Math.abs(Number(tx.amount));
+  const currency = tx.currency || "XRP";
+
+  const toUsd = (val: number, cur: string) => {
+    if (cur === "XRP") return val * xrpPrice;
+    if (cur === "RLUSD" || cur === "USD") return val;
+    return 0;
+  };
+
+  if (tx.type === "OfferCreate") {
+    const amount2Num = tx.amount2 ? Math.abs(Number(tx.amount2)) : 0;
+    return {
+      id: `xrpl-${tx.hash}`,
+      date: new Date(tx.date),
+      type: "swap",
+      asset: `${currency} → ${tx.currency2 || "?"}`,
+      quantity: amount,
+      price: 0,
+      total: toUsd(amount, currency),
+      fee: tx.fee ? Number(tx.fee) : 0,
+      source: "xrpl",
+      direction: "swap",
+      hash: tx.hash,
+      usdValue: toUsd(amount2Num, tx.currency2 || ""),
+      amount2: tx.amount2,
+      currency2: tx.currency2,
+    };
+  }
+
+  return {
+    id: `xrpl-${tx.hash}`,
+    date: new Date(tx.date),
+    type: "payment",
+    asset: currency,
+    quantity: amount,
+    price: toUsd(1, currency),
+    total: toUsd(amount, currency),
+    fee: tx.fee ? Number(tx.fee) : 0,
+    source: "xrpl",
+    direction: isSent ? "sent" : "received",
+    hash: tx.hash,
+    usdValue: toUsd(amount, currency),
+  };
+}
+
+function dbTxToUnified(tx: Transaction, accounts: Account[]): UnifiedTransaction {
+  const account = accounts.find((a) => a.id === tx.accountId);
+  const source = account?.provider || "manual";
+  const directionMap: Record<string, UnifiedTransaction["direction"]> = {
+    buy: "buy",
+    sell: "sell",
+    income: "income",
+    transfer_out: "transfer",
+  };
+
+  return {
+    id: tx.id,
+    date: new Date(tx.transactionDate),
+    type: tx.transactionType,
+    asset: tx.assetSymbol,
+    quantity: parseFloat(tx.quantity),
+    price: parseFloat(tx.pricePerUnit),
+    total: parseFloat(tx.totalValue),
+    fee: parseFloat(tx.fee || "0"),
+    source,
+    direction: directionMap[tx.transactionType] || "buy",
+    hash: tx.externalId || undefined,
+  };
+}
+
 export default function Transactions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(loadColumnPrefs);
+  const [xrplTransactions, setXrplTransactions] = useState<XrplTransaction[]>([]);
+  const [xrpPrice, setXrpPrice] = useState<number>(0);
+  const [xrplLoading, setXrplLoading] = useState(false);
   const { toast } = useToast();
+  const { walletAddress, isConnected } = useXrplStore();
 
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
@@ -63,6 +258,38 @@ export default function Transactions() {
   const { data: accounts = [] } = useQuery<Account[]>({
     queryKey: ["/api/accounts"],
   });
+
+  const fetchXrplTxs = useCallback(async () => {
+    if (!walletAddress || !isConnected) return;
+    setXrplLoading(true);
+    try {
+      const [txs, price] = await Promise.all([
+        getAccountTransactions(walletAddress, 50),
+        getXrpPrice(),
+      ]);
+      setXrplTransactions(txs);
+      setXrpPrice(price);
+    } catch {
+      // silently fail — XRPL data is supplementary
+    } finally {
+      setXrplLoading(false);
+    }
+  }, [walletAddress, isConnected]);
+
+  useEffect(() => {
+    fetchXrplTxs();
+  }, [fetchXrplTxs]);
+
+  const toggleColumn = (col: ColumnKey) => {
+    setVisibleColumns((prev) => {
+      const next = prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col];
+      if (next.length === 0) return prev;
+      saveColumnPrefs(next);
+      return next;
+    });
+  };
+
+  const isCol = (col: ColumnKey) => visibleColumns.includes(col);
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -96,40 +323,33 @@ export default function Transactions() {
     },
   });
 
+  const dbExternalIds = new Set(
+    transactions.filter((t) => t.externalId).map((t) => t.externalId)
+  );
+
+  const unifiedDb = transactions.map((tx) => dbTxToUnified(tx, accounts));
+  const unifiedXrpl = xrplTransactions
+    .map((tx) => xrplTxToUnified(tx, walletAddress || "", xrpPrice))
+    .filter((tx): tx is UnifiedTransaction => tx !== null)
+    .filter((tx) => !tx.hash || !dbExternalIds.has(tx.hash));
+
+  const allUnified = [...unifiedDb, ...unifiedXrpl].sort(
+    (a, b) => b.date.getTime() - a.date.getTime()
+  );
+
   const sourceOptions = (() => {
     const sources = new Set<string>();
-    transactions.forEach((tx) => {
-      const account = accounts.find((a) => a.id === tx.accountId);
-      sources.add(account?.provider || "manual");
-    });
+    allUnified.forEach((tx) => sources.add(tx.source));
     return Array.from(sources);
   })();
 
-  const getProviderLabel = (provider: string) => {
-    const labels: Record<string, string> = {
-      binance: "Binance",
-      binance_us: "Binance.US",
-      coinbase: "Coinbase",
-      crypto_com: "Crypto.com",
-      kraken: "Kraken",
-      uphold: "Uphold",
-      gemini: "Gemini",
-      kucoin: "KuCoin",
-      bybit: "Bybit",
-      okx: "OKX",
-      nexo: "Nexo",
-      "soil-xrpl": "Soil Protocol",
-      manual: "Manual Entry",
-    };
-    return labels[provider] || provider;
-  };
-
-  const filteredTransactions = transactions.filter((tx) => {
-    const matchesSearch = tx.assetSymbol.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || tx.transactionType === typeFilter;
-    const account = accounts.find((a) => a.id === tx.accountId);
-    const txSource = account?.provider || "manual";
-    const matchesSource = sourceFilter === "all" || txSource === sourceFilter;
+  const filteredTransactions = allUnified.filter((tx) => {
+    const matchesSearch = tx.asset.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType =
+      typeFilter === "all" ||
+      tx.type === typeFilter ||
+      tx.direction === typeFilter;
+    const matchesSource = sourceFilter === "all" || tx.source === sourceFilter;
     return matchesSearch && matchesType && matchesSource;
   });
 
@@ -155,13 +375,42 @@ export default function Transactions() {
     }
   };
 
+  const getDirectionBadge = (tx: UnifiedTransaction) => {
+    const config: Record<string, { label: string; className: string }> = {
+      buy: { label: "BUY", className: "bg-chart-2 text-white" },
+      sell: { label: "SELL", className: "bg-chart-5 text-white" },
+      income: { label: "INCOME", className: "bg-amber-500 text-white" },
+      transfer: { label: "TRANSFER", className: "bg-blue-500 text-white" },
+      sent: { label: "SENT", className: "bg-red-500 text-white" },
+      received: { label: "RECEIVED", className: "bg-emerald-600 text-white" },
+      swap: { label: "SWAP", className: "bg-[#00A4E4] text-white" },
+      trust: { label: "TRUST", className: "" },
+      cancel: { label: "CANCEL", className: "" },
+    };
+    const c = config[tx.direction] || { label: tx.type.toUpperCase(), className: "" };
+    return (
+      <Badge variant="default" className={c.className}>
+        {c.label}
+      </Badge>
+    );
+  };
+
+  const getDirectionIcon = (tx: UnifiedTransaction) => {
+    if (tx.direction === "swap") return <ArrowLeftRight className="h-4 w-4 text-[#00A4E4]" />;
+    if (tx.direction === "sent" || tx.direction === "sell" || tx.direction === "transfer")
+      return <ArrowUpRight className="h-4 w-4 text-red-500" />;
+    return <ArrowDownLeft className="h-4 w-4 text-emerald-600" />;
+  };
+
+  const anyLoading = isLoading || xrplLoading;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Transactions</h1>
           <p className="text-muted-foreground">
-            All trades across your connected exchanges, Soil vaults, and manual entries
+            All trades across exchanges, XRPL wallet, Soil vaults, and manual entries
           </p>
         </div>
         <div className="flex gap-2">
@@ -369,6 +618,31 @@ export default function Transactions() {
               />
             </div>
             <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="button-column-picker">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Columns
+                    <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
+                      {visibleColumns.length}/{ALL_COLUMNS.length}
+                    </Badge>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ALL_COLUMNS.map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={col.key}
+                      checked={isCol(col.key)}
+                      onCheckedChange={() => toggleColumn(col.key)}
+                      data-testid={`toggle-col-${col.key}`}
+                    >
+                      {col.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[120px]" data-testid="select-type-filter">
@@ -379,7 +653,10 @@ export default function Transactions() {
                   <SelectItem value="buy">Buy</SelectItem>
                   <SelectItem value="sell">Sell</SelectItem>
                   <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="transfer_out">Transfer</SelectItem>
+                  <SelectItem value="transfer">Transfer</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="received">Received</SelectItem>
+                  <SelectItem value="swap">Swap</SelectItem>
                 </SelectContent>
               </Select>
               {sourceOptions.length > 1 && (
@@ -401,12 +678,157 @@ export default function Transactions() {
           </div>
         </CardHeader>
         <CardContent>
-          <TransactionsTable
-            transactions={filteredTransactions}
-            isLoading={isLoading}
-          />
+          {anyLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <svg
+                  className="h-8 w-8 text-muted-foreground"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium">No transactions yet</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Connect an exchange or XRPL wallet, or add a transaction manually.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {isCol("date") && <TableHead>Date</TableHead>}
+                    {isCol("type") && <TableHead>Type</TableHead>}
+                    {isCol("direction") && <TableHead>Direction</TableHead>}
+                    {isCol("asset") && <TableHead>Asset</TableHead>}
+                    {isCol("quantity") && <TableHead className="text-right">Quantity</TableHead>}
+                    {isCol("price") && <TableHead className="text-right">Price</TableHead>}
+                    {isCol("total") && <TableHead className="text-right">Total</TableHead>}
+                    {isCol("usdValue") && <TableHead className="text-right">USD Value</TableHead>}
+                    {isCol("fee") && <TableHead className="text-right">Fee</TableHead>}
+                    {isCol("source") && <TableHead>Source</TableHead>}
+                    {isCol("hash") && <TableHead>Tx Link</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map((tx) => (
+                    <TableRow key={tx.id} data-testid={`transaction-row-${tx.id}`}>
+                      {isCol("date") && (
+                        <TableCell className="font-mono text-sm">
+                          {format(tx.date, "MMM d, yyyy")}
+                        </TableCell>
+                      )}
+                      {isCol("type") && (
+                        <TableCell>{getDirectionBadge(tx)}</TableCell>
+                      )}
+                      {isCol("direction") && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {getDirectionIcon(tx)}
+                            <span className="text-sm text-muted-foreground capitalize">
+                              {tx.direction}
+                            </span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {isCol("asset") && (
+                        <TableCell className="font-medium">{tx.asset}</TableCell>
+                      )}
+                      {isCol("quantity") && (
+                        <TableCell className="text-right font-mono">
+                          {tx.quantity > 0 ? tx.quantity.toLocaleString("en-US", { maximumFractionDigits: 6 }) : "—"}
+                        </TableCell>
+                      )}
+                      {isCol("price") && (
+                        <TableCell className="text-right font-mono">
+                          {tx.price > 0 ? formatUsd(tx.price) : "—"}
+                        </TableCell>
+                      )}
+                      {isCol("total") && (
+                        <TableCell className="text-right font-mono font-medium">
+                          {tx.total > 0 ? formatUsd(tx.total) : "—"}
+                        </TableCell>
+                      )}
+                      {isCol("usdValue") && (
+                        <TableCell className="text-right font-mono">
+                          {tx.usdValue && tx.usdValue > 0 ? (
+                            <span className={cn(
+                              tx.direction === "sent" || tx.direction === "sell" ? "text-red-500" : "text-emerald-600"
+                            )}>
+                              {formatUsd(tx.usdValue)}
+                            </span>
+                          ) : tx.total > 0 ? (
+                            formatUsd(tx.total)
+                          ) : "—"}
+                        </TableCell>
+                      )}
+                      {isCol("fee") && (
+                        <TableCell className="text-right">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {tx.fee > 0
+                              ? tx.source === "xrpl"
+                                ? `${tx.fee.toFixed(6)} XRP`
+                                : formatUsd(tx.fee)
+                              : "—"}
+                          </span>
+                        </TableCell>
+                      )}
+                      {isCol("source") && (
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {getProviderLabel(tx.source)}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {isCol("hash") && (
+                        <TableCell>
+                          {tx.hash ? (
+                            <a
+                              href={
+                                tx.source === "xrpl"
+                                  ? `https://xrplscan.com/tx/${tx.hash}`
+                                  : "#"
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[#00A4E4] hover:underline"
+                              data-testid={`link-tx-${tx.id}`}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {isConnected && xrpPrice > 0 && (
+        <p className="text-xs text-muted-foreground text-right">
+          XRP USD values based on current price: {formatUsd(xrpPrice)}
+        </p>
+      )}
     </div>
   );
 }

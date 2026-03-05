@@ -33,9 +33,10 @@ import {
 import { IntegrationCard } from "@/components/integration-card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Link2, Eye, EyeOff, ExternalLink, Info } from "lucide-react";
+import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle } from "lucide-react";
 import { SiBinance, SiCoinbase } from "react-icons/si";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import type { ApiCredential } from "@shared/schema";
 
 const EXCHANGE_OPTIONS = [
@@ -146,6 +147,13 @@ export default function Integrations() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [showApiSecret, setShowApiSecret] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    skipped: number;
+    total: number;
+    errors: string[];
+    message: string;
+  } | null>(null);
   const { toast } = useToast();
 
   const { data: credentials = [], isLoading } = useQuery<ApiCredential[]>({
@@ -249,6 +257,48 @@ export default function Integrations() {
 
   const getExchangeName = (provider: string) => {
     return EXCHANGE_OPTIONS.find((e) => e.value === provider)?.label || provider;
+  };
+
+  const csvImportMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/import/yahoo", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Import failed" }));
+        throw new Error(err.message);
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setImportResult(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/accounts"] });
+      toast({ title: data.message });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Import failed",
+        description: error.message || "Could not process the CSV file",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportResult(null);
+      csvImportMutation.mutate(file);
+    }
+    e.target.value = "";
   };
 
   const connectedProviders = credentials.map((c) => c.provider);
@@ -482,6 +532,100 @@ export default function Integrations() {
           ))
         )}
       </div>
+
+      <Card data-testid="card-csv-import">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
+            Import Transaction History
+          </CardTitle>
+          <CardDescription>
+            Import your purchase history from Yahoo Finance, CoinTracker, or any CSV file
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Supported Formats</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="secondary" className="text-xs">Yahoo Finance</Badge>
+                  <span className="text-muted-foreground">Portfolio export CSV</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="secondary" className="text-xs">CoinTracker</Badge>
+                  <span className="text-muted-foreground">Transaction history CSV</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="secondary" className="text-xs">Generic CSV</Badge>
+                  <span className="text-muted-foreground">Symbol, Quantity, Price, Date columns</span>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
+                <p className="font-medium text-foreground">How to export from Yahoo Finance:</p>
+                <ol className="list-decimal ml-4 space-y-0.5">
+                  <li>Go to finance.yahoo.com and open your portfolio</li>
+                  <li>Click the "Export" or download button (top right)</li>
+                  <li>Save the .csv file and upload it here</li>
+                </ol>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 text-center">
+              <Upload className="h-8 w-8 text-muted-foreground mb-3" />
+              <p className="text-sm font-medium mb-1">
+                {csvImportMutation.isPending ? "Importing..." : "Upload CSV File"}
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Max 10 MB. Your data creates transactions and tax lots automatically.
+              </p>
+              <label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={csvImportMutation.isPending}
+                  data-testid="input-csv-upload"
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={csvImportMutation.isPending}
+                  asChild
+                >
+                  <span data-testid="button-upload-csv">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {csvImportMutation.isPending ? "Processing..." : "Choose File"}
+                  </span>
+                </Button>
+              </label>
+            </div>
+          </div>
+
+          {importResult && (
+            <Alert className={importResult.imported > 0 ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20" : "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"}>
+              {importResult.imported > 0 ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              )}
+              <AlertDescription className="text-sm">
+                <p className="font-medium" data-testid="text-import-result">{importResult.message}</p>
+                {importResult.errors.length > 0 && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <p className="font-medium">Issues:</p>
+                    <ul className="list-disc ml-4">
+                      {importResult.errors.map((e, i) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

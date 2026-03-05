@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
 import multer from "multer";
@@ -264,6 +264,15 @@ export async function registerRoutes(
         allocationMap.set(pos.assetSymbol, (allocationMap.get(pos.assetSymbol) || 0) + value);
       }
 
+      const walletBals = await storage.getWalletBalancesByUser(userId);
+      for (const wb of walletBals) {
+        const usdVal = parseFloat(wb.usdValue || "0");
+        if (usdVal > 0) {
+          totalValue += usdVal;
+          allocationMap.set(wb.assetSymbol, (allocationMap.get(wb.assetSymbol) || 0) + usdVal);
+        }
+      }
+
       const allocation = Array.from(allocationMap.entries()).map(([name, value], index) => ({
         name,
         value,
@@ -515,17 +524,51 @@ export async function registerRoutes(
         })
       );
 
-      const allocation = positionsWithMarket.map((pos, index) => ({
-        name: pos.assetSymbol,
-        value: pos.currentValue,
-        color: colors[index % colors.length],
+      const walletBalsForPortfolio = await storage.getWalletBalancesByUser(userId);
+      const userWalletsForPortfolio = await storage.getWalletsByUser(userId);
+
+      const walletPositions = walletBalsForPortfolio.map((wb) => {
+        const wallet = userWalletsForPortfolio.find((w) => w.id === wb.walletId);
+        const usdVal = parseFloat(wb.usdValue || "0");
+        const bal = parseFloat(wb.balance);
+        const price = bal > 0 ? usdVal / bal : 0;
+        totalValue += usdVal;
+        return {
+          id: wb.id,
+          userId: wb.userId,
+          accountId: wb.walletId,
+          assetSymbol: wb.assetSymbol,
+          quantity: wb.balance,
+          averageCost: "0",
+          totalCostBasis: "0",
+          updatedAt: wb.updatedAt,
+          currentPrice: price,
+          currentValue: usdVal,
+          gainLoss: 0,
+          gainLossPercent: 0,
+          source: wallet?.label || wallet?.chain || "Wallet",
+        };
+      });
+
+      const allPositions = [...positionsWithMarket.map(p => ({ ...p, source: "Exchange" })), ...walletPositions];
+
+      const allocationMap = new Map<string, number>();
+      allPositions.forEach((pos) => {
+        const val = pos.currentValue || 0;
+        allocationMap.set(pos.assetSymbol, (allocationMap.get(pos.assetSymbol) || 0) + val);
+      });
+
+      const allocation = Array.from(allocationMap.entries()).map(([name, value], idx) => ({
+        name,
+        value,
+        color: colors[idx % colors.length],
       }));
 
       const totalGainLoss = totalValue - totalCostBasis;
       const totalGainLossPercent = totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
 
       res.json({
-        positions: positionsWithMarket,
+        positions: allPositions,
         totalValue,
         totalCostBasis,
         totalGainLoss,
@@ -1422,6 +1465,409 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Delete alert error:", error);
       res.status(500).json({ message: "Failed to delete alert" });
+    }
+  });
+
+  const { getWalletBalances: fetchChainBalances, CHAIN_CONFIG } = await import("./services/blockchain-balance");
+
+  app.get("/api/wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userWallets = await storage.getWalletsByUser(userId);
+      const walletsWithBalances = await Promise.all(
+        userWallets.map(async (w) => {
+          const balances = await storage.getWalletBalances(w.id);
+          return { ...w, balances };
+        })
+      );
+      res.json(walletsWithBalances);
+    } catch (error) {
+      console.error("Get wallets error:", error);
+      res.status(500).json({ message: "Failed to load wallets" });
+    }
+  });
+
+  app.get("/api/wallets/chains", (_req: any, res) => {
+    res.json(CHAIN_CONFIG);
+  });
+
+  app.post("/api/wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const parsed = insertWalletSchema.parse({ ...req.body, userId });
+
+      const existing = await storage.getWalletsByUser(userId);
+      const duplicate = existing.find(
+        (w) => w.chain === parsed.chain && w.address.toLowerCase() === parsed.address.toLowerCase()
+      );
+      if (duplicate) {
+        return res.status(400).json({ message: "This wallet address is already added" });
+      }
+
+      const wallet = await storage.createWallet(parsed);
+      res.json(wallet);
+    } catch (error: any) {
+      console.error("Create wallet error:", error);
+      res.status(400).json({ message: error.message || "Failed to add wallet" });
+    }
+  });
+
+  app.post("/api/wallets/:id/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+
+      const chain = wallet.chain as any;
+      const balances = await fetchChainBalances(chain, wallet.address);
+
+      await storage.deleteWalletBalances(wallet.id);
+
+      for (const bal of balances) {
+        await storage.upsertWalletBalance({
+          walletId: wallet.id,
+          userId,
+          assetSymbol: bal.symbol,
+          balance: bal.balance.toString(),
+          usdValue: bal.usdValue.toString(),
+        });
+      }
+
+      await storage.updateWalletSyncTime(wallet.id);
+
+      const updatedWallet = await storage.getWallet(wallet.id);
+      const updatedBalances = await storage.getWalletBalances(wallet.id);
+      res.json({ ...updatedWallet, balances: updatedBalances });
+    } catch (error) {
+      console.error("Sync wallet error:", error);
+      res.status(500).json({ message: "Failed to sync wallet" });
+    }
+  });
+
+  app.delete("/api/wallets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      await storage.deleteWallet(wallet.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete wallet error:", error);
+      res.status(500).json({ message: "Failed to delete wallet" });
+    }
+  });
+
+  app.get("/api/wallets/portfolio", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const userWallets = await storage.getWalletsByUser(userId);
+
+      const holdings: Record<string, { symbol: string; balance: number; usdValue: number; sources: string[] }> = {};
+
+      for (const bal of balances) {
+        const wallet = userWallets.find((w) => w.id === bal.walletId);
+        const label = wallet?.label || wallet?.chain || "Wallet";
+        const sym = bal.assetSymbol;
+        if (!holdings[sym]) {
+          holdings[sym] = { symbol: sym, balance: 0, usdValue: 0, sources: [] };
+        }
+        holdings[sym].balance += parseFloat(bal.balance);
+        holdings[sym].usdValue += parseFloat(bal.usdValue || "0");
+        if (!holdings[sym].sources.includes(label)) {
+          holdings[sym].sources.push(label);
+        }
+      }
+
+      const totalValue = Object.values(holdings).reduce((sum, h) => sum + h.usdValue, 0);
+
+      res.json({
+        holdings: Object.values(holdings),
+        totalValue,
+        walletCount: userWallets.length,
+      });
+    } catch (error) {
+      console.error("Wallet portfolio error:", error);
+      res.status(500).json({ message: "Failed to load wallet portfolio" });
+    }
+  });
+
+  const csvUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    fileFilter: (_req, file, cb) => {
+      cb(null, file.mimetype === "text/csv" || file.originalname.endsWith(".csv"));
+    },
+  });
+
+  app.post("/api/import/yahoo", isAuthenticated, csvUpload.single("file"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!req.file) {
+        return res.status(400).json({ message: "No CSV file uploaded" });
+      }
+
+      const { parse } = await import("csv-parse/sync");
+      const csvText = req.file.buffer.toString("utf-8");
+
+      let records: any[];
+      try {
+        records = parse(csvText, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+          relax_column_count: true,
+        });
+      } catch (parseErr: any) {
+        return res.status(400).json({ message: `CSV parse error: ${parseErr.message}` });
+      }
+
+      if (records.length === 0) {
+        return res.status(400).json({ message: "CSV file is empty or has no valid rows" });
+      }
+
+      const headers = Object.keys(records[0]).map((h) => h.toLowerCase().trim());
+      const hasYahooFormat = headers.some((h) => h.includes("symbol")) &&
+        headers.some((h) => h.includes("quantity") || h.includes("shares"));
+
+      const hasCoinTracker = headers.some((h) => h.includes("received quantity") || h.includes("sent quantity"));
+      const hasGenericFormat = headers.some((h) => h.includes("asset") || h.includes("coin") || h.includes("ticker")) &&
+        headers.some((h) => h.includes("amount") || h.includes("quantity") || h.includes("qty"));
+
+      if (!hasYahooFormat && !hasCoinTracker && !hasGenericFormat) {
+        return res.status(400).json({
+          message: "Unrecognized CSV format. Supported formats: Yahoo Finance, CoinTracker, or generic CSV with columns: Symbol/Asset, Quantity, Purchase Price, Trade Date",
+          detectedHeaders: Object.keys(records[0]),
+        });
+      }
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let importAccount = existingAccounts.find((a) => a.provider === "yahoo_import");
+      if (!importAccount) {
+        importAccount = await storage.createAccount({
+          userId,
+          credentialId: null,
+          provider: "yahoo_import",
+          accountName: "Yahoo Finance Import",
+          accountType: "import",
+        });
+      }
+
+      const findCol = (row: any, ...candidates: string[]) => {
+        for (const key of Object.keys(row)) {
+          const lk = key.toLowerCase().trim();
+          for (const c of candidates) {
+            if (lk === c || lk.includes(c)) return row[key];
+          }
+        }
+        return null;
+      };
+
+      let imported = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+      const seenRows = new Set<string>();
+
+      const existingTxns = await storage.getTransactionsByUser(userId);
+      const existingKeys = new Set(
+        existingTxns
+          .filter((t) => t.notes?.includes("Imported from"))
+          .map((t) => `${t.assetSymbol}|${t.quantity}|${new Date(t.transactionDate).toISOString().split("T")[0]}|${t.pricePerUnit}`)
+      );
+
+      for (let i = 0; i < records.length; i++) {
+        const row = records[i];
+        try {
+          let symbol = findCol(row, "symbol", "ticker", "asset", "coin", "currency name");
+          let quantity = findCol(row, "quantity", "shares", "amount", "qty", "received quantity");
+          let price = findCol(row, "purchase price", "cost basis per unit", "price per unit", "price", "cost/unit", "buy price");
+          let dateStr = findCol(row, "trade date", "date", "purchase date", "acquired date", "transaction date");
+          let fee = findCol(row, "commission", "fee", "fees");
+          let totalCost = findCol(row, "cost basis", "total cost", "total", "cost basis total");
+          let txType = findCol(row, "type", "transaction type", "side", "action");
+
+          if (!symbol) {
+            errors.push(`Row ${i + 2}: Missing symbol`);
+            skipped++;
+            continue;
+          }
+
+          symbol = symbol.replace(/-USD$/i, "").replace(/-USDT$/i, "").replace(/\.X$/i, "").toUpperCase().trim();
+
+          if (!symbol || symbol === "" || symbol.length > 10) {
+            errors.push(`Row ${i + 2}: Invalid symbol "${symbol}"`);
+            skipped++;
+            continue;
+          }
+
+          const qty = parseFloat(String(quantity || "0").replace(/,/g, ""));
+          if (!qty || qty <= 0 || isNaN(qty)) {
+            errors.push(`Row ${i + 2}: Invalid quantity for ${symbol}`);
+            skipped++;
+            continue;
+          }
+
+          const dedupeKey = `${symbol}|${qty}|${dateStr || ""}|${price || ""}`;
+          if (seenRows.has(dedupeKey)) {
+            errors.push(`Row ${i + 2}: Duplicate row in file skipped (${symbol})`);
+            skipped++;
+            continue;
+          }
+          seenRows.add(dedupeKey);
+
+          const dbDedupeKey = `${symbol}|${qty}|${dateStr ? new Date(dateStr).toISOString().split("T")[0] : ""}|${price || "0"}`;
+          if (existingKeys.has(dbDedupeKey)) {
+            errors.push(`Row ${i + 2}: Already imported (${symbol})`);
+            skipped++;
+            continue;
+          }
+
+          let unitPrice = parseFloat(String(price || "0").replace(/[$,]/g, ""));
+          if ((!unitPrice || isNaN(unitPrice)) && totalCost) {
+            const tc = parseFloat(String(totalCost).replace(/[$,]/g, ""));
+            if (tc && !isNaN(tc)) unitPrice = tc / qty;
+          }
+          if (!unitPrice || isNaN(unitPrice) || unitPrice < 0) unitPrice = 0;
+
+          const feeVal = fee ? parseFloat(String(fee).replace(/[$,]/g, "")) : 0;
+          const totalVal = qty * unitPrice;
+
+          let transactionDate = new Date();
+          if (dateStr) {
+            const parsed = new Date(dateStr);
+            if (!isNaN(parsed.getTime())) transactionDate = parsed;
+          }
+
+          let transactionType = "buy";
+          if (txType) {
+            const lt = txType.toLowerCase();
+            if (lt.includes("sell") || lt.includes("sold")) transactionType = "sell";
+            else if (lt.includes("income") || lt.includes("interest") || lt.includes("reward") || lt.includes("staking")) transactionType = "income";
+          }
+
+          const transaction = await storage.createTransaction({
+            userId,
+            accountId: importAccount.id,
+            assetSymbol: symbol,
+            transactionType,
+            quantity: qty.toString(),
+            pricePerUnit: unitPrice.toString(),
+            totalValue: totalVal.toFixed(2),
+            fee: (feeVal || 0).toFixed(2),
+            transactionDate,
+            notes: `Imported from Yahoo Finance CSV (row ${i + 1})`,
+          });
+
+          if (transactionType === "buy" || transactionType === "income") {
+            const existingPosition = await storage.getPositionByUserAndAsset(userId, importAccount.id, symbol);
+
+            if (existingPosition) {
+              const existingQty = parseFloat(existingPosition.quantity);
+              const existingCostBasis = parseFloat(existingPosition.totalCostBasis);
+              const newQty = existingQty + qty;
+              const newCostBasis = existingCostBasis + totalVal;
+              const newAvgCost = newCostBasis / newQty;
+
+              await storage.updatePosition(existingPosition.id, {
+                quantity: newQty.toString(),
+                averageCost: newAvgCost.toString(),
+                totalCostBasis: newCostBasis.toString(),
+              });
+            } else {
+              await storage.createPosition({
+                userId,
+                accountId: importAccount.id,
+                assetSymbol: symbol,
+                quantity: qty.toString(),
+                averageCost: unitPrice.toString(),
+                totalCostBasis: totalVal.toFixed(2),
+              });
+            }
+
+            await storage.createTaxLot({
+              userId,
+              transactionId: transaction.id,
+              assetSymbol: symbol,
+              acquiredDate: transactionDate,
+              originalQuantity: qty.toString(),
+              remainingQuantity: qty.toString(),
+              costBasisPerUnit: unitPrice.toString(),
+            });
+          } else if (transactionType === "sell") {
+            const existingPosition = await storage.getPositionByUserAndAsset(userId, importAccount.id, symbol);
+            if (existingPosition) {
+              const existingQty = parseFloat(existingPosition.quantity);
+              const existingCostBasis = parseFloat(existingPosition.totalCostBasis);
+              const newQty = Math.max(0, existingQty - qty);
+              const costReduction = existingQty > 0 ? (qty / existingQty) * existingCostBasis : 0;
+              const newCostBasis = Math.max(0, existingCostBasis - costReduction);
+              const newAvgCost = newQty > 0 ? newCostBasis / newQty : 0;
+
+              await storage.updatePosition(existingPosition.id, {
+                quantity: newQty.toString(),
+                averageCost: newAvgCost.toString(),
+                totalCostBasis: newCostBasis.toString(),
+              });
+            }
+
+            const taxLots = await storage.getTaxLotsByAsset(userId, symbol);
+            let remaining = qty;
+            for (const lot of taxLots) {
+              if (remaining <= 0) break;
+              const lotRemaining = parseFloat(lot.remainingQuantity);
+              if (lotRemaining <= 0) continue;
+              const used = Math.min(remaining, lotRemaining);
+              const newLotRemaining = lotRemaining - used;
+              await storage.updateTaxLot(lot.id, {
+                remainingQuantity: newLotRemaining.toString(),
+              });
+
+              const costBasisPerUnit = parseFloat(lot.costBasisPerUnit);
+              const proceeds = used * unitPrice;
+              const costBasis = used * costBasisPerUnit;
+              const gainLoss = proceeds - costBasis;
+              const holdingDays = (transactionDate.getTime() - new Date(lot.acquiredDate).getTime()) / (1000 * 60 * 60 * 24);
+
+              await storage.createGainEvent({
+                userId,
+                sellTransactionId: transaction.id,
+                taxLotId: lot.id,
+                assetSymbol: symbol,
+                quantity: used.toString(),
+                proceeds: proceeds.toFixed(2),
+                costBasis: costBasis.toFixed(2),
+                gainLoss: gainLoss.toFixed(2),
+                isLongTerm: holdingDays >= 365,
+                taxMethod: "FIFO",
+                soldDate: transactionDate,
+                acquiredDate: new Date(lot.acquiredDate),
+              });
+
+              remaining -= used;
+            }
+          }
+
+          imported++;
+        } catch (rowErr: any) {
+          errors.push(`Row ${i + 2}: ${rowErr.message}`);
+          skipped++;
+        }
+      }
+
+      res.json({
+        imported,
+        skipped,
+        total: records.length,
+        errors: errors.slice(0, 10),
+        message: `Successfully imported ${imported} transaction${imported !== 1 ? "s" : ""}${skipped > 0 ? `, skipped ${skipped} row${skipped !== 1 ? "s" : ""}` : ""}`,
+      });
+    } catch (error: any) {
+      console.error("Yahoo import error:", error);
+      res.status(500).json({ message: "Failed to import CSV: " + (error.message || "Unknown error") });
     }
   });
 
