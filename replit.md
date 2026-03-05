@@ -32,6 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Core Functionality**:
     - **Authentication**: Email/password auth (scrypt hashing, email verification, password reset), legacy Replit Auth. PostgreSQL-backed sessions. Admin roles with dashboard.
     - **Data Sync**: Exchange API key management (encrypted), automatic/manual sync of balances and transactions from exchanges (Binance, Coinbase, etc.). Public blockchain API integrations for cold wallet balance tracking (BTC, ETH, SOL, XRP, DOGE, LTC, ADA).
+    - **Blockchain Transaction Import**: When syncing ETH or BTC wallets, pulls full transaction history from Etherscan (ETH) and blockchain.info (BTC). Classifies receive→buy, send→sell. Looks up historical USD price per transaction date via CoinGecko and creates tax lots for acquisitions. Deduplicates by tx hash. Services: `server/services/blockchain-transactions.ts` (tx fetching), `server/services/historical-prices.ts` (price lookup with in-memory cache).
     - **XRPL Scanner**: Scans XRPL ledger for transactions between user wallets and Soil vault address for deposits and interest payments, storing them for tax integration.
     - **Email Notifications**: Resend integration for various transactional emails.
 

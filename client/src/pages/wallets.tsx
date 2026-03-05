@@ -366,14 +366,25 @@ export default function Wallets() {
 
   const syncMutation = useMutation({
     mutationFn: async (walletId: string) => {
-      return apiRequest("POST", `/api/wallets/${walletId}/sync`, {});
+      const res = await apiRequest("POST", `/api/wallets/${walletId}/sync`, {});
+      try {
+        return await res.json();
+      } catch {
+        return {};
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Wallet synced successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      const txCount = data?.newTransactions || 0;
+      if (txCount > 0) {
+        toast({ title: `Wallet synced — ${txCount} new transaction${txCount > 1 ? "s" : ""} imported` });
+      } else {
+        toast({ title: "Wallet synced successfully" });
+      }
     },
     onError: () => {
       toast({ title: "Failed to sync wallet — the address may be invalid or the blockchain API may be temporarily unavailable", variant: "destructive" });

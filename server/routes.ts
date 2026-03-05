@@ -1663,9 +1663,104 @@ export async function registerRoutes(
 
       await storage.updateWalletSyncTime(wallet.id);
 
+      let newTransactions = 0;
+
+      if (chain === "ethereum" || chain === "bitcoin") {
+        try {
+          const { getEthTransactions, getBtcTransactions } = await import("./services/blockchain-transactions");
+          const { getHistoricalPrice } = await import("./services/historical-prices");
+
+          const blockchainTxs = chain === "ethereum"
+            ? await getEthTransactions(wallet.address)
+            : await getBtcTransactions(wallet.address);
+
+          if (blockchainTxs.length > 0) {
+            const existingAccounts = await storage.getAccountsByUser(userId);
+            let walletAccount = existingAccounts.find(a => a.accountName === `${wallet.label || chain} Wallet` && a.accountType === "wallet");
+            if (!walletAccount) {
+              walletAccount = await storage.createAccount({
+                userId,
+                provider: chain,
+                accountName: `${wallet.label || chain} Wallet`,
+                accountType: "wallet",
+              });
+            }
+
+            const existingTxns = await storage.getTransactionsByUser(userId);
+            const existingExternalIds = new Set(
+              existingTxns.filter(t => t.externalId && t.accountId === walletAccount!.id).map(t => t.externalId)
+            );
+
+            const uniqueDates = new Map<string, Date>();
+            for (const tx of blockchainTxs) {
+              if (!existingExternalIds.has(tx.hash)) {
+                const dayKey = tx.timestamp.toISOString().split("T")[0];
+                if (!uniqueDates.has(dayKey)) uniqueDates.set(dayKey, tx.timestamp);
+              }
+            }
+
+            const MAX_PRICE_LOOKUPS = 60;
+            const priceMap = new Map<string, number>();
+            const asset = chain === "ethereum" ? "ETH" : "BTC";
+            let lookupCount = 0;
+            for (const [dayKey, date] of uniqueDates) {
+              if (lookupCount >= MAX_PRICE_LOOKUPS) {
+                console.warn(`Capping price lookups at ${MAX_PRICE_LOOKUPS} for wallet ${wallet.id}`);
+                break;
+              }
+              const price = await getHistoricalPrice(asset, date);
+              priceMap.set(dayKey, price);
+              lookupCount++;
+              if (lookupCount < uniqueDates.size) await new Promise(r => setTimeout(r, 2500));
+            }
+
+            for (const tx of blockchainTxs) {
+              if (existingExternalIds.has(tx.hash)) continue;
+
+              const dayKey = tx.timestamp.toISOString().split("T")[0];
+              const pricePerUnit = priceMap.get(dayKey) || 0;
+              const totalValue = tx.quantity * pricePerUnit;
+              const txType = tx.type === "receive" ? "buy" : "sell";
+
+              const transaction = await storage.createTransaction({
+                userId,
+                accountId: walletAccount!.id,
+                assetSymbol: tx.asset,
+                transactionType: txType,
+                quantity: tx.quantity.toString(),
+                pricePerUnit: pricePerUnit.toFixed(2),
+                totalValue: totalValue.toFixed(2),
+                fee: tx.fee.toString(),
+                transactionDate: tx.timestamp,
+                externalId: tx.hash,
+                notes: `Imported from ${chain === "ethereum" ? "Ethereum" : "Bitcoin"} blockchain`,
+              });
+
+              if (txType === "buy" && pricePerUnit > 0) {
+                await storage.createTaxLot({
+                  userId,
+                  transactionId: transaction.id,
+                  assetSymbol: tx.asset,
+                  acquiredDate: tx.timestamp,
+                  originalQuantity: tx.quantity.toString(),
+                  remainingQuantity: tx.quantity.toString(),
+                  costBasisPerUnit: pricePerUnit.toFixed(2),
+                });
+              }
+
+              newTransactions++;
+            }
+
+            console.log(`Wallet sync: imported ${newTransactions} new ${chain} transactions for wallet ${wallet.id}`);
+          }
+        } catch (txError) {
+          console.error(`Failed to import ${chain} transactions:`, txError);
+        }
+      }
+
       const updatedWallet = await storage.getWallet(wallet.id);
       const updatedBalances = await storage.getWalletBalances(wallet.id);
-      res.json({ ...updatedWallet, balances: updatedBalances });
+      res.json({ ...updatedWallet, balances: updatedBalances, newTransactions });
     } catch (error) {
       console.error("Sync wallet error:", error);
       res.status(500).json({ message: "Failed to sync wallet" });
