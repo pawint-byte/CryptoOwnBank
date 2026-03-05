@@ -13,6 +13,11 @@ import {
   CheckCircle2,
   ArrowRight,
   ExternalLink,
+  ShoppingCart,
+  ScanLine,
+  UserCheck,
+  Landmark,
+  BarChart3,
 } from "lucide-react";
 
 const steps = [
@@ -52,40 +57,104 @@ const steps = [
       "In Xaman, tap the \"+\" button or go to Add Token",
       "Search for \"RLUSD\" in the token list",
       "Tap \"Setup Trust Line\" to create the RLUSD trust line",
-      "Your Ledger will prompt you to sign the TrustSet transaction — confirm on device",
+      "Your Ledger will prompt you to sign the TrustSet transaction \u2014 confirm on device",
       "Once confirmed, your wallet can now receive and hold RLUSD",
     ],
-    tip: "A trust line is how the XRPL works — it tells the ledger your account accepts a specific token. This is a one-time setup with a small XRP reserve (~2 XRP).",
+    tip: "A trust line is how the XRPL works \u2014 it tells the ledger your account accepts a specific token. This is a one-time setup with a small XRP reserve (~2 XRP).",
   },
   {
     number: 4,
     icon: Link2,
-    title: "Connect to CryptoOwnBank",
+    title: "Connect Wallet to CryptoOwnBank",
     description: "Link your wallet to the dashboard to view balances and access Soil vaults.",
     details: [
       "On CryptoOwnBank, go to OwnBank Dashboard",
       "Click \"Connect Wallet\" \u2192 choose \"Connect Xumm\"",
-      "A QR code appears — scan it with Xaman (or tap the deep link on mobile)",
+      "A QR code appears \u2014 scan it with Xaman (or tap the deep link on mobile)",
       "Approve the connection request in Xaman",
       "If using Ledger + Xaman combo, Ledger may also prompt for confirmation",
       "Your wallet address and balances will appear on the dashboard",
     ],
-    tip: "This is a read-only connection. We only see your public address — never your keys or seed phrase.",
+    tip: "This is a read-only connection. We only see your public address \u2014 never your keys or seed phrase.",
   },
   {
     number: 5,
-    icon: Shield,
-    title: "Deposit RLUSD & Start Earning",
-    description: "Deposit RLUSD into a Soil vault and start earning 5.2–8.0% APR yield.",
+    icon: ShoppingCart,
+    title: "Buy RLUSD on an Exchange",
+    description: "Purchase RLUSD on a supported exchange and withdraw it to your XRPL wallet.",
     details: [
-      "Go to OwnBank \u2192 Vaults",
-      "Choose a vault: Treasury (5.2% APR) or CREDIT+ (8.0% APR)",
-      "Enter the amount of RLUSD you want to deposit",
-      "Review the transaction preview — we pre-build everything for you",
-      "Sign the deposit transaction in Xaman (Ledger confirms on device)",
-      "Done — your RLUSD is now earning fixed yield!",
+      "Log in to a supported exchange: Binance, Kraken, Coinbase, Crypto.com, or Uphold",
+      "Buy RLUSD (Ripple\u2019s regulated USD stablecoin, pegged 1:1 to USD)",
+      "Go to Withdraw \u2192 select RLUSD \u2192 choose XRPL as the network",
+      "Paste your XRPL wallet address (starts with r\u2026 \u2014 find it in Xaman or on the CryptoOwnBank dashboard)",
+      "Confirm the withdrawal \u2014 RLUSD typically arrives in seconds",
+      "Your CryptoOwnBank dashboard will show the new RLUSD balance",
     ],
-    tip: "Every deposit requires your cold wallet signature. We build the transaction; you approve it. Your keys never leave your device.",
+    tip: "Make sure you select the XRPL network when withdrawing, not Ethereum or another chain. Double-check your wallet address before sending. Start with a small test amount.",
+  },
+  {
+    number: 6,
+    icon: ScanLine,
+    title: "Connect Your Wallet to Soil Protocol",
+    description: "From CryptoOwnBank, you\u2019ll be redirected to Soil to connect your wallet.",
+    details: [
+      "On CryptoOwnBank, go to OwnBank \u2192 Vaults",
+      "Click \"Deposit RLUSD\" on a vault, then click \"Deposit on Soil\"",
+      "You\u2019ll be redirected to Soil Protocol\u2019s XRPL app (xrpl.soil.co)",
+      "On Soil\u2019s site, click \"Launch App\" or \"XRPL App\" in the top navigation",
+      "Click \"Connect Wallet\" \u2014 a QR code appears",
+      "Open Xaman on your phone and scan the QR code",
+      "Approve the connection request in Xaman (Ledger may prompt for confirmation)",
+      "Your wallet address and RLUSD balance will appear on Soil\u2019s dashboard",
+    ],
+    tip: "This is a separate connection from CryptoOwnBank. Soil needs to verify your wallet to manage vault deposits. This is also non-custodial \u2014 Soil never holds your keys.",
+  },
+  {
+    number: 7,
+    icon: UserCheck,
+    title: "Complete Soil KYC Verification",
+    description: "Soil requires identity verification before you can deposit into vaults.",
+    details: [
+      "After connecting your wallet, Soil will prompt you to verify your identity",
+      "Upload a clear photo of your passport or government-issued ID",
+      "Complete the camera/selfie verification \u2014 follow the on-screen instructions",
+      "Submit and wait for verification \u2014 this usually completes within minutes",
+      "Once verified, you\u2019ll see green checkmarks: Wallet Connected, Email Verified, Identity (KYC) Verified",
+      "You only need to do this once \u2014 after that, you can deposit freely",
+    ],
+    tip: "Soil\u2019s KYC is required because their vaults involve real-world assets (US Treasuries, private credit). This is standard for regulated yield products. CryptoOwnBank does not require KYC.",
+  },
+  {
+    number: 8,
+    icon: Landmark,
+    title: "Deposit RLUSD into a Soil Vault",
+    description: "Choose a vault, enter your deposit amount, and sign the transaction.",
+    details: [
+      "On Soil\u2019s dashboard, click \"Vaults\" in the left sidebar",
+      "Choose a vault based on your goals:",
+      "\u2022 Treasury (~5.2% APR) \u2014 backed by US Treasuries, 3-day rolling withdrawal, lower risk",
+      "\u2022 CREDIT+ (8.0% APR) \u2014 backed by private credit, 90-day notice + 10-day cooldown, higher yield",
+      "Enter the amount of RLUSD you want to deposit",
+      "Click \"Deposit\" \u2014 a QR code appears",
+      "Scan with Xaman \u2192 approve on your phone \u2192 confirm on Ledger if prompted",
+      "You\u2019ll see \"Allocation Successful\" with your principal, APR, and status confirmed",
+    ],
+    tip: "You can split your RLUSD across both vaults \u2014 for example, some in Treasury for quick access and some in CREDIT+ for higher yield. Interest compounds automatically if you don\u2019t withdraw it.",
+  },
+  {
+    number: 9,
+    icon: BarChart3,
+    title: "Track Your Yield",
+    description: "Monitor your vault positions and accrued interest.",
+    details: [
+      "Return to CryptoOwnBank \u2192 OwnBank Dashboard to see your updated wallet balances",
+      "Your RLUSD wallet balance will be lower (since it\u2019s now in a Soil vault earning yield)",
+      "Click \"View Vault & Yield on Soil\" to see your vault position on Soil\u2019s dashboard",
+      "On Soil, you\u2019ll see: Total Commitment, Total Yield, Return Rate, and SEED Bonus",
+      "Interest accrues daily \u2014 check back after 24 hours to see your first yield",
+      "To withdraw interest: go to CryptoOwnBank \u2192 Withdraw Interest, or manage directly on Soil",
+    ],
+    tip: "Your principal stays locked and protected in the vault. Only the accrued interest is withdrawable. Interest compounds automatically if left in the vault.",
   },
 ];
 
@@ -123,12 +192,12 @@ export default function SetupGuide() {
               Setup Guide
             </Badge>
             <h1 className="text-3xl font-bold mb-3" data-testid="heading-setup-guide">
-              How to Connect Ledger Nano X + Xaman for RLUSD & Soil Yield
+              Complete Setup: Ledger + Xaman + Soil Vault Yield
             </h1>
             <p className="text-muted-foreground leading-relaxed">
-              Follow these 5 steps to connect your Ledger hardware wallet through Xaman (Xumm),
-              set up RLUSD, and start earning yield on Soil Protocol vaults — all while keeping
-              your keys completely offline.
+              Follow these 9 steps to set up your cold wallet, buy RLUSD, connect to Soil Protocol,
+              and start earning 5.2–8.0% fixed APR on your stablecoins — all while keeping
+              your keys completely offline on your Ledger device.
             </p>
           </div>
 
@@ -188,9 +257,10 @@ export default function SetupGuide() {
                   <div>
                     <h3 className="text-lg font-semibold mb-2" data-testid="text-setup-done">You're All Set!</h3>
                     <p className="text-muted-foreground mb-4">
-                      Your Ledger Nano X is paired with Xaman, your RLUSD trust line is active, and you're
-                      connected to CryptoOwnBank. Now you can deposit RLUSD to Soil vaults and sign every
-                      transaction with your Ledger/Xaman combo — keys always offline, site always your helper.
+                      Your Ledger is paired with Xaman, your RLUSD trust line is active, you're connected to
+                      CryptoOwnBank and Soil Protocol, KYC is complete, and your RLUSD is earning yield in a
+                      Soil vault. Track everything from your CryptoOwnBank dashboard — keys always offline,
+                      yield always growing.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <a href="/signup">
@@ -219,8 +289,9 @@ export default function SetupGuide() {
                   "XRP app installed on Ledger",
                   "Xaman app on your phone",
                   "Some XRP for network reserves (~10 XRP)",
-                  "RLUSD to deposit (buy on Binance, Kraken, or Coinbase)",
-                  "A few minutes of setup time",
+                  "RLUSD to deposit (buy on Binance, Kraken, Coinbase, or Uphold)",
+                  "Valid passport or government ID (for Soil KYC verification)",
+                  "About 15–20 minutes for the full setup",
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
                     <div className="h-1.5 w-1.5 rounded-full bg-[#00A4E4] flex-shrink-0" />
