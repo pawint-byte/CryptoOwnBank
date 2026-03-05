@@ -778,7 +778,7 @@ export async function registerRoutes(
       if (Amount) txJson.Amount = Amount;
       if (LimitAmount) txJson.LimitAmount = LimitAmount;
 
-      const payload = await xummSdk.payload.create(txJson as any, true);
+      const payload = await xummSdk.payload.create({ txjson: txJson } as any, true);
       if (!payload) {
         return res.status(500).json({ message: "Failed to create payload" });
       }
