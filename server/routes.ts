@@ -727,19 +727,11 @@ export async function registerRoutes(
       if (!xummSdk) {
         return res.status(500).json({ message: "Xumm SDK not configured" });
       }
-      console.log("Creating Xumm SignIn payload...");
-      let payload;
-      try {
-        payload = await xummSdk.payload.create({
-          TransactionType: "SignIn" as any,
-        } as any, true);
-      } catch (createErr: any) {
-        console.log("Xumm payload.create threw:", createErr?.message, JSON.stringify(createErr, Object.getOwnPropertyNames(createErr)));
-        return res.status(500).json({ message: createErr?.message || "Xumm API error" });
-      }
-      console.log("Xumm payload result:", JSON.stringify(payload));
+      const payload = await xummSdk.payload.create({
+        TransactionType: "SignIn" as any,
+      } as any, true);
       if (!payload) {
-        return res.status(500).json({ message: "Failed to create Xumm payload (null result)" });
+        return res.status(500).json({ message: "Failed to create Xumm payload" });
       }
       res.json({
         uuid: payload.uuid,
@@ -748,7 +740,7 @@ export async function registerRoutes(
         mobileLink: payload.refs.websocket_status,
       });
     } catch (error: any) {
-      console.log("Xumm signin outer error:", error?.message, JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      console.error("Xumm signin error:", error?.message);
       res.status(500).json({ message: error.message || "Failed to create sign-in request" });
     }
   });

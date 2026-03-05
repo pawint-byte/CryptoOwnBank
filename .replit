@@ -44,4 +44,4 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_database:1.0.
 [userenv]
 
 [userenv.shared]
-VITE_XUMM_API_KEY = "f7532863-a66a-4ac6-ac2e-0ddd4bd6620c"
+VITE_XUMM_API_KEY = "f7532863-a6ea-4ac6-ac2e-0ddd4bd6620c"
