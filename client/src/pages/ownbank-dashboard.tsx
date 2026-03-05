@@ -21,6 +21,7 @@ import {
 import { connectXumm } from "@/lib/xumm-connector";
 import { connectLedger } from "@/lib/ledger-connector";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
+import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import {
   Wallet,
@@ -38,6 +39,9 @@ import {
   Sparkles,
   ArrowRight,
   Share2,
+  Database,
+  ArrowUpFromLine,
+  CheckCircle,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 
@@ -68,6 +72,15 @@ export default function OwnBankDashboard() {
   const [connectingXumm, setConnectingXumm] = useState(false);
   const [connectingLedger, setConnectingLedger] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [syncingSoil, setSyncingSoil] = useState(false);
+  const [soilSummary, setSoilSummary] = useState<{
+    deposits: number;
+    totalDeposited: string;
+    interestPayments: number;
+    totalInterestReceived: string;
+    transactions: Array<{ hash: string; type: string; amount: string; currency: string; date: string }>;
+  } | null>(null);
+  const [soilSynced, setSoilSynced] = useState(false);
 
   const fetchBalances = useCallback(async () => {
     if (!walletAddress) return;
@@ -168,6 +181,37 @@ export default function OwnBankDashboard() {
     saveWalletToServer("", "");
     toast({ title: "Wallet Disconnected" });
   };
+
+  const handleSyncSoil = useCallback(async () => {
+    if (!walletAddress) return;
+    setSyncingSoil(true);
+    try {
+      const response = await apiRequest("POST", "/api/soil/sync", {});
+      const data = await response.json();
+      if (data.success) {
+        setSoilSummary(data.summary);
+        setSoilSynced(true);
+        toast({
+          title: "Soil Activity Synced",
+          description: `Found ${data.summary.deposits} deposit(s) and ${data.summary.interestPayments} interest payment(s). ${data.newlyImported} new transaction(s) imported.`,
+        });
+      }
+    } catch {
+      toast({
+        title: "Sync failed",
+        description: "Could not scan XRPL for Soil transactions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingSoil(false);
+    }
+  }, [walletAddress, toast]);
+
+  useEffect(() => {
+    if (isConnected && walletAddress && !soilSynced) {
+      handleSyncSoil();
+    }
+  }, [isConnected, walletAddress, soilSynced, handleSyncSoil]);
 
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
 
@@ -427,21 +471,114 @@ export default function OwnBankDashboard() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
               <TrendingUp className="h-5 w-5 inline mr-2 text-purple-500" />
-              Your Soil Vault
+              Soil Vault Activity
             </CardTitle>
-            <Badge variant="secondary" className="text-xs">5.2–8.0% APR</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">5.2–8.0% APR</Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSyncSoil}
+                disabled={syncingSoil}
+                data-testid="button-sync-soil"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${syncingSoil ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            View your deposits, accrued yield, and SEED rewards directly on Soil Protocol.
+            Real-time activity synced from XRPL ledger. All data verified on-chain.
           </p>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-purple-600 text-white hover:bg-purple-700" size="lg" data-testid="button-view-soil-dashboard">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View Vault & Yield on Soil
-            </Button>
-          </a>
+        <CardContent className="space-y-4">
+          {syncingSoil && !soilSummary ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Scanning XRPL ledger for Soil transactions...
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-16" />
+                <Skeleton className="h-16" />
+              </div>
+            </div>
+          ) : soilSummary && (soilSummary.deposits > 0 || soilSummary.interestPayments > 0) ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-card p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <ArrowUpFromLine className="h-3.5 w-3.5 text-purple-500" />
+                    <p className="text-xs text-muted-foreground">Total Deposited</p>
+                  </div>
+                  <p className="text-lg font-bold font-mono" data-testid="text-soil-total-deposited">
+                    ${parseFloat(soilSummary.totalDeposited).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{soilSummary.deposits} deposit{soilSummary.deposits !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="rounded-lg border bg-card p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                    <p className="text-xs text-muted-foreground">Interest Received</p>
+                  </div>
+                  <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-total-interest">
+                    ${parseFloat(soilSummary.totalInterestReceived).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{soilSummary.interestPayments} payment{soilSummary.interestPayments !== 1 ? "s" : ""}</p>
+                </div>
+              </div>
+
+              {soilSummary.transactions.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Recent On-Chain Activity</p>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {soilSummary.transactions.slice(-5).reverse().map((tx) => (
+                      <div
+                        key={tx.hash}
+                        className="flex items-center justify-between text-xs rounded-md border px-3 py-2"
+                        data-testid={`row-soil-tx-${tx.hash.slice(0, 8)}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {tx.type === "deposit" ? (
+                            <ArrowUpFromLine className="h-3 w-3 text-purple-500" />
+                          ) : (
+                            <ArrowDownToLine className="h-3 w-3 text-emerald-500" />
+                          )}
+                          <span className="font-medium capitalize">{tx.type}</span>
+                        </div>
+                        <span className="font-mono">
+                          {tx.type === "interest" ? "+" : "-"}${parseFloat(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {new Date(tx.date).toLocaleDateString()}
+                        </span>
+                        <a
+                          href={`https://xrpscan.com/tx/${tx.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#00A4E4] hover:underline"
+                          data-testid={`link-tx-explorer-${tx.hash.slice(0, 8)}`}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <CheckCircle className="h-3 w-3 text-emerald-500" />
+                Data pulled directly from XRPL ledger. Synced to your tax reports automatically.
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <Database className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No Soil transactions found on-chain for this wallet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Deposit RLUSD to Soil to start earning 5.2–8.0% APR.</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-2">
             <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="w-full" data-testid="button-soil-yield">
@@ -463,7 +600,7 @@ export default function OwnBankDashboard() {
             </Link>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Interest accrues daily on Soil. Your principal stays locked and protected.
+            Interest accrues daily on Soil. Accrued but unpaid interest is not shown here — only paid-out transactions appear. Your principal stays locked and protected.
           </p>
         </CardContent>
       </Card>

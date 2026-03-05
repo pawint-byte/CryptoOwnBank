@@ -170,6 +170,8 @@ export function calculateAccruedInterest(
   return principal * (apr / 100) * (daysDiff / 365);
 }
 
+export const SOIL_VAULT_ADDRESS = "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX";
+
 export const SOIL_VAULTS = [
   {
     id: "soil-treasury",
@@ -180,7 +182,7 @@ export const SOIL_VAULTS = [
     riskLevel: "Lower risk",
     withdrawalTerms: "3-day rolling withdrawal",
     bestFor: "Users who want stability and quicker access to funds",
-    address: "rSoiLTreasuryVaultXXXXXXXXXXXXXX",
+    address: SOIL_VAULT_ADDRESS,
     minDeposit: 10,
     totalDeposited: 2_450_000,
   },
@@ -193,11 +195,103 @@ export const SOIL_VAULTS = [
     riskLevel: "Higher risk",
     withdrawalTerms: "90-day notice + 10-day cooldown",
     bestFor: "Users willing to lock funds longer for higher returns",
-    address: "rSoiLPrivateCreditVaultXXXXXXXXXX",
+    address: SOIL_VAULT_ADDRESS,
     minDeposit: 50,
     totalDeposited: 1_120_000,
   },
 ];
+
+export interface SoilTransaction {
+  hash: string;
+  type: "deposit" | "interest";
+  amount: number;
+  currency: string;
+  date: string;
+  fee: string;
+  status: string;
+}
+
+export async function getSoilTransactions(
+  address: string
+): Promise<SoilTransaction[]> {
+  try {
+    const client = await getClient();
+    const soilTxns: SoilTransaction[] = [];
+    let marker: any = undefined;
+    let hasMore = true;
+
+    while (hasMore) {
+      const request: any = {
+        command: "account_tx",
+        account: address,
+        ledger_index_min: -1,
+        ledger_index_max: -1,
+        limit: 100,
+      };
+      if (marker) request.marker = marker;
+
+      const response = await client.request(request);
+      const txs = response.result.transactions || [];
+
+      for (const tx of txs) {
+        const txData = tx.tx || tx.tx_json || {};
+        const meta = tx.meta || {};
+
+        if (meta.TransactionResult !== "tesSUCCESS") continue;
+        if (txData.TransactionType !== "Payment") continue;
+
+        const src = txData.Account || "";
+        const dest = txData.Destination || "";
+        const isSoilRelated =
+          src === SOIL_VAULT_ADDRESS || dest === SOIL_VAULT_ADDRESS;
+        if (!isSoilRelated) continue;
+
+        let amount = 0;
+        let currency = "Unknown";
+        if (typeof txData.Amount === "object" && txData.Amount) {
+          amount = parseFloat(txData.Amount.value || "0");
+          currency =
+            txData.Amount.currency === RLUSD_CURRENCY
+              ? "RLUSD"
+              : txData.Amount.currency || "Unknown";
+        } else if (typeof txData.Amount === "string") {
+          amount = Number(txData.Amount) / 1_000_000;
+          currency = "XRP";
+        }
+
+        if (amount <= 0) continue;
+
+        const rippleEpoch = 946684800;
+        const date = txData.date
+          ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
+          : "";
+
+        const isDeposit = dest === SOIL_VAULT_ADDRESS;
+
+        soilTxns.push({
+          hash: txData.hash || (tx as any).hash || "",
+          type: isDeposit ? "deposit" : "interest",
+          amount,
+          currency,
+          date,
+          fee: txData.Fee
+            ? (Number(txData.Fee) / 1_000_000).toFixed(6)
+            : "0",
+          status: "Success",
+        });
+      }
+
+      marker = response.result.marker;
+      hasMore = !!marker;
+    }
+
+    return soilTxns.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+  } catch {
+    return [];
+  }
+}
 
 export const SOIL_REFERRAL_CODE = "OWNBANK2026";
 export const SOIL_REFERRAL_URL = `https://xrpl.soil.co/?af=${SOIL_REFERRAL_CODE}`;

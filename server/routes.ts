@@ -9,6 +9,10 @@ import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
+import { Client } from "xrpl";
+
+const SOIL_VAULT_ADDRESS = "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX";
+const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -45,6 +49,189 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: "Failed to save wallet" });
+    }
+  });
+
+  app.post("/api/soil/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      const [user] = await db.select({
+        xrplWalletAddress: users.xrplWalletAddress,
+      }).from(users).where(eq(users.id, userId));
+
+      const walletAddress = user?.xrplWalletAddress;
+      if (!walletAddress) {
+        return res.status(400).json({ message: "No wallet connected. Connect your XRPL wallet first." });
+      }
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let soilAccount = existingAccounts.find(a => a.provider === "soil-xrpl");
+      if (!soilAccount) {
+        soilAccount = await storage.createAccount({
+          userId,
+          credentialId: null,
+          provider: "soil-xrpl",
+          accountName: "Soil Protocol (XRPL)",
+          accountType: "defi",
+        });
+      }
+
+      const existingTxns = await storage.getTransactionsByUser(userId);
+      const existingHashes = new Set(
+        existingTxns
+          .filter(t => t.externalId && t.accountId === soilAccount!.id)
+          .map(t => t.externalId)
+      );
+
+      const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+
+      const client = new Client("wss://xrplcluster.com");
+      await client.connect();
+
+      const soilTxns: Array<{
+        hash: string;
+        type: "deposit" | "interest";
+        amount: number;
+        currency: string;
+        date: string;
+        fee: string;
+      }> = [];
+
+      try {
+        let marker: any = undefined;
+        let hasMore = true;
+
+        while (hasMore) {
+          const request: any = {
+            command: "account_tx",
+            account: walletAddress,
+            ledger_index_min: -1,
+            ledger_index_max: -1,
+            limit: 100,
+          };
+          if (marker) request.marker = marker;
+
+          const response = await client.request(request);
+          const txs = response.result.transactions || [];
+
+          for (const tx of txs) {
+            const txData = tx.tx || tx.tx_json || {};
+            const meta = tx.meta || {};
+
+            if (meta.TransactionResult !== "tesSUCCESS") continue;
+            if (txData.TransactionType !== "Payment") continue;
+
+            const src = txData.Account || "";
+            const dest = txData.Destination || "";
+            const isSoilRelated =
+              src === SOIL_VAULT_ADDRESS || dest === SOIL_VAULT_ADDRESS;
+            if (!isSoilRelated) continue;
+
+            let amount = 0;
+            let currency = "Unknown";
+            let validCurrency = false;
+
+            if (typeof txData.Amount === "object" && txData.Amount) {
+              const amountCurrency = txData.Amount.currency || "";
+              const amountIssuer = txData.Amount.issuer || "";
+              if (
+                (amountCurrency === RLUSD_CURRENCY_HEX || amountCurrency === "RLUSD") &&
+                amountIssuer === RLUSD_ISSUER
+              ) {
+                amount = parseFloat(txData.Amount.value || "0");
+                currency = "RLUSD";
+                validCurrency = true;
+              }
+            } else if (typeof txData.Amount === "string") {
+              amount = Number(txData.Amount) / 1_000_000;
+              currency = "XRP";
+              validCurrency = true;
+            }
+
+            if (!validCurrency || amount <= 0) continue;
+
+            const rippleEpoch = 946684800;
+            const date = txData.date
+              ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
+              : new Date().toISOString();
+
+            const hash = txData.hash || (tx as any).hash || "";
+            if (!hash) continue;
+
+            const isDeposit = dest === SOIL_VAULT_ADDRESS;
+
+            soilTxns.push({
+              hash,
+              type: isDeposit ? "deposit" : "interest",
+              amount,
+              currency,
+              date,
+              fee: txData.Fee
+                ? (Number(txData.Fee) / 1_000_000).toFixed(6)
+                : "0",
+            });
+          }
+
+          marker = response.result.marker;
+          hasMore = !!marker;
+        }
+      } finally {
+        await client.disconnect().catch(() => {});
+      }
+
+      let imported = 0;
+      for (const stx of soilTxns) {
+        if (existingHashes.has(stx.hash)) continue;
+
+        const transactionType = stx.type === "deposit" ? "transfer_out" : "income";
+        const assetSymbol = stx.currency;
+
+        await storage.createTransaction({
+          userId,
+          accountId: soilAccount.id,
+          assetSymbol,
+          transactionType,
+          quantity: stx.amount.toString(),
+          pricePerUnit: "1",
+          totalValue: stx.amount.toFixed(2),
+          fee: stx.fee,
+          transactionDate: new Date(stx.date),
+          externalId: stx.hash,
+          notes: stx.type === "deposit"
+            ? "Soil vault deposit (auto-synced from XRPL)"
+            : "Soil vault interest payment (auto-synced from XRPL)",
+        });
+
+        imported++;
+      }
+
+      const deposits = soilTxns.filter(t => t.type === "deposit");
+      const interestPayments = soilTxns.filter(t => t.type === "interest");
+      const totalDeposited = deposits.reduce((sum, t) => sum + t.amount, 0);
+      const totalInterest = interestPayments.reduce((sum, t) => sum + t.amount, 0);
+
+      res.json({
+        success: true,
+        totalTransactions: soilTxns.length,
+        newlyImported: imported,
+        summary: {
+          deposits: deposits.length,
+          totalDeposited: totalDeposited.toFixed(2),
+          interestPayments: interestPayments.length,
+          totalInterestReceived: totalInterest.toFixed(2),
+          transactions: soilTxns.map(t => ({
+            hash: t.hash,
+            type: t.type,
+            amount: t.amount.toFixed(2),
+            currency: t.currency,
+            date: t.date,
+          })),
+        },
+      });
+    } catch (error: any) {
+      console.error("Soil sync error:", error);
+      res.status(500).json({ message: "Failed to sync Soil transactions: " + (error.message || "Unknown error") });
     }
   });
 

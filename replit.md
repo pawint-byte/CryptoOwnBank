@@ -74,12 +74,21 @@ Preferred communication style: Simple, everyday language.
 - Settings: User preferences, spending wallet, subscription management
 
 #### OwnBank XRPL Section
-- OwnBank Dashboard (`/ownbank`): XRPL wallet connection (Xumm/Ledger), XRP/RLUSD balances, interest metrics, referral link, affiliate buy buttons
+- OwnBank Dashboard (`/ownbank`): XRPL wallet connection (Xumm/Ledger), XRP/RLUSD balances, Soil vault activity (auto-synced from XRPL ledger), referral link, affiliate buy buttons
 - Vaults (`/ownbank/vaults`): Soil Protocol RLUSD yield vaults (Treasury 5.2% APR, Private Credit 7.8% APR), deposit flow with Soil referral code
 - Withdraw Interest (`/ownbank/withdraw`): Interest-only withdrawal with principal protection, freemium gating for auto-withdraw
 - History (`/ownbank/history`): XRPL transaction history from blockchain
 - My Referrals (`/ownbank/referrals`): Referral link, stats, referred user list
 - XLS-66 Lending: Placeholder (Coming Q2 2026)
+
+### Soil XRPL Transaction Scanner
+- **Endpoint**: `POST /api/soil/sync` — scans XRPL ledger for all transactions between user's wallet and Soil vault address (`rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX`)
+- **Auto-sync**: Triggers automatically when user connects wallet on OwnBank dashboard
+- **Manual sync**: Refresh button on Soil Vault Activity card
+- **Transaction types**: Deposits (Payment TO Soil address) and Interest payments (Payment FROM Soil address)
+- **Tax integration**: Imported transactions stored as `transfer_out` (deposits) and `income` (interest) in transactions table, linked to "Soil Protocol (XRPL)" account
+- **Deduplication**: Uses transaction hash as `externalId` to prevent duplicates on re-sync
+- **Data source**: 100% on-chain XRPL data — no estimates, no manual entry
 
 ## File Structure
 
