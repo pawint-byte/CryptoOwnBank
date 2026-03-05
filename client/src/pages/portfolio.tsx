@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AllocationChart } from "@/components/allocation-chart";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Position } from "@shared/schema";
 
 interface PositionWithMarket extends Position {
@@ -13,6 +16,7 @@ interface PositionWithMarket extends Position {
   gainLoss?: number;
   gainLossPercent?: number;
   source?: string;
+  isImport?: boolean;
 }
 
 interface PortfolioData {
@@ -25,8 +29,25 @@ interface PortfolioData {
 }
 
 export default function Portfolio() {
+  const { toast } = useToast();
   const { data, isLoading } = useQuery<PortfolioData>({
     queryKey: ["/api/portfolio"],
+  });
+
+  const deletePositionMutation = useMutation({
+    mutationFn: async (positionId: string) => {
+      const res = await apiRequest("DELETE", `/api/positions/${positionId}`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: data.message });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to remove position", description: error.message, variant: "destructive" });
+    },
   });
 
   const formatCurrency = (value: number) => {
@@ -176,26 +197,41 @@ export default function Portfolio() {
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="font-mono font-medium">
-                        {formatCurrency(position.currentValue || 0)}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-mono font-medium">
+                          {formatCurrency(position.currentValue || 0)}
+                        </div>
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-1 text-sm",
+                            (position.gainLossPercent || 0) > 0 && "text-chart-2",
+                            (position.gainLossPercent || 0) < 0 && "text-destructive",
+                            (position.gainLossPercent || 0) === 0 && "text-muted-foreground"
+                          )}
+                        >
+                          {(position.gainLossPercent || 0) > 0 && <TrendingUp className="h-3 w-3" />}
+                          {(position.gainLossPercent || 0) < 0 && <TrendingDown className="h-3 w-3" />}
+                          {(position.gainLossPercent || 0) === 0 && <Minus className="h-3 w-3" />}
+                          <span>
+                            {(position.gainLossPercent || 0) > 0 && "+"}
+                            {(position.gainLossPercent || 0).toFixed(2)}%
+                          </span>
+                        </div>
                       </div>
-                      <div
-                        className={cn(
-                          "flex items-center justify-end gap-1 text-sm",
-                          (position.gainLossPercent || 0) > 0 && "text-chart-2",
-                          (position.gainLossPercent || 0) < 0 && "text-destructive",
-                          (position.gainLossPercent || 0) === 0 && "text-muted-foreground"
-                        )}
-                      >
-                        {(position.gainLossPercent || 0) > 0 && <TrendingUp className="h-3 w-3" />}
-                        {(position.gainLossPercent || 0) < 0 && <TrendingDown className="h-3 w-3" />}
-                        {(position.gainLossPercent || 0) === 0 && <Minus className="h-3 w-3" />}
-                        <span>
-                          {(position.gainLossPercent || 0) > 0 && "+"}
-                          {(position.gainLossPercent || 0).toFixed(2)}%
-                        </span>
-                      </div>
+                      {position.isImport && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => deletePositionMutation.mutate(position.id)}
+                          disabled={deletePositionMutation.isPending}
+                          data-testid={`button-delete-position-${position.assetSymbol}`}
+                          title={`Remove ${position.assetSymbol} from ${position.source}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}

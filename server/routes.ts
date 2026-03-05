@@ -330,6 +330,8 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const positionsData = await storage.getPositionsByUser(userId);
+      const accounts = await storage.getAccountsByUser(userId);
+      const accountMap = new Map(accounts.map(a => [a.id, a]));
       const enriched = [];
       for (const pos of positionsData) {
         const asset = await storage.getAsset(pos.assetSymbol);
@@ -338,18 +340,42 @@ export async function registerRoutes(
         const value = qty * currentPrice;
         const costBasis = parseFloat(pos.totalCostBasis);
         const gainLoss = value - costBasis;
+        const account = accountMap.get(pos.accountId);
+        const isImport = account?.accountType === "import";
         enriched.push({
           ...pos,
           currentPrice: currentPrice.toFixed(2),
           currentValue: value.toFixed(2),
           gainLoss: gainLoss.toFixed(2),
           gainLossPercent: costBasis > 0 ? ((gainLoss / costBasis) * 100).toFixed(2) : "0",
+          source: account?.accountName || "",
+          isImport,
         });
       }
       res.json(enriched);
     } catch (error) {
       console.error("Positions error:", error);
       res.status(500).json({ message: "Failed to load positions" });
+    }
+  });
+
+  app.delete("/api/positions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const positionsData = await storage.getPositionsByUser(userId);
+      const position = positionsData.find(p => p.id === id);
+      if (!position) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      if (position.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      await storage.deletePosition(id);
+      res.json({ message: `Removed ${position.assetSymbol} position` });
+    } catch (error) {
+      console.error("Delete position error:", error);
+      res.status(500).json({ message: "Failed to delete position" });
     }
   });
 

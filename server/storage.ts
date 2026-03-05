@@ -80,6 +80,7 @@ export interface IStorage {
   getPositionsByUser(userId: string): Promise<Position[]>;
   updatePosition(id: string, data: Partial<Position>): Promise<Position | undefined>;
   getPositionByUserAndAsset(userId: string, accountId: string, assetSymbol: string): Promise<Position | undefined>;
+  deletePosition(id: string): Promise<void>;
 
   createTaxLot(taxLot: InsertTaxLot): Promise<TaxLot>;
   getTaxLotsByUser(userId: string): Promise<TaxLot[]>;
@@ -252,6 +253,10 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return result;
+  }
+
+  async deletePosition(id: string): Promise<void> {
+    await db.delete(positions).where(eq(positions.id, id));
   }
 
   async createTaxLot(taxLot: InsertTaxLot): Promise<TaxLot> {
