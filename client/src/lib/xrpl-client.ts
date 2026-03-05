@@ -83,6 +83,8 @@ export interface XrplTransaction {
   type: string;
   amount: string;
   currency: string;
+  amount2: string;
+  currency2: string;
   destination: string;
   source: string;
   date: string;
@@ -90,9 +92,26 @@ export interface XrplTransaction {
   fee: string;
 }
 
+function parseXrplAmount(amountField: any): { amount: string; currency: string } {
+  if (!amountField) return { amount: "0", currency: "" };
+  if (typeof amountField === "string") {
+    return {
+      amount: (Number(amountField) / 1_000_000).toFixed(6),
+      currency: "XRP",
+    };
+  }
+  if (typeof amountField === "object") {
+    return {
+      amount: amountField.value || "0",
+      currency: amountField.currency === RLUSD_CURRENCY ? "RLUSD" : (amountField.currency || "Unknown"),
+    };
+  }
+  return { amount: "0", currency: "" };
+}
+
 export async function getAccountTransactions(
   address: string,
-  limit: number = 20
+  limit: number = 50
 ): Promise<XrplTransaction[]> {
   try {
     const client = await getClient();
@@ -114,22 +133,51 @@ export async function getAccountTransactions(
 
       let amount = "0";
       let currency = "XRP";
-      if (typeof txData.Amount === "string") {
-        amount = (Number(txData.Amount) / 1_000_000).toFixed(6);
-        currency = "XRP";
-      } else if (txData.Amount && typeof txData.Amount === "object") {
-        amount = txData.Amount.value || "0";
-        currency =
-          txData.Amount.currency === RLUSD_CURRENCY
-            ? "RLUSD"
-            : txData.Amount.currency || "Unknown";
+      let amount2 = "";
+      let currency2 = "";
+      const txType = txData.TransactionType || "Unknown";
+
+      if (txType === "Payment") {
+        const delivered = meta.delivered_amount || txData.Amount;
+        const parsed = parseXrplAmount(delivered);
+        amount = parsed.amount;
+        currency = parsed.currency;
+      } else if (txType === "OfferCreate") {
+        const gets = parseXrplAmount(txData.TakerGets);
+        const pays = parseXrplAmount(txData.TakerPays);
+        if (txData.Account === address) {
+          amount = pays.amount;
+          currency = pays.currency;
+          amount2 = gets.amount;
+          currency2 = gets.currency;
+        } else {
+          amount = gets.amount;
+          currency = gets.currency;
+          amount2 = pays.amount;
+          currency2 = pays.currency;
+        }
+      } else if (txType === "TrustSet") {
+        const limitAmount = txData.LimitAmount;
+        if (limitAmount && typeof limitAmount === "object") {
+          amount = limitAmount.value || "0";
+          currency = limitAmount.currency === RLUSD_CURRENCY ? "RLUSD" : (limitAmount.currency || "");
+        }
+      } else if (txType === "OfferCancel") {
+        amount = "0";
+        currency = "";
+      } else {
+        const parsed = parseXrplAmount(txData.Amount);
+        amount = parsed.amount;
+        currency = parsed.currency;
       }
 
       return {
         hash: txData.hash || tx.hash || "",
-        type: txData.TransactionType || "Unknown",
+        type: txType,
         amount,
         currency,
+        amount2,
+        currency2,
         destination: txData.Destination || "",
         source: txData.Account || "",
         date,

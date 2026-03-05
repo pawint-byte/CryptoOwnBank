@@ -33,11 +33,13 @@ import {
   Filter,
   ArrowUpRight,
   ArrowDownLeft,
+  ArrowLeftRight,
   Link2,
   AlertCircle,
+  XCircle,
 } from "lucide-react";
 
-type TxFilter = "all" | "vault" | "payment" | "trustset";
+type TxFilter = "all" | "vault" | "payment" | "swap" | "trustset";
 
 function truncateHash(hash: string): string {
   if (!hash) return "";
@@ -129,6 +131,8 @@ export default function OwnBankHistory() {
         return isVaultTransaction(tx);
       case "payment":
         return tx.type === "Payment";
+      case "swap":
+        return tx.type === "OfferCreate";
       case "trustset":
         return tx.type === "TrustSet";
       default:
@@ -212,7 +216,8 @@ export default function OwnBankHistory() {
                 <SelectItem value="all">All Transactions</SelectItem>
                 <SelectItem value="vault">Vault Only</SelectItem>
                 <SelectItem value="payment">Payments</SelectItem>
-                <SelectItem value="trustset">TrustSet</SelectItem>
+                <SelectItem value="swap">Swaps</SelectItem>
+                <SelectItem value="trustset">Trust Lines</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -303,19 +308,54 @@ export default function OwnBankHistory() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            {getDirectionIcon(tx, walletAddress)}
-                            <span className="text-sm text-muted-foreground">
-                              {isSent ? "Sent" : "Received"}
-                            </span>
+                            {tx.type === "OfferCreate" ? (
+                              <>
+                                <ArrowLeftRight className="h-4 w-4 text-[#00A4E4]" />
+                                <span className="text-sm text-muted-foreground">Swap</span>
+                              </>
+                            ) : tx.type === "TrustSet" ? (
+                              <>
+                                <Link2 className="h-4 w-4 text-amber-500" />
+                                <span className="text-sm text-muted-foreground">Trust Line</span>
+                              </>
+                            ) : tx.type === "OfferCancel" ? (
+                              <>
+                                <XCircle className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">Cancel</span>
+                              </>
+                            ) : (
+                              <>
+                                {getDirectionIcon(tx, walletAddress)}
+                                <span className="text-sm text-muted-foreground">
+                                  {isSent ? "Sent" : "Received"}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="font-mono text-sm" data-testid={`text-tx-amount-${tx.hash || index}`}>
-                            {Number(tx.amount).toLocaleString("en-US", {
-                              maximumFractionDigits: 6,
-                            })}{" "}
-                            {tx.currency}
-                          </span>
+                          <div className="font-mono text-sm" data-testid={`text-tx-amount-${tx.hash || index}`}>
+                            {tx.type === "OfferCreate" && tx.amount2 ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-red-500">
+                                  -{Number(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency}
+                                </span>
+                                <span className="text-emerald-600">
+                                  +{Number(tx.amount2).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency2}
+                                </span>
+                              </div>
+                            ) : tx.type === "TrustSet" ? (
+                              <span className="text-muted-foreground">
+                                {tx.currency || "—"} trust line
+                              </span>
+                            ) : tx.type === "OfferCancel" ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <span>
+                                {Number(tx.amount).toLocaleString("en-US", { maximumFractionDigits: 6 })} {tx.currency}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {counterparty ? (
