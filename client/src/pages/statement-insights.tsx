@@ -99,6 +99,14 @@ function getProductSymbol(product: any): string {
   const institution = product.institutionName || "Manual";
   const tag = TYPE_SHORT[product.productType] || "ACCT";
   const prefix = institution.replace(/[^A-Za-z0-9]/g, "").substring(0, 10).toUpperCase();
+
+  if (product.rawDescription && product.rawDescription.length < 60) {
+    const descTag = product.rawDescription.replace(/[^A-Za-z0-9]/g, "").substring(0, 12).toUpperCase();
+    if (descTag && descTag.length > 0) {
+      return `${prefix}-${descTag}`;
+    }
+  }
+
   return `${prefix}-${tag}`;
 }
 
@@ -333,11 +341,15 @@ export default function StatementInsights() {
                             <CardTitle className="text-sm sm:text-base">
                               {PRODUCT_TYPE_LABELS[product.productType] || product.productType}
                             </CardTitle>
-                            {product.institutionName && (
+                            {product.rawDescription && product.rawDescription.length < 60 && product.rawDescription !== (PRODUCT_TYPE_LABELS[product.productType] || "").substring(0, 50) ? (
+                              <CardDescription className="text-xs">
+                                {product.institutionName ? `${product.institutionName} · ${product.rawDescription}` : product.rawDescription}
+                              </CardDescription>
+                            ) : product.institutionName ? (
                               <CardDescription className="text-xs">
                                 {product.institutionName}
                               </CardDescription>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">

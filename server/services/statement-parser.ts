@@ -175,6 +175,75 @@ function extractTerm(text: string): string | null {
   return null;
 }
 
+function extractTableRows(text: string, institution: string | null): DetectedProduct[] {
+  const lines = text.split("\n");
+  const products: DetectedProduct[] = [];
+
+  const headerPattern = /account\s*name/i;
+  const hasEndingBalance = /ending\s*balance/i.test(text);
+  const hasAccountTable = lines.some(l => headerPattern.test(l));
+  if (!hasAccountTable || !hasEndingBalance) return [];
+
+  const totalPattern = /^\s*total\s+account\s+balance/i;
+  const maskedAcctPattern = /(?:x{3,}|[*]{3,})\d{3,}/i;
+  const cdKeywords = /\bCD\b|certificate|cert\b/i;
+
+  const rowPatterns = [
+    /^(.+?)\s+((?:x{3,}|[*]{3,})\d{3,})\s+\$?\s?([\d,]+(?:\.\d{2})?)\s+\$?\s?([\d,]+(?:\.\d{2})?)\s*$/,
+    /^(.+?)\s+((?:x{3,}|[*]{3,})\d{3,})\s+.*\$\s?([\d,]+(?:\.\d{2})?)\s*$/,
+    /^(.+?)\s{2,}((?:x{3,}|[*]{3,})\d{3,})\s{2,}.*?\$?\s?([\d,]+\.\d{2})\s*$/,
+  ];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || totalPattern.test(trimmed) || headerPattern.test(trimmed)) continue;
+    if (!maskedAcctPattern.test(trimmed)) continue;
+
+    let accountName = "";
+    let endingBalance: number | null = null;
+
+    for (const pattern of rowPatterns) {
+      const match = trimmed.match(pattern);
+      if (match) {
+        accountName = match[1].trim();
+        const lastDollarAmount = match[match.length - 1];
+        endingBalance = parseFloat(lastDollarAmount.replace(/,/g, ""));
+        break;
+      }
+    }
+
+    if (!accountName && !endingBalance) {
+      const parts = trimmed.split(maskedAcctPattern);
+      if (parts.length >= 1) {
+        accountName = parts[0].trim();
+        const allAmounts = trimmed.match(/\$?\s?([\d,]+\.\d{2})/g);
+        if (allAmounts && allAmounts.length > 0) {
+          const lastAmt = allAmounts[allAmounts.length - 1];
+          endingBalance = parseFloat(lastAmt.replace(/[$,\s]/g, ""));
+        }
+      }
+    }
+
+    if (!accountName || !endingBalance || endingBalance <= 0 || endingBalance >= 10_000_000) continue;
+
+    const isCd = cdKeywords.test(accountName);
+    products.push({
+      productType: isCd ? "cd" : "savings",
+      institutionName: institution,
+      balance: endingBalance,
+      interestRate: null,
+      apy: null,
+      maturityDate: null,
+      term: null,
+      isLocked: isCd,
+      rawDescription: accountName.substring(0, 200),
+      confidence: 0.95,
+    });
+  }
+
+  return products;
+}
+
 function extractSummaryLines(text: string, institution: string | null): DetectedProduct[] {
   const products: DetectedProduct[] = [];
   const lines = text.split("\n");
@@ -341,6 +410,11 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
   }
 
   const institution = detectInstitution(text);
+
+  const tableProducts = extractTableRows(text, institution);
+  if (tableProducts.length > 0) {
+    return tableProducts;
+  }
 
   const summaryProducts = extractSummaryLines(text, institution);
   if (summaryProducts.length > 0) {

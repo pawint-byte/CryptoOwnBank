@@ -3069,7 +3069,14 @@ export async function registerRoutes(
         const institution = product.institutionName || "Manual";
         const tag = TYPE_SHORT[product.productType] || "ACCT";
         const prefix = institution.replace(/[^A-Za-z0-9]/g, "").substring(0, 10).toUpperCase();
-        const symbol = `${prefix}-${tag}`;
+
+        let symbol = `${prefix}-${tag}`;
+        if (product.rawDescription && product.rawDescription.length < 60) {
+          const descTag = product.rawDescription.replace(/[^A-Za-z0-9]/g, "").substring(0, 12).toUpperCase();
+          if (descTag && descTag.length > 0) {
+            symbol = `${prefix}-${descTag}`;
+          }
+        }
 
         const accountName = institution;
         const account = accounts.find(a => a.provider === "manual" && a.accountName === accountName);
