@@ -486,14 +486,18 @@ export default function Wallets() {
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
-  const bySourceData = userWallets.map((w) => {
-    const total = w.balances.reduce((s, b) => s + parseFloat(b.usdValue || "0"), 0);
-    return {
-      name: w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`,
-      value: total,
-      chain: w.chain,
-    };
-  }).filter((d) => d.value > 0);
+  const bySourceData = (() => {
+    const grouped: Record<string, { name: string; value: number; chain: string }> = {};
+    for (const w of userWallets) {
+      const total = w.balances.reduce((s, b) => s + parseFloat(b.usdValue || "0"), 0);
+      const label = (w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`).trim().toUpperCase();
+      if (!grouped[label]) {
+        grouped[label] = { name: label, value: 0, chain: w.chain };
+      }
+      grouped[label].value += total;
+    }
+    return Object.values(grouped).filter((d) => d.value > 0);
+  })();
 
   const byAssetData = portfolioData?.holdings || [];
 
