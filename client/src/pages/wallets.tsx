@@ -506,8 +506,16 @@ export default function Wallets() {
   }
 
   const savedLabels = Array.from(
-    new Set(userWallets.map((w) => w.label).filter((l): l is string => !!l && l.trim().length > 0))
-  ).sort();
+    userWallets
+      .map((w) => w.label)
+      .filter((l): l is string => !!l && l.trim().length > 0)
+      .reduce((map, lbl) => {
+        const key = lbl.toLowerCase().trim();
+        if (!map.has(key)) map.set(key, lbl);
+        return map;
+      }, new Map<string, string>())
+      .values()
+  ).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
   const chains = [
     { value: "bitcoin", label: "Bitcoin (BTC)" },
