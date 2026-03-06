@@ -27,6 +27,10 @@ import {
   Info,
   Eye,
   EyeOff,
+  ArrowRight,
+  Copy,
+  CheckCircle2,
+  Scale,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -117,6 +121,310 @@ function timeSince(dateStr?: string): string {
   const days = Math.floor(hrs / 24);
   if (days < 30) return `${days}d ago`;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }: {
+  positions: EnrichedPosition[];
+  selectedKeep: string | null;
+  setSelectedKeep: (id: string | null) => void;
+  onResolve: (keepId: string, removeId: string, copyValues: boolean) => void;
+}) {
+  const livePositions = positions.filter(p => p.isWallet);
+  const importPositions = positions.filter(p => p.isImport);
+  const exchangePositions = positions.filter(p => !p.isWallet && !p.isImport);
+  const hasLiveSource = livePositions.length > 0 || exchangePositions.length > 0;
+  const removable = importPositions.filter(p => !p.isWallet);
+
+  const totalLiveQty = livePositions.reduce((sum, p) => sum + parseFloat(p.quantity || "0"), 0);
+  const totalExchangeQty = exchangePositions.reduce((sum, p) => sum + parseFloat(p.quantity || "0"), 0);
+  const liveSources = [
+    ...livePositions.map(p => p.source || "Wallet"),
+    ...exchangePositions.map(p => p.source || "Exchange"),
+  ];
+
+  if (hasLiveSource && removable.length > 0) {
+    return (
+      <div className="mt-3 pt-3 border-t border-dashed">
+        <div className="flex items-start gap-2 mb-3">
+          <Shield className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">
+              Already tracked by live sources
+            </p>
+            <p className="text-muted-foreground mt-0.5">
+              This asset is tracked live via {liveSources.join(", ")}
+              {livePositions.length > 0 ? " (on-chain — always current)" : " (exchange API)"}
+              . The import {removable.length === 1 ? "entry" : "entries"} below {removable.length === 1 ? "is" : "are"} from your Yahoo/CSV import and no longer needed.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {removable.map(removePos => {
+            const removeQty = parseFloat(removePos.quantity || "0");
+            const liveTotal = totalLiveQty + totalExchangeQty;
+            const qtyMatch = Math.abs(liveTotal - removeQty) < 0.0001;
+
+            return (
+              <div
+                key={removePos.id}
+                className="rounded-lg border p-3 bg-muted/20 space-y-2"
+                data-testid={`resolve-action-${removePos.id}`}
+              >
+                <div className="flex items-start gap-2">
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <p className="font-medium">
+                      {removePos.source} — {formatQty(removeQty)} units
+                      {parseFloat(removePos.totalCostBasis || "0") > 0 ? `, cost basis ${formatCurrency(removePos.totalCostBasis)}` : ""}
+                    </p>
+                    {qtyMatch ? (
+                      <p className="text-emerald-600 dark:text-emerald-400">
+                        <Check className="h-3 w-3 inline mr-0.5" />
+                        Quantity matches what's already tracked live. Safe to remove — this is the same holding.
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Quantity may differ from live data due to trades, transfers, or timing. If this holding is already represented elsewhere on your dashboard, it's safe to remove.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 w-full text-destructive hover:text-destructive"
+                      data-testid={`resolve-delete-${removePos.id}`}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Already accounted for — Remove
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove this import entry?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        "{removePos.source}" ({formatQty(removeQty)} {removePos.assetSymbol}) is already tracked live via {liveSources.join(", ")}. This import entry will be permanently deleted. Your live data is unaffected. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          const keepRef = livePositions[0] || exchangePositions[0];
+                          onResolve(keepRef.id, removePos.id, false);
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Remove Import Entry
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (removable.length >= 2 && !hasLiveSource) {
+    const others = selectedKeep ? positions.filter(p => p.id !== selectedKeep) : [];
+
+    return (
+      <div className="mt-3 pt-3 border-t border-dashed">
+        <p className="text-[11px] text-muted-foreground mb-2 font-medium">
+          No live source connected for this asset. Pick the entry you want to keep, and remove the duplicate.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {removable.map((pos) => (
+            <Button
+              key={pos.id}
+              size="sm"
+              variant={selectedKeep === pos.id ? "default" : "outline"}
+              className="text-xs h-8 flex-1"
+              onClick={() => setSelectedKeep(selectedKeep === pos.id ? null : pos.id)}
+              data-testid={`resolve-keep-${pos.id}`}
+            >
+              {selectedKeep === pos.id ? (
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+              ) : (
+                <ArrowRight className="h-3 w-3 mr-1" />
+              )}
+              Keep {pos.source || "Unknown"}
+            </Button>
+          ))}
+        </div>
+
+        {selectedKeep && others.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {others.filter(p => !p.isWallet).map(removePos => {
+              const keepPos = positions.find(p => p.id === selectedKeep)!;
+              const keepQty = parseFloat(keepPos.quantity || "0");
+              const removeQty = parseFloat(removePos.quantity || "0");
+              const qtyMatch = Math.abs(keepQty - removeQty) < 0.0001;
+
+              return (
+                <div
+                  key={removePos.id}
+                  className="rounded-lg border p-3 bg-muted/20 space-y-2"
+                  data-testid={`resolve-action-${removePos.id}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="text-xs">
+                      {qtyMatch ? (
+                        <p className="text-emerald-600 dark:text-emerald-400">
+                          <Check className="h-3 w-3 inline mr-0.5" />
+                          Quantities match ({formatQty(keepQty)}). Safe to remove the duplicate.
+                        </p>
+                      ) : (
+                        <p className="text-amber-600 dark:text-amber-400">
+                          <AlertTriangle className="h-3 w-3 inline mr-0.5" />
+                          Quantities differ: keeping {formatQty(keepQty)}, removing {formatQty(removeQty)}.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 w-full text-destructive hover:text-destructive"
+                        data-testid={`resolve-delete-${removePos.id}`}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Remove {removePos.source}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remove duplicate entry?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete "{removePos.source}" ({formatQty(removeQty)} {removePos.assetSymbol}). "{keepPos.source}" will remain. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onResolve(selectedKeep!, removePos.id, false)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Remove
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ComparisonTable({ positions, onResolve }: {
+  positions: EnrichedPosition[];
+  onResolve: (keepId: string, removeId: string, copyValues: boolean) => void;
+}) {
+  const [selectedKeep, setSelectedKeep] = useState<string | null>(null);
+
+  if (positions.length < 2) return null;
+
+  const fields: { label: string; key: string; format: (pos: EnrichedPosition) => string }[] = [
+    { label: "Quantity", key: "quantity", format: (p) => formatQty(p.quantity) },
+    { label: "Current Value", key: "currentValue", format: (p) => formatCurrency(p.currentValue) },
+    { label: "Avg Cost", key: "averageCost", format: (p) => formatCurrency(p.averageCost) },
+    { label: "Cost Basis", key: "totalCostBasis", format: (p) => formatCurrency(p.totalCostBasis) },
+    { label: "Price Used", key: "currentPrice", format: (p) => formatCurrency(p.currentPrice) },
+    { label: "Last Updated", key: "updatedAt", format: (p) => timeSince(p.updatedAt) },
+  ];
+
+  const qtyValues = positions.map(p => parseFloat(p.quantity || "0"));
+  const allQtySame = qtyValues.every(v => Math.abs(v - qtyValues[0]) < 0.0001);
+  const costValues = positions.map(p => parseFloat(p.totalCostBasis || "0"));
+  const allCostSame = costValues.every(v => Math.abs(v - costValues[0]) < 0.01);
+
+  const others = selectedKeep ? positions.filter(p => p.id !== selectedKeep) : [];
+
+  return (
+    <div className="px-4 py-3 border-t bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-950/10" data-testid="comparison-table">
+      <div className="flex items-center gap-2 mb-3">
+        <Scale className="h-3.5 w-3.5 text-blue-500" />
+        <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Side-by-Side Comparison</span>
+        {allQtySame && (
+          <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-600">
+            <Check className="h-2.5 w-2.5 mr-0.5" /> Quantities match
+          </Badge>
+        )}
+        {!allQtySame && (
+          <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-600">
+            <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> Quantities differ
+          </Badge>
+        )}
+      </div>
+
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-xs border-collapse" data-testid="comparison-grid">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-1.5 px-2 text-muted-foreground font-medium w-28">Field</th>
+              {positions.map((pos) => (
+                <th key={pos.id} className="text-right py-1.5 px-2 font-medium min-w-[120px]">
+                  <div className="flex items-center justify-end gap-1.5">
+                    {getSourceIcon(pos.source || "", pos.isWallet, pos.isImport)}
+                    <span className="truncate max-w-[100px]">{pos.source || "Unknown"}</span>
+                  </div>
+                  <div className="mt-0.5">
+                    <Badge variant="outline" className="text-[9px]">
+                      {getSourceType(pos.source || "", pos.isWallet, pos.isImport)}
+                    </Badge>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map((field) => {
+              const values = positions.map(p => field.format(p));
+              const allSame = values.every(v => v === values[0]);
+              return (
+                <tr key={field.key} className="border-b border-dashed last:border-b-0">
+                  <td className="py-1.5 px-2 text-muted-foreground">{field.label}</td>
+                  {positions.map((pos, i) => {
+                    const isDifferent = !allSame;
+                    return (
+                      <td
+                        key={pos.id}
+                        className={`py-1.5 px-2 text-right font-medium ${
+                          isDifferent && (field.key === "quantity" || field.key === "totalCostBasis")
+                            ? "text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20"
+                            : ""
+                        }`}
+                      >
+                        {values[i]}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <ResolveSection positions={positions} selectedKeep={selectedKeep} setSelectedKeep={setSelectedKeep} onResolve={onResolve} />
+    </div>
+  );
 }
 
 export default function Reconciliation() {
@@ -272,6 +580,35 @@ export default function Reconciliation() {
       toast({ title: "Merge failed", description: error.message, variant: "destructive" });
     },
   });
+
+  const resolveMutation = useMutation({
+    mutationFn: async ({ keepId, removeId, copyValues }: { keepId: string; removeId: string; copyValues: boolean }) => {
+      if (copyValues) {
+        const removePos = allPositions.find(p => p.id === removeId);
+        if (removePos) {
+          await apiRequest("PATCH", `/api/positions/${keepId}`, {
+            averageCost: removePos.averageCost,
+            totalCostBasis: removePos.totalCostBasis,
+          });
+        }
+      }
+      const res = await apiRequest("DELETE", `/api/positions/${removeId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: "Resolved", description: "Duplicate removed. Your portfolio is updated." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Resolve failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleResolve = useCallback((keepId: string, removeId: string, copyValues: boolean) => {
+    resolveMutation.mutate({ keepId, removeId, copyValues });
+  }, []);
 
   const addressedMutation = useMutation({
     mutationFn: async ({ id, addressed }: { id: string; addressed: boolean }) => {
@@ -519,12 +856,19 @@ export default function Reconciliation() {
                         <div className="flex items-start gap-2 px-4 py-2.5 bg-amber-50/50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800">
                           <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
                           <div className="text-xs text-amber-800 dark:text-amber-200">
-                            <span className="font-medium">Possible duplicate detected.</span>
+                            <span className="font-medium">This asset appears from multiple sources.</span>
                             {group.hasWalletAndExchange
-                              ? " This asset appears in both a blockchain wallet and an exchange/import. If the exchange holds the same coins shown on-chain, one entry may be double-counting."
-                              : " This asset appears from multiple sources. Review quantities to ensure nothing is counted twice."}
+                              ? " Your live data (blockchain/exchange) already tracks this holding. If you imported it via Yahoo/CSV, that import entry is likely a duplicate — review and remove it below."
+                              : " Compare the entries below to identify duplicates. If one is from an old import and the asset is now tracked elsewhere, remove the import."}
                           </div>
                         </div>
+                      )}
+
+                      {group.positions.length >= 2 && !isMerging && (
+                        <ComparisonTable
+                          positions={group.positions}
+                          onResolve={handleResolve}
+                        />
                       )}
 
                       {isMerging && mergeSelection.ids.length === 2 && (
