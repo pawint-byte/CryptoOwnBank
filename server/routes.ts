@@ -2484,6 +2484,8 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   VVS: "vvs-finance",
   ZBCN: "zebec-protocol",
   VAULTA: "vaulta",
+  AWE: "awe",
+  PRO: "propy",
 };
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
