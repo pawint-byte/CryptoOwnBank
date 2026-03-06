@@ -69,6 +69,9 @@ const COINGECKO_IDS: Record<string, string> = {
   RADAR: "dappradar",
   MXC: "mxc",
   QI: "benqi",
+  DGB: "digibyte",
+  CSPR: "casper-network",
+  TRX: "tron",
   SPELL: "spell-token",
   ONDO: "ondo-finance",
   BTT: "bittorrent",
@@ -594,7 +597,387 @@ export async function getAvalancheBalance(address: string): Promise<ChainBalance
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche";
+export async function getAlgorandBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://mainnet-api.algonode.cloud/v2/accounts/${address}`);
+    const microAlgos = data.amount || 0;
+    const algo = microAlgos / 1e6;
+    if (algo <= 0) return [];
+
+    const prices = await getPrices(["ALGO"]);
+    const balances: ChainBalance[] = [{
+      symbol: "ALGO",
+      balance: algo,
+      usdValue: algo * (prices.ALGO || 0),
+    }];
+
+    const assets = data.assets || [];
+    if (assets.length > 0) {
+      const asaIds: Record<string, { symbol: string; decimals: number }> = {
+        "31566704": { symbol: "USDC", decimals: 6 },
+        "312769": { symbol: "USDT", decimals: 6 },
+        "386192725": { symbol: "goETH", decimals: 8 },
+        "386195940": { symbol: "goBTC", decimals: 8 },
+        "793124631": { symbol: "VEST", decimals: 6 },
+        "287867876": { symbol: "OPUL", decimals: 10 },
+        "226701642": { symbol: "YLDY", decimals: 6 },
+        "700965019": { symbol: "VESTIGE", decimals: 7 },
+        "523683256": { symbol: "AKITA", decimals: 0 },
+      };
+
+      for (const asset of assets) {
+        if (asset.amount > 0 && asaIds[String(asset["asset-id"])]) {
+          const info = asaIds[String(asset["asset-id"])];
+          const bal = asset.amount / Math.pow(10, info.decimals);
+          const stablecoins = new Set(["USDC", "USDT"]);
+          balances.push({
+            symbol: info.symbol,
+            balance: bal,
+            usdValue: stablecoins.has(info.symbol) ? bal : 0,
+          });
+        }
+      }
+    }
+
+    console.log(`Algorand scan: found ${balances.length} assets for ${address}`);
+    return balances;
+  } catch (err) {
+    console.error("Algorand balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getCosmosBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(
+      `https://rest.cosmos.directory/cosmoshub/cosmos/bank/v1beta1/balances/${address}`
+    );
+
+    const balances: ChainBalance[] = [];
+    const denomBalances = data.balances || [];
+
+    for (const entry of denomBalances) {
+      if (entry.denom === "uatom") {
+        const atom = parseInt(entry.amount) / 1e6;
+        if (atom > 0) {
+          const prices = await getPrices(["ATOM"]);
+          balances.push({
+            symbol: "ATOM",
+            balance: atom,
+            usdValue: atom * (prices.ATOM || 0),
+          });
+        }
+      }
+    }
+
+    try {
+      const stakingData = await fetchJson(
+        `https://rest.cosmos.directory/cosmoshub/cosmos/staking/v1beta1/delegations/${address}`
+      );
+      const delegations = stakingData.delegation_responses || [];
+      let stakedAtom = 0;
+      for (const d of delegations) {
+        stakedAtom += parseInt(d.balance?.amount || "0") / 1e6;
+      }
+      if (stakedAtom > 0) {
+        const prices = await getPrices(["ATOM"]);
+        balances.push({
+          symbol: "ATOM (staked)",
+          balance: stakedAtom,
+          usdValue: stakedAtom * (prices.ATOM || 0),
+        });
+      }
+    } catch {}
+
+    console.log(`Cosmos scan: found ${balances.length} assets for ${address}`);
+    return balances;
+  } catch (err) {
+    console.error("Cosmos balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getTronBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+
+  try {
+    const data = await fetchJson(`https://api.trongrid.io/v1/accounts/${address}`);
+    const account = data.data?.[0];
+    if (!account) return [];
+
+    const trxBalance = (account.balance || 0) / 1e6;
+    if (trxBalance > 0) {
+      const prices = await getPrices(["TRX"]);
+      balances.push({
+        symbol: "TRX",
+        balance: trxBalance,
+        usdValue: trxBalance * (prices.TRX || 0),
+      });
+    }
+
+    const trc20 = account.trc20 || [];
+    const knownTRC20: Record<string, { symbol: string; decimals: number }> = {
+      "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t": { symbol: "USDT", decimals: 6 },
+      "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8": { symbol: "USDC", decimals: 6 },
+      "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR": { symbol: "WTRX", decimals: 6 },
+      "TFczxzPhnThNSqr5by8tvxsdCFRRz6cPNq": { symbol: "APENFT", decimals: 6 },
+      "TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S": { symbol: "SUN", decimals: 18 },
+      "TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4": { symbol: "BTT", decimals: 18 },
+      "TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7": { symbol: "WIN", decimals: 6 },
+      "TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9": { symbol: "JST", decimals: 18 },
+    };
+
+    for (const tokenObj of trc20) {
+      for (const [contract, rawBalance] of Object.entries(tokenObj)) {
+        const info = knownTRC20[contract];
+        if (info && rawBalance && String(rawBalance) !== "0") {
+          const bal = Number(BigInt(String(rawBalance))) / Math.pow(10, info.decimals);
+          if (bal > 0.000001) {
+            const stablecoins = new Set(["USDT", "USDC"]);
+            balances.push({
+              symbol: info.symbol,
+              balance: bal,
+              usdValue: stablecoins.has(info.symbol) ? bal : 0,
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`Tron scan: found ${balances.length} assets for ${address}`);
+  } catch (err) {
+    console.error("Tron balance fetch error:", err);
+  }
+
+  return balances;
+}
+
+export async function getHederaBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(
+      `https://mainnet-public.mirrornode.hedera.com/api/v1/balances?account.id=${address}`
+    );
+
+    const entry = data.balances?.[0];
+    if (!entry) return [];
+
+    const hbar = (entry.balance || 0) / 1e8;
+    if (hbar <= 0) return [];
+
+    const prices = await getPrices(["HBAR"]);
+    const balances: ChainBalance[] = [{
+      symbol: "HBAR",
+      balance: hbar,
+      usdValue: hbar * (prices.HBAR || 0),
+    }];
+
+    const tokens = entry.tokens || [];
+    for (const token of tokens) {
+      if (token.balance > 0) {
+        try {
+          const tokenInfo = await fetchJson(
+            `https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${token.token_id}`
+          );
+          const symbol = (tokenInfo.symbol || token.token_id).toUpperCase();
+          const decimals = parseInt(tokenInfo.decimals || "8");
+          const bal = token.balance / Math.pow(10, decimals);
+          if (bal > 0.000001) {
+            balances.push({ symbol, balance: bal, usdValue: 0 });
+          }
+        } catch {
+          balances.push({ symbol: token.token_id, balance: token.balance, usdValue: 0 });
+        }
+      }
+    }
+
+    console.log(`Hedera scan: found ${balances.length} assets for ${address}`);
+    return balances;
+  } catch (err) {
+    console.error("Hedera balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getPolkadotBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(
+      `https://polkadot.api.subscan.io/api/v2/scan/search`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: address }),
+      }
+    );
+
+    const account = data.data?.account;
+    if (!account) return [];
+
+    const balStr = account.balance || "0";
+    const dot = parseFloat(balStr);
+    if (dot <= 0) return [];
+
+    const prices = await getPrices(["DOT"]);
+    console.log(`Polkadot scan: found DOT balance for ${address}`);
+    return [{
+      symbol: "DOT",
+      balance: dot,
+      usdValue: dot * (prices.DOT || 0),
+    }];
+  } catch (err) {
+    console.error("Polkadot balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getVechainBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://vet.blockscout.com/api/v2/addresses/${address}`);
+
+    const balances: ChainBalance[] = [];
+
+    if (data.coin_balance) {
+      const vet = Number(BigInt(data.coin_balance) / 10n ** 12n) / 1e6;
+      if (vet > 0) {
+        const prices = await getPrices(["VET"]);
+        balances.push({
+          symbol: "VET",
+          balance: vet,
+          usdValue: vet * (prices.VET || 0),
+        });
+      }
+    }
+
+    try {
+      const tokenData = await fetchJson(
+        `https://vet.blockscout.com/api/v2/addresses/${address}/tokens?type=ERC-20`
+      );
+      const items = tokenData.items || [];
+      for (const item of items) {
+        const token = item.token || {};
+        const symbol = (token.symbol || "").toUpperCase();
+        const decimals = parseInt(token.decimals || "18");
+        const rawBalance = item.value || "0";
+        if (!symbol || rawBalance === "0") continue;
+        const rawBal = BigInt(rawBalance);
+        let bal: number;
+        if (decimals <= 6) {
+          bal = Number(rawBal) / Math.pow(10, decimals);
+        } else {
+          bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+        }
+        if (bal > 0.000001) {
+          balances.push({ symbol, balance: bal, usdValue: 0 });
+        }
+      }
+    } catch {}
+
+    console.log(`VeChain scan: found ${balances.length} assets for ${address}`);
+    return balances;
+  } catch (err) {
+    console.error("VeChain balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getDigibyteBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://dgb1.trezor.io/api/v2/address/${address}?details=basic`);
+    const balance = data.balance || "0";
+    const dgb = Number(balance) / 1e8;
+    if (dgb <= 0) return [];
+
+    const prices = await getPrices(["DGB"]);
+    console.log(`DigiByte scan: found balance for ${address}`);
+    return [{
+      symbol: "DGB",
+      balance: dgb,
+      usdValue: dgb * (prices.DGB || 0),
+    }];
+  } catch (err) {
+    console.error("DigiByte balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getCasperBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://api.casperstats.io/v2/account/${address}`);
+    const balance = parseFloat(data.balance || "0");
+    const cspr = balance / 1e9;
+    if (cspr <= 0) return [];
+
+    const prices = await getPrices(["CSPR"]);
+    console.log(`Casper scan: found balance for ${address}`);
+    return [{
+      symbol: "CSPR",
+      balance: cspr,
+      usdValue: cspr * (prices.CSPR || 0),
+    }];
+  } catch (err) {
+    console.error("Casper balance fetch error:", err);
+    return [];
+  }
+}
+
+export async function getCronosBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+
+  try {
+    const data = await fetchJson(
+      `https://cronos.org/explorer/api?module=account&action=balance&address=${address}`
+    );
+
+    if (data.status === "1" && data.result && data.result !== "0") {
+      const wei = BigInt(data.result);
+      const cro = Number(wei / 10n ** 12n) / 1e6;
+      if (cro > 0) {
+        const prices = await getPrices(["CRO"]);
+        balances.push({
+          symbol: "CRO",
+          balance: cro,
+          usdValue: cro * (prices.CRO || 0),
+        });
+      }
+    }
+
+    try {
+      const tokenData = await fetchJson(
+        `https://cronos.org/explorer/api?module=account&action=tokenlist&address=${address}`
+      );
+      if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
+        for (const token of tokenData.result) {
+          const symbol = (token.symbol || "").toUpperCase();
+          const decimals = parseInt(token.decimals || "18");
+          const rawBalance = token.balance || "0";
+          if (!symbol || rawBalance === "0") continue;
+          const rawBal = BigInt(rawBalance);
+          let bal: number;
+          if (decimals <= 6) {
+            bal = Number(rawBal) / Math.pow(10, decimals);
+          } else {
+            bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+          }
+          if (bal > 0.000001) {
+            const stablecoins = new Set(["USDT", "USDC", "DAI"]);
+            balances.push({
+              symbol,
+              balance: bal,
+              usdValue: stablecoins.has(symbol) ? bal : 0,
+            });
+          }
+        }
+      }
+    } catch {}
+
+    console.log(`Cronos scan: found ${balances.length} assets for ${address}`);
+  } catch (err) {
+    console.error("Cronos balance fetch error:", err);
+  }
+
+  return balances;
+}
+
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -605,6 +988,15 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   litecoin: { name: "Litecoin", symbol: "LTC", addressPattern: "^(L|M|ltc1)", example: "ltc1q..." },
   cardano: { name: "Cardano", symbol: "ADA", addressPattern: "^addr1", example: "addr1..." },
   avalanche: { name: "Avalanche C-Chain", symbol: "AVAX", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  algorand: { name: "Algorand", symbol: "ALGO", addressPattern: "^[A-Z2-7]{58}$", example: "ALGO..." },
+  cosmos: { name: "Cosmos Hub", symbol: "ATOM", addressPattern: "^cosmos1", example: "cosmos1..." },
+  tron: { name: "Tron", symbol: "TRX", addressPattern: "^T[1-9A-HJ-NP-Za-km-z]{33}$", example: "T..." },
+  hedera: { name: "Hedera", symbol: "HBAR", addressPattern: "^0\\.0\\.", example: "0.0.12345" },
+  polkadot: { name: "Polkadot", symbol: "DOT", addressPattern: "^1[1-9A-HJ-NP-Za-km-z]{47}$", example: "1..." },
+  vechain: { name: "VeChain", symbol: "VET", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  digibyte: { name: "DigiByte", symbol: "DGB", addressPattern: "^(D|dgb1)", example: "D..." },
+  casper: { name: "Casper", symbol: "CSPR", addressPattern: "^0[12]", example: "01..." },
+  cronos: { name: "Cronos", symbol: "CRO", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -625,6 +1017,24 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getCardanoBalance(address);
     case "avalanche":
       return getAvalancheBalance(address);
+    case "algorand":
+      return getAlgorandBalance(address);
+    case "cosmos":
+      return getCosmosBalance(address);
+    case "tron":
+      return getTronBalance(address);
+    case "hedera":
+      return getHederaBalance(address);
+    case "polkadot":
+      return getPolkadotBalance(address);
+    case "vechain":
+      return getVechainBalance(address);
+    case "digibyte":
+      return getDigibyteBalance(address);
+    case "casper":
+      return getCasperBalance(address);
+    case "cronos":
+      return getCronosBalance(address);
     default:
       return [];
   }

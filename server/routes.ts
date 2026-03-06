@@ -2374,6 +2374,8 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   WETH: "weth",
   STX: "blockstack",
   QI: "benqi",
+  DGB: "digibyte",
+  CSPR: "casper-network",
 };
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {

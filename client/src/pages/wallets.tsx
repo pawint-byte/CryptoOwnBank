@@ -102,6 +102,15 @@ const CHAIN_LABELS: Record<string, string> = {
   litecoin: "LTC",
   cardano: "ADA",
   avalanche: "AVAX",
+  algorand: "ALGO",
+  cosmos: "ATOM",
+  tron: "TRX",
+  hedera: "HBAR",
+  polkadot: "DOT",
+  vechain: "VET",
+  digibyte: "DGB",
+  casper: "CSPR",
+  cronos: "CRO",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -113,6 +122,15 @@ const CHAIN_COLORS: Record<string, string> = {
   litecoin: "#345D9D",
   cardano: "#0033AD",
   avalanche: "#E84142",
+  algorand: "#000000",
+  cosmos: "#2E3148",
+  tron: "#FF0013",
+  hedera: "#222222",
+  polkadot: "#E6007A",
+  vechain: "#15BDFF",
+  digibyte: "#006AD2",
+  casper: "#FF473E",
+  cronos: "#002D74",
 };
 
 const CHART_COLORS = [
@@ -315,6 +333,15 @@ function getExplorerUrl(chain: string, address: string): string {
     litecoin: `https://litecoinspace.org/address/${address}`,
     cardano: `https://cardanoscan.io/address/${address}`,
     avalanche: `https://snowtrace.io/address/${address}`,
+    algorand: `https://algoexplorer.io/address/${address}`,
+    cosmos: `https://www.mintscan.io/cosmos/address/${address}`,
+    tron: `https://tronscan.org/#/address/${address}`,
+    hedera: `https://hashscan.io/mainnet/account/${address}`,
+    polkadot: `https://subscan.io/account/${address}`,
+    vechain: `https://explore.vechain.org/accounts/${address}`,
+    digibyte: `https://digiexplorer.info/address/${address}`,
+    casper: `https://cspr.live/account/${address}`,
+    cronos: `https://cronos.org/explorer/address/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -481,6 +508,15 @@ export default function Wallets() {
     { value: "litecoin", label: "Litecoin (LTC)" },
     { value: "cardano", label: "Cardano (ADA)" },
     { value: "avalanche", label: "Avalanche C-Chain (AVAX)" },
+    { value: "algorand", label: "Algorand (ALGO)" },
+    { value: "cosmos", label: "Cosmos Hub (ATOM)" },
+    { value: "tron", label: "Tron (TRX)" },
+    { value: "hedera", label: "Hedera (HBAR)" },
+    { value: "polkadot", label: "Polkadot (DOT)" },
+    { value: "vechain", label: "VeChain (VET)" },
+    { value: "digibyte", label: "DigiByte (DGB)" },
+    { value: "casper", label: "Casper (CSPR)" },
+    { value: "cronos", label: "Cronos (CRO)" },
   ];
 
   const selectedChain = form.watch("chain");
