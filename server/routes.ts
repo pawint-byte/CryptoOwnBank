@@ -1666,12 +1666,25 @@ export async function registerRoutes(
     }
   });
 
+  const SYNC_COOLDOWN_MS = 2 * 60 * 1000;
+
   app.post("/api/wallets/:id/sync", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const wallet = await storage.getWallet(req.params.id);
       if (!wallet || wallet.userId !== userId) {
         return res.status(404).json({ message: "Wallet not found" });
+      }
+
+      const force = req.body?.force === true;
+      if (!force && wallet.lastSyncAt) {
+        const lastSync = new Date(wallet.lastSyncAt).getTime();
+        const elapsed = Date.now() - lastSync;
+        if (elapsed < SYNC_COOLDOWN_MS) {
+          const existingBalances = await storage.getWalletBalances(wallet.id);
+          console.log(`Sync skipped for ${wallet.chain} wallet ${wallet.id} — synced ${Math.round(elapsed / 1000)}s ago (cooldown ${SYNC_COOLDOWN_MS / 1000}s)`);
+          return res.json({ ...wallet, balances: existingBalances, skipped: true, newTransactions: 0 });
+        }
       }
 
       const chain = wallet.chain as any;
@@ -1822,6 +1835,9 @@ export async function registerRoutes(
     }
   });
 
+  let priceCache: { prices: Record<string, number>; fetchedAt: number } = { prices: {}, fetchedAt: 0 };
+  const PRICE_CACHE_TTL_MS = 60 * 1000;
+
   app.get("/api/wallets/portfolio", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1851,10 +1867,19 @@ export async function registerRoutes(
 
       if (zeroSymbols.length > 0) {
         try {
-          const prices = await fetchCurrentPrices(zeroSymbols);
+          const now = Date.now();
+          const missingFromCache = zeroSymbols.filter(s => !priceCache.prices[s]);
+          const cacheExpired = (now - priceCache.fetchedAt) > PRICE_CACHE_TTL_MS;
+
+          if (cacheExpired || missingFromCache.length > 0) {
+            const allSymbols = Object.keys(holdings).filter(s => !stablecoins.has(s) && !s.includes("(staked)"));
+            const freshPrices = await fetchCurrentPrices(allSymbols);
+            priceCache = { prices: { ...priceCache.prices, ...freshPrices }, fetchedAt: now };
+          }
+
           for (const sym of zeroSymbols) {
-            if (prices[sym]) {
-              holdings[sym].usdValue = holdings[sym].balance * prices[sym];
+            if (priceCache.prices[sym]) {
+              holdings[sym].usdValue = holdings[sym].balance * priceCache.prices[sym];
             }
           }
           for (const sym of Object.keys(holdings)) {

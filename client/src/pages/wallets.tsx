@@ -417,7 +417,9 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       const txCount = data?.newTransactions || 0;
-      if (txCount > 0) {
+      if (data?.skipped) {
+        toast({ title: "Already up to date — synced less than 2 min ago" });
+      } else if (txCount > 0) {
         toast({ title: `Wallet synced — ${txCount} new transaction${txCount > 1 ? "s" : ""} imported` });
       } else {
         toast({ title: "Wallet synced successfully" });
@@ -446,16 +448,28 @@ export default function Wallets() {
 
   const syncAllMutation = useMutation({
     mutationFn: async () => {
+      let synced = 0, skipped = 0;
       for (const wallet of userWallets) {
-        await apiRequest("POST", `/api/wallets/${wallet.id}/sync`, {});
+        try {
+          const res = await apiRequest("POST", `/api/wallets/${wallet.id}/sync`, {});
+          const data = await res.json().catch(() => ({}));
+          if (data?.skipped) skipped++; else synced++;
+        } catch { synced++; }
       }
+      return { synced, skipped };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "All wallets synced" });
+      if (data.skipped > 0 && data.synced === 0) {
+        toast({ title: "All wallets already up to date" });
+      } else if (data.skipped > 0) {
+        toast({ title: `${data.synced} wallet${data.synced > 1 ? "s" : ""} synced, ${data.skipped} already up to date` });
+      } else {
+        toast({ title: "All wallets synced" });
+      }
     },
     onError: () => {
       toast({ title: "Some wallets failed to sync", variant: "destructive" });
