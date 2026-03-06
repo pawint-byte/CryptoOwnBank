@@ -270,6 +270,38 @@ export async function registerRoutes(
       const totalDeposited = deposits.reduce((sum, t) => sum + t.amount, 0);
       const totalInterest = interestPayments.reduce((sum, t) => sum + t.amount, 0);
 
+      const vaultTotals: Record<string, number> = {};
+      for (const dep of deposits) {
+        const addr = dep.vaultAddress || SOIL_VAULT_ADDRESSES[0];
+        vaultTotals[addr] = (vaultTotals[addr] || 0) + dep.amount;
+      }
+      for (const ip of interestPayments) {
+        const addr = ip.vaultAddress || SOIL_VAULT_ADDRESSES[0];
+        vaultTotals[addr] = (vaultTotals[addr] || 0) + ip.amount;
+      }
+
+      for (const [addr, total] of Object.entries(vaultTotals)) {
+        const vaultName = SOIL_VAULT_NAMES[addr] || "Vault";
+        const posSymbol = `RLUSD-SOIL-${vaultName.toUpperCase()}`;
+        const existingPos = await storage.getPositionByUserAndAsset(userId, soilAccount.id, posSymbol);
+        if (existingPos) {
+          await storage.updatePosition(existingPos.id, {
+            quantity: total.toFixed(8),
+            averageCost: "1",
+            totalCostBasis: total.toFixed(2),
+          });
+        } else {
+          await storage.createPosition({
+            userId,
+            accountId: soilAccount.id,
+            assetSymbol: posSymbol,
+            quantity: total.toFixed(8),
+            averageCost: "1",
+            totalCostBasis: total.toFixed(2),
+          });
+        }
+      }
+
       const sortedTxns = [...soilTxns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       const lastInterestPayment = interestPayments.length > 0
         ? interestPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
