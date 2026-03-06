@@ -2378,6 +2378,7 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   CSPR: "casper-network",
   CKB: "nervos-network",
   ZIL: "zilliqa",
+  VTHO: "vethor-token",
 };
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {

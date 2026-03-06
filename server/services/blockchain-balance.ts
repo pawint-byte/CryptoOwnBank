@@ -74,6 +74,7 @@ const COINGECKO_IDS: Record<string, string> = {
   TRX: "tron",
   CKB: "nervos-network",
   ZIL: "zilliqa",
+  VTHO: "vethor-token",
   SPELL: "spell-token",
   ONDO: "ondo-finance",
   BTT: "bittorrent",
@@ -832,53 +833,33 @@ export async function getPolkadotBalance(address: string): Promise<ChainBalance[
 }
 
 export async function getVechainBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
   try {
-    const data = await fetchJson(`https://vet.blockscout.com/api/v2/addresses/${address}`);
+    const data = await fetchJson(`https://vethor-node.vechain.com/accounts/${address}`);
 
-    const balances: ChainBalance[] = [];
+    const prices = await getPrices(["VET", "VTHO"]);
 
-    if (data.coin_balance) {
-      const vet = Number(BigInt(data.coin_balance) / 10n ** 12n) / 1e6;
+    if (data.balance) {
+      const vetWei = BigInt(data.balance);
+      const vet = Number(vetWei / 10n ** 12n) / 1e6;
       if (vet > 0) {
-        const prices = await getPrices(["VET"]);
-        balances.push({
-          symbol: "VET",
-          balance: vet,
-          usdValue: vet * (prices.VET || 0),
-        });
+        balances.push({ symbol: "VET", balance: vet, usdValue: vet * (prices.VET || 0) });
       }
     }
 
-    try {
-      const tokenData = await fetchJson(
-        `https://vet.blockscout.com/api/v2/addresses/${address}/tokens?type=ERC-20`
-      );
-      const items = tokenData.items || [];
-      for (const item of items) {
-        const token = item.token || {};
-        const symbol = (token.symbol || "").toUpperCase();
-        const decimals = parseInt(token.decimals || "18");
-        const rawBalance = item.value || "0";
-        if (!symbol || rawBalance === "0") continue;
-        const rawBal = BigInt(rawBalance);
-        let bal: number;
-        if (decimals <= 6) {
-          bal = Number(rawBal) / Math.pow(10, decimals);
-        } else {
-          bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
-        }
-        if (bal > 0.000001) {
-          balances.push({ symbol, balance: bal, usdValue: 0 });
-        }
+    if (data.energy) {
+      const vthoWei = BigInt(data.energy);
+      const vtho = Number(vthoWei / 10n ** 12n) / 1e6;
+      if (vtho > 0) {
+        balances.push({ symbol: "VTHO", balance: vtho, usdValue: vtho * (prices.VTHO || 0) });
       }
-    } catch {}
+    }
 
     console.log(`VeChain scan: found ${balances.length} assets for ${address}`);
-    return balances;
   } catch (err) {
     console.error("VeChain balance fetch error:", err);
-    return [];
   }
+  return balances;
 }
 
 export async function getDigibyteBalance(address: string): Promise<ChainBalance[]> {
