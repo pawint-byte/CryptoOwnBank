@@ -104,6 +104,16 @@ export default function OwnBankDashboard() {
   const [labelName, setLabelName] = useState("");
   const [labelApr, setLabelApr] = useState("");
   const [savingLabel, setSavingLabel] = useState(false);
+  const [customVaults, setCustomVaults] = useState<Array<{
+    address: string;
+    name: string;
+    apr: number;
+    addedAt: string;
+  }>>([]);
+  const [editingVault, setEditingVault] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editApr, setEditApr] = useState("");
+  const [expandedAddr, setExpandedAddr] = useState<string | null>(null);
 
   const fetchBalances = useCallback(async () => {
     if (!walletAddress) return;
@@ -277,6 +287,43 @@ export default function OwnBankDashboard() {
     }
   }, [isConnected, walletAddress, soilSynced, handleSyncSoil]);
 
+  const fetchCustomVaults = useCallback(async () => {
+    try {
+      const response = await apiRequest("GET", "/api/custom-vaults");
+      const data = await response.json();
+      setCustomVaults((data.vaults || []).filter((v: any) => v.name !== "__dismissed__"));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (isConnected) {
+      fetchCustomVaults();
+    }
+  }, [isConnected, fetchCustomVaults]);
+
+  const handleEditVault = async (address: string) => {
+    if (!editName.trim()) return;
+    try {
+      await apiRequest("PATCH", `/api/custom-vaults/${encodeURIComponent(address)}`, {
+        name: editName.trim(),
+        apr: parseFloat(editApr) || 0,
+      });
+      setEditingVault(null);
+      fetchCustomVaults();
+      handleSyncSoil();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to update", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveVault = async (address: string) => {
+    try {
+      await apiRequest("DELETE", `/api/custom-vaults/${encodeURIComponent(address)}`);
+      fetchCustomVaults();
+      handleSyncSoil();
+    } catch {}
+  };
+
   const handleLabelVault = async (address: string) => {
     if (!labelName.trim()) return;
     setSavingLabel(true);
@@ -293,9 +340,10 @@ export default function OwnBankDashboard() {
         setLabelName("");
         setLabelApr("");
         toast({
-          title: "Vault Added",
-          description: `"${labelName.trim()}" will now be tracked automatically. Sync again to import transactions.`,
+          title: "Address Labeled",
+          description: `"${labelName.trim()}" is now tracked. Syncing transactions...`,
         });
+        fetchCustomVaults();
         handleSyncSoil();
       }
     } catch (err: any) {
@@ -744,10 +792,27 @@ export default function OwnBankDashboard() {
                             <div className="min-w-0">
                               <p className="text-[10px] text-muted-foreground">
                                 {d.direction === "outgoing" ? (
-                                  <><span className="text-purple-600 dark:text-purple-400 font-medium">Sent to</span> <span className="font-mono">{d.address.slice(0, 8)}...{d.address.slice(-6)}</span></>
+                                  <span className="text-purple-600 dark:text-purple-400 font-medium">Sent to </span>
                                 ) : (
-                                  <><span className="text-emerald-600 dark:text-emerald-400 font-medium">Received from</span> <span className="font-mono">{d.address.slice(0, 8)}...{d.address.slice(-6)}</span></>
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Received from </span>
                                 )}
+                                <button
+                                  className="font-mono hover:underline cursor-pointer"
+                                  onClick={() => setExpandedAddr(expandedAddr === d.address ? null : d.address)}
+                                  data-testid={`button-expand-addr-${d.address.slice(0, 8)}`}
+                                >
+                                  {expandedAddr === d.address ? d.address : `${d.address.slice(0, 8)}...${d.address.slice(-6)}`}
+                                </button>
+                                {" "}
+                                <a
+                                  href={`https://xrpscan.com/account/${d.address}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center text-[#00A4E4] hover:underline"
+                                  data-testid={`link-xrpscan-${d.address.slice(0, 8)}`}
+                                >
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
                               </p>
                               <p className="text-xs mt-0.5">
                                 <span className="font-medium">${d.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -772,6 +837,72 @@ export default function OwnBankDashboard() {
                                 onClick={() => handleDismissAddress(d.address)}
                                 data-testid={`button-dismiss-${d.address.slice(0, 8)}`}
                               >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {customVaults.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-xs font-medium text-muted-foreground">Labeled Addresses</p>
+                  </div>
+                  <div className="space-y-1">
+                    {customVaults.map((cv) => (
+                      <div key={cv.address} className="rounded-md border bg-card px-2.5 py-2" data-testid={`card-labeled-${cv.address.slice(0, 8)}`}>
+                        {editingVault === cv.address ? (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="h-7 text-xs"
+                                placeholder="Name"
+                                data-testid="input-edit-vault-name"
+                              />
+                              <Input
+                                value={editApr}
+                                onChange={(e) => setEditApr(e.target.value)}
+                                className="h-7 text-xs w-20"
+                                type="number"
+                                placeholder="APR %"
+                                data-testid="input-edit-vault-apr"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" className="h-6 text-[10px]" onClick={() => handleEditVault(cv.address)} data-testid="button-save-edit">Save</Button>
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setEditingVault(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium">{cv.name}{cv.apr > 0 ? <span className="text-emerald-600 dark:text-emerald-400 ml-1.5">{cv.apr}% APR</span> : ""}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                <button
+                                  className="font-mono hover:underline cursor-pointer"
+                                  onClick={() => setExpandedAddr(expandedAddr === cv.address ? null : cv.address)}
+                                >
+                                  {expandedAddr === cv.address ? cv.address : `${cv.address.slice(0, 8)}...${cv.address.slice(-6)}`}
+                                </button>
+                                {" "}
+                                <a href={`https://xrpscan.com/account/${cv.address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-[#00A4E4] hover:underline">
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              </p>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => { setEditingVault(cv.address); setEditName(cv.name); setEditApr(cv.apr.toString()); }} data-testid={`button-edit-${cv.address.slice(0, 8)}`}>
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-destructive" onClick={() => handleRemoveVault(cv.address)} data-testid={`button-remove-${cv.address.slice(0, 8)}`}>
                                 <X className="h-3 w-3" />
                               </Button>
                             </div>
