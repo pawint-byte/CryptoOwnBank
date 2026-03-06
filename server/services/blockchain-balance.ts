@@ -107,6 +107,7 @@ const COINGECKO_IDS: Record<string, string> = {
   VVS: "vvs-finance",
   ZBCN: "zebec-protocol",
   VAULTA: "vaulta",
+  TONIC: "tectonic",
   AWE: "awe",
   PRO: "propy",
   XTZ: "tezos",

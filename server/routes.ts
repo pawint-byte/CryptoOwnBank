@@ -2484,6 +2484,7 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   VVS: "vvs-finance",
   ZBCN: "zebec-protocol",
   VAULTA: "vaulta",
+  TONIC: "tectonic",
   AWE: "awe",
   PRO: "propy",
 };
