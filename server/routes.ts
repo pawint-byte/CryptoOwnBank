@@ -1615,6 +1615,9 @@ export async function registerRoutes(
 
   const { getWalletBalances: fetchChainBalances, CHAIN_CONFIG } = await import("./services/blockchain-balance");
 
+  let priceCache: { prices: Record<string, number>; fetchedAt: number } = { prices: {}, fetchedAt: 0 };
+  const PRICE_CACHE_TTL_MS = 60 * 1000;
+
   app.get("/api/wallets", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1625,6 +1628,53 @@ export async function registerRoutes(
           return { ...w, balances };
         })
       );
+
+      const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
+      const allSymbols = new Set<string>();
+      const zeroSymbols = new Set<string>();
+      for (const w of walletsWithBalances) {
+        for (const b of w.balances) {
+          const sym = b.assetSymbol;
+          if (sym.includes("(staked)")) continue;
+          allSymbols.add(sym);
+          if (parseFloat(b.usdValue || "0") === 0 && parseFloat(b.balance) > 0 && !stablecoins.has(sym)) {
+            zeroSymbols.add(sym);
+          }
+        }
+      }
+
+      if (zeroSymbols.size > 0) {
+        try {
+          const now = Date.now();
+          const cacheExpired = (now - priceCache.fetchedAt) > PRICE_CACHE_TTL_MS;
+          const missingFromCache = [...zeroSymbols].filter(s => !priceCache.prices[s]);
+          if (cacheExpired || missingFromCache.length > 0) {
+            const freshPrices = await fetchCurrentPrices([...allSymbols].filter(s => !stablecoins.has(s) && !s.includes("(staked)")));
+            priceCache = { prices: { ...priceCache.prices, ...freshPrices }, fetchedAt: now };
+          }
+          for (const w of walletsWithBalances) {
+            for (const b of w.balances) {
+              const sym = b.assetSymbol;
+              const bal = parseFloat(b.balance);
+              const usd = parseFloat(b.usdValue || "0");
+              if (usd === 0 && bal > 0) {
+                if (stablecoins.has(sym)) {
+                  b.usdValue = bal.toString();
+                } else {
+                  const baseSym = sym.replace(" (staked)", "");
+                  const price = priceCache.prices[sym] || priceCache.prices[baseSym];
+                  if (price) {
+                    b.usdValue = (bal * price).toString();
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Wallet re-pricing error:", err);
+        }
+      }
+
       res.json(walletsWithBalances);
     } catch (error) {
       console.error("Get wallets error:", error);
@@ -1834,9 +1884,6 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to delete wallet" });
     }
   });
-
-  let priceCache: { prices: Record<string, number>; fetchedAt: number } = { prices: {}, fetchedAt: 0 };
-  const PRICE_CACHE_TTL_MS = 60 * 1000;
 
   app.get("/api/wallets/portfolio", isAuthenticated, async (req: any, res) => {
     try {

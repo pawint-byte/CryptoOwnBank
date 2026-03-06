@@ -873,17 +873,26 @@ export async function getPolkadotBalance(address: string): Promise<ChainBalance[
     const account = data.data?.account;
     if (!account) return [];
 
-    const balStr = account.balance || "0";
-    const dot = parseFloat(balStr);
-    if (dot <= 0) return [];
+    const freeBalance = parseFloat(account.balance || "0");
+    const bonded = parseFloat(account.bonded || "0");
+    const reserved = parseFloat(account.reserved || "0");
+    const totalDot = freeBalance + bonded + reserved;
 
+    if (totalDot <= 0) return [];
+
+    const balances: ChainBalance[] = [];
     const prices = await getPrices(["DOT"]);
-    console.log(`Polkadot scan: found DOT balance for ${address}`);
-    return [{
-      symbol: "DOT",
-      balance: dot,
-      usdValue: dot * (prices.DOT || 0),
-    }];
+    const dotPrice = prices.DOT || 0;
+
+    if (freeBalance > 0) {
+      balances.push({ symbol: "DOT", balance: freeBalance, usdValue: freeBalance * dotPrice });
+    }
+    if (bonded > 0) {
+      balances.push({ symbol: "DOT (staked)", balance: bonded, usdValue: bonded * dotPrice });
+    }
+
+    console.log(`Polkadot scan: free=${freeBalance}, bonded=${bonded}, reserved=${reserved} for ${address}`);
+    return balances;
   } catch (err) {
     console.error("Polkadot balance fetch error:", err);
     return [];
