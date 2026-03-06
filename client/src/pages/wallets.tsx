@@ -101,6 +101,7 @@ const CHAIN_LABELS: Record<string, string> = {
   dogecoin: "DOGE",
   litecoin: "LTC",
   cardano: "ADA",
+  avalanche: "AVAX",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -111,6 +112,7 @@ const CHAIN_COLORS: Record<string, string> = {
   dogecoin: "#C2A633",
   litecoin: "#345D9D",
   cardano: "#0033AD",
+  avalanche: "#E84142",
 };
 
 const CHART_COLORS = [
@@ -312,6 +314,7 @@ function getExplorerUrl(chain: string, address: string): string {
     dogecoin: `https://dogechain.info/address/${address}`,
     litecoin: `https://litecoinspace.org/address/${address}`,
     cardano: `https://cardanoscan.io/address/${address}`,
+    avalanche: `https://snowtrace.io/address/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -477,6 +480,7 @@ export default function Wallets() {
     { value: "dogecoin", label: "Dogecoin (DOGE)" },
     { value: "litecoin", label: "Litecoin (LTC)" },
     { value: "cardano", label: "Cardano (ADA)" },
+    { value: "avalanche", label: "Avalanche C-Chain (AVAX)" },
   ];
 
   const selectedChain = form.watch("chain");

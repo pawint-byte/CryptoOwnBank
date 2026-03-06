@@ -68,6 +68,7 @@ const COINGECKO_IDS: Record<string, string> = {
   KRL: "kryll",
   RADAR: "dappradar",
   MXC: "mxc",
+  QI: "benqi",
   SPELL: "spell-token",
   ONDO: "ondo-finance",
   BTT: "bittorrent",
@@ -532,7 +533,68 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
   }
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano";
+export async function getAvalancheBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+
+  try {
+    const data = await fetchJson(
+      `https://glacier-api.avax.network/v1/chains/43114/addresses/${address}/balances:listErc20`
+    );
+
+    const native = data.nativeTokenBalance;
+    if (native && native.balance && native.balance !== "0") {
+      const wei = BigInt(native.balance);
+      const avax = Number(wei / 10n ** 12n) / 1e6;
+      if (avax > 0) {
+        const price = native.price?.value || 0;
+        balances.push({
+          symbol: "AVAX",
+          balance: avax,
+          usdValue: avax * price,
+        });
+      }
+    }
+
+    const tokens = data.erc20TokenBalances || [];
+    for (const token of tokens) {
+      const symbol = (token.symbol || "").toUpperCase();
+      const decimals = parseInt(token.decimals || "18");
+      const rawBalance = token.balance || "0";
+
+      if (!symbol || rawBalance === "0") continue;
+
+      const rawBal = BigInt(rawBalance);
+      let bal: number;
+      if (decimals <= 6) {
+        bal = Number(rawBal) / Math.pow(10, decimals);
+      } else {
+        bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+      }
+
+      if (bal > 0.000001) {
+        const price = token.price?.value || 0;
+        let usdValue = bal * price;
+
+        if (!usdValue && COINGECKO_IDS[symbol]) {
+          try {
+            const prices = await getPrices([symbol]);
+            if (prices[symbol]) usdValue = bal * prices[symbol];
+          } catch {}
+        }
+
+        balances.push({ symbol, balance: bal, usdValue });
+      }
+    }
+
+    console.log(`Glacier AVAX scan: found ${balances.length} tokens for ${address}`);
+  } catch (err) {
+    console.error("Avalanche balance fetch error:", err);
+  }
+
+  return balances;
+}
+
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -542,6 +604,7 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   dogecoin: { name: "Dogecoin", symbol: "DOGE", addressPattern: "^D[1-9A-HJ-NP-Za-km-z]{33}$", example: "D7Y..." },
   litecoin: { name: "Litecoin", symbol: "LTC", addressPattern: "^(L|M|ltc1)", example: "ltc1q..." },
   cardano: { name: "Cardano", symbol: "ADA", addressPattern: "^addr1", example: "addr1..." },
+  avalanche: { name: "Avalanche C-Chain", symbol: "AVAX", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -560,6 +623,8 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getLitecoinBalance(address);
     case "cardano":
       return getCardanoBalance(address);
+    case "avalanche":
+      return getAvalancheBalance(address);
     default:
       return [];
   }
