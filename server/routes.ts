@@ -1649,7 +1649,8 @@ export async function registerRoutes(
           const cacheExpired = (now - priceCache.fetchedAt) > PRICE_CACHE_TTL_MS;
           const missingFromCache = [...zeroSymbols].filter(s => !priceCache.prices[s]);
           if (cacheExpired || missingFromCache.length > 0) {
-            const freshPrices = await fetchCurrentPrices([...allSymbols].filter(s => !stablecoins.has(s) && !s.includes("(staked)")));
+            const symbolsToFetch = [...allSymbols].filter(s => !stablecoins.has(s) && !s.includes("(staked)"));
+            const freshPrices = await fetchCurrentPrices(symbolsToFetch);
             priceCache = { prices: { ...priceCache.prices, ...freshPrices }, fetchedAt: now };
           }
           for (const w of walletsWithBalances) {

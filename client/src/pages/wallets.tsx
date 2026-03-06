@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -486,10 +486,31 @@ export default function Wallets() {
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
+  const portfolioPriceMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (portfolioData?.holdings) {
+      for (const h of portfolioData.holdings) {
+        if (h.balance > 0 && h.usdValue > 0) {
+          map[h.symbol] = h.usdValue / h.balance;
+        }
+      }
+    }
+    return map;
+  }, [portfolioData]);
+
+  const getEnrichedUsdValue = (symbol: string, balance: number, storedUsd: string | null) => {
+    const usd = parseFloat(storedUsd || "0");
+    if (usd > 0) return usd;
+    if (balance <= 0) return 0;
+    const baseSym = symbol.replace(" (staked)", "");
+    const price = portfolioPriceMap[symbol] || portfolioPriceMap[baseSym];
+    return price ? balance * price : 0;
+  };
+
   const bySourceData = (() => {
     const grouped: Record<string, { name: string; value: number; chain: string }> = {};
     for (const w of userWallets) {
-      const total = w.balances.reduce((s, b) => s + parseFloat(b.usdValue || "0"), 0);
+      const total = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
       const label = (w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`).trim().toUpperCase();
       if (!grouped[label]) {
         grouped[label] = { name: label, value: 0, chain: w.chain };
@@ -515,7 +536,7 @@ export default function Wallets() {
       allHoldings.push({
         symbol: b.assetSymbol,
         balance: parseFloat(b.balance),
-        usdValue: parseFloat(b.usdValue || "0"),
+        usdValue: getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue),
         source: w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`,
         chain: w.chain,
         walletId: w.id,
@@ -875,7 +896,7 @@ export default function Wallets() {
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
                 {userWallets.map((w) => {
-                  const totalVal = w.balances.reduce((s, b) => s + parseFloat(b.usdValue || "0"), 0);
+                  const totalVal = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
                   return (
                     <Card key={w.id} data-testid={`wallet-card-${w.id}`}>
                       <CardHeader className="pb-3">
@@ -983,7 +1004,7 @@ export default function Wallets() {
                                   </div>
                                 </div>
                                 <span className="font-mono font-medium text-sm">
-                                  {formatUsd(parseFloat(b.usdValue || "0"))}
+                                  {formatUsd(getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue))}
                                 </span>
                               </div>
                             ))}
