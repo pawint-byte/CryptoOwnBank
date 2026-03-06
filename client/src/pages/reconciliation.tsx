@@ -123,11 +123,340 @@ function timeSince(dateStr?: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+interface TaxLot {
+  id: string;
+  assetSymbol: string;
+  acquiredDate: string;
+  originalQuantity: string;
+  remainingQuantity: string;
+  costBasisPerUnit: string;
+  note?: string | null;
+}
+
+function PurchaseLots({ walletBalanceId, assetSymbol, liveQuantity }: {
+  walletBalanceId: string;
+  assetSymbol: string;
+  liveQuantity: number;
+}) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingLotId, setEditingLotId] = useState<string | null>(null);
+  const [addForm, setAddForm] = useState({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
+  const [editForm, setEditForm] = useState({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
+  const { toast } = useToast();
+
+  const { data: lots = [], isLoading } = useQuery<TaxLot[]>({
+    queryKey: ["/api/wallet-balances", walletBalanceId, "lots"],
+    queryFn: async () => {
+      const res = await fetch(`/api/wallet-balances/${walletBalanceId}/lots`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load lots");
+      return res.json();
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (data: typeof addForm) => {
+      const res = await apiRequest("POST", `/api/wallet-balances/${walletBalanceId}/lots`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", walletBalanceId, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setAddForm({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
+      setShowAddForm(false);
+      toast({ title: "Purchase lot added" });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async ({ lotId, data }: { lotId: string; data: typeof editForm }) => {
+      const res = await apiRequest("PATCH", `/api/wallet-balances/${walletBalanceId}/lots/${lotId}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", walletBalanceId, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setEditingLotId(null);
+      toast({ title: "Purchase lot updated" });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (lotId: string) => {
+      const res = await apiRequest("DELETE", `/api/wallet-balances/${walletBalanceId}/lots/${lotId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", walletBalanceId, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: "Purchase lot removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const lotsTotal = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+  const lotsCostBasis = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+  const difference = liveQuantity - lotsTotal;
+  const isAccountedFor = Math.abs(difference) < 0.0001;
+
+  const startEditLot = (lot: TaxLot) => {
+    setEditingLotId(lot.id);
+    setEditForm({
+      quantity: lot.originalQuantity,
+      costPerUnit: lot.costBasisPerUnit,
+      acquiredDate: new Date(lot.acquiredDate).toISOString().split("T")[0],
+      note: lot.note || "",
+    });
+  };
+
+  if (isLoading) return <Skeleton className="h-16 w-full" />;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-dashed" data-testid={`purchase-lots-${walletBalanceId}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Scale className="h-3.5 w-3.5 text-blue-500" />
+          <span className="text-xs font-medium">Purchase Lots</span>
+          <Badge variant="secondary" className="text-[10px] h-4 px-1">
+            {lots.length} lot{lots.length !== 1 ? "s" : ""}
+          </Badge>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-xs h-6 px-2"
+          onClick={() => setShowAddForm(!showAddForm)}
+          data-testid="add-purchase-lot-btn"
+        >
+          {showAddForm ? <X className="h-3 w-3 mr-1" /> : <span className="mr-1">+</span>}
+          {showAddForm ? "Cancel" : "Add Lot"}
+        </Button>
+      </div>
+
+      {lots.length > 0 && (
+        <div className="mb-2 text-[11px] flex items-center gap-3 text-muted-foreground">
+          <span>Lots total: <span className="font-medium text-foreground">{formatQty(lotsTotal)}</span></span>
+          <span>Live: <span className="font-medium text-foreground">{formatQty(liveQuantity)}</span></span>
+          {isAccountedFor ? (
+            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+              <Check className="h-3 w-3" /> Fully accounted for
+            </span>
+          ) : (
+            <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+              <AlertTriangle className="h-3 w-3" /> Gap: {formatQty(Math.abs(difference))} {difference > 0 ? "untracked" : "over-tracked"}
+            </span>
+          )}
+        </div>
+      )}
+
+      {lots.length === 0 && !showAddForm && (
+        <p className="text-[11px] text-muted-foreground mb-2">
+          No purchase lots recorded. Add your purchase history to track cost basis and gain/loss per acquisition.
+        </p>
+      )}
+
+      <div className="space-y-1.5">
+        {lots.map((lot, idx) => {
+          const qty = parseFloat(lot.originalQuantity);
+          const cost = parseFloat(lot.costBasisPerUnit);
+          const totalCost = qty * cost;
+          const isEditing = editingLotId === lot.id;
+          const dateStr = new Date(lot.acquiredDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+          if (isEditing) {
+            return (
+              <div key={lot.id} className="rounded border p-2 bg-muted/30 space-y-2" data-testid={`edit-lot-${lot.id}`}>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Quantity</label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={editForm.quantity}
+                      onChange={e => setEditForm(f => ({ ...f, quantity: e.target.value }))}
+                      className="h-7 text-xs"
+                      data-testid="edit-lot-quantity"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Cost/Unit ($)</label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={editForm.costPerUnit}
+                      onChange={e => setEditForm(f => ({ ...f, costPerUnit: e.target.value }))}
+                      className="h-7 text-xs"
+                      data-testid="edit-lot-cost"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Date Acquired</label>
+                    <Input
+                      type="date"
+                      value={editForm.acquiredDate}
+                      onChange={e => setEditForm(f => ({ ...f, acquiredDate: e.target.value }))}
+                      className="h-7 text-xs"
+                      data-testid="edit-lot-date"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Note</label>
+                    <Input
+                      value={editForm.note}
+                      onChange={e => setEditForm(f => ({ ...f, note: e.target.value }))}
+                      className="h-7 text-xs"
+                      placeholder="Optional"
+                      data-testid="edit-lot-note"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-1 justify-end">
+                  <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setEditingLotId(null)}>
+                    <X className="h-3 w-3 mr-1" /> Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-6 text-xs px-2"
+                    disabled={editMutation.isPending}
+                    onClick={() => editMutation.mutate({ lotId: lot.id, data: editForm })}
+                    data-testid="save-edit-lot-btn"
+                  >
+                    <Save className="h-3 w-3 mr-1" /> Save
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={lot.id} className="rounded border px-2.5 py-1.5 flex items-center justify-between bg-background hover:bg-muted/30 transition-colors" data-testid={`lot-row-${lot.id}`}>
+              <div className="flex items-center gap-3 text-[11px] flex-wrap">
+                <span className="text-muted-foreground w-4 text-center">{idx + 1}</span>
+                <span className="font-medium">{formatQty(qty)} {assetSymbol}</span>
+                <span className="text-muted-foreground">@ {formatCurrency(cost)}</span>
+                <span className="text-muted-foreground">=</span>
+                <span className="font-medium">{formatCurrency(totalCost)}</span>
+                <span className="text-muted-foreground">{dateStr}</span>
+                {lot.note && <span className="text-muted-foreground italic">"{lot.note}"</span>}
+              </div>
+              <div className="flex items-center gap-0.5 shrink-0">
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => startEditLot(lot)} data-testid={`edit-lot-btn-${lot.id}`}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" data-testid={`delete-lot-btn-${lot.id}`}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this purchase lot?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {formatQty(qty)} {assetSymbol} acquired on {dateStr} at {formatCurrency(cost)}/unit will be permanently removed. Your live balance is unaffected.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => deleteMutation.mutate(lot.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete Lot
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {showAddForm && (
+        <div className="rounded border p-2 bg-muted/30 space-y-2 mt-2" data-testid="add-lot-form">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div>
+              <label className="text-[10px] text-muted-foreground">Quantity</label>
+              <Input
+                type="number"
+                step="any"
+                value={addForm.quantity}
+                onChange={e => setAddForm(f => ({ ...f, quantity: e.target.value }))}
+                className="h-7 text-xs"
+                placeholder="e.g. 1000"
+                data-testid="add-lot-quantity"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground">Cost/Unit ($)</label>
+              <Input
+                type="number"
+                step="any"
+                value={addForm.costPerUnit}
+                onChange={e => setAddForm(f => ({ ...f, costPerUnit: e.target.value }))}
+                className="h-7 text-xs"
+                placeholder="e.g. 0.55"
+                data-testid="add-lot-cost"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground">Date Acquired</label>
+              <Input
+                type="date"
+                value={addForm.acquiredDate}
+                onChange={e => setAddForm(f => ({ ...f, acquiredDate: e.target.value }))}
+                className="h-7 text-xs"
+                data-testid="add-lot-date"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground">Note</label>
+              <Input
+                value={addForm.note}
+                onChange={e => setAddForm(f => ({ ...f, note: e.target.value }))}
+                className="h-7 text-xs"
+                placeholder="Optional"
+                data-testid="add-lot-note"
+              />
+            </div>
+          </div>
+          <div className="flex gap-1 justify-end">
+            <Button
+              size="sm"
+              className="h-6 text-xs px-2"
+              disabled={addMutation.isPending || !addForm.quantity || !addForm.costPerUnit || !addForm.acquiredDate}
+              onClick={() => addMutation.mutate(addForm)}
+              data-testid="submit-add-lot-btn"
+            >
+              <Save className="h-3 w-3 mr-1" /> Add Purchase Lot
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {lots.length > 0 && (
+        <div className="mt-2 pt-2 border-t text-[11px] flex items-center gap-3">
+          <span className="text-muted-foreground">Total cost basis:</span>
+          <span className="font-medium">{formatCurrency(lotsCostBasis)}</span>
+          {lotsTotal > 0 && (
+            <>
+              <span className="text-muted-foreground">Avg cost:</span>
+              <span className="font-medium">{formatCurrency(lotsCostBasis / lotsTotal)}/unit</span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }: {
   positions: EnrichedPosition[];
   selectedKeep: string | null;
   setSelectedKeep: (id: string | null) => void;
-  onResolve: (keepId: string, removeId: string, copyValues: boolean) => void;
+  onResolve: (keepId: string, removeId: string, copyValues: boolean, keepIsWallet?: boolean) => void;
 }) {
   const livePositions = positions.filter(p => p.isWallet);
   const importPositions = positions.filter(p => p.isImport);
@@ -207,7 +536,7 @@ function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }:
                     <AlertDialogHeader>
                       <AlertDialogTitle>Remove this import entry?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        "{removePos.source}" ({formatQty(removeQty)} {removePos.assetSymbol}) is already tracked live via {liveSources.join(", ")}. This import entry will be permanently deleted. Your live data is unaffected. This cannot be undone.
+                        "{removePos.source}" ({formatQty(removeQty)} {removePos.assetSymbol}) is already tracked live via {liveSources.join(", ")}. This import entry will be removed, but any purchase history (cost basis, dates) will be transferred to your wallet entry as purchase lots. Your live data is unaffected.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -215,7 +544,7 @@ function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }:
                       <AlertDialogAction
                         onClick={() => {
                           const keepRef = livePositions[0] || exchangePositions[0];
-                          onResolve(keepRef.id, removePos.id, false);
+                          onResolve(keepRef.id, removePos.id, false, keepRef.isWallet);
                         }}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
@@ -334,7 +663,7 @@ function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }:
 
 function ComparisonTable({ positions, onResolve }: {
   positions: EnrichedPosition[];
-  onResolve: (keepId: string, removeId: string, copyValues: boolean) => void;
+  onResolve: (keepId: string, removeId: string, copyValues: boolean, keepIsWallet?: boolean) => void;
 }) {
   const [selectedKeep, setSelectedKeep] = useState<string | null>(null);
 
@@ -586,7 +915,14 @@ export default function Reconciliation() {
   });
 
   const resolveMutation = useMutation({
-    mutationFn: async ({ keepId, removeId, copyValues }: { keepId: string; removeId: string; copyValues: boolean }) => {
+    mutationFn: async ({ keepId, removeId, copyValues, keepIsWallet }: { keepId: string; removeId: string; copyValues: boolean; keepIsWallet?: boolean }) => {
+      if (keepIsWallet) {
+        const res = await apiRequest("POST", "/api/positions/resolve-to-wallet", {
+          removePositionId: removeId,
+          walletBalanceId: keepId,
+        });
+        return res.json();
+      }
       if (copyValues) {
         const removePos = allPositions.find(p => p.id === removeId);
         if (removePos) {
@@ -599,19 +935,22 @@ export default function Reconciliation() {
       const res = await apiRequest("DELETE", `/api/positions/${removeId}`);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Resolved", description: "Duplicate removed. Your portfolio is updated." });
+      const desc = data?.lotsTransferred > 0
+        ? `Duplicate removed. ${data.lotsTransferred} purchase lot${data.lotsTransferred > 1 ? "s" : ""} transferred to wallet entry.`
+        : "Duplicate removed. Your portfolio is updated.";
+      toast({ title: "Resolved", description: desc });
     },
     onError: (error: Error) => {
       toast({ title: "Resolve failed", description: error.message, variant: "destructive" });
     },
   });
 
-  const handleResolve = useCallback((keepId: string, removeId: string, copyValues: boolean) => {
-    resolveMutation.mutate({ keepId, removeId, copyValues });
+  const handleResolve = useCallback((keepId: string, removeId: string, copyValues: boolean, keepIsWallet?: boolean) => {
+    resolveMutation.mutate({ keepId, removeId, copyValues, keepIsWallet });
   }, []);
 
   const addressedMutation = useMutation({
@@ -1053,6 +1392,14 @@ export default function Reconciliation() {
                                     Updated {timeSince(pos.updatedAt)}
                                     {pos.currentPrice ? ` · Price: ${formatCurrency(pos.currentPrice)}` : ""}
                                   </p>
+
+                                  {pos.isWallet && !isEditing && (
+                                    <PurchaseLots
+                                      walletBalanceId={pos.id}
+                                      assetSymbol={pos.assetSymbol}
+                                      liveQuantity={parseFloat(pos.quantity || "0")}
+                                    />
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">

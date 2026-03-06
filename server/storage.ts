@@ -94,7 +94,9 @@ export interface IStorage {
   createTaxLot(taxLot: InsertTaxLot): Promise<TaxLot>;
   getTaxLotsByUser(userId: string): Promise<TaxLot[]>;
   getTaxLotsByAsset(userId: string, assetSymbol: string): Promise<TaxLot[]>;
+  getTaxLotsByWalletBalance(userId: string, walletBalanceId: string): Promise<TaxLot[]>;
   updateTaxLot(id: string, data: Partial<TaxLot>): Promise<TaxLot | undefined>;
+  deleteTaxLot(id: string): Promise<void>;
 
   createGainEvent(gainEvent: InsertGainEvent): Promise<GainEvent>;
   getGainEventsByUser(userId: string): Promise<GainEvent[]>;
@@ -123,6 +125,7 @@ export interface IStorage {
   updateWalletSyncTime(id: string): Promise<void>;
 
   upsertWalletBalance(balance: InsertWalletBalance): Promise<WalletBalance>;
+  updateWalletBalanceCostData(id: string, averageCost: string, totalCostBasis: string): Promise<void>;
   getWalletBalances(walletId: string): Promise<WalletBalance[]>;
   getWalletBalancesByUser(userId: string): Promise<WalletBalance[]>;
   deleteWalletBalances(walletId: string): Promise<void>;
@@ -312,6 +315,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(taxLots.acquiredDate);
   }
 
+  async getTaxLotsByWalletBalance(userId: string, walletBalanceId: string): Promise<TaxLot[]> {
+    return db
+      .select()
+      .from(taxLots)
+      .where(and(eq(taxLots.userId, userId), eq(taxLots.walletBalanceId, walletBalanceId)))
+      .orderBy(taxLots.acquiredDate);
+  }
+
   async updateTaxLot(id: string, data: Partial<TaxLot>): Promise<TaxLot | undefined> {
     const [result] = await db
       .update(taxLots)
@@ -319,6 +330,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(taxLots.id, id))
       .returning();
     return result;
+  }
+
+  async deleteTaxLot(id: string): Promise<void> {
+    await db.delete(taxLots).where(eq(taxLots.id, id));
   }
 
   async createGainEvent(gainEvent: InsertGainEvent): Promise<GainEvent> {
@@ -482,6 +497,10 @@ export class DatabaseStorage implements IStorage {
 
     const [result] = await db.insert(walletBalances).values(balance).returning();
     return result;
+  }
+
+  async updateWalletBalanceCostData(id: string, averageCost: string, totalCostBasis: string): Promise<void> {
+    await db.update(walletBalances).set({ averageCost, totalCostBasis }).where(eq(walletBalances.id, id));
   }
 
   async getWalletBalances(walletId: string): Promise<WalletBalance[]> {

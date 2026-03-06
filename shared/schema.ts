@@ -77,12 +77,14 @@ export const positions = pgTable("positions", {
 export const taxLots = pgTable("tax_lots", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
-  transactionId: varchar("transaction_id").notNull(),
+  transactionId: varchar("transaction_id"),
+  walletBalanceId: varchar("wallet_balance_id"),
   assetSymbol: varchar("asset_symbol", { length: 20 }).notNull(),
   acquiredDate: timestamp("acquired_date").notNull(),
   originalQuantity: decimal("original_quantity", { precision: 18, scale: 8 }).notNull(),
   remainingQuantity: decimal("remaining_quantity", { precision: 18, scale: 8 }).notNull(),
   costBasisPerUnit: decimal("cost_basis_per_unit", { precision: 18, scale: 8 }).notNull(),
+  note: varchar("note", { length: 200 }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_tax_lots_user").on(table.userId),
