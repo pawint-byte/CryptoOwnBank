@@ -13,6 +13,9 @@ export interface XummSignInPayload {
   deepLink: string;
 }
 
+const XUMM_PENDING_KEY = "xumm_pending_signin";
+const XUMM_PENDING_PAYMENT_KEY = "xumm_pending_payment";
+
 export async function createXummSignIn(): Promise<XummSignInPayload> {
   const res = await apiRequest("POST", "/api/xumm/signin");
   return res.json();
@@ -23,14 +26,47 @@ export async function checkXummStatus(uuid: string): Promise<{ resolved: boolean
   return res.json();
 }
 
+export function hasPendingXummSignIn(): boolean {
+  return !!sessionStorage.getItem(XUMM_PENDING_KEY);
+}
+
+export async function completePendingXummSignIn(): Promise<XummSignResult> {
+  const uuid = sessionStorage.getItem(XUMM_PENDING_KEY);
+  if (!uuid) {
+    return { success: false, error: "No pending sign-in" };
+  }
+
+  const maxAttempts = 30;
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const status = await checkXummStatus(uuid);
+      if (status.resolved) {
+        sessionStorage.removeItem(XUMM_PENDING_KEY);
+        if (status.signed && status.account) {
+          return { success: true, address: status.account };
+        }
+        return { success: false, error: "Sign-in was declined" };
+      }
+    } catch {
+      sessionStorage.removeItem(XUMM_PENDING_KEY);
+      return { success: false, error: "Failed to check sign-in status" };
+    }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
+  sessionStorage.removeItem(XUMM_PENDING_KEY);
+  return { success: false, error: "Sign-in timed out. Please try again." };
+}
+
 export async function connectXumm(): Promise<XummSignResult> {
   try {
     const payload = await createXummSignIn();
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
+      sessionStorage.setItem(XUMM_PENDING_KEY, payload.uuid);
       window.location.href = payload.deepLink;
-      return { success: false, error: "Redirecting to Xaman..." };
+      return new Promise(() => {});
     }
 
     return new Promise((resolve) => {
@@ -110,7 +146,9 @@ export async function signPayment(
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
+      sessionStorage.setItem(XUMM_PENDING_PAYMENT_KEY, payload.uuid);
       window.location.href = payload.deepLink;
+      return new Promise(() => {});
     }
 
     return new Promise((resolve) => {
@@ -176,7 +214,9 @@ export async function signTrustSet(
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
+      sessionStorage.setItem(XUMM_PENDING_PAYMENT_KEY, payload.uuid);
       window.location.href = payload.deepLink;
+      return new Promise(() => {});
     }
 
     return new Promise((resolve) => {

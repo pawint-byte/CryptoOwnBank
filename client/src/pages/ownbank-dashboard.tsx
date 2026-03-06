@@ -18,7 +18,7 @@ import {
   AFFILIATE_LINKS,
   SOIL_REFERRAL_URL,
 } from "@/lib/xrpl-client";
-import { connectXumm } from "@/lib/xumm-connector";
+import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn } from "@/lib/xumm-connector";
 import { connectLedger } from "@/lib/ledger-connector";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
 import { apiRequest } from "@/lib/queryClient";
@@ -134,6 +134,22 @@ export default function OwnBankDashboard() {
           }
         })
         .catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isConnected && hasPendingXummSignIn()) {
+      setConnectingXumm(true);
+      completePendingXummSignIn().then((result) => {
+        if (result.success && result.address) {
+          connect(result.address, "xumm");
+          saveWalletToServer(result.address, "xumm");
+          toast({ title: "Wallet Connected", description: `Connected via Xaman: ${truncateAddress(result.address)}` });
+        } else if (result.error && result.error !== "No pending sign-in") {
+          toast({ title: "Connection Failed", description: result.error, variant: "destructive" });
+        }
+        setConnectingXumm(false);
+      });
     }
   }, []);
 
@@ -308,7 +324,7 @@ export default function OwnBankDashboard() {
                 ) : (
                   <SiRipple className="h-4 w-4 mr-2" />
                 )}
-                Connect Xumm
+                {connectingXumm ? "Connecting..." : "Connect Xumm"}
               </Button>
               <Button
                 variant="outline"
