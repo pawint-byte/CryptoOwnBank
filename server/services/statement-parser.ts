@@ -52,16 +52,44 @@ function detectInstitution(text: string): string | null {
 }
 
 function extractBalances(text: string): number[] {
+  const contextualBalances: number[] = [];
+  const allBalances: number[] = [];
+
+  const contextPatterns = [
+    /(?:ending|closing|current|available|total|account|beginning|opening|market)\s*(?:balance|value|worth)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
+    /(?:balance|value|worth)\s*(?:as of|on|ending|:)\s*[^$]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
+    /\$\s?([\d,]+(?:\.\d{2})?)\s*(?:ending|closing|current|available|total)\s*(?:balance|value)/gi,
+    /(?:your|my)\s+(?:account|balance|total|portfolio)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
+    /(?:net\s*(?:asset|worth)|portfolio\s*value|account\s*value)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
+  ];
+
+  for (const pattern of contextPatterns) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const value = parseFloat(match[1].replace(/,/g, ""));
+      if (value > 0 && value < 10_000_000 && !contextualBalances.includes(value)) {
+        contextualBalances.push(value);
+      }
+    }
+  }
+
+  const skipContextPattern = /(?:assets\s*under\s*management|fund\s*(?:net\s*)?assets|total\s*(?:net\s*)?assets\s*of\s*(?:the\s*)?fund|(?:net|total|gross)\s*asset\s*value\s*of\s*(?:the\s*)?(?:fund|portfolio|trust))/i;
+
   const balancePattern = /\$\s?([\d,]+(?:\.\d{2})?)/g;
-  const balances: number[] = [];
   let match;
   while ((match = balancePattern.exec(text)) !== null) {
     const value = parseFloat(match[1].replace(/,/g, ""));
-    if (value > 0 && value < 100_000_000) {
-      balances.push(value);
+    if (value > 0 && value < 10_000_000) {
+      const surroundingStart = Math.max(0, match.index - 100);
+      const surroundingEnd = Math.min(text.length, match.index + match[0].length + 50);
+      const surrounding = text.substring(surroundingStart, surroundingEnd);
+      if (!skipContextPattern.test(surrounding)) {
+        allBalances.push(value);
+      }
     }
   }
-  return balances;
+
+  return contextualBalances.length > 0 ? contextualBalances : allBalances;
 }
 
 function extractRates(text: string): number[] {
@@ -236,7 +264,10 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
         }
       }
 
-      const mainBalance = balances.length > 0 ? Math.max(...balances) : null;
+      const sortedBals = [...balances].sort((a, b) => b - a);
+      const mainBalance = sortedBals.length > 0
+        ? (sortedBals.length >= 3 ? sortedBals[Math.floor(sortedBals.length * 0.25)] : sortedBals[0])
+        : null;
       const mainRate = rates.length > 0 ? rates[0] : null;
 
       const description = section.text.trim().substring(0, 200);
@@ -258,10 +289,12 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
     const balances = extractBalances(text);
     const rates = extractRates(text);
     if (balances.length > 0) {
+      const sortedFallback = [...balances].sort((a, b) => b - a);
+      const fallbackBalance = sortedFallback.length >= 3 ? sortedFallback[Math.floor(sortedFallback.length * 0.25)] : sortedFallback[0];
       products.push({
         productType: "other",
         institutionName: institution,
-        balance: balances.length > 0 ? Math.max(...balances) : null,
+        balance: fallbackBalance,
         interestRate: rates.length > 0 ? rates[0] : null,
         apy: rates.length > 0 ? rates[0] : null,
         maturityDate: null,
