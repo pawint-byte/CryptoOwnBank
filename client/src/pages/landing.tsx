@@ -103,7 +103,7 @@ const features = [
     icon: PieChart,
     title: "One Cockpit for Everything",
     description:
-      "Connect all your exchanges, cold wallets, and yield vaults across 8 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Dogecoin, Litecoin, and Cardano. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
+      "Connect all your exchanges, cold wallets, and yield vaults across 19 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, DigiByte, Casper, Cronos, Nervos, and Zilliqa. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
   },
   {
     icon: TrendingUp,
@@ -173,8 +173,8 @@ const memberStories = [
     icon: BarChart3,
     accent: "from-amber-500/10 to-orange-500/10",
     story:
-      "CryptoOwnBank isn't just about XRPL — it's your complete crypto command center. Connect your Coinbase, Kraken, Crypto.com, or Binance accounts. Add cold wallets across 8 blockchains — Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP, Avalanche C-Chain, Dogecoin, Litecoin, and Cardano. Search, filter by source, and sort your holdings by value, gain/loss, or quantity. Import CSV files from Ledger Live or Yahoo Finance. All in one dashboard with real-time prices and tax reports.",
-    benefit: "One dashboard for your entire crypto portfolio across 8 chains, plus yield vaults for RLUSD.",
+      "CryptoOwnBank isn't just about XRPL — it's your complete crypto command center. Connect your Coinbase, Kraken, Crypto.com, or Binance accounts. Add cold wallets across 19 blockchains — Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP (with trust lines), Avalanche C-Chain, Cardano, Algorand, Cosmos (with staking), Tron (with TRC-20 tokens), Hedera (just paste your 0.0.xxxxx account ID — staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), DigiByte, Casper, Cronos (with CRC-20 tokens), Nervos, and Zilliqa. Search, filter by source, and sort your holdings by value, gain/loss, or quantity. Import CSV files from Ledger Live or Yahoo Finance. All in one dashboard with real-time prices and tax reports.",
+    benefit: "One dashboard for your entire crypto portfolio across 19 chains, plus yield vaults for RLUSD.",
   },
 ];
 
@@ -238,7 +238,7 @@ const testimonials = [
 
 const freeTierFeatures = [
   "Connect 1 exchange (Coinbase, Kraken, Crypto.com, etc.)",
-  "Track 1 cold wallet across 8 blockchains",
+  "Track 1 cold wallet across 19 blockchains",
   "Soil vault access (deposit + manual withdraw)",
   "Yield calculator for projected earnings",
   "3 price alerts with email notifications",
@@ -248,8 +248,8 @@ const freeTierFeatures = [
 
 const premiumFeatures = [
   "Unlimited exchange connections",
-  "Unlimited cold wallets (BTC, ETH, SOL, XRP, AVAX, DOGE, LTC, ADA)",
-  "Full ERC-20 & SPL token auto-detection",
+  "Unlimited cold wallets across 19 blockchains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, DOGE, LTC, DGB, CSPR, CRO, CKB, ZIL)",
+  "Full ERC-20, SPL, TRC-20, VIP-180 & CRC-20 token auto-detection",
   "Full transaction history (all time)",
   "CSV import (Ledger Live, Yahoo Finance, CoinTracker)",
   "Unlimited price alerts",
@@ -347,7 +347,7 @@ const faqGroups = [
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
-        a: "CryptoOwnBank already supports 8 blockchains for cold wallet tracking: Bitcoin, Ethereum (with automatic detection of all ERC-20 tokens), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche C-Chain, Dogecoin, Litecoin, and Cardano. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. For yield, we integrate with Soil Protocol on XRPL for 5\u20138% fixed APR on RLUSD. Coming soon: XLS-66 native XRP lending, more DeFi protocols, and additional chain support \u2014 all non-custodial, all from one dashboard.",
+        a: "CryptoOwnBank supports 19 blockchains for cold wallet tracking: Bitcoin, Ethereum (with automatic detection of all ERC-20 tokens), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche C-Chain, Cardano, Algorand (with ASA tokens), Cosmos Hub (with staking delegations), Tron (with TRC-20 tokens), Hedera (just paste your 0.0.xxxxx account ID \u2014 staked HBAR is included automatically), Polkadot, VeChain (auto-detects VET + VTHO gas token), Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), Nervos CKB, and Zilliqa. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. Over 150 tokens are mapped to live CoinGecko prices. For yield, we integrate with Soil Protocol on XRPL for 5\u20138% fixed APR on RLUSD. Coming soon: XLS-66 native XRP lending, more DeFi protocols, and additional chain support \u2014 all non-custodial, all from one dashboard.",
       },
       {
         q: "Why should I join now?",
@@ -368,7 +368,7 @@ const faqGroups = [
       },
       {
         q: "What wallets and hardware devices are supported?",
-        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For cold wallet portfolio tracking: paste any wallet address from Ledger, Cypherock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet \u2014 we support 8 blockchains (Bitcoin, Ethereum, Solana, XRP, Avalanche, Dogecoin, Litecoin, Cardano). Ethereum addresses automatically detect all ERC-20 tokens. For exchanges: connect via API keys (Coinbase, Kraken, Crypto.com, Binance, and more). You can also import transactions from Ledger Live or Yahoo Finance CSV files.",
+        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For cold wallet portfolio tracking: paste any wallet address from Ledger, Cypherock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet \u2014 we support 19 blockchains. Ethereum addresses automatically detect all ERC-20 tokens (UNI, LINK, SHIB, PEPE, and 100+ more). Hedera is simple \u2014 just paste your account ID (0.0.xxxxx) and it pulls your full HBAR balance including staked amounts. VeChain addresses pull both VET and VTHO automatically. Cosmos addresses include staking delegations. For exchanges: connect via API keys (Coinbase, Kraken, Crypto.com, Binance, and more). You can also import transactions from Ledger Live or Yahoo Finance CSV files.",
       },
       {
         q: "Do Ledger Nano X and Xaman show the same address for RLUSD?",
@@ -385,6 +385,18 @@ const faqGroups = [
       {
         q: "Do I need a destination tag/memo when transferring RLUSD?",
         a: "No \u2014 RLUSD on XRPL does not require tags or memos (unlike XLM on Stellar). Just send to your correct XRPL address (starts with \u201Cr\u2026\u201D). Always double-check the address before sending.",
+      },
+      {
+        q: "How does Hedera (HBAR) tracking work? What about staking?",
+        a: "Super simple \u2014 just paste your Hedera account ID (it looks like 0.0.12345) into the wallet address field. Our system uses the Hedera Mirror Node API to pull your full HBAR balance, including staked HBAR. If you stake through Stader, HashPack, or any other provider, your HBAR stays in your account with a staking delegation \u2014 it doesn't move to a different address. So one account ID captures everything.",
+      },
+      {
+        q: "Which tokens are auto-detected on each chain?",
+        a: "Ethereum: all ERC-20 tokens (UNI, LINK, SHIB, PEPE, RNDR, and 100+ more). Solana: all SPL tokens (JUP, BONK, RAY, etc.). XRP: trust line tokens like RLUSD. Avalanche: all C-Chain tokens via Glacier API. Tron: all TRC-20 tokens. VeChain: VET + VTHO (gas token) automatically. Cosmos: ATOM + staking delegations. Cronos: CRO + all CRC-20 tokens. Hedera: HBAR + HTS tokens. Over 150 tokens are mapped to live CoinGecko prices for accurate USD valuations.",
+      },
+      {
+        q: "I have crypto on multiple hardware wallets (Ledger, Cypherock, Ellipal). Can I track them all?",
+        a: "Yes! Premium users can add unlimited wallet addresses. Use the label feature to organize them \u2014 label each wallet 'Ledger X', 'Cypherock', 'Ellipal', etc. Previously used labels appear as quick-pick buttons so you don't have to retype them. You can even add suffixes like 'Ledger X - Dad' or 'Ledger X - Kids' to distinguish multiple devices of the same type.",
       },
       {
         q: "Is my data secure?",
@@ -454,7 +466,7 @@ const faqGroups = [
       },
       {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
-        a: "Absolutely \u2014 CryptoOwnBank is a full multi-chain portfolio tracker. Add cold wallet addresses across 8 blockchains: Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP Ledger, Avalanche C-Chain, Dogecoin, Litecoin, and Cardano. Connect exchange accounts (Coinbase, Kraken, Crypto.com, Binance) to track everything in one place. Import CSV files from Ledger Live or Yahoo Finance. Search, filter by source, and sort your holdings by value, gain/loss, or quantity. All with real-time prices (100+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
+        a: "Absolutely \u2014 CryptoOwnBank is a full multi-chain portfolio tracker. Add cold wallet addresses across 19 blockchains: Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP Ledger, Avalanche C-Chain, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, DigiByte, Casper, Cronos, Nervos, and Zilliqa. Connect exchange accounts (Coinbase, Kraken, Crypto.com, Binance) to track everything in one place. Import CSV files from Ledger Live or Yahoo Finance. Search, filter by source, and sort your holdings by value, gain/loss, or quantity. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
       },
     ],
   },
@@ -463,7 +475,7 @@ const faqGroups = [
     items: [
       {
         q: "What\u2019s the difference between Free and Premium?",
-        a: "Free: 1 exchange connection, 1 cold wallet (across 8 blockchains), 3 price alerts, Soil vault access, yield calculator, and basic portfolio dashboard. Premium Monthly ($9/mo): unlimited exchanges and cold wallets, unlimited price alerts, CSV import (Ledger Live, Yahoo Finance), portfolio search/filter/sort, auto-withdraw interest. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
+        a: "Free: 1 exchange connection, 1 cold wallet (across 19 blockchains), 3 price alerts, Soil vault access, yield calculator, and basic portfolio dashboard. Premium Monthly ($9/mo): unlimited exchanges and cold wallets across all 19 chains, unlimited price alerts, CSV import (Ledger Live, Yahoo Finance), portfolio search/filter/sort, auto-withdraw interest. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
       },
       {
         q: "How do Price Alerts work?",
