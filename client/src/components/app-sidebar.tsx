@@ -23,6 +23,7 @@ import {
   Wallet,
   FileSearch,
   ArrowRightLeft as ReconcileIcon,
+  Route,
 } from "lucide-react";
 import {
   Sidebar,
@@ -198,6 +199,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/migration-guide"}
+                  data-testid="nav-migration-guide"
+                >
+                  <Link href="/migration-guide">
+                    <Route className="h-4 w-4" />
+                    <span>Migration Guide</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

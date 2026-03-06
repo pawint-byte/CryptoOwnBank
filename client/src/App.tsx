@@ -44,6 +44,7 @@ import PriceAlerts from "@/pages/price-alerts";
 import WalletsPage from "@/pages/wallets";
 import StatementInsights from "@/pages/statement-insights";
 import Reconciliation from "@/pages/reconciliation";
+import MigrationGuide from "@/pages/migration-guide";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -108,6 +109,7 @@ function AuthenticatedRoutes() {
         <Route path="/wallets" component={WalletsPage} />
         <Route path="/statement-insights" component={StatementInsights} />
         <Route path="/reconciliation" component={Reconciliation} />
+        <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
@@ -140,6 +142,7 @@ function Router() {
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />

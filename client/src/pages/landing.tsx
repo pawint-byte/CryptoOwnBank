@@ -1461,6 +1461,7 @@ export default function Landing() {
             <div>
               <p className="text-sm font-medium text-gray-200 mb-3">Resources</p>
               <div className="flex flex-col gap-2 text-sm">
+                <a href="/migration-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-migration-guide">Migration Guide</a>
                 <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Setup Guide</a>
                 <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
                 <a href="/faq" className="hover:text-[#00A4E4] transition-colors" data-testid="link-faq-footer">FAQ</a>
