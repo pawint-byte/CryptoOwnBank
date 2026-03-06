@@ -79,9 +79,11 @@ export interface IStorage {
 
   createPosition(position: InsertPosition): Promise<Position>;
   getPositionsByUser(userId: string): Promise<Position[]>;
+  getActivePositionsByUser(userId: string): Promise<Position[]>;
   updatePosition(id: string, data: Partial<Position>): Promise<Position | undefined>;
   getPositionByUserAndAsset(userId: string, accountId: string, assetSymbol: string): Promise<Position | undefined>;
   deletePosition(id: string): Promise<void>;
+  markPositionAddressed(id: string, addressed: boolean): Promise<void>;
 
   createTaxLot(taxLot: InsertTaxLot): Promise<TaxLot>;
   getTaxLotsByUser(userId: string): Promise<TaxLot[]>;
@@ -235,6 +237,12 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(positions).where(eq(positions.userId, userId));
   }
 
+  async getActivePositionsByUser(userId: string): Promise<Position[]> {
+    return db.select().from(positions).where(
+      and(eq(positions.userId, userId), eq(positions.isAddressed, false))
+    );
+  }
+
   async updatePosition(id: string, data: Partial<Position>): Promise<Position | undefined> {
     const [result] = await db
       .update(positions)
@@ -264,6 +272,10 @@ export class DatabaseStorage implements IStorage {
 
   async deletePosition(id: string): Promise<void> {
     await db.delete(positions).where(eq(positions.id, id));
+  }
+
+  async markPositionAddressed(id: string, addressed: boolean): Promise<void> {
+    await db.update(positions).set({ isAddressed: addressed, updatedAt: new Date() }).where(eq(positions.id, id));
   }
 
   async createTaxLot(taxLot: InsertTaxLot): Promise<TaxLot> {

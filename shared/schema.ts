@@ -68,6 +68,7 @@ export const positions = pgTable("positions", {
   quantity: decimal("quantity", { precision: 18, scale: 8 }).notNull(),
   averageCost: decimal("average_cost", { precision: 18, scale: 8 }).notNull(),
   totalCostBasis: decimal("total_cost_basis", { precision: 18, scale: 2 }).notNull(),
+  isAddressed: boolean("is_addressed").default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_positions_user").on(table.userId),

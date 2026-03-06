@@ -289,7 +289,7 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       
       const txns = await storage.getTransactionsByUser(userId);
-      const positionsData = await storage.getPositionsByUser(userId);
+      const positionsData = await storage.getActivePositionsByUser(userId);
       
       let totalValue = 0;
       let totalCostBasis = 0;
@@ -386,6 +386,7 @@ export async function registerRoutes(
           gainLossPercent: costBasis > 0 ? ((gainLoss / costBasis) * 100).toFixed(2) : "0",
           source: account?.accountName || "",
           isImport,
+          isAddressed: pos.isAddressed || false,
         });
       }
       res.json(enriched);
@@ -584,10 +585,28 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/positions/:id/addressed", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const { addressed } = req.body;
+      const position = await storage.getPositionsByUser(userId);
+      const pos = position.find(p => p.id === id);
+      if (!pos) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      await storage.markPositionAddressed(id, addressed);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark addressed error:", error);
+      res.status(500).json({ message: "Failed to update position" });
+    }
+  });
+
   app.get("/api/portfolio", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const positionsData = await storage.getPositionsByUser(userId);
+      const positionsData = await storage.getActivePositionsByUser(userId);
       
       let totalValue = 0;
       let totalCostBasis = 0;
