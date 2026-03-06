@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
 import multer from "multer";
@@ -14,6 +14,7 @@ import { Client } from "xrpl";
 const SOIL_VAULT_ADDRESSES = [
   "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX",
   "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8",
+  // YIELD vault address — add here when Soil activates the pool
 ];
 const SOIL_VAULT_ADDRESS = SOIL_VAULT_ADDRESSES[0];
 const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
@@ -73,6 +74,133 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/custom-vaults", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      const vaults = (settings?.customVaults as CustomVault[] | null) || [];
+      res.json({ vaults });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch custom vaults" });
+    }
+  });
+
+  app.post("/api/custom-vaults", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { address, name, apr } = req.body;
+
+      if (!address || !name || typeof address !== "string" || typeof name !== "string") {
+        return res.status(400).json({ message: "Address and name are required" });
+      }
+
+      if (!address.startsWith("r") || address.length < 25 || address.length > 35) {
+        return res.status(400).json({ message: "Invalid XRPL address format" });
+      }
+
+      const parsedApr = typeof apr === "number" ? apr : parseFloat(apr || "0");
+      if (isNaN(parsedApr) || parsedApr < 0 || parsedApr > 100) {
+        return res.status(400).json({ message: "APR must be between 0 and 100" });
+      }
+
+      let settings = await storage.getUserSettings(userId);
+      if (!settings) {
+        settings = await storage.upsertUserSettings({ userId });
+      }
+
+      const existing = (settings.customVaults as CustomVault[] | null) || [];
+
+      if (existing.some(v => v.address === address)) {
+        return res.status(400).json({ message: "This vault address is already added" });
+      }
+
+      if (SOIL_VAULT_ADDRESSES.includes(address)) {
+        return res.status(400).json({ message: "This is a built-in vault address — no need to add it manually" });
+      }
+
+      const newVault: CustomVault = {
+        address,
+        name: name.trim(),
+        apr: parsedApr,
+        addedAt: new Date().toISOString(),
+      };
+
+      const updated = [...existing, newVault];
+      await storage.upsertUserSettings({ userId, customVaults: updated });
+
+      res.json({ success: true, vaults: updated });
+    } catch (error: any) {
+      console.error("Custom vault add error:", error);
+      res.status(500).json({ message: "Failed to add custom vault" });
+    }
+  });
+
+  app.delete("/api/custom-vaults/:address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const address = req.params.address;
+      const settings = await storage.getUserSettings(userId);
+      if (!settings) return res.json({ success: true, vaults: [] });
+
+      const existing = (settings.customVaults as CustomVault[] | null) || [];
+      const updated = existing.filter(v => v.address !== address);
+      await storage.upsertUserSettings({ userId, customVaults: updated });
+      res.json({ success: true, vaults: updated });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to remove custom vault" });
+    }
+  });
+
+  app.patch("/api/custom-vaults/:address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const address = req.params.address;
+      const { name, apr } = req.body;
+      const settings = await storage.getUserSettings(userId);
+      if (!settings) return res.status(404).json({ message: "No settings found" });
+
+      const existing = (settings.customVaults as CustomVault[] | null) || [];
+      const updated = existing.map(v => {
+        if (v.address !== address) return v;
+        return {
+          ...v,
+          ...(name !== undefined ? { name: name.trim() } : {}),
+          ...(apr !== undefined ? { apr: typeof apr === "number" ? apr : parseFloat(apr) } : {}),
+        };
+      });
+      await storage.upsertUserSettings({ userId, customVaults: updated });
+      res.json({ success: true, vaults: updated });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to update custom vault" });
+    }
+  });
+
+  app.post("/api/custom-vaults/dismiss", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { address } = req.body;
+      if (!address) return res.status(400).json({ message: "Address is required" });
+
+      let settings = await storage.getUserSettings(userId);
+      if (!settings) {
+        settings = await storage.upsertUserSettings({ userId });
+      }
+
+      const existing = (settings.customVaults as CustomVault[] | null) || [];
+      const dismissed: CustomVault = {
+        address,
+        name: "__dismissed__",
+        apr: 0,
+        addedAt: new Date().toISOString(),
+      };
+      const updated = [...existing, dismissed];
+      await storage.upsertUserSettings({ userId, customVaults: updated });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to dismiss address" });
+    }
+  });
+
   app.post("/api/soil/sync", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -116,6 +244,9 @@ export async function registerRoutes(
 
       const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
 
+      const settings = await storage.getUserSettings(userId);
+      const userCustomVaults = (settings?.customVaults as CustomVault[] | null) || [];
+
       const client = new Client("wss://xrplcluster.com");
       await client.connect();
 
@@ -127,6 +258,23 @@ export async function registerRoutes(
         "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX": "Credit+",
         "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8": "Liquid",
       };
+
+      for (const cv of userCustomVaults) {
+        SOIL_VAULT_APR[cv.address] = cv.apr / 100;
+        SOIL_VAULT_NAMES[cv.address] = cv.name;
+      }
+
+      const dismissedAddresses = new Set(
+        userCustomVaults.filter(v => v.name === "__dismissed__").map(v => v.address)
+      );
+      const activeCustomVaults = userCustomVaults.filter(v => v.name !== "__dismissed__");
+
+      const allKnownVaultAddresses = new Set([
+        ...SOIL_VAULT_ADDRESSES,
+        ...activeCustomVaults.map(v => v.address),
+      ]);
+
+      const discoveredAddresses: Array<{ address: string; direction: "outgoing" | "incoming"; amount: number; date: string; hash: string }> = [];
 
       const soilTxns: Array<{
         hash: string;
@@ -165,9 +313,8 @@ export async function registerRoutes(
 
             const src = txData.Account || "";
             const dest = txData.Destination || "";
-            const isSoilRelated =
-              SOIL_VAULT_ADDRESSES.includes(src) || SOIL_VAULT_ADDRESSES.includes(dest);
-            if (!isSoilRelated) continue;
+            const isKnownVault =
+              allKnownVaultAddresses.has(src) || allKnownVaultAddresses.has(dest);
 
             let amount = 0;
             let currency = "Unknown";
@@ -215,7 +362,24 @@ export async function registerRoutes(
             const hash = txData.hash || (tx as any).hash || txData.Hash || "";
             if (!hash) continue;
 
-            const isDeposit = SOIL_VAULT_ADDRESSES.includes(dest);
+            if (!isKnownVault) {
+              if (currency === "RLUSD" && amount >= 10) {
+                const isOutgoing = src === walletAddress;
+                const counterparty = isOutgoing ? dest : src;
+                if (!dismissedAddresses.has(counterparty) && !discoveredAddresses.some(d => d.address === counterparty && d.hash === hash)) {
+                  discoveredAddresses.push({
+                    address: counterparty,
+                    direction: isOutgoing ? "outgoing" : "incoming",
+                    amount,
+                    date,
+                    hash,
+                  });
+                }
+              }
+              continue;
+            }
+
+            const isDeposit = allKnownVaultAddresses.has(dest);
             const vaultAddr = isDeposit ? dest : src;
 
             soilTxns.push({
@@ -352,10 +516,23 @@ export async function registerRoutes(
         apr: (info.apr * 100).toFixed(1),
       }));
 
+      const uniqueDiscovered = Object.values(
+        discoveredAddresses.reduce((acc, d) => {
+          if (!acc[d.address]) {
+            acc[d.address] = { address: d.address, totalAmount: 0, txCount: 0, lastDate: d.date, direction: d.direction };
+          }
+          acc[d.address].totalAmount += d.amount;
+          acc[d.address].txCount += 1;
+          if (d.date > acc[d.address].lastDate) acc[d.address].lastDate = d.date;
+          return acc;
+        }, {} as Record<string, { address: string; totalAmount: number; txCount: number; lastDate: string; direction: string }>)
+      );
+
       res.json({
         success: true,
         totalTransactions: soilTxns.length,
         newlyImported: imported,
+        discoveredAddresses: uniqueDiscovered,
         summary: {
           deposits: deposits.length,
           totalDeposited: totalDeposited.toFixed(2),

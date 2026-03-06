@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, boolean, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, boolean, integer, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -119,9 +119,17 @@ export const userSettings = pgTable("user_settings", {
   subscriptionBillingCycle: varchar("subscription_billing_cycle", { length: 20 }),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  customVaults: jsonb("custom_vaults").default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export type CustomVault = {
+  address: string;
+  name: string;
+  apr: number;
+  addedAt: string;
+};
 
 export const priceHistory = pgTable("price_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

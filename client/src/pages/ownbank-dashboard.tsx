@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -42,6 +43,9 @@ import {
   Database,
   ArrowUpFromLine,
   CheckCircle,
+  HelpCircle,
+  Tag,
+  Loader2,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 
@@ -89,6 +93,17 @@ export default function OwnBankDashboard() {
     transactions: Array<{ hash: string; type: string; amount: string; currency: string; date: string; vaultName?: string }>;
   } | null>(null);
   const [soilSynced, setSoilSynced] = useState(false);
+  const [discoveredAddresses, setDiscoveredAddresses] = useState<Array<{
+    address: string;
+    totalAmount: number;
+    txCount: number;
+    lastDate: string;
+    direction: string;
+  }>>([]);
+  const [labelingAddress, setLabelingAddress] = useState<string | null>(null);
+  const [labelName, setLabelName] = useState("");
+  const [labelApr, setLabelApr] = useState("");
+  const [savingLabel, setSavingLabel] = useState(false);
 
   const fetchBalances = useCallback(async () => {
     if (!walletAddress) return;
@@ -226,6 +241,11 @@ export default function OwnBankDashboard() {
       if (data.success) {
         setSoilSummary(data.summary);
         setSoilSynced(true);
+        if (data.discoveredAddresses && data.discoveredAddresses.length > 0) {
+          setDiscoveredAddresses(data.discoveredAddresses);
+        } else {
+          setDiscoveredAddresses([]);
+        }
         if (data.newlyImported > 0) {
           toast({
             title: "Soil Activity Synced",
@@ -256,6 +276,41 @@ export default function OwnBankDashboard() {
       handleSyncSoil();
     }
   }, [isConnected, walletAddress, soilSynced, handleSyncSoil]);
+
+  const handleLabelVault = async (address: string) => {
+    if (!labelName.trim()) return;
+    setSavingLabel(true);
+    try {
+      const response = await apiRequest("POST", "/api/custom-vaults", {
+        address,
+        name: labelName.trim(),
+        apr: parseFloat(labelApr) || 0,
+      });
+      const data = await response.json();
+      if (data.success) {
+        setDiscoveredAddresses(prev => prev.filter(d => d.address !== address));
+        setLabelingAddress(null);
+        setLabelName("");
+        setLabelApr("");
+        toast({
+          title: "Vault Added",
+          description: `"${labelName.trim()}" will now be tracked automatically. Sync again to import transactions.`,
+        });
+        handleSyncSoil();
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to add vault", variant: "destructive" });
+    } finally {
+      setSavingLabel(false);
+    }
+  };
+
+  const handleDismissAddress = async (address: string) => {
+    try {
+      await apiRequest("POST", "/api/custom-vaults/dismiss", { address });
+      setDiscoveredAddresses(prev => prev.filter(d => d.address !== address));
+    } catch {}
+  };
 
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
 
@@ -621,6 +676,99 @@ export default function OwnBankDashboard() {
                           <p className="text-[10px] text-muted-foreground">{v.apr}% APR</p>
                         </div>
                         <p className="text-sm font-bold font-mono">${parseFloat(v.principal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {discoveredAddresses.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <HelpCircle className="h-3.5 w-3.5 text-amber-500" />
+                    <p className="text-xs font-medium text-muted-foreground">Unrecognized RLUSD Transfers</p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    We found RLUSD payments to addresses not yet tracked. If any of these are yield vaults, label them to start tracking automatically.
+                  </p>
+                  <div className="space-y-2">
+                    {discoveredAddresses.map((d) => (
+                      <div key={d.address} className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-2.5" data-testid={`card-discovered-${d.address.slice(0, 8)}`}>
+                        {labelingAddress === d.address ? (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium">Label this vault</p>
+                            <p className="text-[10px] text-muted-foreground font-mono break-all">{d.address}</p>
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Vault name (e.g. Yield)"
+                                value={labelName}
+                                onChange={(e) => setLabelName(e.target.value)}
+                                className="h-7 text-xs"
+                                data-testid="input-vault-name"
+                              />
+                              <Input
+                                placeholder="APR %"
+                                value={labelApr}
+                                onChange={(e) => setLabelApr(e.target.value)}
+                                className="h-7 text-xs w-20"
+                                type="number"
+                                data-testid="input-vault-apr"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => handleLabelVault(d.address)}
+                                disabled={!labelName.trim() || savingLabel}
+                                data-testid="button-save-vault"
+                              >
+                                {savingLabel ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Tag className="h-3 w-3 mr-1" />}
+                                Track as Vault
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs"
+                                onClick={() => { setLabelingAddress(null); setLabelName(""); setLabelApr(""); }}
+                                data-testid="button-cancel-label"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-mono text-muted-foreground truncate">{d.address}</p>
+                              <p className="text-xs mt-0.5">
+                                <span className="font-medium">${d.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="text-muted-foreground"> RLUSD · {d.txCount} tx · {d.direction === "outgoing" ? "sent" : "received"}</span>
+                              </p>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => { setLabelingAddress(d.address); setLabelName(""); setLabelApr(""); }}
+                                data-testid={`button-label-${d.address.slice(0, 8)}`}
+                              >
+                                <Tag className="h-3 w-3 mr-1" />
+                                Label
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-muted-foreground"
+                                onClick={() => handleDismissAddress(d.address)}
+                                data-testid={`button-dismiss-${d.address.slice(0, 8)}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

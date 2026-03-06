@@ -59,6 +59,9 @@ function getVaultIcon(vaultId: string) {
   if (vaultId === "soil-treasury") {
     return <Landmark className="h-5 w-5 text-[#00A4E4]" />;
   }
+  if (vaultId === "soil-yield") {
+    return <Sparkles className="h-5 w-5 text-[#00A4E4]" />;
+  }
   return <Briefcase className="h-5 w-5 text-[#00A4E4]" />;
 }
 
