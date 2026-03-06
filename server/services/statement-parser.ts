@@ -198,6 +198,10 @@ function extractSummaryLines(text: string, institution: string | null): Detected
     for (const cat of categoryMap) {
       if (!cat.pattern.test(line)) continue;
 
+      const textWithoutBalance = line.replace(balanceOnLine, "").trim();
+      const isSummaryLine = textWithoutBalance.length < 40 && !/\d{4}|account\s*#|acct|maturity|owner/i.test(textWithoutBalance);
+      if (!isSummaryLine) continue;
+
       const key = cat.type + (cat.pattern.source.includes("IRA") ? "-ira" : "");
       if (seenTypes.has(key)) continue;
 
@@ -207,9 +211,12 @@ function extractSummaryLines(text: string, institution: string | null): Detected
         balance = parseFloat(match[1].replace(/,/g, ""));
       }
       if (!balance && i + 1 < lines.length) {
-        const nextMatch = lines[i + 1].match(balanceOnLine);
-        if (nextMatch) {
-          balance = parseFloat(nextMatch[1].replace(/,/g, ""));
+        const nextLine = lines[i + 1].trim();
+        if (nextLine.length < 30) {
+          const nextMatch = nextLine.match(balanceOnLine);
+          if (nextMatch) {
+            balance = parseFloat(nextMatch[1].replace(/,/g, ""));
+          }
         }
       }
 
