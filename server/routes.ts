@@ -249,6 +249,41 @@ export async function registerRoutes(
     }
   });
 
+  async function enrichWalletBalances(walletBals: any[]): Promise<any[]> {
+    const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
+    const zeroBalances = walletBals.filter(wb => {
+      const usd = parseFloat(wb.usdValue || "0");
+      const bal = parseFloat(wb.balance);
+      return usd === 0 && bal > 0 && !stablecoins.has(wb.assetSymbol) && !wb.assetSymbol.includes("(staked)");
+    });
+
+    if (zeroBalances.length === 0) return walletBals;
+
+    let prices: Record<string, number> = {};
+    try {
+      const rows = await db.select().from(priceCacheTable);
+      for (const row of rows) {
+        prices[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
+    } catch {}
+
+    return walletBals.map(wb => {
+      const usd = parseFloat(wb.usdValue || "0");
+      const bal = parseFloat(wb.balance);
+      if (usd === 0 && bal > 0) {
+        if (stablecoins.has(wb.assetSymbol)) {
+          return { ...wb, usdValue: bal.toString() };
+        }
+        const baseSym = wb.assetSymbol.replace(" (staked)", "");
+        const price = prices[wb.assetSymbol] || prices[baseSym];
+        if (price) {
+          return { ...wb, usdValue: (bal * price).toString() };
+        }
+      }
+      return wb;
+    });
+  }
+
   app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -278,7 +313,8 @@ export async function registerRoutes(
         allocationMap.set(pos.assetSymbol, (allocationMap.get(pos.assetSymbol) || 0) + value);
       }
 
-      const walletBals = await storage.getWalletBalancesByUser(userId);
+      const rawWalletBals = await storage.getWalletBalancesByUser(userId);
+      const walletBals = await enrichWalletBalances(rawWalletBals);
       for (const wb of walletBals) {
         const usdVal = parseFloat(wb.usdValue || "0");
         if (usdVal > 0) {
@@ -572,11 +608,12 @@ export async function registerRoutes(
         })
       );
 
-      const walletBalsForPortfolio = await storage.getWalletBalancesByUser(userId);
+      const rawWalletBalsForPortfolio = await storage.getWalletBalancesByUser(userId);
+      const enrichedWalletBals = await enrichWalletBalances(rawWalletBalsForPortfolio);
       const userWalletsForPortfolio = await storage.getWalletsByUser(userId);
 
-      const walletPositions = walletBalsForPortfolio.map((wb) => {
-        const wallet = userWalletsForPortfolio.find((w) => w.id === wb.walletId);
+      const walletPositions = enrichedWalletBals.map((wb) => {
+        const wallet = userWalletsForPortfolio.find((w: any) => w.id === wb.walletId);
         const usdVal = parseFloat(wb.usdValue || "0");
         const bal = parseFloat(wb.balance);
         const price = bal > 0 ? usdVal / bal : 0;
