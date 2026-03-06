@@ -1844,6 +1844,29 @@ export async function registerRoutes(
         }
       }
 
+      const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
+      const zeroSymbols = Object.values(holdings)
+        .filter(h => h.usdValue === 0 && h.balance > 0 && !stablecoins.has(h.symbol) && !h.symbol.includes("(staked)"))
+        .map(h => h.symbol);
+
+      if (zeroSymbols.length > 0) {
+        try {
+          const prices = await fetchCurrentPrices(zeroSymbols);
+          for (const sym of zeroSymbols) {
+            if (prices[sym]) {
+              holdings[sym].usdValue = holdings[sym].balance * prices[sym];
+            }
+          }
+          for (const sym of Object.keys(holdings)) {
+            if (stablecoins.has(sym) && holdings[sym].usdValue === 0) {
+              holdings[sym].usdValue = holdings[sym].balance;
+            }
+          }
+        } catch (err) {
+          console.error("Portfolio re-pricing error:", err);
+        }
+      }
+
       const totalValue = Object.values(holdings).reduce((sum, h) => sum + h.usdValue, 0);
 
       res.json({

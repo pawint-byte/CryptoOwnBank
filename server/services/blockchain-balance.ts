@@ -864,10 +864,11 @@ export async function getVechainBalance(address: string): Promise<ChainBalance[]
 
 export async function getDigibyteBalance(address: string): Promise<ChainBalance[]> {
   try {
-    const data = await fetchJson(`https://dgb1.trezor.io/api/v2/address/${address}?details=basic`);
-    const balance = data.balance || "0";
-    const dgb = Number(balance) / 1e8;
-    if (dgb <= 0) return [];
+    const resp = await fetch(`https://chainz.cryptoid.info/dgb/api.dws?q=getbalance&a=${address}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const dgb = parseFloat(text);
+    if (isNaN(dgb) || dgb <= 0) return [];
 
     const prices = await getPrices(["DGB"]);
     console.log(`DigiByte scan: found balance for ${address}`);
@@ -906,8 +907,14 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
   const balances: ChainBalance[] = [];
 
   try {
+    let evmAddress = address;
+    if (address.startsWith("cro1")) {
+      const hex = bech32ToHex(address);
+      if (hex) evmAddress = "0x" + hex;
+    }
+
     const data = await fetchJson(
-      `https://cronos.org/explorer/api?module=account&action=balance&address=${address}`
+      `https://cronos.org/explorer/api?module=account&action=balance&address=${evmAddress}`
     );
 
     if (data.status === "1" && data.result && data.result !== "0") {
@@ -925,7 +932,7 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
 
     try {
       const tokenData = await fetchJson(
-        `https://cronos.org/explorer/api?module=account&action=tokenlist&address=${address}`
+        `https://cronos.org/explorer/api?module=account&action=tokenlist&address=${evmAddress}`
       );
       if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
         for (const token of tokenData.result) {
