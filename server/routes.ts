@@ -11,7 +11,11 @@ import { eq } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
 
-const SOIL_VAULT_ADDRESS = "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX";
+const SOIL_VAULT_ADDRESSES = [
+  "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX",
+  "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8",
+];
+const SOIL_VAULT_ADDRESS = SOIL_VAULT_ADDRESSES[0];
 const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
 const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
 
@@ -56,12 +60,15 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { walletAddress, walletType } = req.body;
-      await db.update(users).set({
+      console.log(`[wallet-save] userId=${userId} address=${walletAddress} type=${walletType}`);
+      const result = await db.update(users).set({
         xrplWalletAddress: walletAddress || null,
         xrplWalletType: walletType || null,
       }).where(eq(users.id, userId));
+      console.log(`[wallet-save] result:`, result);
       res.json({ success: true });
     } catch (error: any) {
+      console.error("[wallet-save] ERROR:", error);
       res.status(500).json({ message: "Failed to save wallet" });
     }
   });
@@ -112,6 +119,15 @@ export async function registerRoutes(
       const client = new Client("wss://xrplcluster.com");
       await client.connect();
 
+      const SOIL_VAULT_APR: Record<string, number> = {
+        "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX": 0.08,
+        "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8": 0.05,
+      };
+      const SOIL_VAULT_NAMES: Record<string, string> = {
+        "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX": "Credit+",
+        "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8": "Liquid",
+      };
+
       const soilTxns: Array<{
         hash: string;
         type: "deposit" | "interest";
@@ -119,6 +135,8 @@ export async function registerRoutes(
         currency: string;
         date: string;
         fee: string;
+        vaultAddress?: string;
+        vaultName?: string;
       }> = [];
 
       try {
@@ -148,28 +166,43 @@ export async function registerRoutes(
             const src = txData.Account || "";
             const dest = txData.Destination || "";
             const isSoilRelated =
-              src === SOIL_VAULT_ADDRESS || dest === SOIL_VAULT_ADDRESS;
+              SOIL_VAULT_ADDRESSES.includes(src) || SOIL_VAULT_ADDRESSES.includes(dest);
             if (!isSoilRelated) continue;
 
             let amount = 0;
             let currency = "Unknown";
             let validCurrency = false;
 
-            if (typeof txData.Amount === "object" && txData.Amount) {
+            const deliveredAmount = meta.delivered_amount || txData.Amount;
+
+            if (typeof deliveredAmount === "object" && deliveredAmount) {
+              const amountCurrency = deliveredAmount.currency || "";
+              const amountIssuer = deliveredAmount.issuer || "";
+              if (
+                (amountCurrency === RLUSD_CURRENCY_HEX || amountCurrency === "RLUSD") &&
+                (amountIssuer === RLUSD_ISSUER || !amountIssuer)
+              ) {
+                amount = parseFloat(deliveredAmount.value || "0");
+                currency = "RLUSD";
+                validCurrency = true;
+              }
+            } else if (typeof deliveredAmount === "string") {
+              amount = Number(deliveredAmount) / 1_000_000;
+              currency = "XRP";
+              validCurrency = true;
+            }
+
+            if (!validCurrency && typeof txData.Amount === "object" && txData.Amount) {
               const amountCurrency = txData.Amount.currency || "";
               const amountIssuer = txData.Amount.issuer || "";
               if (
                 (amountCurrency === RLUSD_CURRENCY_HEX || amountCurrency === "RLUSD") &&
-                amountIssuer === RLUSD_ISSUER
+                (amountIssuer === RLUSD_ISSUER || !amountIssuer)
               ) {
                 amount = parseFloat(txData.Amount.value || "0");
                 currency = "RLUSD";
                 validCurrency = true;
               }
-            } else if (typeof txData.Amount === "string") {
-              amount = Number(txData.Amount) / 1_000_000;
-              currency = "XRP";
-              validCurrency = true;
             }
 
             if (!validCurrency || amount <= 0) continue;
@@ -179,10 +212,11 @@ export async function registerRoutes(
               ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
               : new Date().toISOString();
 
-            const hash = txData.hash || (tx as any).hash || "";
+            const hash = txData.hash || (tx as any).hash || txData.Hash || "";
             if (!hash) continue;
 
-            const isDeposit = dest === SOIL_VAULT_ADDRESS;
+            const isDeposit = SOIL_VAULT_ADDRESSES.includes(dest);
+            const vaultAddr = isDeposit ? dest : src;
 
             soilTxns.push({
               hash,
@@ -193,6 +227,8 @@ export async function registerRoutes(
               fee: txData.Fee
                 ? (Number(txData.Fee) / 1_000_000).toFixed(6)
                 : "0",
+              vaultAddress: vaultAddr,
+              vaultName: SOIL_VAULT_NAMES[vaultAddr] || "Unknown",
             });
           }
 
@@ -243,20 +279,46 @@ export async function registerRoutes(
         : null;
 
       const currentPrincipal = totalDeposited;
-      const avgApr = 0.08;
+
+      const vaultBreakdown: Record<string, { principal: number; apr: number; name: string }> = {};
+      for (const dep of deposits) {
+        const addr = dep.vaultAddress || SOIL_VAULT_ADDRESSES[0];
+        if (!vaultBreakdown[addr]) {
+          vaultBreakdown[addr] = {
+            principal: 0,
+            apr: SOIL_VAULT_APR[addr] || 0.065,
+            name: SOIL_VAULT_NAMES[addr] || "Vault",
+          };
+        }
+        vaultBreakdown[addr].principal += dep.amount;
+      }
+
       let estimatedPendingYield = 0;
       if (currentPrincipal > 0) {
-        const sinceDate = lastInterestPayment
-          ? new Date(lastInterestPayment.date)
-          : firstDeposit
-            ? new Date(firstDeposit.date)
-            : new Date();
-        const daysSinceLastPayout = Math.max(0, (Date.now() - sinceDate.getTime()) / (1000 * 60 * 60 * 24));
-        estimatedPendingYield = currentPrincipal * avgApr * (daysSinceLastPayout / 365);
+        for (const [, info] of Object.entries(vaultBreakdown)) {
+          const sinceDate = lastInterestPayment
+            ? new Date(lastInterestPayment.date)
+            : firstDeposit
+              ? new Date(firstDeposit.date)
+              : new Date();
+          const daysSince = Math.max(0, (Date.now() - sinceDate.getTime()) / (1000 * 60 * 60 * 24));
+          estimatedPendingYield += info.principal * info.apr * (daysSince / 365);
+        }
       }
+
+      const weightedApr = currentPrincipal > 0
+        ? Object.values(vaultBreakdown).reduce((sum, v) => sum + v.principal * v.apr, 0) / currentPrincipal
+        : 0;
 
       const effectiveYield = totalInterest + estimatedPendingYield;
       const effectiveYieldPercent = currentPrincipal > 0 ? (effectiveYield / currentPrincipal) * 100 : 0;
+
+      const vaults = Object.entries(vaultBreakdown).map(([addr, info]) => ({
+        address: addr,
+        name: info.name,
+        principal: info.principal.toFixed(2),
+        apr: (info.apr * 100).toFixed(1),
+      }));
 
       res.json({
         success: true,
@@ -273,12 +335,15 @@ export async function registerRoutes(
           effectiveYieldPercent: effectiveYieldPercent.toFixed(2),
           lastInterestDate: lastInterestPayment?.date || null,
           firstDepositDate: firstDeposit?.date || null,
+          weightedApr: (weightedApr * 100).toFixed(1),
+          vaults,
           transactions: sortedTxns.map(t => ({
             hash: t.hash,
             type: t.type,
             amount: t.amount.toFixed(2),
             currency: t.currency,
             date: t.date,
+            vaultName: t.vaultName || null,
           })),
         },
       });

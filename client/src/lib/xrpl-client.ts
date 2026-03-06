@@ -218,7 +218,11 @@ export function calculateAccruedInterest(
   return principal * (apr / 100) * (daysDiff / 365);
 }
 
-export const SOIL_VAULT_ADDRESS = "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX";
+export const SOIL_VAULT_ADDRESSES = [
+  "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX",
+  "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8",
+];
+export const SOIL_VAULT_ADDRESS = SOIL_VAULT_ADDRESSES[0];
 
 export const SOIL_VAULTS = [
   {
@@ -230,7 +234,7 @@ export const SOIL_VAULTS = [
     riskLevel: "Lower risk",
     withdrawalTerms: "3-day rolling withdrawal",
     bestFor: "Users who want stability and quicker access to funds",
-    address: SOIL_VAULT_ADDRESS,
+    address: "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8",
     minDeposit: 10,
     totalDeposited: 2_450_000,
   },
@@ -243,7 +247,7 @@ export const SOIL_VAULTS = [
     riskLevel: "Higher risk",
     withdrawalTerms: "90-day notice + 10-day cooldown",
     bestFor: "Users willing to lock funds longer for higher returns",
-    address: SOIL_VAULT_ADDRESS,
+    address: "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX",
     minDeposit: 50,
     totalDeposited: 1_120_000,
   },
@@ -291,19 +295,20 @@ export async function getSoilTransactions(
         const src = txData.Account || "";
         const dest = txData.Destination || "";
         const isSoilRelated =
-          src === SOIL_VAULT_ADDRESS || dest === SOIL_VAULT_ADDRESS;
+          SOIL_VAULT_ADDRESSES.includes(src) || SOIL_VAULT_ADDRESSES.includes(dest);
         if (!isSoilRelated) continue;
 
         let amount = 0;
         let currency = "Unknown";
-        if (typeof txData.Amount === "object" && txData.Amount) {
-          amount = parseFloat(txData.Amount.value || "0");
+        const deliveredAmount = meta.delivered_amount || txData.Amount;
+        if (typeof deliveredAmount === "object" && deliveredAmount) {
+          amount = parseFloat(deliveredAmount.value || "0");
           currency =
-            txData.Amount.currency === RLUSD_CURRENCY
+            deliveredAmount.currency === RLUSD_CURRENCY
               ? "RLUSD"
-              : txData.Amount.currency || "Unknown";
-        } else if (typeof txData.Amount === "string") {
-          amount = Number(txData.Amount) / 1_000_000;
+              : deliveredAmount.currency || "Unknown";
+        } else if (typeof deliveredAmount === "string") {
+          amount = Number(deliveredAmount) / 1_000_000;
           currency = "XRP";
         }
 
@@ -314,7 +319,7 @@ export async function getSoilTransactions(
           ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
           : "";
 
-        const isDeposit = dest === SOIL_VAULT_ADDRESS;
+        const isDeposit = SOIL_VAULT_ADDRESSES.includes(dest);
 
         soilTxns.push({
           hash: txData.hash || (tx as any).hash || "",

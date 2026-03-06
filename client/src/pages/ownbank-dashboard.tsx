@@ -82,9 +82,11 @@ export default function OwnBankDashboard() {
     estimatedPendingYield: string;
     effectiveYield: string;
     effectiveYieldPercent: string;
+    weightedApr?: string;
     lastInterestDate: string | null;
     firstDepositDate: string | null;
-    transactions: Array<{ hash: string; type: string; amount: string; currency: string; date: string }>;
+    vaults?: Array<{ address: string; name: string; principal: string; apr: string }>;
+    transactions: Array<{ hash: string; type: string; amount: string; currency: string; date: string; vaultName?: string }>;
   } | null>(null);
   const [soilSynced, setSoilSynced] = useState(false);
 
@@ -590,20 +592,37 @@ export default function OwnBankDashboard() {
               </div>
 
               {soilSummary.firstDepositDate && (
-                <div className="rounded-lg border bg-muted/30 p-3">
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
                   <div className="flex items-center justify-between gap-2 text-sm">
                     <span className="text-muted-foreground">Active since</span>
                     <span className="font-medium">{new Date(soilSummary.firstDepositDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   </div>
                   {soilSummary.lastInterestDate && (
-                    <div className="flex items-center justify-between gap-2 text-sm mt-1">
+                    <div className="flex items-center justify-between gap-2 text-sm">
                       <span className="text-muted-foreground shrink-0">Last interest</span>
                       <span className="font-medium">{new Date(soilSummary.lastInterestDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-muted-foreground">APR</span>
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">8.00%</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Blended APR</span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{soilSummary.weightedApr || "6.5"}%</span>
+                  </div>
+                </div>
+              )}
+
+              {soilSummary.vaults && soilSummary.vaults.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Vault Positions</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {soilSummary.vaults.map((v) => (
+                      <div key={v.address} className="rounded-lg border bg-card p-2.5 flex items-center justify-between" data-testid={`card-vault-${v.name.toLowerCase()}`}>
+                        <div>
+                          <p className="text-xs font-medium">{v.name} Vault</p>
+                          <p className="text-[10px] text-muted-foreground">{v.apr}% APR</p>
+                        </div>
+                        <p className="text-sm font-bold font-mono">${parseFloat(v.principal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -625,6 +644,7 @@ export default function OwnBankDashboard() {
                             <ArrowDownToLine className="h-3 w-3 text-emerald-500" />
                           )}
                           <span className="font-medium capitalize hidden sm:inline">{tx.type}</span>
+                          {tx.vaultName && <span className="text-[10px] text-muted-foreground hidden sm:inline">({tx.vaultName})</span>}
                         </div>
                         <span className="font-mono shrink-0">
                           {tx.type === "interest" ? "+" : "-"}${parseFloat(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
