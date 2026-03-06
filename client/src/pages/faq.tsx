@@ -151,6 +151,27 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Statement Uploads",
+    items: [
+      {
+        q: "What is Statement Insights?",
+        a: "Statement Insights lets you upload PDF statements from your banks, brokerages, and credit unions. We automatically detect the institution, account type (brokerage, savings, money market, CD, etc.), and your balance \u2014 then show you how your current rates compare to Soil vault yields. You can add detected accounts to your portfolio with one click.",
+      },
+      {
+        q: "Tip: Rename your statement files before uploading",
+        a: "Most banks name downloaded statements something generic like 'statement_2026-02.pdf' or a random string of numbers. Before uploading, rename each file to something you\u2019ll recognize \u2014 for example: 'ETrade-Brokerage-Feb2026.pdf', 'Stash-Invest-Feb2026.pdf', or 'NavyFed-Savings-Feb2026.pdf'. This makes it much easier to keep track of which files you\u2019ve already uploaded and which ones are left to do.",
+      },
+      {
+        q: "Which institutions are supported?",
+        a: "We automatically detect statements from Chase, Bank of America, Wells Fargo, Citibank, Capital One, Ally, Discover, Schwab, Fidelity, Vanguard, E*TRADE, SoFi, Robinhood, Wealthfront, Betterment, Stash, Acorns, Greenlight, M1 Finance, Webull, Tastytrade, Interactive Brokers, Morgan Stanley, Merrill Lynch, USAA, Navy Federal, Kinecta, PenFed, and most other credit unions. If your institution isn\u2019t listed, the parser will still try to detect account types and balances from the PDF content.",
+      },
+      {
+        q: "What happens when I delete a statement?",
+        a: "Deleting a statement removes the upload, all detected products, and any portfolio entries you added from it. It\u2019s a clean removal \u2014 you won\u2019t have orphaned entries left behind in your portfolio.",
+      },
+    ],
+  },
+  {
     heading: "Getting Started & Transfers",
     items: [
       {
