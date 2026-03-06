@@ -82,7 +82,8 @@ function extractBalances(text: string): number[] {
   const allBalances: number[] = [];
 
   const contextPatterns = [
-    /(?:ending|closing|current|available|total|account|beginning|opening|market)\s*(?:balance|value|worth)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
+    /(?:ending|closing|current|available|total\s+account|beginning|opening)\s*(?:balance|value|worth)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
+    /(?:total|net|gross)\s*(?:portfolio|account|assets?)\s*(?:balance|value|worth)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
     /(?:balance|value|worth)\s*(?:as of|on|ending|:)\s*[^$]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
     /\$\s?([\d,]+(?:\.\d{2})?)\s*(?:ending|closing|current|available|total)\s*(?:balance|value)/gi,
     /(?:your|my)\s+(?:account|balance|total|portfolio)[\s:]*\$\s?([\d,]+(?:\.\d{2})?)/gi,
@@ -99,7 +100,7 @@ function extractBalances(text: string): number[] {
     }
   }
 
-  const skipContextPattern = /(?:assets\s*under\s*management|fund\s*(?:net\s*)?assets|total\s*(?:net\s*)?assets\s*of\s*(?:the\s*)?fund|(?:net|total|gross)\s*asset\s*value\s*of\s*(?:the\s*)?(?:fund|portfolio|trust))/i;
+  const skipContextPattern = /(?:assets\s*under\s*management|fund\s*(?:net\s*)?assets|total\s*(?:net\s*)?assets\s*of\s*(?:the\s*)?fund|(?:net|total|gross)\s*asset\s*value\s*of\s*(?:the\s*)?(?:fund|portfolio|trust)|expense\s*ratio|(?:shares|units)\s*owned|(?:price|cost)\s*per\s*share|(?:unrealized|realized)\s*(?:gain|loss)\s*\$)/i;
 
   const balancePattern = /\$\s?([\d,]+(?:\.\d{2})?)/g;
   let match;
@@ -273,42 +274,65 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
   const sections = classifySections(text);
   const products: DetectedProduct[] = [];
 
-  if (sections.length > 0) {
-    for (const section of sections) {
-      const balances = extractBalances(section.text);
-      const rates = extractRates(section.text);
-      const term = section.productType === "cd" || section.productType === "bond"
-        ? extractTerm(section.text)
+  const groupedSections = new Map<string, SectionResult[]>();
+  for (const section of sections) {
+    const existing = groupedSections.get(section.productType) || [];
+    existing.push(section);
+    groupedSections.set(section.productType, existing);
+  }
+
+  if (groupedSections.size > 0) {
+    for (const [productType, typeSections] of groupedSections) {
+      const combinedText = typeSections.map(s => s.text).join("\n");
+      const bestConfidence = Math.max(...typeSections.map(s => s.confidence));
+      const isLocked = typeSections.some(s => s.isLocked);
+
+      const contextualBalances = extractBalances(text);
+
+      const sectionBalances = extractBalances(combinedText);
+
+      const allCandidates = [...new Set([...contextualBalances, ...sectionBalances])];
+
+      const term = productType === "cd" || productType === "bond"
+        ? extractTerm(combinedText)
         : null;
 
       let maturityDate: string | null = null;
-      if (section.productType === "cd" || section.productType === "bond") {
-        const maturityMatch = section.text.match(/matur(?:ity|es?)\s*(?:date)?[:\s]*([^\n]{5,20})/i);
+      if (productType === "cd" || productType === "bond") {
+        const maturityMatch = combinedText.match(/matur(?:ity|es?)\s*(?:date)?[:\s]*([^\n]{5,20})/i);
         if (maturityMatch) {
           const dates = extractDates(maturityMatch[1]);
           if (dates.length > 0) maturityDate = dates[0];
         }
       }
 
-      const sortedBals = [...balances].sort((a, b) => b - a);
-      const mainBalance = sortedBals.length > 0
-        ? (sortedBals.length >= 3 ? sortedBals[Math.floor(sortedBals.length * 0.25)] : sortedBals[0])
-        : null;
+      const rates = extractRates(combinedText);
       const mainRate = rates.length > 0 ? rates[0] : null;
 
-      const description = section.text.trim().substring(0, 200);
+      let mainBalance: number | null = null;
+      if (allCandidates.length > 0) {
+        const sorted = [...allCandidates].sort((a, b) => b - a);
+        if (sorted.length >= 5) {
+          const p75Index = Math.floor(sorted.length * 0.25);
+          mainBalance = sorted[p75Index];
+        } else {
+          mainBalance = sorted[0];
+        }
+      }
+
+      const description = typeSections[0].text.trim().substring(0, 200);
 
       products.push({
-        productType: section.productType,
+        productType: productType as DetectedProduct["productType"],
         institutionName: institution,
         balance: mainBalance,
         interestRate: mainRate,
         apy: mainRate,
         maturityDate,
         term,
-        isLocked: section.isLocked,
+        isLocked,
         rawDescription: description,
-        confidence: section.confidence,
+        confidence: bestConfidence,
       });
     }
   } else {
