@@ -366,7 +366,11 @@ export async function registerRoutes(
               if (currency === "RLUSD" && amount >= 10) {
                 const isOutgoing = src === walletAddress;
                 const counterparty = isOutgoing ? dest : src;
-                if (!dismissedAddresses.has(counterparty) && !discoveredAddresses.some(d => d.address === counterparty && d.hash === hash)) {
+                if (
+                  counterparty !== walletAddress &&
+                  !dismissedAddresses.has(counterparty) &&
+                  !discoveredAddresses.some(d => d.address === counterparty && d.hash === hash)
+                ) {
                   discoveredAddresses.push({
                     address: counterparty,
                     direction: isOutgoing ? "outgoing" : "incoming",

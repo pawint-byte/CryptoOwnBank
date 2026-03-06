@@ -696,7 +696,9 @@ export default function OwnBankDashboard() {
                       <div key={d.address} className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-2.5" data-testid={`card-discovered-${d.address.slice(0, 8)}`}>
                         {labelingAddress === d.address ? (
                           <div className="space-y-2">
-                            <p className="text-xs font-medium">Label this vault</p>
+                            <p className="text-xs font-medium">
+                              {d.direction === "outgoing" ? "You sent RLUSD to this address — is it a yield vault?" : "You received RLUSD from this address — is it a yield source?"}
+                            </p>
                             <p className="text-[10px] text-muted-foreground font-mono break-all">{d.address}</p>
                             <div className="flex gap-2">
                               <Input
@@ -740,10 +742,16 @@ export default function OwnBankDashboard() {
                         ) : (
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-[10px] font-mono text-muted-foreground truncate">{d.address}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {d.direction === "outgoing" ? (
+                                  <><span className="text-purple-600 dark:text-purple-400 font-medium">Sent to</span> <span className="font-mono">{d.address.slice(0, 8)}...{d.address.slice(-6)}</span></>
+                                ) : (
+                                  <><span className="text-emerald-600 dark:text-emerald-400 font-medium">Received from</span> <span className="font-mono">{d.address.slice(0, 8)}...{d.address.slice(-6)}</span></>
+                                )}
+                              </p>
                               <p className="text-xs mt-0.5">
                                 <span className="font-medium">${d.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                <span className="text-muted-foreground"> RLUSD · {d.txCount} tx · {d.direction === "outgoing" ? "sent" : "received"}</span>
+                                <span className="text-muted-foreground"> RLUSD · {d.txCount} tx</span>
                               </p>
                             </div>
                             <div className="flex gap-1 shrink-0">
