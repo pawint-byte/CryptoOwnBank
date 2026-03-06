@@ -103,7 +103,7 @@ const features = [
     icon: PieChart,
     title: "One Cockpit for Everything",
     description:
-      "Connect all your exchanges, cold wallets, and yield vaults. See your entire crypto footprint — BTC, ETH, XRP, altcoins — in one real-time dashboard instead of logging into five different apps.",
+      "Connect all your exchanges, cold wallets, and yield vaults across 8 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Dogecoin, Litecoin, and Cardano. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
   },
   {
     icon: TrendingUp,
@@ -173,8 +173,8 @@ const memberStories = [
     icon: BarChart3,
     accent: "from-amber-500/10 to-orange-500/10",
     story:
-      "CryptoOwnBank isn't just about XRPL — it's your complete crypto command center. Connect your Coinbase, Kraken, or Binance accounts and see Bitcoin, Ethereum, XRP, and every altcoin you hold in one dashboard with real-time performance metrics and tax reports.",
-    benefit: "One dashboard for your entire crypto portfolio, plus yield vaults for RLUSD.",
+      "CryptoOwnBank isn't just about XRPL — it's your complete crypto command center. Connect your Coinbase, Kraken, Crypto.com, or Binance accounts. Add cold wallets across 8 blockchains — Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP, Avalanche C-Chain, Dogecoin, Litecoin, and Cardano. Search, filter by source, and sort your holdings by value, gain/loss, or quantity. Import CSV files from Ledger Live or Yahoo Finance. All in one dashboard with real-time prices and tax reports.",
+    benefit: "One dashboard for your entire crypto portfolio across 8 chains, plus yield vaults for RLUSD.",
   },
 ];
 
@@ -237,24 +237,24 @@ const testimonials = [
 ];
 
 const freeTierFeatures = [
-  "Connect 1 exchange (Coinbase, Kraken, Binance, etc.)",
-  "Track 1 cold wallet",
+  "Connect 1 exchange (Coinbase, Kraken, Crypto.com, etc.)",
+  "Track 1 cold wallet across 8 blockchains",
   "Soil vault access (deposit + manual withdraw)",
   "Yield calculator for projected earnings",
   "3 price alerts with email notifications",
   "30-day transaction history",
-  "Basic dashboard with real-time balances",
+  "Dashboard with real-time balances & recommendations",
 ];
 
 const premiumFeatures = [
   "Unlimited exchange connections",
-  "Unlimited cold wallets",
+  "Unlimited cold wallets (BTC, ETH, SOL, XRP, AVAX, DOGE, LTC, ADA)",
+  "Full ERC-20 & SPL token auto-detection",
   "Full transaction history (all time)",
-  "CSV import (Yahoo Finance, CoinTracker)",
+  "CSV import (Ledger Live, Yahoo Finance, CoinTracker)",
   "Unlimited price alerts",
   "Auto-withdrawal from Soil vaults",
-  "Portfolio analytics across all sources",
-  "Priority support",
+  "Portfolio search, filter & sort",
 ];
 
 const annualBonusFeatures = [
@@ -346,8 +346,8 @@ const faqGroups = [
         a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($9/mo or $79/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
-        q: "Can CryptoOwnBank connect to other blockchains and protocols in the future?",
-        a: "Yes \u2014 and that\u2019s exactly the vision. CryptoOwnBank is built to be your personal on-chain control center \u2014 not just for XRPL today, but for any blockchain or smart contract that offers yield, lending, staking, or tokenized assets. We plug into new protocols the same non-custodial way: reading public blockchain data, building ready-to-sign transactions, and letting your cold wallet approve. You stay the owner; we become your smart assistant \u2014 one beautiful dashboard instead of scattered apps, one-click actions instead of copy-pasting addresses, and automation without giving up sovereignty. When XLS-66 XRP lending activates or new RWA protocols launch, we add them \u2014 you get instant access without switching tools. Coming soon: native XRP lending, more XRPL protocols, and multi-chain support \u2014 all while keeping you in 100% control.",
+        q: "Which blockchains and protocols does CryptoOwnBank support?",
+        a: "CryptoOwnBank already supports 8 blockchains for cold wallet tracking: Bitcoin, Ethereum (with automatic detection of all ERC-20 tokens), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche C-Chain, Dogecoin, Litecoin, and Cardano. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. For yield, we integrate with Soil Protocol on XRPL for 5\u20138% fixed APR on RLUSD. Coming soon: XLS-66 native XRP lending, more DeFi protocols, and additional chain support \u2014 all non-custodial, all from one dashboard.",
       },
       {
         q: "Why should I join now?",
@@ -367,8 +367,8 @@ const faqGroups = [
         a: "No \u2014 we are 100% non-custodial. We never hold, control, or have access to your funds or private keys. All actions (deposits, withdrawals) are signed directly from your own cold wallet. The dashboard is just a secure interface to view balances and interact with XRPL + Soil. Your keys stay on your Ledger or Xumm device at all times.",
       },
       {
-        q: "What wallets are supported?",
-        a: "For XRPL yield vaults, we support Xumm/Xaman (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). Both are cold wallet solutions that keep your private keys completely offline or on a secure device. For portfolio tracking, you connect exchange accounts via API keys. See our step-by-step Setup Guide at /setup-guide for detailed instructions.",
+        q: "What wallets and hardware devices are supported?",
+        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For cold wallet portfolio tracking: paste any wallet address from Ledger, Cypherock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet \u2014 we support 8 blockchains (Bitcoin, Ethereum, Solana, XRP, Avalanche, Dogecoin, Litecoin, Cardano). Ethereum addresses automatically detect all ERC-20 tokens. For exchanges: connect via API keys (Coinbase, Kraken, Crypto.com, Binance, and more). You can also import transactions from Ledger Live or Yahoo Finance CSV files.",
       },
       {
         q: "Do Ledger Nano X and Xaman show the same address for RLUSD?",
@@ -454,7 +454,7 @@ const faqGroups = [
       },
       {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
-        a: "Currently focused on XRPL-native assets (XRP, RLUSD, Soil positions). You can also connect exchange accounts (Coinbase, Kraken, Binance) to track your full crypto portfolio \u2014 Bitcoin, Ethereum, altcoins, and more. Future updates will add multi-chain support so you can manage more from one dashboard \u2014 still signing from your cold wallet.",
+        a: "Absolutely \u2014 CryptoOwnBank is a full multi-chain portfolio tracker. Add cold wallet addresses across 8 blockchains: Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP Ledger, Avalanche C-Chain, Dogecoin, Litecoin, and Cardano. Connect exchange accounts (Coinbase, Kraken, Crypto.com, Binance) to track everything in one place. Import CSV files from Ledger Live or Yahoo Finance. Search, filter by source, and sort your holdings by value, gain/loss, or quantity. All with real-time prices (100+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
       },
     ],
   },
@@ -463,7 +463,7 @@ const faqGroups = [
     items: [
       {
         q: "What\u2019s the difference between Free and Premium?",
-        a: "Free gives you full access to portfolio tracking, wallet connection, vault deposits, manual interest withdrawal, tax reports (CSV export), 3 price alerts, and the yield calculator. Premium ($9/month or $79/year) adds automatic weekly interest withdrawals, PDF tax report exports, unlimited price alerts, priority vault alerts, XLS-66 lending early access, and premium referral bonuses.",
+        a: "Free: 1 exchange connection, 1 cold wallet (across 8 blockchains), 3 price alerts, Soil vault access, yield calculator, and basic portfolio dashboard. Premium Monthly ($9/mo): unlimited exchanges and cold wallets, unlimited price alerts, CSV import (Ledger Live, Yahoo Finance), portfolio search/filter/sort, auto-withdraw interest. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
       },
       {
         q: "How do Price Alerts work?",
