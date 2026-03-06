@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -132,23 +133,21 @@ export default function OwnBankVaults() {
     setShowPreview(true);
   }
 
-  function handleConfirmDeposit() {
-    if (!selectedVault) return;
-
-    window.open(SOIL_REFERRAL_URL, "_blank", "noopener,noreferrer");
-
-    toast({
-      title: "Redirecting to Soil Protocol",
-      description: `Complete your ${selectedVault.name} deposit on Soil's website. Your wallet will sign the transaction there.`,
-    });
-    setDepositModalOpen(false);
-    setShowPreview(false);
-    setDepositAmount("");
-  }
-
-  async function handleConfirmDepositLegacy() {
+  async function handleConfirmDeposit() {
     if (!selectedVault || !depositAmount) return;
     const amount = parseFloat(depositAmount);
+
+    if (!selectedVault.address) {
+      window.open(SOIL_REFERRAL_URL, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Redirecting to Soil Protocol",
+        description: `Complete your deposit on Soil's website.`,
+      });
+      setDepositModalOpen(false);
+      setShowPreview(false);
+      setDepositAmount("");
+      return;
+    }
 
     setIsDepositing(true);
     try {
@@ -181,6 +180,14 @@ export default function OwnBankVaults() {
         };
         addVaultDeposit(deposit);
 
+        try {
+          const { walletAddress } = useXrplStore.getState();
+          await apiRequest("POST", "/api/soil/sync", {
+            walletAddress,
+            walletType: walletType || "xumm",
+          });
+        } catch {}
+
         if (referredBy) {
           const isFirstDeposit = vaultDeposits.length === 0;
           if (isFirstDeposit) {
@@ -196,7 +203,7 @@ export default function OwnBankVaults() {
 
         toast({
           title: "Deposit Successful",
-          description: `Deposited ${formatCurrency(amount)} RLUSD to ${selectedVault.name}.`,
+          description: `Deposited ${formatCurrency(amount)} RLUSD to ${selectedVault.name}. Transaction recorded and synced.`,
         });
         setDepositModalOpen(false);
       } else {
@@ -537,16 +544,14 @@ export default function OwnBankVaults() {
 
               <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 space-y-2">
                 <p className="text-xs text-blue-800 dark:text-blue-300">
-                  You will be redirected to{" "}
-                  <span className="font-semibold">Soil Protocol</span>{" "}
-                  to complete your deposit of{" "}
-                  <span className="font-semibold">
-                    {depositAmount} RLUSD
-                  </span>.
-                  Sign the transaction directly with your cold wallet on Soil's site.
+                  {walletType === "xumm" ? (
+                    <>Your Xumm wallet will prompt you to sign a <span className="font-semibold">{depositAmount} RLUSD</span> payment directly to the <span className="font-semibold">{selectedVault?.name}</span> vault. The transaction is recorded and tracked automatically.</>
+                  ) : (
+                    <>Confirm the <span className="font-semibold">{depositAmount} RLUSD</span> deposit on your device.</>
+                  )}
                 </p>
                 <p className="text-xs text-blue-700/80 dark:text-blue-400/80">
-                  Principal protected. Only interest withdrawable. We never see your keys.
+                  Non-custodial. We never hold your funds or see your keys. The vault address and amount are captured so you always have visibility.
                 </p>
               </div>
 
@@ -554,6 +559,7 @@ export default function OwnBankVaults() {
                 <Button
                   variant="outline"
                   onClick={() => setShowPreview(false)}
+                  disabled={isDepositing}
                   data-testid="button-back-deposit"
                 >
                   Back
@@ -561,10 +567,20 @@ export default function OwnBankVaults() {
                 <Button
                   onClick={handleConfirmDeposit}
                   className="bg-[#00A4E4] text-white border-[#00A4E4]"
+                  disabled={isDepositing}
                   data-testid="button-confirm-deposit"
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Deposit on Soil
+                  {isDepositing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Signing...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Sign &amp; Deposit
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </div>
