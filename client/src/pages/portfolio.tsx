@@ -278,10 +278,10 @@ export default function Portfolio() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold" data-testid="heading-portfolio">Portfolio</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Your holdings and performance breakdown
           </p>
         </div>
@@ -295,7 +295,9 @@ export default function Portfolio() {
               data-testid="button-toggle-addressed"
             >
               {showAddressed ? <EyeOff className="h-3.5 w-3.5 mr-1.5" /> : <Eye className="h-3.5 w-3.5 mr-1.5" />}
-              {showAddressed ? "Hide" : "Show"} Addressed ({addressedPositions.length})
+              <span className="hidden sm:inline">{showAddressed ? "Hide" : "Show"} Addressed</span>
+              <span className="sm:hidden">{addressedPositions.length}</span>
+              <span className="hidden sm:inline"> ({addressedPositions.length})</span>
             </Button>
           )}
           <Dialog open={manualOpen} onOpenChange={setManualOpen}>
@@ -399,50 +401,50 @@ export default function Portfolio() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Total Value
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono" data-testid="text-total-value">
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-lg sm:text-2xl font-bold font-mono" data-testid="text-total-value">
               {formatCurrency(data?.totalValue || 0)}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Cost Basis
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono" data-testid="text-cost-basis">
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-lg sm:text-2xl font-bold font-mono" data-testid="text-cost-basis">
               {formatCurrency(data?.totalCostBasis || 0)}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+        <Card className="col-span-2 md:col-span-1">
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               Unrealized Gain/Loss
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
             <div
               className={cn(
-                "text-2xl font-bold font-mono",
+                "text-lg sm:text-2xl font-bold font-mono",
                 (data?.totalGainLoss || 0) > 0 && "text-chart-2",
                 (data?.totalGainLoss || 0) < 0 && "text-destructive"
               )}
               data-testid="text-gain-loss"
             >
               {formatCurrency(data?.totalGainLoss || 0)}
-              <span className="text-sm ml-2">
+              <span className="text-xs sm:text-sm ml-2">
                 ({(data?.totalGainLossPercent || 0).toFixed(2)}%)
               </span>
             </div>
@@ -561,90 +563,93 @@ export default function Portfolio() {
                           )}
                           <div
                             className={cn(
-                              "flex items-center justify-between p-4 rounded-lg border",
+                              "p-3 sm:p-4 rounded-lg border",
                               isAddr && "opacity-50 bg-muted/30",
                               !isAddr && isDupe && position.isImport && "border-l-4 border-l-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10",
                               !isAddr && isDupe && !position.isImport && "border-l-4 border-l-emerald-400/60 bg-emerald-50/30 dark:bg-emerald-950/10"
                             )}
                             data-testid={`position-${position.assetSymbol}-${position.id}`}
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <span className="text-sm font-bold text-primary">
-                                  {position.assetSymbol.slice(0, 2)}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold">{position.assetSymbol}</span>
-                                  {position.source && (
-                                    <Badge variant={position.isImport ? "secondary" : "default"} className="text-[10px] px-1.5 py-0">
-                                      {position.source}
-                                    </Badge>
-                                  )}
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
-                                    {getAssetCategory(position.assetSymbol)}
-                                  </Badge>
-                                  {isAddr && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                      Addressed
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-sm text-muted-foreground font-mono">
-                                  {parseFloat(position.quantity).toFixed(6)} units
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <div className="font-mono font-medium">
-                                  {formatCurrency(position.currentValue || 0)}
-                                </div>
-                                <div
-                                  className={cn(
-                                    "flex items-center justify-end gap-1 text-sm",
-                                    (position.gainLossPercent || 0) > 0 && "text-chart-2",
-                                    (position.gainLossPercent || 0) < 0 && "text-destructive",
-                                    (position.gainLossPercent || 0) === 0 && "text-muted-foreground"
-                                  )}
-                                >
-                                  {(position.gainLossPercent || 0) > 0 && <TrendingUp className="h-3 w-3" />}
-                                  {(position.gainLossPercent || 0) < 0 && <TrendingDown className="h-3 w-3" />}
-                                  {(position.gainLossPercent || 0) === 0 && <Minus className="h-3 w-3" />}
-                                  <span>
-                                    {(position.gainLossPercent || 0) > 0 && "+"}
-                                    {(position.gainLossPercent || 0).toFixed(2)}%
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs sm:text-sm font-bold text-primary">
+                                    {position.assetSymbol.slice(0, 2)}
                                   </span>
                                 </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-sm sm:text-base">{position.assetSymbol}</span>
+                                    {position.source && (
+                                      <Badge variant={position.isImport ? "secondary" : "default"} className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
+                                        {position.source}
+                                      </Badge>
+                                    )}
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground hidden sm:inline-flex">
+                                      {getAssetCategory(position.assetSymbol)}
+                                    </Badge>
+                                    {isAddr && (
+                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                        Addressed
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-xs sm:text-sm text-muted-foreground font-mono">
+                                    {parseFloat(position.quantity).toFixed(4)} units
+                                    {position.source && <span className="sm:hidden text-[10px] ml-1 text-muted-foreground/70">· {position.source}</span>}
+                                  </div>
+                                </div>
                               </div>
-                              {!position.isWallet && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className={cn("h-8 w-8", isAddr ? "text-chart-2 hover:text-chart-2" : "text-muted-foreground hover:text-amber-600")}
-                                  onClick={() => addressMutation.mutate({ id: position.id, addressed: !isAddr })}
-                                  disabled={addressMutation.isPending}
-                                  data-testid={`button-address-${position.id}`}
-                                  title={isAddr ? "Restore position" : "Mark as addressed"}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {position.isImport && !position.isWallet && !isAddr && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => deletePositionMutation.mutate(position.id)}
-                                  disabled={deletePositionMutation.isPending}
-                                  data-testid={`button-delete-position-${position.assetSymbol}`}
-                                  title={`Remove ${position.assetSymbol} from ${position.source}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
+
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                                <div className="text-right">
+                                  <div className="font-mono font-medium text-sm sm:text-base">
+                                    {formatCurrency(position.currentValue || 0)}
+                                  </div>
+                                  <div
+                                    className={cn(
+                                      "flex items-center justify-end gap-1 text-xs sm:text-sm",
+                                      (position.gainLossPercent || 0) > 0 && "text-chart-2",
+                                      (position.gainLossPercent || 0) < 0 && "text-destructive",
+                                      (position.gainLossPercent || 0) === 0 && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {(position.gainLossPercent || 0) > 0 && <TrendingUp className="h-3 w-3" />}
+                                    {(position.gainLossPercent || 0) < 0 && <TrendingDown className="h-3 w-3" />}
+                                    {(position.gainLossPercent || 0) === 0 && <Minus className="h-3 w-3" />}
+                                    <span>
+                                      {(position.gainLossPercent || 0) > 0 && "+"}
+                                      {(position.gainLossPercent || 0).toFixed(2)}%
+                                    </span>
+                                  </div>
+                                </div>
+                                {!position.isWallet && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(isAddr ? "text-chart-2 hover:text-chart-2" : "text-muted-foreground hover:text-amber-600")}
+                                    onClick={() => addressMutation.mutate({ id: position.id, addressed: !isAddr })}
+                                    disabled={addressMutation.isPending}
+                                    data-testid={`button-address-${position.id}`}
+                                    title={isAddr ? "Restore position" : "Mark as addressed"}
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {position.isImport && !position.isWallet && !isAddr && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    onClick={() => deletePositionMutation.mutate(position.id)}
+                                    disabled={deletePositionMutation.isPending}
+                                    data-testid={`button-delete-position-${position.assetSymbol}`}
+                                    title={`Remove ${position.assetSymbol} from ${position.source}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -667,39 +672,39 @@ export default function Portfolio() {
                     const pctOfPortfolio = totalPortfolioValue > 0 ? (item.totalValue / totalPortfolioValue) * 100 : 0;
 
                     return (
-                      <div key={item.symbol} className="p-4 rounded-lg border" data-testid={`consolidated-${item.symbol}`}>
+                      <div key={item.symbol} className="p-3 sm:p-4 rounded-lg border" data-testid={`consolidated-${item.symbol}`}>
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-sm font-bold text-primary">{item.symbol.slice(0, 2)}</span>
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs sm:text-sm font-bold text-primary">{item.symbol.slice(0, 2)}</span>
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold">{item.symbol}</span>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold text-sm sm:text-base">{item.symbol}</span>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
                                   {getAssetCategory(item.symbol)}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {pctOfPortfolio.toFixed(1)}% of portfolio
+                                <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                  {pctOfPortfolio.toFixed(1)}%
                                 </span>
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                <span className="font-mono">{item.totalQty.toFixed(6)}</span> units
+                              <div className="text-xs sm:text-sm text-muted-foreground">
+                                <span className="font-mono">{item.totalQty.toFixed(4)}</span> units
                                 {item.sources.length > 0 && (
-                                  <span className="ml-2 text-xs">
+                                  <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs hidden sm:inline">
                                     from {item.sources.join(", ")}
                                   </span>
                                 )}
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="font-mono font-medium">{formatCurrency(item.totalValue)}</div>
-                            <div className="text-xs text-muted-foreground">
+                          <div className="text-right flex-shrink-0">
+                            <div className="font-mono font-medium text-sm sm:text-base">{formatCurrency(item.totalValue)}</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
                               Avg: {formatCurrency(avgCost)} | Basis: {formatCurrency(item.totalCostBasis)}
                             </div>
-                            <div className={cn("text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
-                              {gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} ({gainPct.toFixed(2)}%)
+                            <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
+                              <span className="hidden sm:inline">{gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} </span>({gainPct.toFixed(2)}%)
                             </div>
                           </div>
                         </div>
@@ -725,33 +730,33 @@ export default function Portfolio() {
                     return (
                       <div key={cat.category} className="rounded-lg border overflow-hidden" data-testid={`category-${cat.category}`}>
                         <button
-                          className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                          className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors text-left"
                           onClick={() => toggleCategory(cat.category)}
                           data-testid={`button-toggle-category-${cat.category}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
-                              <div className="h-4 w-4 rounded-full" style={{ backgroundColor: color }} />
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
+                              <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full" style={{ backgroundColor: color }} />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold">{cat.category}</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold text-sm sm:text-base">{cat.category}</span>
                                 <Badge variant="outline" className="text-[10px]">
-                                  {cat.assets.length} asset{cat.assets.length !== 1 ? "s" : ""}
+                                  {cat.assets.length}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-[10px] sm:text-xs text-muted-foreground">
                                   {pctOfPortfolio.toFixed(1)}%
                                 </span>
                               </div>
-                              <div className="w-full bg-muted rounded-full h-1.5 mt-1" style={{ maxWidth: 200 }}>
+                              <div className="w-full bg-muted rounded-full h-1.5 mt-1 hidden sm:block" style={{ maxWidth: 200 }}>
                                 <div className="h-1.5 rounded-full" style={{ width: `${Math.min(pctOfPortfolio, 100)}%`, backgroundColor: color }} />
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                             <div className="text-right">
-                              <div className="font-mono font-medium">{formatCurrency(cat.totalValue)}</div>
-                              <div className={cn("text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
+                              <div className="font-mono font-medium text-sm sm:text-base">{formatCurrency(cat.totalValue)}</div>
+                              <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
                                 {gainLoss > 0 ? "+" : ""}{gainPct.toFixed(2)}%
                               </div>
                             </div>

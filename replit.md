@@ -19,6 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Charts**: Recharts for visualizations.
 - **Forms**: React Hook Form with Zod validation.
 - **XRPL Integration**: xrpl.js, Xumm SDK, Ledger HW libs.
+- **Mobile Responsiveness**: All pages optimized for mobile with responsive breakpoints (`sm:` for 640px+). Key patterns: 2x2 metric card grids, collapsible allocation chart legends (top 8 + "Show All"), hidden table columns on mobile (Price/Total in transactions), compact position items with hidden badges, responsive chart heights, smaller padding/fonts on mobile.
 - **Key Pages**:
     - **CryptoBroker**: Dashboard, Transactions, Portfolio, Cold Wallets, Tax Reports, Price Alerts, Integrations, Settings.
     - **OwnBank XRPL**: Dashboard (with full Soil vault tracking — principal, paid interest, estimated accruing yield, total yield, dates), Vaults (Soil Protocol RLUSD yield vaults), Withdraw Interest (interest-only), History, My Referrals.

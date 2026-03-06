@@ -72,7 +72,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <MetricCard
           title="Total Portfolio Value"
           value={data ? formatCurrency(data.totalValue) : "$0.00"}
@@ -104,7 +104,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <PortfolioChart
           data={data?.portfolioHistory || []}
           isLoading={isLoading}
@@ -116,15 +116,15 @@ export default function Dashboard() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle>Recent Transactions</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-3 sm:px-6">
+          <CardTitle className="text-base sm:text-lg">Recent Transactions</CardTitle>
           <Link href="/transactions">
             <Button variant="ghost" size="sm" data-testid="link-view-all-transactions">
               View All
             </Button>
           </Link>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           <TransactionsTable
             transactions={data?.recentTransactions || []}
             isLoading={isLoading}

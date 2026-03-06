@@ -62,7 +62,7 @@ export function TransactionsTable({
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -70,20 +70,21 @@ export function TransactionsTable({
             <TableHead>Type</TableHead>
             <TableHead>Asset</TableHead>
             <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Price</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
+            <TableHead className="text-right hidden sm:table-cell">Total</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {displayTransactions.map((tx) => (
             <TableRow key={tx.id} data-testid={`transaction-row-${tx.id}`}>
-              <TableCell className="font-mono text-sm">
+              <TableCell className="font-mono text-xs sm:text-sm whitespace-nowrap">
                 {format(new Date(tx.transactionDate), "MMM d, yyyy")}
               </TableCell>
               <TableCell>
                 <Badge
                   variant={tx.transactionType === "buy" ? "default" : "secondary"}
                   className={cn(
+                    "text-xs",
                     tx.transactionType === "buy" && "bg-chart-2 text-white",
                     tx.transactionType === "sell" && "bg-chart-5 text-white"
                   )}
@@ -91,14 +92,14 @@ export function TransactionsTable({
                   {tx.transactionType.toUpperCase()}
                 </Badge>
               </TableCell>
-              <TableCell className="font-medium">{tx.assetSymbol}</TableCell>
-              <TableCell className="text-right font-mono">
-                {parseFloat(tx.quantity).toFixed(6)}
+              <TableCell className="font-medium text-xs sm:text-sm">{tx.assetSymbol}</TableCell>
+              <TableCell className="text-right font-mono text-xs sm:text-sm">
+                {parseFloat(tx.quantity).toFixed(4)}
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell className="text-right font-mono hidden sm:table-cell">
                 ${parseFloat(tx.pricePerUnit).toFixed(2)}
               </TableCell>
-              <TableCell className="text-right font-mono font-medium">
+              <TableCell className="text-right font-mono font-medium hidden sm:table-cell">
                 ${parseFloat(tx.totalValue).toFixed(2)}
               </TableCell>
             </TableRow>

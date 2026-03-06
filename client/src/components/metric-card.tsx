@@ -28,7 +28,7 @@ export function MetricCard({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
           <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-          <div className="h-8 w-8 animate-pulse rounded bg-muted" />
+          <div className="h-8 w-8 animate-pulse rounded bg-muted hidden sm:block" />
         </CardHeader>
         <CardContent>
           <div className="h-8 w-32 animate-pulse rounded bg-muted mb-2" />
@@ -40,18 +40,18 @@ export function MetricCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
         {icon && (
-          <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+          <div className="h-8 w-8 rounded-md bg-muted items-center justify-center hidden sm:flex">
             {icon}
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold font-mono">{value}</div>
+      <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+        <div className="text-lg sm:text-2xl font-bold font-mono">{value}</div>
         {change !== undefined && (
           <div
             className={cn(
