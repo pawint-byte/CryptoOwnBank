@@ -2962,10 +2962,14 @@ export async function registerRoutes(
           comparisons: limits.statementComparisons ? comparisons : null,
           comparisonsLocked: !limits.statementComparisons,
         });
-      } catch (parseError) {
+      } catch (parseError: any) {
         await storage.updateStatementUpload(upload.id, { status: "failed" });
-        console.error("Statement parse error:", parseError);
-        res.status(422).json({ message: "Could not parse the PDF. Please ensure it is a readable bank or brokerage statement." });
+        console.error("Statement parse error:", parseError?.message || parseError);
+        const isEncrypted = parseError?.message?.includes("password") || parseError?.message?.includes("encrypted");
+        const msg = isEncrypted
+          ? "This PDF appears to be password-protected. Please upload an unencrypted version of your statement."
+          : "Could not extract text from this PDF. It may be a scanned image or an unsupported format. Please try a different statement file.";
+        res.status(422).json({ message: msg });
       }
     } catch (error) {
       console.error("Statement upload error:", error);

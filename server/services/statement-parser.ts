@@ -1,5 +1,3 @@
-import pdf from "pdf-parse";
-
 export interface DetectedProduct {
   productType: "cd" | "savings" | "money_market" | "checking" | "bond" | "brokerage" | "other";
   institutionName: string | null;
@@ -37,6 +35,13 @@ const INSTITUTION_PATTERNS: Array<{ pattern: RegExp; name: string }> = [
   { pattern: /\brobinhood\b/i, name: "Robinhood" },
   { pattern: /\bwealthfront\b/i, name: "Wealthfront" },
   { pattern: /\bbetterment\b/i, name: "Betterment" },
+  { pattern: /\bnavy federal\b/i, name: "Navy Federal Credit Union" },
+  { pattern: /\bkinecta\b/i, name: "Kinecta Federal Credit Union" },
+  { pattern: /\bpen ?fed\b/i, name: "PenFed Credit Union" },
+  { pattern: /\bUSAA\b/i, name: "USAA" },
+  { pattern: /\bmorgan stanley\b/i, name: "Morgan Stanley" },
+  { pattern: /\bmerrill\b/i, name: "Merrill Lynch" },
+  { pattern: /\bcredit union\b/i, name: "Credit Union" },
 ];
 
 function detectInstitution(text: string): string | null {
@@ -126,12 +131,12 @@ function classifySections(text: string): SectionResult[] {
   const sections: SectionResult[] = [];
   const lines = text.split("\n");
 
-  const cdPatterns = /certificate of deposit|CD\s+(?:account|summary|statement)|time deposit|\bCD\b.*(?:maturity|term|rate)/i;
-  const savingsPatterns = /savings?\s*account|high[\s-]yield\s*savings|online\s*savings|savings\s*summary/i;
-  const moneyMarketPatterns = /money\s*market|MMA\s+account/i;
-  const checkingPatterns = /checking\s*account|checking\s*summary|demand\s*deposit/i;
+  const cdPatterns = /certificate of deposit|CD\s+(?:account|summary|statement)|time deposit|\bCD\b.*(?:maturity|term|rate)|share\s*certificate|cert(?:ificate)?\s*(?:of\s*)?(?:deposit|savings)/i;
+  const savingsPatterns = /savings?\s*(?:account|summary|balance|share)|high[\s-]yield\s*savings|online\s*savings|regular\s*savings|primary\s*savings|share\s*savings/i;
+  const moneyMarketPatterns = /money\s*market|MMA\s+(?:account|balance)|market\s*(?:rate|savings)\s*account/i;
+  const checkingPatterns = /checking\s*(?:account|summary|balance)|demand\s*deposit|free\s*checking|(?:primary|everyday)\s*checking|share\s*draft/i;
   const bondPatterns = /\bbond\b.*(?:coupon|yield|maturity)|treasury|municipal\s*bond|corporate\s*bond|fixed\s*income/i;
-  const brokeragePatterns = /(?:investment|brokerage|trading)\s*account|portfolio\s*summary|securities|holdings\s*summary/i;
+  const brokeragePatterns = /(?:investment|brokerage|trading)\s*account|portfolio\s*(?:summary|value|balance)|securities|holdings\s*summary|(?:stock|equity|fund)\s*(?:holdings|positions|account)|(?:account|portfolio)\s*(?:holdings|positions)|market\s*value|dividend|(?:realized|unrealized)\s*gain/i;
 
   let currentSection = "";
   let sectionStart = 0;
@@ -181,12 +186,30 @@ function classifySections(text: string): SectionResult[] {
     }
   }
 
+  if (sections.length === 0) {
+    const hasBalances = /\$\s?[\d,]+(?:\.\d{2})/.test(text);
+    const hasAccountRef = /account\s*(?:number|#|no|summary|statement|balance|ending)/i.test(text);
+    if (hasBalances && hasAccountRef) {
+      const looksLikeBrokerage = /(?:stock|shares|dividend|portfolio|holdings|market\s*value|positions)/i.test(text);
+      sections.push({
+        text,
+        productType: looksLikeBrokerage ? "brokerage" : "other",
+        confidence: 0.3,
+        isLocked: false,
+      });
+    }
+  }
+
   return sections;
 }
 
 export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]> {
-  const data = await pdf(buffer);
-  const text = data.text;
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data: buffer });
+  const result = await parser.getText();
+  const text = result.text;
+
+  try { await parser.destroy(); } catch (_) {}
 
   if (!text || text.trim().length < 50) {
     return [];
