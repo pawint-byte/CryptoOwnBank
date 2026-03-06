@@ -532,7 +532,11 @@ export default function Reconciliation() {
   }, [assetGroups, allPositions, showAddressed]);
 
   const editMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data, isWallet }: { id: string; data: any; isWallet?: boolean }) => {
+      if (isWallet) {
+        const res = await apiRequest("PATCH", `/api/wallet-balances/${id}/cost`, data);
+        return res.json();
+      }
       const res = await apiRequest("PATCH", `/api/positions/${id}`, data);
       return res.json();
     },
@@ -541,7 +545,7 @@ export default function Reconciliation() {
       queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Position updated" });
+      toast({ title: "Updated successfully" });
     },
     onError: (error: Error) => {
       toast({ title: "Update failed", description: error.message, variant: "destructive" });
@@ -641,22 +645,38 @@ export default function Reconciliation() {
 
   const saveEdit = useCallback(() => {
     if (!editingId) return;
-    const qty = parseFloat(editForm.quantity);
+    const editingPos = allPositions.find(p => p.id === editingId);
+    const isWalletEdit = editingPos?.isWallet;
     const avgCost = parseFloat(editForm.averageCost);
-    if (isNaN(qty) || qty < 0) {
-      toast({ title: "Invalid quantity", variant: "destructive" });
-      return;
+
+    if (isWalletEdit) {
+      const qty = parseFloat(editingPos?.quantity || "0");
+      const costBasis = isNaN(avgCost) ? 0 : qty * avgCost;
+      editMutation.mutate({
+        id: editingId,
+        isWallet: true,
+        data: {
+          averageCost: editForm.averageCost,
+          totalCostBasis: costBasis.toFixed(2),
+        },
+      });
+    } else {
+      const qty = parseFloat(editForm.quantity);
+      if (isNaN(qty) || qty < 0) {
+        toast({ title: "Invalid quantity", variant: "destructive" });
+        return;
+      }
+      const costBasis = isNaN(avgCost) ? 0 : qty * avgCost;
+      editMutation.mutate({
+        id: editingId,
+        data: {
+          quantity: editForm.quantity,
+          averageCost: editForm.averageCost,
+          totalCostBasis: costBasis.toFixed(2),
+        },
+      });
     }
-    const costBasis = isNaN(avgCost) ? 0 : qty * avgCost;
-    editMutation.mutate({
-      id: editingId,
-      data: {
-        quantity: editForm.quantity,
-        averageCost: editForm.averageCost,
-        totalCostBasis: costBasis.toFixed(2),
-      },
-    });
-  }, [editingId, editForm]);
+  }, [editingId, editForm, allPositions]);
 
   const startMerge = useCallback((symbol: string) => {
     setMergeSelection({ symbol, ids: [] });
@@ -966,32 +986,46 @@ export default function Reconciliation() {
                                   </div>
 
                                   {isEditing ? (
-                                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                      <div>
-                                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Quantity</label>
-                                        <Input
-                                          value={editForm.quantity}
-                                          onChange={(e) => setEditForm(f => ({ ...f, quantity: e.target.value }))}
-                                          className="h-8 text-sm mt-0.5"
-                                          data-testid="input-edit-quantity"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Avg Cost</label>
-                                        <Input
-                                          value={editForm.averageCost}
-                                          onChange={(e) => setEditForm(f => ({ ...f, averageCost: e.target.value }))}
-                                          className="h-8 text-sm mt-0.5"
-                                          data-testid="input-edit-avg-cost"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost Basis (auto)</label>
-                                        <p className="text-sm font-medium mt-1.5">
-                                          {formatCurrency(
-                                            (parseFloat(editForm.quantity) || 0) * (parseFloat(editForm.averageCost) || 0)
+                                    <div className="mt-2 space-y-2">
+                                      {pos.isWallet && (
+                                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                          <Shield className="h-3 w-3 text-emerald-500" />
+                                          Quantity is live from the blockchain. Edit your average cost to calculate profit/loss.
+                                        </div>
+                                      )}
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div>
+                                          <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Quantity</label>
+                                          {pos.isWallet ? (
+                                            <p className="text-sm font-medium mt-1.5 text-muted-foreground">
+                                              {formatQty(parseFloat(pos.quantity || "0"))} <span className="text-[10px]">(live)</span>
+                                            </p>
+                                          ) : (
+                                            <Input
+                                              value={editForm.quantity}
+                                              onChange={(e) => setEditForm(f => ({ ...f, quantity: e.target.value }))}
+                                              className="h-8 text-sm mt-0.5"
+                                              data-testid="input-edit-quantity"
+                                            />
                                           )}
-                                        </p>
+                                        </div>
+                                        <div>
+                                          <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Avg Cost (per unit)</label>
+                                          <Input
+                                            value={editForm.averageCost}
+                                            onChange={(e) => setEditForm(f => ({ ...f, averageCost: e.target.value }))}
+                                            className="h-8 text-sm mt-0.5"
+                                            data-testid="input-edit-avg-cost"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost Basis (auto)</label>
+                                          <p className="text-sm font-medium mt-1.5">
+                                            {formatCurrency(
+                                              (parseFloat(pos.isWallet ? pos.quantity : editForm.quantity) || 0) * (parseFloat(editForm.averageCost) || 0)
+                                            )}
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
                                   ) : (
@@ -1046,22 +1080,22 @@ export default function Reconciliation() {
                                     </>
                                   ) : (
                                     <>
-                                      {!pos.isWallet && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-7 w-7 p-0"
-                                              onClick={(e) => { e.stopPropagation(); startEdit(pos); }}
-                                              data-testid={`button-edit-${pos.id}`}
-                                            >
-                                              <Pencil className="h-3.5 w-3.5" />
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent className="text-xs">Edit quantity & cost</TooltipContent>
-                                        </Tooltip>
-                                      )}
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-7 w-7 p-0"
+                                            onClick={(e) => { e.stopPropagation(); startEdit(pos); }}
+                                            data-testid={`button-edit-${pos.id}`}
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="text-xs">
+                                          {pos.isWallet ? "Edit cost basis" : "Edit quantity & cost"}
+                                        </TooltipContent>
+                                      </Tooltip>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <Button

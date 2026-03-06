@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
 import multer from "multer";
@@ -471,6 +471,45 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/wallet-balances/:id/cost", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const balance = balances.find(b => b.id === id);
+      if (!balance) {
+        return res.status(404).json({ message: "Wallet balance not found" });
+      }
+      if (balance.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const { averageCost, totalCostBasis } = req.body;
+      const updates: any = {};
+      if (averageCost !== undefined) {
+        const ac = parseFloat(averageCost);
+        if (isNaN(ac) || ac < 0) return res.status(400).json({ message: "Invalid average cost" });
+        updates.averageCost = ac.toString();
+      }
+      if (totalCostBasis !== undefined) {
+        const tcb = parseFloat(totalCostBasis);
+        if (isNaN(tcb) || tcb < 0) return res.status(400).json({ message: "Invalid cost basis" });
+        updates.totalCostBasis = tcb.toFixed(2);
+      }
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "Provide averageCost and/or totalCostBasis" });
+      }
+      const [updated] = await db
+        .update(walletBalances)
+        .set(updates)
+        .where(eq(walletBalances.id, id))
+        .returning();
+      res.json(updated);
+    } catch (error) {
+      console.error("Edit wallet balance cost error:", error);
+      res.status(500).json({ message: "Failed to update cost data" });
+    }
+  });
+
   app.post("/api/positions/merge", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -841,20 +880,25 @@ export async function registerRoutes(
         const usdVal = parseFloat(wb.usdValue || "0");
         const bal = parseFloat(wb.balance);
         const price = bal > 0 ? usdVal / bal : 0;
+        const avgCost = parseFloat(wb.averageCost || "0");
+        const costBasis = parseFloat(wb.totalCostBasis || "0");
+        const gainLoss = costBasis > 0 ? usdVal - costBasis : 0;
+        const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
         totalValue += usdVal;
+        if (costBasis > 0) totalCostBasis += costBasis;
         return {
           id: wb.id,
           userId: wb.userId,
           accountId: wb.walletId,
           assetSymbol: wb.assetSymbol,
           quantity: wb.balance,
-          averageCost: "0",
-          totalCostBasis: "0",
+          averageCost: avgCost.toString(),
+          totalCostBasis: costBasis.toFixed(2),
           updatedAt: wb.updatedAt,
           currentPrice: price,
           currentValue: usdVal,
-          gainLoss: 0,
-          gainLossPercent: 0,
+          gainLoss,
+          gainLossPercent,
           source: wallet?.label || wallet?.chain || "Wallet",
           isImport: false,
           isAddressed: false,
@@ -2037,7 +2081,14 @@ export async function registerRoutes(
         console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError})`);
         await storage.updateWalletSyncTime(wallet.id);
       } else {
-        await storage.deleteWalletBalances(wallet.id);
+        const existingBalances = await storage.getWalletBalances(wallet.id);
+        const activeSymbols = new Set(balances.map(b => b.symbol));
+
+        for (const existing of existingBalances) {
+          if (!activeSymbols.has(existing.assetSymbol)) {
+            await db.delete(walletBalances).where(eq(walletBalances.id, existing.id));
+          }
+        }
 
         for (const bal of balances) {
           await storage.upsertWalletBalance({
