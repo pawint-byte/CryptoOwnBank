@@ -244,55 +244,136 @@ function extractTableRows(text: string, institution: string | null): DetectedPro
   return products;
 }
 
+function extractIRAPlanTable(text: string, institution: string | null): DetectedProduct[] {
+  const products: DetectedProduct[] = [];
+
+  const planSections = text.split(/SUMMARY\s+FOR\s+/i);
+  if (planSections.length <= 1) return [];
+
+  for (let s = 1; s < planSections.length; s++) {
+    const section = planSections[s];
+    const headerLine = section.split("\n")[0].trim();
+
+    const isTraditional = /traditional\s*ira/i.test(headerLine);
+    const isRoth = /roth/i.test(headerLine);
+    const isStatement = /statement/i.test(headerLine);
+    if (isStatement) continue;
+    if (!isTraditional && !isRoth) continue;
+
+    const planLabel = isRoth ? "Roth IRA" : "Traditional IRA";
+    const lines = section.split("\n");
+
+    const hasAccountNumber = /ACCOUNT\s*NUMBER/i.test(section);
+    const hasCurrentBalance = /CURRENT\s*BALANCE/i.test(section) || /BALANCE/i.test(section);
+    if (!hasAccountNumber && !hasCurrentBalance) continue;
+
+    const totalLine = /^\s*total\b/i;
+    const simpleAcctRow = /(\d{10,})\s+(?:(\d{2}\/\d{2}\/\d{2,4})|N\/A)\s+(\d*\.?\d+)\s+.*?([\d,]+\.\d{2})\s*$/;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || totalLine.test(trimmed)) continue;
+
+      const m = trimmed.match(simpleAcctRow);
+      if (!m) continue;
+
+      const acctNum = m[1];
+      const maturityDate: string | null = m[2] || null;
+      const divRate = parseFloat(m[3]);
+      const balance = parseFloat(m[4].replace(/,/g, ""));
+
+      if (balance < 0 || balance >= 10_000_000) continue;
+
+      const acctSuffix = acctNum.slice(-4);
+      const hasMat = maturityDate && maturityDate !== "N/A";
+      const rawDesc = hasMat
+        ? `${planLabel} Cert ****${acctSuffix} mat ${maturityDate}`
+        : `${planLabel} Shares ****${acctSuffix}`;
+
+      products.push({
+        productType: "cd",
+        institutionName: institution,
+        balance,
+        interestRate: divRate,
+        apy: divRate,
+        maturityDate: hasMat ? maturityDate : null,
+        term: null,
+        isLocked: true,
+        rawDescription: rawDesc,
+        confidence: 0.95,
+      });
+    }
+  }
+
+  return products;
+}
+
 function extractSummaryLines(text: string, institution: string | null): DetectedProduct[] {
   const products: DetectedProduct[] = [];
   const lines = text.split("\n");
 
   const categoryMap: Array<{ pattern: RegExp; type: DetectedProduct["productType"]; isLocked: boolean }> = [
-    { pattern: /^\s*checking\b/i, type: "checking", isLocked: false },
-    { pattern: /^\s*savings?\b/i, type: "savings", isLocked: false },
-    { pattern: /^\s*money\s*market\b/i, type: "money_market", isLocked: false },
-    { pattern: /^\s*(?:certificate|CD)\b/i, type: "cd", isLocked: true },
-    { pattern: /^\s*(?:IRA|individual\s*retirement|traditional\s*IRA|roth\s*IRA)\b/i, type: "cd", isLocked: true },
-    { pattern: /^\s*(?:investment|brokerage)\b/i, type: "brokerage", isLocked: false },
+    { pattern: /^\s*(?:total\s*balance[:\s]*)?checking\b/i, type: "checking", isLocked: false },
+    { pattern: /^\s*(?:total\s*balance[:\s]*)?savings?\b/i, type: "savings", isLocked: false },
+    { pattern: /^\s*(?:total\s*balance[:\s]*)?money\s*market\b/i, type: "money_market", isLocked: false },
+    { pattern: /^\s*(?:total\s*balance[:\s]*)?(?:certificate|CD|share\s*certificate)\b/i, type: "cd", isLocked: true },
+    { pattern: /^\s*(?:total\s*balance[:\s]*)?(?:IRA|individual\s*retirement|traditional\s*IRA|roth\s*IRA|retirement\s*account)\b/i, type: "cd", isLocked: true },
+    { pattern: /^\s*(?:total\s*balance[:\s]*)?(?:investment|brokerage)\b/i, type: "brokerage", isLocked: false },
   ];
 
-  const balanceOnLine = /\$\s?([\d,]+(?:\.\d{2})?)/;
+  const balanceOnLine = /\$?\s?([\d,]+\.\d{2})/;
+  const zeroBalancePattern = /\.00\s*$/;
   const seenTypes = new Set<string>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
+    if (/^\s*total\s*statement\s*balance/i.test(line)) continue;
 
     for (const cat of categoryMap) {
       if (!cat.pattern.test(line)) continue;
 
-      const textWithoutBalance = line.replace(balanceOnLine, "").trim();
-      const isSummaryLine = textWithoutBalance.length < 40 && !/\d{4}|account\s*#|acct|maturity|owner/i.test(textWithoutBalance);
+      const textWithoutBalance = line.replace(balanceOnLine, "").replace(/\$\s?/g, "").trim();
+      const isSummaryLine = textWithoutBalance.length < 50 && !/account\s*#|acct\s*#|maturity|owner/i.test(textWithoutBalance);
       if (!isSummaryLine) continue;
 
-      const key = cat.type + (cat.pattern.source.includes("IRA") ? "-ira" : "");
+      const key = cat.type + (cat.pattern.source.includes("IRA") || cat.pattern.source.includes("retirement") ? "-ira" : "");
       if (seenTypes.has(key)) continue;
 
       let balance: number | null = null;
-      const match = line.match(balanceOnLine);
-      if (match) {
-        balance = parseFloat(match[1].replace(/,/g, ""));
-      }
-      if (!balance && i + 1 < lines.length) {
-        const nextLine = lines[i + 1].trim();
-        if (nextLine.length < 30) {
-          const nextMatch = nextLine.match(balanceOnLine);
-          if (nextMatch) {
-            balance = parseFloat(nextMatch[1].replace(/,/g, ""));
+      let isZero = false;
+
+      if (zeroBalancePattern.test(line)) {
+        const zeroMatch = line.match(/([\d,]*\.00)\s*$/);
+        if (zeroMatch) {
+          const val = parseFloat(zeroMatch[1].replace(/,/g, ""));
+          if (val === 0) {
+            isZero = true;
+            balance = 0;
           }
         }
       }
 
-      if (balance && balance > 0 && balance < 10_000_000) {
+      if (!isZero) {
+        const match = line.match(balanceOnLine);
+        if (match) {
+          balance = parseFloat(match[1].replace(/,/g, ""));
+        }
+        if (balance === null && i + 1 < lines.length) {
+          const nextLine = lines[i + 1].trim();
+          if (nextLine.length < 30) {
+            const nextMatch = nextLine.match(balanceOnLine);
+            if (nextMatch) {
+              balance = parseFloat(nextMatch[1].replace(/,/g, ""));
+            }
+          }
+        }
+      }
+
+      if (balance !== null && balance >= 0 && balance < 10_000_000) {
         seenTypes.add(key);
 
-        const label = cat.pattern.source.includes("IRA") ? "IRA / Retirement" : undefined;
+        const label = (cat.pattern.source.includes("IRA") || cat.pattern.source.includes("retirement")) ? "IRA / Retirement" : undefined;
 
         products.push({
           productType: cat.type,
@@ -416,6 +497,11 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
     return tableProducts;
   }
 
+  const iraProducts = extractIRAPlanTable(text, institution);
+  if (iraProducts.length > 0) {
+    return iraProducts;
+  }
+
   const summaryProducts = extractSummaryLines(text, institution);
   if (summaryProducts.length > 0) {
     return summaryProducts;
@@ -460,7 +546,14 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
 
       let mainBalance: number | null = null;
 
-      if (sectionBalances.length > 0) {
+      const hasExplicitZero = /(?:ending|closing|current|available|total\s+account|beginning|opening)\s*(?:balance|value|worth)[\s:]*\$?\s*(?:0\.00|\.00)\b/i.test(combinedText)
+        || /(?:balance|value|worth)\s*(?:as of|on|ending|:)[^$\n]*\$?\s*(?:0\.00|\.00)\b/i.test(combinedText)
+        || /\$\s*0\.00\s*$/m.test(combinedText)
+        || /(?:total|net)\s*(?:balance|value)[\s:]*\.00\s*$/im.test(combinedText);
+
+      if (hasExplicitZero && sectionBalances.length === 0) {
+        mainBalance = 0;
+      } else if (sectionBalances.length > 0) {
         const available = sectionBalances.filter(b => !usedBalances.has(b));
         const candidates = available.length > 0 ? available : sectionBalances;
         const sorted = [...candidates].sort((a, b) => b - a);
