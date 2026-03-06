@@ -11,6 +11,8 @@ import {
   priceAlerts,
   wallets,
   walletBalances,
+  statementUploads,
+  statementProducts,
   type ApiCredential,
   type InsertApiCredential,
   type Account,
@@ -33,6 +35,10 @@ import {
   type InsertWallet,
   type WalletBalance,
   type InsertWalletBalance,
+  type StatementUpload,
+  type InsertStatementUpload,
+  type StatementProduct,
+  type InsertStatementProduct,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -120,6 +126,17 @@ export interface IStorage {
   getWalletBalances(walletId: string): Promise<WalletBalance[]>;
   getWalletBalancesByUser(userId: string): Promise<WalletBalance[]>;
   deleteWalletBalances(walletId: string): Promise<void>;
+
+  createStatementUpload(upload: InsertStatementUpload): Promise<StatementUpload>;
+  updateStatementUpload(id: string, data: Partial<StatementUpload>): Promise<StatementUpload | undefined>;
+  getStatementUploadsByUser(userId: string): Promise<StatementUpload[]>;
+  getStatementUpload(id: string): Promise<StatementUpload | undefined>;
+  deleteStatementUpload(id: string): Promise<void>;
+  countStatementUploadsByUser(userId: string): Promise<number>;
+
+  createStatementProduct(product: InsertStatementProduct): Promise<StatementProduct>;
+  getProductsByUpload(uploadId: string): Promise<StatementProduct[]>;
+  getProductsByUser(userId: string): Promise<StatementProduct[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -477,6 +494,59 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWalletBalances(walletId: string): Promise<void> {
     await db.delete(walletBalances).where(eq(walletBalances.walletId, walletId));
+  }
+
+  async createStatementUpload(upload: InsertStatementUpload): Promise<StatementUpload> {
+    const [result] = await db.insert(statementUploads).values(upload).returning();
+    return result;
+  }
+
+  async updateStatementUpload(id: string, data: Partial<StatementUpload>): Promise<StatementUpload | undefined> {
+    const [result] = await db
+      .update(statementUploads)
+      .set(data)
+      .where(eq(statementUploads.id, id))
+      .returning();
+    return result;
+  }
+
+  async getStatementUploadsByUser(userId: string): Promise<StatementUpload[]> {
+    return db
+      .select()
+      .from(statementUploads)
+      .where(eq(statementUploads.userId, userId))
+      .orderBy(desc(statementUploads.uploadedAt));
+  }
+
+  async getStatementUpload(id: string): Promise<StatementUpload | undefined> {
+    const [result] = await db.select().from(statementUploads).where(eq(statementUploads.id, id));
+    return result;
+  }
+
+  async deleteStatementUpload(id: string): Promise<void> {
+    await db.delete(statementProducts).where(eq(statementProducts.uploadId, id));
+    await db.delete(statementUploads).where(eq(statementUploads.id, id));
+  }
+
+  async countStatementUploadsByUser(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(statementUploads)
+      .where(eq(statementUploads.userId, userId));
+    return result[0]?.count || 0;
+  }
+
+  async createStatementProduct(product: InsertStatementProduct): Promise<StatementProduct> {
+    const [result] = await db.insert(statementProducts).values(product).returning();
+    return result;
+  }
+
+  async getProductsByUpload(uploadId: string): Promise<StatementProduct[]> {
+    return db.select().from(statementProducts).where(eq(statementProducts.uploadId, uploadId));
+  }
+
+  async getProductsByUser(userId: string): Promise<StatementProduct[]> {
+    return db.select().from(statementProducts).where(eq(statementProducts.userId, userId));
   }
 }
 

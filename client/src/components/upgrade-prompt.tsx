@@ -17,6 +17,7 @@ const PREMIUM_BENEFITS = [
   "Unlimited price alerts",
   "Auto-withdrawal from Soil vaults",
   "Portfolio analytics across all sources",
+  "Statement Insights with rate comparisons",
 ];
 
 const ANNUAL_BENEFITS = [

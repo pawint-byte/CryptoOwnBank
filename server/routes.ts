@@ -1548,6 +1548,8 @@ export async function registerRoutes(
     csvImport: boolean;
     autoWithdraw: boolean;
     xls66Lending: boolean;
+    statementUploads: number | null;
+    statementComparisons: boolean;
   }> = {
     free: {
       exchanges: 1,
@@ -1557,6 +1559,8 @@ export async function registerRoutes(
       csvImport: false,
       autoWithdraw: false,
       xls66Lending: false,
+      statementUploads: 1,
+      statementComparisons: false,
     },
     premium: {
       exchanges: null,
@@ -1566,6 +1570,8 @@ export async function registerRoutes(
       csvImport: true,
       autoWithdraw: true,
       xls66Lending: false,
+      statementUploads: null,
+      statementComparisons: true,
     },
     pro: {
       exchanges: null,
@@ -1575,6 +1581,8 @@ export async function registerRoutes(
       csvImport: true,
       autoWithdraw: true,
       xls66Lending: true,
+      statementUploads: null,
+      statementComparisons: true,
     },
   };
 
@@ -1602,6 +1610,8 @@ export async function registerRoutes(
         taxReports: taxReportsUnlocked,
         autoWithdraw: limits.autoWithdraw,
         xls66Lending: limits.xls66Lending,
+        statementUploads: limits.statementUploads,
+        statementComparisons: limits.statementComparisons,
       });
     } catch (error) {
       console.error("Subscription limits error:", error);
@@ -2551,6 +2561,172 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Yahoo import error:", error);
       res.status(500).json({ message: "Failed to import CSV: " + (error.message || "Unknown error") });
+    }
+  });
+
+  const statementPdfUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      cb(null, file.mimetype === "application/pdf" || file.originalname.endsWith(".pdf"));
+    },
+  });
+
+  app.post("/api/statements/upload", statementPdfUpload.single("file"), isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+      if (limits.statementUploads !== null) {
+        const currentCount = await storage.countStatementUploadsByUser(userId);
+        if (currentCount >= limits.statementUploads) {
+          return res.status(403).json({
+            message: `Free plan allows ${limits.statementUploads} statement upload. Upgrade to Premium for unlimited uploads and comparison insights.`,
+          });
+        }
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "Please upload a PDF file" });
+      }
+
+      const { parseStatement } = await import("./services/statement-parser");
+      const { generateComparisons } = await import("./services/comparison-engine");
+
+      const upload = await storage.createStatementUpload({
+        userId,
+        filename: req.file.originalname,
+        status: "processing",
+        tier,
+      });
+
+      try {
+        const products = await parseStatement(req.file.buffer);
+
+        for (const product of products) {
+          await storage.createStatementProduct({
+            uploadId: upload.id,
+            userId,
+            productType: product.productType,
+            institutionName: product.institutionName,
+            balance: product.balance?.toString() ?? null,
+            interestRate: product.interestRate?.toString() ?? null,
+            apy: product.apy?.toString() ?? null,
+            maturityDate: product.maturityDate ? new Date(product.maturityDate) : null,
+            term: product.term,
+            isLocked: product.isLocked,
+            rawDescription: product.rawDescription,
+          });
+        }
+
+        await storage.updateStatementUpload(upload.id, {
+          status: "complete",
+          productCount: products.length,
+        });
+
+        const savedProducts = await storage.getProductsByUpload(upload.id);
+
+        let comparisons: any[] = [];
+        if (limits.statementComparisons) {
+          comparisons = savedProducts.map((p) =>
+            generateComparisons({
+              productType: p.productType,
+              institutionName: p.institutionName,
+              balance: p.balance ? parseFloat(p.balance) : null,
+              interestRate: p.interestRate ? parseFloat(p.interestRate) : null,
+              apy: p.apy ? parseFloat(p.apy) : null,
+              maturityDate: p.maturityDate?.toISOString() ?? null,
+              term: p.term,
+              isLocked: p.isLocked ?? false,
+            })
+          );
+        }
+
+        res.json({
+          upload: { ...upload, status: "complete", productCount: products.length },
+          products: savedProducts,
+          comparisons: limits.statementComparisons ? comparisons : null,
+          comparisonsLocked: !limits.statementComparisons,
+        });
+      } catch (parseError) {
+        await storage.updateStatementUpload(upload.id, { status: "failed" });
+        console.error("Statement parse error:", parseError);
+        res.status(422).json({ message: "Could not parse the PDF. Please ensure it is a readable bank or brokerage statement." });
+      }
+    } catch (error) {
+      console.error("Statement upload error:", error);
+      res.status(500).json({ message: "Failed to process statement" });
+    }
+  });
+
+  app.get("/api/statements", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const uploads = await storage.getStatementUploadsByUser(userId);
+      res.json(uploads);
+    } catch (error) {
+      console.error("Get statements error:", error);
+      res.status(500).json({ message: "Failed to load statements" });
+    }
+  });
+
+  app.get("/api/statements/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const upload = await storage.getStatementUpload(req.params.id);
+
+      if (!upload || upload.userId !== userId) {
+        return res.status(404).json({ message: "Statement not found" });
+      }
+
+      const products = await storage.getProductsByUpload(upload.id);
+      const { tier } = await getEffectiveTier(userId);
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+      let comparisons: any[] = [];
+      if (limits.statementComparisons) {
+        const { generateComparisons } = await import("./services/comparison-engine");
+        comparisons = products.map((p) =>
+          generateComparisons({
+            productType: p.productType,
+            institutionName: p.institutionName,
+            balance: p.balance ? parseFloat(p.balance) : null,
+            interestRate: p.interestRate ? parseFloat(p.interestRate) : null,
+            apy: p.apy ? parseFloat(p.apy) : null,
+            maturityDate: p.maturityDate?.toISOString() ?? null,
+            term: p.term,
+            isLocked: p.isLocked ?? false,
+          })
+        );
+      }
+
+      res.json({
+        upload,
+        products,
+        comparisons: limits.statementComparisons ? comparisons : null,
+        comparisonsLocked: !limits.statementComparisons,
+      });
+    } catch (error) {
+      console.error("Get statement detail error:", error);
+      res.status(500).json({ message: "Failed to load statement details" });
+    }
+  });
+
+  app.delete("/api/statements/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const upload = await storage.getStatementUpload(req.params.id);
+
+      if (!upload || upload.userId !== userId) {
+        return res.status(404).json({ message: "Statement not found" });
+      }
+
+      await storage.deleteStatementUpload(upload.id);
+      res.json({ message: "Statement deleted" });
+    } catch (error) {
+      console.error("Delete statement error:", error);
+      res.status(500).json({ message: "Failed to delete statement" });
     }
   });
 

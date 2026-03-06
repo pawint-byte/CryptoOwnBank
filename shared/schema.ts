@@ -267,3 +267,48 @@ export const priceCache = pgTable("price_cache", {
   priceUsd: decimal("price_usd", { precision: 24, scale: 12 }).notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const statementUploads = pgTable("statement_uploads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("processing"),
+  productCount: integer("product_count").default(0),
+  tier: varchar("tier", { length: 20 }).notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+}, (table) => [
+  index("idx_statement_uploads_user").on(table.userId),
+]);
+
+export const statementProducts = pgTable("statement_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  uploadId: varchar("upload_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  productType: varchar("product_type", { length: 30 }).notNull(),
+  institutionName: varchar("institution_name", { length: 100 }),
+  balance: decimal("balance", { precision: 18, scale: 2 }),
+  interestRate: decimal("interest_rate", { precision: 6, scale: 3 }),
+  apy: decimal("apy", { precision: 6, scale: 3 }),
+  maturityDate: timestamp("maturity_date"),
+  term: varchar("term", { length: 50 }),
+  isLocked: boolean("is_locked").default(false),
+  rawDescription: text("raw_description"),
+}, (table) => [
+  index("idx_statement_products_upload").on(table.uploadId),
+  index("idx_statement_products_user").on(table.userId),
+]);
+
+export const insertStatementUploadSchema = createInsertSchema(statementUploads).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export const insertStatementProductSchema = createInsertSchema(statementProducts).omit({
+  id: true,
+});
+
+export type StatementUpload = typeof statementUploads.$inferSelect;
+export type InsertStatementUpload = z.infer<typeof insertStatementUploadSchema>;
+
+export type StatementProduct = typeof statementProducts.$inferSelect;
+export type InsertStatementProduct = z.infer<typeof insertStatementProductSchema>;
