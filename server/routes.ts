@@ -2439,6 +2439,21 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   CKB: "nervos-network",
   ZIL: "zilliqa",
   VTHO: "vethor-token",
+  DNT: "district0x",
+  EPX: "ellipsis-x",
+  LSS: "lossless",
+  PRQ: "parsiq",
+  REEF: "reef",
+  VRA: "verasity",
+  XCN: "onyxcoin",
+  ALI: "artificial-liquid-intelligence",
+  ELON: "dogelon-mars",
+  IQ: "everipedia",
+  KRL: "kryll",
+  MXC: "mxc",
+  OOKI: "ooki",
+  QSP: "quantstamp",
+  RADAR: "dappradar",
 };
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
