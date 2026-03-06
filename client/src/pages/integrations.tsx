@@ -34,7 +34,7 @@ import { IntegrationCard } from "@/components/integration-card";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
+import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Trash2, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SiBinance, SiCoinbase } from "react-icons/si";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -185,6 +185,30 @@ export default function Integrations() {
   const { data: limits } = useQuery<SubscriptionLimits>({
     queryKey: ["/api/subscription/limits"],
   });
+
+  const { data: accountsList = [] } = useQuery<any[]>({
+    queryKey: ["/api/accounts"],
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      const res = await apiRequest("DELETE", `/api/accounts/${accountId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      toast({ title: "Data source removed successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to remove data source", variant: "destructive" });
+    },
+  });
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const exchangeAtLimit = limits?.exchanges.limit !== null && limits?.exchanges.used !== undefined && limits.exchanges.used >= (limits.exchanges.limit ?? Infinity);
   const csvImportLocked = limits?.csvImport === false;
@@ -713,6 +737,81 @@ export default function Integrations() {
           )}
         </CardContent>
       </Card>
+
+      {accountsList.length > 0 && (
+        <Card data-testid="card-data-sources">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Imported Data Sources
+            </CardTitle>
+            <CardDescription>
+              Manage your imported accounts. Remove a source to delete all its positions and transactions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {accountsList.map((account: any) => (
+              <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg" data-testid={`row-account-${account.id}`}>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm" data-testid={`text-account-name-${account.id}`}>
+                      {account.accountName || account.provider}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {account.provider === "yahoo_import" ? "Yahoo Finance CSV" :
+                       account.provider === "ledger_live_import" ? "Ledger Live CSV" :
+                       account.provider === "crypto_com" ? "Crypto.com" :
+                       account.provider === "binance" ? "Binance" :
+                       account.provider === "coinbase" ? "Coinbase" :
+                       account.provider}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {deleteConfirmId === account.id ? (
+                    <>
+                      <span className="text-xs text-destructive font-medium mr-2">Delete all data?</span>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          deleteAccountMutation.mutate(account.id);
+                          setDeleteConfirmId(null);
+                        }}
+                        disabled={deleteAccountMutation.isPending}
+                        data-testid={`button-confirm-delete-${account.id}`}
+                      >
+                        Yes, Delete
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDeleteConfirmId(null)}
+                        data-testid={`button-cancel-delete-${account.id}`}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteConfirmId(account.id)}
+                      data-testid={`button-delete-account-${account.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

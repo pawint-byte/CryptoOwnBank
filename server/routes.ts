@@ -568,6 +568,22 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/accounts/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const account = await storage.getAccount(id);
+      if (!account || account.userId !== userId) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+      await storage.deleteAccountWithData(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete account error:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
   app.get("/api/portfolio", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

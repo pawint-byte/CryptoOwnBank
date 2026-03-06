@@ -70,6 +70,7 @@ export interface IStorage {
   createAccount(account: InsertAccount): Promise<Account>;
   getAccountsByUser(userId: string): Promise<Account[]>;
   getAccount(id: string): Promise<Account | undefined>;
+  deleteAccountWithData(accountId: string): Promise<void>;
 
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
@@ -167,6 +168,12 @@ export class DatabaseStorage implements IStorage {
 
   async deleteApiCredential(id: string): Promise<void> {
     await db.delete(apiCredentials).where(eq(apiCredentials.id, id));
+  }
+
+  async deleteAccountWithData(accountId: string): Promise<void> {
+    await db.delete(positions).where(eq(positions.accountId, accountId));
+    await db.delete(transactions).where(eq(transactions.accountId, accountId));
+    await db.delete(accounts).where(eq(accounts.id, accountId));
   }
 
   async createAccount(account: InsertAccount): Promise<Account> {
