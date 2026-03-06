@@ -175,6 +175,69 @@ function extractTerm(text: string): string | null {
   return null;
 }
 
+function extractSummaryLines(text: string, institution: string | null): DetectedProduct[] {
+  const products: DetectedProduct[] = [];
+  const lines = text.split("\n");
+
+  const categoryMap: Array<{ pattern: RegExp; type: DetectedProduct["productType"]; isLocked: boolean }> = [
+    { pattern: /^\s*checking\b/i, type: "checking", isLocked: false },
+    { pattern: /^\s*savings?\b/i, type: "savings", isLocked: false },
+    { pattern: /^\s*money\s*market\b/i, type: "money_market", isLocked: false },
+    { pattern: /^\s*(?:certificate|CD)\b/i, type: "cd", isLocked: true },
+    { pattern: /^\s*(?:IRA|individual\s*retirement|traditional\s*IRA|roth\s*IRA)\b/i, type: "cd", isLocked: true },
+    { pattern: /^\s*(?:investment|brokerage)\b/i, type: "brokerage", isLocked: false },
+  ];
+
+  const balanceOnLine = /\$\s?([\d,]+(?:\.\d{2})?)/;
+  const seenTypes = new Set<string>();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    for (const cat of categoryMap) {
+      if (!cat.pattern.test(line)) continue;
+
+      const key = cat.type + (cat.pattern.source.includes("IRA") ? "-ira" : "");
+      if (seenTypes.has(key)) continue;
+
+      let balance: number | null = null;
+      const match = line.match(balanceOnLine);
+      if (match) {
+        balance = parseFloat(match[1].replace(/,/g, ""));
+      }
+      if (!balance && i + 1 < lines.length) {
+        const nextMatch = lines[i + 1].match(balanceOnLine);
+        if (nextMatch) {
+          balance = parseFloat(nextMatch[1].replace(/,/g, ""));
+        }
+      }
+
+      if (balance && balance > 0 && balance < 10_000_000) {
+        seenTypes.add(key);
+
+        const label = cat.pattern.source.includes("IRA") ? "IRA / Retirement" : undefined;
+
+        products.push({
+          productType: cat.type,
+          institutionName: institution,
+          balance,
+          interestRate: null,
+          apy: null,
+          maturityDate: null,
+          term: null,
+          isLocked: cat.isLocked,
+          rawDescription: label || line.substring(0, 200),
+          confidence: 0.9,
+        });
+      }
+      break;
+    }
+  }
+
+  return products;
+}
+
 interface SectionResult {
   text: string;
   productType: DetectedProduct["productType"];
@@ -271,6 +334,12 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
   }
 
   const institution = detectInstitution(text);
+
+  const summaryProducts = extractSummaryLines(text, institution);
+  if (summaryProducts.length > 0) {
+    return summaryProducts;
+  }
+
   const sections = classifySections(text);
   const products: DetectedProduct[] = [];
 
