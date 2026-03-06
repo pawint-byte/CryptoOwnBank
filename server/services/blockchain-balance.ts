@@ -72,6 +72,8 @@ const COINGECKO_IDS: Record<string, string> = {
   DGB: "digibyte",
   CSPR: "casper-network",
   TRX: "tron",
+  CKB: "nervos-network",
+  ZIL: "zilliqa",
   SPELL: "spell-token",
   ONDO: "ondo-finance",
   BTT: "bittorrent",
@@ -977,7 +979,101 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos";
+export async function getNervosBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  try {
+    const data = await fetchJson(
+      `https://mainnet-api.explorer.nervos.org/api/v1/addresses/${address}`,
+      { headers: { Accept: "application/vnd.api+json", "Content-Type": "application/vnd.api+json" } }
+    );
+    const attrs = Array.isArray(data.data) ? data.data[0]?.attributes : data.data?.attributes;
+    if (attrs) {
+      const shannonBalance = BigInt(attrs.balance || "0");
+      const ckb = Number(shannonBalance / 10n ** 2n) / 1e6;
+      if (ckb > 0) {
+        const prices = await getPrices(["CKB"]);
+        balances.push({ symbol: "CKB", balance: ckb, usdValue: ckb * (prices.CKB || 0) });
+      }
+      if (Array.isArray(attrs.udt_accounts)) {
+        for (const udt of attrs.udt_accounts) {
+          const symbol = (udt.symbol || "").toUpperCase();
+          const amount = parseFloat(udt.amount || "0");
+          const decimals = parseInt(udt.decimal || "0");
+          if (!symbol || amount === 0) continue;
+          const bal = amount / Math.pow(10, decimals);
+          if (bal > 0.000001) {
+            balances.push({ symbol, balance: bal, usdValue: 0 });
+          }
+        }
+      }
+    }
+    console.log(`CKB scan: found ${balances.length} assets for ${address}`);
+  } catch (err) {
+    console.error("Nervos CKB balance fetch error:", err);
+  }
+  return balances;
+}
+
+function bech32ToHex(bech32Addr: string): string | null {
+  try {
+    const CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+    const sepIdx = bech32Addr.lastIndexOf("1");
+    if (sepIdx < 1) return null;
+    const dataStr = bech32Addr.slice(sepIdx + 1, -6);
+    const data5bit: number[] = [];
+    for (const c of dataStr) {
+      const v = CHARSET.indexOf(c);
+      if (v === -1) return null;
+      data5bit.push(v);
+    }
+    const data8bit: number[] = [];
+    let acc = 0, bits = 0;
+    for (const v of data5bit) {
+      acc = (acc << 5) | v;
+      bits += 5;
+      while (bits >= 8) {
+        bits -= 8;
+        data8bit.push((acc >> bits) & 0xff);
+      }
+    }
+    return data8bit.map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return null;
+  }
+}
+
+export async function getZilliqaBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  try {
+    let hexAddr = address;
+    if (address.startsWith("zil1")) {
+      const converted = bech32ToHex(address);
+      if (converted) hexAddr = converted;
+    }
+    if (hexAddr.startsWith("0x")) hexAddr = hexAddr.slice(2);
+
+    const resp = await fetch("https://api.zilliqa.com/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "1", jsonrpc: "2.0", method: "GetBalance", params: [hexAddr] }),
+    });
+    const data = await resp.json();
+    if (data.result && data.result.balance) {
+      const qaBalance = BigInt(data.result.balance);
+      const zil = Number(qaBalance / 10n ** 6n) / 1e6;
+      if (zil > 0) {
+        const prices = await getPrices(["ZIL"]);
+        balances.push({ symbol: "ZIL", balance: zil, usdValue: zil * (prices.ZIL || 0) });
+      }
+    }
+    console.log(`ZIL scan: found ${balances.length} assets for ${address}`);
+  } catch (err) {
+    console.error("Zilliqa balance fetch error:", err);
+  }
+  return balances;
+}
+
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -997,6 +1093,8 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   digibyte: { name: "DigiByte", symbol: "DGB", addressPattern: "^(D|dgb1)", example: "D..." },
   casper: { name: "Casper", symbol: "CSPR", addressPattern: "^0[12]", example: "01..." },
   cronos: { name: "Cronos", symbol: "CRO", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  nervos: { name: "Nervos CKB", symbol: "CKB", addressPattern: "^ckb1", example: "ckb1q..." },
+  zilliqa: { name: "Zilliqa", symbol: "ZIL", addressPattern: "^(zil1|0x)", example: "zil1..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -1035,6 +1133,10 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getCasperBalance(address);
     case "cronos":
       return getCronosBalance(address);
+    case "nervos":
+      return getNervosBalance(address);
+    case "zilliqa":
+      return getZilliqaBalance(address);
     default:
       return [];
   }

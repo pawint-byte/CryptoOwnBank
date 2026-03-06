@@ -111,6 +111,8 @@ const CHAIN_LABELS: Record<string, string> = {
   digibyte: "DGB",
   casper: "CSPR",
   cronos: "CRO",
+  nervos: "CKB",
+  zilliqa: "ZIL",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -131,6 +133,8 @@ const CHAIN_COLORS: Record<string, string> = {
   digibyte: "#006AD2",
   casper: "#FF473E",
   cronos: "#002D74",
+  nervos: "#3CC68A",
+  zilliqa: "#49C1BF",
 };
 
 const CHART_COLORS = [
@@ -342,6 +346,8 @@ function getExplorerUrl(chain: string, address: string): string {
     digibyte: `https://digiexplorer.info/address/${address}`,
     casper: `https://cspr.live/account/${address}`,
     cronos: `https://cronos.org/explorer/address/${address}`,
+    nervos: `https://explorer.nervos.org/address/${address}`,
+    zilliqa: `https://viewblock.io/zilliqa/address/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -517,6 +523,8 @@ export default function Wallets() {
     { value: "digibyte", label: "DigiByte (DGB)" },
     { value: "casper", label: "Casper (CSPR)" },
     { value: "cronos", label: "Cronos (CRO)" },
+    { value: "nervos", label: "Nervos (CKB)" },
+    { value: "zilliqa", label: "Zilliqa (ZIL)" },
   ];
 
   const selectedChain = form.watch("chain");
