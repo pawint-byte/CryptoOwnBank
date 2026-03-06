@@ -22,6 +22,7 @@ import {
   Bell,
   Wallet,
   FileSearch,
+  ArrowRightLeft as ReconcileIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -46,6 +47,7 @@ const trackerItems = [
   { title: "Blockchain Addresses", url: "/wallets", icon: Wallet },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText },
   { title: "Statement Insights", url: "/statement-insights", icon: FileSearch },
+  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon },
   { title: "Integrations", url: "/integrations", icon: Link2 },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },

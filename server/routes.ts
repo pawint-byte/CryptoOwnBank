@@ -426,6 +426,90 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/positions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const positionsData = await storage.getPositionsByUser(userId);
+      const position = positionsData.find(p => p.id === id);
+      if (!position) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      if (position.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const { quantity, averageCost, totalCostBasis, assetSymbol } = req.body;
+      const updates: any = {};
+      if (quantity !== undefined) {
+        const qty = parseFloat(quantity);
+        if (isNaN(qty) || qty < 0) return res.status(400).json({ message: "Invalid quantity" });
+        updates.quantity = qty.toString();
+      }
+      if (averageCost !== undefined) {
+        const ac = parseFloat(averageCost);
+        if (isNaN(ac) || ac < 0) return res.status(400).json({ message: "Invalid average cost" });
+        updates.averageCost = ac.toString();
+      }
+      if (totalCostBasis !== undefined) {
+        const tcb = parseFloat(totalCostBasis);
+        if (isNaN(tcb) || tcb < 0) return res.status(400).json({ message: "Invalid cost basis" });
+        updates.totalCostBasis = tcb.toFixed(2);
+      }
+      if (assetSymbol !== undefined) {
+        const sym = String(assetSymbol).toUpperCase().trim();
+        if (!sym || sym.length > 20) return res.status(400).json({ message: "Invalid symbol" });
+        updates.assetSymbol = sym;
+      }
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+      const updated = await storage.updatePosition(id, updates);
+      res.json(updated);
+    } catch (error) {
+      console.error("Edit position error:", error);
+      res.status(500).json({ message: "Failed to update position" });
+    }
+  });
+
+  app.post("/api/positions/merge", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { keepId, removeId } = req.body;
+      if (!keepId || !removeId || keepId === removeId) {
+        return res.status(400).json({ message: "Provide two different position IDs" });
+      }
+      const positionsData = await storage.getPositionsByUser(userId);
+      const keep = positionsData.find(p => p.id === keepId);
+      const remove = positionsData.find(p => p.id === removeId);
+      if (!keep || !remove) {
+        return res.status(404).json({ message: "One or both positions not found" });
+      }
+      if (keep.userId !== userId || remove.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      if (keep.assetSymbol.toUpperCase() !== remove.assetSymbol.toUpperCase()) {
+        return res.status(400).json({ message: "Cannot merge positions with different asset symbols" });
+      }
+      const keepQty = parseFloat(keep.quantity);
+      const removeQty = parseFloat(remove.quantity);
+      const keepCost = parseFloat(keep.totalCostBasis);
+      const removeCost = parseFloat(remove.totalCostBasis);
+      const newQty = keepQty + removeQty;
+      const newCostBasis = keepCost + removeCost;
+      const newAvgCost = newQty > 0 ? newCostBasis / newQty : 0;
+      await storage.updatePosition(keepId, {
+        quantity: newQty.toString(),
+        averageCost: newAvgCost.toString(),
+        totalCostBasis: newCostBasis.toFixed(2),
+      });
+      await storage.deletePosition(removeId);
+      res.json({ message: `Merged into ${keep.assetSymbol} — combined ${newQty} units`, positionId: keepId });
+    } catch (error) {
+      console.error("Merge positions error:", error);
+      res.status(500).json({ message: "Failed to merge positions" });
+    }
+  });
+
   app.delete("/api/positions/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
