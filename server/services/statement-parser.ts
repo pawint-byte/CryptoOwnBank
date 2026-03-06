@@ -41,10 +41,36 @@ const INSTITUTION_PATTERNS: Array<{ pattern: RegExp; name: string }> = [
   { pattern: /\bUSAA\b/i, name: "USAA" },
   { pattern: /\bmorgan stanley\b/i, name: "Morgan Stanley" },
   { pattern: /\bmerrill\b/i, name: "Merrill Lynch" },
+  { pattern: /\bstash\b/i, name: "Stash" },
+  { pattern: /\bacorns\b/i, name: "Acorns" },
+  { pattern: /\bgreenlight\b/i, name: "Greenlight" },
+  { pattern: /\bm1\s*finance\b/i, name: "M1 Finance" },
+  { pattern: /\bpublic\.com\b|\bpublic\s+invest/i, name: "Public" },
+  { pattern: /\bwebull\b/i, name: "Webull" },
+  { pattern: /\btastyworks\b|\btastytrade\b/i, name: "Tastytrade" },
+  { pattern: /\binteractive\s*brokers\b|\bIBKR\b/i, name: "Interactive Brokers" },
   { pattern: /\bcredit union\b/i, name: "Credit Union" },
 ];
 
 function detectInstitution(text: string): string | null {
+  const headerText = text.substring(0, Math.min(text.length, 500));
+  for (const { pattern, name } of INSTITUTION_PATTERNS) {
+    if (pattern.test(headerText)) return name;
+  }
+
+  const lines = text.split("\n").slice(0, 30);
+  const topText = lines.join("\n");
+  let earliest: { name: string; index: number } | null = null;
+  for (const { pattern, name } of INSTITUTION_PATTERNS) {
+    const match = topText.match(pattern);
+    if (match && match.index !== undefined) {
+      if (!earliest || match.index < earliest.index) {
+        earliest = { name, index: match.index };
+      }
+    }
+  }
+  if (earliest) return earliest.name;
+
   for (const { pattern, name } of INSTITUTION_PATTERNS) {
     if (pattern.test(text)) return name;
   }
