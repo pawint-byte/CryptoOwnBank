@@ -505,6 +505,10 @@ export default function Wallets() {
     }
   }
 
+  const savedLabels = Array.from(
+    new Set(userWallets.map((w) => w.label).filter((l): l is string => !!l && l.trim().length > 0))
+  ).sort();
+
   const chains = [
     { value: "bitcoin", label: "Bitcoin (BTC)" },
     { value: "ethereum", label: "Ethereum (ETH)" },
@@ -661,6 +665,23 @@ export default function Wallets() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Label (Optional)</FormLabel>
+                        {savedLabels.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pb-1" data-testid="saved-labels">
+                            {savedLabels.map((lbl) => (
+                              <Button
+                                key={lbl}
+                                type="button"
+                                variant={field.value === lbl ? "default" : "outline"}
+                                size="sm"
+                                className="h-7 text-xs px-2.5"
+                                onClick={() => field.onChange(field.value === lbl ? "" : lbl)}
+                                data-testid={`label-quick-pick-${lbl.toLowerCase().replace(/\s+/g, "-")}`}
+                              >
+                                {lbl}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
                         <FormControl>
                           <Input
                             placeholder="e.g. My Ledger, Cold Storage, Trading..."
