@@ -380,12 +380,12 @@ export async function registerRoutes(
         const isImport = account?.accountType === "import";
         enriched.push({
           ...pos,
-          currentPrice: currentPrice.toFixed(2),
-          currentValue: value.toFixed(2),
-          gainLoss: gainLoss.toFixed(2),
-          gainLossPercent: costBasis > 0 ? ((gainLoss / costBasis) * 100).toFixed(2) : "0",
+          currentPrice,
+          currentValue: value,
+          gainLoss,
+          gainLossPercent: costBasis > 0 ? (gainLoss / costBasis) * 100 : 0,
           source: account?.accountName || "",
-          isImport,
+          isImport: isImport || account?.provider === "manual",
           isAddressed: pos.isAddressed || false,
         });
       }
@@ -582,6 +582,81 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Delete account error:", error);
       res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
+  app.post("/api/positions/manual", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetSymbol, quantity, costPerUnit, currentPrice, location } = req.body;
+
+      if (!assetSymbol || !quantity) {
+        return res.status(400).json({ message: "Asset symbol and quantity are required" });
+      }
+
+      const sym = String(assetSymbol).toUpperCase().trim();
+      if (!sym || sym.length > 20) {
+        return res.status(400).json({ message: "Invalid asset symbol" });
+      }
+
+      const qty = parseFloat(quantity);
+      if (isNaN(qty) || qty <= 0) {
+        return res.status(400).json({ message: "Quantity must be a positive number" });
+      }
+
+      const cost = costPerUnit ? parseFloat(costPerUnit) : 0;
+      if (isNaN(cost) || cost < 0) {
+        return res.status(400).json({ message: "Cost per unit must be a valid number" });
+      }
+
+      const price = currentPrice ? parseFloat(currentPrice) : 0;
+      if (isNaN(price) || price < 0) {
+        return res.status(400).json({ message: "Current price must be a valid number" });
+      }
+
+      const accountName = location ? String(location).trim().substring(0, 100) : "Manual Entry";
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let account = existingAccounts.find(a => a.provider === "manual" && a.accountName === accountName);
+      if (!account) {
+        account = await storage.createAccount({
+          userId,
+          credentialId: null,
+          provider: "manual",
+          accountName,
+          accountType: "manual",
+        });
+      }
+
+      const totalCostBasis = qty * cost;
+
+      const existingPosition = await storage.getPositionByUserAndAsset(userId, account.id, sym);
+      if (existingPosition) {
+        const existingQty = parseFloat(existingPosition.quantity);
+        const existingCost = parseFloat(existingPosition.totalCostBasis);
+        const newQty = existingQty + qty;
+        const newCostBasis = existingCost + totalCostBasis;
+        const newAvgCost = newQty > 0 ? newCostBasis / newQty : 0;
+        await storage.updatePosition(existingPosition.id, {
+          quantity: newQty.toString(),
+          averageCost: newAvgCost.toString(),
+          totalCostBasis: newCostBasis.toFixed(2),
+        });
+      } else {
+        await storage.createPosition({
+          userId,
+          accountId: account.id,
+          assetSymbol: sym,
+          quantity: qty.toString(),
+          averageCost: cost.toString(),
+          totalCostBasis: totalCostBasis.toFixed(2),
+        });
+      }
+
+      res.json({ success: true, message: `Added ${qty} ${sym} to ${accountName}` });
+    } catch (error) {
+      console.error("Manual position error:", error);
+      res.status(500).json({ message: "Failed to add manual position" });
     }
   });
 

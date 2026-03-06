@@ -7,7 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -43,6 +45,14 @@ export default function Portfolio() {
   const [viewMode, setViewMode] = useState<ViewMode>("holdings");
   const [showAddressed, setShowAddressed] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    assetSymbol: "",
+    quantity: "",
+    costPerUnit: "",
+    currentPrice: "",
+    location: "",
+  });
 
   const { data, isLoading } = useQuery<PortfolioData>({
     queryKey: ["/api/portfolio"],
@@ -81,6 +91,24 @@ export default function Portfolio() {
     },
     onError: () => {
       toast({ title: "Failed to update position", variant: "destructive" });
+    },
+  });
+
+  const manualEntryMutation = useMutation({
+    mutationFn: async (data: typeof manualForm) => {
+      const res = await apiRequest("POST", "/api/positions/manual", data);
+      return res.json();
+    },
+    onSuccess: (result) => {
+      toast({ title: result.message || "Position added" });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setManualOpen(false);
+      setManualForm({ assetSymbol: "", quantity: "", costPerUnit: "", currentPrice: "", location: "" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to add position", description: error.message, variant: "destructive" });
     },
   });
 
@@ -264,6 +292,104 @@ export default function Portfolio() {
               {showAddressed ? "Hide" : "Show"} Addressed ({addressedPositions.length})
             </Button>
           )}
+          <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-testid="button-add-manual">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add Entry
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Manual Entry</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  manualEntryMutation.mutate(manualForm);
+                }}
+                className="space-y-4"
+                data-testid="form-manual-entry"
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="assetSymbol">Asset Symbol *</Label>
+                    <Input
+                      id="assetSymbol"
+                      placeholder="BTC, AAPL, GOLD..."
+                      value={manualForm.assetSymbol}
+                      onChange={(e) => setManualForm(f => ({ ...f, assetSymbol: e.target.value }))}
+                      required
+                      data-testid="input-manual-symbol"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Quantity *</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="10"
+                      value={manualForm.quantity}
+                      onChange={(e) => setManualForm(f => ({ ...f, quantity: e.target.value }))}
+                      required
+                      data-testid="input-manual-quantity"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="costPerUnit">Cost Per Unit ($)</Label>
+                    <Input
+                      id="costPerUnit"
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="0.00"
+                      value={manualForm.costPerUnit}
+                      onChange={(e) => setManualForm(f => ({ ...f, costPerUnit: e.target.value }))}
+                      data-testid="input-manual-cost"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPrice">Current Price ($)</Label>
+                    <Input
+                      id="currentPrice"
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="0.00"
+                      value={manualForm.currentPrice}
+                      onChange={(e) => setManualForm(f => ({ ...f, currentPrice: e.target.value }))}
+                      data-testid="input-manual-price"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Where It's Held</Label>
+                  <Input
+                    id="location"
+                    placeholder="Fidelity, Cold Storage, Safe..."
+                    value={manualForm.location}
+                    onChange={(e) => setManualForm(f => ({ ...f, location: e.target.value }))}
+                    data-testid="input-manual-location"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  If the asset has no live price feed, you can set the current price manually and update it later.
+                </p>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={manualEntryMutation.isPending}
+                  data-testid="button-submit-manual"
+                >
+                  {manualEntryMutation.isPending ? "Adding..." : "Add to Portfolio"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

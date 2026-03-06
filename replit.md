@@ -39,7 +39,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL with Drizzle ORM and drizzle-zod for schema validation. Migrations via `drizzle-kit push`.
-- **Key Models**: Users, API Credentials (encrypted), Accounts, Transactions, Positions (with isAddressed flag), Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances, Price Cache (DB-backed CoinGecko price fallback).
+- **Key Models**: Users, API Credentials (encrypted), Accounts (including "manual" provider for manual entries), Transactions, Positions (with isAddressed flag), Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances, Price Cache (DB-backed CoinGecko price fallback).
+- **Manual Entry**: `POST /api/positions/manual` creates positions for assets with no automated price feed (stocks, unsupported tokens, physical assets). Creates a "manual" account per location. Does NOT write to global asset prices. Form on Portfolio page via "Add Entry" button.
 - **Asset Categories**: `shared/asset-categories.ts` maps 150+ crypto symbols to sectors: Layer 1, Layer 2, DeFi, Smart Contracts, Finance, Memecoin, Gaming, AI, Oracle, Web3, Stablecoin, Staking, NFT, RWA, IoT, Privacy, Storage, Supply Chain, Metaverse, Internet.
 - **Client-side Storage (Zustand)**: Wallet state, XRPL balances, Vault Deposits, Referral System data, Spending Wallet, Subscription Tier.
 
