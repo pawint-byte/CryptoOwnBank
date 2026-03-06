@@ -121,6 +121,7 @@ export default function OwnBankDashboard() {
     if (isConnected && walletAddress) {
       fetchBalances();
       fetchPrice();
+      saveWalletToServer(walletAddress, walletType || "xumm");
     }
   }, [isConnected, walletAddress, fetchBalances, fetchPrice]);
 
@@ -153,13 +154,20 @@ export default function OwnBankDashboard() {
     }
   }, []);
 
-  const saveWalletToServer = (address: string, type: string) => {
-    fetch("/api/wallet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ walletAddress: address, walletType: type }),
-    }).catch(() => {});
+  const saveWalletToServer = async (address: string, type: string) => {
+    try {
+      const resp = await fetch("/api/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ walletAddress: address, walletType: type }),
+      });
+      if (!resp.ok) {
+        console.error("Failed to save wallet to server:", resp.status);
+      }
+    } catch (err) {
+      console.error("Failed to save wallet to server:", err);
+    }
   };
 
   const handleConnectXumm = async () => {
@@ -208,7 +216,10 @@ export default function OwnBankDashboard() {
     if (!walletAddress) return;
     setSyncingSoil(true);
     try {
-      const response = await apiRequest("POST", "/api/soil/sync", {});
+      const response = await apiRequest("POST", "/api/soil/sync", {
+        walletAddress,
+        walletType: walletType || "xumm",
+      });
       const data = await response.json();
       if (data.success) {
         setSoilSummary(data.summary);

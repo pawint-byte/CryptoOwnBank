@@ -74,7 +74,16 @@ export async function registerRoutes(
         xrplWalletAddress: users.xrplWalletAddress,
       }).from(users).where(eq(users.id, userId));
 
-      const walletAddress = user?.xrplWalletAddress;
+      let walletAddress = user?.xrplWalletAddress;
+
+      if (!walletAddress && req.body.walletAddress) {
+        walletAddress = req.body.walletAddress;
+        await db.update(users).set({
+          xrplWalletAddress: walletAddress,
+          xrplWalletType: req.body.walletType || "xumm",
+        }).where(eq(users.id, userId));
+      }
+
       if (!walletAddress) {
         return res.status(400).json({ message: "No wallet connected. Connect your XRPL wallet first." });
       }
