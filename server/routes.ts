@@ -3039,8 +3039,34 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Statement not found" });
       }
 
+      const TYPE_SHORT: Record<string, string> = {
+        cd: "CD", savings: "SAVE", money_market: "MM", checking: "CHK",
+        bond: "BOND", brokerage: "INVEST", other: "ACCT",
+      };
+
+      const products = await storage.getProductsByUpload(upload.id);
+      const accounts = await storage.getAccountsByUser(userId);
+      let removedCount = 0;
+
+      for (const product of products) {
+        const institution = product.institutionName || "Manual";
+        const tag = TYPE_SHORT[product.productType] || "ACCT";
+        const prefix = institution.replace(/[^A-Za-z0-9]/g, "").substring(0, 10).toUpperCase();
+        const symbol = `${prefix}-${tag}`;
+
+        const accountName = institution;
+        const account = accounts.find(a => a.provider === "manual" && a.accountName === accountName);
+        if (account) {
+          const position = await storage.getPositionByUserAndAsset(userId, account.id, symbol);
+          if (position) {
+            await storage.deletePosition(position.id);
+            removedCount++;
+          }
+        }
+      }
+
       await storage.deleteStatementUpload(upload.id);
-      res.json({ message: "Statement deleted" });
+      res.json({ message: "Statement deleted", removedPositions: removedCount });
     } catch (error) {
       console.error("Delete statement error:", error);
       res.status(500).json({ message: "Failed to delete statement" });

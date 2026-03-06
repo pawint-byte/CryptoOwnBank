@@ -151,12 +151,22 @@ export default function StatementInsights() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/statements/${id}`);
+      const res = await apiRequest("DELETE", `/api/statements/${id}`);
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/statements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       if (selectedUploadId) setSelectedUploadId(null);
-      toast({ title: "Statement deleted" });
+      const removed = data?.removedPositions || 0;
+      toast({
+        title: "Statement deleted",
+        description: removed > 0
+          ? `Removed ${removed} portfolio ${removed === 1 ? "entry" : "entries"} that were added from this statement.`
+          : "No portfolio entries were linked to this statement.",
+      });
     },
   });
 
@@ -598,7 +608,7 @@ export default function StatementInsights() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Statement</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will permanently delete this statement analysis and all detected products. This cannot be undone.
+                                  This will permanently delete this statement analysis, all detected products, and any portfolio entries that were added from it. This cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
