@@ -650,12 +650,12 @@ export default function OwnBankDashboard() {
           )}
 
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
+            <Link href="/ownbank/history">
               <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm" data-testid="button-soil-yield">
                 <DollarSign className="h-3.5 w-3.5 sm:mr-1" />
-                <span className="hidden sm:inline">Yield</span>
+                <span className="hidden sm:inline">History</span>
               </Button>
-            </a>
+            </Link>
             <a href={SOIL_REFERRAL_URL} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm" data-testid="button-soil-deposit-more">
                 <ArrowRight className="h-3.5 w-3.5 sm:mr-1" />
