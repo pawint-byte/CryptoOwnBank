@@ -1675,21 +1675,33 @@ export async function registerRoutes(
       }
 
       const chain = wallet.chain as any;
-      const balances = await fetchChainBalances(chain, wallet.address);
-
-      await storage.deleteWalletBalances(wallet.id);
-
-      for (const bal of balances) {
-        await storage.upsertWalletBalance({
-          walletId: wallet.id,
-          userId,
-          assetSymbol: bal.symbol,
-          balance: bal.balance.toString(),
-          usdValue: bal.usdValue.toString(),
-        });
+      let balances: Awaited<ReturnType<typeof fetchChainBalances>> = [];
+      let fetchError = false;
+      try {
+        balances = await fetchChainBalances(chain, wallet.address);
+      } catch (err) {
+        console.error(`Sync fetch error for ${chain} wallet ${wallet.id}:`, err);
+        fetchError = true;
       }
 
-      await storage.updateWalletSyncTime(wallet.id);
+      if (fetchError || balances.length === 0) {
+        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError})`);
+        await storage.updateWalletSyncTime(wallet.id);
+      } else {
+        await storage.deleteWalletBalances(wallet.id);
+
+        for (const bal of balances) {
+          await storage.upsertWalletBalance({
+            walletId: wallet.id,
+            userId,
+            assetSymbol: bal.symbol,
+            balance: bal.balance.toString(),
+            usdValue: bal.usdValue.toString(),
+          });
+        }
+
+        await storage.updateWalletSyncTime(wallet.id);
+      }
 
       let newTransactions = 0;
 
