@@ -2454,6 +2454,16 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   OOKI: "ooki",
   QSP: "quantstamp",
   RADAR: "dappradar",
+  ASM: "assemble-protocol",
+  ATH: "aethir",
+  DAG: "constellation-labs",
+  FLR: "flare-networks",
+  KAS: "kaspa",
+  MINA: "mina-protocol",
+  NXRA: "allianceblock-nexera",
+  SOLO: "sologenic",
+  TAO: "bittensor",
+  MONKY: "wise-monkey",
 };
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
