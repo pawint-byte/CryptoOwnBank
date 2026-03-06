@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable } from "@shared/schema";
 import { createCheckoutSession, PLANS } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
 import multer from "multer";
@@ -1616,7 +1616,7 @@ export async function registerRoutes(
   const { getWalletBalances: fetchChainBalances, CHAIN_CONFIG } = await import("./services/blockchain-balance");
 
   let priceCache: { prices: Record<string, number>; fetchedAt: number } = { prices: {}, fetchedAt: 0 };
-  const PRICE_CACHE_TTL_MS = 60 * 1000;
+  const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
 
   app.get("/api/wallets", isAuthenticated, async (req: any, res) => {
     try {
@@ -2364,8 +2364,36 @@ export async function registerRoutes(
   });
 
   startPriceAlertChecker();
+  seedPriceCache();
 
   return httpServer;
+}
+
+async function seedPriceCache() {
+  try {
+    const existing = await db.select().from(priceCacheTable);
+    if (existing.length > 10) {
+      console.log(`Price cache already seeded with ${existing.length} entries`);
+      return;
+    }
+    console.log("Seeding price cache from CoinGecko...");
+    const allSymbols = Object.keys(COINGECKO_ASSET_MAP);
+    const batchSize = 50;
+    for (let i = 0; i < allSymbols.length; i += batchSize) {
+      const batch = allSymbols.slice(i, i + batchSize);
+      const prices = await fetchCurrentPrices(batch);
+      if (Object.keys(prices).length > 0) {
+        await savePricesToDb(prices);
+      }
+      if (i + batchSize < allSymbols.length) {
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+    const count = (await db.select().from(priceCacheTable)).length;
+    console.log(`Price cache seeded with ${count} entries`);
+  } catch (err) {
+    console.error("Price cache seeding error:", err);
+  }
 }
 
 const COINGECKO_ASSET_MAP: Record<string, string> = {
@@ -2543,6 +2571,36 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   PRO: "propy",
 };
 
+async function savePricesToDb(prices: Record<string, number>): Promise<void> {
+  try {
+    const entries = Object.entries(prices).filter(([, v]) => v > 0);
+    for (const [symbol, price] of entries) {
+      await db.insert(priceCacheTable)
+        .values({ symbol: symbol.toUpperCase(), priceUsd: price.toString() })
+        .onConflictDoUpdate({
+          target: priceCacheTable.symbol,
+          set: { priceUsd: price.toString(), updatedAt: new Date() },
+        });
+    }
+  } catch (err) {
+    console.error("Failed to save prices to DB:", err);
+  }
+}
+
+async function loadPricesFromDb(symbols: string[]): Promise<Record<string, number>> {
+  try {
+    const rows = await db.select().from(priceCacheTable);
+    const prices: Record<string, number> = {};
+    for (const row of rows) {
+      prices[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+    }
+    return prices;
+  } catch (err) {
+    console.error("Failed to load prices from DB:", err);
+    return {};
+  }
+}
+
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
   const coingeckoIds = assets
     .map((a) => COINGECKO_ASSET_MAP[a.toUpperCase()])
@@ -2554,8 +2612,8 @@ async function fetchCurrentPrices(assets: string[]): Promise<Record<string, numb
     const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd`;
     const response = await fetch(url);
     if (!response.ok) {
-      console.error("CoinGecko API error:", response.status);
-      return {};
+      console.error("CoinGecko API error:", response.status, "- falling back to cached prices");
+      return await loadPricesFromDb(assets);
     }
     const data = await response.json();
     const prices: Record<string, number> = {};
@@ -2564,10 +2622,13 @@ async function fetchCurrentPrices(assets: string[]): Promise<Record<string, numb
         prices[symbol] = data[cgId].usd;
       }
     }
+    if (Object.keys(prices).length > 0) {
+      savePricesToDb(prices);
+    }
     return prices;
   } catch (error) {
-    console.error("Failed to fetch prices from CoinGecko:", error);
-    return {};
+    console.error("Failed to fetch prices from CoinGecko, falling back to cached:", error);
+    return await loadPricesFromDb(assets);
   }
 }
 

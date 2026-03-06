@@ -182,6 +182,21 @@ async function fetchJson(url: string, options?: RequestInit): Promise<any> {
   return res.json();
 }
 
+async function loadPricesFromDb(): Promise<Record<string, number>> {
+  try {
+    const { db } = await import("../db");
+    const { priceCache: priceCacheTable } = await import("@shared/schema");
+    const rows = await db.select().from(priceCacheTable);
+    const prices: Record<string, number> = {};
+    for (const row of rows) {
+      prices[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+    }
+    return prices;
+  } catch {
+    return {};
+  }
+}
+
 async function getPrices(symbols: string[]): Promise<Record<string, number>> {
   const ids = symbols
     .map((s) => COINGECKO_IDS[s.toUpperCase()])
@@ -201,9 +216,10 @@ async function getPrices(symbols: string[]): Promise<Record<string, number>> {
         prices[sym.toUpperCase()] = data[id].usd;
       }
     }
-    return prices;
+    if (Object.keys(prices).length > 0) return prices;
+    return await loadPricesFromDb();
   } catch {
-    return {};
+    return await loadPricesFromDb();
   }
 }
 

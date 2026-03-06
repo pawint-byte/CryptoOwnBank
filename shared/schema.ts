@@ -260,3 +260,9 @@ export type InsertWallet = z.infer<typeof insertWalletSchema>;
 
 export type WalletBalance = typeof walletBalances.$inferSelect;
 export type InsertWalletBalance = z.infer<typeof insertWalletBalanceSchema>;
+
+export const priceCache = pgTable("price_cache", {
+  symbol: varchar("symbol", { length: 20 }).primaryKey(),
+  priceUsd: decimal("price_usd", { precision: 24, scale: 12 }).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
