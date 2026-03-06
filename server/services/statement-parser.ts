@@ -281,17 +281,16 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
     groupedSections.set(section.productType, existing);
   }
 
+  const documentBalances = extractBalances(text);
+  const usedBalances = new Set<number>();
+
   if (groupedSections.size > 0) {
     for (const [productType, typeSections] of groupedSections) {
       const combinedText = typeSections.map(s => s.text).join("\n");
       const bestConfidence = Math.max(...typeSections.map(s => s.confidence));
       const isLocked = typeSections.some(s => s.isLocked);
 
-      const contextualBalances = extractBalances(text);
-
       const sectionBalances = extractBalances(combinedText);
-
-      const allCandidates = [...new Set([...contextualBalances, ...sectionBalances])];
 
       const term = productType === "cd" || productType === "bond"
         ? extractTerm(combinedText)
@@ -310,14 +309,22 @@ export async function parseStatement(buffer: Buffer): Promise<DetectedProduct[]>
       const mainRate = rates.length > 0 ? rates[0] : null;
 
       let mainBalance: number | null = null;
-      if (allCandidates.length > 0) {
-        const sorted = [...allCandidates].sort((a, b) => b - a);
-        if (sorted.length >= 5) {
-          const p75Index = Math.floor(sorted.length * 0.25);
-          mainBalance = sorted[p75Index];
-        } else {
+
+      if (sectionBalances.length > 0) {
+        const available = sectionBalances.filter(b => !usedBalances.has(b));
+        const candidates = available.length > 0 ? available : sectionBalances;
+        const sorted = [...candidates].sort((a, b) => b - a);
+        mainBalance = sorted[0];
+      } else if (documentBalances.length > 0) {
+        const available = documentBalances.filter(b => !usedBalances.has(b));
+        if (available.length > 0) {
+          const sorted = [...available].sort((a, b) => b - a);
           mainBalance = sorted[0];
         }
+      }
+
+      if (mainBalance !== null) {
+        usedBalances.add(mainBalance);
       }
 
       const description = typeSections[0].text.trim().substring(0, 200);

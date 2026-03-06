@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   Plus,
   Check,
+  Minus,
 } from "lucide-react";
 import {
   Table,
@@ -211,6 +212,28 @@ export default function StatementInsights() {
     },
   });
 
+  const removeFromPortfolioMutation = useMutation({
+    mutationFn: async (product: any) => {
+      const symbol = getProductSymbol(product);
+      await apiRequest("DELETE", `/api/positions/by-symbol/${encodeURIComponent(symbol)}`);
+      return product.id;
+    },
+    onSuccess: (productId: string) => {
+      setImportedProducts((prev) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      toast({ title: "Removed from Portfolio", description: "This entry has been removed from your portfolio" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Remove failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleFileSelect = useCallback((file: File) => {
     if (!file.name.endsWith(".pdf") && file.type !== "application/pdf") {
       toast({ title: "Invalid file", description: "Please upload a PDF file", variant: "destructive" });
@@ -329,9 +352,18 @@ export default function StatementInsights() {
                           )}
                           {product.balance && (
                             isProductImported(product) ? (
-                              <Badge variant="default" className="text-[10px] bg-emerald-600">
-                                <Check className="h-3 w-3 mr-0.5" /> In Portfolio
-                              </Badge>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="h-7 text-[10px] sm:text-xs bg-emerald-600 hover:bg-red-600"
+                                onClick={() => removeFromPortfolioMutation.mutate(product)}
+                                disabled={removeFromPortfolioMutation.isPending}
+                                data-testid={`button-remove-${product.id}`}
+                              >
+                                <Check className="h-3 w-3 mr-0.5" />
+                                <span className="hidden sm:inline">In Portfolio</span>
+                                <span className="sm:hidden">Added</span>
+                              </Button>
                             ) : (
                               <Button
                                 variant="outline"

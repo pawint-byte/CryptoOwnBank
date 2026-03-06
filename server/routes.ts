@@ -727,6 +727,23 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/positions/by-symbol/:symbol", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const symbol = decodeURIComponent(req.params.symbol).toUpperCase();
+      const positionsData = await storage.getPositionsByUser(userId);
+      const position = positionsData.find(p => p.assetSymbol === symbol);
+      if (!position) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      await storage.deletePosition(position.id);
+      res.json({ message: `Removed ${symbol} from portfolio` });
+    } catch (error) {
+      console.error("Delete position by symbol error:", error);
+      res.status(500).json({ message: "Failed to remove position" });
+    }
+  });
+
   app.delete("/api/positions/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
