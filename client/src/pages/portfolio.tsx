@@ -24,6 +24,7 @@ interface PositionWithMarket extends Position {
   source?: string;
   isImport?: boolean;
   isAddressed?: boolean;
+  isWallet?: boolean;
 }
 
 interface PortfolioData {
@@ -58,9 +59,13 @@ export default function Portfolio() {
     queryKey: ["/api/portfolio"],
   });
 
-  const { data: allPositions = [] } = useQuery<PositionWithMarket[]>({
+  const { data: dbPositions = [] } = useQuery<PositionWithMarket[]>({
     queryKey: ["/api/positions"],
   });
+
+  const allPositions = useMemo(() => {
+    return data?.positions || dbPositions;
+  }, [data?.positions, dbPositions]);
 
   const deletePositionMutation = useMutation({
     mutationFn: async (positionId: string) => {
@@ -145,8 +150,9 @@ export default function Portfolio() {
       }
       if (sourceFilter !== "all") {
         if (sourceFilter === "imports" && !p.isImport) return false;
-        if (sourceFilter === "exchanges" && p.isImport) return false;
-        if (sourceFilter !== "imports" && sourceFilter !== "exchanges" && p.source !== sourceFilter) return false;
+        if (sourceFilter === "exchanges" && (p.isImport || p.isWallet)) return false;
+        if (sourceFilter === "wallets" && !p.isWallet) return false;
+        if (sourceFilter !== "imports" && sourceFilter !== "exchanges" && sourceFilter !== "wallets" && p.source !== sourceFilter) return false;
       }
       return true;
     });
@@ -498,6 +504,7 @@ export default function Portfolio() {
                         <SelectItem value="all">All Sources</SelectItem>
                         <SelectItem value="imports">Imports Only</SelectItem>
                         <SelectItem value="exchanges">Exchanges Only</SelectItem>
+                        <SelectItem value="wallets">Wallets Only</SelectItem>
                         {uniqueSources.map(source => (
                           <SelectItem key={source} value={source}>{source}</SelectItem>
                         ))}
@@ -612,18 +619,20 @@ export default function Portfolio() {
                                   </span>
                                 </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("h-8 w-8", isAddr ? "text-chart-2 hover:text-chart-2" : "text-muted-foreground hover:text-amber-600")}
-                                onClick={() => addressMutation.mutate({ id: position.id, addressed: !isAddr })}
-                                disabled={addressMutation.isPending}
-                                data-testid={`button-address-${position.id}`}
-                                title={isAddr ? "Restore position" : "Mark as addressed"}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              {position.isImport && !isAddr && (
+                              {!position.isWallet && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn("h-8 w-8", isAddr ? "text-chart-2 hover:text-chart-2" : "text-muted-foreground hover:text-amber-600")}
+                                  onClick={() => addressMutation.mutate({ id: position.id, addressed: !isAddr })}
+                                  disabled={addressMutation.isPending}
+                                  data-testid={`button-address-${position.id}`}
+                                  title={isAddr ? "Restore position" : "Mark as addressed"}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {position.isImport && !position.isWallet && !isAddr && (
                                 <Button
                                   variant="ghost"
                                   size="icon"

@@ -21,7 +21,7 @@ Preferred communication style: Simple, everyday language.
 - **XRPL Integration**: xrpl.js, Xumm SDK, Ledger HW libs.
 - **Key Pages**:
     - **CryptoBroker**: Dashboard, Transactions, Portfolio, Cold Wallets, Tax Reports, Price Alerts, Integrations, Settings.
-    - **OwnBank XRPL**: Dashboard, Vaults (Soil Protocol RLUSD yield vaults), Withdraw Interest (interest-only), History, My Referrals.
+    - **OwnBank XRPL**: Dashboard (with full Soil vault tracking — principal, paid interest, estimated accruing yield, total yield, dates), Vaults (Soil Protocol RLUSD yield vaults), Withdraw Interest (interest-only), History, My Referrals.
 
 ### Backend
 - **Runtime**: Node.js with Express.

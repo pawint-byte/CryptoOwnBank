@@ -225,6 +225,30 @@ export async function registerRoutes(
       const totalDeposited = deposits.reduce((sum, t) => sum + t.amount, 0);
       const totalInterest = interestPayments.reduce((sum, t) => sum + t.amount, 0);
 
+      const sortedTxns = [...soilTxns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const lastInterestPayment = interestPayments.length > 0
+        ? interestPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+        : null;
+      const firstDeposit = deposits.length > 0
+        ? deposits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+        : null;
+
+      const currentPrincipal = totalDeposited;
+      const avgApr = 0.08;
+      let estimatedPendingYield = 0;
+      if (currentPrincipal > 0) {
+        const sinceDate = lastInterestPayment
+          ? new Date(lastInterestPayment.date)
+          : firstDeposit
+            ? new Date(firstDeposit.date)
+            : new Date();
+        const daysSinceLastPayout = Math.max(0, (Date.now() - sinceDate.getTime()) / (1000 * 60 * 60 * 24));
+        estimatedPendingYield = currentPrincipal * avgApr * (daysSinceLastPayout / 365);
+      }
+
+      const effectiveYield = totalInterest + estimatedPendingYield;
+      const effectiveYieldPercent = currentPrincipal > 0 ? (effectiveYield / currentPrincipal) * 100 : 0;
+
       res.json({
         success: true,
         totalTransactions: soilTxns.length,
@@ -234,7 +258,13 @@ export async function registerRoutes(
           totalDeposited: totalDeposited.toFixed(2),
           interestPayments: interestPayments.length,
           totalInterestReceived: totalInterest.toFixed(2),
-          transactions: soilTxns.map(t => ({
+          currentPrincipal: currentPrincipal.toFixed(2),
+          estimatedPendingYield: estimatedPendingYield.toFixed(4),
+          effectiveYield: effectiveYield.toFixed(4),
+          effectiveYieldPercent: effectiveYieldPercent.toFixed(2),
+          lastInterestDate: lastInterestPayment?.date || null,
+          firstDepositDate: firstDeposit?.date || null,
+          transactions: sortedTxns.map(t => ({
             hash: t.hash,
             type: t.type,
             amount: t.amount.toFixed(2),
@@ -742,10 +772,24 @@ export async function registerRoutes(
           gainLoss: 0,
           gainLossPercent: 0,
           source: wallet?.label || wallet?.chain || "Wallet",
+          isImport: false,
+          isAddressed: false,
+          isWallet: true,
         };
       });
 
-      const allPositions = [...positionsWithMarket.map(p => ({ ...p, source: "Exchange" })), ...walletPositions];
+      const accounts = await storage.getAccountsByUser(userId);
+      const accountMap = new Map(accounts.map(a => [a.id, a]));
+      const allPositions = [...positionsWithMarket.map(p => {
+        const account = accountMap.get(p.accountId);
+        return {
+          ...p,
+          source: account?.accountName || "Exchange",
+          isImport: account?.accountType === "import" || account?.provider === "manual",
+          isAddressed: p.isAddressed || false,
+          isWallet: false,
+        };
+      }), ...walletPositions];
 
       const allocationMap = new Map<string, number>();
       allPositions.forEach((pos) => {
