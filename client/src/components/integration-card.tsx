@@ -30,15 +30,15 @@ export function IntegrationCard({
 }: IntegrationCardProps) {
   return (
     <Card className="hover-elevate">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-              {logo || <Link2 className="h-6 w-6 text-muted-foreground" />}
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+              {logo || <Link2 className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />}
             </div>
-            <div>
-              <h3 className="font-semibold">{name}</h3>
-              <p className="text-sm text-muted-foreground capitalize">{provider}</p>
+            <div className="min-w-0">
+              <h3 className="font-semibold truncate">{name}</h3>
+              <p className="text-sm text-muted-foreground capitalize truncate">{provider}</p>
             </div>
           </div>
           <Badge

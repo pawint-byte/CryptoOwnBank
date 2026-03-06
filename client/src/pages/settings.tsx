@@ -200,24 +200,24 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0">
                 <AvatarImage src={user?.profileImageUrl || undefined} />
-                <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
+                <AvatarFallback className="text-base sm:text-lg">{getInitials()}</AvatarFallback>
               </Avatar>
-              <div>
-                <p className="font-medium">
+              <div className="min-w-0">
+                <p className="font-medium truncate">
                   {user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
                     : user?.email?.split("@")[0] || "User"}
                 </p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
             <Separator />
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Email</Label>
-                <p className="font-medium">{user?.email || "Not set"}</p>
+                <p className="font-medium truncate">{user?.email || "Not set"}</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Member Since</Label>
@@ -296,9 +296,10 @@ export default function SettingsPage() {
               <Label htmlFor="spending-wallet">XRPL Wallet Address</Label>
               <Input
                 id="spending-wallet"
-                placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                placeholder="rXXXX...XXXX"
                 value={walletInput}
                 onChange={(e) => setWalletInput(e.target.value)}
+                className="font-mono text-sm"
                 data-testid="input-spending-wallet"
               />
               <p className="text-xs text-muted-foreground">
@@ -498,14 +499,14 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/30">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border border-destructive/30">
+            <div className="min-w-0">
               <p className="font-medium">Delete All Data</p>
               <p className="text-sm text-muted-foreground">
                 Permanently delete all your transactions and settings
               </p>
             </div>
-            <Button variant="destructive" size="sm" data-testid="button-delete-data">
+            <Button variant="destructive" size="sm" className="flex-shrink-0 self-start sm:self-center" data-testid="button-delete-data">
               Delete Data
             </Button>
           </div>

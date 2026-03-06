@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -261,6 +262,7 @@ export default function Transactions() {
   const [xrpPrice, setXrpPrice] = useState<number>(0);
   const [xrplLoading, setXrplLoading] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { walletAddress, isConnected } = useXrplStore();
 
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
@@ -641,7 +643,7 @@ export default function Transactions() {
                 data-testid="input-search-transactions"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" data-testid="button-column-picker">
@@ -669,7 +671,7 @@ export default function Transactions() {
               </DropdownMenu>
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[120px]" data-testid="select-type-filter">
+                <SelectTrigger className="w-[100px] sm:w-[120px]" data-testid="select-type-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -685,7 +687,7 @@ export default function Transactions() {
               </Select>
               {sourceOptions.length > 1 && (
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-[150px]" data-testid="select-source-filter">
+                  <SelectTrigger className="w-[120px] sm:w-[150px]" data-testid="select-source-filter">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -737,14 +739,14 @@ export default function Transactions() {
                   <TableRow>
                     {isCol("date") && <TableHead>Date</TableHead>}
                     {isCol("type") && <TableHead>Type</TableHead>}
-                    {isCol("direction") && <TableHead>Direction</TableHead>}
+                    {isCol("direction") && <TableHead className="hidden sm:table-cell">Direction</TableHead>}
                     {isCol("asset") && <TableHead>Asset</TableHead>}
-                    {isCol("quantity") && <TableHead className="text-right">Quantity</TableHead>}
-                    {isCol("price") && <TableHead className="text-right">Price</TableHead>}
-                    {isCol("total") && <TableHead className="text-right">Total</TableHead>}
+                    {isCol("quantity") && <TableHead className="text-right">Qty</TableHead>}
+                    {isCol("price") && <TableHead className="hidden sm:table-cell text-right">Price</TableHead>}
+                    {isCol("total") && <TableHead className="hidden sm:table-cell text-right">Total</TableHead>}
                     {isCol("usdValue") && <TableHead className="text-right">USD Value</TableHead>}
-                    {isCol("fee") && <TableHead className="text-right">Fee</TableHead>}
-                    {isCol("source") && <TableHead>Source</TableHead>}
+                    {isCol("fee") && <TableHead className="hidden sm:table-cell text-right">Fee</TableHead>}
+                    {isCol("source") && <TableHead className="hidden sm:table-cell">Source</TableHead>}
                     {isCol("hash") && <TableHead>Tx Link</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -752,15 +754,16 @@ export default function Transactions() {
                   {filteredTransactions.map((tx) => (
                     <TableRow key={tx.id} data-testid={`transaction-row-${tx.id}`}>
                       {isCol("date") && (
-                        <TableCell className="font-mono text-sm">
-                          {format(tx.date, "MMM d, yyyy")}
+                        <TableCell className="font-mono text-sm whitespace-nowrap">
+                          <span className="sm:hidden">{format(tx.date, "MMM d")}</span>
+                          <span className="hidden sm:inline">{format(tx.date, "MMM d, yyyy")}</span>
                         </TableCell>
                       )}
                       {isCol("type") && (
                         <TableCell>{getDirectionBadge(tx)}</TableCell>
                       )}
                       {isCol("direction") && (
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-1">
                             {getDirectionIcon(tx)}
                             <span className="text-sm text-muted-foreground capitalize">
@@ -774,16 +777,16 @@ export default function Transactions() {
                       )}
                       {isCol("quantity") && (
                         <TableCell className="text-right font-mono">
-                          {tx.quantity > 0 ? tx.quantity.toLocaleString("en-US", { maximumFractionDigits: 6 }) : "—"}
+                          {tx.quantity > 0 ? tx.quantity.toLocaleString("en-US", { maximumFractionDigits: isMobile ? 2 : 6 }) : "—"}
                         </TableCell>
                       )}
                       {isCol("price") && (
-                        <TableCell className="text-right font-mono">
+                        <TableCell className="hidden sm:table-cell text-right font-mono">
                           {tx.price > 0 ? formatUsd(tx.price) : "—"}
                         </TableCell>
                       )}
                       {isCol("total") && (
-                        <TableCell className="text-right font-mono font-medium">
+                        <TableCell className="hidden sm:table-cell text-right font-mono font-medium">
                           {tx.total > 0 ? formatUsd(tx.total) : "—"}
                         </TableCell>
                       )}
@@ -801,7 +804,7 @@ export default function Transactions() {
                         </TableCell>
                       )}
                       {isCol("fee") && (
-                        <TableCell className="text-right">
+                        <TableCell className="hidden sm:table-cell text-right">
                           <span className="font-mono text-xs text-muted-foreground">
                             {tx.fee > 0
                               ? tx.source === "xrpl"
@@ -812,7 +815,7 @@ export default function Transactions() {
                         </TableCell>
                       )}
                       {isCol("source") && (
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Badge variant="outline" className="text-xs">
                             {getProviderLabel(tx.source)}
                           </Badge>

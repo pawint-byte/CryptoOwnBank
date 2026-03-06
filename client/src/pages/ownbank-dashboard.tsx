@@ -499,13 +499,13 @@ export default function OwnBankDashboard() {
 
       <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-transparent">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg">
               <TrendingUp className="h-5 w-5 inline mr-2 text-purple-500" />
               Soil Vault Activity
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">5.2–8.0% APR</Badge>
+              <Badge variant="secondary" className="text-xs hidden sm:inline-flex">5.2–8.0% APR</Badge>
               <Button
                 variant="ghost"
                 size="sm"
@@ -535,59 +535,59 @@ export default function OwnBankDashboard() {
             </div>
           ) : soilSummary && (soilSummary.deposits > 0 || soilSummary.interestPayments > 0) ? (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="rounded-lg border bg-card p-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div className="rounded-lg border bg-card p-2 sm:p-3">
                   <div className="flex items-center gap-1.5 mb-1">
                     <ArrowUpFromLine className="h-3.5 w-3.5 text-purple-500" />
-                    <p className="text-xs text-muted-foreground">Principal</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Principal</p>
                   </div>
-                  <p className="text-lg font-bold font-mono" data-testid="text-soil-total-deposited">
+                  <p className="text-sm sm:text-lg font-bold font-mono" data-testid="text-soil-total-deposited">
                     ${parseFloat(soilSummary.currentPrincipal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{soilSummary.deposits} deposit{soilSummary.deposits !== 1 ? "s" : ""} (RLUSD)</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.deposits} deposit{soilSummary.deposits !== 1 ? "s" : ""}</p>
                 </div>
-                <div className="rounded-lg border bg-card p-3">
+                <div className="rounded-lg border bg-card p-2 sm:p-3">
                   <div className="flex items-center gap-1.5 mb-1">
                     <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                    <p className="text-xs text-muted-foreground">Paid Interest</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Paid Interest</p>
                   </div>
-                  <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-total-interest">
+                  <p className="text-sm sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-total-interest">
                     ${parseFloat(soilSummary.totalInterestReceived).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{soilSummary.interestPayments} payment{soilSummary.interestPayments !== 1 ? "s" : ""}</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.interestPayments} payment{soilSummary.interestPayments !== 1 ? "s" : ""}</p>
                 </div>
-                <div className="rounded-lg border bg-card p-3 border-emerald-500/30">
+                <div className="rounded-lg border bg-card p-2 sm:p-3 border-emerald-500/30">
                   <div className="flex items-center gap-1.5 mb-1">
                     <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
-                    <p className="text-xs text-muted-foreground">Accruing (est.)</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Accruing (est.)</p>
                   </div>
-                  <p className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400" data-testid="text-soil-pending-yield">
-                    ${parseFloat(soilSummary.estimatedPendingYield).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                  <p className="text-sm sm:text-lg font-bold font-mono text-amber-600 dark:text-amber-400" data-testid="text-soil-pending-yield">
+                    ${parseFloat(soilSummary.estimatedPendingYield).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">Since {soilSummary.lastInterestDate ? new Date(soilSummary.lastInterestDate).toLocaleDateString() : "deposit"}</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">Since {soilSummary.lastInterestDate ? new Date(soilSummary.lastInterestDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "deposit"}</p>
                 </div>
-                <div className="rounded-lg border bg-card p-3 bg-gradient-to-br from-emerald-500/5 to-transparent">
+                <div className="rounded-lg border bg-card p-2 sm:p-3 bg-gradient-to-br from-emerald-500/5 to-transparent">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                    <p className="text-xs text-muted-foreground">Total Yield</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Total Yield</p>
                   </div>
-                  <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-effective-yield">
-                    ${parseFloat(soilSummary.effectiveYield).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                  <p className="text-sm sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-effective-yield">
+                    ${parseFloat(soilSummary.effectiveYield).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{soilSummary.effectiveYieldPercent}% return</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.effectiveYieldPercent}% return</p>
                 </div>
               </div>
 
               {soilSummary.firstDepositDate && (
                 <div className="rounded-lg border bg-muted/30 p-3">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between gap-2 text-sm">
                     <span className="text-muted-foreground">Active since</span>
-                    <span className="font-medium">{new Date(soilSummary.firstDepositDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                    <span className="font-medium">{new Date(soilSummary.firstDepositDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   </div>
                   {soilSummary.lastInterestDate && (
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-muted-foreground">Last interest payment</span>
-                      <span className="font-medium">{new Date(soilSummary.lastInterestDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                    <div className="flex items-center justify-between gap-2 text-sm mt-1">
+                      <span className="text-muted-foreground shrink-0">Last interest</span>
+                      <span className="font-medium">{new Date(soilSummary.lastInterestDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm mt-1">
@@ -604,28 +604,28 @@ export default function OwnBankDashboard() {
                     {[...soilSummary.transactions].reverse().map((tx) => (
                       <div
                         key={tx.hash}
-                        className="flex items-center justify-between text-xs rounded-md border px-3 py-2"
+                        className="flex items-center justify-between gap-2 text-xs rounded-md border px-2 sm:px-3 py-2"
                         data-testid={`row-soil-tx-${tx.hash.slice(0, 8)}`}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {tx.type === "deposit" ? (
                             <ArrowUpFromLine className="h-3 w-3 text-purple-500" />
                           ) : (
                             <ArrowDownToLine className="h-3 w-3 text-emerald-500" />
                           )}
-                          <span className="font-medium capitalize">{tx.type}</span>
+                          <span className="font-medium capitalize hidden sm:inline">{tx.type}</span>
                         </div>
-                        <span className="font-mono">
+                        <span className="font-mono shrink-0">
                           {tx.type === "interest" ? "+" : "-"}${parseFloat(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
-                        <span className="text-muted-foreground">
-                          {new Date(tx.date).toLocaleDateString()}
+                        <span className="text-muted-foreground shrink-0">
+                          {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </span>
                         <a
                           href={`https://xrpscan.com/tx/${tx.hash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#00A4E4] hover:underline"
+                          className="text-[#00A4E4] hover:underline shrink-0"
                           data-testid={`link-tx-explorer-${tx.hash.slice(0, 8)}`}
                         >
                           <ExternalLink className="h-3 w-3" />
@@ -649,23 +649,23 @@ export default function OwnBankDashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <a href="https://xrpl.soil.co/user/dashboard" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="w-full" data-testid="button-soil-yield">
-                <DollarSign className="h-3.5 w-3.5 mr-1" />
-                Yield
+              <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm" data-testid="button-soil-yield">
+                <DollarSign className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">Yield</span>
               </Button>
             </a>
             <a href={SOIL_REFERRAL_URL} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="w-full" data-testid="button-soil-deposit-more">
-                <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                Deposit More
+              <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm" data-testid="button-soil-deposit-more">
+                <ArrowRight className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">Deposit</span>
               </Button>
             </a>
             <Link href="/ownbank/withdraw">
-              <Button variant="outline" size="sm" className="w-full" data-testid="button-withdraw-interest">
-                <ArrowDownToLine className="h-3.5 w-3.5 mr-1" />
-                Withdraw
+              <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm" data-testid="button-withdraw-interest">
+                <ArrowDownToLine className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">Withdraw</span>
               </Button>
             </Link>
           </div>

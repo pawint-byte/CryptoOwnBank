@@ -811,39 +811,39 @@ export default function Wallets() {
       )}
 
       {userWallets.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 Total Wallet Value
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-mono" data-testid="text-total-wallet-value">
+              <div className="text-lg sm:text-2xl font-bold font-mono" data-testid="text-total-wallet-value">
                 {portfolioLoading ? <Skeleton className="h-8 w-32" /> : formatUsd(portfolioData?.totalValue || 0)}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 Wallets Connected
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-wallet-count">
+              <div className="text-lg sm:text-2xl font-bold" data-testid="text-wallet-count">
                 {userWallets.length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 Assets Tracked
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-asset-count">
+              <div className="text-lg sm:text-2xl font-bold" data-testid="text-asset-count">
                 {byAssetData.length}
               </div>
             </CardContent>
@@ -875,20 +875,20 @@ export default function Wallets() {
         <Tabs defaultValue="source" className="space-y-4">
           <TabsList data-testid="tabs-wallet-views">
             <TabsTrigger value="source" data-testid="tab-by-source">
-              <Layers className="h-4 w-4 mr-2" />
-              By Source
+              <Layers className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">By Source</span>
             </TabsTrigger>
             <TabsTrigger value="asset" data-testid="tab-by-asset">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              By Asset
+              <BarChart3 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">By Asset</span>
             </TabsTrigger>
             <TabsTrigger value="detail" data-testid="tab-detail">
-              <Eye className="h-4 w-4 mr-2" />
-              All Holdings
+              <Eye className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">All Holdings</span>
             </TabsTrigger>
             <TabsTrigger value="recommend" data-testid="tab-recommend">
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Recommendations
+              <ShieldCheck className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Recommendations</span>
             </TabsTrigger>
           </TabsList>
 
@@ -900,25 +900,25 @@ export default function Wallets() {
                   return (
                     <Card key={w.id} data-testid={`wallet-card-${w.id}`}>
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div
-                              className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-lg shrink-0"
                               style={{ backgroundColor: CHAIN_COLORS[w.chain] || "#666" }}
                             >
                               {CHAIN_LABELS[w.chain] || "?"}
                             </div>
-                            <div>
-                              <CardTitle className="text-base">
+                            <div className="min-w-0">
+                              <CardTitle className="text-sm sm:text-base truncate">
                                 {w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <code className="text-xs text-muted-foreground">
+                                <code className="text-xs text-muted-foreground truncate">
                                   {truncateAddress(w.address)}
                                 </code>
                                 <button
                                   onClick={() => handleCopy(w.address)}
-                                  className="text-muted-foreground hover:text-foreground"
+                                  className="text-muted-foreground hover:text-foreground shrink-0"
                                   data-testid={`button-copy-${w.id}`}
                                 >
                                   {copiedAddress === w.address ? (
@@ -931,7 +931,7 @@ export default function Wallets() {
                                   href={getExplorerUrl(w.chain, w.address)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-muted-foreground hover:text-foreground"
+                                  className="text-muted-foreground hover:text-foreground shrink-0"
                                   data-testid={`link-explorer-${w.id}`}
                                 >
                                   <ExternalLink className="h-3 w-3" />
@@ -939,45 +939,47 @@ export default function Wallets() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold font-mono">
+                          <div className="flex items-center gap-2 justify-between sm:justify-end">
+                            <span className="text-base sm:text-lg font-bold font-mono">
                               {formatUsd(totalVal)}
                             </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => syncMutation.mutate(w.id)}
-                              disabled={syncMutation.isPending}
-                              data-testid={`button-sync-${w.id}`}
-                            >
-                              <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  data-testid={`button-delete-${w.id}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove wallet?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will remove the wallet and its balance data from your portfolio. You can always add it back.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteMutation.mutate(w.id)}>
-                                    Remove
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => syncMutation.mutate(w.id)}
+                                disabled={syncMutation.isPending}
+                                data-testid={`button-sync-${w.id}`}
+                              >
+                                <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                    data-testid={`button-delete-${w.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove wallet?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will remove the wallet and its balance data from your portfolio. You can always add it back.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteMutation.mutate(w.id)}>
+                                      Remove
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
                         </div>
                       </CardHeader>
@@ -990,20 +992,20 @@ export default function Wallets() {
                                 className="flex items-center justify-between py-2 border-t"
                                 data-testid={`balance-${b.assetSymbol}-${w.id}`}
                               >
-                                <div className="flex items-center gap-3">
-                                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <span className="text-xs font-bold text-primary">
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] sm:text-xs font-bold text-primary">
                                       {b.assetSymbol.slice(0, 2)}
                                     </span>
                                   </div>
-                                  <div>
-                                    <span className="font-medium text-sm">{b.assetSymbol}</span>
-                                    <div className="text-xs text-muted-foreground font-mono">
-                                      {formatBalance(parseFloat(b.balance))}
+                                  <div className="min-w-0">
+                                    <span className="font-medium text-sm truncate block">{b.assetSymbol}</span>
+                                    <div className="text-xs text-muted-foreground font-mono truncate">
+                                      {formatBalance(parseFloat(b.balance), 4)}
                                     </div>
                                   </div>
                                 </div>
-                                <span className="font-mono font-medium text-sm">
+                                <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
                                   {formatUsd(getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue))}
                                 </span>
                               </div>
@@ -1065,17 +1067,17 @@ export default function Wallets() {
                       {bySourceData.map((item, i) => {
                         const total = bySourceData.reduce((s, d) => s + d.value, 0);
                         return (
-                          <div key={i} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
+                          <div key={i} className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
                               <div
-                                className="h-3 w-3 rounded-full"
+                                className="h-3 w-3 rounded-full shrink-0"
                                 style={{ backgroundColor: CHAIN_COLORS[item.chain] || CHART_COLORS[i] }}
                               />
-                              <span>{item.name}</span>
+                              <span className="truncate">{item.name}</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                               <span className="font-mono">{formatUsd(item.value)}</span>
-                              <span className="text-muted-foreground">
+                              <span className="text-muted-foreground hidden sm:inline">
                                 ({total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%)
                               </span>
                             </div>
@@ -1114,25 +1116,25 @@ export default function Wallets() {
                             return (
                               <div
                                 key={h.symbol}
-                                className="flex items-center gap-4 p-3 rounded-lg border"
+                                className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-lg border"
                                 data-testid={`asset-row-${h.symbol}`}
                               >
-                                <div className="h-10 w-10 rounded-full flex items-center justify-center bg-primary/10">
-                                  <span className="text-sm font-bold text-primary">
+                                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-primary/10 shrink-0">
+                                  <span className="text-xs sm:text-sm font-bold text-primary">
                                     {h.symbol.slice(0, 3)}
                                   </span>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-semibold">{h.symbol}</span>
-                                    <span className="font-mono font-medium">{formatUsd(h.usdValue)}</span>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-semibold text-sm sm:text-base">{h.symbol}</span>
+                                    <span className="font-mono font-medium text-sm sm:text-base">{formatUsd(h.usdValue)}</span>
                                   </div>
-                                  <div className="flex items-center justify-between mt-1">
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                      {formatBalance(h.balance)} {h.symbol}
+                                  <div className="flex items-center justify-between gap-2 mt-1">
+                                    <span className="text-xs text-muted-foreground font-mono truncate">
+                                      {formatBalance(h.balance, 4)} {h.symbol}
                                     </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {pct.toFixed(1)}% of wallet portfolio
+                                    <span className="text-xs text-muted-foreground shrink-0">
+                                      {pct.toFixed(1)}%
                                     </span>
                                   </div>
                                   <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -1145,7 +1147,7 @@ export default function Wallets() {
                                     />
                                   </div>
                                   {h.sources.length > 0 && (
-                                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                                    <div className="hidden sm:flex gap-1 mt-1.5 flex-wrap">
                                       {h.sources.map((src) => (
                                         <Badge key={src} variant="outline" className="text-[10px] px-1.5 py-0">
                                           {src}
@@ -1242,11 +1244,11 @@ export default function Wallets() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Asset</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Chain</TableHead>
-                          <TableHead className="text-right">Balance</TableHead>
+                          <TableHead className="hidden sm:table-cell">Source</TableHead>
+                          <TableHead className="hidden md:table-cell">Chain</TableHead>
+                          <TableHead className="hidden sm:table-cell text-right">Balance</TableHead>
                           <TableHead className="text-right">USD Value</TableHead>
-                          <TableHead className="text-right">% of Total</TableHead>
+                          <TableHead className="hidden md:table-cell text-right">% of Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1259,20 +1261,25 @@ export default function Wallets() {
                               <TableRow key={`${h.walletId}-${h.symbol}`} data-testid={`holding-row-${i}`}>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
-                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                      <span className="text-xs font-bold text-primary">
+                                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <span className="text-[10px] sm:text-xs font-bold text-primary">
                                         {h.symbol.slice(0, 2)}
                                       </span>
                                     </div>
-                                    <span className="font-medium">{h.symbol}</span>
+                                    <div>
+                                      <span className="font-medium text-sm">{h.symbol}</span>
+                                      <div className="sm:hidden text-xs text-muted-foreground font-mono">
+                                        {formatBalance(h.balance, 4)}
+                                      </div>
+                                    </div>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden sm:table-cell">
                                   <Badge variant="outline" className="text-xs">
                                     {h.source}
                                   </Badge>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden md:table-cell">
                                   <div className="flex items-center gap-1.5">
                                     <span
                                       className="text-sm font-mono"
@@ -1283,13 +1290,13 @@ export default function Wallets() {
                                     <span className="text-sm capitalize">{h.chain}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-right font-mono">
+                                <TableCell className="hidden sm:table-cell text-right font-mono">
                                   {formatBalance(h.balance)}
                                 </TableCell>
                                 <TableCell className="text-right font-mono font-medium">
                                   {formatUsd(h.usdValue)}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="hidden md:table-cell text-right">
                                   <div className="flex items-center justify-end gap-2">
                                     <span className="text-sm text-muted-foreground">
                                       {pct.toFixed(1)}%
@@ -1353,7 +1360,7 @@ export default function Wallets() {
                   </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {recommendations.map((rec, i) => (
                     <Card
                       key={rec.model}
@@ -1471,9 +1478,9 @@ export default function Wallets() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Asset</TableHead>
-                            <TableHead>Currently On</TableHead>
+                            <TableHead className="hidden sm:table-cell">Currently On</TableHead>
                             <TableHead className="text-right">Value</TableHead>
-                            <TableHead>Compatible Wallets</TableHead>
+                            <TableHead className="hidden md:table-cell">Compatible Wallets</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1485,15 +1492,15 @@ export default function Wallets() {
                               <TableRow key={`${item.symbol}-${item.source}-${idx}`} data-testid={`migration-row-${idx}`}>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
-                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                      <span className="text-xs font-bold text-primary">
+                                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <span className="text-[10px] sm:text-xs font-bold text-primary">
                                         {item.symbol.slice(0, 2)}
                                       </span>
                                     </div>
-                                    <span className="font-medium">{item.symbol}</span>
+                                    <span className="font-medium text-sm">{item.symbol}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden sm:table-cell">
                                   <Badge variant="outline" className="text-xs">
                                     {item.source}
                                   </Badge>
@@ -1501,7 +1508,7 @@ export default function Wallets() {
                                 <TableCell className="text-right font-mono">
                                   {formatUsd(item.usdValue)}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden md:table-cell">
                                   <div className="flex flex-wrap gap-1">
                                     {compatWallets.length > 0 ? (
                                       compatWallets.slice(0, 2).map((wn) => (

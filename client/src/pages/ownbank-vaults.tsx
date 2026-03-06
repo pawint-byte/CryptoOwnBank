@@ -316,13 +316,13 @@ export default function OwnBankVaults() {
           return (
             <Card key={vault.id} data-testid={`card-vault-${vault.id}`}>
               <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   {getVaultIcon(vault.id)}
-                  <div>
-                    <CardTitle className="text-lg" data-testid={`text-vault-name-${vault.id}`}>
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg" data-testid={`text-vault-name-${vault.id}`}>
                       {vault.name}
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                       {vault.description}
                     </p>
                   </div>
@@ -410,10 +410,12 @@ export default function OwnBankVaults() {
                   <Button
                     onClick={() => openDepositModal(vault)}
                     className="bg-[#00A4E4] text-white border-[#00A4E4]"
+                    size="sm"
                     data-testid={`button-deposit-${vault.id}`}
                   >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Deposit RLUSD
+                    <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Deposit RLUSD</span>
+                    <span className="sm:hidden">Deposit</span>
                   </Button>
                 </div>
               </CardContent>

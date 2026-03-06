@@ -237,15 +237,18 @@ export default function TaxReports() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Tax Summary - {selectedYear}
-              </CardTitle>
-              <CardDescription>
-                Using {taxMethod} calculation method
-              </CardDescription>
+          <CardHeader className="space-y-3">
+            <div className="flex flex-row items-start justify-between gap-2">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  <span className="hidden sm:inline">Tax Summary - {selectedYear}</span>
+                  <span className="sm:hidden">Summary - {selectedYear}</span>
+                </CardTitle>
+                <CardDescription>
+                  Using {taxMethod} calculation method
+                </CardDescription>
+              </div>
             </div>
             {!taxReportsLocked && (
               <div className="flex gap-2 flex-wrap">
@@ -265,7 +268,8 @@ export default function TaxReports() {
                   data-testid="button-export-turbotax"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  TurboTax
+                  <span className="hidden sm:inline">TurboTax</span>
+                  <span className="sm:hidden">TTax</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -360,11 +364,11 @@ export default function TaxReports() {
                 </div>
 
                 <div className="p-4 rounded-lg bg-muted space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Total Net Capital Gain/Loss</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-sm sm:text-base">Total Net Capital Gain/Loss</span>
                     <span
                       className={cn(
-                        "text-xl font-bold font-mono",
+                        "text-lg sm:text-xl font-bold font-mono whitespace-nowrap",
                         (taxData?.totalNetGainLoss || 0) >= 0 ? "text-chart-2" : "text-destructive"
                       )}
                       data-testid="text-total-gain-loss"
@@ -430,9 +434,9 @@ export default function TaxReports() {
                   <TableRow>
                     <TableHead>Date Sold</TableHead>
                     <TableHead>Asset</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Proceeds</TableHead>
-                    <TableHead className="text-right">Cost Basis</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Quantity</TableHead>
+                    <TableHead className="text-right hidden lg:table-cell">Proceeds</TableHead>
+                    <TableHead className="text-right hidden lg:table-cell">Cost Basis</TableHead>
                     <TableHead className="text-right">Gain/Loss</TableHead>
                     <TableHead>Type</TableHead>
                   </TableRow>
@@ -441,16 +445,17 @@ export default function TaxReports() {
                   {taxData?.gainEvents?.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell className="font-mono text-sm">
-                        {format(new Date(event.soldDate), "MMM d, yyyy")}
+                        <span className="hidden sm:inline">{format(new Date(event.soldDate), "MMM d, yyyy")}</span>
+                        <span className="sm:hidden">{format(new Date(event.soldDate), "M/d/yy")}</span>
                       </TableCell>
                       <TableCell className="font-medium">{event.assetSymbol}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {parseFloat(event.quantity).toFixed(6)}
+                      <TableCell className="text-right font-mono hidden md:table-cell">
+                        {parseFloat(event.quantity).toFixed(4)}
                       </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="text-right font-mono hidden lg:table-cell">
                         {formatCurrency(parseFloat(event.proceeds))}
                       </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="text-right font-mono hidden lg:table-cell">
                         {formatCurrency(parseFloat(event.costBasis))}
                       </TableCell>
                       <TableCell className="text-right">

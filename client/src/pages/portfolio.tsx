@@ -572,8 +572,8 @@ export default function Portfolio() {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-xs sm:text-sm font-bold text-primary">
+                                <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[10px] sm:text-sm font-bold text-primary">
                                     {position.assetSymbol.slice(0, 2)}
                                   </span>
                                 </div>
@@ -594,16 +594,17 @@ export default function Portfolio() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="text-xs sm:text-sm text-muted-foreground font-mono">
-                                    {parseFloat(position.quantity).toFixed(4)} units
+                                  <div className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
+                                    <span className="sm:hidden">{parseFloat(position.quantity).toFixed(2)} units</span>
+                                    <span className="hidden sm:inline">{parseFloat(position.quantity).toFixed(4)} units</span>
                                     {position.source && <span className="sm:hidden text-[10px] ml-1 text-muted-foreground/70">· {position.source}</span>}
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
                                 <div className="text-right">
-                                  <div className="font-mono font-medium text-sm sm:text-base">
+                                  <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">
                                     {formatCurrency(position.currentValue || 0)}
                                   </div>
                                   <div
@@ -675,8 +676,8 @@ export default function Portfolio() {
                       <div key={item.symbol} className="p-3 sm:p-4 rounded-lg border" data-testid={`consolidated-${item.symbol}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs sm:text-sm font-bold text-primary">{item.symbol.slice(0, 2)}</span>
+                            <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-[10px] sm:text-sm font-bold text-primary">{item.symbol.slice(0, 2)}</span>
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
@@ -688,8 +689,9 @@ export default function Portfolio() {
                                   {pctOfPortfolio.toFixed(1)}%
                                 </span>
                               </div>
-                              <div className="text-xs sm:text-sm text-muted-foreground">
-                                <span className="font-mono">{item.totalQty.toFixed(4)}</span> units
+                              <div className="text-xs sm:text-sm text-muted-foreground truncate">
+                                <span className="font-mono sm:hidden">{item.totalQty.toFixed(2)}</span>
+                                <span className="font-mono hidden sm:inline">{item.totalQty.toFixed(4)}</span> units
                                 {item.sources.length > 0 && (
                                   <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs hidden sm:inline">
                                     from {item.sources.join(", ")}
@@ -698,8 +700,8 @@ export default function Portfolio() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className="font-mono font-medium text-sm sm:text-base">{formatCurrency(item.totalValue)}</div>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">{formatCurrency(item.totalValue)}</div>
                             <div className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
                               Avg: {formatCurrency(avgCost)} | Basis: {formatCurrency(item.totalCostBasis)}
                             </div>
@@ -735,7 +737,7 @@ export default function Portfolio() {
                           data-testid={`button-toggle-category-${cat.category}`}
                         >
                           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
+                            <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
                               <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full" style={{ backgroundColor: color }} />
                             </div>
                             <div className="min-w-0">
@@ -753,9 +755,9 @@ export default function Portfolio() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-2">
                             <div className="text-right">
-                              <div className="font-mono font-medium text-sm sm:text-base">{formatCurrency(cat.totalValue)}</div>
+                              <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">{formatCurrency(cat.totalValue)}</div>
                               <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
                                 {gainLoss > 0 ? "+" : ""}{gainPct.toFixed(2)}%
                               </div>
@@ -770,12 +772,13 @@ export default function Portfolio() {
                               const assetPct = asset.costBasis > 0 ? (assetGain / asset.costBasis) * 100 : 0;
                               return (
                                 <div key={asset.symbol} className="flex items-center justify-between py-2 border-b last:border-b-0 border-border/50" data-testid={`category-asset-${asset.symbol}`}>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 min-w-0">
                                     <span className="font-medium text-sm">{asset.symbol}</span>
-                                    <span className="text-xs text-muted-foreground font-mono">{asset.qty.toFixed(4)}</span>
+                                    <span className="text-xs text-muted-foreground font-mono sm:hidden">{asset.qty.toFixed(2)}</span>
+                                    <span className="text-xs text-muted-foreground font-mono hidden sm:inline">{asset.qty.toFixed(4)}</span>
                                   </div>
-                                  <div className="text-right">
-                                    <span className="font-mono text-sm">{formatCurrency(asset.value)}</span>
+                                  <div className="text-right flex-shrink-0 ml-2">
+                                    <span className="font-mono text-xs sm:text-sm whitespace-nowrap">{formatCurrency(asset.value)}</span>
                                     <span className={cn("text-xs ml-2", assetGain > 0 ? "text-chart-2" : assetGain < 0 ? "text-destructive" : "text-muted-foreground")}>
                                       {assetGain > 0 ? "+" : ""}{assetPct.toFixed(1)}%
                                     </span>

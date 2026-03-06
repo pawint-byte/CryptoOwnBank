@@ -67,6 +67,8 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["hash", "type", "direction", "amount", "usdValue", "fee", "address", "date", "status"];
 
+const MOBILE_HIDDEN_COLUMNS: ColumnKey[] = ["fee", "address", "usdValue", "status"];
+
 const STORAGE_KEY = "xrpl-history-columns";
 
 function loadColumnPrefs(): ColumnKey[] {
@@ -96,10 +98,21 @@ function truncateAddress(addr: string): string {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-function formatDate(isoDate: string): string {
+function formatDateShort(isoDate: string): string {
   if (!isoDate) return "N/A";
   try {
-    return new Date(isoDate).toLocaleDateString("en-US", {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  } catch {
+    return "N/A";
+  }
+}
+
+function formatDateFull(isoDate: string): string {
+  if (!isoDate) return "N/A";
+  try {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -293,17 +306,17 @@ export default function OwnBankHistory() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <History className="h-5 w-5 text-[#00A4E4]" />
             Transactions
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="button-column-picker">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Columns
+                  <SlidersHorizontal className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Columns</span>
                   <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
                     {visibleColumns.length}/{ALL_COLUMNS.length}
                   </Badge>
@@ -324,13 +337,13 @@ export default function OwnBankHistory() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
             <Select
               value={filter}
               onValueChange={(v) => setFilter(v as TxFilter)}
             >
               <SelectTrigger
-                className="w-[160px]"
+                className="w-[130px] sm:w-[160px]"
                 data-testid="select-tx-filter"
               >
                 <SelectValue />
@@ -394,13 +407,13 @@ export default function OwnBankHistory() {
                   <TableRow>
                     {isColumnVisible("hash") && <TableHead>Tx Hash</TableHead>}
                     {isColumnVisible("type") && <TableHead>Type</TableHead>}
-                    {isColumnVisible("direction") && <TableHead>Direction</TableHead>}
+                    {isColumnVisible("direction") && <TableHead className="hidden sm:table-cell">Direction</TableHead>}
                     {isColumnVisible("amount") && <TableHead>Amount</TableHead>}
-                    {isColumnVisible("usdValue") && <TableHead className="text-right">USD Value</TableHead>}
-                    {isColumnVisible("fee") && <TableHead className="text-right">Fee</TableHead>}
-                    {isColumnVisible("address") && <TableHead>Address</TableHead>}
+                    {isColumnVisible("usdValue") && <TableHead className="text-right hidden sm:table-cell">USD Value</TableHead>}
+                    {isColumnVisible("fee") && <TableHead className="text-right hidden md:table-cell">Fee</TableHead>}
+                    {isColumnVisible("address") && <TableHead className="hidden md:table-cell">Address</TableHead>}
                     {isColumnVisible("date") && <TableHead>Date</TableHead>}
-                    {isColumnVisible("status") && <TableHead>Status</TableHead>}
+                    {isColumnVisible("status") && <TableHead className="hidden sm:table-cell">Status</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -436,7 +449,7 @@ export default function OwnBankHistory() {
                           </TableCell>
                         )}
                         {isColumnVisible("direction") && (
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <div className="flex items-center gap-1">
                               {tx.type === "OfferCreate" ? (
                                 <>
@@ -491,7 +504,7 @@ export default function OwnBankHistory() {
                           </TableCell>
                         )}
                         {isColumnVisible("usdValue") && (
-                          <TableCell className="text-right">
+                          <TableCell className="text-right hidden sm:table-cell">
                             {(() => {
                               if (tx.type === "TrustSet" || tx.type === "OfferCancel") {
                                 return <span className="text-muted-foreground font-mono text-sm">—</span>;
@@ -520,7 +533,7 @@ export default function OwnBankHistory() {
                           </TableCell>
                         )}
                         {isColumnVisible("fee") && (
-                          <TableCell className="text-right">
+                          <TableCell className="text-right hidden md:table-cell">
                             <span className="font-mono text-xs text-muted-foreground" data-testid={`text-tx-fee-${tx.hash || index}`}>
                               {tx.fee && Number(tx.fee) > 0
                                 ? `${Number(tx.fee).toFixed(6)} XRP`
@@ -529,7 +542,7 @@ export default function OwnBankHistory() {
                           </TableCell>
                         )}
                         {isColumnVisible("address") && (
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                             {counterparty ? (
                               <a
                                 href={`https://xrplscan.com/account/${counterparty}`}
@@ -550,12 +563,13 @@ export default function OwnBankHistory() {
                         {isColumnVisible("date") && (
                           <TableCell>
                             <span className="text-sm text-muted-foreground" data-testid={`text-tx-date-${tx.hash || index}`}>
-                              {formatDate(tx.date)}
+                              <span className="sm:hidden">{formatDateShort(tx.date)}</span>
+                              <span className="hidden sm:inline">{formatDateFull(tx.date)}</span>
                             </span>
                           </TableCell>
                         )}
                         {isColumnVisible("status") && (
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <Badge
                               variant={tx.status === "Success" ? "outline" : "destructive"}
                               data-testid={`badge-tx-status-${tx.hash || index}`}

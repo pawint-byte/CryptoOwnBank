@@ -635,25 +635,25 @@ export default function Integrations() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-3">
               <p className="text-sm font-medium">Supported Formats</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="default" className="text-xs">Ledger Live</Badge>
-                  <span className="text-muted-foreground">Operation history CSV (all accounts)</span>
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                  <Badge variant="default" className="text-xs flex-shrink-0">Ledger Live</Badge>
+                  <span className="text-muted-foreground">Operation history CSV</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="secondary" className="text-xs">Yahoo Finance</Badge>
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">Yahoo Finance</Badge>
                   <span className="text-muted-foreground">Portfolio export CSV</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="secondary" className="text-xs">CoinTracker</Badge>
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">CoinTracker</Badge>
                   <span className="text-muted-foreground">Transaction history CSV</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="secondary" className="text-xs">Generic CSV</Badge>
-                  <span className="text-muted-foreground">Symbol, Quantity, Price, Date columns</span>
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">Generic CSV</Badge>
+                  <span className="text-muted-foreground">Symbol, Quantity, Price, Date</span>
                 </div>
               </div>
               <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
@@ -751,16 +751,16 @@ export default function Integrations() {
           </CardHeader>
           <CardContent className="space-y-3">
             {accountsList.map((account: any) => (
-              <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg" data-testid={`row-account-${account.id}`}>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+              <div key={account.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border rounded-lg" data-testid={`row-account-${account.id}`}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-8 w-8 flex-shrink-0 rounded-full bg-muted flex items-center justify-center">
                     <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
-                    <p className="font-medium text-sm" data-testid={`text-account-name-${account.id}`}>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate" data-testid={`text-account-name-${account.id}`}>
                       {account.accountName || account.provider}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground truncate">
                       {account.provider === "yahoo_import" ? "Yahoo Finance CSV" :
                        account.provider === "ledger_live_import" ? "Ledger Live CSV" :
                        account.provider === "crypto_com" ? "Crypto.com" :
@@ -770,10 +770,10 @@ export default function Integrations() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0 sm:justify-end justify-start pl-11 sm:pl-0">
                   {deleteConfirmId === account.id ? (
                     <>
-                      <span className="text-xs text-destructive font-medium mr-2">Delete all data?</span>
+                      <span className="text-xs text-destructive font-medium mr-1 sm:mr-2">Delete all data?</span>
                       <Button
                         variant="destructive"
                         size="sm"
@@ -820,10 +820,10 @@ export default function Integrations() {
             How we keep your data safe
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
+        <CardContent className="space-y-3 sm:space-y-4 text-sm text-muted-foreground">
           <div className="flex gap-3">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
-              <span className="text-chart-2 font-bold">1</span>
+            <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
+              <span className="text-chart-2 font-bold text-xs sm:text-sm">1</span>
             </div>
             <div>
               <p className="font-medium text-foreground">Encrypted Storage</p>
@@ -831,8 +831,8 @@ export default function Integrations() {
             </div>
           </div>
           <div className="flex gap-3">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
-              <span className="text-chart-2 font-bold">2</span>
+            <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
+              <span className="text-chart-2 font-bold text-xs sm:text-sm">2</span>
             </div>
             <div>
               <p className="font-medium text-foreground">Read-Only Access</p>
@@ -840,8 +840,8 @@ export default function Integrations() {
             </div>
           </div>
           <div className="flex gap-3">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
-              <span className="text-chart-2 font-bold">3</span>
+            <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
+              <span className="text-chart-2 font-bold text-xs sm:text-sm">3</span>
             </div>
             <div>
               <p className="font-medium text-foreground">Instant Revocation</p>
