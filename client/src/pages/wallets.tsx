@@ -679,10 +679,19 @@ export default function Wallets() {
                               <Button
                                 key={lbl}
                                 type="button"
-                                variant={field.value === lbl ? "default" : "outline"}
+                                variant={field.value?.toLowerCase().startsWith(lbl.toLowerCase()) ? "default" : "outline"}
                                 size="sm"
                                 className="h-7 text-xs px-2.5"
-                                onClick={() => field.onChange(field.value === lbl ? "" : lbl)}
+                                onClick={() => {
+                                  field.onChange(lbl);
+                                  setTimeout(() => {
+                                    const input = document.querySelector('[data-testid="input-wallet-label"]') as HTMLInputElement;
+                                    if (input) {
+                                      input.focus();
+                                      input.setSelectionRange(lbl.length, lbl.length);
+                                    }
+                                  }, 0);
+                                }}
                                 data-testid={`label-quick-pick-${lbl.toLowerCase().replace(/\s+/g, "-")}`}
                               >
                                 {lbl}
@@ -692,7 +701,7 @@ export default function Wallets() {
                         )}
                         <FormControl>
                           <Input
-                            placeholder="e.g. My Ledger, Cold Storage, Trading..."
+                            placeholder={savedLabels.length > 0 ? "Pick above or type a new label..." : "e.g. My Ledger, Cold Storage, Trading..."}
                             {...field}
                             data-testid="input-wallet-label"
                           />
