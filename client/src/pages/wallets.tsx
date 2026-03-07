@@ -113,6 +113,7 @@ const CHAIN_LABELS: Record<string, string> = {
   cronos: "CRO",
   nervos: "CKB",
   zilliqa: "ZIL",
+  stellar: "XLM",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -135,6 +136,7 @@ const CHAIN_COLORS: Record<string, string> = {
   cronos: "#002D74",
   nervos: "#3CC68A",
   zilliqa: "#49C1BF",
+  stellar: "#000000",
 };
 
 const CHART_COLORS = [
@@ -348,6 +350,7 @@ function getExplorerUrl(chain: string, address: string): string {
     cronos: `https://cronos.org/explorer/address/${address}`,
     nervos: `https://explorer.nervos.org/address/${address}`,
     zilliqa: `https://viewblock.io/zilliqa/address/${address}`,
+    stellar: `https://stellar.expert/explorer/public/account/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -576,6 +579,7 @@ export default function Wallets() {
     { value: "cronos", label: "Cronos (CRO)" },
     { value: "nervos", label: "Nervos (CKB)" },
     { value: "zilliqa", label: "Zilliqa (ZIL)" },
+    { value: "stellar", label: "Stellar (XLM)" },
   ];
 
   const selectedChain = form.watch("chain");

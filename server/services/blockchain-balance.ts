@@ -1208,7 +1208,42 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getNervosBalance(address);
     case "zilliqa":
       return getZilliqaBalance(address);
+    case "stellar":
+      return getStellarBalance(address);
     default:
       return [];
+  }
+}
+
+export async function getStellarBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://horizon.stellar.org/accounts/${address}`);
+    const balances: ChainBalance[] = [];
+    const prices = await getPrices(["XLM", "USDC", "USDT"]);
+
+    for (const bal of data.balances || []) {
+      if (bal.asset_type === "native") {
+        const amount = parseFloat(bal.balance) || 0;
+        if (amount > 0) {
+          balances.push({
+            symbol: "XLM",
+            balance: amount,
+            usdValue: amount * (prices.XLM || 0),
+          });
+        }
+      } else if (bal.asset_code) {
+        const amount = parseFloat(bal.balance) || 0;
+        if (amount > 0) {
+          const symbol = bal.asset_code.toUpperCase();
+          const price = prices[symbol] || 0;
+          const usdValue = ["USDC", "USDT"].includes(symbol) ? amount : amount * price;
+          balances.push({ symbol, balance: amount, usdValue });
+        }
+      }
+    }
+    return balances;
+  } catch (e) {
+    console.error("Stellar balance error:", e);
+    return [];
   }
 }
