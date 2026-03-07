@@ -47,6 +47,10 @@ const faqGroups = [
         a: "For XRPL yield vaults, we support Xumm/Xaman (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). Both are cold wallet solutions that keep your private keys completely offline or on a secure device. For portfolio tracking, you connect exchange accounts via API keys. See our step-by-step Setup Guide at /setup-guide for detailed instructions.",
       },
       {
+        q: "How do I add my ELLIPAL wallet to CryptoOwnBank for portfolio tracking?",
+        a: "ELLIPAL is an air-gapped cold wallet — it doesn't connect via API or Bluetooth, so CryptoOwnBank tracks it using your public blockchain addresses (read-only, no keys shared). To get your address: 1) Open the ELLIPAL app on your phone. 2) Select the coin you want to track (e.g., XRP, BTC, ETH, SOL, HBAR, etc.). 3) Tap 'Receive' — this shows your public blockchain address and QR code. 4) Copy the address. 5) Go to CryptoOwnBank → Blockchain Addresses → '+ Add Address'. 6) Paste the address, select the correct blockchain, and give it a label like 'ELLIPAL XRP' or 'ELLIPAL BTC'. 7) Click Add — we'll automatically pull your balances and transaction history. Repeat for each coin you hold on ELLIPAL. Your private keys never leave the ELLIPAL device — we only read public on-chain data.",
+      },
+      {
         q: "Do Ledger Nano X and Xaman show the same address for RLUSD?",
         a: "Yes \u2014 when you pair Ledger Nano X with Xaman, Xaman displays the exact XRPL address controlled by your Ledger device. There is only one address. Xaman is the bridge that sends signing requests to Ledger \u2014 the keys stay on Ledger.",
       },
