@@ -114,6 +114,7 @@ const CHAIN_LABELS: Record<string, string> = {
   nervos: "CKB",
   zilliqa: "ZIL",
   stellar: "XLM",
+  verge: "XVG",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -137,6 +138,7 @@ const CHAIN_COLORS: Record<string, string> = {
   nervos: "#3CC68A",
   zilliqa: "#49C1BF",
   stellar: "#000000",
+  verge: "#00CBFF",
 };
 
 const CHART_COLORS = [
@@ -351,6 +353,7 @@ function getExplorerUrl(chain: string, address: string): string {
     nervos: `https://explorer.nervos.org/address/${address}`,
     zilliqa: `https://viewblock.io/zilliqa/address/${address}`,
     stellar: `https://stellar.expert/explorer/public/account/${address}`,
+    verge: `https://verge-blockchain.info/address/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -580,6 +583,7 @@ export default function Wallets() {
     { value: "nervos", label: "Nervos (CKB)" },
     { value: "zilliqa", label: "Zilliqa (ZIL)" },
     { value: "stellar", label: "Stellar (XLM)" },
+    { value: "verge", label: "Verge (XVG)" },
   ];
 
   const selectedChain = form.watch("chain");

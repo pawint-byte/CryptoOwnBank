@@ -2896,6 +2896,7 @@ export async function registerRoutes(
                   "stellar": "XLM", "algorand": "ALGO", "tron": "TRX", "hedera": "HBAR",
                   "avalanche": "AVAX", "polygon": "MATIC", "cosmos": "ATOM", "near": "NEAR",
                   "tezos": "XTZ", "vechain": "VET", "elrond": "EGLD", "filecoin": "FIL",
+                  "verge": "XVG",
                 };
                 symbol = nameToTicker[currName.toLowerCase()] || currName.toUpperCase().slice(0, 10);
               }

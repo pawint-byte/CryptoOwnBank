@@ -1210,8 +1210,30 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getZilliqaBalance(address);
     case "stellar":
       return getStellarBalance(address);
+    case "verge":
+      return getVergeBalance(address);
     default:
       return [];
+  }
+}
+
+export async function getVergeBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const resp = await fetch(`https://chainz.cryptoid.info/xvg/api.dws?q=getbalance&a=${address}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const xvg = parseFloat(text);
+    if (isNaN(xvg) || xvg <= 0) return [];
+
+    const prices = await getPrices(["XVG"]);
+    return [{
+      symbol: "XVG",
+      balance: xvg,
+      usdValue: xvg * (prices.XVG || 0),
+    }];
+  } catch (err) {
+    console.error("Verge balance fetch error:", err);
+    return [];
   }
 }
 
