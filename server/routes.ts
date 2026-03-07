@@ -287,6 +287,8 @@ export async function registerRoutes(
         vaultName?: string;
       }> = [];
 
+      let totalTxScanned = 0;
+      let rlsudTxFound = 0;
       try {
         let marker: any = undefined;
         let hasMore = true;
@@ -303,6 +305,7 @@ export async function registerRoutes(
 
           const response = await client.request(request);
           const txs = response.result.transactions || [];
+          console.log(`[Soil sync] Fetched ${txs.length} txs for ${walletAddress}, marker=${!!marker}`);
 
           for (const tx of txs) {
             const txData = tx.tx || tx.tx_json || {};
