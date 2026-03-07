@@ -308,10 +308,12 @@ export async function registerRoutes(
           console.log(`[Soil sync] Fetched ${txs.length} txs for ${walletAddress}, marker=${!!marker}`);
 
           for (const tx of txs) {
-            const txData = tx.tx || tx.tx_json || {};
-            const meta = tx.meta || {};
+            totalTxScanned++;
+            const txData = tx.tx_json || tx.tx || {};
+            const meta = typeof tx.meta === "string" ? {} : (tx.meta || {});
+            const metaResult = meta.TransactionResult || (tx as any).validated === true ? "tesSUCCESS" : meta.TransactionResult;
 
-            if (meta.TransactionResult !== "tesSUCCESS") continue;
+            if (meta.TransactionResult && meta.TransactionResult !== "tesSUCCESS") continue;
             if (txData.TransactionType !== "Payment") continue;
 
             const src = txData.Account || "";
@@ -355,12 +357,22 @@ export async function registerRoutes(
               }
             }
 
-            if (!validCurrency || amount <= 0) continue;
+            if (!validCurrency || amount <= 0) {
+              if (totalTxScanned <= 5) {
+                const deliveredAmt = meta.delivered_amount || txData.Amount;
+                console.log(`[Soil sync] Skipping tx: validCurrency=${validCurrency}, amount=${amount}, deliveredAmount=`, JSON.stringify(deliveredAmt));
+              }
+              continue;
+            }
+            rlsudTxFound++;
 
             const rippleEpoch = 946684800;
-            const date = txData.date
-              ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
-              : new Date().toISOString();
+            const closeTimeIso = (tx as any).close_time_iso;
+            const date = closeTimeIso
+              ? new Date(closeTimeIso).toISOString()
+              : txData.date
+                ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
+                : new Date().toISOString();
 
             const hash = txData.hash || (tx as any).hash || txData.Hash || "";
             if (!hash) continue;
@@ -409,6 +421,8 @@ export async function registerRoutes(
       } finally {
         await client.disconnect().catch(() => {});
       }
+
+      console.log(`[Soil sync] Scanned ${totalTxScanned} total txs, found ${soilTxns.length} Soil txs, ${discoveredAddresses.length} discovered addresses for wallet ${walletAddress}`);
 
       let imported = 0;
       for (const stx of soilTxns) {
@@ -538,6 +552,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         totalTransactions: soilTxns.length,
+        totalTxScanned,
         newlyImported: imported,
         discoveredAddresses: uniqueDiscovered,
         summary: {
