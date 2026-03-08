@@ -393,8 +393,12 @@ export async function registerRoutes(
             const hash = (tx as any).hash || txData.hash || txData.Hash || "";
             if (!hash) continue;
 
+            if (currency !== "RLUSD") continue;
+
+            if (src === walletAddress && dest === walletAddress) continue;
+
             if (!isKnownVault) {
-              if (currency === "RLUSD" && amount >= 10) {
+              if (amount >= 10) {
                 const isOutgoing = src === walletAddress;
                 const counterparty = isOutgoing ? dest : src;
                 if (
