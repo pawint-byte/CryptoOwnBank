@@ -421,9 +421,11 @@ export async function registerRoutes(
             const isDeposit = allKnownVaultAddresses.has(dest);
             const vaultAddr = isDeposit ? dest : src;
 
+            const txType = isDeposit ? "deposit" : "interest";
+            console.log(`[Soil sync] Found ${txType}: ${amount} ${currency} | ${src.slice(0,8)}->${dest.slice(0,8)} | vault=${vaultAddr.slice(0,8)} | hash=${hash.slice(0,12)}`);
             soilTxns.push({
               hash,
-              type: isDeposit ? "deposit" : "interest",
+              type: txType,
               amount,
               currency,
               date,
