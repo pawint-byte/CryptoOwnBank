@@ -1193,7 +1193,214 @@ export async function getZilliqaBalance(address: string): Promise<ChainBalance[]
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge";
+export async function getXdcBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  const xdcAddress = address.startsWith("xdc") ? "0x" + address.slice(3) : address;
+
+  try {
+    const data = await fetchJson(
+      `https://rpc.xdc.org`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_getBalance",
+          params: [xdcAddress, "latest"],
+        }),
+      }
+    );
+
+    const hexBalance = data.result;
+    if (hexBalance && hexBalance !== "0x0") {
+      const wei = BigInt(hexBalance);
+      const xdc = Number(wei / 10n ** 12n) / 1e6;
+      if (xdc > 0) {
+        const prices = await getPrices(["XDC"]);
+        balances.push({
+          symbol: "XDC",
+          balance: xdc,
+          usdValue: xdc * (prices.XDC || 0),
+        });
+      }
+    }
+  } catch (err) {
+    console.error("XDC native balance fetch error:", err);
+  }
+
+  try {
+    const tokenData = await fetchJson(
+      `https://xdc.blocksscan.io/api/tokens/holding/${xdcAddress}?page=1&limit=50`
+    );
+    const items = tokenData?.items || tokenData?.data || [];
+    if (Array.isArray(items)) {
+      const stablecoins = new Set(["USDT", "USDC", "FXUSD"]);
+      for (const item of items) {
+        const token = item.token || item;
+        const symbol = (token.symbol || "").toUpperCase();
+        const decimals = parseInt(token.decimals || "18");
+        const rawBalance = item.quantity || item.balance || "0";
+        if (!symbol || rawBalance === "0") continue;
+        try {
+          const rawBal = BigInt(rawBalance);
+          let bal: number;
+          if (decimals <= 6) {
+            bal = Number(rawBal) / Math.pow(10, decimals);
+          } else {
+            bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+          }
+          if (bal > 0.000001) {
+            const cgId = COINGECKO_IDS[symbol];
+            let usdValue = 0;
+            if (stablecoins.has(symbol)) {
+              usdValue = bal;
+            } else if (cgId) {
+              const prices = await getPrices([symbol]);
+              usdValue = bal * (prices[symbol] || 0);
+            }
+            balances.push({ symbol, balance: bal, usdValue });
+          }
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.error("XDC token balance fetch error:", err);
+  }
+
+  console.log(`XDC scan: found ${balances.length} assets for ${address.slice(0, 12)}...`);
+  return balances;
+}
+
+export async function getPolygonBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+
+  try {
+    const data = await fetchJson(
+      `https://polygon-bor-rpc.publicnode.com`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_getBalance",
+          params: [address, "latest"],
+        }),
+      }
+    );
+
+    const hexBalance = data.result;
+    if (hexBalance && hexBalance !== "0x0") {
+      const wei = BigInt(hexBalance);
+      const pol = Number(wei / 10n ** 12n) / 1e6;
+      if (pol > 0) {
+        const prices = await getPrices(["POL"]);
+        balances.push({
+          symbol: "POL",
+          balance: pol,
+          usdValue: pol * (prices.POL || 0),
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Polygon native balance fetch error:", err);
+  }
+
+  try {
+    const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD"]);
+    const tokenEntries: Array<{ symbol: string; balance: number }> = [];
+    const blockscoutUrl = `https://polygon.blockscout.com/api/v2/addresses/${address}/tokens?type=ERC-20`;
+
+    let nextPageParams: any = null;
+    let pageCount = 0;
+
+    do {
+      let url = blockscoutUrl;
+      if (nextPageParams) {
+        const params = new URLSearchParams();
+        for (const [k, v] of Object.entries(nextPageParams)) {
+          params.set(k, String(v));
+        }
+        url += `&${params.toString()}`;
+      }
+
+      const tokenData = await fetchJson(url);
+      const items = tokenData.items || [];
+
+      for (const item of items) {
+        const token = item.token || {};
+        const symbol = (token.symbol || "").toUpperCase();
+        const decimals = parseInt(token.decimals || "18");
+        const rawBalance = item.value || "0";
+        if (!symbol || rawBalance === "0") continue;
+        const rawBal = BigInt(rawBalance);
+        let bal: number;
+        if (decimals <= 6) {
+          bal = Number(rawBal) / Math.pow(10, decimals);
+        } else {
+          bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+        }
+        if (bal > 0.000001) {
+          tokenEntries.push({ symbol, balance: bal });
+        }
+      }
+
+      nextPageParams = tokenData.next_page_params || null;
+      pageCount++;
+    } while (nextPageParams && pageCount < 10);
+
+    if (tokenEntries.length > 0) {
+      const tokenSymbols = tokenEntries.map(e => e.symbol);
+      const ids = tokenSymbols
+        .filter(s => !stablecoins.has(s))
+        .map(s => COINGECKO_IDS[s])
+        .filter(Boolean);
+
+      let tokenPrices: Record<string, number> = {};
+      if (ids.length > 0) {
+        try {
+          const dbPrices = await loadPricesFromDb();
+          for (const sym of tokenSymbols) {
+            if (dbPrices[sym]) tokenPrices[sym] = dbPrices[sym];
+          }
+          const missingSymbols = tokenSymbols.filter(s => !tokenPrices[s] && !stablecoins.has(s) && COINGECKO_IDS[s]);
+          if (missingSymbols.length > 0) {
+            const missingIds = [...new Set(missingSymbols.map(s => COINGECKO_IDS[s]).filter(Boolean))];
+            const priceData = await fetchJson(
+              `https://api.coingecko.com/api/v3/simple/price?ids=${missingIds.join(",")}&vs_currencies=usd`
+            );
+            for (const sym of missingSymbols) {
+              const id = COINGECKO_IDS[sym];
+              if (id && priceData[id]?.usd) {
+                tokenPrices[sym] = priceData[id].usd;
+              }
+            }
+          }
+        } catch {}
+      }
+
+      for (const entry of tokenEntries) {
+        let usdValue = 0;
+        if (stablecoins.has(entry.symbol)) {
+          usdValue = entry.balance;
+        } else if (tokenPrices[entry.symbol]) {
+          usdValue = entry.balance * tokenPrices[entry.symbol];
+        }
+        balances.push({
+          symbol: entry.symbol,
+          balance: entry.balance,
+          usdValue,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Polygon token balance fetch error:", err);
+  }
+
+  console.log(`Polygon scan: found ${balances.length} assets for ${address.slice(0, 12)}...`);
+  return balances;
+}
+
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -1218,6 +1425,8 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   ton: { name: "TON", symbol: "TON", addressPattern: "^(EQ|UQ|0:|kf)", example: "UQ..." },
   stellar: { name: "Stellar", symbol: "XLM", addressPattern: "^G[A-Z2-7]{55}$", example: "G..." },
   verge: { name: "Verge", symbol: "XVG", addressPattern: "^D[1-9A-HJ-NP-Za-km-z]{33}$", example: "D..." },
+  xdc: { name: "XDC Network", symbol: "XDC", addressPattern: "^(xdc[a-fA-F0-9]{40}|0x[a-fA-F0-9]{40})$", example: "xdc..." },
+  polygon: { name: "Polygon", symbol: "POL", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -1266,6 +1475,10 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getVergeBalance(address);
     case "ton":
       return getTonBalance(address);
+    case "xdc":
+      return getXdcBalance(address);
+    case "polygon":
+      return getPolygonBalance(address);
     default:
       return [];
   }
@@ -1281,7 +1494,7 @@ export function detectCorrectChain(storedChain: SupportedChain, address: string)
     "bitcoin", "ethereum", "solana", "xrp", "ton", "litecoin", "dogecoin",
     "tron", "cardano", "algorand", "cosmos", "hedera", "polkadot",
     "stellar", "vechain", "cronos", "nervos", "zilliqa", "digibyte",
-    "casper", "verge", "avalanche",
+    "casper", "verge", "avalanche", "xdc", "polygon",
   ];
   for (const chain of priorityOrder) {
     if (chain === storedChain) continue;

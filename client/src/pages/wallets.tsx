@@ -117,6 +117,8 @@ const CHAIN_LABELS: Record<string, string> = {
   zilliqa: "ZIL",
   stellar: "XLM",
   verge: "XVG",
+  xdc: "XDC",
+  polygon: "POL",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -142,6 +144,8 @@ const CHAIN_COLORS: Record<string, string> = {
   zilliqa: "#49C1BF",
   stellar: "#000000",
   verge: "#00CBFF",
+  xdc: "#1E4B6E",
+  polygon: "#8247E5",
 };
 
 const CHART_COLORS = [
@@ -358,6 +362,8 @@ function getExplorerUrl(chain: string, address: string): string {
     zilliqa: `https://viewblock.io/zilliqa/address/${address}`,
     stellar: `https://stellar.expert/explorer/public/account/${address}`,
     verge: `https://verge-blockchain.info/address/${address}`,
+    xdc: `https://xdc.blocksscan.io/address/${address.startsWith("xdc") ? address : "xdc" + address.slice(2)}`,
+    polygon: `https://polygonscan.com/address/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -593,6 +599,8 @@ export default function Wallets() {
     { value: "zilliqa", label: "Zilliqa (ZIL)" },
     { value: "stellar", label: "Stellar (XLM)" },
     { value: "verge", label: "Verge (XVG)" },
+    { value: "xdc", label: "XDC Network (XDC)" },
+    { value: "polygon", label: "Polygon (POL)" },
   ];
 
   const selectedChain = form.watch("chain");

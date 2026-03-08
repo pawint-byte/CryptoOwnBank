@@ -2,7 +2,7 @@
 
 ## Overview
 
-CryptoBroker Tracker is a cryptocurrency and investment portfolio management application with an integrated OwnBank XRPL yield dashboard. It allows users to connect exchange and brokerage accounts for portfolio tracking, transaction monitoring, and tax report generation. The OwnBank section facilitates non-custodial XRPL wallet connections (Xumm/Ledger) to interact with Soil Protocol yield vaults, track interest, and withdraw earned interest while maintaining principal lock. The project aims to provide a comprehensive, non-custodial solution for crypto portfolio management and DeFi yield participation on the XRPL, targeting informed investors seeking transparency and control over their assets.
+CryptoBroker Tracker is a comprehensive cryptocurrency and investment portfolio management application with an integrated OwnBank XRPL yield dashboard. It offers account connection for portfolio tracking, transaction monitoring, and tax report generation. The OwnBank section provides non-custodial XRPL wallet connections (Xumm/Ledger) to interact with Soil Protocol yield vaults, track interest, and manage withdrawals while maintaining principal lock. The project's vision is to deliver a transparent, non-custodial solution for crypto portfolio management and DeFi yield participation on the XRPL for informed investors.
 
 ## User Preferences
 
@@ -12,53 +12,40 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 - **Framework**: React 18 with TypeScript.
-- **Routing**: Wouter.
-- **State Management**: TanStack React Query for server state, Zustand for XRPL wallet/vault state (localStorage).
-- **UI Components**: shadcn/ui built on Radix UI.
-- **Styling**: Tailwind CSS with custom design tokens for light/dark themes.
-- **Charts**: Recharts for visualizations.
+- **State Management**: TanStack React Query for server state, Zustand for XRPL wallet/vault state.
+- **UI Components**: shadcn/ui built on Radix UI, styled with Tailwind CSS (light/dark themes).
+- **Charts**: Recharts.
 - **Forms**: React Hook Form with Zod validation.
-- **XRPL Integration**: xrpl.js, Xumm SDK, Ledger HW libs.
-- **Mobile Responsiveness**: All pages optimized for mobile with responsive breakpoints (`sm:` for 640px+). Key patterns: 2x2 metric card grids, collapsible allocation chart legends (top 8 + "Show All"), hidden table columns on mobile (Price/Total in transactions, Direction/Fee/Source in full transactions, Balance/Source/Chain in wallets, Quantity/Proceeds/CostBasis in tax reports, Direction/USDValue/Status in OwnBank history), compact position items with hidden badges on mobile (source shown inline as "· source" suffix), responsive chart heights, smaller padding/fonts/avatars on mobile, compact date formats (short dates on mobile, full dates with time on desktop), abbreviated quantity decimals (2 on mobile, 4-6 on desktop), stacked layouts for buttons/controls on mobile, truncated addresses/emails.
-- **Key Pages**:
-    - **CryptoBroker**: Dashboard, Transactions, Portfolio, Cold Wallets, Tax Reports, Price Alerts, Integrations, Settings.
-    - **OwnBank XRPL**: Dashboard (with full Soil vault tracking — principal, paid interest, estimated accruing yield, total yield, dates), Vaults (Soil Protocol RLUSD yield vaults), Withdraw Interest (interest-only), History, My Referrals.
+- **XRPL Integration**: xrpl.js, Xumm SDK, Ledger HW libraries.
+- **Mobile Responsiveness**: Optimized for mobile with responsive breakpoints, compact layouts, hidden columns, and abbreviated data.
+- **Key Pages**: CryptoBroker (Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings) and OwnBank XRPL (Dashboard with Soil vault tracking, Vaults, Withdraw Interest, History, Referrals).
 
 ### Backend
-- **Runtime**: Node.js with Express.
-- **Language**: TypeScript (ESM modules).
+- **Runtime**: Node.js with Express and TypeScript.
 - **API Pattern**: RESTful.
-- **Build System**: Vite for frontend, esbuild for server.
-- **Payments**: Stripe for subscriptions.
 - **Core Functionality**:
-    - **Authentication**: Email/password auth (scrypt hashing, email verification, password reset), legacy Replit Auth. PostgreSQL-backed sessions. Admin roles with dashboard.
-    - **Data Sync**: Exchange API key management (encrypted), automatic/manual sync of balances and transactions from exchanges (Binance, Coinbase, etc.). Public blockchain API integrations for wallet balance tracking across 22 chains: BTC, ETH, SOL, XRP, DOGE, LTC, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, DGB, CSPR, CRO, CKB, ZIL, TON, XLM, XVG. **Auto-chain-detection**: During sync, if a wallet's address format doesn't match its stored chain, the system auto-detects the correct chain, fetches from there, and updates the DB (e.g., a TON address stored as "cronos" gets auto-corrected to "ton").
-    - **Token Scanning**: Ethereum addresses pull native ETH (via llamarpc) + all ERC-20 tokens via Blockscout API with pagination. Solana: native SOL + SPL tokens via `getTokenAccountsByOwner` RPC. XRP: native XRP + trust line tokens (RLUSD) via `account_lines`. Avalanche: Glacier API for native AVAX + tokens. Algorand: Algonode API for ALGO + ASA tokens. Cosmos: REST API for ATOM + staking delegations. Tron: TronGrid API for TRX + TRC-20 tokens. Hedera: Mirror Node API for HBAR + HTS tokens. Polkadot: Subscan API. VeChain: Blockscout for VET + VIP-180 tokens. Cronos: Explorer API for CRO + CRC-20 tokens. DigiByte: Trezor Blockbook API. Casper: CasperStats API. 100+ tokens mapped to CoinGecko IDs for automatic price lookup.
-    - **Blockchain Transaction Import**: When syncing ETH or BTC wallets, pulls full transaction history from Etherscan (ETH) and blockchain.info (BTC). Classifies receive→buy, send→sell. Looks up historical USD price per transaction date via CoinGecko and creates tax lots for acquisitions. Deduplicates by tx hash. Services: `server/services/blockchain-transactions.ts` (tx fetching), `server/services/historical-prices.ts` (price lookup with in-memory cache).
-    - **XRPL Scanner**: Scans XRPL ledger for transactions between user wallets and Soil vault addresses (Credit+ `rHKx9ng...` at 8% APR, Liquid `rnvp6Fi...` at 5% APR, plus user-added custom vaults) for deposits and interest payments. Creates position records per vault (`RLUSD-SOIL-CREDIT+`, `RLUSD-SOIL-LIQUID`, etc.) so they appear in Overview/Portfolio. Auto-discovers unknown RLUSD transfers (≥$10) and surfaces them as "Unrecognized RLUSD Transfers" for the user to label as vaults or dismiss. Custom vault addresses stored in `user_settings.customVaults` (jsonb). Direct deposit flow via Xumm signing from the Vaults page captures vault address + tx hash server-side and triggers auto-sync.
-    - **Email Notifications**: Resend integration for various transactional emails.
+    - **Authentication**: Email/password, legacy Replit Auth, PostgreSQL-backed sessions, admin roles.
+    - **Data Sync**: Encrypted exchange API key management, automatic/manual balance and transaction sync from major exchanges and 24 public blockchains (BTC, ETH, SOL, XRP, etc.), with auto-chain-detection for wallet addresses.
+    - **Token Scanning**: Comprehensive token scanning across various chains (ERC-20, SPL, XRP trust lines, ASA, etc.) with price lookup via CoinGecko.
+    - **Blockchain Transaction Import**: Full transaction history import from Etherscan (ETH) and blockchain.info (BTC), classifying transactions and creating tax lots based on historical USD prices.
+    - **XRPL Scanner**: Monitors XRPL for transactions between user wallets and Soil vault addresses (Credit+, Liquid, custom vaults), creating position records and auto-discovering unrecognized RLUSD transfers.
+    - **Email Notifications**: Transactional emails via Resend.
 
 ### Data Storage
-- **Database**: PostgreSQL with Drizzle ORM and drizzle-zod for schema validation. Migrations via `drizzle-kit push`.
-- **Key Models**: Users, API Credentials (encrypted), Accounts (including "manual" provider for manual entries), Transactions, Positions (with isAddressed flag), Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances, Price Cache (DB-backed CoinGecko price fallback).
-- **Manual Entry**: `POST /api/positions/manual` creates positions for assets with no automated price feed (stocks, unsupported tokens, physical assets). Creates a "manual" account per location. Does NOT write to global asset prices. Form on Portfolio page via "Add Entry" button.
-- **Asset Categories**: `shared/asset-categories.ts` maps 150+ crypto symbols to sectors: Layer 1, Layer 2, DeFi, Smart Contracts, Finance, Memecoin, Gaming, AI, Oracle, Web3, Stablecoin, Staking, NFT, RWA, IoT, Privacy, Storage, Supply Chain, Metaverse, Internet.
-- **Client-side Storage (Zustand)**: Wallet state, XRPL balances, Vault Deposits, Referral System data, Spending Wallet, Subscription Tier.
+- **Database**: PostgreSQL with Drizzle ORM.
+- **Key Models**: Users, API Credentials, Accounts, Transactions, Positions, Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances.
+- **Manual Entry**: Supports manual position creation for assets without automated feeds.
+- **Asset Categories**: Categorizes 150+ crypto symbols into sectors (Layer 1, DeFi, AI, Stablecoin, etc.).
+- **Client-side Storage (Zustand)**: Stores wallet state, XRPL balances, vault deposits, and referral data.
 
 ### Monetization (Freemium)
-- **Tiers**: Free, Premium ($9/month or $79/year), and future Pro tier.
-- **Free**: 1 exchange, 1 wallet, 3 alerts, 30-day history, Soil vault access, yield calculator.
-- **Premium Monthly** ($9/mo): Unlimited exchanges/wallets/alerts, full history, CSV import, auto-withdraw. No tax reports.
-- **Premium Annual** ($79/yr): Everything in monthly + complete tax reports (CSV, PDF, TurboTax). Tax reports are annual-plan exclusive to prevent one-month gaming at tax time.
-- **Pro** (future): Everything in Premium Annual + XLS-66 XRPL lending.
-- **Billing cycle stored**: `subscriptionBillingCycle` column in user_settings tracks "monthly" or "yearly" from Stripe checkout metadata.
-- **Gating**: Server-side enforced limits with 403 responses. Frontend shows `UpgradePrompt` component (supports `variant="premium"` or `variant="annual"` for different messaging). Gated endpoints: POST /api/credentials, POST /api/wallets, GET /api/transactions, POST /api/import/yahoo, GET /api/tax-report, POST /api/tax-report/calculate, GET /api/tax-report/export, POST /api/alerts.
-- **Admin Bypass**: `getEffectiveTier(userId)` in `server/routes.ts` returns `{tier:"premium", billingCycle:"yearly"}` for ADMIN_EMAILS (`pawint@me.com`, `andrew.wint@gmail.com`). All tier-gated endpoints use this helper so admins can test all features without paying. The `/api/subscription/limits` endpoint also uses it so the frontend shows everything unlocked for admins.
-- **CSV Import**: Supports Ledger Live (auto-detected by headers: operation date, currency ticker, operation type), Yahoo Finance, CoinTracker, and generic CSV formats. Ledger Live maps IN→buy, OUT→sell, REWARD→income, deduplicates by operation hash.
-- **Statement Insights**: Upload bank/brokerage PDF statements for educational rate comparisons. Parser extracts financial products (CDs, savings, money market, checking, bonds, brokerage) with balances, rates, maturity dates. Comparison engine shows side-by-side with alternatives (Soil Treasury 5.2% APR, Soil Credit+ 8.0% APR, HY Savings benchmark, T-Bills benchmark). Heavy disclaimer framework: persistent banner, inline disclaimers on each comparison, first-use acknowledgment modal. Free tier: 1 upload with basic product detection only. Premium: unlimited uploads + full comparison insights. "Add to Portfolio" imports detected products as manual positions with symbol format `INSTITUTION-TYPE` (e.g., `CHASE-CD`, `ALLY-SAVE`), using `quantity=balance` and `costPerUnit=1`. Duplicate detection checks existing portfolio positions by symbol match to prevent re-importing. Files: `server/services/statement-parser.ts`, `server/services/comparison-engine.ts`, `client/src/pages/statement-insights.tsx`, `client/src/components/disclaimer-banner.tsx`. Tables: `statement_uploads`, `statement_products`.
-- **Migration Guide**: Guided 6-step walkthrough at `/migration-guide` that helps new users move from Yahoo Finance/spreadsheets to live portfolio tracking. Steps: (1) Import Yahoo CSV, (2) Connect exchanges, (3) Add blockchain wallets, (4) Reconcile duplicates, (5) Verify dashboard totals, (6) Explore yield vaults (optional). Progress tracking auto-detects completed steps from actual account data (imports, connected exchanges, wallet addresses, reconciled entries). Accessible to both logged-in and logged-out users — logged-out users see a signup prompt instead of progress. Linked from sidebar nav and landing page footer. File: `client/src/pages/migration-guide.tsx`.
-- **Data Reconciliation**: Dedicated page at `/reconciliation` for reviewing and truing up portfolio data across all sources. Features: (1) All positions grouped by asset symbol with source details (exchange, blockchain, manual, import), (2) Duplicate detection flags when same asset appears from overlapping sources (e.g., wallet + exchange), (3) **Side-by-side comparison table** when 2+ entries exist for same asset — shows quantity, value, avg cost, cost basis, price, last updated side by side with visual diff highlighting (amber for mismatches, green badge for matching quantities), (4) **Resolve workflow**: import entries alongside live sources show "Already accounted for — Remove" with auto-detected blockchain truth. When resolving, tax lots from the import are automatically transferred to the wallet entry via `POST /api/positions/resolve-to-wallet` (clears transactionId, sets walletBalanceId); non-wallet duplicates use pick-and-choose, (5) **Purchase Lots (parent/child structure)**: Wallet entries display a parent/child view — live blockchain balance on top (always current, read-only), with expandable purchase lot sub-entries underneath. Each lot records: quantity, cost per unit, date acquired, optional note. Lots can be added/edited/deleted manually. The sum of lot quantities is compared against the live balance with a "Fully accounted for" or "Gap" indicator. When Yahoo/CSV imports are resolved in favor of wallet entries, the import's tax lots automatically transfer to become purchase lots on the wallet entry. Endpoints: `GET/POST /api/wallet-balances/:id/lots`, `PATCH/DELETE /api/wallet-balances/:balanceId/lots/:lotId`. Schema: `tax_lots` table now has nullable `transactionId`, new `walletBalanceId` and `note` columns. Cost data auto-recalculates on all lot changes via `storage.updateWalletBalanceCostData()`, (6) Inline editing of quantity and cost basis on non-wallet positions, (7) Merge tool to combine two positions of the same asset into one, (8) Delete individual non-wallet positions with confirmation, (9) "Mark as Addressed" to hide reviewed entries without deleting. Filter cards: All/Duplicates/Manual/Zero-balance. Search by asset or source. Backend: `PATCH /api/positions/:id` (edit fields), `PATCH /api/wallet-balances/:id/cost` (edit wallet cost data), `POST /api/positions/merge` (merge two positions, validates same symbol). **Sync safety**: Wallet sync no longer deletes-and-reinserts balances; instead it upserts (preserving cost data) and only deletes balances for tokens no longer on-chain. File: `client/src/pages/reconciliation.tsx`.
-- **Affiliate/Referral**: Links for buying RLUSD, embedded Soil referral code, user referral program for premium credits.
+- **Tiers**: Free, Premium (monthly/annual), and future Pro. Features gated by tier (e.g., number of exchanges/wallets, history depth, tax reports).
+- **Gating**: Server-side enforced limits with 403 responses and frontend `UpgradePrompt`. Admin bypass for testing.
+- **CSV Import**: Supports Ledger Live, Yahoo Finance, CoinTracker, and generic CSV formats.
+- **Statement Insights**: PDF statement upload for comparing financial products against alternatives (Soil Treasury, HY Savings, T-Bills).
+- **Migration Guide**: Guided walkthrough for new users transitioning from other platforms.
+- **Data Reconciliation**: Dedicated page for reviewing and truing up portfolio data, including duplicate detection, side-by-side comparison, and purchase lot management for wallet entries.
+- **Affiliate/Referral**: Links for RLUSD, embedded Soil referral code, and user referral program.
 
 ## External Dependencies
 
@@ -66,7 +53,7 @@ Preferred communication style: Simple, everyday language.
 - PostgreSQL
 
 ### Authentication
-- Replit Auth (OpenID Connect provider)
+- Replit Auth
 
 ### Payments
 - Stripe
@@ -77,51 +64,13 @@ Preferred communication style: Simple, everyday language.
 - @ledgerhq/hw-app-xrp
 - @ledgerhq/hw-transport-webusb
 
-### Frontend Libraries
-- @tanstack/react-query
-- zustand
-- Radix UI
-- Recharts
-- date-fns
-- lucide-react
-
-### Backend Libraries
-- Drizzle ORM
-- Passport.js
-- crypto (Node.js module)
-- stripe (SDK)
-
 ### Email Service
-- Resend (via Replit connector)
-- Nodemailer (for market data alerts, optional SMTP config)
+- Resend
+- Nodemailer
 
 ### Market Data
-- CoinGecko API (free tier, 27 tracked assets) — prices + 24h change
-- DefiLlama Yields API — DeFi yield data from known protocols (Lido, Aave, Jito, Benqi, etc.)
-- Cached in `market_cache` DB table, refreshed every 2 hours via scheduler
-- Services: `server/services/market-data.ts`, `server/services/email-service.ts`
-
-### Recommendations Hub
-- Frontend component: `client/src/components/recommendations-hub.tsx`
-- Custody knowledge base: `client/src/lib/custody-knowledge.ts`
-- 6-tab interface: Overview (prices + summary), By Asset (consolidated view), Move Off Exchange, Staking, DeFi vs TradFi, Alerts
-- Placed on Dashboard between charts and transactions
-- DB tables: `market_cache`, `email_config`, `alert_log`
+- CoinGecko API (prices, 24h change)
+- DefiLlama Yields API (DeFi yield data)
 
 ### Analytics
 - Google Analytics 4 (GA4)
-
-## Roadmap / To Do
-
-### Grant Opportunities
-1. **XRPL Grant Application** — Prepare and submit to Ripple's XRPL Grants program. Highlight Soil vault integration, XRP wallet tracking, RLUSD support, non-custodial architecture, and multi-chain portfolio aggregation. Typical grant range: $10K–$50K.
-2. **Deeper XRPL Features (strengthens grant case)**:
-   - XRPL DEX trading pair viewer
-   - AMM pool tracking and yield display
-   - Trustline management UI
-   - XRPL transaction history with token-level detail
-3. **Additional Grant Programs**:
-   - Stellar Community Fund (we already support Stellar wallet scanning)
-   - Ethereum Foundation ecosystem grants (Blockscout-powered ERC-20 scanning)
-   - Solana Foundation grants (we have Solana wallet + SPL token support)
-4. **Usage Metrics & Analytics** — Track and surface active users, wallets connected, transactions processed, and other KPIs to strengthen grant proposals and demonstrate traction.
