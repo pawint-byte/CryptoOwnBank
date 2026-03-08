@@ -1,9 +1,13 @@
+export type CustodyType = "on_chain" | "custodial";
+
 export interface StakingOption {
   platform: string;
   method: string;
   apyRange: string;
   apyMid: number;
   link: string;
+  custodyType: CustodyType;
+  blockchain: string;
 }
 
 export interface DefiAlternative {
@@ -14,6 +18,8 @@ export interface DefiAlternative {
   defiApyMid: number;
   riskLevel: "Low" | "Medium" | "High";
   link: string;
+  custodyType: CustodyType;
+  blockchain: string;
 }
 
 export interface ExchangeEarnOption {
@@ -23,6 +29,7 @@ export interface ExchangeEarnOption {
   apyMid: number;
   flexible: boolean;
   link: string;
+  custodyType: CustodyType;
 }
 
 export interface AssetKnowledge {
@@ -44,20 +51,20 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Lido", method: "Liquid Staking (stETH)", apyRange: "3.0–3.5%", apyMid: 3.25, link: "https://lido.fi" },
-      { platform: "Rocket Pool", method: "Decentralized Staking (rETH)", apyRange: "2.8–3.2%", apyMid: 3.0, link: "https://rocketpool.net" },
-      { platform: "Coinbase (cbETH)", method: "Wrapped Staking", apyRange: "2.5–3.0%", apyMid: 2.75, link: "https://www.coinbase.com/earn" },
-      { platform: "EigenLayer", method: "Restaking", apyRange: "Variable + Points", apyMid: 4.0, link: "https://www.eigenlayer.xyz" },
+      { platform: "Lido", method: "Liquid Staking (stETH)", apyRange: "3.0–3.5%", apyMid: 3.25, link: "https://lido.fi", custodyType: "on_chain", blockchain: "Ethereum" },
+      { platform: "Rocket Pool", method: "Decentralized Staking (rETH)", apyRange: "2.8–3.2%", apyMid: 3.0, link: "https://rocketpool.net", custodyType: "on_chain", blockchain: "Ethereum" },
+      { platform: "Coinbase (cbETH)", method: "Wrapped Staking", apyRange: "2.5–3.0%", apyMid: 2.75, link: "https://www.coinbase.com/earn", custodyType: "custodial", blockchain: "Ethereum" },
+      { platform: "EigenLayer", method: "Restaking", apyRange: "Variable + Points", apyMid: 4.0, link: "https://www.eigenlayer.xyz", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "ETH Staking", apyRange: "2.5–3.0%", apyMid: 2.75, flexible: false, link: "https://www.coinbase.com/earn" },
-      { exchange: "Kraken", program: "ETH Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins" },
-      { exchange: "Binance", program: "ETH 2.0 Staking", apyRange: "2.5–3.5%", apyMid: 3.0, flexible: false, link: "https://www.binance.com/en/eth2" },
-      { exchange: "Crypto.com", program: "Earn", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://crypto.com/earn" },
+      { exchange: "Coinbase", program: "ETH Staking", apyRange: "2.5–3.0%", apyMid: 2.75, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
+      { exchange: "Kraken", program: "ETH Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
+      { exchange: "Binance", program: "ETH 2.0 Staking", apyRange: "2.5–3.5%", apyMid: 3.0, flexible: false, link: "https://www.binance.com/en/eth2", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
     ],
     defiAlternatives: [
-      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Lido stETH", defiApy: "3.2%", defiApyMid: 3.2, riskLevel: "Low", link: "https://lido.fi" },
-      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave ETH Lending", defiApy: "2.0–4.0%", defiApyMid: 3.0, riskLevel: "Medium", link: "https://aave.com" },
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Lido stETH", defiApy: "3.2%", defiApyMid: 3.2, riskLevel: "Low", link: "https://lido.fi", custodyType: "on_chain", blockchain: "Ethereum" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave ETH Lending", defiApy: "2.0–4.0%", defiApyMid: 3.0, riskLevel: "Medium", link: "https://aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     warnings: ["Never share your seed phrase", "Verify staking contracts before depositing"],
     selfCustodyWallets: ["Ledger Nano X", "Trezor Model T", "MetaMask (software)"],
@@ -68,17 +75,17 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Marinade", method: "Liquid Staking (mSOL)", apyRange: "6.5–7.5%", apyMid: 7.0, link: "https://marinade.finance" },
-      { platform: "Jito", method: "Liquid Staking (JitoSOL)", apyRange: "7.0–8.0%", apyMid: 7.5, link: "https://www.jito.network" },
-      { platform: "Native Delegation", method: "Direct Validator Staking", apyRange: "6.0–7.0%", apyMid: 6.5, link: "https://solanabeach.io/validators" },
+      { platform: "Marinade", method: "Liquid Staking (mSOL)", apyRange: "6.5–7.5%", apyMid: 7.0, link: "https://marinade.finance", custodyType: "on_chain", blockchain: "Solana" },
+      { platform: "Jito", method: "Liquid Staking (JitoSOL)", apyRange: "7.0–8.0%", apyMid: 7.5, link: "https://www.jito.network", custodyType: "on_chain", blockchain: "Solana" },
+      { platform: "Native Delegation", method: "Direct Validator Staking", apyRange: "6.0–7.0%", apyMid: 6.5, link: "https://solanabeach.io/validators", custodyType: "on_chain", blockchain: "Solana" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "SOL Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn" },
-      { exchange: "Kraken", program: "SOL Staking", apyRange: "5.0–6.0%", apyMid: 5.5, flexible: false, link: "https://www.kraken.com/features/staking-coins" },
-      { exchange: "Binance", program: "SOL Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://www.binance.com/en/staking" },
+      { exchange: "Coinbase", program: "SOL Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
+      { exchange: "Kraken", program: "SOL Staking", apyRange: "5.0–6.0%", apyMid: 5.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
+      { exchange: "Binance", program: "SOL Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
     ],
     defiAlternatives: [
-      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Jito Staking", defiApy: "7.5%", defiApyMid: 7.5, riskLevel: "Low", link: "https://www.jito.network" },
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Jito Staking", defiApy: "7.5%", defiApyMid: 7.5, riskLevel: "Low", link: "https://www.jito.network", custodyType: "on_chain", blockchain: "Solana" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Phantom (software)", "Solflare (software)"],
   },
@@ -97,11 +104,11 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Native Delegation", method: "Stake Pool Delegation", apyRange: "3.0–5.0%", apyMid: 4.0, link: "https://pool.pm" },
+      { platform: "Native Delegation", method: "Stake Pool Delegation", apyRange: "3.0–5.0%", apyMid: 4.0, link: "https://pool.pm", custodyType: "on_chain", blockchain: "Cardano" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Kraken", program: "ADA Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins" },
-      { exchange: "Binance", program: "ADA Staking", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://www.binance.com/en/staking" },
+      { exchange: "Kraken", program: "ADA Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
+      { exchange: "Binance", program: "ADA Staking", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Daedalus", "Yoroi"],
   },
@@ -111,12 +118,12 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Native Nomination", method: "Nominating Validators", apyRange: "12–15%", apyMid: 13.5, link: "https://polkadot.js.org/apps/#/staking" },
-      { platform: "Bifrost", method: "Liquid Staking (vDOT)", apyRange: "10–13%", apyMid: 11.5, link: "https://bifrost.finance" },
+      { platform: "Native Nomination", method: "Nominating Validators", apyRange: "12–15%", apyMid: 13.5, link: "https://polkadot.js.org/apps/#/staking", custodyType: "on_chain", blockchain: "Polkadot" },
+      { platform: "Bifrost", method: "Liquid Staking (vDOT)", apyRange: "10–13%", apyMid: 11.5, link: "https://bifrost.finance", custodyType: "on_chain", blockchain: "Polkadot" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Kraken", program: "DOT Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.kraken.com/features/staking-coins" },
-      { exchange: "Binance", program: "DOT Staking", apyRange: "10.0–12.0%", apyMid: 11.0, flexible: false, link: "https://www.binance.com/en/staking" },
+      { exchange: "Kraken", program: "DOT Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
+      { exchange: "Binance", program: "DOT Staking", apyRange: "10.0–12.0%", apyMid: 11.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Polkadot.js", "Nova Wallet"],
   },
@@ -126,11 +133,11 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Benqi", method: "Liquid Staking (sAVAX)", apyRange: "5.0–6.0%", apyMid: 5.5, link: "https://benqi.fi" },
-      { platform: "Native Delegation", method: "Validator Delegation", apyRange: "8.0–9.5%", apyMid: 8.75, link: "https://wallet.avax.network" },
+      { platform: "Benqi", method: "Liquid Staking (sAVAX)", apyRange: "5.0–6.0%", apyMid: 5.5, link: "https://benqi.fi", custodyType: "on_chain", blockchain: "Avalanche" },
+      { platform: "Native Delegation", method: "Validator Delegation", apyRange: "8.0–9.5%", apyMid: 8.75, link: "https://wallet.avax.network", custodyType: "on_chain", blockchain: "Avalanche" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "AVAX Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn" },
+      { exchange: "Coinbase", program: "AVAX Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Core Wallet"],
   },
@@ -140,8 +147,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     exchangeEarnOptions: [
-      { exchange: "Crypto.com", program: "Earn", apyRange: "0.5–1.5%", apyMid: 1.0, flexible: true, link: "https://crypto.com/earn" },
-      { exchange: "Binance", program: "Simple Earn", apyRange: "0.5–2.0%", apyMid: 1.0, flexible: true, link: "https://www.binance.com/en/earn" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "0.5–1.5%", apyMid: 1.0, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
+      { exchange: "Binance", program: "Simple Earn", apyRange: "0.5–2.0%", apyMid: 1.0, flexible: true, link: "https://www.binance.com/en/earn", custodyType: "custodial" },
     ],
     warnings: ["Bitcoin does not support native staking", "Be cautious of wrapped BTC yield products"],
     selfCustodyWallets: ["Ledger Nano X", "Trezor Model T", "Coldcard", "Ellipal Titan", "Arculus"],
@@ -152,11 +159,11 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Lido", method: "Liquid Staking (stMATIC)", apyRange: "4.0–5.0%", apyMid: 4.5, link: "https://polygon.lido.fi" },
-      { platform: "Native Delegation", method: "Validator Delegation", apyRange: "4.5–5.5%", apyMid: 5.0, link: "https://staking.polygon.technology" },
+      { platform: "Lido", method: "Liquid Staking (stMATIC)", apyRange: "4.0–5.0%", apyMid: 4.5, link: "https://polygon.lido.fi", custodyType: "on_chain", blockchain: "Polygon" },
+      { platform: "Native Delegation", method: "Validator Delegation", apyRange: "4.5–5.5%", apyMid: 5.0, link: "https://staking.polygon.technology", custodyType: "on_chain", blockchain: "Polygon" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "MATIC Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.coinbase.com/earn" },
+      { exchange: "Coinbase", program: "MATIC Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "MetaMask"],
   },
@@ -166,10 +173,10 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Ankr", method: "Liquid Staking (ankrBNB)", apyRange: "2.5–3.5%", apyMid: 3.0, link: "https://www.ankr.com/staking/stake/bnb/" },
+      { platform: "Ankr", method: "Liquid Staking (ankrBNB)", apyRange: "2.5–3.5%", apyMid: 3.0, link: "https://www.ankr.com/staking/stake/bnb/", custodyType: "on_chain", blockchain: "BNB Chain" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Binance", program: "BNB Vault", apyRange: "2.0–5.0%", apyMid: 3.5, flexible: true, link: "https://www.binance.com/en/bnbvault" },
+      { exchange: "Binance", program: "BNB Vault", apyRange: "2.0–5.0%", apyMid: 3.5, flexible: true, link: "https://www.binance.com/en/bnbvault", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Trust Wallet"],
   },
@@ -194,7 +201,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Native Freezing", method: "Energy/Bandwidth Staking", apyRange: "3.0–5.0%", apyMid: 4.0, link: "https://tronscan.org/#/sr/votes" },
+      { platform: "Native Freezing", method: "Energy/Bandwidth Staking", apyRange: "3.0–5.0%", apyMid: 4.0, link: "https://tronscan.org/#/sr/votes", custodyType: "on_chain", blockchain: "TRON" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "TronLink"],
   },
@@ -204,7 +211,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Governance", method: "Governance Rewards", apyRange: "5.0–8.0%", apyMid: 6.5, link: "https://governance.algorand.foundation" },
+      { platform: "Governance", method: "Governance Rewards", apyRange: "5.0–8.0%", apyMid: 6.5, link: "https://governance.algorand.foundation", custodyType: "on_chain", blockchain: "Algorand" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Pera Wallet"],
   },
@@ -221,7 +228,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Native Staking", method: "Proxy Staking", apyRange: "2.5–3.5%", apyMid: 3.0, link: "https://hedera.com/staking" },
+      { platform: "Native Staking", method: "Proxy Staking", apyRange: "2.5–3.5%", apyMid: 3.0, link: "https://hedera.com/staking", custodyType: "on_chain", blockchain: "Hedera" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "HashPack"],
   },
@@ -231,12 +238,12 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "USDC Rewards", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: true, link: "https://www.coinbase.com/earn" },
-      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/earn" },
+      { exchange: "Coinbase", program: "USDC Rewards", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: true, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
     ],
     defiAlternatives: [
-      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave USDC Lending", defiApy: "3.0–6.0%", defiApyMid: 4.5, riskLevel: "Low", link: "https://aave.com" },
-      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Morpho USDC", defiApy: "4.0–7.0%", defiApyMid: 5.5, riskLevel: "Medium", link: "https://morpho.org" },
+      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave USDC Lending", defiApy: "3.0–6.0%", defiApyMid: 4.5, riskLevel: "Low", link: "https://aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Morpho USDC", defiApy: "4.0–7.0%", defiApyMid: 5.5, riskLevel: "Medium", link: "https://morpho.org", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "MetaMask", "Phantom"],
   },
@@ -246,11 +253,11 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     exchangeEarnOptions: [
-      { exchange: "Binance", program: "Simple Earn", apyRange: "3.0–5.0%", apyMid: 4.0, flexible: true, link: "https://www.binance.com/en/earn" },
-      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/earn" },
+      { exchange: "Binance", program: "Simple Earn", apyRange: "3.0–5.0%", apyMid: 4.0, flexible: true, link: "https://www.binance.com/en/earn", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
     ],
     defiAlternatives: [
-      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave USDT Lending", defiApy: "3.0–5.0%", defiApyMid: 4.0, riskLevel: "Low", link: "https://aave.com" },
+      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave USDT Lending", defiApy: "3.0–5.0%", defiApyMid: 4.0, riskLevel: "Low", link: "https://aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "MetaMask"],
   },
@@ -260,12 +267,12 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Native Delegation", method: "Validator Delegation", apyRange: "15–20%", apyMid: 17.5, link: "https://www.mintscan.io/cosmos/validators" },
-      { platform: "Stride", method: "Liquid Staking (stATOM)", apyRange: "14–17%", apyMid: 15.5, link: "https://stride.zone" },
+      { platform: "Native Delegation", method: "Validator Delegation", apyRange: "15–20%", apyMid: 17.5, link: "https://www.mintscan.io/cosmos/validators", custodyType: "on_chain", blockchain: "Cosmos" },
+      { platform: "Stride", method: "Liquid Staking (stATOM)", apyRange: "14–17%", apyMid: 15.5, link: "https://stride.zone", custodyType: "on_chain", blockchain: "Cosmos" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Kraken", program: "ATOM Staking", apyRange: "10.0–14.0%", apyMid: 12.0, flexible: false, link: "https://www.kraken.com/features/staking-coins" },
-      { exchange: "Coinbase", program: "ATOM Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.coinbase.com/earn" },
+      { exchange: "Kraken", program: "ATOM Staking", apyRange: "10.0–14.0%", apyMid: 12.0, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "ATOM Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Keplr", "Cosmostation"],
   },
@@ -275,7 +282,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "VeChainThor", method: "VTHO Generation (holding)", apyRange: "1.0–2.0%", apyMid: 1.5, link: "https://www.vechain.org" },
+      { platform: "VeChainThor", method: "VTHO Generation (holding)", apyRange: "1.0–2.0%", apyMid: 1.5, link: "https://www.vechain.org", custodyType: "on_chain", blockchain: "VeChain" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "VeChainThor Wallet"],
   },
@@ -309,8 +316,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     defiAlternatives: [
-      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Soil Credit+ Vault", defiApy: "8.0%", defiApyMid: 8.0, riskLevel: "Low", link: "https://soil.xyz" },
-      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Soil Liquid Vault", defiApy: "5.0%", defiApyMid: 5.0, riskLevel: "Low", link: "https://soil.xyz" },
+      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Soil Credit+ Vault", defiApy: "8.0%", defiApyMid: 8.0, riskLevel: "Low", link: "https://soil.xyz", custodyType: "on_chain", blockchain: "XRPL" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Soil Liquid Vault", defiApy: "5.0%", defiApyMid: 5.0, riskLevel: "Low", link: "https://soil.xyz", custodyType: "on_chain", blockchain: "XRPL" },
     ],
     selfCustodyWallets: ["Xaman (XUMM)", "Ledger Nano X"],
   },
@@ -590,11 +597,17 @@ export interface AssetRecommendation {
   missedAnnual: number;
   actionItems: ActionItem[];
   riskNote?: string;
+  custodyInfo?: {
+    type: CustodyType;
+    blockchain?: string;
+    explanation: string;
+  };
 }
 
 export interface ActionItem {
   text: string;
   link?: string;
+  custodyBadge?: CustodyType;
 }
 
 const DUST_THRESHOLD_USD = 5;
@@ -621,6 +634,32 @@ export function isScamToken(symbol: string): boolean {
 export interface StakedContext {
   stakedUsdOnSameWallet: number;
   stakedBalanceOnSameWallet: number;
+}
+
+function custodyLabel(ct: CustodyType): string {
+  return ct === "on_chain" ? "On-Chain (You Keep Your Keys)" : "Custodial (Company Holds Your Assets)";
+}
+
+function getCustodyInfo(source: StakingOption | DefiAlternative | null, type: "staking" | "defi"): AssetRecommendation["custodyInfo"] {
+  if (!source) return undefined;
+  if (type === "staking") {
+    const s = source as StakingOption;
+    return {
+      type: s.custodyType,
+      blockchain: s.blockchain,
+      explanation: s.custodyType === "on_chain"
+        ? `${s.platform} runs on the ${s.blockchain} blockchain — your assets stay on-chain and you keep ownership`
+        : `${s.platform} is custodial — they hold your assets on your behalf`,
+    };
+  }
+  const d = source as DefiAlternative;
+  return {
+    type: d.custodyType,
+    blockchain: d.blockchain,
+    explanation: d.custodyType === "on_chain"
+      ? `${d.defiProtocol} is a DeFi protocol on ${d.blockchain} — your assets stay on-chain via smart contracts`
+      : `${d.defiProtocol} is custodial — they hold your assets on your behalf`,
+  };
 }
 
 export function evaluateAsset(
@@ -693,11 +732,17 @@ export function evaluateAsset(
   }
 
   if (location === "defi") {
+    const defiBlockchain = bestDefiSource?.blockchain || "";
     return {
-      symbol, name: displayName, type: "optimal", title: "Earning in DeFi",
-      description: `${symbol} is in a non-custodial DeFi protocol on ${provider} — you control your keys and are earning yield.`,
+      symbol, name: displayName, type: "optimal", title: "Earning On-Chain in DeFi",
+      description: `${symbol} is in a non-custodial DeFi protocol on ${provider}${defiBlockchain ? ` (${defiBlockchain} blockchain)` : ""} — you control your keys and are earning yield on-chain.`,
       currentLocation: provider, currentYield: bestDefi, bestYield: bestDefi, bestYieldSource: provider, usdValue, missedAnnual: 0,
       actionItems: [],
+      custodyInfo: bestDefiSource ? getCustodyInfo(bestDefiSource, "defi") : {
+        type: "on_chain" as CustodyType,
+        blockchain: defiBlockchain,
+        explanation: `${provider} is a DeFi protocol — your assets are managed by smart contracts on the blockchain`,
+      },
     };
   }
 
@@ -790,15 +835,24 @@ export function evaluateAsset(
 
     if (bestSelfCustodyYield > 0) {
       const missed = usdValue * (bestSelfCustodyYield / 100);
+      const bestSource = bestStaking >= bestDefi ? bestStakingSource : null;
+      const bestDefiSrc = bestDefi > bestStaking ? bestDefiSource : null;
+      const primaryCustody = bestSource
+        ? getCustodyInfo(bestSource, "staking")
+        : getCustodyInfo(bestDefiSrc, "defi");
+      const onChainNote = primaryCustody?.type === "on_chain"
+        ? ` This is on-chain on ${primaryCustody.blockchain} — you keep ownership of your assets.`
+        : "";
       return {
         symbol, name: displayName, type: "stake_available",
         title: "Yield Available",
-        description: `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
+        description: `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.${onChainNote}`,
         currentLocation: provider, currentYield: 0, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
         actionItems: walletActions.length > 0 ? walletActions : [
-          bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
-          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
+          bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} on ${bestStakingSource?.blockchain} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link, custodyBadge: bestStakingSource?.custodyType } : null,
+          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} on ${bestDefiSource?.blockchain} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link, custodyBadge: bestDefiSource?.custodyType } : null,
         ].filter(Boolean) as ActionItem[],
+        custodyInfo: primaryCustody,
       };
     }
 
@@ -812,35 +866,46 @@ export function evaluateAsset(
 
   if (location === "exchange") {
     const canWithdraw = knowledge.withdrawable !== false;
+    const exchangeCustodyNote = `${provider} is a custodial platform — they hold your assets on your behalf. Not your keys, not your crypto.`;
 
     if (bestExchangeEarnOnCurrent > 0 && bestSelfCustodyYield > 0) {
       if (bestSelfCustodyYield > bestExchangeEarnOnCurrent) {
         const missed = usdValue * ((bestSelfCustodyYield - bestExchangeEarnOnCurrent) / 100);
         const stakingLink = bestStaking >= bestDefi ? bestStakingSource?.link : bestDefiSource?.link;
+        const onChainSource = bestStaking >= bestDefi ? bestStakingSource : null;
+        const onChainDefi = bestDefi > bestStaking ? bestDefiSource : null;
+        const onChainBlockchain = onChainSource?.blockchain || onChainDefi?.blockchain || "";
         return {
           symbol, name: displayName, type: "split_strategy",
-          title: "Split Strategy Recommended",
-          description: `${provider} offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but self-custody staking via ${bestSelfCustodyLabel} offers ${bestSelfCustodyYield.toFixed(1)}% — moving could earn ~$${missed.toFixed(0)}/year more.`,
+          title: "Better On-Chain Yield Available",
+          description: `${provider} (custodial) offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but on-chain staking via ${bestSelfCustodyLabel} on ${onChainBlockchain} offers ${bestSelfCustodyYield.toFixed(1)}% — and you keep your keys.`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
           actionItems: [
-            canWithdraw ? { text: `Move a portion to cold wallet and stake via ${bestSelfCustodyLabel}`, link: stakingLink } : null,
-            { text: `Keep some on ${provider} for liquidity and easy selling` },
-            bestExchangeEarnOnCurrentSource?.link ? { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource.apyRange} on ${provider}`, link: bestExchangeEarnOnCurrentSource.link } : { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource?.apyRange} on ${provider}` },
+            canWithdraw ? { text: `Move to cold wallet and stake on-chain via ${bestSelfCustodyLabel} on ${onChainBlockchain}`, link: stakingLink, custodyBadge: "on_chain" } : null,
+            { text: `Keep some on ${provider} for liquidity — but remember, ${provider} is custodial`, custodyBadge: "custodial" },
+            bestExchangeEarnOnCurrentSource?.link ? { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource.apyRange} on ${provider} (custodial)`, link: bestExchangeEarnOnCurrentSource.link, custodyBadge: "custodial" } : null,
           ].filter(Boolean) as ActionItem[],
-          riskNote: "Splitting between exchange and cold wallet balances yield optimization with liquidity and safety.",
+          riskNote: exchangeCustodyNote,
+          custodyInfo: onChainSource
+            ? getCustodyInfo(onChainSource, "staking")
+            : getCustodyInfo(onChainDefi, "defi"),
         };
       } else {
         return {
           symbol, name: displayName, type: "split_strategy",
-          title: "Earning on Exchange — Consider Safety Split",
-          description: `${provider} offers competitive ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}. Self-custody yield (${bestSelfCustodyYield.toFixed(1)}%) is similar or lower.`,
+          title: "Earning on Exchange — Consider Self-Custody",
+          description: `${provider} (custodial) offers competitive ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}. On-chain yield (${bestSelfCustodyYield.toFixed(1)}%) is similar or lower, but self-custody means you own your assets.`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestExchangeEarnOnCurrent, bestYieldSource: `${provider} ${bestExchangeEarnOnCurrentSource?.program}`, usdValue, missedAnnual: 0,
           actionItems: [
-            { text: `You're earning well on ${provider} — no urgency to move` },
-            canWithdraw ? { text: "For risk mitigation, consider moving a portion to cold wallet" } : null,
+            { text: `You're earning well on ${provider} — but your assets are held by the exchange`, custodyBadge: "custodial" as CustodyType },
+            canWithdraw ? { text: "For true ownership, move a portion to your cold wallet", custodyBadge: "on_chain" as CustodyType } : null,
             { text: "Keep enough on exchange for easy liquidation if needed" },
           ].filter(Boolean) as ActionItem[],
-          riskNote: "Exchange yield is good, but remember: not your keys, not your crypto. A safety split reduces risk.",
+          riskNote: exchangeCustodyNote,
+          custodyInfo: {
+            type: "custodial" as CustodyType,
+            explanation: `${provider} is a custodial exchange — competitive yield, but they hold your assets`,
+          },
         };
       }
     }
@@ -848,16 +913,20 @@ export function evaluateAsset(
     if (bestExchangeEarnOnCurrent > 0 && bestSelfCustodyYield === 0) {
       return {
         symbol, name: displayName, type: "split_strategy",
-        title: "Earning on Exchange — No Better Alternative",
-        description: `${symbol} earns ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${provider}. No self-custody staking is available, so exchange earning is your best yield option.`,
+        title: "Earning on Exchange — No On-Chain Alternative",
+        description: `${symbol} earns ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${provider} (custodial). No on-chain staking exists for this asset, so this is the best yield option — but your assets are held by ${provider}.`,
         currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestExchangeEarnOnCurrent, bestYieldSource: `${provider} ${bestExchangeEarnOnCurrentSource?.program}`, usdValue, missedAnnual: 0,
         actionItems: [
           bestExchangeEarnOnCurrentSource?.link
-            ? { text: `Earning ${bestExchangeEarnOnCurrentSource.apyRange} — this is the best available yield`, link: bestExchangeEarnOnCurrentSource.link }
-            : { text: `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} — this is the best available yield` },
-          canWithdraw ? { text: "Move a portion to cold wallet for safety (no yield, but self-custodied)" } : null,
+            ? { text: `Earning ${bestExchangeEarnOnCurrentSource.apyRange} on ${provider} — best available, but custodial`, link: bestExchangeEarnOnCurrentSource.link, custodyBadge: "custodial" as CustodyType }
+            : { text: `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} on ${provider} — best available, but custodial`, custodyBadge: "custodial" as CustodyType },
+          canWithdraw ? { text: "Move a portion to cold wallet for self-custody (no yield, but you own it)", custodyBadge: "on_chain" as CustodyType } : null,
         ].filter(Boolean) as ActionItem[],
-        riskNote: "Not your keys, not your crypto. Even with earning, keep only what you need on exchange.",
+        riskNote: exchangeCustodyNote,
+        custodyInfo: {
+          type: "custodial" as CustodyType,
+          explanation: `${provider} is a custodial exchange — they hold your ${symbol} on your behalf. No on-chain staking alternative exists for this asset.`,
+        },
       };
     }
 
@@ -866,23 +935,29 @@ export function evaluateAsset(
       const stakingName = bestStakingSource?.platform || bestDefiSource?.defiProtocol || "";
       const stakingLink = bestStaking >= bestDefi ? bestStakingSource?.link : bestDefiSource?.link;
       const stakingApy = bestStakingSource?.apyRange || bestDefiSource?.defiApy || "";
+      const stakingBlockchain = bestStakingSource?.blockchain || bestDefiSource?.blockchain || "";
       const actions: ActionItem[] = [
-        canWithdraw ? { text: `Withdraw ${symbol} from ${provider} to your cold wallet` } : { text: `${symbol} may not be withdrawable from ${provider}` },
-        { text: `Stake via ${stakingName} for ${stakingApy} APY`, link: stakingLink },
+        canWithdraw ? { text: `Withdraw ${symbol} from ${provider} (custodial) to your cold wallet` } : { text: `${symbol} may not be withdrawable from ${provider}` },
+        { text: `Stake on-chain via ${stakingName} on ${stakingBlockchain} for ${stakingApy} APY — you keep your keys`, link: stakingLink, custodyBadge: "on_chain" },
         { text: `Check if ${provider} offers an earn/staking program for ${symbol} — we can't detect enrollment automatically` },
       ];
       if (bestExchangeEarnAnywhere > 0 && bestExchangeEarnAnywhere > bestSelfCustodyYield) {
         const bestAnyExch = knowledge.exchangeEarnOptions?.reduce((best, e) => e.apyMid > (best?.apyMid || 0) ? e : best, null as ExchangeEarnOption | null);
         if (bestAnyExch) {
-          actions.push({ text: `Alternative: ${bestAnyExch.exchange} offers ${bestAnyExch.apyRange} APY via ${bestAnyExch.program} (custodial)`, link: bestAnyExch.link });
+          actions.push({ text: `Alternative: ${bestAnyExch.exchange} offers ${bestAnyExch.apyRange} APY (custodial — they hold your assets)`, link: bestAnyExch.link, custodyBadge: "custodial" });
         }
       }
+      const primarySource = bestStaking >= bestDefi ? bestStakingSource : null;
+      const primaryDefi = bestDefi > bestStaking ? bestDefiSource : null;
       return {
         symbol, name: displayName, type: "move_to_cold",
-        title: "Move to Cold Wallet & Earn",
-        description: `${symbol} is sitting on ${provider} earning nothing. Moving to a cold wallet and staking could earn ~$${missed.toFixed(0)}/year (${bestOverall.toFixed(1)}% APY via ${bestOverallSource}).`,
+        title: "Move to Self-Custody & Earn On-Chain",
+        description: `${symbol} is sitting on ${provider} (custodial) earning nothing. Moving to your own wallet and staking on-chain could earn ~$${missed.toFixed(0)}/year (${bestOverall.toFixed(1)}% APY via ${bestOverallSource} on ${stakingBlockchain}).`,
         currentLocation: provider, currentYield: 0, bestYield: bestOverall, bestYieldSource: bestOverallSource, usdValue, missedAnnual: missed,
         actionItems: actions,
+        custodyInfo: primarySource
+          ? getCustodyInfo(primarySource, "staking")
+          : getCustodyInfo(primaryDefi, "defi"),
       };
     }
 
@@ -890,9 +965,14 @@ export function evaluateAsset(
       if (!canWithdraw) {
         return {
           symbol, name: displayName, type: "no_action", title: "No Action Available",
-          description: `${symbol} on ${provider} — no yield options and withdrawal may not be available.`,
+          description: `${symbol} on ${provider} (custodial) — no yield options and withdrawal may not be available.`,
           currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
           actionItems: [],
+          riskNote: exchangeCustodyNote,
+          custodyInfo: {
+            type: "custodial" as CustodyType,
+            explanation: `${provider} is a custodial exchange — they hold your assets`,
+          },
         };
       }
 
@@ -901,28 +981,36 @@ export function evaluateAsset(
         const missed = usdValue * (bestExchangeEarnAnywhere / 100);
         return {
           symbol, name: displayName, type: "split_strategy",
-          title: "Yield Available Elsewhere",
-          description: `${symbol} is on ${provider} earning nothing. ${bestAnyExch?.exchange} offers ${bestAnyExch?.apyRange} APY via ${bestAnyExch?.program}.`,
+          title: "Yield Available — But Only Custodial",
+          description: `${symbol} is on ${provider} (custodial) earning nothing. ${bestAnyExch?.exchange} offers ${bestAnyExch?.apyRange} APY via ${bestAnyExch?.program} — but that's also custodial. No on-chain option exists.`,
           currentLocation: provider, currentYield: 0, bestYield: bestExchangeEarnAnywhere, bestYieldSource: bestAnyExch ? `${bestAnyExch.exchange} ${bestAnyExch.program}` : "", usdValue, missedAnnual: missed,
           actionItems: [
-            bestAnyExch?.link ? { text: `Move to ${bestAnyExch.exchange} to earn ${bestAnyExch.apyRange} APY`, link: bestAnyExch.link } : { text: `Move to ${bestAnyExch?.exchange} to earn ${bestAnyExch?.apyRange} APY` },
-            { text: "Move a portion to cold wallet for self-custody and safety" },
-            knowledge.selfCustodyWallets ? { text: `Recommended wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
+            bestAnyExch?.link ? { text: `Move to ${bestAnyExch.exchange} for ${bestAnyExch.apyRange} APY (custodial)`, link: bestAnyExch.link, custodyBadge: "custodial" as CustodyType } : null,
+            { text: "For true ownership, move to your cold wallet — no yield, but you own your assets", custodyBadge: "on_chain" as CustodyType },
+            knowledge.selfCustodyWallets ? { text: `Recommended self-custody wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
           ].filter(Boolean) as ActionItem[],
-          riskNote: "Exchanges are custodial — not your keys, not your crypto. Only keep what you're actively earning on.",
+          riskNote: exchangeCustodyNote,
+          custodyInfo: {
+            type: "custodial" as CustodyType,
+            explanation: `Both ${provider} and ${bestAnyExch?.exchange} are custodial — no on-chain alternative exists for ${symbol}`,
+          },
         };
       }
 
       return {
         symbol, name: displayName, type: "move_to_cold",
-        title: "Move to Cold Wallet for Safety",
-        description: `${symbol} is on ${provider} with no yield earning opportunity anywhere. Moving to a cold wallet gives you full self-custody.`,
+        title: "Move to Self-Custody",
+        description: `${symbol} is on ${provider} (custodial) with no yield available. Moving to your cold wallet gives you full ownership — your keys, your crypto.`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: [
-          { text: `Withdraw ${symbol} from ${provider} to your cold wallet` },
+          { text: `Withdraw ${symbol} from ${provider} to your cold wallet`, custodyBadge: "on_chain" as CustodyType },
           { text: "Self-custody protects against exchange hacks, freezes, or insolvency" },
-          knowledge.selfCustodyWallets ? { text: `Recommended wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
+          knowledge.selfCustodyWallets ? { text: `Recommended self-custody wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
         ].filter(Boolean) as ActionItem[],
+        custodyInfo: {
+          type: "custodial" as CustodyType,
+          explanation: `${provider} is custodial — move to your own wallet for true ownership`,
+        },
       };
     }
   }

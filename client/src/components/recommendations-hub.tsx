@@ -15,12 +15,12 @@ import {
   getAssetsWithDefiAlternatives,
   getAssetWarnings,
 } from "@/lib/custody-knowledge";
-import type { AssetRecommendation, StakedContext } from "@/lib/custody-knowledge";
+import type { AssetRecommendation, StakedContext, CustodyType } from "@/lib/custody-knowledge";
 import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
   CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
-  Zap, Lock, Sparkles,
+  Zap, Lock, Sparkles, Globe, Building2,
 } from "lucide-react";
 
 interface WalletData {
@@ -680,11 +680,44 @@ function RecommendationCard({ rec }: { rec: AssetRecommendation }) {
             </div>
           )}
 
+          {rec.custodyInfo && (
+            <div className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md w-fit ${
+              rec.custodyInfo.type === "on_chain"
+                ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
+                : "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400"
+            }`} data-testid={`custody-info-${rec.symbol}`}>
+              {rec.custodyInfo.type === "on_chain" ? (
+                <Globe className="h-3 w-3 shrink-0" />
+              ) : (
+                <Building2 className="h-3 w-3 shrink-0" />
+              )}
+              <span className="font-medium">
+                {rec.custodyInfo.type === "on_chain" ? "On-Chain" : "Custodial"}
+                {rec.custodyInfo.blockchain ? ` · ${rec.custodyInfo.blockchain}` : ""}
+              </span>
+              <span className="hidden sm:inline">— {rec.custodyInfo.explanation}</span>
+            </div>
+          )}
+
           {rec.actionItems.length > 0 && (
             <div className="space-y-1 mt-2">
               {rec.actionItems.map((action, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-muted-foreground mt-0.5">•</span>
+                  {action.custodyBadge ? (
+                    <span className={`mt-0.5 shrink-0 ${
+                      action.custodyBadge === "on_chain"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}>
+                      {action.custodyBadge === "on_chain" ? (
+                        <Globe className="h-3.5 w-3.5" />
+                      ) : (
+                        <Building2 className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground mt-0.5">•</span>
+                  )}
                   {action.link ? (
                     <a href={action.link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1" data-testid={`action-link-${rec.symbol}-${i}`}>
                       {action.text}
