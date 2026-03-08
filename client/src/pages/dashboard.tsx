@@ -36,7 +36,7 @@ export default function Dashboard() {
   });
 
   const { data: walletsData } = useQuery<any[]>({
-    queryKey: ["/api/wallets/portfolio"],
+    queryKey: ["/api/wallets"],
   });
 
   const { data: portfolioData } = useQuery<any>({
