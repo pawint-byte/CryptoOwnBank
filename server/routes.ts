@@ -247,8 +247,22 @@ export async function registerRoutes(
       const settings = await storage.getUserSettings(userId);
       const userCustomVaults = (settings?.customVaults as CustomVault[] | null) || [];
 
-      const client = new Client("wss://xrplcluster.com");
-      await client.connect();
+      let client: Client | null = null;
+      const xrplServers = ["wss://xrplcluster.com", "wss://s1.ripple.com", "wss://s2.ripple.com"];
+      for (const server of xrplServers) {
+        try {
+          const c = new Client(server, { connectionTimeout: 15000 });
+          await c.connect();
+          console.log(`[Soil sync] Connected to ${server} for wallet: ${walletAddress}`);
+          client = c;
+          break;
+        } catch (err: any) {
+          console.error(`[Soil sync] Failed to connect to ${server}:`, err?.message);
+        }
+      }
+      if (!client) {
+        throw new Error("Could not connect to any XRPL server. Please try again.");
+      }
 
       const SOIL_VAULT_APR: Record<string, number> = {
         "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX": 0.08,
