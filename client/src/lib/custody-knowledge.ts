@@ -1035,3 +1035,95 @@ export function getAssetWarnings(): { symbol: string; warnings: string[] }[] {
     .filter(a => a.warnings && a.warnings.length > 0)
     .map(a => ({ symbol: a.symbol, warnings: a.warnings! }));
 }
+
+export interface BestInClassEntry {
+  symbol: string;
+  name: string;
+  category: string;
+  platform: string;
+  method: string;
+  apyRange: string;
+  apyMid: number;
+  link: string;
+  custodyType: CustodyType;
+  blockchain: string;
+}
+
+export function getBestInClass(): { category: string; description: string; entries: BestInClassEntry[] }[] {
+  const allOnChainStaking: BestInClassEntry[] = [];
+  const allDefiYield: BestInClassEntry[] = [];
+  const allPassiveEarning: BestInClassEntry[] = [];
+  const allExchangeEarning: BestInClassEntry[] = [];
+
+  for (const asset of Object.values(CUSTODY_KNOWLEDGE)) {
+    if (asset.stakingOptions) {
+      for (const opt of asset.stakingOptions) {
+        if (opt.custodyType === "on_chain") {
+          allOnChainStaking.push({
+            symbol: asset.symbol, name: asset.name, category: "On-Chain Staking",
+            platform: opt.platform, method: opt.method, apyRange: opt.apyRange,
+            apyMid: opt.apyMid, link: opt.link, custodyType: opt.custodyType, blockchain: opt.blockchain,
+          });
+        }
+      }
+    }
+    if (asset.defiAlternatives) {
+      for (const alt of asset.defiAlternatives) {
+        if (alt.custodyType === "on_chain") {
+          allDefiYield.push({
+            symbol: asset.symbol, name: asset.name, category: "DeFi Yield",
+            platform: alt.defiProtocol, method: `Lending/Vault on ${alt.blockchain}`,
+            apyRange: alt.defiApy, apyMid: alt.defiApyMid, link: alt.link,
+            custodyType: alt.custodyType, blockchain: alt.blockchain,
+          });
+        }
+      }
+    }
+    if (asset.symbol === "VET") {
+      allPassiveEarning.push({
+        symbol: "VET", name: "VeChain", category: "Passive Earning",
+        platform: "VeChainThor", method: "VTHO Generation (just hold it)",
+        apyRange: "1.0–2.0%", apyMid: 1.5, link: "https://www.vechain.org",
+        custodyType: "on_chain", blockchain: "VeChain",
+      });
+    }
+    if (asset.exchangeEarnOptions) {
+      const best = asset.exchangeEarnOptions.reduce((b, e) => e.apyMid > (b?.apyMid || 0) ? e : b, null as typeof asset.exchangeEarnOptions[0] | null);
+      if (best) {
+        allExchangeEarning.push({
+          symbol: asset.symbol, name: asset.name, category: "Exchange Earning",
+          platform: best.exchange, method: best.program,
+          apyRange: best.apyRange, apyMid: best.apyMid, link: best.link,
+          custodyType: "custodial", blockchain: "",
+        });
+      }
+    }
+  }
+
+  allOnChainStaking.sort((a, b) => b.apyMid - a.apyMid);
+  allDefiYield.sort((a, b) => b.apyMid - a.apyMid);
+  allExchangeEarning.sort((a, b) => b.apyMid - a.apyMid);
+
+  return [
+    {
+      category: "On-Chain Staking",
+      description: "Stake directly on the blockchain — you keep your keys and earn yield from the network itself.",
+      entries: allOnChainStaking,
+    },
+    {
+      category: "DeFi Yield",
+      description: "Earn yield through decentralized finance protocols — smart contracts manage your assets on-chain.",
+      entries: allDefiYield,
+    },
+    {
+      category: "Passive Earning",
+      description: "Assets that earn yield automatically just by holding them — no staking or DeFi action needed.",
+      entries: allPassiveEarning,
+    },
+    {
+      category: "Exchange Earning (Custodial)",
+      description: "Earn through exchange programs — higher convenience, but you hand custody of your assets to the exchange.",
+      entries: allExchangeEarning,
+    },
+  ].filter(c => c.entries.length > 0);
+}

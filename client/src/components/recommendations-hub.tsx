@@ -14,13 +14,14 @@ import {
   getStakeableAssets,
   getAssetsWithDefiAlternatives,
   getAssetWarnings,
+  getBestInClass,
 } from "@/lib/custody-knowledge";
-import type { AssetRecommendation, StakedContext, CustodyType } from "@/lib/custody-knowledge";
+import type { AssetRecommendation, StakedContext, CustodyType, BestInClassEntry } from "@/lib/custody-knowledge";
 import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
   CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
-  Zap, Lock, Sparkles, Globe, Building2,
+  Zap, Lock, Sparkles, Globe, Building2, Trophy, Crown,
 } from "lucide-react";
 
 interface WalletData {
@@ -152,6 +153,8 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   });
   const defiAltAssets = getAssetsWithDefiAlternatives();
   const allWarnings = getAssetWarnings();
+  const bestInClass = getBestInClass();
+  const ownedSymbols = new Set(recommendations.map(r => r.symbol));
 
   const consolidatedAssets: Record<string, { symbol: string; totalBalance: number; totalUsd: number; locations: { source: string; label: string; balance: number; usd: number }[] }> = {};
   for (const w of addresses) {
@@ -196,6 +199,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
           <TabsList className="flex flex-wrap h-auto gap-1 mb-4" data-testid="recommendations-tabs">
             <TabsTrigger value="optimize" data-testid="tab-optimize">Optimize</TabsTrigger>
             <TabsTrigger value="consolidated" data-testid="tab-consolidated">By Asset</TabsTrigger>
+            <TabsTrigger value="bestinclass" data-testid="tab-bestinclass">Best in Class</TabsTrigger>
             <TabsTrigger value="staking" data-testid="tab-staking">Staking</TabsTrigger>
             <TabsTrigger value="defi" data-testid="tab-defi-tradfi">DeFi vs TradFi</TabsTrigger>
             <TabsTrigger value="prices" data-testid="tab-prices">Prices</TabsTrigger>
@@ -355,6 +359,114 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
             )}
           </TabsContent>
 
+          <TabsContent value="bestinclass" data-testid="tab-content-bestinclass">
+            <div className="flex items-center gap-2 mb-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              <h3 className="font-semibold">Best in Class — Top Yield Opportunities</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              The highest-earning opportunities across all assets — sorted by yield. Discover what's worth holding for maximum returns while staying in control of your assets.
+            </p>
+
+            {bestInClass.map(group => {
+              const isOnChain = !group.category.includes("Custodial");
+              const categoryIcon = group.category.includes("Staking") ? (
+                <Lock className="h-4 w-4" />
+              ) : group.category.includes("DeFi") ? (
+                <Sparkles className="h-4 w-4" />
+              ) : group.category.includes("Passive") ? (
+                <Coins className="h-4 w-4" />
+              ) : (
+                <Building2 className="h-4 w-4" />
+              );
+
+              return (
+                <div key={group.category} className="mb-6" data-testid={`bestinclass-${group.category.replace(/\s+/g, "-").toLowerCase()}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={isOnChain ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
+                      {categoryIcon}
+                    </span>
+                    <h4 className="font-medium">{group.category}</h4>
+                    <Badge variant="outline" className={`text-xs ${isOnChain ? "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400" : "border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400"}`}>
+                      {isOnChain ? "You Keep Your Keys" : "Company Holds Assets"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">{group.description}</p>
+
+                  <div className="space-y-1">
+                    {group.entries.map((entry, i) => {
+                      const isOwned = ownedSymbols.has(entry.symbol);
+                      const isTop3 = i < 3;
+                      return (
+                        <div
+                          key={`${entry.symbol}-${entry.platform}-${i}`}
+                          className={`flex items-center justify-between p-2.5 rounded-lg border ${
+                            isTop3
+                              ? "bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-950/20 dark:to-transparent border-amber-200 dark:border-amber-800"
+                              : "bg-card"
+                          }`}
+                          data-testid={`bestinclass-entry-${entry.symbol}-${i}`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {isTop3 && (
+                              <span className="text-amber-500 shrink-0">
+                                {i === 0 ? <Crown className="h-4 w-4" /> : <span className="text-xs font-bold w-4 text-center inline-block">#{i + 1}</span>}
+                              </span>
+                            )}
+                            {!isTop3 && <span className="text-xs text-muted-foreground w-4 text-center shrink-0">#{i + 1}</span>}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm">{entry.symbol}</span>
+                                <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
+                                {isOwned && (
+                                  <Badge variant="default" className="text-xs px-1.5 py-0 h-4 bg-emerald-600">You Hold This</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <span className="font-medium">{entry.platform}</span>
+                                <span>·</span>
+                                <span className="truncate">{entry.method}</span>
+                                {entry.blockchain && (
+                                  <>
+                                    <span>·</span>
+                                    <span className={`flex items-center gap-0.5 ${isOnChain ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                                      {isOnChain ? <Globe className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                                      {entry.blockchain}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant={isTop3 ? "default" : "outline"} className={`text-xs ${isTop3 ? "bg-amber-600 hover:bg-amber-700" : ""}`}>
+                              {entry.apyRange} APY
+                            </Badge>
+                            <a href={entry.link} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground" data-testid={`bestinclass-link-${entry.symbol}-${i}`}>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="mt-4 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+              <div className="flex items-start gap-2">
+                <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-emerald-800 dark:text-emerald-200">CryptoOwnBank Philosophy</p>
+                  <p className="text-emerald-700 dark:text-emerald-300 text-xs mt-1">
+                    We prioritize on-chain options where you keep ownership of your assets. Custodial exchange options are shown for comparison, but your keys = your crypto. Use blockchain on-ramps and off-ramps to maximize returns while staying in control.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
           <TabsContent value="staking" data-testid="tab-content-staking">
             <h3 className="font-semibold mb-3">Staking Opportunities</h3>
             <p className="text-sm text-muted-foreground mb-4">Earn yield on your assets through staking and DeFi protocols.</p>
@@ -415,9 +527,15 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
                           <div className="space-y-1">
                             {asset.stakingOptions.map((opt, i) => (
                               <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
-                                <div>
-                                  <span className="font-medium">{opt.platform}</span>
-                                  <span className="text-xs text-muted-foreground ml-2">{opt.method}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className={`shrink-0 ${opt.custodyType === "on_chain" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                                    {opt.custodyType === "on_chain" ? <Globe className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />}
+                                  </span>
+                                  <div>
+                                    <span className="font-medium">{opt.platform}</span>
+                                    <span className="text-xs text-muted-foreground ml-2">{opt.method}</span>
+                                    <span className="text-xs text-muted-foreground ml-1">· {opt.blockchain}</span>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Badge variant="outline" className="text-xs">{opt.apyRange}</Badge>
@@ -474,7 +592,15 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
                             <Badge variant="outline" className="mt-1">{alt.tradFiApy}</Badge>
                           </div>
                           <div className="border rounded-lg p-3 bg-primary/5">
-                            <p className="text-xs font-medium text-muted-foreground mb-1">DeFi</p>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <p className="text-xs font-medium text-muted-foreground">DeFi</p>
+                              {alt.custodyType === "on_chain" && (
+                                <span className="flex items-center gap-0.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                  <Globe className="h-3 w-3" />
+                                  {alt.blockchain}
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-1">
                               <p className="font-medium text-sm">{alt.defiProtocol}</p>
                               <a href={alt.link} target="_blank" rel="noopener noreferrer">
