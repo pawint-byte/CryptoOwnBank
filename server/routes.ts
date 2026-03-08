@@ -2624,10 +2624,28 @@ export async function registerRoutes(
         }
       }
 
+      const EXCHANGE_LABELS = new Set(["CRYPTO.COM", "COINBASE", "BINANCE", "KRAKEN", "GEMINI", "KUCOIN", "BITSTAMP", "BITFINEX", "UPHOLD", "GATE.IO", "OKX", "BYBIT", "HUOBI", "BITGET", "MEXC"]);
+      const walletLabel = (wallet.label || "").toUpperCase().trim();
+      const isExchangeDeposit = EXCHANGE_LABELS.has(walletLabel);
+
       let chain = wallet.chain as any;
       let balances: Awaited<ReturnType<typeof fetchChainBalances>> = [];
       let fetchError = false;
       let correctedChain: string | null = null;
+
+      if (isExchangeDeposit) {
+        console.log(`Sync: skipping on-chain balance for "${wallet.label}" deposit address ${wallet.address.slice(0, 12)}... — use API key integration to track exchange holdings`);
+        const existingBalances = await storage.getWalletBalances(wallet.id);
+        if (existingBalances.length > 0) {
+          for (const existing of existingBalances) {
+            await db.delete(walletBalances).where(eq(walletBalances.id, existing.id));
+          }
+          console.log(`Cleared ${existingBalances.length} stale balance record(s) from exchange deposit address`);
+        }
+        await storage.updateWalletSyncTime(wallet.id);
+        const updatedWallet = await storage.getWallet(wallet.id);
+        return res.json({ ...updatedWallet, balances: [], newTransactions: 0, exchangeDeposit: true });
+      }
 
       const { detectCorrectChain } = await import("./services/blockchain-balance");
       const detectedChain = detectCorrectChain(chain, wallet.address);
@@ -2656,8 +2674,17 @@ export async function registerRoutes(
         }
       }
 
-      if (fetchError || balances.length === 0) {
-        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError})`);
+      if (fetchError) {
+        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (fetch error, preserving cached data)`);
+        await storage.updateWalletSyncTime(wallet.id);
+      } else if (balances.length === 0) {
+        const existingBalances = await storage.getWalletBalances(wallet.id);
+        if (existingBalances.length > 0) {
+          console.log(`Sync: clearing ${existingBalances.length} stale balance(s) for ${chain} wallet ${wallet.id} (API returned 0 results)`);
+          for (const existing of existingBalances) {
+            await db.delete(walletBalances).where(eq(walletBalances.id, existing.id));
+          }
+        }
         await storage.updateWalletSyncTime(wallet.id);
       } else {
         const existingBalances = await storage.getWalletBalances(wallet.id);

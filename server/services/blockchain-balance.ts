@@ -996,24 +996,33 @@ async function getCryptoOrgNativeBalance(address: string): Promise<ChainBalance[
     const prices = await getPrices(["CRO"]);
     const croPrice = prices.CRO || 0;
 
-    const totalBalanceEntry = account.totalBalance?.find((b: any) => b.denom === "basecro");
-    if (totalBalanceEntry) {
-      const basecro = parseFloat(totalBalanceEntry.amount) || 0;
-      const cro = basecro / 1e8;
-      if (cro > 0) {
-        balances.push({ symbol: "CRO", balance: cro, usdValue: cro * croPrice });
-      }
+    let liquidCro = 0;
+    const liquidEntry = account.balance?.find((b: any) => b.denom === "basecro");
+    if (liquidEntry) {
+      liquidCro = (parseFloat(liquidEntry.amount) || 0) / 1e8;
     }
 
+    let stakedCro = 0;
     const stakedEntries = account.bondedBalance || [];
     for (const entry of stakedEntries) {
       if (entry.denom === "basecro") {
-        const basecro = parseFloat(entry.amount) || 0;
-        const cro = basecro / 1e8;
-        if (cro > 0) {
-          balances.push({ symbol: "CRO (staked)", balance: cro, usdValue: cro * croPrice });
-        }
+        stakedCro += (parseFloat(entry.amount) || 0) / 1e8;
       }
+    }
+
+    let rewardsCro = 0;
+    const rewardEntries = account.totalRewards || [];
+    for (const entry of rewardEntries) {
+      if (entry.denom === "basecro") {
+        rewardsCro += (parseFloat(entry.amount) || 0) / 1e8;
+      }
+    }
+
+    if (liquidCro > 0) {
+      balances.push({ symbol: "CRO", balance: liquidCro, usdValue: liquidCro * croPrice });
+    }
+    if (stakedCro > 0) {
+      balances.push({ symbol: "CRO (staked)", balance: stakedCro, usdValue: stakedCro * croPrice });
     }
 
     console.log(`Crypto.org native scan: found ${balances.length} assets for ${address.slice(0, 12)}...`);

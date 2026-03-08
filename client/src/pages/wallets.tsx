@@ -427,7 +427,9 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       const txCount = data?.newTransactions || 0;
-      if (data?.correctedChain) {
+      if (data?.exchangeDeposit) {
+        toast({ title: "Exchange Deposit Address", description: "This is an exchange deposit address — the on-chain balance belongs to the exchange, not you. Use API key integration to track exchange holdings." });
+      } else if (data?.correctedChain) {
         toast({ title: "Chain Auto-Corrected", description: `Address was detected as ${data.correctedChain} and synced successfully.` });
       } else if (data?.skipped) {
         toast({ title: "Already up to date — synced less than 2 min ago" });
