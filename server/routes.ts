@@ -1467,10 +1467,14 @@ export async function registerRoutes(
       const accountMap = new Map(accounts.map(a => [a.id, a]));
       const allPositions = [...positionsWithMarket.map(p => {
         const account = accountMap.get(p.accountId);
+        const isImport = account?.accountType === "import" || account?.provider === "manual";
+        const isDefi = account?.accountType === "defi";
         return {
           ...p,
           source: account?.accountName || "Exchange",
-          isImport: account?.accountType === "import" || account?.provider === "manual",
+          isImport,
+          isDefi,
+          isExchange: !isImport && !isDefi,
           isAddressed: p.isAddressed || false,
           isWallet: false,
         };

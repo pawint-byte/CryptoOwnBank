@@ -56,7 +56,7 @@ export default function Dashboard() {
   }));
 
   const exchangeBalances = (portfolioData?.positions || [])
-    .filter((p: any) => !p.isWallet && parseFloat(p.quantity) > 0)
+    .filter((p: any) => p.isExchange && parseFloat(p.quantity) > 0)
     .map((p: any) => ({
       provider: p.source || "Exchange",
       asset: p.assetSymbol || "",
