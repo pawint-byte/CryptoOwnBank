@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 - **Migration Guide**: Guided walkthrough for new users transitioning from other platforms.
 - **Data Reconciliation**: Dedicated page for reviewing and truing up portfolio data, including duplicate detection, side-by-side comparison, and purchase lot management for wallet entries.
 - **Affiliate/Referral**: Links for RLUSD, embedded Soil referral code, and user referral program.
+- **Recommendations Engine**: Decision-tree-based asset optimization engine in `client/src/lib/custody-knowledge.ts`. Evaluates each asset through: Where is it held? (cold wallet / exchange / DeFi) → Is it earning yield? → Could it earn more elsewhere? → What's the best action? Shows "money left on the table" calculations. Includes exchange earning data (Coinbase, Kraken, Binance, Crypto.com), staking options, and DeFi alternatives. Skips dust balances (<$5). UI in `client/src/components/recommendations-hub.tsx` with tabs: Optimize (main decision tree), By Asset (consolidated view), Staking, DeFi vs TradFi, Prices, Alerts.
 
 ## External Dependencies
 

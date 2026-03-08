@@ -9,14 +9,17 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   CUSTODY_KNOWLEDGE,
+  evaluateAsset,
   getStakeableAssets,
   getAssetsWithDefiAlternatives,
   getAssetWarnings,
 } from "@/lib/custody-knowledge";
+import type { AssetRecommendation } from "@/lib/custody-knowledge";
 import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
-  CheckCircle, XCircle, Mail, Wallet, Info,
+  CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
+  Zap, Lock, Sparkles,
 } from "lucide-react";
 
 interface WalletData {
@@ -88,29 +91,44 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     },
   });
 
-  const walletSymbols = new Set<string>();
+  const recommendations: AssetRecommendation[] = [];
+
   for (const w of addresses) {
     for (const b of w.balances || []) {
-      walletSymbols.add(b.assetSymbol.toUpperCase().replace(/ \(staked\)/, ""));
+      const sym = b.assetSymbol.toUpperCase().replace(/ \(staked\)/, "");
+      const isStaked = b.assetSymbol.toLowerCase().includes("staked");
+      const usd = parseFloat(b.usdValue) || 0;
+      const rec = evaluateAsset(sym, "cold_wallet", w.label || `${w.chain} wallet`, usd, isStaked);
+      recommendations.push(rec);
     }
   }
 
-  const exchangeByAsset: Record<string, ExchangeBalance[]> = {};
   for (const eb of exchangeBalances) {
     const sym = eb.asset.toUpperCase();
-    if (!exchangeByAsset[sym]) exchangeByAsset[sym] = [];
-    exchangeByAsset[sym].push(eb);
+    const rec = evaluateAsset(sym, "exchange", eb.provider, eb.usdValue, false);
+    recommendations.push(rec);
   }
 
-  const moveOffExchangeItems = exchangeBalances.filter(eb => eb.usdValue > 0);
-  const stakeableOwned = getStakeableAssets().filter(a =>
-    walletSymbols.has(a.symbol) || exchangeByAsset[a.symbol]
+  const recsBySymbol: Record<string, AssetRecommendation[]> = {};
+  for (const r of recommendations) {
+    if (!recsBySymbol[r.symbol]) recsBySymbol[r.symbol] = [];
+    recsBySymbol[r.symbol].push(r);
+  }
+
+  const totalMissedAnnual = recommendations.reduce((sum, r) => sum + r.missedAnnual, 0);
+  const actionableRecs = recommendations.filter(r =>
+    r.type !== "optimal" && r.type !== "no_action" && r.type !== "no_data"
   );
+  const optimalRecs = recommendations.filter(r => r.type === "optimal");
+
+  const stakeableOwned = getStakeableAssets().filter(a => {
+    const owned = recommendations.some(r => r.symbol === a.symbol);
+    return owned;
+  });
   const defiAltAssets = getAssetsWithDefiAlternatives();
   const allWarnings = getAssetWarnings();
 
   const consolidatedAssets: Record<string, { symbol: string; totalBalance: number; totalUsd: number; locations: { source: string; label: string; balance: number; usd: number }[] }> = {};
-
   for (const w of addresses) {
     for (const b of w.balances || []) {
       const sym = b.assetSymbol.toUpperCase().replace(/ \(staked\)/, "");
@@ -119,12 +137,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
       const usd = parseFloat(b.usdValue) || 0;
       consolidatedAssets[sym].totalBalance += bal;
       consolidatedAssets[sym].totalUsd += usd;
-      consolidatedAssets[sym].locations.push({
-        source: "wallet",
-        label: w.label || `${w.chain} wallet`,
-        balance: bal,
-        usd,
-      });
+      consolidatedAssets[sym].locations.push({ source: "wallet", label: w.label || `${w.chain} wallet`, balance: bal, usd });
     }
   }
   for (const eb of exchangeBalances) {
@@ -132,17 +145,9 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     if (!consolidatedAssets[sym]) consolidatedAssets[sym] = { symbol: sym, totalBalance: 0, totalUsd: 0, locations: [] };
     consolidatedAssets[sym].totalBalance += eb.balance;
     consolidatedAssets[sym].totalUsd += eb.usdValue;
-    consolidatedAssets[sym].locations.push({
-      source: "exchange",
-      label: eb.provider,
-      balance: eb.balance,
-      usd: eb.usdValue,
-    });
+    consolidatedAssets[sym].locations.push({ source: "exchange", label: eb.provider, balance: eb.balance, usd: eb.usdValue });
   }
-
-  const sortedConsolidated = Object.values(consolidatedAssets)
-    .filter(a => a.totalUsd > 0.01)
-    .sort((a, b) => b.totalUsd - a.totalUsd);
+  const sortedConsolidated = Object.values(consolidatedAssets).filter(a => a.totalUsd > 0.01).sort((a, b) => b.totalUsd - a.totalUsd);
 
   const priceEntries = Object.entries(prices || {}).sort((a, b) => (b[1]?.usd || 0) - (a[1]?.usd || 0));
 
@@ -162,41 +167,90 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
         </Button>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="optimize">
           <TabsList className="flex flex-wrap h-auto gap-1 mb-4" data-testid="recommendations-tabs">
-            <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="optimize" data-testid="tab-optimize">Optimize</TabsTrigger>
             <TabsTrigger value="consolidated" data-testid="tab-consolidated">By Asset</TabsTrigger>
-            <TabsTrigger value="move" data-testid="tab-move-off-exchange">Move Off Exchange</TabsTrigger>
             <TabsTrigger value="staking" data-testid="tab-staking">Staking</TabsTrigger>
             <TabsTrigger value="defi" data-testid="tab-defi-tradfi">DeFi vs TradFi</TabsTrigger>
+            <TabsTrigger value="prices" data-testid="tab-prices">Prices</TabsTrigger>
             <TabsTrigger value="alerts" data-testid="tab-alerts">Alerts</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" data-testid="tab-content-overview">
+          <TabsContent value="optimize" data-testid="tab-content-optimize">
+            {totalMissedAnnual > 0 && (
+              <div className="border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 rounded-lg p-4 mb-6" data-testid="missed-earnings-banner">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-8 w-8 text-amber-600 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-lg text-amber-800 dark:text-amber-200">
+                      ~${totalMissedAnnual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/year in missed earnings
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Based on current positions, you could earn more by optimizing where your assets sit.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 mb-6">
-              <SummaryCard icon={<ArrowRightLeft className="h-5 w-5" />} label="Move Off Exchange" value={moveOffExchangeItems.length} />
+              <SummaryCard icon={<Zap className="h-5 w-5 text-amber-500" />} label="Actions Available" value={actionableRecs.length} />
+              <SummaryCard icon={<CheckCircle className="h-5 w-5 text-green-500" />} label="Already Optimal" value={optimalRecs.length} />
               <SummaryCard icon={<Coins className="h-5 w-5" />} label="Staking Opportunities" value={stakeableOwned.length} />
               <SummaryCard icon={<BarChart3 className="h-5 w-5" />} label="Live Prices" value={priceEntries.length} />
-              <SummaryCard icon={<AlertTriangle className="h-5 w-5" />} label="Warnings" value={allWarnings.reduce((c, w) => c + w.warnings.length, 0)} />
             </div>
 
-            <h3 className="font-semibold mb-3">Live Prices</h3>
-            {pricesLoading ? (
-              <p className="text-sm text-muted-foreground">Loading prices...</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {priceEntries.map(([sym, data]) => (
-                  <div key={sym} className="flex items-center justify-between p-2 rounded-lg border bg-card" data-testid={`price-card-${sym}`}>
-                    <div>
-                      <span className="font-medium text-sm">{sym}</span>
-                      <p className="text-xs text-muted-foreground">${data?.usd?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</p>
+            {actionableRecs.length > 0 && (
+              <>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  Actions to Maximize Your Portfolio
+                </h3>
+                <div className="space-y-3 mb-6">
+                  {actionableRecs
+                    .sort((a, b) => b.missedAnnual - a.missedAnnual)
+                    .map((rec, i) => (
+                      <RecommendationCard key={`${rec.symbol}-${rec.currentLocation}-${i}`} rec={rec} />
+                    ))}
+                </div>
+              </>
+            )}
+
+            {optimalRecs.length > 0 && (
+              <>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Well-Positioned Assets
+                </h3>
+                <div className="space-y-2">
+                  {optimalRecs.map((rec, i) => (
+                    <div key={`${rec.symbol}-opt-${i}`} className="flex items-center justify-between p-3 rounded-lg border bg-green-50/50 dark:bg-green-950/20" data-testid={`optimal-asset-${rec.symbol}-${i}`}>
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                        <div>
+                          <span className="font-medium">{rec.symbol}</span>
+                          <span className="text-sm text-muted-foreground ml-2">on {rec.currentLocation}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium">${rec.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        {rec.currentYield > 0 && (
+                          <p className="text-xs text-green-600 dark:text-green-400">Earning ~{rec.currentYield.toFixed(1)}%</p>
+                        )}
+                      </div>
                     </div>
-                    <Badge variant={data?.usd_24h_change >= 0 ? "default" : "destructive"} className="text-xs">
-                      {data?.usd_24h_change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                      {data?.usd_24h_change?.toFixed(1)}%
-                    </Badge>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </>
+            )}
+
+            {recommendations.filter(r => r.type === "no_data").length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  {recommendations.filter(r => r.type === "no_data").length} asset(s) have no optimization data yet: {recommendations.filter(r => r.type === "no_data").map(r => r.symbol).join(", ")}
+                </p>
               </div>
             )}
           </TabsContent>
@@ -208,86 +262,41 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
               <p className="text-sm text-muted-foreground">No assets found. Sync your wallets and exchanges.</p>
             ) : (
               <div className="space-y-3">
-                {sortedConsolidated.map(asset => (
-                  <div key={asset.symbol} className="border rounded-lg p-3" data-testid={`consolidated-asset-${asset.symbol}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{asset.symbol}</span>
-                        <Badge variant="outline" className="text-xs">{asset.locations.length} location{asset.locations.length > 1 ? "s" : ""}</Badge>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-medium">${asset.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <p className="text-xs text-muted-foreground">{asset.totalBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {asset.symbol}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      {asset.locations.map((loc, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm pl-4 py-1 border-l-2 border-muted">
-                          <div className="flex items-center gap-2">
-                            {loc.source === "wallet" ? <Wallet className="h-3 w-3 text-green-500" /> : <ArrowRightLeft className="h-3 w-3 text-orange-500" />}
-                            <span className="text-muted-foreground">{loc.label}</span>
-                          </div>
-                          <span>{loc.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })} (${loc.usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="move" data-testid="tab-content-move">
-            <h3 className="font-semibold mb-3">Move Assets Off Exchange</h3>
-            <p className="text-sm text-muted-foreground mb-4">Your funds on exchanges are held by a third party. Consider moving them to wallets you control.</p>
-            {moveOffExchangeItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No exchange balances detected.</p>
-            ) : (
-              <div className="space-y-3">
-                {moveOffExchangeItems.map((eb, i) => {
-                  const sym = eb.asset.toUpperCase();
-                  const knowledge = CUSTODY_KNOWLEDGE[sym];
-                  const matchingWallet = addresses.find(w =>
-                    w.balances?.some(b => b.assetSymbol.toUpperCase().replace(/ \(staked\)/, "") === sym)
-                  );
+                {sortedConsolidated.map(asset => {
+                  const recs = recsBySymbol[asset.symbol] || [];
+                  const hasMissed = recs.some(r => r.missedAnnual > 0);
                   return (
-                    <div key={i} className="border rounded-lg p-3" data-testid={`move-exchange-${sym}-${i}`}>
+                    <div key={asset.symbol} className="border rounded-lg p-3" data-testid={`consolidated-asset-${asset.symbol}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <span className="font-medium">{sym}</span>
-                          <span className="text-sm text-muted-foreground ml-2">on {eb.provider}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{asset.symbol}</span>
+                          <Badge variant="outline" className="text-xs">{asset.locations.length} location{asset.locations.length > 1 ? "s" : ""}</Badge>
+                          {hasMissed && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Yield available</Badge>}
                         </div>
                         <div className="text-right">
-                          <span className="font-medium">${eb.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <p className="text-xs text-muted-foreground">{eb.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {sym}</p>
+                          <span className="font-medium">${asset.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <p className="text-xs text-muted-foreground">{asset.totalBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} {asset.symbol}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        {matchingWallet ? (
-                          <>
-                            <Badge className="bg-green-600 text-white" data-testid={`badge-wallet-ready-${sym}`}>
-                              <CheckCircle className="h-3 w-3 mr-1" /> Wallet Ready
-                            </Badge>
-                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                              → {matchingWallet.label || matchingWallet.address.slice(0, 12) + "..."}
-                            </span>
-                          </>
-                        ) : (
-                          <Badge variant="outline" className="border-orange-500 text-orange-600" data-testid={`badge-need-wallet-${sym}`}>
-                            <XCircle className="h-3 w-3 mr-1" /> Need Wallet
-                          </Badge>
-                        )}
+                      <div className="space-y-1">
+                        {asset.locations.map((loc, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm pl-4 py-1 border-l-2 border-muted">
+                            <div className="flex items-center gap-2">
+                              {loc.source === "wallet" ? <Wallet className="h-3 w-3 text-green-500" /> : <ArrowRightLeft className="h-3 w-3 text-orange-500" />}
+                              <span className="text-muted-foreground">{loc.label}</span>
+                            </div>
+                            <span>{loc.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })} (${loc.usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                          </div>
+                        ))}
                       </div>
-                      {!matchingWallet && knowledge?.selfCustodyWallets && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          <Info className="h-3 w-3 inline mr-1" />
-                          Recommended wallets: {knowledge.selfCustodyWallets.join(", ")}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        <Shield className="h-3 w-3 inline mr-1" />
-                        Tip: Withdraw to your own wallet for full custody. Start with a small test transfer.
-                      </p>
+                      {recs.filter(r => r.missedAnnual > 0).map((r, ri) => (
+                        <div key={ri} className="mt-2 p-2 rounded bg-amber-50 dark:bg-amber-950/30 text-sm flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
+                          <span className="text-amber-800 dark:text-amber-200">
+                            ~${r.missedAnnual.toFixed(0)}/yr available via {r.bestYieldSource} ({r.bestYield.toFixed(1)}% APY)
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   );
                 })}
@@ -302,53 +311,95 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
               <p className="text-sm text-muted-foreground">None of your current assets support staking, or add wallets/exchanges to see opportunities.</p>
             ) : (
               <div className="space-y-4">
-                {stakeableOwned.map(asset => (
-                  <div key={asset.symbol} className="border rounded-lg p-3" data-testid={`staking-asset-${asset.symbol}`}>
-                    <h4 className="font-medium mb-2">{asset.symbol} — {asset.name}</h4>
+                {stakeableOwned.map(asset => {
+                  const assetRecs = recsBySymbol[asset.symbol] || [];
+                  const totalUsd = assetRecs.reduce((s, r) => s + r.usdValue, 0);
+                  const notStakedUsd = assetRecs.filter(r => r.type !== "optimal").reduce((s, r) => s + r.usdValue, 0);
+                  const bestApy = asset.stakingOptions?.reduce((best, opt) => opt.apyMid > best ? opt.apyMid : best, 0) || 0;
+                  const potentialEarning = notStakedUsd * (bestApy / 100);
 
-                    {yields?.[asset.symbol] && yields[asset.symbol].length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Live DeFi Yields (DefiLlama)</p>
-                        <div className="space-y-1">
-                          {yields[asset.symbol].map((pool: any, i: number) => (
-                            <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
-                              <div>
-                                <span className="font-medium">{pool.protocol}</span>
-                                <span className="text-xs text-muted-foreground ml-2">{pool.chain}</span>
-                              </div>
-                              <div className="text-right">
-                                <Badge variant="default" className="text-xs">{pool.apy?.toFixed(2)}% APY</Badge>
-                                <p className="text-xs text-muted-foreground">TVL: ${(pool.tvl / 1e6).toFixed(0)}M</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                  return (
+                    <div key={asset.symbol} className="border rounded-lg p-3" data-testid={`staking-asset-${asset.symbol}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">{asset.symbol} — {asset.name}</h4>
+                        {potentialEarning > 0 && (
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
+                            ~${potentialEarning.toFixed(0)}/yr potential
+                          </Badge>
+                        )}
                       </div>
-                    )}
 
-                    {asset.stakingOptions && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Curated Options</p>
-                        <div className="space-y-1">
-                          {asset.stakingOptions.map((opt, i) => (
-                            <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
-                              <div>
-                                <span className="font-medium">{opt.platform}</span>
-                                <span className="text-xs text-muted-foreground ml-2">{opt.method}</span>
+                      {potentialEarning > 0 && (
+                        <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/30 text-sm mb-3">
+                          <Sparkles className="h-3 w-3 text-amber-500 inline mr-1" />
+                          <span className="text-amber-800 dark:text-amber-200">
+                            You hold ${notStakedUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })} in unstaked {asset.symbol} — staking at ~{bestApy.toFixed(1)}% could earn ~${potentialEarning.toFixed(0)}/year
+                          </span>
+                        </div>
+                      )}
+
+                      {yields?.[asset.symbol] && yields[asset.symbol].length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Live DeFi Yields (DefiLlama)</p>
+                          <div className="space-y-1">
+                            {yields[asset.symbol].map((pool: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                                <div>
+                                  <span className="font-medium">{pool.protocol}</span>
+                                  <span className="text-xs text-muted-foreground ml-2">{pool.chain}</span>
+                                </div>
+                                <div className="text-right">
+                                  <Badge variant="default" className="text-xs">{pool.apy?.toFixed(2)}% APY</Badge>
+                                  <p className="text-xs text-muted-foreground">TVL: ${(pool.tvl / 1e6).toFixed(0)}M</p>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {asset.stakingOptions && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Curated Options</p>
+                          <div className="space-y-1">
+                            {asset.stakingOptions.map((opt, i) => (
+                              <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
+                                <div>
+                                  <span className="font-medium">{opt.platform}</span>
+                                  <span className="text-xs text-muted-foreground ml-2">{opt.method}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">{opt.apyRange}</Badge>
+                                  <a href={opt.link} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                  </a>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {asset.exchangeEarnOptions && asset.exchangeEarnOptions.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Exchange Earning (custodial)</p>
+                          <div className="space-y-1">
+                            {asset.exchangeEarnOptions.map((opt, i) => (
+                              <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted/20 rounded">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{opt.exchange}</span>
+                                  <span className="text-xs text-muted-foreground">{opt.program}</span>
+                                  {opt.flexible && <Badge variant="outline" className="text-xs">Flexible</Badge>}
+                                </div>
                                 <Badge variant="outline" className="text-xs">{opt.apyRange}</Badge>
-                                <a href={opt.link} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                                </a>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -401,6 +452,28 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
                         ))}
                       </div>
                     )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="prices" data-testid="tab-content-prices">
+            <h3 className="font-semibold mb-3">Live Prices</h3>
+            {pricesLoading ? (
+              <p className="text-sm text-muted-foreground">Loading prices...</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {priceEntries.map(([sym, data]) => (
+                  <div key={sym} className="flex items-center justify-between p-2 rounded-lg border bg-card" data-testid={`price-card-${sym}`}>
+                    <div>
+                      <span className="font-medium text-sm">{sym}</span>
+                      <p className="text-xs text-muted-foreground">${data?.usd?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</p>
+                    </div>
+                    <Badge variant={data?.usd_24h_change >= 0 ? "default" : "destructive"} className="text-xs">
+                      {data?.usd_24h_change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                      {data?.usd_24h_change?.toFixed(1)}%
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -514,10 +587,74 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   );
 }
 
+function RecommendationCard({ rec }: { rec: AssetRecommendation }) {
+  const typeConfig: Record<string, { icon: React.ReactNode; borderColor: string; bgColor: string }> = {
+    move_to_cold: { icon: <Shield className="h-5 w-5 text-blue-500" />, borderColor: "border-blue-300 dark:border-blue-700", bgColor: "bg-blue-50/50 dark:bg-blue-950/20" },
+    split_strategy: { icon: <ArrowRightLeft className="h-5 w-5 text-purple-500" />, borderColor: "border-purple-300 dark:border-purple-700", bgColor: "bg-purple-50/50 dark:bg-purple-950/20" },
+    stake_available: { icon: <Coins className="h-5 w-5 text-amber-500" />, borderColor: "border-amber-300 dark:border-amber-700", bgColor: "bg-amber-50/50 dark:bg-amber-950/20" },
+    defi_yield: { icon: <Sparkles className="h-5 w-5 text-emerald-500" />, borderColor: "border-emerald-300 dark:border-emerald-700", bgColor: "bg-emerald-50/50 dark:bg-emerald-950/20" },
+    no_data: { icon: <Info className="h-5 w-5 text-gray-500" />, borderColor: "border-gray-300 dark:border-gray-700", bgColor: "bg-gray-50/50 dark:bg-gray-950/20" },
+  };
+  const config = typeConfig[rec.type] || typeConfig.no_data;
+
+  return (
+    <div className={`border ${config.borderColor} ${config.bgColor} rounded-lg p-4`} data-testid={`recommendation-${rec.symbol}-${rec.type}`}>
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 mt-0.5">{config.icon}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{rec.symbol}</span>
+              <Badge variant="outline" className="text-xs">{rec.title}</Badge>
+            </div>
+            <span className="font-medium text-sm shrink-0">${rec.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <p className="text-sm text-muted-foreground mb-2">{rec.description}</p>
+
+          {rec.missedAnnual > 0 && (
+            <div className="flex items-center gap-2 mb-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/30">
+              <DollarSign className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                ~${rec.missedAnnual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/year left on the table
+              </span>
+            </div>
+          )}
+
+          {rec.currentYield > 0 && rec.bestYield > rec.currentYield && (
+            <div className="flex items-center gap-2 text-sm mb-2">
+              <span className="text-muted-foreground">Current: {rec.currentYield.toFixed(1)}%</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="font-medium text-green-600 dark:text-green-400">Best: {rec.bestYield.toFixed(1)}% via {rec.bestYieldSource}</span>
+            </div>
+          )}
+
+          {rec.actionItems.length > 0 && (
+            <div className="space-y-1 mt-2">
+              {rec.actionItems.map((action, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm">
+                  <span className="text-muted-foreground mt-0.5">•</span>
+                  <span className="text-muted-foreground">{action}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {rec.riskNote && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
+              <Shield className="h-3 w-3 mt-0.5 shrink-0" />
+              {rec.riskNote}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <div className="border rounded-lg p-3 flex items-center gap-3">
-      <div className="text-muted-foreground">{icon}</div>
+      <div>{icon}</div>
       <div>
         <p className="text-2xl font-bold">{value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
