@@ -1149,12 +1149,12 @@ export async function getZilliqaBalance(address: string): Promise<ChainBalance[]
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa";
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
   ethereum: { name: "Ethereum", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
-  solana: { name: "Solana", symbol: "SOL", addressPattern: "^[1-9A-HJ-NP-Za-km-z]{32,44}$", example: "DRpb..." },
+  solana: { name: "Solana", symbol: "SOL", addressPattern: "^[1-9A-HJ-NP-Za-km-z]{43,44}$", example: "DRpb..." },
   xrp: { name: "XRP Ledger", symbol: "XRP", addressPattern: "^r[1-9A-HJ-NP-Za-km-z]{24,34}$", example: "rXXX..." },
   dogecoin: { name: "Dogecoin", symbol: "DOGE", addressPattern: "^D[1-9A-HJ-NP-Za-km-z]{33}$", example: "D7Y..." },
   litecoin: { name: "Litecoin", symbol: "LTC", addressPattern: "^(L|M|ltc1)", example: "ltc1q..." },
@@ -1168,9 +1168,12 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   vechain: { name: "VeChain", symbol: "VET", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   digibyte: { name: "DigiByte", symbol: "DGB", addressPattern: "^(D|dgb1)", example: "D..." },
   casper: { name: "Casper", symbol: "CSPR", addressPattern: "^0[12]", example: "01..." },
-  cronos: { name: "Cronos", symbol: "CRO", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  cronos: { name: "Cronos", symbol: "CRO", addressPattern: "^(0x[a-fA-F0-9]{40}|cro1)", example: "0x..." },
   nervos: { name: "Nervos CKB", symbol: "CKB", addressPattern: "^ckb1", example: "ckb1q..." },
   zilliqa: { name: "Zilliqa", symbol: "ZIL", addressPattern: "^(zil1|0x)", example: "zil1..." },
+  ton: { name: "TON", symbol: "TON", addressPattern: "^(EQ|UQ|0:|kf)", example: "UQ..." },
+  stellar: { name: "Stellar", symbol: "XLM", addressPattern: "^G[A-Z2-7]{55}$", example: "G..." },
+  verge: { name: "Verge", symbol: "XVG", addressPattern: "^D[1-9A-HJ-NP-Za-km-z]{33}$", example: "D..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -1217,8 +1220,74 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getStellarBalance(address);
     case "verge":
       return getVergeBalance(address);
+    case "ton":
+      return getTonBalance(address);
     default:
       return [];
+  }
+}
+
+export function detectCorrectChain(storedChain: SupportedChain, address: string): SupportedChain | null {
+  const a = address.trim();
+  const currentPattern = CHAIN_CONFIG[storedChain]?.addressPattern;
+  if (currentPattern && new RegExp(currentPattern).test(a)) {
+    return null;
+  }
+  const priorityOrder: SupportedChain[] = [
+    "bitcoin", "ethereum", "solana", "xrp", "ton", "litecoin", "dogecoin",
+    "tron", "cardano", "algorand", "cosmos", "hedera", "polkadot",
+    "stellar", "vechain", "cronos", "nervos", "zilliqa", "digibyte",
+    "casper", "verge", "avalanche",
+  ];
+  for (const chain of priorityOrder) {
+    if (chain === storedChain) continue;
+    const pattern = CHAIN_CONFIG[chain]?.addressPattern;
+    if (pattern && new RegExp(pattern).test(a)) {
+      return chain;
+    }
+  }
+  return null;
+}
+
+export async function getTonBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://toncenter.com/api/v2/getAddressBalance?address=${address}`);
+    if (!data.ok || !data.result) return [];
+    const nanoton = BigInt(data.result);
+    const ton = Number(nanoton / 1000000n) / 1000;
+    if (ton <= 0) return [];
+    const prices = await getPrices(["TON"]);
+    const balances: ChainBalance[] = [{
+      symbol: "TON",
+      balance: ton,
+      usdValue: ton * (prices.TON || 0),
+    }];
+    try {
+      const jettonData = await fetchJson(`https://toncenter.com/api/v3/jetton/wallets?owner_address=${address}&limit=50`);
+      if (jettonData.jetton_wallets && Array.isArray(jettonData.jetton_wallets)) {
+        for (const jw of jettonData.jetton_wallets) {
+          const rawBal = jw.balance || "0";
+          if (rawBal === "0") continue;
+          const symbol = (jw.jetton?.symbol || jw.jetton?.name || "").toUpperCase();
+          if (!symbol) continue;
+          const decimals = parseInt(jw.jetton?.decimals || "9");
+          const bigBal = BigInt(rawBal);
+          const bal = Number(bigBal / (10n ** BigInt(Math.max(0, decimals - 6)))) / 1e6;
+          if (bal > 0.000001) {
+            const stablecoins = new Set(["USDT", "USDC"]);
+            balances.push({
+              symbol,
+              balance: bal,
+              usdValue: stablecoins.has(symbol) ? bal : 0,
+            });
+          }
+        }
+      }
+    } catch {}
+    return balances;
+  } catch (err) {
+    console.error("TON balance fetch error:", err);
+    return [];
   }
 }
 

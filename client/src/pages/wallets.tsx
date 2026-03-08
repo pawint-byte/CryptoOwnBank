@@ -112,6 +112,7 @@ const CHAIN_LABELS: Record<string, string> = {
   digibyte: "DGB",
   casper: "CSPR",
   cronos: "CRO",
+  ton: "TON",
   nervos: "CKB",
   zilliqa: "ZIL",
   stellar: "XLM",
@@ -136,6 +137,7 @@ const CHAIN_COLORS: Record<string, string> = {
   digibyte: "#006AD2",
   casper: "#FF473E",
   cronos: "#002D74",
+  ton: "#0098EA",
   nervos: "#3CC68A",
   zilliqa: "#49C1BF",
   stellar: "#000000",
@@ -351,6 +353,7 @@ function getExplorerUrl(chain: string, address: string): string {
     digibyte: `https://digiexplorer.info/address/${address}`,
     casper: `https://cspr.live/account/${address}`,
     cronos: `https://cronos.org/explorer/address/${address}`,
+    ton: `https://tonviewer.com/${address}`,
     nervos: `https://explorer.nervos.org/address/${address}`,
     zilliqa: `https://viewblock.io/zilliqa/address/${address}`,
     stellar: `https://stellar.expert/explorer/public/account/${address}`,
@@ -424,8 +427,8 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       const txCount = data?.newTransactions || 0;
-      if (data?.chainMismatch) {
-        toast({ title: "Address Mismatch", description: data.chainMismatch + ". Edit this wallet to select the correct chain.", variant: "destructive" });
+      if (data?.correctedChain) {
+        toast({ title: "Chain Auto-Corrected", description: `Address was detected as ${data.correctedChain} and synced successfully.` });
       } else if (data?.skipped) {
         toast({ title: "Already up to date — synced less than 2 min ago" });
       } else if (txCount > 0) {
@@ -583,6 +586,7 @@ export default function Wallets() {
     { value: "digibyte", label: "DigiByte (DGB)" },
     { value: "casper", label: "Casper (CSPR)" },
     { value: "cronos", label: "Cronos (CRO)" },
+    { value: "ton", label: "TON (TON)" },
     { value: "nervos", label: "Nervos (CKB)" },
     { value: "zilliqa", label: "Zilliqa (ZIL)" },
     { value: "stellar", label: "Stellar (XLM)" },
@@ -1031,19 +1035,9 @@ export default function Wallets() {
                       )}
                       {w.balances.length === 0 && (
                         <CardContent className="pt-0">
-                          {(w as any).chainMismatch ? (
-                            <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/20">
-                              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-xs font-medium text-destructive">{(w as any).chainMismatch}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">Edit this wallet to select the correct blockchain.</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              No balances found. Try syncing this wallet.
-                            </p>
-                          )}
+                          <p className="text-sm text-muted-foreground">
+                            No balances found. Try syncing this wallet.
+                          </p>
                         </CardContent>
                       )}
                     </Card>

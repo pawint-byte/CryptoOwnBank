@@ -2511,8 +2511,7 @@ export async function registerRoutes(
       const walletsWithBalances = await Promise.all(
         userWallets.map(async (w) => {
           const balances = await storage.getWalletBalances(w.id);
-          const mismatch = detectChainMismatch(w.chain, w.address);
-          return { ...w, balances, chainMismatch: mismatch || undefined };
+          return { ...w, balances };
         })
       );
 
@@ -2625,19 +2624,40 @@ export async function registerRoutes(
         }
       }
 
-      const chain = wallet.chain as any;
-      const chainMismatch = detectChainMismatch(chain, wallet.address);
+      let chain = wallet.chain as any;
       let balances: Awaited<ReturnType<typeof fetchChainBalances>> = [];
       let fetchError = false;
-      try {
-        balances = await fetchChainBalances(chain, wallet.address);
-      } catch (err) {
-        console.error(`Sync fetch error for ${chain} wallet ${wallet.id}:`, err);
-        fetchError = true;
+      let correctedChain: string | null = null;
+
+      const { detectCorrectChain } = await import("./services/blockchain-balance");
+      const detectedChain = detectCorrectChain(chain, wallet.address);
+      if (detectedChain) {
+        console.log(`Auto-detect: wallet ${wallet.id} stored as "${chain}" but address matches "${detectedChain}" — querying correct chain`);
+        try {
+          balances = await fetchChainBalances(detectedChain, wallet.address);
+          if (balances.length > 0) {
+            correctedChain = detectedChain;
+            chain = detectedChain;
+            const { wallets: walletsTable } = await import("@shared/schema");
+            await db.update(walletsTable).set({ chain: detectedChain }).where(eq(walletsTable.id, wallet.id));
+            console.log(`Auto-corrected wallet ${wallet.id} chain from "${wallet.chain}" to "${detectedChain}"`);
+          }
+        } catch (err) {
+          console.error(`Auto-detect fetch error for ${detectedChain} wallet ${wallet.id}:`, err);
+        }
+      }
+
+      if (balances.length === 0) {
+        try {
+          balances = await fetchChainBalances(wallet.chain as any, wallet.address);
+        } catch (err) {
+          console.error(`Sync fetch error for ${wallet.chain} wallet ${wallet.id}:`, err);
+          fetchError = true;
+        }
       }
 
       if (fetchError || balances.length === 0) {
-        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError}${chainMismatch ? ', CHAIN MISMATCH: ' + chainMismatch : ''})`);
+        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError})`);
         await storage.updateWalletSyncTime(wallet.id);
       } else {
         const existingBalances = await storage.getWalletBalances(wallet.id);
@@ -2759,7 +2779,7 @@ export async function registerRoutes(
 
       const updatedWallet = await storage.getWallet(wallet.id);
       const updatedBalances = await storage.getWalletBalances(wallet.id);
-      res.json({ ...updatedWallet, balances: updatedBalances, newTransactions, chainMismatch: chainMismatch || undefined });
+      res.json({ ...updatedWallet, balances: updatedBalances, newTransactions, correctedChain: correctedChain || undefined });
     } catch (error) {
       console.error("Sync wallet error:", error);
       res.status(500).json({ message: "Failed to sync wallet" });
