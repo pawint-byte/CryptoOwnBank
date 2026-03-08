@@ -1,0 +1,124 @@
+I need you to add the following features to this existing app. This is a blockchain wallet management app that already has wallet address CRUD, exchange balance CRUD, balance syncing, QR codes, "By Network" / "By Asset" views, and a self-custody recommendation system (CUSTODY_KNOWLEDGE). Here's what needs to be added:
+
+1. Database Schema — New Tables
+Add three new tables to shared/schema.ts:
+
+// Market data cache table
+export const marketCache = pgTable("market_cache", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull(), // "price" | "staking_apy" | "defi_yield"
+  symbol: text("symbol").notNull(),
+  data: jsonb("data").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+// Email notification config
+export const emailConfig = pgTable("email_config", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  enabled: boolean("enabled").default(true),
+  alertTypes: text("alert_types").default("apy_change,new_opportunity,weekly_digest"),
+  lastSentAt: timestamp("last_sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+// Alert log
+export const alertLog = pgTable("alert_log", {
+  id: serial("id").primaryKey(),
+  alertType: text("alert_type").notNull(),
+  message: text("message").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+Create insert schemas and types for each. Add CRUD methods to the storage interface:
+
+getMarketCache(category, symbol), upsertMarketCache(category, symbol, data)
+getEmailConfig(), upsertEmailConfig(data)
+createAlertLog(data), getAlertLogs(limit)
+Run db:push after.
+
+2. Backend — Market Data Service (server/market-data.ts)
+Create a service that:
+
+Fetches CoinGecko prices for these symbols mapped to CoinGecko IDs:
+BTC: bitcoin, ETH: ethereum, XDC: xdcinnetwork, MATIC: polygon-ecosystem-token,
+SOL: solana, XRP: ripple, ADA: cardano, DOT: polkadot, TRX: tron, ALGO: algorand,
+XLM: stellar, DOGE: dogecoin, LTC: litecoin, BNB: binancecoin, AVAX: avalanche-2,
+FTM: fantom, XVG: verge, DGB: digibyte, USDT: tether, USDC: usd-coin
+Uses the free API: https://api.coingecko.com/api/v3/simple/price?ids=...&vs_currencies=usd&include_24hr_change=true
+Fetches one at a time with 1.5s delay to respect rate limits.
+Fetches DefiLlama yields from https://yields.llama.fi/pools:
+Filters pools by symbol match, TVL > $1M, and known protocol names (lido, rocket-pool, aave, jito, benqi, etc.)
+Groups results by symbol, keeps top 5 per symbol sorted by TVL.
+Caches all results in the market_cache DB table.
+Exports getCachedPrices(), getCachedYields(), refreshAllMarketData(), startMarketDataScheduler(hours).
+The scheduler runs refreshAllMarketData() on startup and every N hours via setInterval.
+3. Backend — Email Service (server/email-service.ts)
+Create a service using nodemailer that:
+
+Reads SMTP config from env vars: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM
+Exports isEmailConfigured() — returns true if all SMTP vars are set
+Exports sendTestEmail() — sends a test email to the configured address from email_config table
+Exports checkAndSendAlerts(newPrices, newYields, oldPrices, oldYields) — detects:
+Price swings > 10% in 24h
+APY drops > 2% absolute
+New yield protocols appearing
+Sends HTML email with alert details, logs each alert to alert_log table.
+Exports sendWeeklyDigest(prices, yields) — sends once per week (checks lastSentAt in email_config)
+Gracefully skips all sending if SMTP is not configured (no crashes).
+4. API Routes
+Add these routes to server/routes.ts:
+
+GET  /api/market-data/prices   → returns cached CoinGecko prices
+GET  /api/market-data/yields   → returns cached DefiLlama yields
+POST /api/market-data/refresh  → force refresh + check alerts + attempt weekly digest
+GET  /api/email-config         → returns { config, smtpConfigured }
+POST /api/email-config         → saves email + enabled + alertTypes
+POST /api/email-config/test    → sends test email
+GET  /api/alert-logs           → returns last 50 alert logs
+Call startMarketDataScheduler(2) at the end of route registration so it starts on server boot.
+
+5. Frontend — Recommendations Hub Component
+Build a RecommendationsHub component that takes addresses and exchangeBalances as props. It should:
+
+Fetch live data from /api/market-data/prices and /api/market-data/yields (refetch every 5 minutes)
+Fetch email config from /api/email-config
+Have a "Refresh Data" button that calls POST /api/market-data/refresh
+Use a tabbed interface with these tabs:
+Overview tab:
+
+Summary cards: Move Off Exchange count, Staking Opportunities count, Live Prices count, Warnings count
+Price grid showing all tracked assets with USD price and 24h % change (green/red)
+Move Off Exchange tab:
+
+For each exchange balance, show amount + USD value (from live prices)
+Show "Wallet Ready" badge if user has a matching self-custody wallet, or "Need Wallet" with recommendations
+If wallet exists, show the transfer-to address
+Show withdrawal tips
+Staking tab:
+
+For each stakeable asset (from CUSTODY_KNOWLEDGE), show:
+Live yields from DefiLlama (protocol, pool, chain, TVL, APY)
+Curated staking options from CUSTODY_KNOWLEDGE (platform, method, APY range, external link)
+DeFi vs TradFi tab:
+
+For assets with defiAlternatives in CUSTODY_KNOWLEDGE, show side-by-side comparison cards:
+Left: Traditional finance product + APY
+Right: DeFi protocol + APY + risk level + link
+Plus any additional live yields from DefiLlama
+Alerts tab:
+
+Email setup: input field for email address, save button
+If email already configured: show active status with Test Email button
+Show SMTP warning if env vars not set
+Show alert type badges (APY Changes, New Opportunities, Weekly Digest)
+Show asset warnings from CUSTODY_KNOWLEDGE
+Place the RecommendationsHub component on the home page between the wallet/asset views and the info cards section. Only show it when the user has at least one wallet or exchange balance.
+
+6. Email: Default to Pawint@me.com
+The notification email should default to Pawint@me.com. SMTP env vars (SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM) need to be configured for email delivery to work — the service gracefully skips if they're not set.
+
+Important Technical Notes
+Use direct fetch() with User-Agent: Mozilla/5.0 headers for all external API calls (CoinGecko, DefiLlama) to avoid 403s
+CoinGecko free API rate limit: fetch prices one at a time with 1.5s delays
+DefiLlama yields API has no rate limit but returns large payloads — filter aggressively
+Install nodemailer and @types/nodemailer packages
+All market data should be cached in the database so it survives server restarts
+The scheduler should log to console: [market-data] Updated X prices from CoinGecko, etc.

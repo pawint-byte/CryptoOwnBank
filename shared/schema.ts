@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, boolean, integer, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, boolean, integer, serial, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -324,3 +324,38 @@ export type InsertStatementUpload = z.infer<typeof insertStatementUploadSchema>;
 
 export type StatementProduct = typeof statementProducts.$inferSelect;
 export type InsertStatementProduct = z.infer<typeof insertStatementProductSchema>;
+
+export const marketCache = pgTable("market_cache", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull(),
+  symbol: text("symbol").notNull(),
+  data: jsonb("data").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const emailConfig = pgTable("email_config", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  enabled: boolean("enabled").default(true),
+  alertTypes: text("alert_types").default("apy_change,new_opportunity,weekly_digest"),
+  lastSentAt: timestamp("last_sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const alertLog = pgTable("alert_log", {
+  id: serial("id").primaryKey(),
+  alertType: text("alert_type").notNull(),
+  message: text("message").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export const insertMarketCacheSchema = createInsertSchema(marketCache).omit({ id: true, updatedAt: true });
+export const insertEmailConfigSchema = createInsertSchema(emailConfig).omit({ id: true, createdAt: true });
+export const insertAlertLogSchema = createInsertSchema(alertLog).omit({ id: true, sentAt: true });
+
+export type MarketCache = typeof marketCache.$inferSelect;
+export type InsertMarketCache = z.infer<typeof insertMarketCacheSchema>;
+export type EmailConfig = typeof emailConfig.$inferSelect;
+export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
+export type AlertLog = typeof alertLog.$inferSelect;
+export type InsertAlertLog = z.infer<typeof insertAlertLogSchema>;
