@@ -287,12 +287,13 @@ export async function registerRoutes(
         ...SOIL_VAULT_ADDRESSES,
         ...activeCustomVaults.map(v => v.address),
       ]);
+      console.log(`[Soil sync] allKnownVaultAddresses: ${JSON.stringify([...allKnownVaultAddresses])}, customVaults: ${JSON.stringify(userCustomVaults)}`);
 
       const discoveredAddresses: Array<{ address: string; direction: "outgoing" | "incoming"; amount: number; date: string; hash: string }> = [];
 
       const soilTxns: Array<{
         hash: string;
-        type: "deposit" | "interest";
+        type: "deposit" | "withdrawal";
         amount: number;
         currency: string;
         date: string;
@@ -331,8 +332,12 @@ export async function registerRoutes(
 
             const src = txData.Account || "";
             const dest = txData.Destination || "";
-            const isKnownVault =
-              allKnownVaultAddresses.has(src) || allKnownVaultAddresses.has(dest);
+            const srcIsVault = allKnownVaultAddresses.has(src);
+            const destIsVault = allKnownVaultAddresses.has(dest);
+            const isKnownVault = srcIsVault || destIsVault;
+            if (isKnownVault && !srcIsVault && !destIsVault) {
+              console.log(`[Soil sync] BUG: isKnownVault=true but neither src nor dest matched! src=${src} dest=${dest}`);
+            }
 
             let amount = 0;
             let currency = "Unknown";
@@ -388,7 +393,10 @@ export async function registerRoutes(
 
             if (src === walletAddress && dest === walletAddress) continue;
 
-            if (!isKnownVault) {
+            const isDeposit = src === walletAddress && allKnownVaultAddresses.has(dest);
+            const isWithdrawal = dest === walletAddress && allKnownVaultAddresses.has(src);
+
+            if (!isDeposit && !isWithdrawal) {
               if (amount >= 10) {
                 const isOutgoing = src === walletAddress;
                 const counterparty = isOutgoing ? dest : src;
@@ -409,10 +417,8 @@ export async function registerRoutes(
               continue;
             }
 
-            const isDeposit = allKnownVaultAddresses.has(dest);
             const vaultAddr = isDeposit ? dest : src;
-
-            const txType = isDeposit ? "deposit" : "interest";
+            const txType = isDeposit ? "deposit" : "withdrawal";
             console.log(`[Soil sync] Found ${txType}: ${amount} ${currency} | ${src.slice(0,8)}->${dest.slice(0,8)} | vault=${vaultAddr.slice(0,8)} | hash=${hash.slice(0,12)}`);
             soilTxns.push({
               hash,
@@ -441,7 +447,7 @@ export async function registerRoutes(
       for (const stx of soilTxns) {
         if (existingHashes.has(stx.hash)) continue;
 
-        const transactionType = stx.type === "deposit" ? "transfer_out" : "income";
+        const transactionType = stx.type === "deposit" ? "transfer_out" : "transfer_in";
         const assetSymbol = stx.currency;
 
         await storage.createTransaction({
@@ -457,24 +463,31 @@ export async function registerRoutes(
           externalId: stx.hash,
           notes: stx.type === "deposit"
             ? "Soil vault deposit (auto-synced from XRPL)"
-            : "Soil vault interest payment (auto-synced from XRPL)",
+            : "Soil vault withdrawal (auto-synced from XRPL)",
         });
 
         imported++;
       }
 
       const deposits = soilTxns.filter(t => t.type === "deposit");
-      const interestPayments = soilTxns.filter(t => t.type === "interest");
+      const withdrawals = soilTxns.filter(t => t.type === "withdrawal");
       const totalDeposited = deposits.reduce((sum, t) => sum + t.amount, 0);
-      const totalInterest = interestPayments.reduce((sum, t) => sum + t.amount, 0);
+      const totalWithdrawn = withdrawals.reduce((sum, t) => sum + t.amount, 0);
+
+      const currentPrincipal = totalDeposited - totalWithdrawn;
 
       const vaultTotals: Record<string, number> = {};
       for (const dep of deposits) {
         const addr = dep.vaultAddress || SOIL_VAULT_ADDRESSES[0];
         vaultTotals[addr] = (vaultTotals[addr] || 0) + dep.amount;
       }
+      for (const wd of withdrawals) {
+        const addr = wd.vaultAddress || SOIL_VAULT_ADDRESSES[0];
+        vaultTotals[addr] = (vaultTotals[addr] || 0) - wd.amount;
+      }
 
       for (const [addr, total] of Object.entries(vaultTotals)) {
+        if (total <= 0) continue;
         const vaultName = SOIL_VAULT_NAMES[addr] || "Vault";
         const posSymbol = `RLUSD-SOIL-${vaultName.toUpperCase()}`;
         const existingPos = await storage.getPositionByUserAndAsset(userId, soilAccount.id, posSymbol);
@@ -497,16 +510,11 @@ export async function registerRoutes(
       }
 
       const sortedTxns = [...soilTxns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      const lastInterestPayment = interestPayments.length > 0
-        ? interestPayments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-        : null;
       const firstDeposit = deposits.length > 0
         ? deposits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
         : null;
 
-      const currentPrincipal = totalDeposited;
-
-      const vaultBreakdown: Record<string, { principal: number; apr: number; name: string }> = {};
+      const vaultBreakdown: Record<string, { principal: number; apr: number; name: string; deposits: Array<{amount: number; date: string}> }> = {};
       for (const dep of deposits) {
         const addr = dep.vaultAddress || SOIL_VAULT_ADDRESSES[0];
         if (!vaultBreakdown[addr]) {
@@ -514,37 +522,51 @@ export async function registerRoutes(
             principal: 0,
             apr: SOIL_VAULT_APR[addr] || 0.065,
             name: SOIL_VAULT_NAMES[addr] || "Vault",
+            deposits: [],
           };
         }
         vaultBreakdown[addr].principal += dep.amount;
+        vaultBreakdown[addr].deposits.push({ amount: dep.amount, date: dep.date });
       }
-
-      let estimatedPendingYield = 0;
-      if (currentPrincipal > 0) {
-        for (const [, info] of Object.entries(vaultBreakdown)) {
-          const sinceDate = lastInterestPayment
-            ? new Date(lastInterestPayment.date)
-            : firstDeposit
-              ? new Date(firstDeposit.date)
-              : new Date();
-          const daysSince = Math.max(0, (Date.now() - sinceDate.getTime()) / (1000 * 60 * 60 * 24));
-          estimatedPendingYield += info.principal * info.apr * (daysSince / 365);
+      for (const wd of withdrawals) {
+        const addr = wd.vaultAddress || SOIL_VAULT_ADDRESSES[0];
+        if (vaultBreakdown[addr]) {
+          vaultBreakdown[addr].principal -= wd.amount;
         }
       }
 
-      const weightedApr = currentPrincipal > 0
-        ? Object.values(vaultBreakdown).reduce((sum, v) => sum + v.principal * v.apr, 0) / currentPrincipal
+      let calculatedInterest = 0;
+      if (currentPrincipal > 0) {
+        for (const [, info] of Object.entries(vaultBreakdown)) {
+          for (const dep of info.deposits) {
+            const depositDate = new Date(dep.date);
+            const daysSince = Math.max(0, (Date.now() - depositDate.getTime()) / (1000 * 60 * 60 * 24));
+            calculatedInterest += dep.amount * info.apr * (daysSince / 365);
+          }
+        }
+      }
+
+      const weightedApr = totalDeposited > 0
+        ? Object.values(vaultBreakdown).reduce((sum, v) => sum + Math.max(0, v.principal) * v.apr, 0) / totalDeposited
         : 0;
 
-      const effectiveYield = totalInterest + estimatedPendingYield;
-      const effectiveYieldPercent = currentPrincipal > 0 ? (effectiveYield / currentPrincipal) * 100 : 0;
+      const effectiveYieldPercent = currentPrincipal > 0 ? (calculatedInterest / currentPrincipal) * 100 : 0;
 
-      const vaults = Object.entries(vaultBreakdown).map(([addr, info]) => ({
-        address: addr,
-        name: info.name,
-        principal: info.principal.toFixed(2),
-        apr: (info.apr * 100).toFixed(1),
-      }));
+      const vaults = Object.entries(vaultBreakdown).map(([addr, info]) => {
+        let vaultInterest = 0;
+        for (const dep of info.deposits) {
+          const depositDate = new Date(dep.date);
+          const daysSince = Math.max(0, (Date.now() - depositDate.getTime()) / (1000 * 60 * 60 * 24));
+          vaultInterest += dep.amount * info.apr * (daysSince / 365);
+        }
+        return {
+          address: addr,
+          name: info.name,
+          principal: Math.max(0, info.principal).toFixed(2),
+          apr: (info.apr * 100).toFixed(1),
+          interest: vaultInterest.toFixed(2),
+        };
+      });
 
       const uniqueDiscovered = Object.values(
         discoveredAddresses.reduce((acc, d) => {
@@ -567,13 +589,11 @@ export async function registerRoutes(
         summary: {
           deposits: deposits.length,
           totalDeposited: totalDeposited.toFixed(2),
-          interestPayments: interestPayments.length,
-          totalInterestReceived: totalInterest.toFixed(2),
+          withdrawals: withdrawals.length,
+          totalWithdrawn: totalWithdrawn.toFixed(2),
           currentPrincipal: currentPrincipal.toFixed(2),
-          estimatedPendingYield: estimatedPendingYield.toFixed(4),
-          effectiveYield: effectiveYield.toFixed(4),
+          calculatedInterest: calculatedInterest.toFixed(4),
           effectiveYieldPercent: effectiveYieldPercent.toFixed(2),
-          lastInterestDate: lastInterestPayment?.date || null,
           firstDepositDate: firstDeposit?.date || null,
           weightedApr: (weightedApr * 100).toFixed(1),
           vaults,

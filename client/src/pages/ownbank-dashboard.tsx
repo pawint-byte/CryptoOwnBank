@@ -80,16 +80,14 @@ export default function OwnBankDashboard() {
   const [soilSummary, setSoilSummary] = useState<{
     deposits: number;
     totalDeposited: string;
-    interestPayments: number;
-    totalInterestReceived: string;
+    withdrawals: number;
+    totalWithdrawn: string;
     currentPrincipal: string;
-    estimatedPendingYield: string;
-    effectiveYield: string;
+    calculatedInterest: string;
     effectiveYieldPercent: string;
     weightedApr?: string;
-    lastInterestDate: string | null;
     firstDepositDate: string | null;
-    vaults?: Array<{ address: string; name: string; principal: string; apr: string }>;
+    vaults?: Array<{ address: string; name: string; principal: string; apr: string; interest: string }>;
     transactions: Array<{ hash: string; type: string; amount: string; currency: string; date: string; vaultName?: string }>;
   } | null>(null);
   const [soilSynced, setSoilSynced] = useState(false);
@@ -259,7 +257,7 @@ export default function OwnBankDashboard() {
         if (data.newlyImported > 0) {
           toast({
             title: "Soil Activity Synced",
-            description: `Found ${data.summary.deposits} deposit(s) and ${data.summary.interestPayments} interest payment(s). ${data.newlyImported} new transaction(s) imported.`,
+            description: `Found ${data.summary.deposits} deposit(s). ${data.newlyImported} new transaction(s) imported.`,
           });
         }
       }
@@ -650,46 +648,26 @@ export default function OwnBankDashboard() {
                 <Skeleton className="h-16" />
               </div>
             </div>
-          ) : soilSummary && (soilSummary.deposits > 0 || soilSummary.interestPayments > 0) ? (
+          ) : soilSummary && soilSummary.deposits > 0 ? (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div className="rounded-lg border bg-card p-2 sm:p-3">
                   <div className="flex items-center gap-1.5 mb-1">
                     <ArrowUpFromLine className="h-3.5 w-3.5 text-purple-500" />
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Principal</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Total Deposited</p>
                   </div>
                   <p className="text-sm sm:text-lg font-bold font-mono" data-testid="text-soil-total-deposited">
                     ${parseFloat(soilSummary.currentPrincipal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.deposits} deposit{soilSummary.deposits !== 1 ? "s" : ""}</p>
                 </div>
-                <div className="rounded-lg border bg-card p-2 sm:p-3">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Paid Interest</p>
-                  </div>
-                  <p className="text-sm sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-total-interest">
-                    ${parseFloat(soilSummary.totalInterestReceived).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.interestPayments} payment{soilSummary.interestPayments !== 1 ? "s" : ""}</p>
-                </div>
-                <div className="rounded-lg border bg-card p-2 sm:p-3 border-emerald-500/30">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Accruing (est.)</p>
-                  </div>
-                  <p className="text-sm sm:text-lg font-bold font-mono text-amber-600 dark:text-amber-400" data-testid="text-soil-pending-yield">
-                    ${parseFloat(soilSummary.estimatedPendingYield).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] text-muted-foreground">Since {soilSummary.lastInterestDate ? new Date(soilSummary.lastInterestDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "deposit"}</p>
-                </div>
                 <div className="rounded-lg border bg-card p-2 sm:p-3 bg-gradient-to-br from-emerald-500/5 to-transparent">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Total Yield</p>
+                    <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Interest Earned (est.)</p>
                   </div>
-                  <p className="text-sm sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-effective-yield">
-                    ${parseFloat(soilSummary.effectiveYield).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <p className="text-sm sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-soil-calculated-interest">
+                    ${parseFloat(soilSummary.calculatedInterest).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.effectiveYieldPercent}% return</p>
                 </div>
@@ -701,12 +679,6 @@ export default function OwnBankDashboard() {
                     <span className="text-muted-foreground">Active since</span>
                     <span className="font-medium">{new Date(soilSummary.firstDepositDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   </div>
-                  {soilSummary.lastInterestDate && (
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground shrink-0">Last interest</span>
-                      <span className="font-medium">{new Date(soilSummary.lastInterestDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Blended APR</span>
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">{soilSummary.weightedApr || "6.5"}%</span>
@@ -719,12 +691,21 @@ export default function OwnBankDashboard() {
                   <p className="text-xs font-medium text-muted-foreground">Vault Positions</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {soilSummary.vaults.map((v) => (
-                      <div key={v.address} className="rounded-lg border bg-card p-2.5 flex items-center justify-between" data-testid={`card-vault-${v.name.toLowerCase()}`}>
-                        <div>
-                          <p className="text-xs font-medium">{v.name} Vault</p>
-                          <p className="text-[10px] text-muted-foreground">{v.apr}% APR</p>
+                      <div key={v.address} className="rounded-lg border bg-card p-2.5" data-testid={`card-vault-${v.name.toLowerCase()}`}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-xs font-medium">{v.name}</p>
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">{v.apr}% APR</span>
                         </div>
-                        <p className="text-sm font-bold font-mono">${parseFloat(v.principal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Deposited</p>
+                            <p className="text-sm font-bold font-mono">${parseFloat(v.principal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-muted-foreground">Interest (est.)</p>
+                            <p className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">+${parseFloat(v.interest).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
