@@ -333,13 +333,20 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
         .filter(Boolean);
 
       let tokenPrices: Record<string, number> = {};
-      if (ids.length > 0) {
+
+      const dbPrices = await loadPricesFromDb();
+      for (const sym of tokenSymbols) {
+        if (dbPrices[sym]) tokenPrices[sym] = dbPrices[sym];
+      }
+
+      const missingSymbols = tokenSymbols.filter(s => !tokenPrices[s] && !stablecoins.has(s) && COINGECKO_IDS[s]);
+      if (missingSymbols.length > 0) {
         try {
-          const uniqueIds = [...new Set(ids)];
+          const missingIds = [...new Set(missingSymbols.map(s => COINGECKO_IDS[s]).filter(Boolean))];
           const priceData = await fetchJson(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${uniqueIds.join(",")}&vs_currencies=usd`
+            `https://api.coingecko.com/api/v3/simple/price?ids=${missingIds.join(",")}&vs_currencies=usd`
           );
-          for (const sym of tokenSymbols) {
+          for (const sym of missingSymbols) {
             const id = COINGECKO_IDS[sym];
             if (id && priceData[id]?.usd) {
               tokenPrices[sym] = priceData[id].usd;
@@ -556,8 +563,9 @@ export async function getXrpBalance(address: string): Promise<ChainBalance[]> {
 
 export async function getDogeBalance(address: string): Promise<ChainBalance[]> {
   try {
-    const data = await fetchJson(`https://dogechain.info/api/v1/address/balance/${address}`);
-    const doge = parseFloat(data.balance || "0");
+    const data = await fetchJson(`https://dogecoin.atomicwallet.io/api/v2/address/${address}`);
+    const satoshis = data.balance || "0";
+    const doge = parseInt(satoshis) / 1e8;
     if (doge <= 0) return [];
 
     const prices = await getPrices(["DOGE"]);
@@ -567,8 +575,21 @@ export async function getDogeBalance(address: string): Promise<ChainBalance[]> {
       usdValue: doge * (prices.DOGE || 0),
     }];
   } catch (err) {
-    console.error("Dogecoin balance fetch error:", err);
-    return [];
+    console.error("Dogecoin primary API error, trying fallback:", err);
+    try {
+      const data = await fetchJson(`https://dogechain.info/api/v1/address/balance/${address}`);
+      const doge = parseFloat(data.balance || "0");
+      if (doge <= 0) return [];
+      const prices = await getPrices(["DOGE"]);
+      return [{
+        symbol: "DOGE",
+        balance: doge,
+        usdValue: doge * (prices.DOGE || 0),
+      }];
+    } catch (err2) {
+      console.error("Dogecoin fallback also failed:", err2);
+      return [];
+    }
   }
 }
 
@@ -594,22 +615,77 @@ export async function getLitecoinBalance(address: string): Promise<ChainBalance[
 
 export async function getCardanoBalance(address: string): Promise<ChainBalance[]> {
   try {
-    const data = await fetchJson(`https://cardano-mainnet.blockfrost.io/api/v0/addresses/${address}`, {
-      headers: { project_id: process.env.BLOCKFROST_API_KEY || "" },
+    const resp = await fetch(`https://api.koios.rest/api/v1/address_info`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ _addresses: [address] }),
     });
-    const lovelace = data.amount?.find((a: any) => a.unit === "lovelace")?.quantity || "0";
-    const ada = Number(lovelace) / 1e6;
+    if (!resp.ok) throw new Error(`Koios HTTP ${resp.status}`);
+    const data = await resp.json();
+    const entry = Array.isArray(data) ? data[0] : null;
+    if (!entry) return [];
+
+    const lovelace = parseInt(entry.balance || "0");
+    const ada = lovelace / 1e6;
     if (ada <= 0) return [];
 
     const prices = await getPrices(["ADA"]);
-    return [{
+    const balances: ChainBalance[] = [{
       symbol: "ADA",
       balance: ada,
       usdValue: ada * (prices.ADA || 0),
     }];
+
+    if (entry.stake_address) {
+      try {
+        const stakeResp = await fetch(`https://api.koios.rest/api/v1/account_info`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ _stake_addresses: [entry.stake_address] }),
+        });
+        if (stakeResp.ok) {
+          const stakeData = await stakeResp.json();
+          const stakeEntry = Array.isArray(stakeData) ? stakeData[0] : null;
+          if (stakeEntry) {
+            const delegated = parseInt(stakeEntry.delegated_pool ? stakeEntry.total_balance || "0" : "0");
+            const staked = delegated / 1e6 - ada;
+            if (staked > 0.01) {
+              balances.push({
+                symbol: "ADA (staked)",
+                balance: staked,
+                usdValue: staked * (prices.ADA || 0),
+              });
+            }
+            const rewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
+            if (rewards > 0.01) {
+              balances.push({
+                symbol: "ADA (rewards)",
+                balance: rewards,
+                usdValue: rewards * (prices.ADA || 0),
+              });
+            }
+          }
+        }
+      } catch {}
+    }
+
+    console.log(`Cardano scan: found ${balances.length} assets for ${address.slice(0, 15)}...`);
+    return balances;
   } catch (err) {
-    console.error("Cardano balance fetch error — Blockfrost API key may be required:", err);
-    return [];
+    console.error("Cardano balance fetch error:", err);
+    try {
+      const data = await fetchJson(`https://cardano-mainnet.blockfrost.io/api/v0/addresses/${address}`, {
+        headers: { project_id: process.env.BLOCKFROST_API_KEY || "" },
+      });
+      const lovelace = data.amount?.find((a: any) => a.unit === "lovelace")?.quantity || "0";
+      const ada = Number(lovelace) / 1e6;
+      if (ada <= 0) return [];
+      const prices = await getPrices(["ADA"]);
+      return [{ symbol: "ADA", balance: ada, usdValue: ada * (prices.ADA || 0) }];
+    } catch (err2) {
+      console.error("Cardano Blockfrost fallback also failed:", err2);
+      return [];
+    }
   }
 }
 
@@ -951,7 +1027,7 @@ export async function getDigibyteBalance(address: string): Promise<ChainBalance[
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();
     const dgb = parseFloat(text);
-    if (isNaN(dgb) || dgb <= 0) return [];
+    if (isNaN(dgb) || dgb <= 0) throw new Error("CryptoID returned 0 or invalid");
 
     const prices = await getPrices(["DGB"]);
     console.log(`DigiByte scan: found balance for ${address}`);
@@ -961,8 +1037,25 @@ export async function getDigibyteBalance(address: string): Promise<ChainBalance[
       usdValue: dgb * (prices.DGB || 0),
     }];
   } catch (err) {
-    console.error("DigiByte balance fetch error:", err);
-    return [];
+    console.error("DigiByte CryptoID error, trying Blockchair:", err);
+    try {
+      const data = await fetchJson(`https://api.blockchair.com/digibyte/dashboards/address/${address}`);
+      const addrData = data?.data?.[address];
+      if (!addrData) return [];
+      const satoshis = addrData.address?.balance || 0;
+      const dgb = satoshis / 1e8;
+      if (dgb <= 0) return [];
+      const prices = await getPrices(["DGB"]);
+      console.log(`DigiByte scan (Blockchair): found balance for ${address}`);
+      return [{
+        symbol: "DGB",
+        balance: dgb,
+        usdValue: dgb * (prices.DGB || 0),
+      }];
+    } catch (err2) {
+      console.error("DigiByte Blockchair fallback also failed:", err2);
+      return [];
+    }
   }
 }
 
