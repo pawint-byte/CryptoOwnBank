@@ -378,31 +378,37 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
   },
   ALGO: {
     ledger: [
-      { text: "Open Pera Wallet on your phone (paired with your Ledger) → tap on your ALGO account", link: "https://perawallet.app" },
-      { text: "Tap 'Staking' inside Pera → select a staking option or Governance period" },
-      { text: "Pera will build the transaction and ask for Ledger approval — confirm on your Ledger device" },
-      { text: "Your ALGO is sent to the staking/governance contract — this is normal and expected" },
-      { text: "For Governance: you must also vote during each governance period to earn the full reward", link: "https://governance.algorand.foundation" },
+      { text: "⚠️ WARNING: Some 'staking pools' listed in wallet apps (including Pera) are unverified and may be scams. Only use Algorand Governance or well-known validators." },
+      { text: "Safest option: Go directly to governance.algorand.foundation → connect Pera (with Ledger) → commit your ALGO for the current governance period", link: "https://governance.algorand.foundation" },
+      { text: "In Pera: tap your ALGO account → Pera will build the governance commit transaction → approve on your Ledger device" },
+      { text: "With Governance, your ALGO stays in your own wallet — it should NOT be sent to another address" },
+      { text: "You must vote during each governance period to earn the full reward" },
+      { text: "Red flag: If any 'staking' option asks to send your ALGO to an unfamiliar address, do NOT approve it" },
     ],
     ellipal: [
-      { text: "ELLIPAL does not support ALGO staking — it is an air-gapped wallet with no DApp browser" },
-      { text: "To stake ALGO, use Pera Wallet instead", link: "https://perawallet.app" },
+      { text: "⚠️ WARNING: Some 'staking pools' in wallet apps are unverified. Only use Algorand Governance directly." },
+      { text: "ELLIPAL does not support ALGO staking — use Pera Wallet paired with your Ledger if possible" },
+      { text: "Go directly to governance.algorand.foundation to commit your ALGO", link: "https://governance.algorand.foundation" },
     ],
     safepal: [
-      { text: "Open SafePal → select ALGO wallet → use DApp browser to join Algorand Governance", link: "https://governance.algorand.foundation" },
+      { text: "⚠️ WARNING: Some 'staking pools' in wallet DApp browsers are unverified. Only use Algorand Governance directly." },
+      { text: "Go directly to governance.algorand.foundation via SafePal's DApp browser", link: "https://governance.algorand.foundation" },
+      { text: "With Governance, your ALGO stays in your own wallet — it should NOT be sent to another address" },
     ],
     cypherock: [
-      { text: "CypheRock does not directly support ALGO staking — use Pera Wallet for staking or governance", link: "https://perawallet.app" },
+      { text: "CypheRock does not directly support ALGO staking — use Pera Wallet with Algorand Governance", link: "https://governance.algorand.foundation" },
     ],
     arculus: [
-      { text: "Arculus does not directly support ALGO staking — use Pera Wallet", link: "https://perawallet.app" },
+      { text: "Arculus does not directly support ALGO staking — use Pera Wallet with Algorand Governance", link: "https://governance.algorand.foundation" },
     ],
     tronlink: [],
     xaman: [],
     metamask: [],
     stader: [],
     unknown: [
-      { text: "Use Pera Wallet to stake your ALGO or join Algorand Governance for 5-8% APY", link: "https://perawallet.app" },
+      { text: "⚠️ WARNING: Only stake ALGO through official Algorand Governance — many 'staking pools' in wallet apps are unverified" },
+      { text: "Go directly to governance.algorand.foundation to commit your ALGO safely", link: "https://governance.algorand.foundation" },
+      { text: "With real Governance, your ALGO stays in your wallet — if anything asks you to send ALGO to another address, do NOT approve" },
     ],
   },
   ATOM: {
