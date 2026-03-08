@@ -953,6 +953,29 @@ export default function Reconciliation() {
     resolveMutation.mutate({ keepId, removeId, copyValues, keepIsWallet });
   }, []);
 
+  const [csvResult, setCsvResult] = useState<any>(null);
+
+  const csvReconcileMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/reconcile/yahoo-csv-to-wallets");
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setCsvResult(result);
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({
+        title: "Yahoo CSV Reconciled",
+        description: `${result.summary.totalAssetsMatched} assets matched, ${result.summary.totalLotsCreated} purchase lots created`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "CSV reconciliation failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const addressedMutation = useMutation({
     mutationFn: async ({ id, addressed }: { id: string; addressed: boolean }) => {
       await apiRequest("PATCH", `/api/positions/${id}/addressed`, { addressed });
@@ -1057,6 +1080,47 @@ export default function Reconciliation() {
             Review every position across all sources. Spot duplicates, fix quantities, merge entries, and make sure your portfolio reflects reality.
           </p>
         </div>
+
+        <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
+          <CardContent className="pt-4 pb-4 px-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-amber-500" />
+                Yahoo Finance CSV Cost Basis Import
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Import purchase lots (dates, prices, quantities) from your Yahoo Finance CSV into wallet balances. Only populates wallets that don't already have cost basis data.
+              </p>
+              {csvResult && (
+                <div className="mt-2 text-xs space-y-1">
+                  <p className="text-green-600 dark:text-green-400 font-medium">
+                    {csvResult.summary.totalAssetsMatched} assets matched · {csvResult.summary.totalLotsCreated} purchase lots created
+                  </p>
+                  {csvResult.skipped.length > 0 && (
+                    <p className="text-muted-foreground">
+                      Skipped {csvResult.skipped.length} (already had lots): {csvResult.skipped.map((s: any) => s.symbol).join(", ")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+              onClick={() => csvReconcileMutation.mutate()}
+              disabled={csvReconcileMutation.isPending}
+              data-testid="button-csv-reconcile"
+            >
+              {csvReconcileMutation.isPending ? (
+                <RefreshCcw className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <ArrowRightLeft className="h-4 w-4 mr-1.5" />
+              )}
+              {csvReconcileMutation.isPending ? "Importing..." : "Import Cost Basis"}
+            </Button>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card

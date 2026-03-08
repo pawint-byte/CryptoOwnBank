@@ -990,6 +990,188 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/reconcile/yahoo-csv-to-wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const fs = await import("fs");
+      const path = await import("path");
+
+      const csvPath = path.resolve("attached_assets/portfolio_(1)_1772983040841.csv");
+      if (!fs.existsSync(csvPath)) {
+        return res.status(404).json({ message: "Yahoo CSV file not found" });
+      }
+
+      const csvContent = fs.readFileSync(csvPath, "utf-8");
+      const csvLines = csvContent.trim().split("\n");
+
+      interface CsvLot {
+        symbol: string;
+        tradeDate: string;
+        purchasePrice: number;
+        quantity: number;
+        commission: number;
+        comment: string;
+      }
+
+      const csvLots: CsvLot[] = [];
+      for (let i = 1; i < csvLines.length; i++) {
+        const parts = csvLines[i].split(",");
+        const rawSym = parts[0] || "";
+        const sym = rawSym.replace("-USD", "");
+        const td = parts[9] || "";
+        const pp = parseFloat(parts[10] || "0");
+        const qty = parseFloat(parts[11] || "0");
+        const comm = parseFloat(parts[12] || "0");
+        const comment = (parts[15] || "").trim();
+        if (sym && qty > 0) {
+          csvLots.push({ symbol: sym, tradeDate: td, purchasePrice: pp, quantity: qty, commission: comm, comment });
+        }
+      }
+
+      const csvBySymbol: Record<string, CsvLot[]> = {};
+      for (const lot of csvLots) {
+        if (!csvBySymbol[lot.symbol]) csvBySymbol[lot.symbol] = [];
+        csvBySymbol[lot.symbol].push(lot);
+      }
+
+      const allWalletBalances = await storage.getWalletBalancesByUser(userId);
+      const userWallets = await storage.getWalletsByUser(userId);
+      const walletMap = new Map(userWallets.map(w => [w.id, w]));
+
+      const results: any[] = [];
+      let totalLotsCreated = 0;
+      let totalAssetsMatched = 0;
+
+      for (const wb of allWalletBalances) {
+        const sym = wb.assetSymbol.replace(" (staked)", "");
+        const lots = csvBySymbol[sym];
+        if (!lots || lots.length === 0) continue;
+
+        const existingLots = await storage.getTaxLotsByWalletBalance(userId, wb.id);
+        if (existingLots.length > 0) {
+          results.push({
+            symbol: sym,
+            walletBalance: wb.id,
+            wallet: walletMap.get(wb.walletId)?.label || "Unknown",
+            status: "skipped",
+            reason: `Already has ${existingLots.length} purchase lots`,
+          });
+          continue;
+        }
+
+        const walletBalance = parseFloat(wb.balance);
+        const lotsWithPrice = lots.filter(l => l.purchasePrice > 0);
+
+        lotsWithPrice.sort((a, b) => {
+          const da = a.tradeDate || "0";
+          const db = b.tradeDate || "0";
+          return da.localeCompare(db);
+        });
+
+        let lotsCreated = 0;
+        let totalCost = 0;
+        let totalQty = 0;
+
+        for (const lot of lotsWithPrice) {
+          const dateStr = lot.tradeDate;
+          let acquiredDate: Date;
+          if (dateStr && dateStr.length === 8) {
+            const y = dateStr.slice(0, 4);
+            const m = dateStr.slice(4, 6);
+            const d = dateStr.slice(6, 8);
+            acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
+          } else {
+            acquiredDate = new Date();
+          }
+
+          await storage.createTaxLot({
+            userId,
+            walletBalanceId: wb.id,
+            assetSymbol: sym,
+            acquiredDate,
+            originalQuantity: lot.quantity.toString(),
+            remainingQuantity: lot.quantity.toString(),
+            costBasisPerUnit: lot.purchasePrice.toString(),
+            note: lot.comment ? `Yahoo CSV: ${lot.comment}` : "Yahoo CSV import",
+          });
+
+          totalCost += lot.quantity * lot.purchasePrice;
+          totalQty += lot.quantity;
+          lotsCreated++;
+        }
+
+        for (const lot of lots.filter(l => l.purchasePrice === 0)) {
+          const dateStr = lot.tradeDate;
+          let acquiredDate: Date;
+          if (dateStr && dateStr.length === 8) {
+            const y = dateStr.slice(0, 4);
+            const m = dateStr.slice(4, 6);
+            const d = dateStr.slice(6, 8);
+            acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
+          } else {
+            acquiredDate = new Date();
+          }
+
+          await storage.createTaxLot({
+            userId,
+            walletBalanceId: wb.id,
+            assetSymbol: sym,
+            acquiredDate,
+            originalQuantity: lot.quantity.toString(),
+            remainingQuantity: lot.quantity.toString(),
+            costBasisPerUnit: "0",
+            note: lot.comment ? `Yahoo CSV (free/airdrop): ${lot.comment}` : "Yahoo CSV (free/airdrop)",
+          });
+
+          totalQty += lot.quantity;
+          lotsCreated++;
+        }
+
+        if (totalQty > 0) {
+          const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+          await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), totalCost.toFixed(2));
+        }
+
+        const wallet = walletMap.get(wb.walletId);
+        results.push({
+          symbol: sym,
+          walletBalance: wb.id,
+          wallet: wallet?.label || "Unknown",
+          chain: wallet?.chain || "unknown",
+          status: "reconciled",
+          lotsCreated,
+          totalCost: totalCost.toFixed(2),
+          avgCost: totalQty > 0 ? (totalCost / totalQty).toFixed(6) : "0",
+          csvQuantity: totalQty.toFixed(2),
+          walletQuantity: walletBalance.toFixed(2),
+        });
+
+        totalLotsCreated += lotsCreated;
+        totalAssetsMatched++;
+      }
+
+      const csvOnlySymbols = Object.keys(csvBySymbol).filter(
+        sym => !allWalletBalances.some(wb => wb.assetSymbol.replace(" (staked)", "") === sym)
+      );
+
+      res.json({
+        summary: {
+          totalAssetsMatched,
+          totalLotsCreated,
+          csvSymbolCount: Object.keys(csvBySymbol).length,
+          walletBalanceCount: allWalletBalances.length,
+          csvOnlyCount: csvOnlySymbols.length,
+        },
+        reconciled: results.filter(r => r.status === "reconciled"),
+        skipped: results.filter(r => r.status === "skipped"),
+        csvOnlySymbols: csvOnlySymbols.sort(),
+      });
+    } catch (error) {
+      console.error("Yahoo CSV reconciliation error:", error);
+      res.status(500).json({ message: "Failed to reconcile Yahoo CSV" });
+    }
+  });
+
   app.post("/api/positions/merge", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
