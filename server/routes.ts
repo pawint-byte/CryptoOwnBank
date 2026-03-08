@@ -4213,12 +4213,14 @@ function startPriceAlertChecker() {
 
       const fs = await import("fs");
       const pathMod = await import("path");
+      const jsonPath = pathMod.resolve("server/data/yahoo-csv-lots.json");
       const csvPath = pathMod.resolve("attached_assets/portfolio_(1)_1772983040841.csv");
-      if (fs.existsSync(csvPath)) {
+      let lotsData: [string, string, number, number, string][] = [];
+      if (fs.existsSync(jsonPath)) {
+        lotsData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+      } else if (fs.existsSync(csvPath)) {
         const csvContent = fs.readFileSync(csvPath, "utf-8");
         const csvLines = csvContent.trim().split("\n");
-        interface MigLot { symbol: string; tradeDate: string; purchasePrice: number; quantity: number; comment: string; }
-        const csvLots: MigLot[] = [];
         for (let i = 1; i < csvLines.length; i++) {
           const parts = csvLines[i].split(",");
           const sym = (parts[0] || "").replace("-USD", "");
@@ -4226,8 +4228,12 @@ function startPriceAlertChecker() {
           const pp = parseFloat(parts[10] || "0");
           const qty = parseFloat(parts[11] || "0");
           const comment = (parts[15] || "").trim();
-          if (sym && qty > 0) csvLots.push({ symbol: sym, tradeDate: td, purchasePrice: pp, quantity: qty, comment });
+          if (sym && qty > 0) lotsData.push([sym, td, pp, qty, comment]);
         }
+      }
+      if (lotsData.length > 0) {
+        interface MigLot { symbol: string; tradeDate: string; purchasePrice: number; quantity: number; comment: string; }
+        const csvLots: MigLot[] = lotsData.map(([symbol, tradeDate, purchasePrice, quantity, comment]) => ({ symbol, tradeDate, purchasePrice, quantity, comment }));
         const csvBySymbol: Record<string, MigLot[]> = {};
         for (const lot of csvLots) {
           if (!csvBySymbol[lot.symbol]) csvBySymbol[lot.symbol] = [];
