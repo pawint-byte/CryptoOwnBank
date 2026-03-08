@@ -279,6 +279,30 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     ],
     selfCustodyWallets: ["Ledger Nano X", "VeChainThor Wallet"],
   },
+  STETH: {
+    symbol: "STETH",
+    name: "Lido Staked ETH",
+    stakeable: false,
+    withdrawable: true,
+    warnings: ["stETH is already staked ETH via Lido — it earns ~3.2% APY automatically by just holding it"],
+    selfCustodyWallets: ["Ledger Nano X", "MetaMask"],
+  },
+  VTHO: {
+    symbol: "VTHO",
+    name: "VeThor",
+    stakeable: false,
+    withdrawable: true,
+    warnings: ["VTHO is generated passively by holding VET — it has no staking mechanism of its own"],
+    selfCustodyWallets: ["Ledger Nano X", "VeChainThor Wallet"],
+  },
+  HBARX: {
+    symbol: "HBARX",
+    name: "Stader Staked HBAR",
+    stakeable: false,
+    withdrawable: true,
+    warnings: ["HBARX represents HBAR staked via Stader — it earns staking rewards automatically"],
+    selfCustodyWallets: ["HashPack"],
+  },
   RLUSD: {
     symbol: "RLUSD",
     name: "Ripple USD",
@@ -291,6 +315,256 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     selfCustodyWallets: ["Xaman (XUMM)", "Ledger Nano X"],
   },
 };
+
+type WalletBrand = "ledger" | "ellipal" | "cypherock" | "safepal" | "arculus" | "xaman" | "tronlink" | "metamask" | "stader" | "unknown";
+
+function detectWalletBrand(label: string): WalletBrand {
+  const l = label.toLowerCase().trim();
+  if (l.includes("ledger")) return "ledger";
+  if (l.includes("ellipal")) return "ellipal";
+  if (l.includes("cypherock") || l.includes("cyphe")) return "cypherock";
+  if (l.includes("safepal")) return "safepal";
+  if (l.includes("arculus")) return "arculus";
+  if (l.includes("xaman") || l.includes("xumm")) return "xaman";
+  if (l.includes("tronlink")) return "tronlink";
+  if (l.includes("metamask")) return "metamask";
+  if (l.includes("stader")) return "stader";
+  return "unknown";
+}
+
+interface WalletAction {
+  text: string;
+  link?: string;
+}
+
+const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>> = {
+  TRX: {
+    ledger: [
+      { text: "Open Ledger Live → connect your Ledger → open the Tron app", link: "https://support.ledger.com/article/360006904193-zd" },
+      { text: "Go to TronScan, click 'Connect Wallet' → select 'Ledger', then vote for a Super Representative", link: "https://tronscan.org/#/sr/votes" },
+      { text: "Pick an SR with high APR and 100% reward share (e.g. Binance Staking, TRONALLIANCE)" },
+    ],
+    ellipal: [
+      { text: "Open the ELLIPAL app on your phone → select your TRX wallet" },
+      { text: "Tap 'Freeze' to freeze your TRX for Energy or Bandwidth" },
+      { text: "Then tap 'Vote' to vote for a Super Representative — this is what earns the ~3-5% APY" },
+      { text: "ELLIPAL staking guide", link: "https://www.ellipal.com/blogs/support/how-to-vote-trx" },
+    ],
+    safepal: [
+      { text: "Open SafePal app → select your TRX wallet → tap 'DApp'" },
+      { text: "Navigate to tronscan.org → Connect Wallet → vote for a Super Representative", link: "https://tronscan.org/#/sr/votes" },
+    ],
+    cypherock: [
+      { text: "CypheRock does not directly support TRX staking — you would need to transfer to a Ledger or TronLink wallet to stake" },
+    ],
+    arculus: [
+      { text: "Arculus does not directly support TRX staking — you would need to transfer to a Ledger or TronLink wallet to stake" },
+    ],
+    tronlink: [
+      { text: "Open TronLink extension → click 'Freeze' → freeze TRX for Energy" },
+      { text: "Go to TronScan → Connect TronLink → vote for a Super Representative", link: "https://tronscan.org/#/sr/votes" },
+    ],
+    xaman: [],
+    metamask: [],
+    stader: [],
+    unknown: [
+      { text: "Freeze your TRX and vote for a Super Representative to earn ~3-5% APY", link: "https://tronscan.org/#/sr/votes" },
+    ],
+  },
+  ALGO: {
+    ledger: [
+      { text: "Connect your Ledger to Pera Wallet (perawallet.app) — it supports Ledger hardware wallets", link: "https://perawallet.app" },
+      { text: "Once connected, go to Algorand Governance portal and commit your ALGO for the current period", link: "https://governance.algorand.foundation" },
+      { text: "You must vote during each governance period to earn the full reward" },
+    ],
+    ellipal: [
+      { text: "ELLIPAL supports Algorand — open the app, select your ALGO wallet" },
+      { text: "Use ELLIPAL's built-in DApp browser to visit the Algorand Governance portal", link: "https://governance.algorand.foundation" },
+      { text: "Commit your ALGO and vote during each governance period" },
+    ],
+    safepal: [
+      { text: "Open SafePal → select ALGO wallet → use DApp browser to join Algorand Governance", link: "https://governance.algorand.foundation" },
+    ],
+    cypherock: [
+      { text: "CypheRock does not directly support ALGO governance — consider using Pera Wallet for governance participation", link: "https://perawallet.app" },
+    ],
+    arculus: [
+      { text: "Arculus does not directly support ALGO governance — consider using Pera Wallet", link: "https://perawallet.app" },
+    ],
+    tronlink: [],
+    xaman: [],
+    metamask: [],
+    stader: [],
+    unknown: [
+      { text: "Join Algorand Governance to earn 5-8% APY on your ALGO", link: "https://governance.algorand.foundation" },
+    ],
+  },
+  ATOM: {
+    ledger: [
+      { text: "Open Ledger Live → install the Cosmos app on your Ledger" },
+      { text: "Go to Keplr wallet (keplr.app), connect your Ledger, and delegate to a validator", link: "https://wallet.keplr.app/chains/cosmos-hub" },
+      { text: "Or use Ledger Live's built-in staking to delegate ATOM directly" },
+    ],
+    ellipal: [
+      { text: "Open ELLIPAL app → select your ATOM wallet → tap 'Delegate'" },
+      { text: "Choose a validator with good uptime and commission rate" },
+      { text: "ELLIPAL Cosmos staking guide", link: "https://www.ellipal.com/blogs/support" },
+    ],
+    safepal: [
+      { text: "Open SafePal → ATOM wallet → use DApp browser to connect to Keplr or Mintscan", link: "https://www.mintscan.io/cosmos/validators" },
+    ],
+    cypherock: [
+      { text: "CypheRock doesn't support Cosmos delegation directly — use Keplr wallet to delegate", link: "https://wallet.keplr.app/chains/cosmos-hub" },
+    ],
+    arculus: [
+      { text: "Arculus doesn't support Cosmos delegation directly — use Keplr wallet", link: "https://wallet.keplr.app/chains/cosmos-hub" },
+    ],
+    tronlink: [],
+    xaman: [],
+    metamask: [],
+    stader: [],
+    unknown: [
+      { text: "Delegate your ATOM to a validator via Keplr wallet for 15-20% APY", link: "https://wallet.keplr.app/chains/cosmos-hub" },
+    ],
+  },
+  HBAR: {
+    ledger: [
+      { text: "Connect your Ledger to HashPack wallet — it supports Ledger hardware signing", link: "https://www.hashpack.app" },
+      { text: "Select a node to stake to — Hedera native staking earns ~2.5-3.5% APY", link: "https://hedera.com/staking" },
+    ],
+    stader: [
+      { text: "If your HBAR is already on Stader, it may already be staked — check your HBARX balance" },
+      { text: "HBARX is Stader's liquid staking token for HBAR — holding it means you're earning staking rewards", link: "https://www.staderlabs.com/hedera/" },
+    ],
+    ellipal: [
+      { text: "ELLIPAL doesn't natively support HBAR staking — use HashPack wallet", link: "https://www.hashpack.app" },
+    ],
+    safepal: [
+      { text: "SafePal doesn't natively support HBAR staking — use HashPack wallet", link: "https://www.hashpack.app" },
+    ],
+    cypherock: [
+      { text: "CypheRock doesn't support HBAR staking — use HashPack wallet", link: "https://www.hashpack.app" },
+    ],
+    arculus: [
+      { text: "Arculus doesn't support HBAR staking — use HashPack wallet", link: "https://www.hashpack.app" },
+    ],
+    tronlink: [],
+    xaman: [],
+    metamask: [],
+    unknown: [
+      { text: "Stake HBAR via HashPack wallet for ~2.5-3.5% APY", link: "https://www.hashpack.app" },
+    ],
+  },
+  DOT: {
+    ledger: [
+      { text: "Open Ledger Live → install the Polkadot app → use Ledger Live's built-in staking to nominate validators" },
+      { text: "Or connect Ledger to Polkadot.js for more control over validator selection", link: "https://polkadot.js.org/apps/#/staking" },
+      { text: "Note: Ledger Earn nomination pools move DOT off your visible address — your DOT is still safe" },
+    ],
+    ellipal: [
+      { text: "ELLIPAL doesn't directly support DOT nomination — use Polkadot.js or Nova Wallet", link: "https://polkadot.js.org/apps/#/staking" },
+    ],
+    safepal: [
+      { text: "SafePal supports Polkadot — use the DApp browser to access Polkadot.js staking", link: "https://polkadot.js.org/apps/#/staking" },
+    ],
+    cypherock: [
+      { text: "CypheRock doesn't support DOT staking — use Nova Wallet or Polkadot.js", link: "https://polkadot.js.org/apps/#/staking" },
+    ],
+    arculus: [
+      { text: "Arculus doesn't support DOT staking — use Nova Wallet or Polkadot.js", link: "https://polkadot.js.org/apps/#/staking" },
+    ],
+    tronlink: [],
+    xaman: [],
+    metamask: [],
+    stader: [],
+    unknown: [
+      { text: "Nominate validators on Polkadot for 12-15% APY", link: "https://polkadot.js.org/apps/#/staking" },
+    ],
+  },
+  ADA: {
+    ledger: [
+      { text: "Open Ledger Live → install the Cardano app → use Ledger Live to delegate to a stake pool" },
+      { text: "Or connect Ledger to Yoroi or Eternl wallet for more stake pool choices", link: "https://pool.pm" },
+    ],
+    ellipal: [
+      { text: "Open ELLIPAL app → select ADA wallet → tap 'Delegate' to choose a stake pool" },
+      { text: "Browse stake pools at pool.pm", link: "https://pool.pm" },
+    ],
+    safepal: [
+      { text: "SafePal supports ADA — use the DApp browser or built-in staking to delegate" },
+    ],
+    cypherock: [
+      { text: "CypheRock doesn't support ADA delegation — use Yoroi or Eternl wallet", link: "https://yoroi-wallet.com" },
+    ],
+    arculus: [
+      { text: "Arculus doesn't support ADA delegation — use Yoroi or Eternl wallet", link: "https://yoroi-wallet.com" },
+    ],
+    tronlink: [],
+    xaman: [],
+    metamask: [],
+    stader: [],
+    unknown: [
+      { text: "Delegate your ADA to a stake pool for 3-5% APY", link: "https://pool.pm" },
+    ],
+  },
+  ETH: {
+    ledger: [
+      { text: "Your stETH on Ledger is already earning ~3.2% APY via Lido — no action needed", link: "https://lido.fi" },
+    ],
+    ellipal: [
+      { text: "Stake ETH via Lido — swap ETH for stETH which earns ~3.2% APY automatically", link: "https://lido.fi" },
+    ],
+    safepal: [
+      { text: "Use SafePal's DApp browser to access Lido and swap ETH for stETH", link: "https://lido.fi" },
+    ],
+    cypherock: [
+      { text: "Use MetaMask or a web wallet to access Lido staking for ETH", link: "https://lido.fi" },
+    ],
+    arculus: [
+      { text: "Arculus doesn't support ETH staking — use MetaMask with Lido", link: "https://lido.fi" },
+    ],
+    tronlink: [],
+    xaman: [],
+    metamask: [
+      { text: "Connect MetaMask to Lido and stake your ETH for stETH (~3.2% APY)", link: "https://lido.fi" },
+    ],
+    stader: [],
+    unknown: [
+      { text: "Stake ETH via Lido for ~3.2% APY (you get stETH in return)", link: "https://lido.fi" },
+    ],
+  },
+  CRO: {
+    ledger: [
+      { text: "Your CRO is already staked via Ledger — earning validator delegation rewards" },
+    ],
+    ellipal: [
+      { text: "ELLIPAL supports Cronos — use the app to delegate CRO to a validator" },
+    ],
+    safepal: [],
+    cypherock: [],
+    arculus: [],
+    tronlink: [],
+    xaman: [],
+    metamask: [],
+    stader: [],
+    unknown: [
+      { text: "Delegate CRO to a Cronos validator for staking rewards" },
+    ],
+  },
+};
+
+const VET_PASSIVE_NOTE: ActionItem = {
+  text: "VET generates VTHO passively just by holding it — no staking action needed. You're already earning ~1-2% equivalent.",
+  link: "https://www.vechain.org",
+};
+
+export function getWalletSpecificActions(symbol: string, walletLabel: string): ActionItem[] {
+  const brand = detectWalletBrand(walletLabel);
+  const guideMap = WALLET_STAKING_GUIDES[symbol];
+  if (!guideMap) return [];
+  const actions = guideMap[brand] || guideMap.unknown || [];
+  return actions;
+}
 
 export type RecommendationType =
   | "optimal"
@@ -428,6 +702,57 @@ export function evaluateAsset(
   }
 
   if (location === "cold_wallet") {
+    const walletBrand = detectWalletBrand(provider);
+    const walletActions = getWalletSpecificActions(symbol, provider);
+
+    if (symbol === "VET") {
+      return {
+        symbol, name: displayName, type: "optimal", title: "Earning Passively",
+        description: `VET on your ${provider} wallet generates VTHO automatically just by holding it — no staking action needed.`,
+        currentLocation: provider, currentYield: 1.5, bestYield: 1.5, bestYieldSource: "VTHO Generation", usdValue, missedAnnual: 0,
+        actionItems: [VET_PASSIVE_NOTE],
+      };
+    }
+
+    if (symbol === "STETH") {
+      return {
+        symbol, name: displayName, type: "optimal", title: "Already Earning",
+        description: `stETH on your ${provider} wallet is already staked ETH via Lido — it earns ~3.2% APY automatically just by holding it.`,
+        currentLocation: provider, currentYield: 3.2, bestYield: 3.2, bestYieldSource: "Lido", usdValue, missedAnnual: 0,
+        actionItems: [{ text: "stETH earns Ethereum staking rewards automatically — no action needed", link: "https://lido.fi" }],
+      };
+    }
+
+    if (symbol === "VTHO") {
+      return {
+        symbol, name: displayName, type: "optimal", title: "Generated Token",
+        description: `VTHO on your ${provider} wallet is generated passively by your VET holdings. It can be used for transactions on VeChain or traded.`,
+        currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
+        actionItems: [{ text: "VTHO is generated by holding VET — consider saving or trading it" }],
+      };
+    }
+
+    if (symbol === "HBARX") {
+      return {
+        symbol, name: displayName, type: "optimal", title: "Staked Position",
+        description: `HBARX on ${provider} represents your staked HBAR via Stader — earning staking rewards automatically.`,
+        currentLocation: provider, currentYield: 3.0, bestYield: 3.0, bestYieldSource: "Stader", usdValue, missedAnnual: 0,
+        actionItems: [{ text: "HBARX accrues staking rewards automatically — no action needed", link: "https://www.staderlabs.com/hedera/" }],
+      };
+    }
+
+    if (symbol === "HBAR" && walletBrand === "stader") {
+      return {
+        symbol, name: displayName, type: "optimal", title: "Staking via Stader",
+        description: `HBAR on ${provider} is being staked through Stader's liquid staking protocol — you're already earning rewards.`,
+        currentLocation: provider, currentYield: 3.0, bestYield: 3.0, bestYieldSource: "Stader Liquid Staking", usdValue, missedAnnual: 0,
+        actionItems: [
+          { text: "Your HBAR is staked via Stader — HBARX represents your staked position", link: "https://www.staderlabs.com/hedera/" },
+          { text: "Staking rewards accrue automatically — no action needed" },
+        ],
+      };
+    }
+
     if (isAlreadyStaked) {
       return {
         symbol, name: displayName, type: "optimal", title: "Already Staking",
@@ -454,10 +779,12 @@ export function evaluateAsset(
           : `${stakedPct}% of your ${symbol} on ${provider} is staked. The liquid remainder ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is too small to generate meaningful additional yield.`,
         currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
         bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue, missedAnnual: missed > 10 ? missed : 0,
-        actionItems: missed > 10 ? [
-          bestStaking > 0 ? { text: `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
-          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
-        ].filter(Boolean) as ActionItem[] : [],
+        actionItems: missed > 10 && walletActions.length > 0
+          ? walletActions
+          : missed > 10 ? [
+            bestStaking > 0 ? { text: `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
+            bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
+          ].filter(Boolean) as ActionItem[] : [],
       };
     }
 
@@ -468,7 +795,7 @@ export function evaluateAsset(
         title: "Yield Available",
         description: `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
         currentLocation: provider, currentYield: 0, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
-        actionItems: [
+        actionItems: walletActions.length > 0 ? walletActions : [
           bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
           bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
         ].filter(Boolean) as ActionItem[],
