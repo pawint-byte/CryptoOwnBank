@@ -955,6 +955,21 @@ export default function Reconciliation() {
 
   const [csvResult, setCsvResult] = useState<any>(null);
 
+  const bulkRenameMutation = useMutation({
+    mutationFn: async ({ fromLabel, toLabel }: { fromLabel: string; toLabel: string }) => {
+      const res = await apiRequest("POST", "/api/wallets/bulk-rename", { fromLabel, toLabel });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      toast({ title: "Wallets renamed", description: result.message });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Rename failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const csvReconcileMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/reconcile/yahoo-csv-to-wallets");
@@ -1080,6 +1095,35 @@ export default function Reconciliation() {
             Review every position across all sources. Spot duplicates, fix quantities, merge entries, and make sure your portfolio reflects reality.
           </p>
         </div>
+
+        <Card className="border-dashed border-blue-500/50 bg-blue-500/5">
+          <CardContent className="pt-4 pb-4 px-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-blue-500" />
+                Merge LEDGERX → LEDGER
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Rename all wallets labeled "LEDGERX" to "LEDGER" so they appear under one group.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-blue-500/50 text-blue-600 hover:bg-blue-500/10"
+              onClick={() => bulkRenameMutation.mutate({ fromLabel: "LEDGERX", toLabel: "LEDGER" })}
+              disabled={bulkRenameMutation.isPending}
+              data-testid="button-bulk-rename"
+            >
+              {bulkRenameMutation.isPending ? (
+                <RefreshCcw className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <ArrowRight className="h-4 w-4 mr-1.5" />
+              )}
+              {bulkRenameMutation.isPending ? "Renaming..." : "Rename Wallets"}
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
           <CardContent className="pt-4 pb-4 px-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">

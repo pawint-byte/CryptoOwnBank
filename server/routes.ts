@@ -3045,6 +3045,47 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/wallets/:id/label", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      const { label } = req.body;
+      if (!label || typeof label !== "string" || label.trim().length === 0) {
+        return res.status(400).json({ message: "Label is required" });
+      }
+      await storage.updateWalletLabel(req.params.id, label.trim());
+      res.json({ message: "Wallet label updated" });
+    } catch (error) {
+      console.error("Rename wallet error:", error);
+      res.status(500).json({ message: "Failed to rename wallet" });
+    }
+  });
+
+  app.post("/api/wallets/bulk-rename", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { fromLabel, toLabel } = req.body;
+      if (!fromLabel || !toLabel) {
+        return res.status(400).json({ message: "Both fromLabel and toLabel are required" });
+      }
+      const userWallets = await storage.getWalletsByUser(userId);
+      const matching = userWallets.filter(w => w.label === fromLabel);
+      if (matching.length === 0) {
+        return res.status(404).json({ message: `No wallets found with label "${fromLabel}"` });
+      }
+      for (const w of matching) {
+        await storage.updateWalletLabel(w.id, toLabel.trim());
+      }
+      res.json({ message: `Renamed ${matching.length} wallets from "${fromLabel}" to "${toLabel}"` });
+    } catch (error) {
+      console.error("Bulk rename error:", error);
+      res.status(500).json({ message: "Failed to bulk rename wallets" });
+    }
+  });
+
   app.delete("/api/wallets/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
