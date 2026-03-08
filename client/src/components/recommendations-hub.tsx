@@ -685,7 +685,14 @@ function RecommendationCard({ rec }: { rec: AssetRecommendation }) {
               {rec.actionItems.map((action, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
                   <span className="text-muted-foreground mt-0.5">•</span>
-                  <span className="text-muted-foreground">{action}</span>
+                  {action.link ? (
+                    <a href={action.link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1" data-testid={`action-link-${rec.symbol}-${i}`}>
+                      {action.text}
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">{action.text}</span>
+                  )}
                 </div>
               ))}
             </div>

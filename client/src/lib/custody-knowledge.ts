@@ -314,8 +314,13 @@ export interface AssetRecommendation {
   bestYieldSource: string;
   usdValue: number;
   missedAnnual: number;
-  actionItems: string[];
+  actionItems: ActionItem[];
   riskNote?: string;
+}
+
+export interface ActionItem {
+  text: string;
+  link?: string;
 }
 
 const DUST_THRESHOLD_USD = 5;
@@ -358,16 +363,20 @@ export function evaluateAsset(
   if (isScamToken(symbol)) {
     return {
       symbol, name: symbol, type: "scam_warning", title: "Suspected Scam Token",
-      description: `This token name contains a URL or suspicious pattern. It was likely airdropped as a dust attack. Do NOT interact with it — clicking links or approving transactions could drain your wallet.`,
+      description: `This token name contains a URL or suspicious pattern. It was likely airdropped to your ${provider} wallet as a dust attack. Do NOT interact with it — clicking links or approving transactions could drain your wallet.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue: 0, missedAnnual: 0,
-      actionItems: ["Do not click any links in the token name", "Do not try to sell or swap this token", "Ignore it — it cannot affect your other assets if left alone"],
+      actionItems: [
+        { text: "Do not click any links in the token name" },
+        { text: "Do not try to sell or swap this token" },
+        { text: "Ignore it — it cannot affect your other assets if left alone" },
+      ],
     };
   }
 
   if (usdValue < DUST_THRESHOLD_USD) {
     return {
       symbol, name: displayName, type: "no_action", title: "Dust Balance",
-      description: `$${usdValue.toFixed(2)} is too small to act on — gas/withdrawal fees would exceed the value.`,
+      description: `$${usdValue.toFixed(2)} on ${provider} is too small to act on — gas/withdrawal fees would exceed the value.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0, actionItems: [],
     };
   }
@@ -375,9 +384,9 @@ export function evaluateAsset(
   if (!knowledge) {
     return {
       symbol, name: displayName, type: "no_data", title: "No Data Available",
-      description: `We don't have optimization data for ${symbol} yet. Your funds are ${location === "cold_wallet" ? "safely self-custodied" : location === "exchange" ? "on an exchange — consider moving to a cold wallet for safety" : "in DeFi"}.`,
+      description: `We don't have optimization data for ${symbol} yet. Your funds are ${location === "cold_wallet" ? `safely self-custodied on ${provider}` : location === "exchange" ? `on ${provider} — consider moving to a cold wallet for safety` : `in DeFi on ${provider}`}.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
-      actionItems: location === "exchange" ? ["Consider moving to a cold wallet for self-custody"] : [],
+      actionItems: location === "exchange" ? [{ text: "Consider moving to a cold wallet for self-custody" }] : [],
     };
   }
 
@@ -412,7 +421,7 @@ export function evaluateAsset(
   if (location === "defi") {
     return {
       symbol, name: displayName, type: "optimal", title: "Earning in DeFi",
-      description: `${symbol} is in a non-custodial DeFi protocol — you control your keys and are earning yield.`,
+      description: `${symbol} is in a non-custodial DeFi protocol on ${provider} — you control your keys and are earning yield.`,
       currentLocation: provider, currentYield: bestDefi, bestYield: bestDefi, bestYieldSource: provider, usdValue, missedAnnual: 0,
       actionItems: [],
     };
@@ -422,9 +431,11 @@ export function evaluateAsset(
     if (isAlreadyStaked) {
       return {
         symbol, name: displayName, type: "optimal", title: "Already Staking",
-        description: `${symbol} is staked from your cold wallet — safe and earning yield.`,
+        description: `${symbol} is staked on your ${provider} wallet — safe and earning yield.`,
         currentLocation: provider, currentYield: bestStaking, bestYield: bestStaking, bestYieldSource: bestStakingSource?.platform || provider, usdValue, missedAnnual: 0,
-        actionItems: [],
+        actionItems: bestStakingSource?.link
+          ? [{ text: `Earning ~${bestStaking.toFixed(1)}% APY via ${bestStakingSource.platform}`, link: bestStakingSource.link }]
+          : [],
       };
     }
 
@@ -444,9 +455,9 @@ export function evaluateAsset(
         currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
         bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue, missedAnnual: missed > 10 ? missed : 0,
         actionItems: missed > 10 ? [
-          bestStaking > 0 ? `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)` : "",
-          bestDefi > 0 ? `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)` : "",
-        ].filter(Boolean) : [],
+          bestStaking > 0 ? { text: `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
+          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
+        ].filter(Boolean) as ActionItem[] : [],
       };
     }
 
@@ -455,18 +466,18 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "stake_available",
         title: "Yield Available",
-        description: `${symbol} is safe on your cold wallet, but you could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
+        description: `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
         currentLocation: provider, currentYield: 0, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
         actionItems: [
-          bestStaking > 0 ? `Stake via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)` : "",
-          bestDefi > 0 ? `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)` : "",
-        ].filter(Boolean),
+          bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
+          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
+        ].filter(Boolean) as ActionItem[],
       };
     }
 
     return {
       symbol, name: displayName, type: "optimal", title: "Safe & Secure",
-      description: `${symbol} is on your cold wallet — fully self-custodied. No native staking is available for this asset.`,
+      description: `${symbol} on your ${provider} wallet — fully self-custodied. No native staking is available for this asset.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
       actionItems: [],
     };
@@ -478,29 +489,30 @@ export function evaluateAsset(
     if (bestExchangeEarnOnCurrent > 0 && bestSelfCustodyYield > 0) {
       if (bestSelfCustodyYield > bestExchangeEarnOnCurrent) {
         const missed = usdValue * ((bestSelfCustodyYield - bestExchangeEarnOnCurrent) / 100);
+        const stakingLink = bestStaking >= bestDefi ? bestStakingSource?.link : bestDefiSource?.link;
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Split Strategy Recommended",
-          description: `${provider} offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but self-custody staking via ${bestSelfCustodyLabel} offers ${bestSelfCustodyYield.toFixed(1)}% — moving could earn ~$${missed.toFixed(0)}/year more. Consider keeping some on the exchange for quick selling and moving the rest for higher yield + safety.`,
+          description: `${provider} offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but self-custody staking via ${bestSelfCustodyLabel} offers ${bestSelfCustodyYield.toFixed(1)}% — moving could earn ~$${missed.toFixed(0)}/year more.`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
           actionItems: [
-            canWithdraw ? `Move a portion to cold wallet and stake via ${bestSelfCustodyLabel}` : "",
-            `Keep some on ${provider} for liquidity and easy selling`,
-            `Currently earning up to ${bestExchangeEarnOnCurrentSource?.apyRange} on ${provider}`,
-          ].filter(Boolean),
+            canWithdraw ? { text: `Move a portion to cold wallet and stake via ${bestSelfCustodyLabel}`, link: stakingLink } : null,
+            { text: `Keep some on ${provider} for liquidity and easy selling` },
+            bestExchangeEarnOnCurrentSource?.link ? { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource.apyRange} on ${provider}`, link: bestExchangeEarnOnCurrentSource.link } : { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource?.apyRange} on ${provider}` },
+          ].filter(Boolean) as ActionItem[],
           riskNote: "Splitting between exchange and cold wallet balances yield optimization with liquidity and safety.",
         };
       } else {
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Earning on Exchange — Consider Safety Split",
-          description: `${provider} offers competitive ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}. Self-custody yield (${bestSelfCustodyYield.toFixed(1)}%) is similar or lower. Consider keeping the earning portion on the exchange but moving some to cold wallet for safety.`,
+          description: `${provider} offers competitive ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}. Self-custody yield (${bestSelfCustodyYield.toFixed(1)}%) is similar or lower.`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestExchangeEarnOnCurrent, bestYieldSource: `${provider} ${bestExchangeEarnOnCurrentSource?.program}`, usdValue, missedAnnual: 0,
           actionItems: [
-            `You're earning well on ${provider} — no urgency to move`,
-            canWithdraw ? "For risk mitigation, consider moving a portion to cold wallet" : "",
-            "Keep enough on exchange for easy liquidation if needed",
-          ].filter(Boolean),
+            { text: `You're earning well on ${provider} — no urgency to move` },
+            canWithdraw ? { text: "For risk mitigation, consider moving a portion to cold wallet" } : null,
+            { text: "Keep enough on exchange for easy liquidation if needed" },
+          ].filter(Boolean) as ActionItem[],
           riskNote: "Exchange yield is good, but remember: not your keys, not your crypto. A safety split reduces risk.",
         };
       }
@@ -510,35 +522,40 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "split_strategy",
         title: "Earning on Exchange — No Better Alternative",
-        description: `${symbol} earns ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${provider}. No self-custody staking is available for this asset, so exchange earning is your best yield option. Consider moving a portion to cold wallet for safety.`,
+        description: `${symbol} earns ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${provider}. No self-custody staking is available, so exchange earning is your best yield option.`,
         currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestExchangeEarnOnCurrent, bestYieldSource: `${provider} ${bestExchangeEarnOnCurrentSource?.program}`, usdValue, missedAnnual: 0,
         actionItems: [
-          `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} — this is the best available yield`,
-          canWithdraw ? "Move a portion to cold wallet for safety (no yield, but self-custodied)" : "",
-        ].filter(Boolean),
+          bestExchangeEarnOnCurrentSource?.link
+            ? { text: `Earning ${bestExchangeEarnOnCurrentSource.apyRange} — this is the best available yield`, link: bestExchangeEarnOnCurrentSource.link }
+            : { text: `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} — this is the best available yield` },
+          canWithdraw ? { text: "Move a portion to cold wallet for safety (no yield, but self-custodied)" } : null,
+        ].filter(Boolean) as ActionItem[],
         riskNote: "Not your keys, not your crypto. Even with earning, keep only what you need on exchange.",
       };
     }
 
     if (bestExchangeEarnOnCurrent === 0 && bestSelfCustodyYield > 0) {
       const missed = usdValue * (bestOverall / 100);
-      const actions: string[] = [
-        canWithdraw ? `Withdraw ${symbol} from ${provider} to your cold wallet` : `${symbol} may not be withdrawable from ${provider}`,
-        `Stake via ${bestStakingSource?.platform || bestDefiSource?.defiProtocol} for ${bestStakingSource?.apyRange || bestDefiSource?.defiApy} APY`,
-        `Check if ${provider} offers an earn/staking program for ${symbol} — we can't detect enrollment automatically`,
+      const stakingName = bestStakingSource?.platform || bestDefiSource?.defiProtocol || "";
+      const stakingLink = bestStaking >= bestDefi ? bestStakingSource?.link : bestDefiSource?.link;
+      const stakingApy = bestStakingSource?.apyRange || bestDefiSource?.defiApy || "";
+      const actions: ActionItem[] = [
+        canWithdraw ? { text: `Withdraw ${symbol} from ${provider} to your cold wallet` } : { text: `${symbol} may not be withdrawable from ${provider}` },
+        { text: `Stake via ${stakingName} for ${stakingApy} APY`, link: stakingLink },
+        { text: `Check if ${provider} offers an earn/staking program for ${symbol} — we can't detect enrollment automatically` },
       ];
       if (bestExchangeEarnAnywhere > 0 && bestExchangeEarnAnywhere > bestSelfCustodyYield) {
         const bestAnyExch = knowledge.exchangeEarnOptions?.reduce((best, e) => e.apyMid > (best?.apyMid || 0) ? e : best, null as ExchangeEarnOption | null);
         if (bestAnyExch) {
-          actions.push(`Alternative: ${bestAnyExch.exchange} offers ${bestAnyExch.apyRange} APY via ${bestAnyExch.program} (custodial)`);
+          actions.push({ text: `Alternative: ${bestAnyExch.exchange} offers ${bestAnyExch.apyRange} APY via ${bestAnyExch.program} (custodial)`, link: bestAnyExch.link });
         }
       }
       return {
         symbol, name: displayName, type: "move_to_cold",
         title: "Move to Cold Wallet & Earn",
-        description: `${symbol} is sitting on ${provider} earning nothing. Moving to a cold wallet and staking could earn ~$${missed.toFixed(0)}/year (${bestOverall.toFixed(1)}% APY via ${bestOverallSource}). Plus, you get full self-custody.`,
+        description: `${symbol} is sitting on ${provider} earning nothing. Moving to a cold wallet and staking could earn ~$${missed.toFixed(0)}/year (${bestOverall.toFixed(1)}% APY via ${bestOverallSource}).`,
         currentLocation: provider, currentYield: 0, bestYield: bestOverall, bestYieldSource: bestOverallSource, usdValue, missedAnnual: missed,
-        actionItems: actions.filter(Boolean),
+        actionItems: actions,
       };
     }
 
@@ -546,7 +563,7 @@ export function evaluateAsset(
       if (!canWithdraw) {
         return {
           symbol, name: displayName, type: "no_action", title: "No Action Available",
-          description: `${symbol} on ${provider} — no yield options and withdrawal may not be available. No recommendation at this time.`,
+          description: `${symbol} on ${provider} — no yield options and withdrawal may not be available.`,
           currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
           actionItems: [],
         };
@@ -558,13 +575,13 @@ export function evaluateAsset(
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Yield Available Elsewhere",
-          description: `${symbol} is on ${provider} earning nothing. ${bestAnyExch?.exchange} offers ${bestAnyExch?.apyRange} APY via ${bestAnyExch?.program}. No self-custody staking exists for ${symbol}, so consider moving some to ${bestAnyExch?.exchange} for yield and some to a cold wallet for safety.`,
+          description: `${symbol} is on ${provider} earning nothing. ${bestAnyExch?.exchange} offers ${bestAnyExch?.apyRange} APY via ${bestAnyExch?.program}.`,
           currentLocation: provider, currentYield: 0, bestYield: bestExchangeEarnAnywhere, bestYieldSource: bestAnyExch ? `${bestAnyExch.exchange} ${bestAnyExch.program}` : "", usdValue, missedAnnual: missed,
           actionItems: [
-            `Move to ${bestAnyExch?.exchange} to earn ${bestAnyExch?.apyRange} APY`,
-            "Move a portion to cold wallet for self-custody and safety",
-            knowledge.selfCustodyWallets ? `Recommended wallets: ${knowledge.selfCustodyWallets.join(", ")}` : "",
-          ].filter(Boolean),
+            bestAnyExch?.link ? { text: `Move to ${bestAnyExch.exchange} to earn ${bestAnyExch.apyRange} APY`, link: bestAnyExch.link } : { text: `Move to ${bestAnyExch?.exchange} to earn ${bestAnyExch?.apyRange} APY` },
+            { text: "Move a portion to cold wallet for self-custody and safety" },
+            knowledge.selfCustodyWallets ? { text: `Recommended wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
+          ].filter(Boolean) as ActionItem[],
           riskNote: "Exchanges are custodial — not your keys, not your crypto. Only keep what you're actively earning on.",
         };
       }
@@ -572,13 +589,13 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "move_to_cold",
         title: "Move to Cold Wallet for Safety",
-        description: `${symbol} is on ${provider} with no yield earning opportunity anywhere. Moving to a cold wallet gives you full self-custody and protection from exchange risk.`,
+        description: `${symbol} is on ${provider} with no yield earning opportunity anywhere. Moving to a cold wallet gives you full self-custody.`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: [
-          `Withdraw ${symbol} from ${provider} to your cold wallet`,
-          "Self-custody protects against exchange hacks, freezes, or insolvency",
-          knowledge.selfCustodyWallets ? `Recommended wallets: ${knowledge.selfCustodyWallets.join(", ")}` : "",
-        ].filter(Boolean),
+          { text: `Withdraw ${symbol} from ${provider} to your cold wallet` },
+          { text: "Self-custody protects against exchange hacks, freezes, or insolvency" },
+          knowledge.selfCustodyWallets ? { text: `Recommended wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
+        ].filter(Boolean) as ActionItem[],
       };
     }
   }
