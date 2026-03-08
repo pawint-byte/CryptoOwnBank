@@ -355,7 +355,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Open the ELLIPAL app on your phone → select your TRX wallet" },
       { text: "Tap 'Freeze' to freeze your TRX for Energy or Bandwidth" },
       { text: "Then tap 'Vote' to vote for a Super Representative — this is what earns the ~3-5% APY" },
-      { text: "ELLIPAL staking guide", link: "https://www.ellipal.com/blogs/support/how-to-vote-trx" },
+      { text: "ELLIPAL staking guide", link: "https://www.ellipal.com/pages/ellipal-staking" },
     ],
     safepal: [
       { text: "Open SafePal app → select your TRX wallet → tap 'DApp'" },
@@ -415,7 +415,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
     ellipal: [
       { text: "Open ELLIPAL app → select your ATOM wallet → tap 'Delegate'" },
       { text: "Choose a validator with good uptime and commission rate" },
-      { text: "ELLIPAL Cosmos staking guide", link: "https://www.ellipal.com/blogs/support" },
+      { text: "ELLIPAL Cosmos staking guide", link: "https://www.ellipal.com/pages/ellipal-staking" },
     ],
     safepal: [
       { text: "Open SafePal → ATOM wallet → use DApp browser to connect to Keplr or Mintscan", link: "https://www.mintscan.io/cosmos/validators" },
