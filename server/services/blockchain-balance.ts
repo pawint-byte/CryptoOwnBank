@@ -986,6 +986,43 @@ export async function getCasperBalance(address: string): Promise<ChainBalance[]>
   }
 }
 
+async function getCryptoOrgNativeBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  try {
+    const data = await fetchJson(`https://crypto.org/explorer/api/v1/accounts/${address}`);
+    const account = data?.result;
+    if (!account) return [];
+
+    const prices = await getPrices(["CRO"]);
+    const croPrice = prices.CRO || 0;
+
+    const totalBalanceEntry = account.totalBalance?.find((b: any) => b.denom === "basecro");
+    if (totalBalanceEntry) {
+      const basecro = parseFloat(totalBalanceEntry.amount) || 0;
+      const cro = basecro / 1e8;
+      if (cro > 0) {
+        balances.push({ symbol: "CRO", balance: cro, usdValue: cro * croPrice });
+      }
+    }
+
+    const stakedEntries = account.bondedBalance || [];
+    for (const entry of stakedEntries) {
+      if (entry.denom === "basecro") {
+        const basecro = parseFloat(entry.amount) || 0;
+        const cro = basecro / 1e8;
+        if (cro > 0) {
+          balances.push({ symbol: "CRO (staked)", balance: cro, usdValue: cro * croPrice });
+        }
+      }
+    }
+
+    console.log(`Crypto.org native scan: found ${balances.length} assets for ${address.slice(0, 12)}...`);
+  } catch (err) {
+    console.error("Crypto.org native balance error:", err);
+  }
+  return balances;
+}
+
 export async function getCronosBalance(address: string): Promise<ChainBalance[]> {
   const balances: ChainBalance[] = [];
 
@@ -994,15 +1031,13 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
     return [];
   }
 
-  try {
-    let evmAddress = address;
-    if (address.startsWith("cro1")) {
-      const hex = bech32ToHex(address);
-      if (hex) evmAddress = "0x" + hex;
-    }
+  if (address.startsWith("cro1")) {
+    return getCryptoOrgNativeBalance(address);
+  }
 
+  try {
     const data = await fetchJson(
-      `https://cronos.org/explorer/api?module=account&action=balance&address=${evmAddress}`
+      `https://cronos.org/explorer/api?module=account&action=balance&address=${address}`
     );
 
     if (data.status === "1" && data.result && data.result !== "0") {
@@ -1020,7 +1055,7 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
 
     try {
       const tokenData = await fetchJson(
-        `https://cronos.org/explorer/api?module=account&action=tokenlist&address=${evmAddress}`
+        `https://cronos.org/explorer/api?module=account&action=tokenlist&address=${address}`
       );
       if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
         for (const token of tokenData.result) {
@@ -1047,7 +1082,7 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
       }
     } catch {}
 
-    console.log(`Cronos scan: found ${balances.length} assets for ${address}`);
+    console.log(`Cronos EVM scan: found ${balances.length} assets for ${address}`);
   } catch (err) {
     console.error("Cronos balance fetch error:", err);
   }
@@ -1292,23 +1327,30 @@ export async function getTonBalance(address: string): Promise<ChainBalance[]> {
 }
 
 export async function getVergeBalance(address: string): Promise<ChainBalance[]> {
-  try {
-    const resp = await fetch(`https://chainz.cryptoid.info/xvg/api.dws?q=getbalance&a=${address}`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const text = await resp.text();
-    const xvg = parseFloat(text);
-    if (isNaN(xvg) || xvg <= 0) return [];
+  const apis = [
+    async () => {
+      const resp = await fetch(`https://chainz.cryptoid.info/xvg/api.dws?q=getbalance&a=${address}`, { signal: AbortSignal.timeout(8000) });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      if (text.includes("unknown") || text.includes("expired")) throw new Error("API unavailable");
+      return parseFloat(text);
+    },
+    async () => {
+      const data = await fetchJson(`https://verge-blockchain.info/api/getaddress/${address}`);
+      return parseFloat(data?.balance || "0");
+    },
+  ];
 
-    const prices = await getPrices(["XVG"]);
-    return [{
-      symbol: "XVG",
-      balance: xvg,
-      usdValue: xvg * (prices.XVG || 0),
-    }];
-  } catch (err) {
-    console.error("Verge balance fetch error:", err);
-    return [];
+  for (const apiFn of apis) {
+    try {
+      const xvg = await apiFn();
+      if (isNaN(xvg) || xvg <= 0) continue;
+      const prices = await getPrices(["XVG"]);
+      return [{ symbol: "XVG", balance: xvg, usdValue: xvg * (prices.XVG || 0) }];
+    } catch {}
   }
+  console.warn(`Verge: all APIs failed for ${address.slice(0, 12)}...`);
+  return [];
 }
 
 export async function getStellarBalance(address: string): Promise<ChainBalance[]> {
