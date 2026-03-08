@@ -311,7 +311,6 @@ export async function registerRoutes(
             totalTxScanned++;
             const txData = tx.tx_json || tx.tx || {};
             const meta = typeof tx.meta === "string" ? {} : (tx.meta || {});
-            const metaResult = meta.TransactionResult || (tx as any).validated === true ? "tesSUCCESS" : meta.TransactionResult;
 
             if (meta.TransactionResult && meta.TransactionResult !== "tesSUCCESS") continue;
             if (txData.TransactionType !== "Payment") continue;
@@ -582,8 +581,9 @@ export async function registerRoutes(
         },
       });
     } catch (error: any) {
-      console.error("Soil sync error:", error);
-      res.status(500).json({ message: "Failed to sync Soil transactions: " + (error.message || "Unknown error") });
+      console.error("Soil sync error:", error?.message || error);
+      console.error("Soil sync stack:", error?.stack?.slice(0, 500));
+      res.status(500).json({ message: "Failed to sync Soil transactions: " + (error?.message || "Unknown error") });
     }
   });
 
