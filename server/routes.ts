@@ -351,10 +351,6 @@ export async function registerRoutes(
                 currency = "RLUSD";
                 validCurrency = true;
               }
-            } else if (typeof deliveredAmount === "string") {
-              amount = Number(deliveredAmount) / 1_000_000;
-              currency = "XRP";
-              validCurrency = true;
             }
 
             if (!validCurrency) {
@@ -373,13 +369,10 @@ export async function registerRoutes(
               }
             }
 
-            if (!validCurrency || amount <= 0) {
-              if (totalTxScanned <= 5) {
-                const deliveredAmt = meta.delivered_amount || txData.Amount;
-                console.log(`[Soil sync] Skipping tx: validCurrency=${validCurrency}, amount=${amount}, deliveredAmount=`, JSON.stringify(deliveredAmt));
-              }
-              continue;
-            }
+            if (!validCurrency || amount <= 0) continue;
+
+            if (currency !== "RLUSD") continue;
+
             rlsudTxFound++;
 
             const rippleEpoch = 946684800;
@@ -392,8 +385,6 @@ export async function registerRoutes(
 
             const hash = (tx as any).hash || txData.hash || txData.Hash || "";
             if (!hash) continue;
-
-            if (currency !== "RLUSD") continue;
 
             if (src === walletAddress && dest === walletAddress) continue;
 
@@ -481,10 +472,6 @@ export async function registerRoutes(
       for (const dep of deposits) {
         const addr = dep.vaultAddress || SOIL_VAULT_ADDRESSES[0];
         vaultTotals[addr] = (vaultTotals[addr] || 0) + dep.amount;
-      }
-      for (const ip of interestPayments) {
-        const addr = ip.vaultAddress || SOIL_VAULT_ADDRESSES[0];
-        vaultTotals[addr] = (vaultTotals[addr] || 0) + ip.amount;
       }
 
       for (const [addr, total] of Object.entries(vaultTotals)) {
