@@ -858,34 +858,42 @@ export async function getTronBalance(address: string): Promise<ChainBalance[]> {
     const account = data.data?.[0];
     if (!account) return [];
 
-    let trxTotal = (account.balance || 0) / 1e6;
+    const trxLiquid = (account.balance || 0) / 1e6;
+    let trxFrozen = 0;
 
     if (account.frozen) {
       for (const f of account.frozen) {
-        trxTotal += (f.frozen_balance || 0) / 1e6;
+        trxFrozen += (f.frozen_balance || 0) / 1e6;
       }
     }
 
     if (account.account_resource?.frozen_balance_for_energy) {
-      trxTotal += (account.account_resource.frozen_balance_for_energy.frozen_balance || 0) / 1e6;
+      trxFrozen += (account.account_resource.frozen_balance_for_energy.frozen_balance || 0) / 1e6;
     }
 
     if (account.frozenV2) {
       for (const f of account.frozenV2) {
-        trxTotal += (f.amount || 0) / 1e6;
+        trxFrozen += (f.amount || 0) / 1e6;
       }
     }
 
     if (account.delegated_frozen_balance_for_bandwidth) {
-      trxTotal += (account.delegated_frozen_balance_for_bandwidth || 0) / 1e6;
+      trxFrozen += (account.delegated_frozen_balance_for_bandwidth || 0) / 1e6;
     }
 
-    if (trxTotal > 0) {
-      const prices = await getPrices(["TRX"]);
+    const prices = await getPrices(["TRX"]);
+    if (trxLiquid > 0) {
       balances.push({
         symbol: "TRX",
-        balance: trxTotal,
-        usdValue: trxTotal * (prices.TRX || 0),
+        balance: trxLiquid,
+        usdValue: trxLiquid * (prices.TRX || 0),
+      });
+    }
+    if (trxFrozen > 0) {
+      balances.push({
+        symbol: "TRX (staked)",
+        balance: trxFrozen,
+        usdValue: trxFrozen * (prices.TRX || 0),
       });
     }
 

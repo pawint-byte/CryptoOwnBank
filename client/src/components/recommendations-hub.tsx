@@ -10,11 +10,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   CUSTODY_KNOWLEDGE,
   evaluateAsset,
+  isScamToken,
   getStakeableAssets,
   getAssetsWithDefiAlternatives,
   getAssetWarnings,
 } from "@/lib/custody-knowledge";
-import type { AssetRecommendation } from "@/lib/custody-knowledge";
+import type { AssetRecommendation, StakedContext } from "@/lib/custody-knowledge";
 import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
@@ -93,12 +94,35 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
 
   const recommendations: AssetRecommendation[] = [];
 
+  const normalizeSymbol = (s: string) => s.toUpperCase().replace(/\s*\(STAKED\)/i, "");
+  const isStakedEntry = (s: string) => /\(staked\)/i.test(s);
+
+  const walletStakedMap: Record<string, Record<string, { usd: number; balance: number }>> = {};
   for (const w of addresses) {
+    const walletKey = w.id || w.address;
+    if (!walletStakedMap[walletKey]) walletStakedMap[walletKey] = {};
     for (const b of w.balances || []) {
-      const sym = b.assetSymbol.toUpperCase().replace(/ \(staked\)/, "");
-      const isStaked = b.assetSymbol.toLowerCase().includes("staked");
+      if (isStakedEntry(b.assetSymbol)) {
+        const sym = normalizeSymbol(b.assetSymbol);
+        walletStakedMap[walletKey][sym] = {
+          usd: parseFloat(b.usdValue) || 0,
+          balance: parseFloat(b.balance) || 0,
+        };
+      }
+    }
+  }
+
+  for (const w of addresses) {
+    const walletKey = w.id || w.address;
+    for (const b of w.balances || []) {
+      const sym = normalizeSymbol(b.assetSymbol);
+      const isStaked = isStakedEntry(b.assetSymbol);
       const usd = parseFloat(b.usdValue) || 0;
-      const rec = evaluateAsset(sym, "cold_wallet", w.label || `${w.chain} wallet`, usd, isStaked);
+      const stakedInfo = walletStakedMap[walletKey]?.[sym];
+      const stakedContext: StakedContext | undefined = !isStaked && stakedInfo
+        ? { stakedUsdOnSameWallet: stakedInfo.usd, stakedBalanceOnSameWallet: stakedInfo.balance }
+        : undefined;
+      const rec = evaluateAsset(sym, "cold_wallet", w.label || `${w.chain} wallet`, usd, isStaked, stakedContext);
       recommendations.push(rec);
     }
   }
@@ -116,8 +140,9 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   }
 
   const totalMissedAnnual = recommendations.reduce((sum, r) => sum + r.missedAnnual, 0);
+  const scamRecs = recommendations.filter(r => r.type === "scam_warning");
   const actionableRecs = recommendations.filter(r =>
-    r.type !== "optimal" && r.type !== "no_action" && r.type !== "no_data"
+    r.type !== "optimal" && r.type !== "no_action" && r.type !== "no_data" && r.type !== "scam_warning"
   );
   const optimalRecs = recommendations.filter(r => r.type === "optimal");
 
@@ -131,7 +156,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   const consolidatedAssets: Record<string, { symbol: string; totalBalance: number; totalUsd: number; locations: { source: string; label: string; balance: number; usd: number }[] }> = {};
   for (const w of addresses) {
     for (const b of w.balances || []) {
-      const sym = b.assetSymbol.toUpperCase().replace(/ \(staked\)/, "");
+      const sym = normalizeSymbol(b.assetSymbol);
       if (!consolidatedAssets[sym]) consolidatedAssets[sym] = { symbol: sym, totalBalance: 0, totalUsd: 0, locations: [] };
       const bal = parseFloat(b.balance) || 0;
       const usd = parseFloat(b.usdValue) || 0;
@@ -147,7 +172,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     consolidatedAssets[sym].totalUsd += eb.usdValue;
     consolidatedAssets[sym].locations.push({ source: "exchange", label: eb.provider, balance: eb.balance, usd: eb.usdValue });
   }
-  const sortedConsolidated = Object.values(consolidatedAssets).filter(a => a.totalUsd > 0.01).sort((a, b) => b.totalUsd - a.totalUsd);
+  const sortedConsolidated = Object.values(consolidatedAssets).filter(a => a.totalUsd > 0.01 && !isScamToken(a.symbol)).sort((a, b) => b.totalUsd - a.totalUsd);
 
   const priceEntries = Object.entries(prices || {}).sort((a, b) => (b[1]?.usd || 0) - (a[1]?.usd || 0));
 
@@ -198,7 +223,10 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
               <SummaryCard icon={<Zap className="h-5 w-5 text-amber-500" />} label="Actions Available" value={actionableRecs.length} />
               <SummaryCard icon={<CheckCircle className="h-5 w-5 text-green-500" />} label="Already Optimal" value={optimalRecs.length} />
               <SummaryCard icon={<Coins className="h-5 w-5" />} label="Staking Opportunities" value={stakeableOwned.length} />
-              <SummaryCard icon={<BarChart3 className="h-5 w-5" />} label="Live Prices" value={priceEntries.length} />
+              {scamRecs.length > 0
+                ? <SummaryCard icon={<AlertTriangle className="h-5 w-5 text-red-500" />} label="Scam Tokens" value={scamRecs.length} />
+                : <SummaryCard icon={<BarChart3 className="h-5 w-5" />} label="Live Prices" value={priceEntries.length} />
+              }
             </div>
 
             {actionableRecs.length > 0 && (
@@ -241,6 +269,29 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
                       </div>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+
+            {scamRecs.length > 0 && (
+              <>
+                <h3 className="font-semibold mb-3 mt-6 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  Suspected Scam Tokens ({scamRecs.length})
+                </h3>
+                <div className="border border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-red-800 dark:text-red-200 mb-2">
+                    These tokens were likely airdropped to your wallets as dust attacks. Do NOT interact with them.
+                  </p>
+                  <div className="space-y-1">
+                    {scamRecs.map((rec, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm" data-testid={`scam-token-${i}`}>
+                        <XCircle className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
+                        <span className="text-red-700 dark:text-red-300 break-all">{rec.symbol}</span>
+                        <span className="text-red-500 dark:text-red-400 text-xs shrink-0">on {rec.currentLocation}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
@@ -593,6 +644,7 @@ function RecommendationCard({ rec }: { rec: AssetRecommendation }) {
     split_strategy: { icon: <ArrowRightLeft className="h-5 w-5 text-purple-500" />, borderColor: "border-purple-300 dark:border-purple-700", bgColor: "bg-purple-50/50 dark:bg-purple-950/20" },
     stake_available: { icon: <Coins className="h-5 w-5 text-amber-500" />, borderColor: "border-amber-300 dark:border-amber-700", bgColor: "bg-amber-50/50 dark:bg-amber-950/20" },
     defi_yield: { icon: <Sparkles className="h-5 w-5 text-emerald-500" />, borderColor: "border-emerald-300 dark:border-emerald-700", bgColor: "bg-emerald-50/50 dark:bg-emerald-950/20" },
+    scam_warning: { icon: <AlertTriangle className="h-5 w-5 text-red-500" />, borderColor: "border-red-300 dark:border-red-700", bgColor: "bg-red-50/50 dark:bg-red-950/20" },
     no_data: { icon: <Info className="h-5 w-5 text-gray-500" />, borderColor: "border-gray-300 dark:border-gray-700", bgColor: "bg-gray-50/50 dark:bg-gray-950/20" },
   };
   const config = typeConfig[rec.type] || typeConfig.no_data;

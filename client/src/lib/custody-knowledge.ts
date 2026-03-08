@@ -298,6 +298,7 @@ export type RecommendationType =
   | "split_strategy"
   | "stake_available"
   | "defi_yield"
+  | "scam_warning"
   | "no_action"
   | "no_data";
 
@@ -319,15 +320,49 @@ export interface AssetRecommendation {
 
 const DUST_THRESHOLD_USD = 5;
 
+const SCAM_PATTERNS = [
+  /https?:\/\//i,
+  /visit\s/i,
+  /claim\s/i,
+  /airdrop/i,
+  /reward/i,
+  /\.com\b/i,
+  /\.xyz\b/i,
+  /\.fi\b/i,
+  /\.io\b/i,
+  /\.pro\b/i,
+  /\.eu\b/i,
+  /\.cash\b/i,
+];
+
+export function isScamToken(symbol: string): boolean {
+  return SCAM_PATTERNS.some(p => p.test(symbol)) || symbol.length > 20;
+}
+
+export interface StakedContext {
+  stakedUsdOnSameWallet: number;
+  stakedBalanceOnSameWallet: number;
+}
+
 export function evaluateAsset(
   symbol: string,
   location: "cold_wallet" | "exchange" | "defi",
   provider: string,
   usdValue: number,
   isAlreadyStaked: boolean,
+  stakedContext?: StakedContext,
 ): AssetRecommendation {
   const knowledge = CUSTODY_KNOWLEDGE[symbol];
   const displayName = knowledge?.name || symbol;
+
+  if (isScamToken(symbol)) {
+    return {
+      symbol, name: symbol, type: "scam_warning", title: "Suspected Scam Token",
+      description: `This token name contains a URL or suspicious pattern. It was likely airdropped as a dust attack. Do NOT interact with it — clicking links or approving transactions could drain your wallet.`,
+      currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue: 0, missedAnnual: 0,
+      actionItems: ["Do not click any links in the token name", "Do not try to sell or swap this token", "Ignore it — it cannot affect your other assets if left alone"],
+    };
+  }
 
   if (usdValue < DUST_THRESHOLD_USD) {
     return {
@@ -393,12 +428,34 @@ export function evaluateAsset(
       };
     }
 
+    const hasStakedOnSameWallet = stakedContext && stakedContext.stakedUsdOnSameWallet > 0;
+
+    if (hasStakedOnSameWallet && bestSelfCustodyYield > 0) {
+      const totalOnWallet = usdValue + stakedContext.stakedUsdOnSameWallet;
+      const stakedPct = Math.round((stakedContext.stakedUsdOnSameWallet / totalOnWallet) * 100);
+      const liquidPct = 100 - stakedPct;
+      const missed = usdValue * (bestSelfCustodyYield / 100);
+      return {
+        symbol, name: displayName, type: missed > 10 ? "stake_available" : "optimal",
+        title: missed > 10 ? "Partially Staked" : "Mostly Optimized",
+        description: missed > 10
+          ? `${stakedPct}% of your ${symbol} on ${provider} is staked and earning yield. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — staking it could earn ~$${missed.toFixed(0)}/year more.`
+          : `${stakedPct}% of your ${symbol} on ${provider} is staked. The liquid remainder ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is too small to generate meaningful additional yield.`,
+        currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
+        bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue, missedAnnual: missed > 10 ? missed : 0,
+        actionItems: missed > 10 ? [
+          bestStaking > 0 ? `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)` : "",
+          bestDefi > 0 ? `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)` : "",
+        ].filter(Boolean) : [],
+      };
+    }
+
     if (bestSelfCustodyYield > 0) {
       const missed = usdValue * (bestSelfCustodyYield / 100);
       return {
         symbol, name: displayName, type: "stake_available",
         title: "Yield Available",
-        description: `${symbol} is safe on your cold wallet, but you could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking or using DeFi — that's ~$${missed.toFixed(0)}/year you're leaving on the table.`,
+        description: `${symbol} is safe on your cold wallet, but you could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
         currentLocation: provider, currentYield: 0, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
         actionItems: [
           bestStaking > 0 ? `Stake via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)` : "",
@@ -409,7 +466,7 @@ export function evaluateAsset(
 
     return {
       symbol, name: displayName, type: "optimal", title: "Safe & Secure",
-      description: `${symbol} is on your cold wallet — fully self-custodied. No staking or yield options are available for this asset right now.`,
+      description: `${symbol} is on your cold wallet — fully self-custodied. No native staking is available for this asset.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
       actionItems: [],
     };
@@ -468,7 +525,7 @@ export function evaluateAsset(
       const actions: string[] = [
         canWithdraw ? `Withdraw ${symbol} from ${provider} to your cold wallet` : `${symbol} may not be withdrawable from ${provider}`,
         `Stake via ${bestStakingSource?.platform || bestDefiSource?.defiProtocol} for ${bestStakingSource?.apyRange || bestDefiSource?.defiApy} APY`,
-        "Start with a small test transfer before moving everything",
+        `Check if ${provider} offers an earn/staking program for ${symbol} — we can't detect enrollment automatically`,
       ];
       if (bestExchangeEarnAnywhere > 0 && bestExchangeEarnAnywhere > bestSelfCustodyYield) {
         const bestAnyExch = knowledge.exchangeEarnOptions?.reduce((best, e) => e.apyMid > (best?.apyMid || 0) ? e : best, null as ExchangeEarnOption | null);
