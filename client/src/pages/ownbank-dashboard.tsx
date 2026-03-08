@@ -268,12 +268,13 @@ export default function OwnBankDashboard() {
       try {
         if (err?.message) errorMsg = err.message;
       } catch {}
+      console.error("[Soil sync] Error:", errorMsg);
       if (errorMsg.includes("No wallet connected") || errorMsg.includes("wallet")) {
         setSoilSynced(true);
       } else {
         toast({
           title: "Soil sync issue",
-          description: "Could not scan XRPL right now. You can try the refresh button later.",
+          description: errorMsg || "Could not scan XRPL right now. You can try the refresh button later.",
         });
       }
     } finally {
