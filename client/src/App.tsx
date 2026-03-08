@@ -161,6 +161,7 @@ function Router() {
       <Route path="/setup-guide" component={SetupGuide} />
       <Route path="/signing-options" component={SigningOptions} />
       <Route path="/contact" component={Contact} />
+      <Route path="/yield-calculator" component={YieldCalculator} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
