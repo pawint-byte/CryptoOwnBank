@@ -2715,14 +2715,18 @@ export async function registerRoutes(
 
       let newTransactions = 0;
 
-      if (chain === "ethereum" || chain === "bitcoin") {
+      if (chain === "ethereum" || chain === "bitcoin" || chain === "xrp") {
         try {
-          const { getEthTransactions, getBtcTransactions } = await import("./services/blockchain-transactions");
+          const { getEthTransactions, getBtcTransactions, getXrpTransactions } = await import("./services/blockchain-transactions");
           const { getHistoricalPrice } = await import("./services/historical-prices");
 
           const blockchainTxs = chain === "ethereum"
             ? await getEthTransactions(wallet.address)
+            : chain === "xrp"
+            ? await getXrpTransactions(wallet.address)
             : await getBtcTransactions(wallet.address);
+
+          const chainName = chain === "ethereum" ? "Ethereum" : chain === "xrp" ? "XRP Ledger" : "Bitcoin";
 
           if (blockchainTxs.length > 0) {
             const existingAccounts = await storage.getAccountsByUser(userId);
@@ -2735,6 +2739,13 @@ export async function registerRoutes(
                 accountType: "wallet",
               });
             }
+
+            const userWallets = await storage.getWalletsByUser(userId);
+            const caseSensitiveChains = new Set(["xrp", "solana", "cardano", "cosmos", "stellar"]);
+            const isCaseSensitive = caseSensitiveChains.has(chain);
+            const ownAddresses = new Set(
+              userWallets.map(w => isCaseSensitive ? w.address : w.address.toLowerCase())
+            );
 
             const existingTxns = await storage.getTransactionsByUser(userId);
             const existingExternalIds = new Set(
@@ -2751,7 +2762,7 @@ export async function registerRoutes(
 
             const MAX_PRICE_LOOKUPS = 60;
             const priceMap = new Map<string, number>();
-            const asset = chain === "ethereum" ? "ETH" : "BTC";
+            const asset = chain === "ethereum" ? "ETH" : chain === "xrp" ? "XRP" : "BTC";
             let lookupCount = 0;
             for (const [dayKey, date] of uniqueDates) {
               if (lookupCount >= MAX_PRICE_LOOKUPS) {
@@ -2764,13 +2775,27 @@ export async function registerRoutes(
               if (lookupCount < uniqueDates.size) await new Promise(r => setTimeout(r, 2500));
             }
 
+            let totalCostBasis = 0;
+            let totalQuantityBought = 0;
+
+            const walletBals = await storage.getWalletBalances(wallet.id);
+            const assetBalanceMap = new Map<string, string>();
+            for (const wb of walletBals) {
+              assetBalanceMap.set(wb.assetSymbol, wb.id);
+            }
+
             for (const tx of blockchainTxs) {
               if (existingExternalIds.has(tx.hash)) continue;
+
+              const normalizeAddr = (addr: string) => isCaseSensitive ? addr : addr.toLowerCase();
+              const isOwnTransfer = tx.type === "receive"
+                ? tx.senderAddress && ownAddresses.has(normalizeAddr(tx.senderAddress))
+                : tx.recipientAddress && ownAddresses.has(normalizeAddr(tx.recipientAddress));
 
               const dayKey = tx.timestamp.toISOString().split("T")[0];
               const pricePerUnit = priceMap.get(dayKey) || 0;
               const totalValue = tx.quantity * pricePerUnit;
-              const txType = tx.type === "receive" ? "buy" : "sell";
+              const txType = isOwnTransfer ? "transfer" : (tx.type === "receive" ? "buy" : "sell");
 
               const transaction = await storage.createTransaction({
                 userId,
@@ -2783,22 +2808,43 @@ export async function registerRoutes(
                 fee: tx.fee.toString(),
                 transactionDate: tx.timestamp,
                 externalId: tx.hash,
-                notes: `Imported from ${chain === "ethereum" ? "Ethereum" : "Bitcoin"} blockchain`,
+                notes: isOwnTransfer
+                  ? `Transfer between own wallets (${chainName})`
+                  : `Imported from ${chainName} blockchain`,
               });
 
               if (txType === "buy" && pricePerUnit > 0) {
+                const wbId = assetBalanceMap.get(tx.asset);
                 await storage.createTaxLot({
                   userId,
                   transactionId: transaction.id,
+                  walletBalanceId: wbId || null,
                   assetSymbol: tx.asset,
                   acquiredDate: tx.timestamp,
                   originalQuantity: tx.quantity.toString(),
                   remainingQuantity: tx.quantity.toString(),
                   costBasisPerUnit: pricePerUnit.toFixed(2),
                 });
+                totalCostBasis += totalValue;
+                totalQuantityBought += tx.quantity;
               }
 
               newTransactions++;
+            }
+
+            if (totalQuantityBought > 0) {
+              const assetBal = walletBals.find(b => b.assetSymbol === asset);
+              if (assetBal) {
+                const allLots = await storage.getTaxLotsByWalletBalance(userId, assetBal.id);
+                const aggregateCost = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+                const aggregateQty = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+                const avgCost = aggregateQty > 0 ? aggregateCost / aggregateQty : 0;
+                await storage.updateWalletBalanceCostData(
+                  assetBal.id,
+                  avgCost.toFixed(8),
+                  aggregateCost.toFixed(2)
+                );
+              }
             }
 
             console.log(`Wallet sync: imported ${newTransactions} new ${chain} transactions for wallet ${wallet.id}`);

@@ -27,7 +27,7 @@ Preferred communication style: Simple, everyday language.
     - **Authentication**: Email/password, legacy Replit Auth, PostgreSQL-backed sessions, admin roles.
     - **Data Sync**: Encrypted exchange API key management, automatic/manual balance and transaction sync from major exchanges and 24 public blockchains (BTC, ETH, SOL, XRP, etc.), with auto-chain-detection for wallet addresses.
     - **Token Scanning**: Comprehensive token scanning across various chains (ERC-20, SPL, XRP trust lines, ASA, etc.) with price lookup via CoinGecko.
-    - **Blockchain Transaction Import**: Full transaction history import from Etherscan (ETH) and blockchain.info (BTC), classifying transactions and creating tax lots based on historical USD prices.
+    - **Blockchain Transaction Import**: Full transaction history import from Etherscan (ETH), blockchain.info (BTC), and XRPL `account_tx` (XRP), classifying transactions and creating tax lots based on historical USD prices. Detects transfers between user's own wallets. Auto-populates cost basis on wallet balances.
     - **XRPL Scanner**: Monitors XRPL for transactions between user wallets and Soil vault addresses (Credit+, Liquid, custom vaults), creating position records and auto-discovering unrecognized RLUSD transfers.
     - **Email Notifications**: Transactional emails via Resend.
 
@@ -35,6 +35,7 @@ Preferred communication style: Simple, everyday language.
 - **Database**: PostgreSQL with Drizzle ORM.
 - **Key Models**: Users, API Credentials, Accounts, Transactions, Positions, Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances.
 - **Manual Entry**: Supports manual position creation for assets without automated feeds.
+- **Cost Basis Management**: Wallet balances have `averageCost` and `totalCostBasis` fields, auto-populated from on-chain transaction imports and manually editable. Purchase lots can be added/edited/deleted per wallet balance. API endpoints: `PATCH /api/wallet-balances/:id/cost`, `GET/POST /api/wallet-balances/:id/lots`, `PATCH/DELETE /api/wallet-balances/:balanceId/lots/:lotId`.
 - **Asset Categories**: Categorizes 150+ crypto symbols into sectors (Layer 1, DeFi, AI, Stablecoin, etc.).
 - **Client-side Storage (Zustand)**: Stores wallet state, XRPL balances, vault deposits, and referral data.
 

@@ -5,6 +5,8 @@ export interface BlockchainTransaction {
   quantity: number;
   fee: number;
   timestamp: Date;
+  senderAddress?: string;
+  recipientAddress?: string;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -81,6 +83,106 @@ export async function getEthTransactions(address: string): Promise<BlockchainTra
     }
   } catch (error) {
     console.error("Failed to fetch ETH transactions:", error);
+  }
+
+  return results;
+}
+
+export async function getXrpTransactions(address: string): Promise<BlockchainTransaction[]> {
+  const results: BlockchainTransaction[] = [];
+  let marker: any = undefined;
+
+  try {
+    while (results.length < MAX_TRANSACTIONS) {
+      const params: any = {
+        account: address,
+        ledger_index_min: -1,
+        ledger_index_max: -1,
+        limit: 200,
+        forward: true,
+      };
+      if (marker) params.marker = marker;
+
+      const res = await fetch("https://xrplcluster.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: "account_tx", params: [params] }),
+      });
+
+      if (!res.ok) {
+        console.warn(`XRPL account_tx error: HTTP ${res.status}`);
+        break;
+      }
+
+      const data = await res.json();
+      const txResult = data.result;
+      if (!txResult || txResult.status !== "success") {
+        console.warn("XRPL account_tx failed:", txResult?.error_message || "unknown");
+        break;
+      }
+
+      const transactions = txResult.transactions || [];
+      if (transactions.length === 0) break;
+
+      for (const entry of transactions) {
+        if (results.length >= MAX_TRANSACTIONS) break;
+
+        const tx = entry.tx || entry.tx_json;
+        const meta = entry.meta;
+        if (!tx || !meta) continue;
+        if (tx.TransactionType !== "Payment") continue;
+        if (meta.TransactionResult !== "tesSUCCESS") continue;
+
+        const delivered = meta.delivered_amount || meta.DeliveredAmount;
+        if (!delivered) continue;
+        if (typeof delivered === "object") continue;
+
+        const drops = Number(delivered);
+        if (isNaN(drops) || drops <= 0) continue;
+        const xrpAmount = drops / 1e6;
+
+        const feeDrop = Number(tx.Fee || 0);
+        const feeXrp = feeDrop / 1e6;
+
+        const closeTime = entry.tx?.date || entry.close_time_iso;
+        let timestamp: Date;
+        if (typeof closeTime === "number") {
+          timestamp = new Date((closeTime + 946684800) * 1000);
+        } else if (typeof closeTime === "string") {
+          timestamp = new Date(closeTime);
+        } else {
+          continue;
+        }
+
+        const dest = tx.Destination;
+        const source = tx.Account;
+
+        let type: "receive" | "send";
+        if (dest === address && source !== address) {
+          type = "receive";
+        } else if (source === address && dest !== address) {
+          type = "send";
+        } else {
+          continue;
+        }
+
+        results.push({
+          hash: tx.hash || entry.hash || "",
+          type,
+          asset: "XRP",
+          quantity: xrpAmount,
+          fee: type === "send" ? feeXrp : 0,
+          timestamp,
+          ...(type === "receive" ? { senderAddress: source } : { recipientAddress: dest }),
+        });
+      }
+
+      marker = txResult.marker;
+      if (!marker) break;
+      await sleep(500);
+    }
+  } catch (error) {
+    console.error("Failed to fetch XRP transactions:", error);
   }
 
   return results;

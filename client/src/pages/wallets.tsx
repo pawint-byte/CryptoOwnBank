@@ -78,6 +78,12 @@ import {
   Star,
   Info,
   AlertCircle,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
@@ -366,6 +372,375 @@ function getExplorerUrl(chain: string, address: string): string {
     polygon: `https://polygonscan.com/address/${address}`,
   };
   return explorers[chain] || "#";
+}
+
+interface TaxLotData {
+  id: string;
+  assetSymbol: string;
+  acquiredDate: string;
+  originalQuantity: string;
+  remainingQuantity: string;
+  costBasisPerUnit: string;
+  note?: string | null;
+}
+
+function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; currentPrice: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [addingLot, setAddingLot] = useState(false);
+  const [editingCost, setEditingCost] = useState(false);
+  const [editCostValue, setEditCostValue] = useState("");
+  const { toast } = useToast();
+
+  const { data: lots = [], isLoading: lotsLoading } = useQuery<TaxLotData[]>({
+    queryKey: ["/api/wallet-balances", balance.id, "lots"],
+    queryFn: async () => {
+      const res = await fetch(`/api/wallet-balances/${balance.id}/lots`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: expanded,
+  });
+
+  const [lotForm, setLotForm] = useState({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
+
+  const addLotMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", `/api/wallet-balances/${balance.id}/lots`, lotForm);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balance.id, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      setAddingLot(false);
+      setLotForm({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
+      toast({ title: "Purchase lot added" });
+    },
+    onError: () => toast({ title: "Failed to add purchase lot", variant: "destructive" }),
+  });
+
+  const editCostMutation = useMutation({
+    mutationFn: async () => {
+      const avgCost = parseFloat(editCostValue);
+      const bal = parseFloat(balance.balance);
+      return apiRequest("PATCH", `/api/wallet-balances/${balance.id}/cost`, {
+        averageCost: avgCost.toString(),
+        totalCostBasis: (avgCost * bal).toFixed(2),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      setEditingCost(false);
+      toast({ title: "Cost basis updated" });
+    },
+    onError: () => toast({ title: "Failed to update cost basis", variant: "destructive" }),
+  });
+
+  const editLotMutation = useMutation({
+    mutationFn: async ({ lotId, data }: { lotId: string; data: any }) => {
+      return apiRequest("PATCH", `/api/wallet-balances/${balance.id}/lots/${lotId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balance.id, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Purchase lot updated" });
+    },
+    onError: () => toast({ title: "Failed to update lot", variant: "destructive" }),
+  });
+
+  const deleteLotMutation = useMutation({
+    mutationFn: async (lotId: string) => {
+      return apiRequest("DELETE", `/api/wallet-balances/${balance.id}/lots/${lotId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balance.id, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Purchase lot removed" });
+    },
+    onError: () => toast({ title: "Failed to delete lot", variant: "destructive" }),
+  });
+
+  const avgCost = balance.averageCost ? parseFloat(balance.averageCost) : 0;
+  const totalCostBasis = balance.totalCostBasis ? parseFloat(balance.totalCostBasis) : 0;
+  const bal = parseFloat(balance.balance);
+  const currentValue = bal * currentPrice;
+  const unrealizedPnl = totalCostBasis > 0 ? currentValue - totalCostBasis : 0;
+  const pnlPercent = totalCostBasis > 0 ? (unrealizedPnl / totalCostBasis) * 100 : 0;
+  const hasCostData = avgCost > 0 || totalCostBasis > 0;
+
+  return (
+    <div className="mt-1">
+      <button
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setExpanded(!expanded)}
+        data-testid={`toggle-cost-basis-${balance.id}`}
+      >
+        <DollarSign className="h-3 w-3" />
+        {hasCostData ? (
+          <span className="flex items-center gap-1">
+            Avg {formatUsd(avgCost)}
+            <span className="mx-0.5">·</span>
+            <span className={cn("font-medium", unrealizedPnl >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+              {unrealizedPnl >= 0 ? "+" : ""}{formatUsd(unrealizedPnl)} ({pnlPercent >= 0 ? "+" : ""}{pnlPercent.toFixed(1)}%)
+            </span>
+          </span>
+        ) : (
+          <span>Add cost basis</span>
+        )}
+        {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-2 p-3 rounded-lg bg-muted/50 border space-y-3">
+          {hasCostData && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">Avg Cost</span>
+                <div className="font-mono font-medium" data-testid={`text-avg-cost-${balance.id}`}>{formatUsd(avgCost)}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Cost Basis</span>
+                <div className="font-mono font-medium" data-testid={`text-cost-basis-${balance.id}`}>{formatUsd(totalCostBasis)}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Current Value</span>
+                <div className="font-mono font-medium">{formatUsd(currentValue)}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Unrealized P&L</span>
+                <div className={cn("font-mono font-medium flex items-center gap-0.5", unrealizedPnl >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")} data-testid={`text-pnl-${balance.id}`}>
+                  {unrealizedPnl >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {unrealizedPnl >= 0 ? "+" : ""}{formatUsd(unrealizedPnl)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            {!editingCost ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => { setEditingCost(true); setEditCostValue(avgCost > 0 ? avgCost.toString() : ""); }}
+                data-testid={`button-edit-cost-${balance.id}`}
+              >
+                <Pencil className="h-3 w-3 mr-1" />
+                {hasCostData ? "Edit Avg Cost" : "Set Avg Cost"}
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  placeholder="Cost per unit"
+                  value={editCostValue}
+                  onChange={(e) => setEditCostValue(e.target.value)}
+                  className="h-7 w-28 text-xs"
+                  data-testid={`input-avg-cost-${balance.id}`}
+                />
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 text-xs px-2"
+                  onClick={() => editCostMutation.mutate()}
+                  disabled={editCostMutation.isPending || !editCostValue}
+                  data-testid={`button-save-cost-${balance.id}`}
+                >
+                  <Check className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setEditingCost(false)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setAddingLot(true)}
+              data-testid={`button-add-lot-${balance.id}`}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add Purchase
+            </Button>
+          </div>
+
+          {addingLot && (
+            <div className="border rounded-lg p-3 space-y-2 bg-background">
+              <div className="text-xs font-medium">New Purchase Lot</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Quantity</label>
+                  <Input
+                    type="number"
+                    step="0.000001"
+                    placeholder="Amount"
+                    value={lotForm.quantity}
+                    onChange={(e) => setLotForm({ ...lotForm, quantity: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-lot-quantity-${balance.id}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Cost per unit ($)</label>
+                  <Input
+                    type="number"
+                    step="0.0001"
+                    placeholder="Price paid"
+                    value={lotForm.costPerUnit}
+                    onChange={(e) => setLotForm({ ...lotForm, costPerUnit: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-lot-cost-${balance.id}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Purchase Date</label>
+                  <Input
+                    type="date"
+                    value={lotForm.acquiredDate}
+                    onChange={(e) => setLotForm({ ...lotForm, acquiredDate: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-lot-date-${balance.id}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Note (optional)</label>
+                  <Input
+                    placeholder="e.g. From Crypto.com"
+                    value={lotForm.note}
+                    onChange={(e) => setLotForm({ ...lotForm, note: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-lot-note-${balance.id}`}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-1 justify-end">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAddingLot(false)}>Cancel</Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => addLotMutation.mutate()}
+                  disabled={addLotMutation.isPending || !lotForm.quantity || !lotForm.costPerUnit || !lotForm.acquiredDate}
+                  data-testid={`button-save-lot-${balance.id}`}
+                >
+                  {addLotMutation.isPending ? "Saving..." : "Save Lot"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {lotsLoading ? (
+            <div className="text-xs text-muted-foreground">Loading purchase lots...</div>
+          ) : lots.length > 0 ? (
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-muted-foreground mb-1">Purchase History ({lots.length} lot{lots.length !== 1 ? "s" : ""})</div>
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {lots.map((lot) => (
+                  <LotRow
+                    key={lot.id}
+                    lot={lot}
+                    balanceId={balance.id}
+                    onEdit={(lotId, data) => editLotMutation.mutate({ lotId, data })}
+                    onDelete={(lotId) => deleteLotMutation.mutate(lotId)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">
+              No purchase lots yet. Add one manually or sync the wallet to import on-chain transactions.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balanceId: string; onEdit: (id: string, data: any) => void; onDelete: (id: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [costPerUnit, setCostPerUnit] = useState(lot.costBasisPerUnit);
+
+  const qty = parseFloat(lot.originalQuantity);
+  const cost = parseFloat(lot.costBasisPerUnit);
+  const totalCost = qty * cost;
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 py-1 px-2 rounded bg-muted/30 border text-xs">
+        <span className="text-muted-foreground shrink-0">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+        <span className="text-muted-foreground shrink-0 mx-1">·</span>
+        <span className="shrink-0 font-mono">{formatBalance(qty, 4)}</span>
+        <span className="text-muted-foreground shrink-0 mx-1">@</span>
+        <span className="text-muted-foreground shrink-0">$</span>
+        <Input
+          type="number"
+          step="0.0001"
+          value={costPerUnit}
+          onChange={(e) => setCostPerUnit(e.target.value)}
+          className="h-6 w-20 text-xs"
+          data-testid={`input-edit-lot-cost-${lot.id}`}
+        />
+        <Button
+          variant="default"
+          size="sm"
+          className="h-6 px-1.5 text-xs"
+          onClick={() => { onEdit(lot.id, { costPerUnit }); setEditing(false); }}
+          data-testid={`button-save-edit-lot-${lot.id}`}
+        >
+          <Check className="h-3 w-3" />
+        </Button>
+        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs" onClick={() => setEditing(false)}>
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/30 text-xs group" data-testid={`lot-row-${lot.id}`}>
+      <div className="flex items-center gap-1 min-w-0">
+        <span className="text-muted-foreground shrink-0">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+        <span className="text-muted-foreground shrink-0">·</span>
+        <span className="font-mono shrink-0">{formatBalance(qty, 4)}</span>
+        <span className="text-muted-foreground shrink-0">@</span>
+        <span className="font-mono shrink-0">{formatUsd(cost)}</span>
+        <span className="text-muted-foreground shrink-0">=</span>
+        <span className="font-mono font-medium shrink-0">{formatUsd(totalCost)}</span>
+        {lot.note && <span className="text-muted-foreground truncate ml-1">({lot.note})</span>}
+      </div>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-5 w-5 p-0"
+          onClick={() => setEditing(true)}
+          data-testid={`button-edit-lot-${lot.id}`}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-destructive" data-testid={`button-delete-lot-${lot.id}`}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove purchase lot?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the {formatBalance(qty, 4)} {lot.assetSymbol} lot from {format(new Date(lot.acquiredDate), "MMM d, yyyy")} and update your cost basis.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onDelete(lot.id)}>Remove</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
 }
 
 export default function Wallets() {
@@ -796,8 +1171,8 @@ export default function Wallets() {
                           </span>
                         ) : selectedChain === "xrp" ? (
                           <span>
-                            <strong className="text-foreground">XRP + issued currencies.</strong>{" "}
-                            We'll pull your native XRP balance plus any trust line tokens (RLUSD, etc.) from the XRP Ledger.
+                            <strong className="text-foreground">XRP + issued currencies + full transaction history.</strong>{" "}
+                            We'll pull your native XRP balance, trust line tokens (RLUSD, etc.), and import your complete payment history with historical cost basis from the XRP Ledger. Transfers between your own wallets are detected automatically.
                           </span>
                         ) : (
                           <span>
@@ -1011,30 +1386,38 @@ export default function Wallets() {
                       {w.balances.length > 0 && (
                         <CardContent className="pt-0">
                           <div className="space-y-2">
-                            {w.balances.map((b) => (
-                              <div
-                                key={b.id}
-                                className="flex items-center justify-between py-2 border-t"
-                                data-testid={`balance-${b.assetSymbol}-${w.id}`}
-                              >
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                    <span className="text-[10px] sm:text-xs font-bold text-primary">
-                                      {b.assetSymbol.slice(0, 2)}
+                            {w.balances.map((b) => {
+                              const balVal = parseFloat(b.balance);
+                              const usdVal = getEnrichedUsdValue(b.assetSymbol, balVal, b.usdValue);
+                              const pricePerUnit = balVal > 0 ? usdVal / balVal : 0;
+                              return (
+                                <div
+                                  key={b.id}
+                                  className="py-2 border-t"
+                                  data-testid={`balance-${b.assetSymbol}-${w.id}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] sm:text-xs font-bold text-primary">
+                                          {b.assetSymbol.slice(0, 2)}
+                                        </span>
+                                      </div>
+                                      <div className="min-w-0">
+                                        <span className="font-medium text-sm truncate block">{b.assetSymbol}</span>
+                                        <div className="text-xs text-muted-foreground font-mono truncate">
+                                          {formatBalance(balVal, 4)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
+                                      {formatUsd(usdVal)}
                                     </span>
                                   </div>
-                                  <div className="min-w-0">
-                                    <span className="font-medium text-sm truncate block">{b.assetSymbol}</span>
-                                    <div className="text-xs text-muted-foreground font-mono truncate">
-                                      {formatBalance(parseFloat(b.balance), 4)}
-                                    </div>
-                                  </div>
+                                  <CostBasisPanel balance={b} currentPrice={pricePerUnit} />
                                 </div>
-                                <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
-                                  {formatUsd(getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue))}
-                                </span>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                           {w.lastSyncAt && (
                             <p className="text-xs text-muted-foreground mt-2">
