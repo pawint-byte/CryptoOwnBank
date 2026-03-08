@@ -970,7 +970,7 @@ export default function OwnBankDashboard() {
             </Link>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Interest accrues daily on Soil. Accrued but unpaid interest is not shown here — only paid-out transactions appear. Your principal stays locked and protected.
+            Interest accrues daily on Soil vaults. Use Withdraw to move earned interest to your wallet or bank when ready. Your principal stays locked and protected.
           </p>
         </CardContent>
       </Card>
