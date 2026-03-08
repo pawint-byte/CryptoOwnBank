@@ -7,27 +7,35 @@ const faqGroups = [
     items: [
       {
         q: "Why was CryptoOwnBank created? (And why should I use it?)",
-        a: "CryptoOwnBank was created for one reason: to help people truly become their own bank \u2014 without giving up control of their assets. Most tools today force you to choose between: custodial platforms (Uphold, Binance, Coinbase) that hold your keys and pay low yields (3\u20136%), traditional banks that pay almost nothing (0.01\u20134.5%) and control your money, or raw blockchain explorers and DeFi apps that feel complicated and overwhelming. We built CryptoOwnBank to fix all three problems at once: (1) Full ownership \u2014 your cold wallet (Ledger, ELLIPAL, Arculus, etc.) stays in control; we never see or store your private keys. (2) Real, higher yields \u2014 earn 5\u20138% fixed APR on RLUSD through Soil Protocol\u2019s real-world-asset vaults (Treasuries, private credit) with automatic compounding if you don\u2019t withdraw interest. (3) Simplicity & power \u2014 one clean dashboard to connect your wallet, track your XRPL portfolio, deposit to vaults, withdraw only the interest you want, and see everything in real time. No copy-pasting addresses, no switching apps. (4) Future-proof \u2014 built for XRPL today (RLUSD + Soil), ready for tomorrow (XLS-66 XRP lending, more protocols, multi-chain support) \u2014 all while keeping you non-custodial.",
+        a: "CryptoOwnBank was created for one reason: to help people truly become their own bank \u2014 without giving up control of their assets. Most tools today force you to choose between: custodial platforms (Uphold, Binance, Coinbase) that hold your keys and pay low yields (3\u20136%), traditional banks that pay almost nothing (0.01\u20134.5%) and control your money, or raw blockchain explorers and DeFi apps that feel complicated and overwhelming. We built CryptoOwnBank to fix all three problems at once: (1) Full ownership \u2014 your cold wallet (Ledger, ELLIPAL, Arculus, SafePal, CypheRock, etc.) stays in control; we never see or store your private keys. (2) Real, higher yields \u2014 earn 5\u20138% fixed APR on RLUSD through Soil Protocol\u2019s real-world-asset vaults (Treasuries, private credit) with automatic compounding, plus we surface on-chain staking and DeFi yield opportunities across 24 blockchains. (3) Simplicity & power \u2014 one clean dashboard to track your entire crypto portfolio across exchanges and cold wallets, connect your XRPL wallet, deposit to Soil vaults, withdraw only the interest you want, and see personalized recommendations \u2014 all in real time. (4) On-chain first philosophy \u2014 every yield recommendation clearly labels whether you keep your keys (on-chain) or hand them to a company (custodial), so you always know exactly who controls your assets.",
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a non-custodial dashboard that lets you track your XRP & RLUSD portfolio and earn fixed yield on RLUSD through Soil Protocol vaults \u2014 all while keeping full control via your cold wallet (Ledger or Xumm). We help you \u201Cbe your own bank\u201D: deposit RLUSD, earn 5\u20138% fixed APR, withdraw only the interest, and leave your principal locked and protected forever \u2014 without ever selling your base holdings.",
+        a: "CryptoOwnBank is a combined crypto portfolio tracker and non-custodial XRPL yield vault. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, and get personalized recommendations for staking, DeFi, and yield opportunities \u2014 all while keeping full control via your cold wallet. We clearly distinguish on-chain options (you keep your keys) from custodial options (a company holds your assets), so you can make informed decisions about every opportunity.",
+      },
+      {
+        q: "What blockchains does CryptoOwnBank support for portfolio tracking?",
+        a: "We support 24 blockchains for portfolio tracking: XRP Ledger, Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, Polygon, Tron, Algorand, Hedera (HBAR), VeChain, Stellar, Sui, Aptos, Near, Fantom, Cronos, Arbitrum, Optimism, Base, Tezos, and Litecoin. Add your public wallet address for any of these chains and we automatically pull your balances. Your private keys are never shared \u2014 we only read public on-chain data.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
-        a: "Banks offer 0.01\u20134.5% yield but you\u2019re an unsecured creditor \u2014 they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5\u20138% fixed APR with automatic compounding, and you own 100% \u2014 keys stay on your cold wallet, every action requires your signature. Other advantages: no KYC on our end, no bank linking, low XRPL fees (~0.0001 XRP vs $15\u201330 wire fees), interest-only withdrawals so principal keeps earning, and future XLS-66 XRP lending from the same dashboard.",
+        a: "Banks offer 0.01\u20134.5% yield but you\u2019re an unsecured creditor \u2014 they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5\u20138% fixed APR with automatic compounding, and you own 100% \u2014 keys stay on your cold wallet, every action requires your signature. Our Recommendations Hub goes further: it analyzes your entire portfolio and surfaces the best on-chain staking, DeFi, and yield opportunities for each asset you hold \u2014 always prioritizing options where you keep your keys.",
+      },
+      {
+        q: "What is the Best in Class tab?",
+        a: "The Best in Class tab in your Recommendations Hub ranks the highest-yielding opportunities across all crypto assets, organized into four categories: On-Chain Staking (you keep your keys \u2014 e.g., ATOM at ~17.5%, DOT at ~13.5%, AVAX at ~8.75%), DeFi Yield (you keep your keys \u2014 e.g., Soil Credit+ at 8%, Jito SOL at 7.5%, Morpho USDC at 5.5%), Passive Earning (automatic yield like VET generating VTHO), and Exchange Earning (custodial, for comparison). Each entry links directly to the platform. If you already hold an asset, it\u2019s tagged with a 'You Hold This' badge so you can see what you\u2019re already set up to earn from.",
+      },
+      {
+        q: "What does 'on-chain' vs 'custodial' mean in recommendations?",
+        a: "Every yield recommendation on CryptoOwnBank is clearly tagged. On-chain (green globe icon) means you keep full ownership of your assets \u2014 your keys stay on your cold wallet, and the yield comes from a blockchain protocol you interact with directly. Custodial (amber building icon) means you hand your assets to a company (like an exchange) that holds them on your behalf \u2014 they control the keys. We prioritize on-chain options because 'not your keys, not your crypto.' Custodial options are shown for comparison but always labeled as tradeoffs.",
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription: monthly ($9/mo) for unlimited portfolio management, or annual ($79/yr) which adds complete tax reports. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
-      },
-      {
-        q: "Can CryptoOwnBank connect to other blockchains and protocols in the future?",
-        a: "Yes \u2014 and that\u2019s exactly the vision. CryptoOwnBank is built to be your personal on-chain control center \u2014 not just for XRPL today, but for any blockchain or smart contract that offers yield, lending, staking, or tokenized assets. Coming soon: native XRP lending, more XRPL protocols, and multi-chain support \u2014 all while keeping you in 100% control.",
+        a: "Free tier forever (1 exchange connection, 1 blockchain address, Soil vault access, and manual withdrawals). Premium Monthly ($9/mo) for unlimited exchanges, unlimited blockchain addresses, and full portfolio management. Premium Annual ($79/yr) adds complete tax reports with PDF and TurboTax export. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
         q: "Why should I join now?",
-        a: "Regulatory clarity is advancing, RLUSD is growing as the compliant stablecoin of choice, and institutional DeFi is expanding. Banks are still offering minimal yields. CryptoOwnBank lets you start earning real, fixed yield today while keeping full control of your assets \u2014 no waiting for traditional finance to catch up.",
+        a: "Regulatory clarity is advancing, RLUSD is growing as the compliant stablecoin of choice, and institutional DeFi is expanding. Banks are still offering minimal yields. CryptoOwnBank lets you start earning real, fixed yield today while keeping full control of your assets. Plus, our portfolio tracker now covers 24 blockchains and multiple exchanges \u2014 so you can see your entire crypto net worth in one place and act on the best yield opportunities immediately.",
       },
     ],
   },
@@ -36,15 +44,15 @@ const faqGroups = [
     items: [
       {
         q: "Why do I need a cold wallet to use CryptoOwnBank?",
-        a: "To keep you in full control. We are 100% non-custodial \u2014 your private keys never leave your Ledger, ELLIPAL, Arculus, SafePal, etc. The site only reads public data and builds transactions for you to sign. Without a cold wallet, there\u2019s no way to approve deposits or withdrawals.",
+        a: "For XRPL yield vaults (Soil deposits/withdrawals), you need a cold wallet to sign transactions \u2014 we are 100% non-custodial. Your private keys never leave your device. For portfolio tracking, you don\u2019t need a cold wallet at all \u2014 just add your public blockchain addresses or connect exchange API keys and we pull balances automatically.",
       },
       {
         q: "Is this a wallet? Do you hold my funds?",
-        a: "No \u2014 we are 100% non-custodial. We never hold, control, or have access to your funds or private keys. All actions (deposits, withdrawals) are signed directly from your own cold wallet. The dashboard is just a secure interface to view balances and interact with XRPL + Soil. Your keys stay on your Ledger or Xumm device at all times.",
+        a: "No \u2014 we are 100% non-custodial. We never hold, control, or have access to your funds or private keys. All vault actions (deposits, withdrawals) are signed directly from your own cold wallet. For portfolio tracking, we only read public on-chain data from your blockchain addresses. The dashboard is a secure interface to view balances, interact with XRPL + Soil, and see personalized yield recommendations across your entire portfolio.",
       },
       {
         q: "What wallets are supported?",
-        a: "For XRPL yield vaults, we support Xumm/Xaman (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). Both are cold wallet solutions that keep your private keys completely offline or on a secure device. For portfolio tracking, you connect exchange accounts via API keys. See our step-by-step Setup Guide at /setup-guide for detailed instructions.",
+        a: "For XRPL yield vaults, we support Xumm/Xaman (mobile app with QR code / deep link connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking across 24 blockchains, we support any cold wallet that has a public address \u2014 Ledger, ELLIPAL, SafePal, CypheRock, Arculus, and more. Just add your public address and we pull your balances. We also provide wallet-specific staking guides for each supported hardware wallet, so you can start earning on-chain yield with step-by-step instructions tailored to your exact device.",
       },
       {
         q: "How do I add my ELLIPAL wallet to CryptoOwnBank for portfolio tracking?",
