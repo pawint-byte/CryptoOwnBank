@@ -352,10 +352,8 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Pick an SR with high APR and 100% reward share (e.g. Binance Staking, TRONALLIANCE)" },
     ],
     ellipal: [
-      { text: "Open the ELLIPAL app on your phone → select your TRX wallet" },
-      { text: "Tap 'Freeze' to freeze your TRX for Energy or Bandwidth" },
-      { text: "Then tap 'Vote' to vote for a Super Representative — this is what earns the ~3-5% APY" },
-      { text: "ELLIPAL staking guide", link: "https://www.ellipal.com/pages/ellipal-staking" },
+      { text: "ELLIPAL does not support TRX staking (freeze/vote) — it is an air-gapped wallet with no DApp browser" },
+      { text: "To stake TRX, you would need to use TronLink wallet or connect a Ledger to TronScan", link: "https://tronscan.org/#/sr/votes" },
     ],
     safepal: [
       { text: "Open SafePal app → select your TRX wallet → tap 'DApp'" },
@@ -385,9 +383,8 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "You must vote during each governance period to earn the full reward" },
     ],
     ellipal: [
-      { text: "ELLIPAL supports Algorand — open the app, select your ALGO wallet" },
-      { text: "Use ELLIPAL's built-in DApp browser to visit the Algorand Governance portal", link: "https://governance.algorand.foundation" },
-      { text: "Commit your ALGO and vote during each governance period" },
+      { text: "ELLIPAL does not support ALGO governance — it is an air-gapped wallet with no DApp browser" },
+      { text: "To participate in Algorand Governance, use Pera Wallet instead", link: "https://perawallet.app" },
     ],
     safepal: [
       { text: "Open SafePal → select ALGO wallet → use DApp browser to join Algorand Governance", link: "https://governance.algorand.foundation" },
@@ -413,9 +410,9 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Or use Ledger Live's built-in staking to delegate ATOM directly" },
     ],
     ellipal: [
-      { text: "Open ELLIPAL app → select your ATOM wallet → tap 'Delegate'" },
-      { text: "Choose a validator with good uptime and commission rate" },
-      { text: "ELLIPAL Cosmos staking guide", link: "https://www.ellipal.com/pages/ellipal-staking" },
+      { text: "ELLIPAL natively supports ATOM staking — open the ELLIPAL app and select your ATOM wallet" },
+      { text: "Tap 'Stake' → choose a validator with good uptime and low commission" },
+      { text: "Min. deposit: 0.000001 ATOM · Estimated APY: ~10%", link: "https://www.ellipal.com/pages/ellipal-staking" },
     ],
     safepal: [
       { text: "Open SafePal → ATOM wallet → use DApp browser to connect to Keplr or Mintscan", link: "https://www.mintscan.io/cosmos/validators" },
@@ -469,7 +466,9 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Note: Ledger Earn nomination pools move DOT off your visible address — your DOT is still safe" },
     ],
     ellipal: [
-      { text: "ELLIPAL doesn't directly support DOT nomination — use Polkadot.js or Nova Wallet", link: "https://polkadot.js.org/apps/#/staking" },
+      { text: "ELLIPAL natively supports DOT staking — open the ELLIPAL app and select your DOT wallet" },
+      { text: "Tap 'Stake' → choose validators to nominate" },
+      { text: "Min. deposit: 120 DOT · Estimated APY: ~8.8%", link: "https://www.ellipal.com/pages/ellipal-staking" },
     ],
     safepal: [
       { text: "SafePal supports Polkadot — use the DApp browser to access Polkadot.js staking", link: "https://polkadot.js.org/apps/#/staking" },
@@ -494,8 +493,9 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Or connect Ledger to Yoroi or Eternl wallet for more stake pool choices", link: "https://pool.pm" },
     ],
     ellipal: [
-      { text: "Open ELLIPAL app → select ADA wallet → tap 'Delegate' to choose a stake pool" },
-      { text: "Browse stake pools at pool.pm", link: "https://pool.pm" },
+      { text: "ELLIPAL natively supports ADA staking — open the ELLIPAL app and select your ADA wallet" },
+      { text: "Tap 'Stake' → choose a stake pool to delegate to" },
+      { text: "Min. deposit: 4 ADA · Estimated APY: ~5%", link: "https://www.ellipal.com/pages/ellipal-staking" },
     ],
     safepal: [
       { text: "SafePal supports ADA — use the DApp browser or built-in staking to delegate" },
@@ -519,7 +519,8 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Your stETH on Ledger is already earning ~3.2% APY via Lido — no action needed", link: "https://lido.fi" },
     ],
     ellipal: [
-      { text: "Stake ETH via Lido — swap ETH for stETH which earns ~3.2% APY automatically", link: "https://lido.fi" },
+      { text: "ELLIPAL does not support ETH staking — it is an air-gapped wallet with no DApp browser" },
+      { text: "To stake ETH via Lido, use MetaMask or a Ledger connected to lido.fi", link: "https://lido.fi" },
     ],
     safepal: [
       { text: "Use SafePal's DApp browser to access Lido and swap ETH for stETH", link: "https://lido.fi" },
@@ -545,7 +546,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Your CRO is already staked via Ledger — earning validator delegation rewards" },
     ],
     ellipal: [
-      { text: "ELLIPAL supports Cronos — use the app to delegate CRO to a validator" },
+      { text: "ELLIPAL does not support CRO staking — use the Crypto.com DeFi Wallet or Keplr to delegate CRO", link: "https://crypto.com/defi-wallet" },
     ],
     safepal: [],
     cypherock: [],
