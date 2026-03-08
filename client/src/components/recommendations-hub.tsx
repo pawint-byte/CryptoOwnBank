@@ -115,10 +115,19 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
 
   for (const w of addresses) {
     const walletKey = w.id || w.address;
+    const hasLiquidCounterpart: Record<string, boolean> = {};
+    for (const b of w.balances || []) {
+      if (!isStakedEntry(b.assetSymbol)) {
+        hasLiquidCounterpart[normalizeSymbol(b.assetSymbol)] = true;
+      }
+    }
     for (const b of w.balances || []) {
       const sym = normalizeSymbol(b.assetSymbol);
       const isStaked = isStakedEntry(b.assetSymbol);
       const usd = parseFloat(b.usdValue) || 0;
+      if (isStaked && hasLiquidCounterpart[sym]) {
+        continue;
+      }
       const stakedInfo = walletStakedMap[walletKey]?.[sym];
       const stakedContext: StakedContext | undefined = !isStaked && stakedInfo
         ? { stakedUsdOnSameWallet: stakedInfo.usd, stakedBalanceOnSameWallet: stakedInfo.balance }

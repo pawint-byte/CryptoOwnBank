@@ -687,7 +687,8 @@ export function evaluateAsset(
     };
   }
 
-  if (usdValue < DUST_THRESHOLD_USD) {
+  const hasStakedCompanion = stakedContext && stakedContext.stakedUsdOnSameWallet > 0;
+  if (usdValue < DUST_THRESHOLD_USD && !hasStakedCompanion) {
     return {
       symbol, name: displayName, type: "no_action", title: "Dust Balance",
       description: `$${usdValue.toFixed(2)} on ${provider} is too small to act on — gas/withdrawal fees would exceed the value.`,
@@ -817,14 +818,15 @@ export function evaluateAsset(
       const stakedPct = Math.round((stakedContext.stakedUsdOnSameWallet / totalOnWallet) * 100);
       const liquidPct = 100 - stakedPct;
       const missed = usdValue * (bestSelfCustodyYield / 100);
+      const totalEarning = stakedContext.stakedUsdOnSameWallet * (bestSelfCustodyYield / 100);
       return {
         symbol, name: displayName, type: missed > 10 ? "stake_available" : "optimal",
-        title: missed > 10 ? "Partially Staked" : "Mostly Optimized",
+        title: missed > 10 ? "Partially Staked" : "Already Staking",
         description: missed > 10
-          ? `${stakedPct}% of your ${symbol} on ${provider} is staked and earning yield. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — staking it could earn ~$${missed.toFixed(0)}/year more.`
-          : `${stakedPct}% of your ${symbol} on ${provider} is staked. The liquid remainder ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is too small to generate meaningful additional yield.`,
+          ? `${stakedPct}% of your ${symbol} on ${provider} ($${stakedContext.stakedUsdOnSameWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is staked and earning ~$${totalEarning.toFixed(0)}/year. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — staking it could earn ~$${missed.toFixed(0)}/year more.`
+          : `${stakedPct}% of your ${symbol} on ${provider} is staked and earning ~$${totalEarning.toFixed(0)}/year (~${bestSelfCustodyYield.toFixed(1)}% APY). Total value: $${totalOnWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
         currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
-        bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue, missedAnnual: missed > 10 ? missed : 0,
+        bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue: totalOnWallet, missedAnnual: missed > 10 ? missed : 0,
         actionItems: missed > 10 && walletActions.length > 0
           ? walletActions
           : missed > 10 ? [
