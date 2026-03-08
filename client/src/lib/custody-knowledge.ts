@@ -87,10 +87,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     name: "XRP",
     stakeable: false,
     withdrawable: true,
-    defiAlternatives: [
-      { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Soil RLUSD Vault (Credit+)", defiApy: "8.0%", defiApyMid: 8.0, riskLevel: "Low", link: "https://soil.xyz" },
-    ],
-    warnings: ["XRPL does not support native staking", "Use Soil vaults for RLUSD yield on XRPL"],
+    defiAlternatives: [],
+    warnings: ["XRPL does not support native staking"],
     selfCustodyWallets: ["Ledger Nano X", "Xaman (XUMM)", "Ellipal Titan", "Arculus"],
   },
   ADA: {
