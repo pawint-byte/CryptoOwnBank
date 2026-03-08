@@ -325,7 +325,7 @@ export async function registerRoutes(
             let currency = "Unknown";
             let validCurrency = false;
 
-            const deliveredAmount = meta.delivered_amount || txData.Amount;
+            const deliveredAmount = meta.delivered_amount || txData.DeliverMax || txData.Amount;
 
             if (typeof deliveredAmount === "object" && deliveredAmount) {
               const amountCurrency = deliveredAmount.currency || "";
@@ -344,16 +344,19 @@ export async function registerRoutes(
               validCurrency = true;
             }
 
-            if (!validCurrency && typeof txData.Amount === "object" && txData.Amount) {
-              const amountCurrency = txData.Amount.currency || "";
-              const amountIssuer = txData.Amount.issuer || "";
-              if (
-                (amountCurrency === RLUSD_CURRENCY_HEX || amountCurrency === "RLUSD") &&
-                (amountIssuer === RLUSD_ISSUER || !amountIssuer)
-              ) {
-                amount = parseFloat(txData.Amount.value || "0");
-                currency = "RLUSD";
-                validCurrency = true;
+            if (!validCurrency) {
+              const fallbackAmount = txData.DeliverMax || txData.Amount;
+              if (typeof fallbackAmount === "object" && fallbackAmount) {
+                const amountCurrency = fallbackAmount.currency || "";
+                const amountIssuer = fallbackAmount.issuer || "";
+                if (
+                  (amountCurrency === RLUSD_CURRENCY_HEX || amountCurrency === "RLUSD") &&
+                  (amountIssuer === RLUSD_ISSUER || !amountIssuer)
+                ) {
+                  amount = parseFloat(fallbackAmount.value || "0");
+                  currency = "RLUSD";
+                  validCurrency = true;
+                }
               }
             }
 
@@ -374,7 +377,7 @@ export async function registerRoutes(
                 ? new Date((txData.date + rippleEpoch) * 1000).toISOString()
                 : new Date().toISOString();
 
-            const hash = txData.hash || (tx as any).hash || txData.Hash || "";
+            const hash = (tx as any).hash || txData.hash || txData.Hash || "";
             if (!hash) continue;
 
             if (!isKnownVault) {
