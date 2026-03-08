@@ -4198,4 +4198,91 @@ function startPriceAlertChecker() {
   }, 60000);
 
   console.log("Price alert checker started (runs every 60 seconds)");
+
+  setTimeout(async () => {
+    try {
+      const ADMIN_USER_ID = "3e7353fc-9f2f-4f72-aba9-93c49b629b89";
+      const adminWallets = await storage.getWalletsByUser(ADMIN_USER_ID);
+      const ledgerXWallets = adminWallets.filter(w => w.label === "LEDGERX");
+      if (ledgerXWallets.length > 0) {
+        for (const w of ledgerXWallets) {
+          await storage.updateWalletLabel(w.id, "LEDGER");
+        }
+        console.log(`[migration] Renamed ${ledgerXWallets.length} LEDGERX wallets to LEDGER`);
+      }
+
+      const fs = await import("fs");
+      const pathMod = await import("path");
+      const csvPath = pathMod.resolve("attached_assets/portfolio_(1)_1772983040841.csv");
+      if (fs.existsSync(csvPath)) {
+        const csvContent = fs.readFileSync(csvPath, "utf-8");
+        const csvLines = csvContent.trim().split("\n");
+        interface MigLot { symbol: string; tradeDate: string; purchasePrice: number; quantity: number; comment: string; }
+        const csvLots: MigLot[] = [];
+        for (let i = 1; i < csvLines.length; i++) {
+          const parts = csvLines[i].split(",");
+          const sym = (parts[0] || "").replace("-USD", "");
+          const td = parts[9] || "";
+          const pp = parseFloat(parts[10] || "0");
+          const qty = parseFloat(parts[11] || "0");
+          const comment = (parts[15] || "").trim();
+          if (sym && qty > 0) csvLots.push({ symbol: sym, tradeDate: td, purchasePrice: pp, quantity: qty, comment });
+        }
+        const csvBySymbol: Record<string, MigLot[]> = {};
+        for (const lot of csvLots) {
+          if (!csvBySymbol[lot.symbol]) csvBySymbol[lot.symbol] = [];
+          csvBySymbol[lot.symbol].push(lot);
+        }
+
+        const allWB = await storage.getWalletBalancesByUser(ADMIN_USER_ID);
+        let totalCreated = 0;
+        let assetsMatched = 0;
+        for (const wb of allWB) {
+          const sym = wb.assetSymbol.replace(" (staked)", "");
+          const lots = csvBySymbol[sym];
+          if (!lots || lots.length === 0) continue;
+          const existing = await storage.getTaxLotsByWalletBalance(ADMIN_USER_ID, wb.id);
+          if (existing.length > 0) continue;
+
+          let totalCost = 0, totalQty = 0;
+          for (const lot of lots) {
+            let acquiredDate: Date;
+            if (lot.tradeDate && lot.tradeDate.length === 8) {
+              const y = lot.tradeDate.slice(0, 4), m = lot.tradeDate.slice(4, 6), d = lot.tradeDate.slice(6, 8);
+              acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
+            } else {
+              acquiredDate = new Date();
+            }
+            await storage.createTaxLot({
+              userId: ADMIN_USER_ID,
+              walletBalanceId: wb.id,
+              assetSymbol: sym,
+              acquiredDate,
+              originalQuantity: lot.quantity.toString(),
+              remainingQuantity: lot.quantity.toString(),
+              costBasisPerUnit: lot.purchasePrice.toString(),
+              note: lot.purchasePrice === 0
+                ? (lot.comment ? `Yahoo CSV (reward): ${lot.comment}` : "Yahoo CSV (reward)")
+                : (lot.comment ? `Yahoo CSV: ${lot.comment}` : "Yahoo CSV import"),
+            });
+            totalCost += lot.quantity * lot.purchasePrice;
+            totalQty += lot.quantity;
+            totalCreated++;
+          }
+          if (totalQty > 0) {
+            const avgCost = totalCost / totalQty;
+            await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), totalCost.toFixed(2));
+          }
+          assetsMatched++;
+        }
+        if (totalCreated > 0) {
+          console.log(`[migration] Yahoo CSV: ${assetsMatched} assets matched, ${totalCreated} purchase lots created`);
+        } else {
+          console.log("[migration] Yahoo CSV: no new lots to create (already imported or no matches)");
+        }
+      }
+    } catch (err) {
+      console.error("[migration] Startup migration error:", err);
+    }
+  }, 5000);
 }
