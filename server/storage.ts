@@ -13,6 +13,9 @@ import {
   walletBalances,
   statementUploads,
   statementProducts,
+  marketCache,
+  emailConfig,
+  alertLog,
   type ApiCredential,
   type InsertApiCredential,
   type Account,
@@ -39,6 +42,9 @@ import {
   type InsertStatementUpload,
   type StatementProduct,
   type InsertStatementProduct,
+  type MarketCache,
+  type EmailConfig,
+  type AlertLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -140,6 +146,15 @@ export interface IStorage {
   createStatementProduct(product: InsertStatementProduct): Promise<StatementProduct>;
   getProductsByUpload(uploadId: string): Promise<StatementProduct[]>;
   getProductsByUser(userId: string): Promise<StatementProduct[]>;
+
+  getMarketCache(category: string, symbol: string): Promise<MarketCache | undefined>;
+  getAllMarketCacheByCategory(category: string): Promise<MarketCache[]>;
+  upsertMarketCache(category: string, symbol: string, data: any): Promise<MarketCache>;
+  getEmailConfigByUser(userId: string): Promise<EmailConfig | undefined>;
+  upsertEmailConfig(userId: string, data: { email: string; enabled?: boolean | null; alertTypes?: string | null; lastSentAt?: Date | null }): Promise<EmailConfig>;
+  getAllEmailConfigs(): Promise<EmailConfig[]>;
+  createAlertLog(data: { alertType: string; message: string; userId?: string | null }): Promise<AlertLog>;
+  getAlertLogsByUser(userId: string, limit: number): Promise<AlertLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -566,6 +581,60 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByUser(userId: string): Promise<StatementProduct[]> {
     return db.select().from(statementProducts).where(eq(statementProducts.userId, userId));
+  }
+
+  async getMarketCache(category: string, symbol: string): Promise<MarketCache | undefined> {
+    const [result] = await db.select().from(marketCache)
+      .where(and(eq(marketCache.category, category), eq(marketCache.symbol, symbol)));
+    return result;
+  }
+
+  async getAllMarketCacheByCategory(category: string): Promise<MarketCache[]> {
+    return db.select().from(marketCache).where(eq(marketCache.category, category));
+  }
+
+  async upsertMarketCache(category: string, symbol: string, data: any): Promise<MarketCache> {
+    const existing = await this.getMarketCache(category, symbol);
+    if (existing) {
+      const [result] = await db.update(marketCache)
+        .set({ data, updatedAt: new Date() })
+        .where(eq(marketCache.id, existing.id))
+        .returning();
+      return result;
+    }
+    const [result] = await db.insert(marketCache).values({ category, symbol, data }).returning();
+    return result;
+  }
+
+  async getEmailConfigByUser(userId: string): Promise<EmailConfig | undefined> {
+    const [result] = await db.select().from(emailConfig).where(eq(emailConfig.userId, userId));
+    return result;
+  }
+
+  async upsertEmailConfig(userId: string, data: { email: string; enabled?: boolean | null; alertTypes?: string | null; lastSentAt?: Date | null }): Promise<EmailConfig> {
+    const existing = await this.getEmailConfigByUser(userId);
+    if (existing) {
+      const [result] = await db.update(emailConfig)
+        .set(data)
+        .where(eq(emailConfig.id, existing.id))
+        .returning();
+      return result;
+    }
+    const [result] = await db.insert(emailConfig).values({ userId, email: data.email, enabled: data.enabled ?? true, alertTypes: data.alertTypes ?? "apy_change,new_opportunity,weekly_digest" }).returning();
+    return result;
+  }
+
+  async getAllEmailConfigs(): Promise<EmailConfig[]> {
+    return db.select().from(emailConfig).where(eq(emailConfig.enabled, true));
+  }
+
+  async createAlertLog(data: { alertType: string; message: string; userId?: string | null }): Promise<AlertLog> {
+    const [result] = await db.insert(alertLog).values(data).returning();
+    return result;
+  }
+
+  async getAlertLogsByUser(userId: string, limit: number): Promise<AlertLog[]> {
+    return db.select().from(alertLog).where(eq(alertLog.userId, userId)).orderBy(desc(alertLog.sentAt)).limit(limit);
   }
 }
 

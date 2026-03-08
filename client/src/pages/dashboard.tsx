@@ -5,6 +5,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PortfolioChart } from "@/components/portfolio-chart";
 import { AllocationChart } from "@/components/allocation-chart";
 import { TransactionsTable } from "@/components/transactions-table";
+import { RecommendationsHub } from "@/components/recommendations-hub";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -33,6 +34,37 @@ export default function Dashboard() {
   const { data, isLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
   });
+
+  const { data: walletsData } = useQuery<any[]>({
+    queryKey: ["/api/wallets/portfolio"],
+  });
+
+  const { data: portfolioData } = useQuery<any>({
+    queryKey: ["/api/portfolio"],
+  });
+
+  const walletAddresses = (walletsData || []).map((w: any) => ({
+    id: w.id,
+    chain: w.chain,
+    address: w.address,
+    label: w.label,
+    balances: (w.balances || []).map((b: any) => ({
+      assetSymbol: b.assetSymbol,
+      balance: b.balance,
+      usdValue: b.usdValue || "0",
+    })),
+  }));
+
+  const exchangeBalances = (portfolioData?.positions || [])
+    .filter((p: any) => !p.isWallet && parseFloat(p.quantity) > 0)
+    .map((p: any) => ({
+      provider: p.source || "Exchange",
+      asset: p.assetSymbol || "",
+      balance: parseFloat(p.quantity) || 0,
+      usdValue: p.currentValue || 0,
+    }));
+
+  const hasData = walletAddresses.length > 0 || exchangeBalances.length > 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -114,6 +146,13 @@ export default function Dashboard() {
           isLoading={isLoading}
         />
       </div>
+
+      {hasData && (
+        <RecommendationsHub
+          addresses={walletAddresses}
+          exchangeBalances={exchangeBalances}
+        />
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-3 sm:px-6">

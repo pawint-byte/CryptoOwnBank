@@ -3509,8 +3509,102 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/market-data/prices", isAuthenticated, async (_req: any, res) => {
+    try {
+      const { getCachedPrices } = await import("./services/market-data");
+      const prices = await getCachedPrices();
+      res.json(prices);
+    } catch (error) {
+      console.error("Market data prices error:", error);
+      res.status(500).json({ message: "Failed to fetch prices" });
+    }
+  });
+
+  app.get("/api/market-data/yields", isAuthenticated, async (_req: any, res) => {
+    try {
+      const { getCachedYields } = await import("./services/market-data");
+      const yields = await getCachedYields();
+      res.json(yields);
+    } catch (error) {
+      console.error("Market data yields error:", error);
+      res.status(500).json({ message: "Failed to fetch yields" });
+    }
+  });
+
+  app.post("/api/market-data/refresh", isAuthenticated, async (_req: any, res) => {
+    try {
+      const { refreshAllMarketData, getCachedPrices, getCachedYields } = await import("./services/market-data");
+      const { checkAndSendAlerts, sendWeeklyDigest } = await import("./services/email-service");
+      const oldPrices = await getCachedPrices();
+      const oldYields = await getCachedYields();
+      const result = await refreshAllMarketData();
+      const newPrices = await getCachedPrices();
+      const newYields = await getCachedYields();
+      await checkAndSendAlerts(newPrices, newYields, oldPrices, oldYields).catch(e => console.error("Alert check error:", e));
+      await sendWeeklyDigest(newPrices, newYields).catch(e => console.error("Weekly digest error:", e));
+      res.json({ message: "Market data refreshed", ...result });
+    } catch (error) {
+      console.error("Market data refresh error:", error);
+      res.status(500).json({ message: "Failed to refresh market data" });
+    }
+  });
+
+  app.get("/api/email-config", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { isEmailConfigured } = await import("./services/email-service");
+      const config = await storage.getEmailConfigByUser(userId);
+      res.json({ config: config || null, smtpConfigured: isEmailConfigured() });
+    } catch (error) {
+      console.error("Email config get error:", error);
+      res.status(500).json({ message: "Failed to get email config" });
+    }
+  });
+
+  app.post("/api/email-config", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { email, enabled, alertTypes } = req.body;
+      if (!email) return res.status(400).json({ message: "Email is required" });
+      const config = await storage.upsertEmailConfig(userId, { email, enabled, alertTypes });
+      res.json(config);
+    } catch (error) {
+      console.error("Email config save error:", error);
+      res.status(500).json({ message: "Failed to save email config" });
+    }
+  });
+
+  app.post("/api/email-config/test", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { sendTestEmail, isEmailConfigured } = await import("./services/email-service");
+      if (!isEmailConfigured()) {
+        return res.json({ sent: false, message: "SMTP not configured" });
+      }
+      const sent = await sendTestEmail(userId);
+      res.json({ sent, message: sent ? "Test email sent" : "Failed to send" });
+    } catch (error) {
+      console.error("Test email error:", error);
+      res.status(500).json({ message: "Failed to send test email" });
+    }
+  });
+
+  app.get("/api/alert-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const logs = await storage.getAlertLogsByUser(userId, 50);
+      res.json(logs);
+    } catch (error) {
+      console.error("Alert logs error:", error);
+      res.status(500).json({ message: "Failed to fetch alert logs" });
+    }
+  });
+
   startPriceAlertChecker();
   seedPriceCache();
+
+  const { startMarketDataScheduler } = await import("./services/market-data");
+  startMarketDataScheduler(2);
 
   return httpServer;
 }

@@ -335,15 +335,19 @@ export const marketCache = pgTable("market_cache", {
 
 export const emailConfig = pgTable("email_config", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
   email: text("email").notNull(),
   enabled: boolean("enabled").default(true),
   alertTypes: text("alert_types").default("apy_change,new_opportunity,weekly_digest"),
   lastSentAt: timestamp("last_sent_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_email_config_user").on(table.userId),
+]);
 
 export const alertLog = pgTable("alert_log", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id"),
   alertType: text("alert_type").notNull(),
   message: text("message").notNull(),
   sentAt: timestamp("sent_at").defaultNow(),

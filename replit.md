@@ -93,6 +93,20 @@ Preferred communication style: Simple, everyday language.
 
 ### Email Service
 - Resend (via Replit connector)
+- Nodemailer (for market data alerts, optional SMTP config)
+
+### Market Data
+- CoinGecko API (free tier, 27 tracked assets) — prices + 24h change
+- DefiLlama Yields API — DeFi yield data from known protocols (Lido, Aave, Jito, Benqi, etc.)
+- Cached in `market_cache` DB table, refreshed every 2 hours via scheduler
+- Services: `server/services/market-data.ts`, `server/services/email-service.ts`
+
+### Recommendations Hub
+- Frontend component: `client/src/components/recommendations-hub.tsx`
+- Custody knowledge base: `client/src/lib/custody-knowledge.ts`
+- 6-tab interface: Overview (prices + summary), By Asset (consolidated view), Move Off Exchange, Staking, DeFi vs TradFi, Alerts
+- Placed on Dashboard between charts and transactions
+- DB tables: `market_cache`, `email_config`, `alert_log`
 
 ### Analytics
 - Google Analytics 4 (GA4)
