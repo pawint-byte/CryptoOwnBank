@@ -989,6 +989,11 @@ export async function getCasperBalance(address: string): Promise<ChainBalance[]>
 export async function getCronosBalance(address: string): Promise<ChainBalance[]> {
   const balances: ChainBalance[] = [];
 
+  if (!address.startsWith("cro1") && !address.startsWith("0x")) {
+    console.log(`Cronos: skipping non-Cronos address ${address.slice(0, 12)}...`);
+    return [];
+  }
+
   try {
     let evmAddress = address;
     if (address.startsWith("cro1")) {

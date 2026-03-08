@@ -11,6 +11,33 @@ import { eq } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
 
+function detectChainMismatch(chain: string, address: string): string | null {
+  const a = address.trim();
+  const patterns: Record<string, (addr: string) => boolean> = {
+    cronos: (addr) => addr.startsWith("cro1") || addr.startsWith("0x"),
+    ethereum: (addr) => addr.startsWith("0x") && addr.length === 42,
+    bitcoin: (addr) => /^(1|3|bc1)[a-zA-Z0-9]{25,}$/.test(addr),
+    xrpl: (addr) => addr.startsWith("r") && addr.length >= 25 && addr.length <= 35,
+    solana: (addr) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr) && !addr.startsWith("0x"),
+    tron: (addr) => addr.startsWith("T") && addr.length === 34,
+    algorand: (addr) => addr.length === 58 && /^[A-Z2-7]+$/.test(addr),
+    cosmos: (addr) => addr.startsWith("cosmos1"),
+    hedera: (addr) => /^0\.0\.\d+$/.test(addr),
+    polkadot: (addr) => /^[1-9A-HJ-NP-Za-km-z]{46,48}$/.test(addr),
+    stellar: (addr) => addr.startsWith("G") && addr.length === 56,
+  };
+  const validator = patterns[chain];
+  if (validator && !validator(a)) {
+    for (const [otherChain, otherValidator] of Object.entries(patterns)) {
+      if (otherChain !== chain && otherValidator(a)) {
+        return `Address looks like ${otherChain}, not ${chain}`;
+      }
+    }
+    return `Address format doesn't match ${chain}`;
+  }
+  return null;
+}
+
 const SOIL_VAULT_ADDRESSES = [
   "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX",
   "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8",
@@ -2484,7 +2511,8 @@ export async function registerRoutes(
       const walletsWithBalances = await Promise.all(
         userWallets.map(async (w) => {
           const balances = await storage.getWalletBalances(w.id);
-          return { ...w, balances };
+          const mismatch = detectChainMismatch(w.chain, w.address);
+          return { ...w, balances, chainMismatch: mismatch || undefined };
         })
       );
 
@@ -2598,6 +2626,7 @@ export async function registerRoutes(
       }
 
       const chain = wallet.chain as any;
+      const chainMismatch = detectChainMismatch(chain, wallet.address);
       let balances: Awaited<ReturnType<typeof fetchChainBalances>> = [];
       let fetchError = false;
       try {
@@ -2608,7 +2637,7 @@ export async function registerRoutes(
       }
 
       if (fetchError || balances.length === 0) {
-        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError})`);
+        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (API returned ${balances.length} results, error=${fetchError}${chainMismatch ? ', CHAIN MISMATCH: ' + chainMismatch : ''})`);
         await storage.updateWalletSyncTime(wallet.id);
       } else {
         const existingBalances = await storage.getWalletBalances(wallet.id);
@@ -2730,7 +2759,7 @@ export async function registerRoutes(
 
       const updatedWallet = await storage.getWallet(wallet.id);
       const updatedBalances = await storage.getWalletBalances(wallet.id);
-      res.json({ ...updatedWallet, balances: updatedBalances, newTransactions });
+      res.json({ ...updatedWallet, balances: updatedBalances, newTransactions, chainMismatch: chainMismatch || undefined });
     } catch (error) {
       console.error("Sync wallet error:", error);
       res.status(500).json({ message: "Failed to sync wallet" });

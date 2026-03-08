@@ -77,6 +77,7 @@ import {
   X,
   Star,
   Info,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
@@ -423,7 +424,9 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       const txCount = data?.newTransactions || 0;
-      if (data?.skipped) {
+      if (data?.chainMismatch) {
+        toast({ title: "Address Mismatch", description: data.chainMismatch + ". Edit this wallet to select the correct chain.", variant: "destructive" });
+      } else if (data?.skipped) {
         toast({ title: "Already up to date — synced less than 2 min ago" });
       } else if (txCount > 0) {
         toast({ title: `Wallet synced — ${txCount} new transaction${txCount > 1 ? "s" : ""} imported` });
@@ -1028,9 +1031,19 @@ export default function Wallets() {
                       )}
                       {w.balances.length === 0 && (
                         <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground">
-                            No balances found. Try syncing this wallet.
-                          </p>
+                          {(w as any).chainMismatch ? (
+                            <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+                              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-medium text-destructive">{(w as any).chainMismatch}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Edit this wallet to select the correct blockchain.</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No balances found. Try syncing this wallet.
+                            </p>
+                          )}
                         </CardContent>
                       )}
                     </Card>
