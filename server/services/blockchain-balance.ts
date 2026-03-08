@@ -1345,8 +1345,17 @@ export async function getVergeBalance(address: string): Promise<ChainBalance[]> 
       return parseFloat(text);
     },
     async () => {
-      const data = await fetchJson(`https://verge-blockchain.info/api/getaddress/${address}`);
-      return parseFloat(data?.balance || "0");
+      const data = await fetchJson(`https://verge-blockchain.info/ext/getbalance/${address}`);
+      if (typeof data === "number") return data;
+      if (typeof data === "string") return parseFloat(data);
+      throw new Error("Unexpected response");
+    },
+    async () => {
+      const data = await fetchJson(`https://api.blockchair.com/verge/dashboards/address/${address}`);
+      if (!data?.data?.[address]) throw new Error("No data from Blockchair");
+      const addrData = data.data[address].address;
+      const satoshis = addrData?.balance || 0;
+      return satoshis / 1e8;
     },
   ];
 
