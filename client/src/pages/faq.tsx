@@ -208,7 +208,7 @@ const faqGroups = [
       },
       {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
-        a: "Currently focused on XRPL-native assets (XRP, RLUSD, Soil positions). You can also connect exchange accounts (Coinbase, Kraken, Binance) to track your full crypto portfolio \u2014 Bitcoin, Ethereum, altcoins, and more. Future updates will add multi-chain support so you can manage more from one dashboard \u2014 still signing from your cold wallet.",
+        a: "Absolutely \u2014 CryptoOwnBank now tracks 24 blockchains. Add your Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, HBAR, VeChain, and many more wallet addresses to see all your holdings in one dashboard. Connect exchange accounts (Coinbase, Kraken, Binance, etc.) to track exchange-held crypto too. Our Recommendations Hub analyzes every asset and shows you the best staking, DeFi, and yield opportunities \u2014 with clear on-chain vs custodial labels. XRPL yield vaults (Soil) are the active earning feature; portfolio tracking and recommendations work across all supported chains.",
       },
     ],
   },
@@ -217,11 +217,11 @@ const faqGroups = [
     items: [
       {
         q: "What's included in the free plan?",
-        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 cold wallet, basic dashboard, yield calculator, 3 price alerts, and 30 days of transaction history. Enough to get started and see the value.",
+        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 blockchain address, basic dashboard with the Recommendations Hub (including Best in Class, on-chain vs custodial recommendations, and wallet-specific staking guides), yield calculator, 3 price alerts, and 30 days of transaction history. Enough to get started and see the value.",
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited cold wallets, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, and auto-withdrawal from Soil vaults. Choose monthly ($9/mo) for portfolio management, or go annual ($79/yr) to also unlock complete tax reports with PDF and TurboTax export.",
+        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, and auto-withdrawal from Soil vaults. Choose monthly ($9/mo) for portfolio management, or go annual ($79/yr) to also unlock complete tax reports with PDF and TurboTax export.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -229,7 +229,7 @@ const faqGroups = [
       },
       {
         q: "Why should I upgrade to Premium?",
-        a: "If your crypto is spread across multiple exchanges, wallets, and DeFi protocols, Premium gives you one cockpit to see everything. Instead of logging into Binance, Coinbase, Ledger Live, and Yahoo Finance separately, you see your entire portfolio, tax liability, and yield earnings in a single dashboard.",
+        a: "If your crypto is spread across multiple exchanges, wallets, and DeFi protocols, Premium gives you one cockpit to see everything. Instead of logging into Binance, Coinbase, Ledger Live, and Yahoo Finance separately, you see your entire portfolio across 24 blockchains, personalized yield recommendations with on-chain vs custodial clarity, tax liability, and yield earnings in a single dashboard. The Recommendations Hub shows you exactly how much yield you\u2019re missing and which on-chain opportunities match the assets you already hold.",
       },
       {
         q: "Can I cancel Premium anytime?",
@@ -258,6 +258,35 @@ const faqGroups = [
       {
         q: "What is XLS-66 Lending?",
         a: "XLS-66 is a proposed XRPL amendment for native on-ledger lending. When it goes live (expected Q2 2026), OwnBank will integrate it so you can lend directly on the XRPL without any intermediary. Premium members get early access.",
+      },
+    ],
+  },
+  {
+    heading: "Recommendations & Yield Optimization",
+    items: [
+      {
+        q: "What is the Recommendations Hub?",
+        a: "The Recommendations Hub is your personalized yield optimization center. It analyzes every asset in your portfolio \u2014 across all connected exchanges and blockchain wallets \u2014 and tells you exactly what you could be earning. It includes six tabs: Optimize (action items sorted by potential yield), By Asset (consolidated view of each asset across all wallets/exchanges), Best in Class (top yields ranked across all crypto), Staking (on-chain staking opportunities with wallet-specific guides), DeFi vs TradFi (side-by-side comparison of DeFi yields vs bank/traditional rates), and Prices (live market data). Every recommendation is tagged as on-chain or custodial so you always know who controls your keys.",
+      },
+      {
+        q: "How do the on-chain vs custodial badges work?",
+        a: "Every yield recommendation displays a custody badge. A green globe icon means the opportunity is on-chain \u2014 you interact directly with a blockchain protocol and keep full ownership of your assets. An amber building icon means the opportunity is custodial \u2014 a company (typically an exchange) holds your assets on your behalf. Each badge also shows which blockchain the opportunity runs on (e.g., Ethereum, Cosmos, XRPL). We always prioritize showing on-chain options first, because your keys = your crypto.",
+      },
+      {
+        q: "What are the wallet-specific staking guides?",
+        a: "For assets that support on-chain staking (like TRX, ALGO, ATOM, HBAR, DOT, ADA, ETH, CRO), we provide step-by-step instructions tailored to your exact cold wallet hardware. Whether you use a Ledger, ELLIPAL, SafePal, CypheRock, or Arculus, the guide walks you through exactly how to stake from that specific device \u2014 which app to open, which buttons to press, and how to confirm. No more searching YouTube or Reddit for instructions.",
+      },
+      {
+        q: "Why does CryptoOwnBank recommend spreading assets across multiple wallets?",
+        a: "Spreading your crypto across multiple cold wallets is a risk mitigation strategy \u2014 similar to not keeping all your cash in one bank. If one device is lost, damaged, or compromised, only a portion of your assets is affected. CryptoOwnBank never recommends consolidating into a single wallet. Each wallet gets its own set of staking instructions and yield recommendations.",
+      },
+      {
+        q: "What do the special token statuses mean (Already Earning, Staked Position, Generated Token)?",
+        a: "Some tokens have special statuses that mean you\u2019re already earning or in an optimal position: 'Already Earning' (e.g., stETH via Lido) means the token itself is a yield-bearing wrapper \u2014 you\u2019re earning just by holding it. 'Staked Position' (e.g., HBARX) means this token represents an active staking position. 'Generated Token' (e.g., VTHO from VeChain) means this token is passively generated by holding another asset. 'Staking via [Platform]' (e.g., HBAR on Stader) means the wallet is already staking through a recognized provider. No further action needed for any of these.",
+      },
+      {
+        q: "How does 'By Asset' consolidation work?",
+        a: "The By Asset tab groups the same asset across all your wallets and exchanges into one view. For example, if you hold XRP on a Ledger, ELLIPAL, CypheRock, SafePal, Arculus, and Coinbase, it shows your total XRP balance, total USD value, and breaks down exactly how much is in each location. This helps you see your true exposure to each asset without logging into multiple apps.",
       },
     ],
   },
@@ -333,7 +362,7 @@ export default function FAQ() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div>
         <h1 className="text-3xl font-bold" data-testid="faq-title">Frequently Asked Questions</h1>
-        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank, RLUSD vaults, and earning yield.</p>
+        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>
       </div>
       {faqGroups.map((group, groupIndex) => (
         <div key={groupIndex} className="space-y-1">
