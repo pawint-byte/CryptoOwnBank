@@ -858,13 +858,34 @@ export async function getTronBalance(address: string): Promise<ChainBalance[]> {
     const account = data.data?.[0];
     if (!account) return [];
 
-    const trxBalance = (account.balance || 0) / 1e6;
-    if (trxBalance > 0) {
+    let trxTotal = (account.balance || 0) / 1e6;
+
+    if (account.frozen) {
+      for (const f of account.frozen) {
+        trxTotal += (f.frozen_balance || 0) / 1e6;
+      }
+    }
+
+    if (account.account_resource?.frozen_balance_for_energy) {
+      trxTotal += (account.account_resource.frozen_balance_for_energy.frozen_balance || 0) / 1e6;
+    }
+
+    if (account.frozenV2) {
+      for (const f of account.frozenV2) {
+        trxTotal += (f.amount || 0) / 1e6;
+      }
+    }
+
+    if (account.delegated_frozen_balance_for_bandwidth) {
+      trxTotal += (account.delegated_frozen_balance_for_bandwidth || 0) / 1e6;
+    }
+
+    if (trxTotal > 0) {
       const prices = await getPrices(["TRX"]);
       balances.push({
         symbol: "TRX",
-        balance: trxBalance,
-        usdValue: trxBalance * (prices.TRX || 0),
+        balance: trxTotal,
+        usdValue: trxTotal * (prices.TRX || 0),
       });
     }
 

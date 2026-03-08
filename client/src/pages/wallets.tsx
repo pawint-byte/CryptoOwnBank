@@ -1428,9 +1428,23 @@ export default function Wallets() {
                       )}
                       {w.balances.length === 0 && (
                         <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground">
-                            No balances found. Try syncing this wallet.
-                          </p>
+                          {["polkadot", "cosmos", "tron", "cronos", "algorand"].includes(w.chain) ? (
+                            <div className="space-y-2">
+                              <p className="text-sm text-muted-foreground">
+                                No balances found. Try syncing this wallet.
+                              </p>
+                              <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-md p-2">
+                                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                <span>
+                                  If your assets are staked through a platform like Ledger Earn or a nomination pool, they may have been moved to a pool address. On-chain tracking only sees balances at your address — staked assets held by pools won't appear here.
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No balances found. Try syncing this wallet.
+                            </p>
+                          )}
                         </CardContent>
                       )}
                     </Card>
