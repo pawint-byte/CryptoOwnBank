@@ -378,29 +378,31 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
   },
   ALGO: {
     ledger: [
-      { text: "Connect your Ledger to Pera Wallet (perawallet.app) — it supports Ledger hardware wallets", link: "https://perawallet.app" },
-      { text: "Once connected, go to Algorand Governance portal and commit your ALGO for the current period", link: "https://governance.algorand.foundation" },
-      { text: "You must vote during each governance period to earn the full reward" },
+      { text: "Open Pera Wallet on your phone (paired with your Ledger) → tap on your ALGO account", link: "https://perawallet.app" },
+      { text: "Tap 'Staking' inside Pera → select a staking option or Governance period" },
+      { text: "Pera will build the transaction and ask for Ledger approval — confirm on your Ledger device" },
+      { text: "Your ALGO is sent to the staking/governance contract — this is normal and expected" },
+      { text: "For Governance: you must also vote during each governance period to earn the full reward", link: "https://governance.algorand.foundation" },
     ],
     ellipal: [
-      { text: "ELLIPAL does not support ALGO governance — it is an air-gapped wallet with no DApp browser" },
-      { text: "To participate in Algorand Governance, use Pera Wallet instead", link: "https://perawallet.app" },
+      { text: "ELLIPAL does not support ALGO staking — it is an air-gapped wallet with no DApp browser" },
+      { text: "To stake ALGO, use Pera Wallet instead", link: "https://perawallet.app" },
     ],
     safepal: [
       { text: "Open SafePal → select ALGO wallet → use DApp browser to join Algorand Governance", link: "https://governance.algorand.foundation" },
     ],
     cypherock: [
-      { text: "CypheRock does not directly support ALGO governance — consider using Pera Wallet for governance participation", link: "https://perawallet.app" },
+      { text: "CypheRock does not directly support ALGO staking — use Pera Wallet for staking or governance", link: "https://perawallet.app" },
     ],
     arculus: [
-      { text: "Arculus does not directly support ALGO governance — consider using Pera Wallet", link: "https://perawallet.app" },
+      { text: "Arculus does not directly support ALGO staking — use Pera Wallet", link: "https://perawallet.app" },
     ],
     tronlink: [],
     xaman: [],
     metamask: [],
     stader: [],
     unknown: [
-      { text: "Join Algorand Governance to earn 5-8% APY on your ALGO", link: "https://governance.algorand.foundation" },
+      { text: "Use Pera Wallet to stake your ALGO or join Algorand Governance for 5-8% APY", link: "https://perawallet.app" },
     ],
   },
   ATOM: {
