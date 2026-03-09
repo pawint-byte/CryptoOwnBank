@@ -414,9 +414,16 @@ export default function SettingsPage() {
 
                 {pendingPayment && pendingPayment.status === "pending" ? (
                   <div className="space-y-4" data-testid="crypto-payment-pending">
-                    <div className="flex items-center gap-2 text-amber-600">
-                      <Clock className="h-4 w-4 animate-pulse" />
-                      <span className="text-sm font-medium">Awaiting payment...</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-amber-600">
+                        <Clock className="h-4 w-4 animate-pulse" />
+                        <span className="text-sm font-medium">Awaiting payment...</span>
+                      </div>
+                      {pendingPayment.referenceCode && (
+                        <Badge variant="outline" className="font-mono text-xs" data-testid="text-reference-code">
+                          Ref: {pendingPayment.referenceCode}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="bg-muted/50 rounded-lg p-4 space-y-3">
@@ -486,11 +493,68 @@ export default function SettingsPage() {
                         </div>
                       )}
 
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-1.5">
+                        <p className="text-xs font-medium text-blue-800 dark:text-blue-200">How we match your payment</p>
+                        {pendingPayment.chain === "xrp" ? (
+                          <p className="text-xs text-blue-700 dark:text-blue-300">
+                            Your payment is identified by the <strong>Destination Tag</strong> above. Include it when sending — without it, we cannot match your payment to your account.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-blue-700 dark:text-blue-300">
+                            Your payment is matched by the <strong>exact amount</strong> shown above (the last few decimal places are unique to your order). Send the precise amount to ensure automatic verification.
+                          </p>
+                        )}
+                      </div>
+
                       <div className="flex justify-between items-center text-xs text-muted-foreground">
                         <span>Plan: {pendingPayment.plan === "yearly" ? "Annual" : "Monthly"}</span>
                         <span>Expires: {new Date(pendingPayment.expiresAt).toLocaleTimeString()}</span>
                       </div>
                     </div>
+
+                    {(() => {
+                      const chain = pendingPayment.chain?.toLowerCase();
+                      const swapLinks: Record<string, { name: string; url: string }[]> = {
+                        ethereum: [
+                          { name: "Uniswap", url: "https://app.uniswap.org/swap" },
+                          { name: "1inch", url: "https://app.1inch.io" },
+                        ],
+                        solana: [
+                          { name: "Jupiter", url: "https://jup.ag/swap" },
+                          { name: "Raydium", url: "https://raydium.io/swap" },
+                        ],
+                        xrp: [
+                          { name: "XRPL DEX", url: "https://sologenic.org/trade" },
+                        ],
+                        bitcoin: [
+                          { name: "Changelly", url: "https://changelly.com" },
+                          { name: "ChangeNOW", url: "https://changenow.io" },
+                        ],
+                      };
+                      const links = swapLinks[chain] || [];
+                      if (links.length === 0) return null;
+                      return (
+                        <div className="text-xs text-muted-foreground" data-testid="swap-links">
+                          <span>Need to convert first? Swap on </span>
+                          {links.map((link, i) => (
+                            <span key={link.name}>
+                              {i > 0 && " or "}
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-amber-600 hover:text-amber-700 underline inline-flex items-center gap-0.5"
+                                data-testid={`link-swap-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
+                              >
+                                {link.name}
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                            </span>
+                          ))}
+                          <span>, then send {pendingPayment.expectedAsset} here.</span>
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-3 w-3 animate-spin" />

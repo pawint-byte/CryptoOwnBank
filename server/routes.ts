@@ -2488,8 +2488,11 @@ export async function registerRoutes(
         expiresAt,
       });
 
+      const refCode = `COB-${payment.id.toString().padStart(4, "0")}`;
+
       res.json({
         id: payment.id,
+        referenceCode: refCode,
         toAddress: payment.toAddress,
         expectedAmount: payment.expectedAmount,
         expectedAsset: payment.expectedAsset,
