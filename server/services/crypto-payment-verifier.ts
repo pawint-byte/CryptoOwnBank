@@ -119,7 +119,8 @@ async function checkRlusdPayment(payment: CryptoPayment): Promise<CheckResult> {
       const delivered = meta.delivered_amount;
       if (!delivered || typeof delivered === "string") continue;
 
-      if (delivered.currency !== "524C555344" && delivered.currency !== "RLUSD") continue;
+      const curr = delivered.currency;
+      if (curr !== "RLUSD" && curr !== "524C555344" && !curr.startsWith("524C555344")) continue;
       if (delivered.issuer !== RLUSD_ISSUER) continue;
 
       const deliveredAmount = parseFloat(delivered.value);
@@ -484,24 +485,9 @@ async function checkTronPayment(payment: CryptoPayment): Promise<CheckResult> {
       const txTime = (tx.block_timestamp || 0) / 1000;
       if (!afterCreation(txTime, payment)) continue;
 
-      const contract = tx.raw_data?.contract?.[0];
-      if (!contract || contract.type !== "TransferContract") continue;
-      const val = contract.parameter?.value;
+      if (tx.raw_data?.contract?.[0]?.type !== "TransferContract") continue;
+      const val = tx.raw_data.contract[0].parameter?.value;
       if (!val) continue;
-
-      const toHex = val.to_address;
-      let toAddr = payment.toAddress;
-      try {
-        const addrRes = await safeFetch(`https://api.trongrid.io/wallet/validateaddress`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address: toHex }),
-        });
-        if (addrRes?.ok) {
-          const addrData = await addrRes.json();
-          toAddr = addrData.result ? payment.toAddress : "";
-        }
-      } catch {}
 
       const trxAmount = (val.amount || 0) / 1e6;
       if (amountMatch(trxAmount, parseFloat(payment.expectedAmount), 0.001)) {

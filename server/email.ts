@@ -45,13 +45,14 @@ async function getResendClient() {
   };
 }
 
-const FROM_EMAIL = "notification@pawint-app.com";
+const FALLBACK_FROM = "CryptoOwnBank <notification@pawint-app.com>";
 
 export async function sendEmail(to: string, subject: string, html: string, attachments?: { filename: string; content: Buffer }[]) {
   try {
-    const { client } = await getResendClient();
+    const { client, fromEmail } = await getResendClient();
+    const from = fromEmail ? `CryptoOwnBank <${fromEmail}>` : FALLBACK_FROM;
     const emailData: any = {
-      from: FROM_EMAIL,
+      from,
       to,
       subject,
       html,

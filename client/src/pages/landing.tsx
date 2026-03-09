@@ -488,6 +488,10 @@ const faqGroups = [
         a: "Free: 1 exchange connection, 1 blockchain address (across 24 chains), 1 price alert, Soil vault access, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, and 7 days of transaction history. Premium Monthly ($9/mo): unlimited exchanges and blockchain addresses across all 24 chains, full Recommendations Hub with Best in Class rankings, personalized staking guides for your exact hardware wallet, DeFi vs TradFi comparisons, 'You Hold This' badges, portfolio search/filter/sort, unlimited price alerts, CSV import, auto-withdraw interest, Statement Insights, and full transaction history. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
       },
       {
+        q: "How do I pay for Premium?",
+        a: "We accept crypto payments on 22 blockchains — RLUSD, XRP, Bitcoin, Ethereum, Solana, Dogecoin, Litecoin, Cardano, Avalanche, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, Cronos, XDC, DigiByte, and Verge. Crypto is our preferred payment method — just select your chain, send the exact amount to the address shown, and your account is upgraded automatically within 60 seconds. For XRP and RLUSD payments, include the Destination Tag we provide so we can match your payment. For all other chains, we match by the exact amount (the last few decimal places are unique to your order). Need to swap first? We show links to the best DEX for each chain (Uniswap, Jupiter, Osmosis, etc.). Credit/debit card via Stripe is also available as a fallback.",
+      },
+      {
         q: "How do Price Alerts work?",
         a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users get 1 active alert; Premium users get unlimited alerts.",
       },
@@ -1103,7 +1107,7 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$9</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $79/yr — Save $29 · Pay with crypto or card</p>
+                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $79/yr — Save $29 · Pay with crypto (22 chains) or card</p>
                   <ul className="space-y-3 mb-4">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
