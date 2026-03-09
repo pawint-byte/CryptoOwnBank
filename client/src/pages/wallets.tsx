@@ -1206,7 +1206,7 @@ export default function Wallets() {
       {walletAtLimit && (
         <UpgradePrompt
           compact
-          feature="Free users can track 1 cold wallet. Upgrade to Premium for unlimited wallet tracking."
+          feature="Free users can track 1 blockchain address. Upgrade to Premium for unlimited addresses across all 24 blockchains."
         />
       )}
 
