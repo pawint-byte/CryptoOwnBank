@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -62,6 +62,11 @@ export default function Portfolio() {
   const { data: dbPositions = [] } = useQuery<PositionWithMarket[]>({
     queryKey: ["/api/positions"],
   });
+
+  const { data: subLimits } = useQuery<{ tier: string; portfolioSearch: boolean }>({
+    queryKey: ["/api/subscription/limits"],
+  });
+  const canSearch = subLimits?.portfolioSearch !== false;
 
   const allPositions = useMemo(() => {
     return data?.positions || dbPositions;
@@ -484,48 +489,56 @@ export default function Portfolio() {
                   By Category
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search assets..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-9 w-40 pl-8 text-sm"
-                    data-testid="input-search-portfolio"
-                  />
+              {canSearch ? (
+                <div className="flex flex-wrap gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search assets..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-9 w-40 pl-8 text-sm"
+                      data-testid="input-search-portfolio"
+                    />
+                  </div>
+                  {viewMode === "holdings" && (
+                    <>
+                      <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                        <SelectTrigger className="h-9 w-36 text-sm" data-testid="select-source-filter">
+                          <Filter className="h-3.5 w-3.5 mr-1.5" />
+                          <SelectValue placeholder="Source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Sources</SelectItem>
+                          <SelectItem value="imports">Imports Only</SelectItem>
+                          <SelectItem value="exchanges">Exchanges Only</SelectItem>
+                          <SelectItem value="wallets">Wallets Only</SelectItem>
+                          {uniqueSources.map(source => (
+                            <SelectItem key={source} value={source}>{source}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="h-9 w-32 text-sm" data-testid="select-sort-by">
+                          <SelectValue placeholder="Sort" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="name">By Name</SelectItem>
+                          <SelectItem value="value">By Value</SelectItem>
+                          <SelectItem value="gainloss">By Gain/Loss</SelectItem>
+                          <SelectItem value="quantity">By Quantity</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
                 </div>
-                {viewMode === "holdings" && (
-                  <>
-                    <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                      <SelectTrigger className="h-9 w-36 text-sm" data-testid="select-source-filter">
-                        <Filter className="h-3.5 w-3.5 mr-1.5" />
-                        <SelectValue placeholder="Source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sources</SelectItem>
-                        <SelectItem value="imports">Imports Only</SelectItem>
-                        <SelectItem value="exchanges">Exchanges Only</SelectItem>
-                        <SelectItem value="wallets">Wallets Only</SelectItem>
-                        {uniqueSources.map(source => (
-                          <SelectItem key={source} value={source}>{source}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="h-9 w-32 text-sm" data-testid="select-sort-by">
-                        <SelectValue placeholder="Sort" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="name">By Name</SelectItem>
-                        <SelectItem value="value">By Value</SelectItem>
-                        <SelectItem value="gainloss">By Gain/Loss</SelectItem>
-                        <SelectItem value="quantity">By Quantity</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
-              </div>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
+                  <Lock className="h-3.5 w-3.5 text-amber-600" />
+                  <span className="text-xs text-amber-700 dark:text-amber-300">Search, filter & sort are Premium features</span>
+                  <a href="/settings" className="text-xs font-medium text-amber-600 hover:underline" data-testid="link-upgrade-portfolio">Upgrade</a>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>

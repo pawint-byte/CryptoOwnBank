@@ -146,7 +146,7 @@ const features = [
     icon: Bell,
     title: "Price Alerts",
     description:
-      "Set alerts for any crypto — get an email when XRP hits $3, BTC breaks $100K, or any price you choose. Free users get 3 alerts, Premium gets unlimited.",
+      "Set alerts for any crypto — get an email when XRP hits $3, BTC breaks $100K, or any price you choose. Free users get 1 alert, Premium gets unlimited.",
   },
 ];
 
@@ -247,18 +247,18 @@ const freeTierFeatures = [
   "Connect 1 exchange (Coinbase, Kraken, Crypto.com, etc.)",
   "Track 1 blockchain address across 24 blockchains",
   "Soil vault access (deposit + manual withdraw)",
-  "Recommendations Hub with Best in Class yields & on-chain vs custodial badges",
-  "Wallet-specific staking guides (Ledger, ELLIPAL, SafePal, CypheRock, Arculus)",
+  "Basic Recommendations Hub (see yield opportunities for your assets)",
   "Yield calculator for projected earnings",
-  "3 price alerts with email notifications",
-  "30-day transaction history",
+  "1 price alert with email notifications",
+  "7-day transaction history",
 ];
 
 const premiumFeatures = [
   "Unlimited exchange connections",
   "Unlimited blockchain addresses across 24 chains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, TON, XLM, MATIC, and more)",
   "Full ERC-20, SPL, TRC-20, VIP-180 & CRC-20 token auto-detection",
-  "Full Recommendations Hub with personalized yield optimization",
+  "Full Recommendations Hub — Best in Class rankings, staking guides, DeFi comparisons, 'You Hold This' badges",
+  "Wallet-specific staking guides (Ledger, ELLIPAL, SafePal, CypheRock, Arculus)",
   "Full transaction history (all time)",
   "CSV import (Ledger Live, Yahoo Finance, CoinTracker)",
   "Unlimited price alerts",
@@ -485,11 +485,11 @@ const faqGroups = [
     items: [
       {
         q: "What\u2019s the difference between Free and Premium?",
-        a: "Free: 1 exchange connection, 1 blockchain address (across 24 chains), 3 price alerts, Soil vault access, Recommendations Hub with Best in Class yields and on-chain vs custodial badges, wallet-specific staking guides, and yield calculator. Premium Monthly ($9/mo): unlimited exchanges and blockchain addresses across all 24 chains, full Recommendations Hub with personalized yield optimization, unlimited price alerts, CSV import (Ledger Live, Yahoo Finance), portfolio search/filter/sort, auto-withdraw interest, and Statement Insights. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
+        a: "Free: 1 exchange connection, 1 blockchain address (across 24 chains), 1 price alert, Soil vault access, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, and 7 days of transaction history. Premium Monthly ($9/mo): unlimited exchanges and blockchain addresses across all 24 chains, full Recommendations Hub with Best in Class rankings, personalized staking guides for your exact hardware wallet, DeFi vs TradFi comparisons, 'You Hold This' badges, portfolio search/filter/sort, unlimited price alerts, CSV import, auto-withdraw interest, Statement Insights, and full transaction history. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
       },
       {
         q: "How do Price Alerts work?",
-        a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users can have up to 3 active alerts; Premium users get unlimited alerts.",
+        a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users get 1 active alert; Premium users get unlimited alerts.",
       },
       {
         q: "What is the Yield Calculator?",

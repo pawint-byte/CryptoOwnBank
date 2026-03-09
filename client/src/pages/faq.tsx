@@ -217,7 +217,7 @@ const faqGroups = [
     items: [
       {
         q: "What's included in the free plan?",
-        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 blockchain address, basic dashboard with the Recommendations Hub (including Best in Class, on-chain vs custodial recommendations, and wallet-specific staking guides), yield calculator, 3 price alerts, and 30 days of transaction history. Enough to get started and see the value.",
+        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 blockchain address, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, 1 price alert, and 7 days of transaction history. Upgrade to Premium to unlock full Recommendations Hub with Best in Class rankings, personalized staking guides, DeFi comparisons, portfolio search/filter/sort, unlimited alerts, Statement Insights, and full transaction history. Enough to get started and see the value on the free tier.",
       },
       {
         q: "What do I get with Premium?",

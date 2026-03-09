@@ -689,7 +689,7 @@ export default function StatementInsights() {
 
       {limits && limits.statementUploads !== null && (
         <div className="text-xs text-muted-foreground text-center max-w-md mx-auto">
-          Free plan includes {limits.statementUploads} statement analysis with product detection. Upgrade to Premium for unlimited uploads, rate comparisons, and yield optimization insights.
+          Statement Insights is a Premium feature. Upgrade to unlock unlimited statement analysis, rate comparisons, and yield optimization insights.
         </div>
       )}
     </div>

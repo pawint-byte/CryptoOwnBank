@@ -429,7 +429,7 @@ export default function Transactions() {
       {isHistoryLimited && (
         <UpgradePrompt
           compact
-          feature="Showing last 30 days of transactions. Upgrade to Premium for complete history."
+          feature="Showing last 7 days of transactions. Upgrade to Premium for complete history."
         />
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

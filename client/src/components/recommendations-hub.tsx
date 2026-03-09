@@ -44,6 +44,31 @@ interface RecommendationsHubProps {
   exchangeBalances: ExchangeBalance[];
 }
 
+interface SubscriptionLimits {
+  tier: string;
+  recommendationsHub: "basic" | "full";
+  portfolioSearch: boolean;
+}
+
+function PremiumLock({ feature }: { feature: string }) {
+  return (
+    <div className="relative">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+        <div className="text-center p-6 max-w-sm">
+          <Lock className="h-8 w-8 text-amber-500 mx-auto mb-3" />
+          <p className="font-semibold text-sm mb-1">Premium Feature</p>
+          <p className="text-xs text-muted-foreground mb-3">{feature}</p>
+          <a href="/settings" data-testid="link-upgrade-recs">
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
+              Upgrade to Premium
+            </Button>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RecommendationsHub({ addresses, exchangeBalances }: RecommendationsHubProps) {
   const { toast } = useToast();
   const [emailInput, setEmailInput] = useState("");
@@ -65,6 +90,11 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   const { data: alertLogs } = useQuery<any[]>({
     queryKey: ["/api/alert-logs"],
   });
+
+  const { data: subLimits } = useQuery<SubscriptionLimits>({
+    queryKey: ["/api/subscription/limits"],
+  });
+  const isFullHub = subLimits?.recommendationsHub === "full" || subLimits?.tier === "premium" || subLimits?.tier === "pro";
 
   const refreshMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/market-data/refresh", {}),
@@ -377,6 +407,10 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
               The highest-earning opportunities across all assets — sorted by yield. Discover what's worth holding for maximum returns while staying in control of your assets.
             </p>
 
+            {!isFullHub && (
+              <PremiumLock feature="Upgrade to see full Best in Class rankings, personalized 'You Hold This' badges, and detailed yield comparisons across all categories." />
+            )}
+
             {bestInClass.map(group => {
               const isOnChain = !group.category.includes("Custodial");
               const categoryIcon = group.category.includes("Staking") ? (
@@ -427,7 +461,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-semibold text-sm">{entry.symbol}</span>
                                 <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
-                                {isOwned && (
+                                {isOwned && isFullHub && (
                                   <Badge variant="default" className="text-xs px-1.5 py-0 h-4 bg-emerald-600">You Hold This</Badge>
                                 )}
                               </div>
@@ -479,7 +513,11 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
           <TabsContent value="staking" data-testid="tab-content-staking">
             <h3 className="font-semibold mb-3">Staking Opportunities</h3>
             <p className="text-sm text-muted-foreground mb-4">Earn yield on your assets through staking and DeFi protocols.</p>
-            {stakeableOwned.length === 0 ? (
+            {!isFullHub ? (
+              <div className="relative min-h-[200px]">
+                <PremiumLock feature="Upgrade to see personalized staking guides with step-by-step instructions for your exact hardware wallet, live DeFi yields, and potential earnings calculations." />
+              </div>
+            ) : stakeableOwned.length === 0 ? (
               <p className="text-sm text-muted-foreground">None of your current assets support staking, or add wallets/exchanges to see opportunities.</p>
             ) : (
               <div className="space-y-4">
@@ -585,7 +623,11 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
           <TabsContent value="defi" data-testid="tab-content-defi">
             <h3 className="font-semibold mb-3">DeFi vs Traditional Finance</h3>
             <p className="text-sm text-muted-foreground mb-4">Compare yields from traditional savings products with DeFi protocols.</p>
-            {defiAltAssets.length === 0 ? (
+            {!isFullHub ? (
+              <div className="relative min-h-[200px]">
+                <PremiumLock feature="Upgrade to compare DeFi yields vs traditional finance for every asset you hold, with actionable recommendations." />
+              </div>
+            ) : defiAltAssets.length === 0 ? (
               <p className="text-sm text-muted-foreground">No DeFi alternatives data available.</p>
             ) : (
               <div className="space-y-4">

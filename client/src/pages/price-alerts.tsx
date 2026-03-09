@@ -32,7 +32,7 @@ const CRYPTO_ASSETS = [
   { symbol: "LINK", name: "Chainlink" },
 ];
 
-const FREE_ALERT_LIMIT = 3;
+const FREE_ALERT_LIMIT = 1;
 
 export default function PriceAlerts() {
   const { toast } = useToast();
@@ -69,7 +69,7 @@ export default function PriceAlerts() {
     onError: (error: Error) => {
       const msg = error.message;
       if (msg.includes("403")) {
-        toast({ title: "Alert limit reached", description: "Free users can have up to 3 active alerts. Upgrade to Premium for unlimited.", variant: "destructive" });
+        toast({ title: "Alert limit reached", description: "Free users can have 1 active alert. Upgrade to Premium for unlimited.", variant: "destructive" });
       } else {
         toast({ title: "Failed to create alert", description: msg, variant: "destructive" });
       }

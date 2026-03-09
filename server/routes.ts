@@ -2421,17 +2421,21 @@ export async function registerRoutes(
     xls66Lending: boolean;
     statementUploads: number | null;
     statementComparisons: boolean;
+    portfolioSearch: boolean;
+    recommendationsHub: "basic" | "full";
   }> = {
     free: {
       exchanges: 1,
       wallets: 1,
-      alerts: 3,
-      transactionHistoryDays: 30,
+      alerts: 1,
+      transactionHistoryDays: 7,
       csvImport: false,
       autoWithdraw: false,
       xls66Lending: false,
-      statementUploads: 1,
+      statementUploads: 0,
       statementComparisons: false,
+      portfolioSearch: false,
+      recommendationsHub: "basic",
     },
     premium: {
       exchanges: null,
@@ -2443,6 +2447,8 @@ export async function registerRoutes(
       xls66Lending: false,
       statementUploads: null,
       statementComparisons: true,
+      portfolioSearch: true,
+      recommendationsHub: "full",
     },
     pro: {
       exchanges: null,
@@ -2454,6 +2460,8 @@ export async function registerRoutes(
       xls66Lending: true,
       statementUploads: null,
       statementComparisons: true,
+      portfolioSearch: true,
+      recommendationsHub: "full",
     },
   };
 
@@ -2483,6 +2491,8 @@ export async function registerRoutes(
         xls66Lending: limits.xls66Lending,
         statementUploads: limits.statementUploads,
         statementComparisons: limits.statementComparisons,
+        portfolioSearch: limits.portfolioSearch,
+        recommendationsHub: limits.recommendationsHub,
       });
     } catch (error) {
       console.error("Subscription limits error:", error);
@@ -2637,10 +2647,10 @@ export async function registerRoutes(
       const { tier: alertTier } = await getEffectiveTier(userId);
       const activeCount = await storage.countActiveAlertsByUser(userId);
 
-      if (alertTier === "free" && activeCount >= 3) {
+      if (alertTier === "free" && activeCount >= 1) {
         return res.status(403).json({
-          message: "Free users can have up to 3 active alerts. Upgrade to Premium for unlimited alerts.",
-          limit: 3,
+          message: "Free users can have 1 active alert. Upgrade to Premium for unlimited alerts.",
+          limit: 1,
           current: activeCount,
         });
       }
@@ -3597,7 +3607,7 @@ export async function registerRoutes(
         const currentCount = await storage.countStatementUploadsByUser(userId);
         if (currentCount >= limits.statementUploads) {
           return res.status(403).json({
-            message: `Free plan allows ${limits.statementUploads} statement upload. Upgrade to Premium for unlimited uploads and comparison insights.`,
+            message: "Statement Insights is a Premium feature. Upgrade to Premium for unlimited uploads and comparison insights.",
           });
         }
       }

@@ -12,12 +12,13 @@ interface UpgradePromptProps {
 const PREMIUM_BENEFITS = [
   "Unlimited exchange connections",
   "Unlimited blockchain addresses across 24 chains",
-  "Full Recommendations Hub with personalized yield optimization",
+  "Full Recommendations Hub — Best in Class, staking guides, DeFi comparisons",
+  "Wallet-specific staking guides for your exact hardware wallet",
+  "Portfolio search, filter & sort",
   "Full transaction history (all time)",
   "CSV import (Yahoo Finance, CoinTracker)",
   "Unlimited price alerts",
   "Auto-withdrawal from Soil vaults",
-  "Portfolio analytics across all sources",
   "Statement Insights with rate comparisons",
 ];
 
