@@ -44,6 +44,7 @@ Preferred communication style: Simple, everyday language.
 - **Gating**: Server-side enforced limits with 403 responses and frontend `UpgradePrompt`. Admin bypass for testing.
 - **CSV Import**: Supports Ledger Live, Yahoo Finance, CoinTracker, and generic CSV formats.
 - **Statement Insights**: PDF statement upload for comparing financial products against alternatives (Soil Treasury, HY Savings, T-Bills).
+- **Onboarding Checklist**: 4-step guided funnel on dashboard for new users: (1) Earn Yield (connect XRPL wallet + deposit to Soil), (2) Add Wallet Addresses (paste cold wallet addresses across 24 chains), (3) Get Evaluated (Recommendations Hub analysis), (4) Go Premium. Auto-detects completion from existing state (XRPL store, wallet count, explicit user clicks). Client-side only (localStorage), dismissible, collapses when minimized. Component: `client/src/components/onboarding-checklist.tsx`.
 - **Migration Guide**: Guided walkthrough for new users transitioning from other platforms.
 - **Data Reconciliation**: Dedicated page for reviewing and truing up portfolio data, including duplicate detection, side-by-side comparison, and purchase lot management for wallet entries.
 - **Affiliate/Referral**: Links for RLUSD, embedded Soil referral code, and user referral program.

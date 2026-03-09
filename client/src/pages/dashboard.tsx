@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { PortfolioChart } from "@/components/portfolio-chart";
 import { AllocationChart } from "@/components/allocation-chart";
 import { TransactionsTable } from "@/components/transactions-table";
 import { RecommendationsHub } from "@/components/recommendations-hub";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -66,6 +68,7 @@ export default function Dashboard() {
 
   const hasData = walletAddresses.length > 0 || exchangeBalances.length > 0;
 
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -103,6 +106,11 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      <OnboardingChecklist
+        walletCount={walletAddresses.length}
+        hasExchangeData={exchangeBalances.length > 0}
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <MetricCard
