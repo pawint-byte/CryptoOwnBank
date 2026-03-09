@@ -1103,7 +1103,7 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$9</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $79/yr — Save $29</p>
+                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $79/yr — Save $29 · Pay with crypto or card</p>
                   <ul className="space-y-3 mb-4">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">

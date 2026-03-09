@@ -2399,6 +2399,219 @@ export async function registerRoutes(
     res.json(PLANS);
   });
 
+  app.get("/api/crypto-payment/addresses", async (_req, res) => {
+    try {
+      const addresses = await storage.getCryptoPaymentAddresses(true);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Crypto payment addresses error:", error);
+      res.status(500).json({ message: "Failed to load payment addresses" });
+    }
+  });
+
+  app.post("/api/crypto-payment/create", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { plan, chain } = req.body;
+
+      if (!plan || !["monthly", "yearly"].includes(plan)) {
+        return res.status(400).json({ message: "Invalid plan. Use 'monthly' or 'yearly'." });
+      }
+      if (!chain) {
+        return res.status(400).json({ message: "Chain is required." });
+      }
+
+      const VERIFIED_CHAINS = ["xrp", "bitcoin", "ethereum", "solana"];
+      if (!VERIFIED_CHAINS.includes(chain.toLowerCase())) {
+        return res.status(400).json({ message: `Automated verification is only available for XRP, BTC, ETH, and SOL. Other chains coming soon.` });
+      }
+
+      const addresses = await storage.getCryptoPaymentAddresses(true);
+      const paymentAddr = addresses.find(a => a.chain.toLowerCase() === chain.toLowerCase());
+      if (!paymentAddr) {
+        return res.status(400).json({ message: `No payment address configured for ${chain}.` });
+      }
+
+      const usdAmount = plan === "yearly" ? 79 : 9;
+
+      const CHAIN_TO_COINGECKO: Record<string, string> = {
+        bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",
+        xrp: "ripple", dogecoin: "dogecoin", litecoin: "litecoin",
+        cardano: "cardano", avalanche: "avalanche-2", algorand: "algorand",
+        cosmos: "cosmos", tron: "tron", hedera: "hedera-hashgraph",
+        polkadot: "polkadot", vechain: "vechain", stellar: "stellar",
+        ton: "the-open-network", polygon: "matic-network", cronos: "crypto-com-chain",
+        xdc: "xdce-crowd-sale",
+      };
+
+      const coingeckoId = CHAIN_TO_COINGECKO[chain.toLowerCase()];
+      if (!coingeckoId) {
+        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
+      }
+
+      const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoId}&vs_currencies=usd`);
+      const priceData = await priceRes.json();
+      const price = priceData[coingeckoId]?.usd;
+      if (!price || price <= 0) {
+        return res.status(500).json({ message: "Failed to fetch current price." });
+      }
+
+      let cryptoAmount = usdAmount / price;
+      const uniqueSuffix = Math.floor(Math.random() * 900 + 100) / 1e8;
+      cryptoAmount += uniqueSuffix;
+
+      const CHAIN_TO_ASSET: Record<string, string> = {
+        bitcoin: "BTC", ethereum: "ETH", solana: "SOL", xrp: "XRP",
+        dogecoin: "DOGE", litecoin: "LTC", cardano: "ADA", avalanche: "AVAX",
+        algorand: "ALGO", cosmos: "ATOM", tron: "TRX", hedera: "HBAR",
+        polkadot: "DOT", vechain: "VET", stellar: "XLM", ton: "TON",
+        polygon: "MATIC", cronos: "CRO", xdc: "XDC",
+      };
+
+      let destinationTag: number | null = null;
+      if (chain.toLowerCase() === "xrp") {
+        destinationTag = Math.floor(Math.random() * 2_000_000_000) + 1;
+      }
+
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const payment = await storage.createCryptoPayment({
+        userId,
+        plan,
+        chain: chain.toLowerCase(),
+        toAddress: paymentAddr.address,
+        expectedAmount: cryptoAmount.toFixed(8),
+        expectedAsset: CHAIN_TO_ASSET[chain.toLowerCase()] || chain.toUpperCase(),
+        usdAmount: usdAmount.toFixed(2),
+        destinationTag,
+        status: "pending",
+        expiresAt,
+      });
+
+      res.json({
+        id: payment.id,
+        toAddress: payment.toAddress,
+        expectedAmount: payment.expectedAmount,
+        expectedAsset: payment.expectedAsset,
+        usdAmount: payment.usdAmount,
+        destinationTag: payment.destinationTag,
+        expiresAt: payment.expiresAt,
+        status: payment.status,
+        chain: payment.chain,
+        plan: payment.plan,
+      });
+    } catch (error) {
+      console.error("Crypto payment create error:", error);
+      res.status(500).json({ message: "Failed to create crypto payment" });
+    }
+  });
+
+  app.get("/api/crypto-payment/status/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const payment = await storage.getCryptoPayment(req.params.id);
+      if (!payment) {
+        return res.status(404).json({ message: "Payment not found." });
+      }
+      if (payment.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied." });
+      }
+      res.json({
+        id: payment.id,
+        status: payment.status,
+        txHash: payment.txHash,
+        confirmedAt: payment.confirmedAt,
+        expiresAt: payment.expiresAt,
+        expectedAmount: payment.expectedAmount,
+        expectedAsset: payment.expectedAsset,
+        toAddress: payment.toAddress,
+        destinationTag: payment.destinationTag,
+        chain: payment.chain,
+        plan: payment.plan,
+      });
+    } catch (error) {
+      console.error("Crypto payment status error:", error);
+      res.status(500).json({ message: "Failed to check payment status" });
+    }
+  });
+
+  app.get("/api/crypto-payment/history", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const payments = await storage.getCryptoPaymentsByUser(userId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load payment history" });
+    }
+  });
+
+  app.get("/api/admin/payment-addresses", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const addresses = await storage.getCryptoPaymentAddresses(false);
+      res.json(addresses);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load payment addresses" });
+    }
+  });
+
+  app.post("/api/admin/payment-addresses", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const { chain, address, label } = req.body;
+      if (!chain || !address) {
+        return res.status(400).json({ message: "Chain and address are required." });
+      }
+
+      const result = await storage.createCryptoPaymentAddress({
+        chain: chain.toLowerCase(),
+        address,
+        label: label || null,
+        isActive: true,
+      });
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create payment address" });
+    }
+  });
+
+  app.delete("/api/admin/payment-addresses/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      await storage.deleteCryptoPaymentAddress(parseInt(req.params.id));
+      res.json({ message: "Address deleted" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete payment address" });
+    }
+  });
+
+  app.get("/api/admin/crypto-payments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const payments = await storage.getRecentCryptoPayments(50);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load crypto payments" });
+    }
+  });
+
   app.get("/api/subscription", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -4208,6 +4421,10 @@ function startPriceAlertChecker() {
   }, 60000);
 
   console.log("Price alert checker started (runs every 60 seconds)");
+
+  import("./services/crypto-payment-verifier").then(({ startCryptoPaymentVerifier }) => {
+    startCryptoPaymentVerifier();
+  });
 
   setTimeout(async () => {
     try {

@@ -58,7 +58,10 @@ Preferred communication style: Simple, everyday language.
 - Replit Auth
 
 ### Payments
-- Stripe
+- Crypto Payments (preferred) — on-chain verification for XRP, BTC, ETH, SOL, and more
+- Stripe (card payments fallback)
+- Admin manages crypto payment addresses via Admin Metrics page
+- Payment verifier runs every 60s, auto-activates Premium on confirmed payment, expires pending payments after 30 minutes
 
 ### XRPL Libraries
 - xrpl.js

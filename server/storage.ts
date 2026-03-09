@@ -45,6 +45,12 @@ import {
   type MarketCache,
   type EmailConfig,
   type AlertLog,
+  cryptoPaymentAddresses,
+  cryptoPayments,
+  type CryptoPaymentAddress,
+  type InsertCryptoPaymentAddress,
+  type CryptoPayment,
+  type InsertCryptoPayment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -156,6 +162,16 @@ export interface IStorage {
   getAllEmailConfigs(): Promise<EmailConfig[]>;
   createAlertLog(data: { alertType: string; message: string; userId?: string | null }): Promise<AlertLog>;
   getAlertLogsByUser(userId: string, limit: number): Promise<AlertLog[]>;
+
+  getCryptoPaymentAddresses(activeOnly?: boolean): Promise<CryptoPaymentAddress[]>;
+  createCryptoPaymentAddress(address: InsertCryptoPaymentAddress): Promise<CryptoPaymentAddress>;
+  deleteCryptoPaymentAddress(id: number): Promise<void>;
+  createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment>;
+  getCryptoPayment(id: string): Promise<CryptoPayment | undefined>;
+  getCryptoPaymentsByUser(userId: string): Promise<CryptoPayment[]>;
+  getPendingCryptoPayments(): Promise<CryptoPayment[]>;
+  updateCryptoPaymentStatus(id: string, status: string, txHash?: string): Promise<CryptoPayment | undefined>;
+  getRecentCryptoPayments(limit: number): Promise<CryptoPayment[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -640,6 +656,52 @@ export class DatabaseStorage implements IStorage {
 
   async getAlertLogsByUser(userId: string, limit: number): Promise<AlertLog[]> {
     return db.select().from(alertLog).where(eq(alertLog.userId, userId)).orderBy(desc(alertLog.sentAt)).limit(limit);
+  }
+
+  async getCryptoPaymentAddresses(activeOnly = true): Promise<CryptoPaymentAddress[]> {
+    if (activeOnly) {
+      return db.select().from(cryptoPaymentAddresses).where(eq(cryptoPaymentAddresses.isActive, true));
+    }
+    return db.select().from(cryptoPaymentAddresses);
+  }
+
+  async createCryptoPaymentAddress(address: InsertCryptoPaymentAddress): Promise<CryptoPaymentAddress> {
+    const [result] = await db.insert(cryptoPaymentAddresses).values(address).returning();
+    return result;
+  }
+
+  async deleteCryptoPaymentAddress(id: number): Promise<void> {
+    await db.delete(cryptoPaymentAddresses).where(eq(cryptoPaymentAddresses.id, id));
+  }
+
+  async createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment> {
+    const [result] = await db.insert(cryptoPayments).values(payment).returning();
+    return result;
+  }
+
+  async getCryptoPayment(id: string): Promise<CryptoPayment | undefined> {
+    const [result] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.id, id));
+    return result;
+  }
+
+  async getCryptoPaymentsByUser(userId: string): Promise<CryptoPayment[]> {
+    return db.select().from(cryptoPayments).where(eq(cryptoPayments.userId, userId)).orderBy(desc(cryptoPayments.createdAt));
+  }
+
+  async getPendingCryptoPayments(): Promise<CryptoPayment[]> {
+    return db.select().from(cryptoPayments).where(eq(cryptoPayments.status, "pending"));
+  }
+
+  async updateCryptoPaymentStatus(id: string, status: string, txHash?: string): Promise<CryptoPayment | undefined> {
+    const updateData: Partial<CryptoPayment> = { status };
+    if (txHash) updateData.txHash = txHash;
+    if (status === "confirmed") updateData.confirmedAt = new Date();
+    const [result] = await db.update(cryptoPayments).set(updateData).where(eq(cryptoPayments.id, id)).returning();
+    return result;
+  }
+
+  async getRecentCryptoPayments(limit: number): Promise<CryptoPayment[]> {
+    return db.select().from(cryptoPayments).orderBy(desc(cryptoPayments.createdAt)).limit(limit);
   }
 }
 

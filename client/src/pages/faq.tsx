@@ -76,7 +76,7 @@ const faqGroups = [
       },
       {
         q: "Is my data secure?",
-        a: "Your exchange API keys are encrypted at rest using AES-256. Your XRPL wallet connection is read-only \u2014 we only see your public address. All transaction signing happens on your device. We use secure authentication and Stripe for payment processing. We never store private keys or seed phrases.",
+        a: "Your exchange API keys are encrypted at rest using AES-256. Your XRPL wallet connection is read-only \u2014 we only see your public address. All transaction signing happens on your device. We use secure authentication and accept crypto payments (verified on-chain) or Stripe for card payments. We never store private keys or seed phrases.",
       },
     ],
   },
@@ -234,6 +234,10 @@ const faqGroups = [
       {
         q: "Can I cancel Premium anytime?",
         a: "Yes. You can cancel your subscription at any time. You'll keep Premium access until the end of your current billing period. No penalties, no questions asked.",
+      },
+      {
+        q: "Can I pay for Premium with crypto?",
+        a: "Yes — crypto is our preferred payment method. Go to Settings → Subscription and choose 'Pay with Crypto.' Select your cryptocurrency (XRP, BTC, ETH, SOL, and more), and we'll show you the exact amount and wallet address to send to. For XRP payments, you'll also get a destination tag. Our system automatically verifies your payment on-chain within seconds and activates your Premium subscription immediately. No KYC, no bank account needed — just send crypto and you're upgraded. Card payments via Stripe are also available as a fallback option.",
       },
       {
         q: "How do Price Alerts work?",

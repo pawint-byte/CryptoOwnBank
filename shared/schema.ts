@@ -353,9 +353,41 @@ export const alertLog = pgTable("alert_log", {
   sentAt: timestamp("sent_at").defaultNow(),
 });
 
+export const cryptoPaymentAddresses = pgTable("crypto_payment_addresses", {
+  id: serial("id").primaryKey(),
+  chain: varchar("chain", { length: 30 }).notNull(),
+  address: text("address").notNull(),
+  label: varchar("label", { length: 100 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const cryptoPayments = pgTable("crypto_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  plan: varchar("plan", { length: 20 }).notNull(),
+  chain: varchar("chain", { length: 30 }).notNull(),
+  toAddress: text("to_address").notNull(),
+  expectedAmount: decimal("expected_amount", { precision: 18, scale: 8 }).notNull(),
+  expectedAsset: varchar("expected_asset", { length: 20 }).notNull(),
+  usdAmount: decimal("usd_amount", { precision: 10, scale: 2 }).notNull(),
+  destinationTag: integer("destination_tag"),
+  txHash: text("tx_hash"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  confirmedAt: timestamp("confirmed_at"),
+}, (table) => [
+  index("idx_crypto_payments_user").on(table.userId),
+  index("idx_crypto_payments_status").on(table.status),
+]);
+
 export const insertMarketCacheSchema = createInsertSchema(marketCache).omit({ id: true, updatedAt: true });
 export const insertEmailConfigSchema = createInsertSchema(emailConfig).omit({ id: true, createdAt: true });
 export const insertAlertLogSchema = createInsertSchema(alertLog).omit({ id: true, sentAt: true });
+
+export const insertCryptoPaymentAddressSchema = createInsertSchema(cryptoPaymentAddresses).omit({ id: true, createdAt: true });
+export const insertCryptoPaymentSchema = createInsertSchema(cryptoPayments).omit({ id: true, createdAt: true, confirmedAt: true });
 
 export type MarketCache = typeof marketCache.$inferSelect;
 export type InsertMarketCache = z.infer<typeof insertMarketCacheSchema>;
@@ -363,3 +395,7 @@ export type EmailConfig = typeof emailConfig.$inferSelect;
 export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
 export type AlertLog = typeof alertLog.$inferSelect;
 export type InsertAlertLog = z.infer<typeof insertAlertLogSchema>;
+export type CryptoPaymentAddress = typeof cryptoPaymentAddresses.$inferSelect;
+export type InsertCryptoPaymentAddress = z.infer<typeof insertCryptoPaymentAddressSchema>;
+export type CryptoPayment = typeof cryptoPayments.$inferSelect;
+export type InsertCryptoPayment = z.infer<typeof insertCryptoPaymentSchema>;

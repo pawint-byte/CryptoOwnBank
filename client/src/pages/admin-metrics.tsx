@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -27,7 +29,14 @@ import {
   ArrowUpRight,
   ExternalLink,
   Filter,
+  Coins,
+  Plus,
+  Trash2,
+  Clock,
+  Loader2,
 } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface MetricsData {
   overview: {
@@ -120,9 +129,28 @@ function formatCurrency(cents: number) {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+const CHAIN_OPTIONS = [
+  "bitcoin", "ethereum", "solana", "xrp", "dogecoin", "litecoin", "cardano",
+  "avalanche", "algorand", "cosmos", "tron", "hedera", "polkadot", "vechain",
+  "stellar", "ton", "polygon", "cronos", "xdc",
+];
+
+const CHAIN_LABELS: Record<string, string> = {
+  bitcoin: "Bitcoin (BTC)", ethereum: "Ethereum (ETH)", solana: "Solana (SOL)",
+  xrp: "XRP", dogecoin: "Dogecoin (DOGE)", litecoin: "Litecoin (LTC)",
+  cardano: "Cardano (ADA)", avalanche: "Avalanche (AVAX)", algorand: "Algorand (ALGO)",
+  cosmos: "Cosmos (ATOM)", tron: "Tron (TRX)", hedera: "Hedera (HBAR)",
+  polkadot: "Polkadot (DOT)", vechain: "VeChain (VET)", stellar: "Stellar (XLM)",
+  ton: "TON", polygon: "Polygon (MATIC)", cronos: "Cronos (CRO)", xdc: "XDC",
+};
+
 export default function AdminMetrics() {
+  const { toast } = useToast();
   const [userSearch, setUserSearch] = useState("");
   const [chargeSourceFilter, setChargeSourceFilter] = useState("all");
+  const [newAddrChain, setNewAddrChain] = useState("");
+  const [newAddrAddress, setNewAddrAddress] = useState("");
+  const [newAddrLabel, setNewAddrLabel] = useState("");
 
   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
@@ -132,6 +160,49 @@ export default function AdminMetrics() {
     queryKey: ["/api/admin/metrics"],
     enabled: adminStatus?.isAdmin === true,
     refetchInterval: 60000,
+  });
+
+  const { data: paymentAddresses = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/payment-addresses"],
+    enabled: adminStatus?.isAdmin === true,
+  });
+
+  const { data: cryptoPayments = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/crypto-payments"],
+    enabled: adminStatus?.isAdmin === true,
+  });
+
+  const addAddressMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/payment-addresses", {
+        chain: newAddrChain,
+        address: newAddrAddress,
+        label: newAddrLabel || undefined,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/crypto-payment/addresses"] });
+      setNewAddrChain("");
+      setNewAddrAddress("");
+      setNewAddrLabel("");
+      toast({ title: "Payment address added" });
+    },
+    onError: () => {
+      toast({ title: "Failed to add address", variant: "destructive" });
+    },
+  });
+
+  const deleteAddressMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/payment-addresses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/crypto-payment/addresses"] });
+      toast({ title: "Payment address removed" });
+    },
   });
 
   if (adminStatus && !adminStatus.isAdmin) {
@@ -630,6 +701,176 @@ export default function AdminMetrics() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      <Separator className="my-2" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-amber-500" />
+            Crypto Payment Addresses
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Select value={newAddrChain} onValueChange={setNewAddrChain}>
+              <SelectTrigger data-testid="select-admin-chain">
+                <SelectValue placeholder="Select chain..." />
+              </SelectTrigger>
+              <SelectContent>
+                {CHAIN_OPTIONS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {CHAIN_LABELS[c] || c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Wallet address"
+              value={newAddrAddress}
+              onChange={(e) => setNewAddrAddress(e.target.value)}
+              data-testid="input-admin-address"
+            />
+            <Input
+              placeholder="Label (optional)"
+              value={newAddrLabel}
+              onChange={(e) => setNewAddrLabel(e.target.value)}
+              data-testid="input-admin-label"
+            />
+            <Button
+              onClick={() => addAddressMutation.mutate()}
+              disabled={!newAddrChain || !newAddrAddress || addAddressMutation.isPending}
+              data-testid="button-admin-add-address"
+            >
+              {addAddressMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              Add
+            </Button>
+          </div>
+
+          {paymentAddresses.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No payment addresses configured. Add one above to enable crypto payments.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {paymentAddresses.map((addr: any) => {
+                const isVerified = ["xrp", "bitcoin", "ethereum", "solana"].includes(addr.chain);
+                return (
+                  <div
+                    key={addr.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    data-testid={`row-payment-address-${addr.id}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                      <Badge variant="outline" className="shrink-0">
+                        {CHAIN_LABELS[addr.chain]?.split(" ")[0] || addr.chain}
+                      </Badge>
+                      {addr.label && (
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {addr.label}
+                        </Badge>
+                      )}
+                      {isVerified ? (
+                        <Badge className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 shrink-0">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Auto-Verified
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Manual Only
+                        </Badge>
+                      )}
+                      <code className="text-xs font-mono truncate max-w-[300px]">{addr.address}</code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 shrink-0"
+                      onClick={() => deleteAddressMutation.mutate(addr.id)}
+                      disabled={deleteAddressMutation.isPending}
+                      data-testid={`button-delete-address-${addr.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-muted-foreground" />
+            Recent Crypto Payments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {cryptoPayments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No crypto payments yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-xs text-muted-foreground">
+                    <th className="text-left p-2">Chain</th>
+                    <th className="text-left p-2">Amount</th>
+                    <th className="text-left p-2">Plan</th>
+                    <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Created</th>
+                    <th className="text-left p-2">TX Hash</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cryptoPayments.map((payment: any) => (
+                    <tr key={payment.id} className="border-b" data-testid={`row-crypto-payment-${payment.id}`}>
+                      <td className="p-2">
+                        <Badge variant="outline" className="text-xs">
+                          {CHAIN_LABELS[payment.chain]?.split(" ")[0] || payment.chain}
+                        </Badge>
+                      </td>
+                      <td className="p-2 font-mono text-xs">
+                        {payment.expectedAmount} {payment.expectedAsset}
+                      </td>
+                      <td className="p-2 text-xs capitalize">{payment.plan}</td>
+                      <td className="p-2">
+                        <Badge
+                          className={`text-xs ${
+                            payment.status === "confirmed"
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                              : payment.status === "pending"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                                : payment.status === "expired"
+                                  ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                                  : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                          }`}
+                        >
+                          {payment.status}
+                        </Badge>
+                      </td>
+                      <td className="p-2 text-xs text-muted-foreground">
+                        {new Date(payment.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-2 text-xs font-mono truncate max-w-[120px]">
+                        {payment.txHash || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

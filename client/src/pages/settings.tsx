@@ -43,6 +43,13 @@ import {
   Crown,
   Check,
   ExternalLink,
+  Coins,
+  CreditCard,
+  Copy,
+  Clock,
+  CheckCircle2,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import type { UserSettings } from "@shared/schema";
 
@@ -61,6 +68,11 @@ export default function SettingsPage() {
   const { spendingWallet, setSpendingWallet, subscriptionTier } = useXrplStore();
   const [walletInput, setWalletInput] = useState(spendingWallet);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"crypto" | "card">("crypto");
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+  const [selectedChain, setSelectedChain] = useState<string>("");
+  const [pendingPayment, setPendingPayment] = useState<any>(null);
+  const [cryptoLoading, setCryptoLoading] = useState(false);
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
@@ -68,6 +80,16 @@ export default function SettingsPage() {
 
   const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
     queryKey: ["/api/subscription"],
+  });
+
+  const { data: cryptoAddresses = [] } = useQuery<any[]>({
+    queryKey: ["/api/crypto-payment/addresses"],
+  });
+
+  const { data: paymentStatus } = useQuery({
+    queryKey: ["/api/crypto-payment/status", pendingPayment?.id],
+    enabled: !!pendingPayment?.id && pendingPayment?.status === "pending",
+    refetchInterval: 5000,
   });
 
   useEffect(() => {
@@ -141,6 +163,16 @@ export default function SettingsPage() {
     toast({ title: "Spending wallet saved" });
   };
 
+  useEffect(() => {
+    if (paymentStatus && (paymentStatus as any).status === "confirmed") {
+      setPendingPayment(null);
+      toast({ title: "Payment confirmed! Welcome to Premium!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/limits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+    }
+  }, [paymentStatus]);
+
   const handleUpgrade = async (plan: "monthly" | "yearly") => {
     setCheckoutLoading(plan);
     try {
@@ -156,6 +188,40 @@ export default function SettingsPage() {
     } finally {
       setCheckoutLoading(null);
     }
+  };
+
+  const handleCryptoPayment = async () => {
+    if (!selectedChain) {
+      toast({ title: "Please select a cryptocurrency", variant: "destructive" });
+      return;
+    }
+    setCryptoLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/crypto-payment/create", {
+        plan: selectedPlan,
+        chain: selectedChain,
+      });
+      const data = await res.json();
+      setPendingPayment(data);
+    } catch {
+      toast({ title: "Failed to create payment", variant: "destructive" });
+    } finally {
+      setCryptoLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: `${label} copied to clipboard` });
+  };
+
+  const CHAIN_LABELS: Record<string, string> = {
+    bitcoin: "Bitcoin (BTC)", ethereum: "Ethereum (ETH)", solana: "Solana (SOL)",
+    xrp: "XRP", dogecoin: "Dogecoin (DOGE)", litecoin: "Litecoin (LTC)",
+    cardano: "Cardano (ADA)", avalanche: "Avalanche (AVAX)", algorand: "Algorand (ALGO)",
+    cosmos: "Cosmos (ATOM)", tron: "Tron (TRX)", hedera: "Hedera (HBAR)",
+    polkadot: "Polkadot (DOT)", vechain: "VeChain (VET)", stellar: "Stellar (XLM)",
+    ton: "TON", polygon: "Polygon (MATIC)", cronos: "Cronos (CRO)", xdc: "XDC",
   };
 
   const getInitials = () => {
@@ -345,52 +411,251 @@ export default function SettingsPage() {
             {subscriptionTier === "free" && (
               <>
                 <Separator />
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Upgrade to Premium</p>
-                  <div className="grid grid-cols-2 gap-3">
+
+                {pendingPayment && pendingPayment.status === "pending" ? (
+                  <div className="space-y-4" data-testid="crypto-payment-pending">
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <Clock className="h-4 w-4 animate-pulse" />
+                      <span className="text-sm font-medium">Awaiting payment...</span>
+                    </div>
+
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Send exactly</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-sm" data-testid="text-expected-amount">
+                            {pendingPayment.expectedAmount} {pendingPayment.expectedAsset}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyToClipboard(pendingPayment.expectedAmount, "Amount")}
+                            data-testid="button-copy-amount"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">USD equivalent</span>
+                        <span className="text-sm">${pendingPayment.usdAmount}</span>
+                      </div>
+
+                      <Separator />
+
+                      <div>
+                        <span className="text-xs text-muted-foreground block mb-1">To address</span>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all" data-testid="text-payment-address">
+                            {pendingPayment.toAddress}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 shrink-0"
+                            onClick={() => copyToClipboard(pendingPayment.toAddress, "Address")}
+                            data-testid="button-copy-address"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {pendingPayment.destinationTag && (
+                        <div>
+                          <span className="text-xs text-muted-foreground block mb-1">
+                            <AlertTriangle className="h-3 w-3 inline mr-1 text-amber-500" />
+                            Destination Tag (required for XRP)
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <code className="text-sm font-mono font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded px-2 py-1" data-testid="text-destination-tag">
+                              {pendingPayment.destinationTag}
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyToClipboard(String(pendingPayment.destinationTag), "Destination tag")}
+                              data-testid="button-copy-tag"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>Plan: {pendingPayment.plan === "yearly" ? "Annual" : "Monthly"}</span>
+                        <span>Expires: {new Date(pendingPayment.expiresAt).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Checking for payment every 5 seconds... {(paymentStatus as any)?.status === "confirmed" ? "Confirmed!" : ""}</span>
+                    </div>
+
                     <Button
-                      variant="outline"
-                      className="flex flex-col h-auto py-4 gap-1 border-amber-500/30 hover:border-amber-500"
-                      onClick={() => handleUpgrade("monthly")}
-                      disabled={checkoutLoading !== null}
-                      data-testid="button-upgrade-monthly"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPendingPayment(null)}
+                      className="text-xs"
+                      data-testid="button-cancel-crypto"
                     >
-                      <span className="text-lg font-bold">$9</span>
-                      <span className="text-xs text-muted-foreground">/month</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex flex-col h-auto py-4 gap-1 border-amber-500/30 hover:border-amber-500 relative"
-                      onClick={() => handleUpgrade("yearly")}
-                      disabled={checkoutLoading !== null}
-                      data-testid="button-upgrade-yearly"
-                    >
-                      <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
-                        Save $29
-                      </Badge>
-                      <span className="text-lg font-bold">$79</span>
-                      <span className="text-xs text-muted-foreground">/year</span>
+                      Cancel and choose different method
                     </Button>
                   </div>
-                  <div className="space-y-2 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-green-500" />
-                      Auto-withdraw interest weekly
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm font-medium">Upgrade to Premium</p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant={selectedPlan === "monthly" ? "default" : "outline"}
+                        className={`flex flex-col h-auto py-3 gap-1 ${selectedPlan === "monthly" ? "border-amber-500 bg-amber-500/10 text-foreground ring-2 ring-amber-500" : "border-amber-500/30 hover:border-amber-500"}`}
+                        onClick={() => setSelectedPlan("monthly")}
+                        data-testid="button-plan-monthly"
+                      >
+                        <span className="text-lg font-bold">$9</span>
+                        <span className="text-xs text-muted-foreground">/month</span>
+                      </Button>
+                      <Button
+                        variant={selectedPlan === "yearly" ? "default" : "outline"}
+                        className={`flex flex-col h-auto py-3 gap-1 relative ${selectedPlan === "yearly" ? "border-amber-500 bg-amber-500/10 text-foreground ring-2 ring-amber-500" : "border-amber-500/30 hover:border-amber-500"}`}
+                        onClick={() => setSelectedPlan("yearly")}
+                        data-testid="button-plan-yearly"
+                      >
+                        <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
+                          Save $29
+                        </Badge>
+                        <span className="text-lg font-bold">$79</span>
+                        <span className="text-xs text-muted-foreground">/year + tax reports</span>
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-green-500" />
-                      Tax CSV export & year-end reports
+
+                    <div className="space-y-2">
+                      <div
+                        className={`rounded-lg border-2 p-3 cursor-pointer transition-colors ${paymentMethod === "crypto" ? "border-amber-500 bg-amber-500/5" : "border-muted hover:border-amber-500/50"}`}
+                        onClick={() => setPaymentMethod("crypto")}
+                        data-testid="button-method-crypto"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Coins className="h-5 w-5 text-amber-500" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">Pay with Crypto</span>
+                              <Badge className="bg-amber-500 text-[10px] px-1.5">Preferred</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Stay on-chain. Pay with any supported cryptocurrency.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`rounded-lg border-2 p-3 cursor-pointer transition-colors ${paymentMethod === "card" ? "border-amber-500 bg-amber-500/5" : "border-muted hover:border-amber-500/50"}`}
+                        onClick={() => setPaymentMethod("card")}
+                        data-testid="button-method-card"
+                      >
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="h-5 w-5 text-muted-foreground" />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium">Pay with Card</span>
+                            <p className="text-xs text-muted-foreground">Credit/debit card via Stripe</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-green-500" />
-                      Priority vault alerts
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-green-500" />
-                      XLS-66 lending early access
+
+                    {paymentMethod === "crypto" && (
+                      <div className="space-y-3">
+                        {cryptoAddresses.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-2">
+                            Crypto payments coming soon. Use card payment for now.
+                          </p>
+                        ) : (
+                          <>
+                            <Select value={selectedChain} onValueChange={setSelectedChain}>
+                              <SelectTrigger className="h-9 text-sm" data-testid="select-crypto-chain">
+                                <SelectValue placeholder="Select cryptocurrency..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cryptoAddresses.map((addr: any) => (
+                                  <SelectItem key={addr.id} value={addr.chain}>
+                                    {CHAIN_LABELS[addr.chain] || addr.chain.toUpperCase()}
+                                    {addr.label ? ` (${addr.label})` : ""}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedChain && (() => {
+                              const addr = cryptoAddresses.find((a: any) => a.chain === selectedChain);
+                              return addr?.label ? (
+                                <p className="text-xs text-muted-foreground" data-testid="text-wallet-label">
+                                  Payment goes to your <span className="font-medium">{addr.label}</span> cold wallet
+                                </p>
+                              ) : null;
+                            })()}
+                            <Button
+                              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                              onClick={handleCryptoPayment}
+                              disabled={!selectedChain || cryptoLoading}
+                              data-testid="button-pay-crypto"
+                            >
+                              {cryptoLoading ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Coins className="h-4 w-4 mr-2" />
+                              )}
+                              Pay ${selectedPlan === "yearly" ? "79" : "9"} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {paymentMethod === "card" && (
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => handleUpgrade(selectedPlan)}
+                        disabled={checkoutLoading !== null}
+                        data-testid="button-pay-card"
+                      >
+                        {checkoutLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-4 w-4 mr-2" />
+                        )}
+                        Continue to Stripe Checkout
+                      </Button>
+                    )}
+
+                    <div className="space-y-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Full Recommendations Hub with staking guides
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Unlimited exchanges, wallets & alerts
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Portfolio search, filter & sort
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Auto-withdraw interest weekly
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Tax reports (annual plan only)
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </>
             )}
           </CardContent>
