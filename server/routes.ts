@@ -4428,6 +4428,26 @@ function startPriceAlertChecker() {
 
   setTimeout(async () => {
     try {
+      const existingAddrs = await storage.getCryptoPaymentAddresses(true);
+      if (existingAddrs.length === 0) {
+        const defaultAddresses = [
+          { chain: "xrp", address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc", label: "Ledger" },
+          { chain: "bitcoin", address: "bc1qa2k2zypknlkta64sdgv7f7alp9ym7kxazwcw95", label: "Ledger" },
+          { chain: "ethereum", address: "0xEc4e0f92BE6A1054FCfF951a5d28E55eB250E8a7", label: "Ledger" },
+          { chain: "solana", address: "Ey4cAzgaSAcZJqi3T4o6eAFXRMjvYCTcFVNJ2ACgYSAZ", label: "SafePal" },
+        ];
+        for (const addr of defaultAddresses) {
+          await storage.createCryptoPaymentAddress(addr);
+        }
+        console.log(`[seed] Created ${defaultAddresses.length} default crypto payment addresses`);
+      }
+    } catch (err) {
+      console.error("[seed] Failed to seed crypto payment addresses:", err);
+    }
+  }, 3000);
+
+  setTimeout(async () => {
+    try {
       const ADMIN_USER_ID = "3e7353fc-9f2f-4f72-aba9-93c49b629b89";
       const adminWallets = await storage.getWalletsByUser(ADMIN_USER_ID);
       const ledgerXWallets = adminWallets.filter(w => w.label === "LEDGERX");
