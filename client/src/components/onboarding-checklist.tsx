@@ -66,7 +66,7 @@ export function OnboardingChecklist({
       description:
         "Connect your XRPL wallet (Xaman or Ledger) and deposit RLUSD into a Soil vault. Earn 5\u20138% fixed APR \u2014 backed by real-world assets, fully non-custodial.",
       cta: "Connect Wallet & Earn",
-      href: "/ownbank/dashboard",
+      href: "/ownbank",
       icon: Sprout,
       iconColor: "text-emerald-500",
       completed: isConnected && vaultDeposits.length > 0,
