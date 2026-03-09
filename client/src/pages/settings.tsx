@@ -216,12 +216,15 @@ export default function SettingsPage() {
   };
 
   const CHAIN_LABELS: Record<string, string> = {
+    rlusd: "RLUSD (Stablecoin)", xrp: "XRP",
     bitcoin: "Bitcoin (BTC)", ethereum: "Ethereum (ETH)", solana: "Solana (SOL)",
-    xrp: "XRP", dogecoin: "Dogecoin (DOGE)", litecoin: "Litecoin (LTC)",
+    dogecoin: "Dogecoin (DOGE)", litecoin: "Litecoin (LTC)",
     cardano: "Cardano (ADA)", avalanche: "Avalanche (AVAX)", algorand: "Algorand (ALGO)",
     cosmos: "Cosmos (ATOM)", tron: "Tron (TRX)", hedera: "Hedera (HBAR)",
     polkadot: "Polkadot (DOT)", vechain: "VeChain (VET)", stellar: "Stellar (XLM)",
     ton: "TON", polygon: "Polygon (MATIC)", cronos: "Cronos (CRO)", xdc: "XDC",
+    digibyte: "DigiByte (DGB)", casper: "Casper (CSPR)", nervos: "Nervos (CKB)",
+    zilliqa: "Zilliqa (ZIL)", verge: "Verge (XVG)",
   };
 
   const getInitials = () => {
@@ -495,7 +498,7 @@ export default function SettingsPage() {
 
                       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-1.5">
                         <p className="text-xs font-medium text-blue-800 dark:text-blue-200">How we match your payment</p>
-                        {pendingPayment.chain === "xrp" ? (
+                        {(pendingPayment.chain === "xrp" || pendingPayment.chain === "rlusd") ? (
                           <p className="text-xs text-blue-700 dark:text-blue-300">
                             Your payment is identified by the <strong>Destination Tag</strong> above. Include it when sending — without it, we cannot match your payment to your account.
                           </p>
@@ -514,30 +517,41 @@ export default function SettingsPage() {
 
                     {(() => {
                       const chain = pendingPayment.chain?.toLowerCase();
+                      const dex = { name: "Changelly", url: "https://changelly.com" };
+                      const chNow = { name: "ChangeNOW", url: "https://changenow.io" };
                       const swapLinks: Record<string, { name: string; url: string }[]> = {
-                        ethereum: [
-                          { name: "Uniswap", url: "https://app.uniswap.org/swap" },
-                          { name: "1inch", url: "https://app.1inch.io" },
-                        ],
-                        solana: [
-                          { name: "Jupiter", url: "https://jup.ag/swap" },
-                          { name: "Raydium", url: "https://raydium.io/swap" },
-                        ],
-                        xrp: [
-                          { name: "XRPL DEX", url: "https://sologenic.org/trade" },
-                        ],
-                        bitcoin: [
-                          { name: "Changelly", url: "https://changelly.com" },
-                          { name: "ChangeNOW", url: "https://changenow.io" },
-                        ],
+                        ethereum: [{ name: "Uniswap", url: "https://app.uniswap.org/swap" }, { name: "1inch", url: "https://app.1inch.io" }],
+                        solana: [{ name: "Jupiter", url: "https://jup.ag/swap" }, { name: "Raydium", url: "https://raydium.io/swap" }],
+                        xrp: [{ name: "Sologenic DEX", url: "https://sologenic.org/trade" }],
+                        rlusd: [{ name: "Sologenic DEX", url: "https://sologenic.org/trade" }, { name: "First Ledger", url: "https://firstledger.net" }],
+                        bitcoin: [dex, chNow],
+                        polygon: [{ name: "QuickSwap", url: "https://quickswap.exchange" }, { name: "1inch", url: "https://app.1inch.io" }],
+                        avalanche: [{ name: "Trader Joe", url: "https://traderjoexyz.com/avalanche/trade" }, dex],
+                        cronos: [{ name: "VVS Finance", url: "https://vvs.finance/swap" }],
+                        tron: [{ name: "SunSwap", url: "https://sunswap.com" }],
+                        cosmos: [{ name: "Osmosis", url: "https://app.osmosis.zone" }],
+                        stellar: [{ name: "StellarX", url: "https://www.stellarx.com" }],
+                        ton: [{ name: "STON.fi", url: "https://ston.fi/swap" }],
+                        algorand: [{ name: "Tinyman", url: "https://app.tinyman.org" }],
+                        dogecoin: [dex, chNow],
+                        litecoin: [dex, chNow],
+                        cardano: [{ name: "SundaeSwap", url: "https://sundae.fi" }, { name: "Minswap", url: "https://minswap.org" }],
+                        hedera: [{ name: "SaucerSwap", url: "https://www.saucerswap.finance" }],
+                        polkadot: [dex, chNow],
+                        vechain: [dex, chNow],
+                        digibyte: [dex, chNow],
+                        casper: [dex, chNow],
+                        nervos: [dex, chNow],
+                        zilliqa: [{ name: "ZilSwap", url: "https://zilswap.io" }],
+                        verge: [dex, chNow],
+                        xdc: [{ name: "XSwap", url: "https://xspswap.finance" }, dex],
                       };
-                      const links = swapLinks[chain] || [];
-                      if (links.length === 0) return null;
+                      const links = swapLinks[chain] || [dex, chNow];
                       return (
                         <div className="text-xs text-muted-foreground" data-testid="swap-links">
                           <span>Need to convert first? Swap on </span>
                           {links.map((link, i) => (
-                            <span key={link.name}>
+                            <span key={link.name + i}>
                               {i > 0 && " or "}
                               <a
                                 href={link.url}

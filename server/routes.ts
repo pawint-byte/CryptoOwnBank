@@ -2421,9 +2421,14 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Chain is required." });
       }
 
-      const VERIFIED_CHAINS = ["xrp", "bitcoin", "ethereum", "solana"];
-      if (!VERIFIED_CHAINS.includes(chain.toLowerCase())) {
-        return res.status(400).json({ message: `Automated verification is only available for XRP, BTC, ETH, and SOL. Other chains coming soon.` });
+      const ALL_SUPPORTED_CHAINS = [
+        "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
+        "cardano", "avalanche", "algorand", "cosmos", "tron", "hedera",
+        "polkadot", "vechain", "digibyte", "casper", "cronos", "nervos",
+        "zilliqa", "ton", "stellar", "verge", "xdc", "polygon",
+      ];
+      if (!ALL_SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
+        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
       }
 
       const addresses = await storage.getCryptoPaymentAddresses(true);
@@ -2436,12 +2441,13 @@ export async function registerRoutes(
 
       const CHAIN_TO_COINGECKO: Record<string, string> = {
         bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",
-        xrp: "ripple", dogecoin: "dogecoin", litecoin: "litecoin",
+        xrp: "ripple", rlusd: "ripple-usd", dogecoin: "dogecoin", litecoin: "litecoin",
         cardano: "cardano", avalanche: "avalanche-2", algorand: "algorand",
         cosmos: "cosmos", tron: "tron", hedera: "hedera-hashgraph",
         polkadot: "polkadot", vechain: "vechain", stellar: "stellar",
         ton: "the-open-network", polygon: "matic-network", cronos: "crypto-com-chain",
-        xdc: "xdce-crowd-sale",
+        xdc: "xdce-crowd-sale", digibyte: "digibyte", casper: "casper-network",
+        nervos: "nervos-network", zilliqa: "zilliqa", verge: "verge",
       };
 
       const coingeckoId = CHAIN_TO_COINGECKO[chain.toLowerCase()];
@@ -2461,15 +2467,16 @@ export async function registerRoutes(
       cryptoAmount += uniqueSuffix;
 
       const CHAIN_TO_ASSET: Record<string, string> = {
-        bitcoin: "BTC", ethereum: "ETH", solana: "SOL", xrp: "XRP",
+        bitcoin: "BTC", ethereum: "ETH", solana: "SOL", xrp: "XRP", rlusd: "RLUSD",
         dogecoin: "DOGE", litecoin: "LTC", cardano: "ADA", avalanche: "AVAX",
         algorand: "ALGO", cosmos: "ATOM", tron: "TRX", hedera: "HBAR",
         polkadot: "DOT", vechain: "VET", stellar: "XLM", ton: "TON",
-        polygon: "MATIC", cronos: "CRO", xdc: "XDC",
+        polygon: "MATIC", cronos: "CRO", xdc: "XDC", digibyte: "DGB",
+        casper: "CSPR", nervos: "CKB", zilliqa: "ZIL", verge: "XVG",
       };
 
       let destinationTag: number | null = null;
-      if (chain.toLowerCase() === "xrp") {
+      if (chain.toLowerCase() === "xrp" || chain.toLowerCase() === "rlusd") {
         destinationTag = Math.floor(Math.random() * 2_000_000_000) + 1;
       }
 
@@ -4432,17 +4439,37 @@ function startPriceAlertChecker() {
   setTimeout(async () => {
     try {
       const existingAddrs = await storage.getCryptoPaymentAddresses(true);
-      if (existingAddrs.length === 0) {
-        const defaultAddresses = [
-          { chain: "xrp", address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc", label: "Ledger" },
-          { chain: "bitcoin", address: "bc1qa2k2zypknlkta64sdgv7f7alp9ym7kxazwcw95", label: "Ledger" },
-          { chain: "ethereum", address: "0xEc4e0f92BE6A1054FCfF951a5d28E55eB250E8a7", label: "Ledger" },
-          { chain: "solana", address: "Ey4cAzgaSAcZJqi3T4o6eAFXRMjvYCTcFVNJ2ACgYSAZ", label: "SafePal" },
-        ];
-        for (const addr of defaultAddresses) {
-          await storage.createCryptoPaymentAddress(addr);
-        }
-        console.log(`[seed] Created ${defaultAddresses.length} default crypto payment addresses`);
+      const existingChains = new Set(existingAddrs.map(a => a.chain.toLowerCase()));
+      const defaultAddresses = [
+        { chain: "xrp", address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc", label: "Ledger" },
+        { chain: "rlusd", address: "rpwKnLcsi441mHxvUZtBeMHumLSSEzzqEY", label: "Xaman" },
+        { chain: "bitcoin", address: "bc1qa2k2zypknlkta64sdgv7f7alp9ym7kxazwcw95", label: "Ledger" },
+        { chain: "ethereum", address: "0xEc4e0f92BE6A1054FCfF951a5d28E55eB250E8a7", label: "Ledger" },
+        { chain: "solana", address: "Ey4cAzgaSAcZJqi3T4o6eAFXRMjvYCTcFVNJ2ACgYSAZ", label: "SafePal" },
+        { chain: "dogecoin", address: "D7aQa7LVAG5gdmYQpnXjweHpzbTxiFSGYe", label: "Ellipal" },
+        { chain: "litecoin", address: "M9S7tv7qv5fPctYuvxph4h3xMnYUFuEWwg", label: "Ellipal" },
+        { chain: "cardano", address: "addr1q8fkvkyguf8d7hx3h0fp79t38s5uyu3j233jlmvjate0dm84eagvqkg0rug72sm0yps7vm2wuhck8c3j36alz2ce4nzqvqtw37", label: "Ledger" },
+        { chain: "avalanche", address: "0x1739b7096bC7a6b70869f8B17F7624eb645D615C", label: "CypheRock" },
+        { chain: "algorand", address: "G73ZVJE4WDP5FWFSPFZCEICVL5HNEIVQ7VKCAELZ323O37IXQH5X6ROR3E", label: "Ledger" },
+        { chain: "cosmos", address: "cosmos1g0uuvkjvc3dv2s2gw3j3jar4gyh3h6z9spw3v8", label: "Ledger" },
+        { chain: "tron", address: "TP4ik3jen62RW5CBxUnehrDV6sQuouDdEK", label: "Ledger" },
+        { chain: "hedera", address: "0.0.2953190", label: "Stader" },
+        { chain: "polkadot", address: "12GEjjJDv339gcYSWF3fEzL7GkEacPyepEzNVEXcjETjCeQw", label: "Ledger" },
+        { chain: "vechain", address: "0x27607b778b53E243B63E13D3f7a46cD864D4E67a", label: "Ledger" },
+        { chain: "digibyte", address: "SRjSn5UEUsQ3qyZgnxAe1QjqQzGP6W7SoK", label: "Ledger" },
+        { chain: "stellar", address: "GCMQNJIAZYBF2C3L5CK7PVKRVCBI75AGSGDVUCXDINBBR27ONRZDDEL3", label: "Ledger" },
+        { chain: "ton", address: "UQD0BRQt-QdIEbsjuRsMqzDlBkUAEfQixShDECoKEOXRc4eR", label: "Crypto.com" },
+        { chain: "polygon", address: "0x1b82116272AFAFde49742D6041A34eB8d917C841", label: "Ellipal" },
+        { chain: "cronos", address: "cro1z0a5536kt28hga64ddlwcd82uq2a2ful3f9jxw", label: "Ledger" },
+        { chain: "xdc", address: "xdc1b82116272AFAFde49742D6041A34eB8d917C841", label: "Ellipal" },
+        { chain: "verge", address: "DEJ1aUcdh12zP5wBP5i4k6M1Nw2j9LR6YZ", label: "Ellipal" },
+      ];
+      const toCreate = defaultAddresses.filter(a => !existingChains.has(a.chain));
+      for (const addr of toCreate) {
+        await storage.createCryptoPaymentAddress(addr);
+      }
+      if (toCreate.length > 0) {
+        console.log(`[seed] Created ${toCreate.length} crypto payment addresses (${toCreate.map(a => a.chain).join(", ")})`);
       }
     } catch (err) {
       console.error("[seed] Failed to seed crypto payment addresses:", err);
