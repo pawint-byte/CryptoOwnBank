@@ -164,6 +164,8 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
         <Route path="/chain-guide" component={ChainGuide} />
+        <Route path="/rwa-yields" component={RwaYields} />
+        <Route path="/stablecoins" component={Stablecoins} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />

@@ -115,6 +115,35 @@ const faqGroups = [
         q: "What happens if Soil or XRPL has issues?",
         a: "Soil is a compliant RWA protocol on XRPL \u2014 funds are loaned to Soil Ltd. (backed by real assets), not algorithmic or high-risk DeFi. If issues arise (rare), withdrawals follow vault rules (notice periods). XRPL itself is battle-tested and decentralized. Your assets stay on-chain in your wallet \u2014 we can\u2019t access or lose them.",
       },
+      {
+        q: "Where does CryptoOwnBank get its price data?",
+        a: "CryptoOwnBank fetches real-time prices from CoinGecko, a widely trusted crypto market data aggregator that sources from hundreds of exchanges. We track which assets also have Chainlink decentralized oracle feeds available (BTC, ETH, XRP, SOL, and others) \u2014 these are the same feeds trusted by Aave, Compound, and other major DeFi protocols. In a future update, we plan to integrate Chainlink on-chain feeds directly for even stronger data integrity. For now, CoinGecko provides reliable, broadly-sourced pricing across all 24+ chains we support.",
+      },
+    ],
+  },
+  {
+    heading: "Stablecoins & Real-World Assets",
+    items: [
+      {
+        q: "What are Real-World Asset (RWA) tokens?",
+        a: "Real-World Asset (RWA) tokens are blockchain-based representations of tangible, off-chain assets \u2014 things like US Treasury bills, real estate, trade receivables, and private credit. By tokenizing these assets, investors can access institutional-grade yields directly on-chain with lower minimums, faster settlement, and transparent pricing. For example, Ondo Finance tokenizes short-term US Treasuries (OUSG) to offer ~5% yield on-chain. Centrifuge tokenizes trade receivables and invoices from real businesses. Soil Protocol lends to institutional borrowers backed by Treasuries and private credit pools, offering 5\u20138% fixed APR on RLUSD. The key advantage: you get traditional finance yields with blockchain transparency and self-custody \u2014 no bank needed.",
+      },
+      {
+        q: "Which stablecoins does CryptoOwnBank support?",
+        a: "CryptoOwnBank tracks and supports the following major stablecoins across multiple chains: RLUSD (Ripple USD) \u2014 Ripple\u2019s regulated stablecoin on XRPL, backed 1:1 by cash and cash equivalents, used for Soil vault deposits. USDC (USD Coin by Circle) \u2014 the most widely used regulated stablecoin, available on Ethereum, Solana, Polygon, Arbitrum, Base, and more. USDT (Tether) \u2014 the largest stablecoin by market cap, available on nearly every chain. EURCV (Euro Coin by Soci\u00e9t\u00e9 G\u00e9n\u00e9rale) \u2014 a euro-denominated stablecoin for European users. PYUSD (PayPal USD) \u2014 PayPal\u2019s regulated stablecoin on Ethereum and Solana. DAI (by MakerDAO) \u2014 a decentralized, crypto-collateralized stablecoin on Ethereum. Our portfolio tracker shows your stablecoin holdings across all connected wallets and exchanges, and the Stablecoin Dashboard compares peg stability, backing reserves, and available yields for each.",
+      },
+      {
+        q: "How do RWA yields compare to traditional savings?",
+        a: "The difference is significant. Traditional bank savings accounts typically offer 0.01\u20130.5% APY \u2014 barely keeping up with inflation. High-yield savings accounts (HYSAs) from online banks like Ally, Marcus, or SoFi currently offer around 4\u20134.5% APY, but rates fluctuate with Fed policy. RWA tokens on-chain offer 5\u20138% fixed APR: Soil Treasury vault pays 5.2% (backed by US government securities), Soil CREDIT+ vault pays 8.0% (backed by diversified private credit), and other RWA protocols like Ondo and Centrifuge offer similar ranges. The trade-off: RWA tokens carry smart contract risk and are newer than FDIC-insured bank deposits. However, the underlying assets (Treasuries, institutional credit) are the same ones banks use to generate their own yields \u2014 RWA tokens simply pass more of that yield directly to you by cutting out the bank as middleman.",
+      },
+      {
+        q: "What are the risks of RWA tokens?",
+        a: "RWA tokens offer compelling yields but come with risks you should understand: (1) Credit risk \u2014 the underlying borrowers or assets could default. Treasury-backed vaults have minimal credit risk (US government debt), but private credit vaults carry higher default exposure. (2) Smart contract risk \u2014 the token and vault contracts could contain bugs or be exploited. Reputable protocols undergo multiple audits, but no code is 100% risk-free. (3) Liquidity risk \u2014 some RWA vaults have lock-up periods (e.g., Soil CREDIT+ requires 90-day notice). You may not be able to exit quickly during market stress. (4) Regulatory risk \u2014 RWA tokenization is a fast-evolving regulatory space. Rules around securities classification, stablecoin backing, and cross-border transfers could change and impact token availability or yields. Always diversify across vault types, understand the withdrawal terms, and never invest more than you can afford to lock up. DYOR.",
+      },
+      {
+        q: "Can I earn yield on stablecoins across different chains?",
+        a: "Yes \u2014 the multi-chain yield landscape for stablecoins is growing rapidly. On XRPL, you can earn 5\u20138% on RLUSD through Soil Protocol vaults. On Ethereum, protocols like Aave, Compound, and Morpho offer variable yields on USDC, USDT, and DAI (typically 3\u20137% depending on market conditions). On Solana, platforms like Marinade and Kamino offer stablecoin lending yields. On Polygon, Arbitrum, and Base, DeFi protocols provide additional stablecoin yield opportunities. CryptoOwnBank\u2019s Recommendations Hub surfaces the best stablecoin yields across all supported chains, clearly labeling each as on-chain (you keep your keys) or custodial (a platform holds your assets). This lets you compare opportunities and choose the best risk-adjusted yield for your stablecoins, regardless of which chain they\u2019re on.",
+      },
     ],
   },
   {

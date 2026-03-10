@@ -9,22 +9,11 @@ const COINGECKO_IDS: Record<string, string> = {
   ZIL: "zilliqa", CKB: "nervos-network", CSPR: "casper-network", TON: "the-open-network",
 };
 
-const CHAINLINK_FEED_IDS: Record<string, string> = {
-  BTC: "bitcoin",
-  ETH: "ethereum",
-  XRP: "ripple",
-  SOL: "solana",
-  LINK: "chainlink",
-  MATIC: "matic-network",
-  DOT: "polkadot",
-  AVAX: "avalanche-2",
-  ADA: "cardano",
-  DOGE: "dogecoin",
-  LTC: "litecoin",
-  BNB: "binancecoin",
-};
+const CHAINLINK_TRACKED_SYMBOLS = new Set([
+  "BTC", "ETH", "XRP", "SOL", "LINK", "MATIC", "DOT", "AVAX", "ADA", "DOGE", "LTC", "BNB",
+]);
 
-const priceSourceCache: Record<string, "chainlink" | "coingecko"> = {};
+const priceSourceCache: Record<string, "coingecko"> = {};
 
 const KNOWN_PROTOCOLS = [
   "lido", "rocket-pool", "aave", "jito", "benqi", "marinade", "compound",
@@ -63,31 +52,6 @@ async function fetchWithRetry(url: string, retries = 2): Promise<any> {
   }
 }
 
-async function fetchChainlinkPrices(): Promise<Record<string, any>> {
-  const results: Record<string, any> = {};
-  const chainlinkSymbols = Object.keys(CHAINLINK_FEED_IDS);
-
-  try {
-    const ids = Object.values(CHAINLINK_FEED_IDS).join(",");
-    const data = await fetchWithRetry(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
-    );
-
-    for (const [symbol, cgId] of Object.entries(CHAINLINK_FEED_IDS)) {
-      if (data[cgId]) {
-        results[symbol] = {
-          usd: data[cgId].usd,
-          usd_24h_change: data[cgId].usd_24h_change,
-          source: "chainlink" as const,
-        };
-      }
-    }
-    console.log(`[market-data] Fetched ${Object.keys(results).length} Chainlink-verified prices`);
-  } catch (err) {
-    console.warn("[market-data] Chainlink price fetch error:", err);
-  }
-  return results;
-}
 
 async function fetchCoinGeckoPrices(): Promise<Record<string, any>> {
   const results: Record<string, any> = {};
@@ -177,27 +141,19 @@ export async function refreshAllMarketData(): Promise<{ priceCount: number; yiel
   const oldPrices = await getCachedPrices();
   const oldYields = await getCachedYields();
 
-  const chainlinkPrices = await fetchChainlinkPrices();
-  let chainlinkCount = 0;
-  for (const [symbol, data] of Object.entries(chainlinkPrices)) {
-    await storage.upsertMarketCache("price", symbol, { ...data, source: "chainlink" });
-    priceSourceCache[symbol] = "chainlink";
-    chainlinkCount++;
-  }
-  console.log(`[market-data] Updated ${chainlinkCount} prices from Chainlink oracle feeds`);
-
   const coingeckoPrices = await fetchCoinGeckoPrices();
-  let coingeckoCount = 0;
+  let priceCount = 0;
   for (const [symbol, data] of Object.entries(coingeckoPrices)) {
-    if (!chainlinkPrices[symbol]) {
-      await storage.upsertMarketCache("price", symbol, { ...data, source: "coingecko" });
-      priceSourceCache[symbol] = "coingecko";
-      coingeckoCount++;
-    }
+    const hasChainlinkFeed = CHAINLINK_TRACKED_SYMBOLS.has(symbol);
+    await storage.upsertMarketCache("price", symbol, {
+      ...data,
+      source: "coingecko",
+      chainlinkAvailable: hasChainlinkFeed,
+    });
+    priceSourceCache[symbol] = "coingecko";
+    priceCount++;
   }
-  console.log(`[market-data] Updated ${coingeckoCount} prices from CoinGecko (fallback)`);
-
-  const priceCount = chainlinkCount + coingeckoCount;
+  console.log(`[market-data] Updated ${priceCount} prices from CoinGecko (${CHAINLINK_TRACKED_SYMBOLS.size} have Chainlink feeds available)`);
 
   const yields = await fetchDefiLlamaYields();
   let yieldCount = 0;
@@ -210,12 +166,12 @@ export async function refreshAllMarketData(): Promise<{ priceCount: number; yiel
   return { priceCount, yieldCount };
 }
 
-export function getPriceSources(): Record<string, "chainlink" | "coingecko"> {
+export function getPriceSources(): Record<string, "coingecko"> {
   return { ...priceSourceCache };
 }
 
-export function getChainlinkSymbols(): string[] {
-  return Object.keys(CHAINLINK_FEED_IDS);
+export function getChainlinkTrackedSymbols(): string[] {
+  return Array.from(CHAINLINK_TRACKED_SYMBOLS);
 }
 
 export function startMarketDataScheduler(hours: number): void {

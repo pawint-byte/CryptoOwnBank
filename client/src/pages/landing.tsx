@@ -224,6 +224,24 @@ const features = [
     description:
       "Set alerts for any crypto — get an email when XRP hits $3, BTC breaks $100K, or any price you choose. Free users get 1 alert, Premium gets unlimited.",
   },
+  {
+    icon: Globe,
+    title: "RWA Yield Explorer",
+    description:
+      "Earn 5–8% on tokenized treasuries and real-world assets. Compare yields from Ondo, Centrifuge, Soil, and more — all in one explorer with live APY data.",
+  },
+  {
+    icon: DollarSign,
+    title: "Stablecoin Dashboard",
+    description:
+      "Track and compare stablecoins across every chain — RLUSD, USDC, USDT, EURCV, PYUSD, DAI. See market caps, peg stability, and supported networks at a glance.",
+  },
+  {
+    icon: LinkIcon,
+    title: "Real-Time Market Data",
+    description:
+      "Real-time pricing from CoinGecko across 24+ blockchains. We track Chainlink oracle feed availability for major assets so you know which prices have decentralized verification on-chain.",
+  },
 ];
 
 const memberStories = [
@@ -1197,10 +1215,22 @@ export default function Landing() {
                 </ul>
               </div>
             </div>
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center flex flex-wrap items-center justify-center gap-3">
               <a href="/chain-guide">
                 <Button variant="outline" data-testid="button-chain-guide-cta">
                   Explore the Chain Guide — XRP vs XLM
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+              <a href="/rwa-yields">
+                <Button variant="outline" data-testid="button-rwa-yields-cta">
+                  RWA Yield Explorer
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+              <a href="/stablecoins">
+                <Button variant="outline" data-testid="button-stablecoins-cta">
+                  Stablecoin Dashboard
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </a>

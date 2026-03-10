@@ -91,7 +91,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     queryKey: ["/api/alert-logs"],
   });
 
-  const { data: priceSources } = useQuery<{ sources: Record<string, "chainlink" | "coingecko">; chainlinkSymbols: string[] }>({
+  const { data: priceSources } = useQuery<{ sources: Record<string, "coingecko">; chainlinkTrackedSymbols: string[] }>({
     queryKey: ["/api/market-data/price-sources"],
     refetchInterval: 5 * 60 * 1000,
   });
@@ -697,12 +697,12 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
             {priceSources && (
               <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
-                  Chainlink Oracle — verified on-chain
-                </span>
-                <span className="flex items-center gap-1">
                   <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                   CoinGecko — market aggregator
+                </span>
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
+                  Chainlink feed available
                 </span>
               </div>
             )}
@@ -711,15 +711,14 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {priceEntries.map(([sym, data]) => {
-                  const source = priceSources?.sources?.[sym] || (data?.source as string) || "coingecko";
-                  const isChainlink = source === "chainlink";
+                  const hasChainlinkFeed = priceSources?.chainlinkTrackedSymbols?.includes(sym);
                   return (
                     <div key={sym} className="flex items-center justify-between p-2 rounded-lg border bg-card" data-testid={`price-card-${sym}`}>
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-sm">{sym}</span>
-                          {isChainlink ? (
-                            <ShieldCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" data-testid={`oracle-badge-${sym}`} />
+                          {hasChainlinkFeed ? (
+                            <ShieldCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" data-testid={`oracle-badge-${sym}`} title="Chainlink feed available" />
                           ) : (
                             <Globe className="h-3 w-3 text-muted-foreground shrink-0" data-testid={`source-badge-${sym}`} />
                           )}

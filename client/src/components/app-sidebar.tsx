@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -32,6 +33,11 @@ import {
   FileText as InvoiceIcon,
   GitCompareArrows,
   Star,
+  StarOff,
+  ChevronDown,
+  ChevronRight,
+  Pin,
+  Gem,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,38 +55,157 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 
-const trackerItems = [
-  { title: "Overview", url: "/", icon: LayoutDashboard },
-  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
-  { title: "Portfolio", url: "/portfolio", icon: PieChart },
-  { title: "Blockchain Addresses", url: "/wallets", icon: Wallet },
-  { title: "Tax Reports", url: "/tax-reports", icon: FileText },
-  { title: "Statement Insights", url: "/statement-insights", icon: FileSearch },
-  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon },
-  { title: "Integrations", url: "/integrations", icon: Link2 },
-  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign },
-  { title: "Price Alerts", url: "/price-alerts", icon: Bell },
-  { title: "Settings", url: "/settings", icon: Settings },
+type NavItem = {
+  title: string;
+  url: string;
+  icon: any;
+  color?: string;
+  group?: string;
+};
+
+const allItems: NavItem[] = [
+  { title: "Overview", url: "/", icon: LayoutDashboard, group: "tracker" },
+  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "tracker" },
+  { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "tracker" },
+  { title: "Blockchain Addresses", url: "/wallets", icon: Wallet, group: "tracker" },
+  { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "tracker" },
+  { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "tracker" },
+  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "tracker" },
+  { title: "Integrations", url: "/integrations", icon: Link2, group: "tracker" },
+  { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "tracker" },
+
+  { title: "Wallet & Yield", url: "/ownbank", icon: Landmark, color: "#00A4E4", group: "ownbank" },
+  { title: "Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
+  { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, color: "#00A4E4", group: "ownbank" },
+  { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, color: "#00A4E4", group: "ownbank" },
+  { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
+  { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, color: "#00A4E4", group: "ownbank" },
+  { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, color: "#00A4E4", group: "ownbank" },
+  { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine, color: "#00A4E4", group: "ownbank" },
+  { title: "History", url: "/ownbank/history", icon: History, color: "#00A4E4", group: "ownbank" },
+  { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
+  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
+
+  { title: "Send (Path Pay)", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
+  { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
+
+  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },
+  { title: "RWA Yields", url: "/rwa-yields", icon: Gem, group: "research" },
+  { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "research" },
+  { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "research" },
+  { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "research" },
+  { title: "FAQ", url: "/faq", icon: HelpCircle, group: "research" },
+  { title: "Contact & Feedback", url: "/contact", icon: MessageSquare, group: "research" },
 ];
 
-const ownbankItems = [
-  { title: "Wallet & Yield", url: "/ownbank", icon: Landmark },
-  { title: "Vaults", url: "/ownbank/vaults", icon: Vault },
-  { title: "Token Manager", url: "/ownbank/tokens", icon: Coins },
-  { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp },
-  { title: "Send & Receive", url: "/ownbank/send", icon: Send },
-  { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon },
-  { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon },
-  { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine },
-  { title: "History", url: "/ownbank/history", icon: History },
-  { title: "My Referrals", url: "/ownbank/referrals", icon: Users },
-  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield },
-];
+const DEFAULT_FAVORITES = ["/", "/portfolio", "/ownbank/vaults", "/stablecoins", "/chain-guide"];
 
-const stellarItems = [
-  { title: "Send (Path Pay)", url: "/stellar/send", icon: Send },
-  { title: "Remittances", url: "/stellar/remittances", icon: Star },
-];
+const STORAGE_KEY_FAVS = "sidebar-favorites";
+const STORAGE_KEY_GROUPS = "sidebar-groups-open";
+
+function useFavorites() {
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_FAVS);
+      return stored ? JSON.parse(stored) : DEFAULT_FAVORITES;
+    } catch {
+      return DEFAULT_FAVORITES;
+    }
+  });
+
+  const toggle = useCallback((url: string) => {
+    setFavorites((prev) => {
+      const next = prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url];
+      localStorage.setItem(STORAGE_KEY_FAVS, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return { favorites, toggle, isFav: (url: string) => favorites.includes(url) };
+}
+
+function useGroupState(defaults: Record<string, boolean>) {
+  const [open, setOpen] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_GROUPS);
+      return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+    } catch {
+      return defaults;
+    }
+  });
+
+  const toggleGroup = useCallback((key: string) => {
+    setOpen((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return { open, toggleGroup };
+}
+
+function NavItemRow({
+  item,
+  testPrefix,
+  showFavStar,
+  isActive,
+  isFavorite,
+  onToggleFav,
+}: {
+  item: NavItem;
+  testPrefix: string;
+  showFavStar: boolean;
+  isActive: boolean;
+  isFavorite: boolean;
+  onToggleFav: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem>
+      <div
+        className="relative flex items-center"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <SidebarMenuButton
+          asChild
+          isActive={isActive}
+          data-testid={`nav-${testPrefix}-${item.title.toLowerCase().replace(/[\s&()]/g, "-")}`}
+          className="flex-1"
+        >
+          <Link href={item.url}>
+            <Icon
+              className="h-4 w-4"
+              style={item.color ? { color: item.color } : undefined}
+            />
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+        {showFavStar && hovered && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleFav();
+            }}
+            className="absolute right-1 p-1 rounded hover:bg-accent transition-colors z-10"
+            data-testid={`fav-toggle-${item.url.replace(/\//g, "-")}`}
+            title={isFavorite ? "Unpin from My Tools" : "Pin to My Tools"}
+          >
+            {isFavorite ? (
+              <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+            ) : (
+              <StarOff className="h-3 w-3 text-muted-foreground" />
+            )}
+          </button>
+        )}
+      </div>
+    </SidebarMenuItem>
+  );
+}
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -88,6 +213,14 @@ export function AppSidebar() {
   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
     enabled: !!user,
+  });
+
+  const { favorites, toggle, isFav } = useFavorites();
+  const { open, toggleGroup } = useGroupState({
+    tracker: true,
+    ownbank: false,
+    stellar: false,
+    research: false,
   });
 
   const getInitials = () => {
@@ -99,6 +232,58 @@ export function AppSidebar() {
     }
     return "U";
   };
+
+  const favoriteItems = allItems.filter((i) => favorites.includes(i.url));
+  const trackerItems = allItems.filter((i) => i.group === "tracker");
+  const ownbankItems = allItems.filter((i) => i.group === "ownbank");
+  const stellarItems = allItems.filter((i) => i.group === "stellar");
+  const researchItems = allItems.filter((i) => i.group === "research");
+
+  const renderItem = (item: NavItem, testPrefix: string, showFavStar = true) => (
+    <NavItemRow
+      key={item.url}
+      item={item}
+      testPrefix={testPrefix}
+      showFavStar={showFavStar}
+      isActive={location === item.url}
+      isFavorite={isFav(item.url)}
+      onToggleFav={() => toggle(item.url)}
+    />
+  );
+
+  const renderCollapsibleGroup = (
+    key: string,
+    label: string,
+    items: NavItem[],
+    dotColor?: string,
+    extra?: JSX.Element
+  ) => (
+    <SidebarGroup>
+      <SidebarGroupLabel
+        className="cursor-pointer select-none hover:bg-accent/30 transition-colors rounded-md"
+        onClick={() => toggleGroup(key)}
+        data-testid={`group-toggle-${key}`}
+      >
+        <span className="flex items-center gap-2 flex-1">
+          {dotColor && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: dotColor }} />}
+          {label}
+        </span>
+        {open[key] ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </SidebarGroupLabel>
+      {open[key] && (
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {items.map((item) => renderItem(item, key))}
+            {extra}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      )}
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar>
@@ -114,96 +299,49 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Tracker</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {trackerItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url}
-                    data-testid={`nav-${item.title.toLowerCase().replace(" ", "-")}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {favoriteItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <span className="flex items-center gap-2">
+                <Pin className="h-3 w-3 text-amber-500" />
+                My Tools
+              </span>
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {favoriteItems.map((item) => renderItem(item, "pinned", true))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#00A4E4]" />
-              OwnBank
-            </span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {ownbankItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url}
-                    data-testid={`nav-ownbank-${item.title.toLowerCase().replace(" ", "-")}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4 text-[#00A4E4]" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  disabled
-                  className="opacity-50 cursor-not-allowed"
-                  data-testid="nav-ownbank-xls66"
-                >
-                  <Zap className="h-4 w-4 text-muted-foreground" />
-                  <span className="flex items-center gap-2">
-                    XLS-66 Lending
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      Q2 2026
-                    </Badge>
-                  </span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderCollapsibleGroup("tracker", "Tracker", trackerItems)}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#7B61FF]" />
-              Stellar
-            </span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {stellarItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url}
-                    data-testid={`nav-stellar-${item.title.toLowerCase().replace(/[\s()]/g, "-")}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4 text-[#7B61FF]" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderCollapsibleGroup(
+          "ownbank",
+          "OwnBank XRPL",
+          ownbankItems,
+          "#00A4E4",
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              disabled
+              className="opacity-50 cursor-not-allowed"
+              data-testid="nav-ownbank-xls66"
+            >
+              <Zap className="h-4 w-4 text-muted-foreground" />
+              <span className="flex items-center gap-2">
+                XLS-66 Lending
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  Q2 2026
+                </Badge>
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )}
+
+        {renderCollapsibleGroup("stellar", "Stellar", stellarItems, "#7B61FF")}
+
+        {renderCollapsibleGroup("research", "Research & Tools", researchItems)}
 
         {adminStatus?.isAdmin && (
           <SidebarGroup>
@@ -243,66 +381,19 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={location === "/chain-guide"}
-                  data-testid="nav-chain-guide"
+                  isActive={location === "/settings"}
+                  data-testid="nav-settings"
                 >
-                  <Link href="/chain-guide">
-                    <GitCompareArrows className="h-4 w-4" />
-                    <span>Chain Guide</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/migration-guide"}
-                  data-testid="nav-migration-guide"
-                >
-                  <Link href="/migration-guide">
-                    <Route className="h-4 w-4" />
-                    <span>Migration Guide</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/yield-calculator"}
-                  data-testid="nav-yield-calculator"
-                >
-                  <Link href="/yield-calculator">
-                    <Calculator className="h-4 w-4" />
-                    <span>Yield Calculator</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/faq"}
-                  data-testid="nav-faq"
-                >
-                  <Link href="/faq">
-                    <HelpCircle className="h-4 w-4" />
-                    <span>FAQ</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/contact"}
-                  data-testid="nav-contact"
-                >
-                  <Link href="/contact">
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Contact & Feedback</span>
+                  <Link href="/settings">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

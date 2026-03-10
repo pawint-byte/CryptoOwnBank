@@ -4177,10 +4177,10 @@ export async function registerRoutes(
 
   app.get("/api/market-data/price-sources", isAuthenticated, async (_req: any, res) => {
     try {
-      const { getPriceSources, getChainlinkSymbols } = await import("./services/market-data");
+      const { getPriceSources, getChainlinkTrackedSymbols } = await import("./services/market-data");
       const sources = getPriceSources();
-      const chainlinkSymbols = getChainlinkSymbols();
-      res.json({ sources, chainlinkSymbols });
+      const chainlinkTrackedSymbols = getChainlinkTrackedSymbols();
+      res.json({ sources, chainlinkTrackedSymbols });
     } catch (error) {
       console.error("Price sources error:", error);
       res.status(500).json({ message: "Failed to fetch price sources" });
