@@ -51,6 +51,9 @@ import Reconciliation from "@/pages/reconciliation";
 import MigrationGuide from "@/pages/migration-guide";
 import OwnBankInvoices from "@/pages/ownbank-invoices";
 import PayPage from "@/pages/pay";
+import StellarRemittances from "@/pages/stellar-remittances";
+import StellarSend from "@/pages/stellar-send";
+import ChainGuide from "@/pages/chain-guide";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -116,10 +119,13 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/send" component={OwnBankSend} />
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
+        <Route path="/stellar/send" component={StellarSend} />
+        <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/price-alerts" component={PriceAlerts} />
         <Route path="/wallets" component={WalletsPage} />
         <Route path="/statement-insights" component={StatementInsights} />
         <Route path="/reconciliation" component={Reconciliation} />
+        <Route path="/chain-guide" component={ChainGuide} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
@@ -153,6 +159,9 @@ function Router() {
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/chain-guide" component={ChainGuide} />
+        <Route path="/stellar/send" component={StellarSend} />
+        <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />

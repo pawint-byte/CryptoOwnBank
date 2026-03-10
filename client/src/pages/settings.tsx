@@ -542,7 +542,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Badge variant="outline" className="text-[10px] px-1.5 capitalize" data-testid={`badge-chain-${w.id}`}>
-                        {w.chain === "xrpl" ? "XRPL" : w.chain}
+                        {w.chain === "xrpl" ? "XRPL" : w.chain === "stellar" ? "Stellar" : w.chain}
                       </Badge>
                       <Badge
                         variant="secondary"
@@ -1216,6 +1216,7 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
+                  <SelectItem value="stellar">Stellar (XLM)</SelectItem>
                   <SelectItem value="ethereum">Ethereum</SelectItem>
                   <SelectItem value="solana">Solana</SelectItem>
                   <SelectItem value="bitcoin">Bitcoin</SelectItem>
@@ -1232,24 +1233,30 @@ export default function SettingsPage() {
               <Label htmlFor="wallet-address">Wallet Address</Label>
               <Input
                 id="wallet-address"
-                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "ethereum" ? "0x..." : "Enter address"}
+                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "stellar" ? "GXXXX...XXXX" : walletForm.chain === "ethereum" ? "0x..." : "Enter address"}
                 value={walletForm.address}
                 onChange={(e) => setWalletForm((f) => ({ ...f, address: e.target.value }))}
                 className="font-mono text-sm"
                 data-testid="input-wallet-address"
               />
             </div>
-            {(walletForm.chain === "xrpl") && (
+            {(walletForm.chain === "xrpl" || walletForm.chain === "stellar") && (
               <div className="space-y-2">
-                <Label htmlFor="wallet-tag">Destination Tag (optional)</Label>
+                <Label htmlFor="wallet-tag">
+                  {walletForm.chain === "stellar" ? "Memo ID (optional)" : "Destination Tag (optional)"}
+                </Label>
                 <Input
                   id="wallet-tag"
-                  placeholder="e.g. 12345"
+                  placeholder={walletForm.chain === "stellar" ? "e.g. 1234567890" : "e.g. 12345"}
                   value={walletForm.destinationTag}
                   onChange={(e) => setWalletForm((f) => ({ ...f, destinationTag: e.target.value }))}
                   data-testid="input-wallet-tag"
                 />
-                <p className="text-xs text-muted-foreground">Required for exchange wallets</p>
+                <p className="text-xs text-muted-foreground">
+                  {walletForm.chain === "stellar"
+                    ? "Required for exchange deposits — Stellar uses memo IDs to identify your account"
+                    : "Required for exchange wallets"}
+                </p>
               </div>
             )}
             <div className="space-y-2">

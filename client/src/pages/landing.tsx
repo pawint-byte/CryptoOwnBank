@@ -1158,6 +1158,56 @@ export default function Landing() {
           </div>
         </section>
 
+        <section id="multi-chain" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-t border-b border-border/50">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-3" data-testid="heading-multi-chain">
+                Two Chains, One Platform — Use Each for What It Does Best
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                XRP Ledger for institutional-grade savings and trading. Stellar for retail payments and global remittances.
+                CryptoOwnBank brings both together so you don't have to choose.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="p-5 rounded-xl border bg-[#00A4E4]/5 border-[#00A4E4]/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="h-3 w-3 rounded-full bg-[#00A4E4]" />
+                  <h3 className="font-semibold">XRP Ledger</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">Savings &amp; Trading</span>
+                </div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> 5–8% fixed APR on RLUSD yield vaults</li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> Native DEX for token trading</li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> Non-custodial wallet management</li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> B2B invoicing &amp; payment corridors</li>
+                </ul>
+              </div>
+              <div className="p-5 rounded-xl border bg-[#7B61FF]/5 border-[#7B61FF]/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="h-3 w-3 rounded-full bg-[#7B61FF]" />
+                  <h3 className="font-semibold">Stellar</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">Payments &amp; Remittances</span>
+                </div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> Path payments — send USD, they get PHP automatically</li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> Global anchor network for cash on/off ramps</li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> Remittance corridor calculator &amp; guides</li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> USDC &amp; EURCV stablecoin support</li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-6 text-center">
+              <a href="/chain-guide">
+                <Button variant="outline" data-testid="button-chain-guide-cta">
+                  Explore the Chain Guide — XRP vs XLM
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+
         <section id="financial-access" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">

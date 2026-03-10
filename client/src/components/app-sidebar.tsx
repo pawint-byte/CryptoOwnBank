@@ -29,6 +29,8 @@ import {
   TrendingUp,
   Send,
   FileText as InvoiceIcon,
+  GitCompareArrows,
+  Star,
 } from "lucide-react";
 import {
   Sidebar,
@@ -71,6 +73,11 @@ const ownbankItems = [
   { title: "History", url: "/ownbank/history", icon: History },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield },
+];
+
+const stellarItems = [
+  { title: "Send (Path Pay)", url: "/stellar/send", icon: Send },
+  { title: "Remittances", url: "/stellar/remittances", icon: Star },
 ];
 
 export function AppSidebar() {
@@ -168,6 +175,34 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[#7B61FF]" />
+              Stellar
+            </span>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {stellarItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url}
+                    data-testid={`nav-stellar-${item.title.toLowerCase().replace(/[\s()]/g, "-")}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4 text-[#7B61FF]" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {adminStatus?.isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel>
@@ -209,6 +244,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/chain-guide"}
+                  data-testid="nav-chain-guide"
+                >
+                  <Link href="/chain-guide">
+                    <GitCompareArrows className="h-4 w-4" />
+                    <span>Chain Guide</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
