@@ -395,6 +395,18 @@ const faqGroups = [
         q: "Do I need Premium to accept business payments?",
         a: "No. The Send & Receive page, Token Manager (for setting up trustlines), and DEX (for currency conversion) are all available on the free tier. Premium adds unlimited blockchain address tracking, full transaction history, and tax reports — which become valuable as your payment volume grows and you need to track everything for accounting and tax filing.",
       },
+      {
+        q: "What if I don't have a bank account? Can I still use CryptoOwnBank?",
+        a: "Yes — and this is exactly the point. An estimated 1.4 billion adults worldwide are unbanked — no access to a traditional bank account at all. Whether that's because there's no bank branch nearby, you don't have the required documentation, or you can't meet minimum balance requirements, traditional finance was never built to include you. The XRPL requires nothing but an internet connection. Download a wallet app like Xaman, create an account in minutes, and you have full access to: receive payments from anyone in the world, send money in 4 seconds for a fraction of a penny, trade on a decentralized exchange, hold dollar-pegged stablecoins (RLUSD) to protect against local currency inflation, and earn 5–8% yield on your savings. No bank account, no credit check, no minimum balance, no government ID required by the network. A street vendor in Lagos and a Wall Street trader use the same blockchain, pay the same fees, and settle in the same 4 seconds.",
+      },
+      {
+        q: "What does 'debanked' mean and how does CryptoOwnBank help?",
+        a: "Debanked means you had a bank account or payment processor — and lost it. Banks close accounts without explanation. PayPal freezes funds for 180 days. Stripe shuts down businesses overnight. Entire industries (crypto, cannabis, firearms, adult content, even legal political organizations) have been systematically cut off from traditional financial services — not because they broke laws, but because a compliance algorithm flagged them as 'high risk.' When you're debanked, you can't process payments, can't receive payroll, can't run your business. On the XRPL, nobody can close your wallet. Nobody can freeze your funds. Nobody can decide your business is too risky to serve. Your wallet runs on a decentralized blockchain that no single company controls. CryptoOwnBank gives you the tools to operate your financial life entirely on-chain — accept payments, manage tokens, trade, earn yield — without needing permission from any institution. That's what being your own bank means when the banks don't want you.",
+      },
+      {
+        q: "Can someone in another country use CryptoOwnBank to participate in global commerce?",
+        a: "Absolutely. The XRPL is a global, borderless network. Someone in the Philippines can receive a payment from a client in Germany, hold it in RLUSD (pegged to the US dollar for stability), trade it on the DEX, or earn yield — all in the same 4 seconds, for the same fraction-of-a-penny fee, using the same tools as everyone else. No international wire fees, no SWIFT codes, no correspondent banks, no 3–5 day waits, no currency conversion markups from banks. CryptoOwnBank is the interface that makes this accessible — clean, educational, non-custodial. If you have internet, you're in.",
+      },
     ],
   },
   {

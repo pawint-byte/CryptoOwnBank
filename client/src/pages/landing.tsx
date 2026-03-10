@@ -44,6 +44,9 @@ import {
   Receipt,
   Handshake,
   CircleDollarSign,
+  Wifi,
+  UserX,
+  MapPin,
 } from "lucide-react";
 
 const xrplToolsComparison = [
@@ -1131,6 +1134,110 @@ export default function Landing() {
               <p className="text-xs text-muted-foreground mt-3 max-w-lg mx-auto">
                 Connect your wallet, share your payment QR code, and get paid in seconds.
                 No forms, no fees, no waiting. Consumers and small businesses welcome.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="financial-access" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 text-sm font-medium mb-4">
+                <Globe className="h-3.5 w-3.5" />
+                Unbanked &middot; Debanked &middot; Underbanked
+              </div>
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-financial-access">
+                If You Have Internet, You Have a Bank
+              </h2>
+              <p className="text-muted-foreground max-w-3xl mx-auto">
+                1.4 billion adults worldwide have no bank account. Millions more have been debanked — shut out by institutions that decided they're too risky, too small, or too inconvenient to serve. The XRPL doesn't care about any of that.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 mb-12">
+              <Card className="overflow-hidden" data-testid="card-unbanked">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+                    <MapPin className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">The Unbanked</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    No bank branch in your village. No government ID that meets requirements. No minimum balance to keep an account open. Traditional finance was never built for you.
+                  </p>
+                  <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <p className="text-sm font-medium">With the XRPL: a smartphone and internet connection is all you need. Create a wallet, receive payments, earn yield, trade on the DEX — no forms, no approvals, no minimums.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="overflow-hidden" data-testid="card-debanked">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+                    <UserX className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">The Debanked</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Account closed without explanation. PayPal froze your funds for 180 days. Stripe shut down your business overnight. You had access — until someone decided you didn't.
+                  </p>
+                  <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <p className="text-sm font-medium">On the XRPL: nobody can close your wallet, freeze your funds, or deny you service. Your keys, your money, your business — running 24/7 on a decentralized network no company controls.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="overflow-hidden" data-testid="card-underbanked">
+                <CardContent className="p-6">
+                  <div className="h-12 w-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+                    <Wifi className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Everyone Else</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Overdraft fees, $12/month account charges, 0.01% savings rates, 3-day holds on deposits, $35 wire fees, limited business hours. Banks nickel-and-dime the people who can least afford it.
+                  </p>
+                  <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <p className="text-sm font-medium">The XRPL charges a fraction of a penny per transaction. Earn 5–8% yield instead of 0.01%. Send money anywhere in 4 seconds. No monthly fees, no overdrafts, no surprises. Open 24/7/365.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="overflow-hidden border-purple-500/20 max-w-4xl mx-auto" data-testid="card-internet-is-enough">
+              <CardContent className="p-6 sm:p-8">
+                <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center">
+                  <div>
+                    <h3 className="font-semibold text-xl mb-3">Internet = On-Chain</h3>
+                    <p className="text-muted-foreground leading-relaxed mb-4">
+                      The old requirement for commerce was a bank account, a credit check, a government ID, and a physical address.
+                      The new requirement is an internet connection. That's it.
+                    </p>
+                    <p className="text-muted-foreground leading-relaxed mb-4">
+                      With CryptoOwnBank, anyone — anywhere in the world — can set up a wallet, accept payments in RLUSD (a dollar-pegged stablecoin),
+                      trade on the XRPL's built-in DEX, earn yield through Soil vaults, and participate in global commerce on equal footing
+                      with someone on Wall Street. No bank required. No permission needed.
+                    </p>
+                    <p className="text-sm font-medium text-foreground">
+                      A street vendor in Lagos and a freelance developer in Berlin use the same tools, pay the same fees (practically zero), and settle in the same 4 seconds. That's what financial access looks like when you remove the gatekeepers.
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex flex-col items-center gap-2 text-center px-4">
+                    <div className="h-16 w-16 rounded-full bg-purple-500/10 flex items-center justify-center">
+                      <Wifi className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400 max-w-[120px]">Internet is the only requirement</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="mt-10 text-center">
+              <a href="/signup">
+                <Button size="lg" className="bg-purple-600 hover:bg-purple-700" data-testid="button-access-cta">
+                  Get On-Chain — Free
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+              <p className="text-xs text-muted-foreground mt-3 max-w-md mx-auto">
+                No bank account needed. No credit check. No minimum balance. Just connect a wallet and go.
               </p>
             </div>
           </div>
