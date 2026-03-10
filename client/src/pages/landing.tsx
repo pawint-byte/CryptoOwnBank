@@ -1103,17 +1103,17 @@ export default function Landing() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-2 mb-3">
                       <Shield className="h-5 w-5 text-[#00A4E4]" />
-                      <h3 className="font-semibold text-lg">We're the Tooling Layer</h3>
+                      <h3 className="font-semibold text-lg">You Own the Payment Rail</h3>
                     </div>
                     <div className="space-y-3 text-sm text-muted-foreground">
                       <p>
-                        <span className="font-medium text-foreground">Stripe</span> = "We process your payment" — they're the middleman, they take a cut, they can freeze your account.
+                        <span className="font-medium text-foreground">With Stripe</span> — they process your payment, take 2.9%, hold your money for 2 days, and can freeze your account, delay payouts, or shut you down at any time. You have no recourse.
                       </p>
                       <p>
-                        <span className="font-medium text-foreground">CryptoOwnBank</span> = "We give you the tools to process your own payment" — we're the workbench, you're the business.
+                        <span className="font-medium text-foreground">With CryptoOwnBank</span> — you process your own payment. Funds go directly to your wallet in 4 seconds. Nobody can freeze it, reverse it, or take a cut. Refunds happen on your terms, not a card network's.
                       </p>
                       <p className="text-xs">
-                        Non-custodial. We never touch your funds. You and your customer transact directly on the XRPL. We sell the software, not the financial service.
+                        That's what "be your own bank" means in practice: you control when money comes in, when it goes out, and nobody sits between you and your revenue.
                       </p>
                     </div>
                   </CardContent>
