@@ -21,7 +21,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
   CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
-  Zap, Lock, Sparkles, Globe, Building2, Trophy, Crown,
+  Zap, Lock, Sparkles, Globe, Building2, Trophy, Crown, ShieldCheck,
 } from "lucide-react";
 
 interface WalletData {
@@ -73,7 +73,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   const { toast } = useToast();
   const [emailInput, setEmailInput] = useState("");
 
-  const { data: prices, isLoading: pricesLoading } = useQuery<Record<string, { usd: number; usd_24h_change: number }>>({
+  const { data: prices, isLoading: pricesLoading } = useQuery<Record<string, { usd: number; usd_24h_change: number; source?: string }>>({
     queryKey: ["/api/market-data/prices"],
     refetchInterval: 5 * 60 * 1000,
   });
@@ -91,6 +91,11 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     queryKey: ["/api/alert-logs"],
   });
 
+  const { data: priceSources } = useQuery<{ sources: Record<string, "chainlink" | "coingecko">; chainlinkSymbols: string[] }>({
+    queryKey: ["/api/market-data/price-sources"],
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: subLimits } = useQuery<SubscriptionLimits>({
     queryKey: ["/api/subscription/limits"],
   });
@@ -101,6 +106,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/market-data/prices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/market-data/yields"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/market-data/price-sources"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alert-logs"] });
       toast({ title: "Market data refreshed" });
     },
@@ -688,22 +694,45 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
 
           <TabsContent value="prices" data-testid="tab-content-prices">
             <h3 className="font-semibold mb-3">Live Prices</h3>
+            {priceSources && (
+              <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
+                  Chainlink Oracle — verified on-chain
+                </span>
+                <span className="flex items-center gap-1">
+                  <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                  CoinGecko — market aggregator
+                </span>
+              </div>
+            )}
             {pricesLoading ? (
               <p className="text-sm text-muted-foreground">Loading prices...</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {priceEntries.map(([sym, data]) => (
-                  <div key={sym} className="flex items-center justify-between p-2 rounded-lg border bg-card" data-testid={`price-card-${sym}`}>
-                    <div>
-                      <span className="font-medium text-sm">{sym}</span>
-                      <p className="text-xs text-muted-foreground">${data?.usd?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</p>
+                {priceEntries.map(([sym, data]) => {
+                  const source = priceSources?.sources?.[sym] || (data?.source as string) || "coingecko";
+                  const isChainlink = source === "chainlink";
+                  return (
+                    <div key={sym} className="flex items-center justify-between p-2 rounded-lg border bg-card" data-testid={`price-card-${sym}`}>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-sm">{sym}</span>
+                          {isChainlink ? (
+                            <ShieldCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" data-testid={`oracle-badge-${sym}`} />
+                          ) : (
+                            <Globe className="h-3 w-3 text-muted-foreground shrink-0" data-testid={`source-badge-${sym}`} />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">${data?.usd?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</p>
+                      </div>
+                      <Badge variant={data?.usd_24h_change >= 0 ? "default" : "destructive"} className="text-xs">
+                        {data?.usd_24h_change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                        {data?.usd_24h_change?.toFixed(1)}%
+                      </Badge>
                     </div>
-                    <Badge variant={data?.usd_24h_change >= 0 ? "default" : "destructive"} className="text-xs">
-                      {data?.usd_24h_change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                      {data?.usd_24h_change?.toFixed(1)}%
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>

@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   Landmark,
+  DollarSign,
   Vault,
   ArrowDownToLine,
   History,
@@ -57,6 +58,7 @@ const trackerItems = [
   { title: "Statement Insights", url: "/statement-insights", icon: FileSearch },
   { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon },
   { title: "Integrations", url: "/integrations", icon: Link2 },
+  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

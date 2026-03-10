@@ -54,6 +54,8 @@ import PayPage from "@/pages/pay";
 import StellarRemittances from "@/pages/stellar-remittances";
 import StellarSend from "@/pages/stellar-send";
 import ChainGuide from "@/pages/chain-guide";
+import Stablecoins from "@/pages/stablecoins";
+import RwaYields from "@/pages/rwa-yields";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -126,6 +128,8 @@ function AuthenticatedRoutes() {
         <Route path="/statement-insights" component={StatementInsights} />
         <Route path="/reconciliation" component={Reconciliation} />
         <Route path="/chain-guide" component={ChainGuide} />
+        <Route path="/rwa-yields" component={RwaYields} />
+        <Route path="/stablecoins" component={Stablecoins} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />

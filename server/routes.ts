@@ -4175,6 +4175,18 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/market-data/price-sources", isAuthenticated, async (_req: any, res) => {
+    try {
+      const { getPriceSources, getChainlinkSymbols } = await import("./services/market-data");
+      const sources = getPriceSources();
+      const chainlinkSymbols = getChainlinkSymbols();
+      res.json({ sources, chainlinkSymbols });
+    } catch (error) {
+      console.error("Price sources error:", error);
+      res.status(500).json({ message: "Failed to fetch price sources" });
+    }
+  });
+
   app.post("/api/market-data/refresh", isAuthenticated, async (_req: any, res) => {
     try {
       const { refreshAllMarketData, getCachedPrices, getCachedYields } = await import("./services/market-data");
