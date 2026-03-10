@@ -694,6 +694,9 @@ export default function Landing() {
               <a href="#faq" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
                 FAQ
               </a>
+              <a href="/setup-guide" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-getting-started">
+                Getting Started
+              </a>
               <a href="/yield-calculator" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-yield-calculator">
                 Yield Calculator
               </a>
@@ -1899,7 +1902,7 @@ export default function Landing() {
               <p className="text-sm font-medium text-gray-200 mb-3">Resources</p>
               <div className="flex flex-col gap-2 text-sm">
                 <a href="/migration-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-migration-guide">Migration Guide</a>
-                <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Setup Guide</a>
+                <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Getting Started</a>
                 <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
                 <a href="/faq" className="hover:text-[#00A4E4] transition-colors" data-testid="link-faq-footer">FAQ</a>
                 <a href="/contact" className="hover:text-[#00A4E4] transition-colors" data-testid="link-contact">Contact &amp; Feedback</a>
