@@ -336,10 +336,10 @@ const testimonials = [
     persona: "Debanked Entrepreneur",
   },
   {
-    quote: "There's no bank branch within 200km of where I live. Getting paid used to mean waiting for someone to drive to town with cash. Now my clients pay me through my XRPL wallet and I hold RLUSD. I earn more yield than a savings account I could never open. Internet is enough.",
+    quote: "There's no bank branch within 200km of where I live. I sell produce at the market and buyers pay me in RLUSD — they scan my QR code and I have digital dollars in 4 seconds. I save what I don't spend in a Soil vault earning 8%. No bank has ever offered me an account, but I have a better financial system than most people with one.",
     author: "Amina K.",
     role: "Free Tier User",
-    persona: "Unbanked Professional",
+    persona: "Unbanked Farmer & Vendor",
   },
 ];
 
@@ -465,7 +465,7 @@ const faqGroups = [
       },
       {
         q: "What if I don't have a bank account or got debanked?",
-        a: "CryptoOwnBank was built with you in mind. 1.4 billion people worldwide are unbanked — no access to traditional finance at all. Millions more have been debanked — accounts closed, funds frozen, services denied without explanation. The XRPL doesn\u2019t require a bank account, credit check, or government ID. If you have internet, you can create a wallet, accept payments, trade on the DEX, hold stablecoins like RLUSD, and earn yield. Same tools, same fees, same 4-second settlement — whether you\u2019re in New York or Nigeria.",
+        a: "CryptoOwnBank was built with you in mind. 1.4 billion people worldwide are unbanked — no access to traditional finance at all. Millions more have been debanked — accounts closed, funds frozen, services denied without explanation. The XRPL doesn\u2019t require a bank account, credit check, or government ID. You don\u2019t even need to 'buy' crypto through an exchange — you can earn it directly by selling goods and services. A farmer sells produce, a buyer scans a QR code, and RLUSD lands in the farmer\u2019s wallet in 4 seconds. Then save it in a yield vault earning 5-8%, spend it by paying others who accept it, and send it to family anywhere in the world. No bank touches the money at any point. See our step-by-step guide at /setup-guide.",
       },
       {
         q: "Why should I join now?",
@@ -1184,7 +1184,7 @@ export default function Landing() {
                     No bank branch in your village. No government ID that meets requirements. No minimum balance to keep an account open. Traditional finance was never built for you.
                   </p>
                   <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
-                    <p className="text-sm font-medium">With the XRPL: a smartphone and internet connection is all you need. Create a wallet, receive payments, earn yield, trade on the DEX — no forms, no approvals, no minimums.</p>
+                    <p className="text-sm font-medium">With the XRPL: a smartphone and internet connection is all you need. Get paid directly for your goods and services in RLUSD — no bank, no exchange, no fiat conversion. A farmer sells produce, a buyer scans a QR code, and digital dollars land in the farmer's wallet in 4 seconds.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1224,18 +1224,17 @@ export default function Landing() {
               <CardContent className="p-6 sm:p-8">
                 <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center">
                   <div>
-                    <h3 className="font-semibold text-xl mb-3">Internet = On-Chain</h3>
+                    <h3 className="font-semibold text-xl mb-3">Earn It, Hold It, Spend It — No Bank Touches It</h3>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      The old requirement for commerce was a bank account, a credit check, a government ID, and a physical address.
-                      The new requirement is an internet connection. That's it.
+                      You don't need to "buy" crypto through an exchange or convert from a bank account. You can earn it directly — sell goods, provide services, do work, and get paid in RLUSD or XRP.
+                      A farmer sells produce at a market, the buyer scans a QR code, and 25 RLUSD lands in the farmer's wallet in 4 seconds. No bank involved at any point.
                     </p>
                     <p className="text-muted-foreground leading-relaxed mb-4">
-                      With CryptoOwnBank, anyone — anywhere in the world — can set up a wallet, accept payments in RLUSD (a dollar-pegged stablecoin),
-                      trade on the XRPL's built-in DEX, earn yield through Soil vaults, and participate in global commerce on equal footing
-                      with someone on Wall Street. No bank required. No permission needed.
+                      Then spend it the same way: pay your seed supplier in RLUSD, send money to family in another country, save the rest in a Soil vault earning 5-8% APR.
+                      Every person you help set up a wallet grows the network. A village where 20 people have XRPL wallets is a village with its own financial system — no bank branch required.
                     </p>
                     <p className="text-sm font-medium text-foreground">
-                      A street vendor in Lagos and a freelance developer in Berlin use the same tools, pay the same fees (practically zero), and settle in the same 4 seconds. That's what financial access looks like when you remove the gatekeepers.
+                      A street vendor in Lagos and a freelance developer in Berlin use the same tools, pay the same fees (practically zero), and settle in the same 4 seconds. The only requirement is internet. That's the whole list.
                     </p>
                   </div>
                   <div className="hidden sm:flex flex-col items-center gap-2 text-center px-4">

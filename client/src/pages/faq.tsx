@@ -407,6 +407,18 @@ const faqGroups = [
         q: "Can someone in another country use CryptoOwnBank to participate in global commerce?",
         a: "Absolutely. The XRPL is a global, borderless network. Someone in the Philippines can receive a payment from a client in Germany, hold it in RLUSD (pegged to the US dollar for stability), trade it on the DEX, or earn yield — all in the same 4 seconds, for the same fraction-of-a-penny fee, using the same tools as everyone else. No international wire fees, no SWIFT codes, no correspondent banks, no 3–5 day waits, no currency conversion markups from banks. CryptoOwnBank is the interface that makes this accessible — clean, educational, non-custodial. If you have internet, you're in.",
       },
+      {
+        q: "Do I need to buy crypto through an exchange, or can I just earn it?",
+        a: "You can earn it directly — no exchange or bank account needed. If you sell goods, provide services, or do any kind of work, you can get paid in XRP or RLUSD instead of cash. A farmer sells produce at a market: the buyer scans the farmer's QR code in Xaman, sends 25 RLUSD, and the farmer has $25 in digital dollars in 4 seconds. No bank involved at any point. No conversion step. No fees. The only requirement to get started is someone sending you ~10 XRP to activate your wallet (the XRPL network reserve). After that, you can receive unlimited payments from anyone in the world. This is the on-ramp that doesn't go through a bank: you earn crypto by providing value, the same way you'd earn cash — except the money lands in your wallet instantly and nobody takes a cut.",
+      },
+      {
+        q: "Can I earn, save, and spend entirely in crypto without ever touching a bank?",
+        a: "Yes — this is what we call the circular crypto economy, and it's already possible today. Earn: sell your goods or services and get paid in RLUSD or XRP directly to your wallet. Save: deposit RLUSD into a Soil vault and earn 5–8% APR — more than most bank savings accounts anywhere in the world. Your principal is locked and protected; only interest can be withdrawn. Spend: pay suppliers, vendors, or anyone else with an XRPL wallet. Send money to family. Buy from others who accept crypto. The XRPL handles it all in 4 seconds for fractions of a penny. No bank touches your money at any point in this loop. The more people in your community using XRPL wallets, the less anyone needs traditional banking. A village where 20 people have wallets is a village with its own financial system. Our Getting Started Toolkit for unbanked users at /setup-guide walks through every step of this.",
+      },
+      {
+        q: "How does a farmer or small vendor without a bank use CryptoOwnBank?",
+        a: "Here's the complete path: (1) Download Xaman on your smartphone — free, takes 2 minutes. (2) Get your wallet activated — someone sends you ~10 XRP (a friend, customer, or community member who already uses crypto). (3) Set up an RLUSD trust line — one tap in Xaman, lets you hold dollar-stable value. (4) Start accepting payment — show your QR code when you sell produce, crafts, services, or anything else. Buyer scans, sends RLUSD, you receive $-value in 4 seconds. (5) Spend — pay your seed supplier, your landlord, or anyone else with a wallet the same way. (6) Save — deposit what you don't spend into a Soil vault and earn 5–8% APR. Compare that to cash under a mattress losing value to inflation. No bank account at any step. No government ID required by the network. No minimum balance. No monthly fees. The only thing you need is internet. See the full step-by-step guide: /setup-guide (choose the 'Unbanked / Debanked' toolkit).",
+      },
     ],
   },
   {
