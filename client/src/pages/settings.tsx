@@ -33,6 +33,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { signPayment } from "@/lib/xumm-connector";
 import {
   User,
   Settings2,
@@ -50,6 +51,7 @@ import {
   CheckCircle2,
   Loader2,
   AlertTriangle,
+  ArrowUp,
 } from "lucide-react";
 import type { UserSettings } from "@shared/schema";
 
@@ -73,6 +75,7 @@ export default function SettingsPage() {
   const [selectedChain, setSelectedChain] = useState<string>("");
   const [pendingPayment, setPendingPayment] = useState<any>(null);
   const [cryptoLoading, setCryptoLoading] = useState(false);
+  const [xamanPayLoading, setXamanPayLoading] = useState(false);
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
@@ -207,6 +210,40 @@ export default function SettingsPage() {
       toast({ title: "Failed to create payment", variant: "destructive" });
     } finally {
       setCryptoLoading(false);
+    }
+  };
+
+  const handleXamanPay = async () => {
+    if (!pendingPayment) return;
+    setXamanPayLoading(true);
+    try {
+      const chain = pendingPayment.chain?.toLowerCase();
+      let amount: string | { currency: string; value: string; issuer: string };
+      if (chain === "rlusd") {
+        amount = {
+          currency: "524C555344000000000000000000000000000000",
+          value: pendingPayment.expectedAmount,
+          issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+        };
+      } else {
+        amount = String(Math.round(parseFloat(pendingPayment.expectedAmount) * 1_000_000));
+      }
+      const options: { destinationTag?: number; memos?: Array<{ MemoType?: string; MemoData?: string }> } = {};
+      if (pendingPayment.destinationTag) {
+        options.destinationTag = Number(pendingPayment.destinationTag);
+      }
+      options.memos = [{ MemoType: "text/plain", MemoData: `CryptoOwnBank Premium ${pendingPayment.referenceCode || ""}` }];
+
+      const result = await signPayment(pendingPayment.toAddress, amount, options);
+      if (result.success) {
+        toast({ title: "Payment sent! Verifying on-chain...", description: "We'll confirm your payment automatically within a few minutes." });
+      } else {
+        toast({ title: result.error || "Payment was not completed", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to open Xaman", variant: "destructive" });
+    } finally {
+      setXamanPayLoading(false);
     }
   };
 
@@ -496,11 +533,27 @@ export default function SettingsPage() {
                         </div>
                       )}
 
+                      {(pendingPayment.chain === "xrp" || pendingPayment.chain === "rlusd") && (
+                        <Button
+                          className="w-full bg-[#00A4E4] hover:bg-[#0090c9] text-white"
+                          onClick={handleXamanPay}
+                          disabled={xamanPayLoading}
+                          data-testid="button-pay-xaman"
+                        >
+                          {xamanPayLoading ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Wallet className="h-4 w-4 mr-2" />
+                          )}
+                          Pay with Xaman — Approve in Your Wallet
+                        </Button>
+                      )}
+
                       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-1.5">
                         <p className="text-xs font-medium text-blue-800 dark:text-blue-200">How we match your payment</p>
                         {(pendingPayment.chain === "xrp" || pendingPayment.chain === "rlusd") ? (
                           <p className="text-xs text-blue-700 dark:text-blue-300">
-                            Your payment is identified by the <strong>Destination Tag</strong> above. Include it when sending — without it, we cannot match your payment to your account.
+                            {xamanPayLoading ? "Xaman will pre-fill everything for you — just approve the transaction." : "Click \"Pay with Xaman\" above to open your wallet and approve. The destination tag, amount, and address are all pre-filled for you."}
                           </p>
                         ) : (
                           <p className="text-xs text-blue-700 dark:text-blue-300">
@@ -675,8 +728,14 @@ export default function SettingsPage() {
                                 </p>
                               ) : null;
                             })()}
+                            {!selectedChain && (
+                              <p className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                                <ArrowUp className="h-3 w-3" />
+                                Choose a cryptocurrency above to continue
+                              </p>
+                            )}
                             <Button
-                              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                              className={`w-full text-white ${selectedChain ? "bg-amber-600 hover:bg-amber-700" : "bg-amber-600/40 cursor-not-allowed"}`}
                               onClick={handleCryptoPayment}
                               disabled={!selectedChain || cryptoLoading}
                               data-testid="button-pay-crypto"
