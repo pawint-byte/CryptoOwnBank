@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -97,6 +99,8 @@ const decisionTree = [
     color: "text-[#00A4E4]",
     bgColor: "bg-[#00A4E4]/5 border-[#00A4E4]/20",
     explanation: "RLUSD + Soil Protocol vaults offer 5-8% fixed APR with principal protection. Institutional-grade, regulated stablecoin yield.",
+    link: "/rwa-yields",
+    linkLabel: "Explore RWA Yields",
   },
   {
     goal: "Send remittances",
@@ -105,6 +109,8 @@ const decisionTree = [
     color: "text-[#7B61FF]",
     bgColor: "bg-[#7B61FF]/5 border-[#7B61FF]/20",
     explanation: "Stellar's path payments auto-convert currencies. Send USD, recipient gets PHP — the network finds the best route automatically. Native anchor network connects to local cash-out points globally.",
+    link: "/stellar/remittances",
+    linkLabel: "Remittance Calculator",
   },
   {
     goal: "Trade tokens on a DEX",
@@ -113,6 +119,8 @@ const decisionTree = [
     color: "text-[#00A4E4]",
     bgColor: "bg-[#00A4E4]/5 border-[#00A4E4]/20",
     explanation: "XRPL's native DEX has deep liquidity and well-established trading pairs. AMM pools are being added for even more options.",
+    link: "/ownbank/dex",
+    linkLabel: "Open DEX Trading",
   },
   {
     goal: "Accept business payments (large B2B)",
@@ -121,6 +129,8 @@ const decisionTree = [
     color: "text-[#00A4E4]",
     bgColor: "bg-[#00A4E4]/5 border-[#00A4E4]/20",
     explanation: "RLUSD on XRPL is ideal for large B2B invoices — regulatory compliance, deep liquidity for large orders, and instant settlement.",
+    link: "/ownbank/send",
+    linkLabel: "Send & Receive",
   },
   {
     goal: "Accept retail / POS payments",
@@ -129,6 +139,8 @@ const decisionTree = [
     color: "text-[#7B61FF]",
     bgColor: "bg-[#7B61FF]/5 border-[#7B61FF]/20",
     explanation: "Stellar's ultra-low fees (fractions of a penny) make it perfect for small retail transactions. USDC on Stellar is widely supported with MoneyGram cash-out.",
+    link: "/stellar/send",
+    linkLabel: "Stellar Send",
   },
   {
     goal: "Hold stablecoins",
@@ -137,6 +149,8 @@ const decisionTree = [
     color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-500/5 border-emerald-500/20",
     explanation: "RLUSD on XRP for savings & yield. USDC/EURCV on Stellar for spending & cross-border payments. Different stablecoins, different strengths.",
+    link: "/stablecoins",
+    linkLabel: "Stablecoin Dashboard",
   },
   {
     goal: "Build DeFi applications",
@@ -145,6 +159,8 @@ const decisionTree = [
     color: "text-[#7B61FF]",
     bgColor: "bg-[#7B61FF]/5 border-[#7B61FF]/20",
     explanation: "Soroban smart contracts (Rust-based) give Stellar full programmability. XRPL has Hooks for simpler on-ledger logic and an EVM sidechain for complex dApps.",
+    link: null,
+    linkLabel: null,
   },
   {
     goal: "Serve unbanked / underbanked users",
@@ -153,6 +169,8 @@ const decisionTree = [
     color: "text-[#7B61FF]",
     bgColor: "bg-[#7B61FF]/5 border-[#7B61FF]/20",
     explanation: "Stellar was built for financial inclusion. Its anchor network connects digital assets to local currencies and cash-out points in developing economies.",
+    link: "/stellar/remittances",
+    linkLabel: "Remittance Tools",
   },
 ];
 
@@ -372,7 +390,27 @@ export default function ChainGuide() {
                         </Badge>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground sm:ml-8">{item.explanation}</p>
+                    <div className="sm:ml-8 space-y-2 flex-1">
+                      <p className="text-sm text-muted-foreground">{item.explanation}</p>
+                      {item.link && (
+                        <Link href={item.link} data-testid={`link-decision-${index}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={`${
+                              item.chain === "XRP"
+                                ? "border-[#00A4E4]/40 text-[#00A4E4] hover:bg-[#00A4E4]/10"
+                                : item.chain === "XLM"
+                                  ? "border-[#7B61FF]/40 text-[#7B61FF] hover:bg-[#7B61FF]/10"
+                                  : "border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
+                            }`}
+                          >
+                            {item.linkLabel}
+                            <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
