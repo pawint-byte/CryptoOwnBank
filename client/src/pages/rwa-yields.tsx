@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import {
   Landmark,
   Shield,
@@ -28,6 +29,8 @@ import {
   Plus,
   LogIn,
   CreditCard,
+  Home,
+  MapPin,
 } from "lucide-react";
 
 interface YieldOpportunity {
@@ -49,7 +52,9 @@ interface YieldOpportunity {
   tokenReceived: string;
   trackingChain: string;
   steps: string[];
-  category: "yield" | "cashback";
+  category: "yield" | "cashback" | "realestate";
+  propertyType?: string;
+  locationType?: string;
 }
 
 const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
@@ -269,6 +274,96 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
       "Add your XRPL wallet to CryptoOwnBank to track your XRP cashback rewards",
     ],
   },
+  {
+    id: "realt",
+    category: "realestate",
+    protocol: "RealT",
+    chain: "Ethereum / Gnosis",
+    asset: "Rental Income Tokens",
+    apyRange: "8\u201312%",
+    apyMid: 10.0,
+    backingType: "Tokenized US Rental Properties",
+    tvl: "$100M+",
+    riskLevel: "Medium",
+    link: "https://realt.co",
+    description: "RealT tokenizes US residential rental properties on Ethereum and Gnosis chain. Each token represents fractional ownership in a specific property, and holders receive daily rental income paid in stablecoins.",
+    integrated: false,
+    minInvestment: "$50",
+    lockup: "None \u2014 tokens tradeable on secondary markets",
+    kycRequired: true,
+    tokenReceived: "RealTokens (ERC-20) on Ethereum/Gnosis",
+    trackingChain: "ethereum",
+    propertyType: "Residential Rental",
+    locationType: "US Cities (Detroit, Chicago, etc.)",
+    steps: [
+      "Visit realt.co and create an account",
+      "Complete identity verification (KYC) \u2014 RealT requires this for all investors due to SEC regulations",
+      "Browse available properties \u2014 each listing shows property details, rental yield, and token price",
+      "Purchase RealTokens starting from $50 \u2014 pay with crypto or bank transfer",
+      "Receive daily rental income in USDC/xDAI directly to your wallet",
+      "Add your Ethereum or Gnosis wallet to CryptoOwnBank to track your RealT positions and rental income",
+    ],
+  },
+  {
+    id: "lofty",
+    category: "realestate",
+    protocol: "Lofty",
+    chain: "Algorand",
+    asset: "Property Tokens",
+    apyRange: "5\u20138%",
+    apyMid: 6.5,
+    backingType: "Tokenized US Rental Properties",
+    tvl: "$50M+",
+    riskLevel: "Medium",
+    link: "https://www.lofty.ai",
+    description: "Lofty tokenizes US rental properties on Algorand, offering fractional ownership with daily rental income. Low minimums and near-instant settlement make it accessible to retail investors.",
+    integrated: false,
+    minInvestment: "$50",
+    lockup: "None \u2014 sell anytime on Lofty marketplace",
+    kycRequired: true,
+    tokenReceived: "Lofty property tokens on Algorand",
+    trackingChain: "algorand",
+    propertyType: "Residential Rental",
+    locationType: "US Cities (various markets)",
+    steps: [
+      "Visit lofty.ai and create an account",
+      "Complete identity verification (KYC) \u2014 required for all US property investments",
+      "Browse listed properties \u2014 each shows estimated rental yield, property details, and neighborhood data",
+      "Purchase property tokens starting from $50 using crypto or fiat",
+      "Receive daily rental income distributions to your Lofty account",
+      "Track your Lofty positions in CryptoOwnBank by adding your Algorand wallet address",
+    ],
+  },
+  {
+    id: "propy",
+    category: "realestate",
+    protocol: "Propy",
+    chain: "Ethereum",
+    asset: "Real Estate NFTs",
+    apyRange: "Varies",
+    apyMid: 0,
+    backingType: "Property Transfer & NFTs",
+    tvl: "$4B+ in transactions",
+    riskLevel: "Medium",
+    link: "https://propy.com",
+    description: "Propy enables real estate transactions on the blockchain through NFT-based property transfers. Buyers can purchase entire properties as NFTs, with legal title transfer handled through Propy\u2019s platform.",
+    integrated: false,
+    minInvestment: "Varies by property",
+    lockup: "Property ownership \u2014 sell via Propy marketplace",
+    kycRequired: true,
+    tokenReceived: "Property NFT on Ethereum",
+    trackingChain: "ethereum",
+    propertyType: "Full Property (NFT)",
+    locationType: "US & International",
+    steps: [
+      "Visit propy.com and create an account",
+      "Complete identity verification and link your Ethereum wallet",
+      "Browse available properties or list your own for sale as an NFT",
+      "Purchase a property NFT \u2014 Propy handles legal title transfer and escrow",
+      "Hold the property NFT representing your ownership on Ethereum",
+      "Add your Ethereum wallet to CryptoOwnBank to track your property NFT holdings",
+    ],
+  },
 ];
 
 interface ComparisonRow {
@@ -332,6 +427,161 @@ function getRiskBadgeVariant(level: string) {
   if (level === "Low") return "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300";
   if (level === "Medium") return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
   return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300";
+}
+
+function RealEstateProtocolCard({ opp }: { opp: YieldOpportunity }) {
+  const [showSteps, setShowSteps] = useState(false);
+  const { user } = useAuth();
+  const { data: subLimits } = useQuery<{ tier: string }>({
+    queryKey: ["/api/subscription/limits"],
+    enabled: !!user,
+  });
+  const isProUser = subLimits?.tier === "pro";
+  const slug = opp.protocol.toLowerCase().replace(/[\s\/]/g, "-");
+
+  return (
+    <Card data-testid={`card-realestate-${slug}`}>
+      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+        <div className="min-w-0">
+          <CardTitle className="text-base flex items-center gap-2 flex-wrap" data-testid={`text-protocol-${slug}`}>
+            <Home className="h-4 w-4 text-[#00A4E4]" />
+            {opp.protocol}
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">{opp.chain}</p>
+        </div>
+        <Badge className={`shrink-0 ${getRiskBadgeVariant(opp.riskLevel)}`} data-testid={`badge-risk-${slug}`}>
+          {opp.riskLevel} Risk
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">{opp.description}</p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Asset Type</p>
+            <p className="text-sm font-medium" data-testid={`text-asset-${slug}`}>{opp.asset}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Yield</p>
+            <p className="text-sm font-semibold text-green-600 dark:text-green-400" data-testid={`text-apy-${slug}`}>{opp.apyRange}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Backing</p>
+            <div className="flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <p className="text-sm font-medium" data-testid={`text-backing-${slug}`}>{opp.backingType}</p>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">TVL</p>
+            <p className="text-sm font-medium" data-testid={`text-tvl-${slug}`}>{opp.tvl}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 pt-1 border-t">
+          {opp.propertyType && (
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Home className="h-3 w-3" /> Property Type
+              </p>
+              <p className="text-sm font-medium" data-testid={`text-property-type-${slug}`}>{opp.propertyType}</p>
+            </div>
+          )}
+          {opp.locationType && (
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <MapPin className="h-3 w-3" /> Location
+              </p>
+              <p className="text-sm font-medium" data-testid={`text-location-${slug}`}>{opp.locationType}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Coins className="h-3 w-3" /> Min. Investment
+            </p>
+            <p className="text-sm font-medium" data-testid={`text-min-${slug}`}>{opp.minInvestment}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <UserCheck className="h-3 w-3" /> KYC Required
+            </p>
+            <p className="text-sm font-medium" data-testid={`text-kyc-${slug}`}>
+              {opp.kycRequired ? (
+                <span className="text-amber-600 dark:text-amber-400">Yes</span>
+              ) : (
+                <span className="text-green-600 dark:text-green-400">No</span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <a href={opp.link} target="_blank" rel="noopener noreferrer" data-testid={`link-protocol-${slug}`}>
+            <Button variant="outline" size="sm">
+              <ExternalLink className="h-4 w-4 mr-1.5" />
+              Visit Protocol
+            </Button>
+          </a>
+          {isProUser ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSteps(!showSteps)}
+              data-testid={`button-steps-${slug}`}
+            >
+              {showSteps ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+              {showSteps ? "Hide Guide" : "Step-by-Step Guide"}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSteps(!showSteps)}
+              data-testid={`button-steps-${slug}`}
+            >
+              <Lock className="h-4 w-4 mr-1" />
+              Step-by-Step Guide
+            </Button>
+          )}
+        </div>
+
+        {showSteps && (
+          isProUser ? (
+            <div className="rounded-lg border bg-muted/20 p-4 space-y-3" data-testid={`steps-${slug}`}>
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Compass className="h-4 w-4 text-[#00A4E4]" />
+                How to get started with {opp.protocol}
+              </p>
+              <ol className="space-y-2">
+                {opp.steps.map((step, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm">
+                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-xs font-bold shrink-0 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="text-muted-foreground">{step}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="pt-2 border-t">
+                <Link href={`/wallets?chain=${opp.trackingChain}`} data-testid={`link-track-${slug}`}>
+                  <Button size="sm" variant="default">
+                    <Wallet className="h-4 w-4 mr-1.5" />
+                    Track This Investment
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <UpgradePrompt
+              feature="Upgrade to Pro to access detailed step-by-step guides for real estate tokenization protocols."
+              variant="pro"
+              compact
+            />
+          )
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function ProtocolCard({ opp }: { opp: YieldOpportunity }) {
@@ -909,6 +1159,23 @@ export default function RwaYields() {
           {YIELD_OPPORTUNITIES.filter((opp) => opp.category === "cashback").map((opp) => (
             <div key={opp.id} id={`protocol-${opp.id}`}>
               <ProtocolCard opp={opp} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-realestate-heading">
+          <Building2 className="h-5 w-5 text-[#00A4E4]" />
+          Real Estate Tokenization
+        </h2>
+        <p className="text-sm text-muted-foreground -mt-2 mb-4">
+          Invest in tokenized real estate properties with fractional ownership, earning rental income and property appreciation on-chain.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {YIELD_OPPORTUNITIES.filter((opp) => opp.category === "realestate").map((opp) => (
+            <div key={opp.id} id={`protocol-${opp.id}`}>
+              <RealEstateProtocolCard opp={opp} />
             </div>
           ))}
         </div>

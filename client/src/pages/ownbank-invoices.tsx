@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { UserWallet } from "@shared/schema";
+import type { UserWallet, UserSettings } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -40,10 +41,21 @@ import {
   ArrowLeftRight,
   Clock,
   Ban,
+  Printer,
+  Building2,
 } from "lucide-react";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { useToast } from "@/hooks/use-toast";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
+
+interface BusinessBrand {
+  businessName?: string;
+  businessLogo?: string;
+  businessTagline?: string;
+  businessEmail?: string;
+  businessWebsite?: string;
+  businessPhone?: string;
+}
 
 interface Invoice {
   id: string;
@@ -56,6 +68,7 @@ interface Invoice {
   destinationTag: string;
   status: "pending" | "paid" | "expired";
   createdAt: string;
+  brand?: BusinessBrand;
 }
 
 const STORAGE_KEY = "ownbank-invoices";
@@ -93,6 +106,9 @@ function generatePayLink(invoice: Invoice): string {
   params.set("currency", invoice.currency);
   if (invoice.description) params.set("memo", invoice.description);
   if (invoice.destinationTag) params.set("tag", invoice.destinationTag);
+  if (invoice.brand?.businessName) params.set("from", invoice.brand.businessName);
+  if (invoice.brand?.businessLogo) params.set("logo", invoice.brand.businessLogo);
+  if (invoice.id) params.set("ref", invoice.id);
   return `${base}?${params.toString()}`;
 }
 
@@ -147,10 +163,15 @@ export default function OwnBankInvoices() {
     queryKey: ["/api/user-wallets"],
   });
 
+  const { data: userSettings } = useQuery<UserSettings>({
+    queryKey: ["/api/settings"],
+  });
+
   const receivingWallets = savedWallets.filter((w) => w.purpose === "receiving" || w.purpose === "general");
   const defaultReceivingAddress = receivingWallets.length > 0 ? receivingWallets[0].address : (walletAddress || "");
   const defaultTag = receivingWallets.length > 0 ? (receivingWallets[0].destinationTag || "") : "";
 
+  const invoicePrintRef = useRef<HTMLDivElement>(null);
   const [invoices, setInvoices] = useState<Invoice[]>(loadInvoices);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -189,6 +210,17 @@ export default function OwnBankInvoices() {
       return;
     }
 
+    const brand: BusinessBrand = {};
+    if (userSettings) {
+      const s = userSettings as any;
+      if (s.businessName) brand.businessName = s.businessName;
+      if (s.businessLogo) brand.businessLogo = s.businessLogo;
+      if (s.businessTagline) brand.businessTagline = s.businessTagline;
+      if (s.businessEmail) brand.businessEmail = s.businessEmail;
+      if (s.businessWebsite) brand.businessWebsite = s.businessWebsite;
+      if (s.businessPhone) brand.businessPhone = s.businessPhone;
+    }
+
     const invoice: Invoice = {
       id: generateInvoiceId(),
       recipientName: recipientName.trim(),
@@ -200,6 +232,7 @@ export default function OwnBankInvoices() {
       destinationTag: destinationTag.trim(),
       status: "pending",
       createdAt: new Date().toISOString(),
+      brand: Object.keys(brand).length > 0 ? brand : undefined,
     };
 
     const updated = [invoice, ...invoices];
@@ -579,68 +612,143 @@ export default function OwnBankInvoices() {
       </Dialog>
 
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle data-testid="text-view-invoice-title">Invoice {selectedInvoice?.id}</DialogTitle>
+            <DialogTitle data-testid="text-view-invoice-title">Invoice Preview</DialogTitle>
           </DialogHeader>
           {selectedInvoice && (
             <div className="space-y-4">
-              <div className="flex items-center justify-center">
-                <div className="rounded-md border p-4 bg-white">
-                  <img
-                    src={generateQrDataUrl(generatePayLink(selectedInvoice))}
-                    alt="Payment QR Code"
-                    className="w-[200px] h-[200px]"
-                    data-testid="img-invoice-qr"
-                  />
+              <div ref={invoicePrintRef} className="bg-white dark:bg-slate-950 rounded-lg border p-6 space-y-5 print:border-none print:shadow-none" data-testid="invoice-preview-doc">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {selectedInvoice.brand?.businessLogo ? (
+                      <img
+                        src={selectedInvoice.brand.businessLogo}
+                        alt="Logo"
+                        className="h-10 w-10 rounded-lg object-contain border bg-white"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-[#00A4E4]/10 flex items-center justify-center">
+                        <Building2 className="h-5 w-5 text-[#00A4E4]" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-sm" data-testid="text-invoice-brand-name">
+                        {selectedInvoice.brand?.businessName || "CryptoOwnBank"}
+                      </p>
+                      {selectedInvoice.brand?.businessTagline && (
+                        <p className="text-[11px] text-muted-foreground">{selectedInvoice.brand.businessTagline}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold tracking-tight text-[#00A4E4]">INVOICE</p>
+                    <p className="text-[11px] font-mono text-muted-foreground" data-testid="text-invoice-ref">{selectedInvoice.id}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-md border p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Recipient</span>
-                  <span className="text-sm font-medium" data-testid="text-view-recipient">{selectedInvoice.recipientName}</span>
-                </div>
-                {selectedInvoice.description && (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Memo</span>
-                    <span className="text-sm font-medium text-right max-w-[200px] truncate" data-testid="text-view-memo">{selectedInvoice.description}</span>
+                {(selectedInvoice.brand?.businessEmail || selectedInvoice.brand?.businessPhone || selectedInvoice.brand?.businessWebsite) && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                    {selectedInvoice.brand.businessEmail && <span>{selectedInvoice.brand.businessEmail}</span>}
+                    {selectedInvoice.brand.businessPhone && <span>{selectedInvoice.brand.businessPhone}</span>}
+                    {selectedInvoice.brand.businessWebsite && <span>{selectedInvoice.brand.businessWebsite}</span>}
                   </div>
                 )}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Amount</span>
-                  <span className="text-sm font-semibold" data-testid="text-view-amount">
-                    {selectedInvoice.amount} {selectedInvoice.currency}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Wallet</span>
-                  <span className="text-xs font-mono truncate max-w-[200px]" data-testid="text-view-wallet">{selectedInvoice.walletAddress}</span>
-                </div>
-                {selectedInvoice.destinationTag && (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Dest. Tag</span>
-                    <span className="text-sm font-medium" data-testid="text-view-tag">{selectedInvoice.destinationTag}</span>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Bill To</p>
+                    <p className="text-sm font-medium" data-testid="text-view-recipient">{selectedInvoice.recipientName}</p>
                   </div>
-                )}
-                {selectedInvoice.dueDate && (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Due Date</span>
-                    <span className="text-sm font-medium" data-testid="text-view-due">{formatDate(selectedInvoice.dueDate)}</span>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Invoice Date</p>
+                    <p className="text-sm">{formatDate(selectedInvoice.createdAt)}</p>
+                    {selectedInvoice.dueDate && (
+                      <>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 mt-2">Due Date</p>
+                        <p className="text-sm" data-testid="text-view-due">{formatDate(selectedInvoice.dueDate)}</p>
+                      </>
+                    )}
                   </div>
-                )}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Status</span>
+                </div>
+
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="text-left py-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Description</th>
+                        <th className="text-right py-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t">
+                        <td className="py-3 px-3" data-testid="text-view-memo">
+                          {selectedInvoice.description || "Payment"}
+                        </td>
+                        <td className="py-3 px-3 text-right font-semibold whitespace-nowrap" data-testid="text-view-amount">
+                          {selectedInvoice.amount} {selectedInvoice.currency}
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t bg-muted/30">
+                        <td className="py-3 px-3 font-semibold text-right">Total Due</td>
+                        <td className="py-3 px-3 text-right font-bold text-base" data-testid="text-view-total">
+                          {selectedInvoice.amount} {selectedInvoice.currency}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Payment Details</p>
+                  <div className="grid gap-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Network</span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 h-5">{selectedInvoice.currency === "XRP" || selectedInvoice.currency === "RLUSD" ? "XRPL" : "Stellar"}</Badge>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-muted-foreground">Pay to</span>
+                      <code className="font-mono text-[11px] break-all text-right max-w-[220px]" data-testid="text-view-wallet">{selectedInvoice.walletAddress}</code>
+                    </div>
+                    {selectedInvoice.destinationTag && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Destination Tag</span>
+                        <code className="font-mono font-bold" data-testid="text-view-tag">{selectedInvoice.destinationTag}</code>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-center pt-1">
+                  <div className="p-2 rounded-lg border bg-white">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(generatePayLink(selectedInvoice))}`}
+                      alt="Payment QR Code"
+                      className="w-[140px] h-[140px]"
+                      data-testid="img-invoice-qr"
+                    />
+                  </div>
+                </div>
+                <p className="text-center text-[10px] text-muted-foreground">Scan to pay or use the link below</p>
+
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t">
                   <Badge
                     variant={selectedInvoice.status === "paid" ? "default" : "secondary"}
+                    className="text-[10px]"
                     data-testid="badge-view-status"
                   >
-                    {selectedInvoice.status}
+                    {selectedInvoice.status.toUpperCase()}
                   </Badge>
+                  <span>Powered by CryptoOwnBank</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap print:hidden">
                 <Button
                   variant="outline"
                   className="flex-1"
@@ -650,7 +758,7 @@ export default function OwnBankInvoices() {
                   {copiedId === selectedInvoice.id ? (
                     <><Check className="h-4 w-4 mr-2 text-green-500" /> Copied</>
                   ) : (
-                    <><Copy className="h-4 w-4 mr-2" /> Copy Invoice Link</>
+                    <><Copy className="h-4 w-4 mr-2" /> Copy Link</>
                   )}
                 </Button>
                 <Button
@@ -660,7 +768,15 @@ export default function OwnBankInvoices() {
                   data-testid="button-open-pay-page"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Open Pay Page
+                  Pay Page
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.print()}
+                  data-testid="button-print-invoice"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print / PDF
                 </Button>
               </div>
             </div>

@@ -54,7 +54,7 @@ async function getEffectiveTier(userId: string): Promise<{ tier: string; billing
 
   const [user] = await db.select({ email: users.email, isAdmin: users.isAdmin }).from(users).where(eq(users.id, userId));
   if (user?.isAdmin || ADMIN_EMAILS.includes(user?.email?.toLowerCase() || "")) {
-    return { tier: "premium", billingCycle: "yearly" };
+    return { tier: "pro", billingCycle: "yearly" };
   }
 
   return { tier, billingCycle };
@@ -1953,14 +1953,20 @@ export async function registerRoutes(
   app.put("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { taxMethod, defaultCurrency, taxYear } = req.body;
+      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone } = req.body;
       
-      const settings = await storage.upsertUserSettings({
-        userId,
-        taxMethod,
-        defaultCurrency,
-        taxYear,
-      });
+      const updateData: any = { userId };
+      if (taxMethod !== undefined) updateData.taxMethod = taxMethod;
+      if (defaultCurrency !== undefined) updateData.defaultCurrency = defaultCurrency;
+      if (taxYear !== undefined) updateData.taxYear = taxYear;
+      if (businessName !== undefined) updateData.businessName = businessName;
+      if (businessLogo !== undefined) updateData.businessLogo = businessLogo;
+      if (businessTagline !== undefined) updateData.businessTagline = businessTagline;
+      if (businessEmail !== undefined) updateData.businessEmail = businessEmail;
+      if (businessWebsite !== undefined) updateData.businessWebsite = businessWebsite;
+      if (businessPhone !== undefined) updateData.businessPhone = businessPhone;
+      
+      const settings = await storage.upsertUserSettings(updateData);
       
       res.json(settings);
     } catch (error) {
@@ -2678,6 +2684,12 @@ export async function registerRoutes(
     statementComparisons: boolean;
     portfolioSearch: boolean;
     recommendationsHub: "basic" | "full";
+    recurringPayments: boolean;
+    recurringPaymentsBatch: boolean;
+    defiBorrowing: boolean;
+    realEstateTokens: boolean;
+    maxTeamMembers: number;
+    treasuryDashboard: boolean;
   }> = {
     free: {
       exchanges: 1,
@@ -2691,6 +2703,12 @@ export async function registerRoutes(
       statementComparisons: false,
       portfolioSearch: false,
       recommendationsHub: "basic",
+      recurringPayments: false,
+      recurringPaymentsBatch: false,
+      defiBorrowing: false,
+      realEstateTokens: false,
+      maxTeamMembers: 0,
+      treasuryDashboard: false,
     },
     premium: {
       exchanges: null,
@@ -2704,6 +2722,12 @@ export async function registerRoutes(
       statementComparisons: true,
       portfolioSearch: true,
       recommendationsHub: "full",
+      recurringPayments: true,
+      recurringPaymentsBatch: false,
+      defiBorrowing: false,
+      realEstateTokens: false,
+      maxTeamMembers: 0,
+      treasuryDashboard: false,
     },
     pro: {
       exchanges: null,
@@ -2717,6 +2741,12 @@ export async function registerRoutes(
       statementComparisons: true,
       portfolioSearch: true,
       recommendationsHub: "full",
+      recurringPayments: true,
+      recurringPaymentsBatch: true,
+      defiBorrowing: true,
+      realEstateTokens: true,
+      maxTeamMembers: 5,
+      treasuryDashboard: true,
     },
   };
 
@@ -2748,6 +2778,12 @@ export async function registerRoutes(
         statementComparisons: limits.statementComparisons,
         portfolioSearch: limits.portfolioSearch,
         recommendationsHub: limits.recommendationsHub,
+        recurringPayments: limits.recurringPayments,
+        recurringPaymentsBatch: limits.recurringPaymentsBatch,
+        defiBorrowing: limits.defiBorrowing,
+        realEstateTokens: limits.realEstateTokens,
+        maxTeamMembers: limits.maxTeamMembers,
+        treasuryDashboard: limits.treasuryDashboard,
       });
     } catch (error) {
       console.error("Subscription limits error:", error);
@@ -3469,6 +3505,180 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Delete user wallet error:", error);
       res.status(500).json({ message: "Failed to delete wallet" });
+    }
+  });
+
+  // ===== Scheduled Payments =====
+  app.get("/api/scheduled-payments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const payments = await storage.getScheduledPaymentsByUser(userId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Get scheduled payments error:", error);
+      res.status(500).json({ message: "Failed to load scheduled payments" });
+    }
+  });
+
+  app.post("/api/scheduled-payments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "free") {
+        return res.status(403).json({ message: "Recurring payments require a Premium or Pro subscription" });
+      }
+      const { payeeName, payeeAddress, chain, amount, currency, frequency, nextRunAt, memo, destinationTag, totalRuns } = req.body;
+      if (!payeeName || !payeeAddress || !chain || !amount || !currency || !frequency || !nextRunAt) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      const payment = await storage.createScheduledPayment({
+        userId,
+        payeeName,
+        payeeAddress,
+        chain,
+        amount: String(amount),
+        currency,
+        frequency,
+        nextRunAt: new Date(nextRunAt),
+        memo: memo || null,
+        destinationTag: destinationTag || null,
+        totalRuns: totalRuns || null,
+        status: "active",
+      });
+      res.json(payment);
+    } catch (error) {
+      console.error("Create scheduled payment error:", error);
+      res.status(500).json({ message: "Failed to create scheduled payment" });
+    }
+  });
+
+  app.patch("/api/scheduled-payments/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const payment = await storage.getScheduledPayment(req.params.id);
+      if (!payment || payment.userId !== userId) {
+        return res.status(404).json({ message: "Scheduled payment not found" });
+      }
+      const updated = await storage.updateScheduledPayment(payment.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update scheduled payment error:", error);
+      res.status(500).json({ message: "Failed to update scheduled payment" });
+    }
+  });
+
+  app.delete("/api/scheduled-payments/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const payment = await storage.getScheduledPayment(req.params.id);
+      if (!payment || payment.userId !== userId) {
+        return res.status(404).json({ message: "Scheduled payment not found" });
+      }
+      await storage.deleteScheduledPayment(payment.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete scheduled payment error:", error);
+      res.status(500).json({ message: "Failed to delete scheduled payment" });
+    }
+  });
+
+  app.get("/api/payment-executions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const executions = await storage.getPaymentExecutionsByUser(userId);
+      res.json(executions);
+    } catch (error) {
+      console.error("Get payment executions error:", error);
+      res.status(500).json({ message: "Failed to load payment history" });
+    }
+  });
+
+  app.post("/api/portfolio-snapshots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { expiresInMinutes = 30 } = req.body;
+      const clampedMinutes = Math.min(Math.max(expiresInMinutes, 5), 1440);
+
+      const portfolioRes = await fetch(`http://localhost:${(app as any).get("port") || 5000}/api/portfolio`, {
+        headers: { cookie: req.headers.cookie || "" },
+      });
+
+      let totalValue = "0";
+      let holdings: any[] = [];
+      if (portfolioRes.ok) {
+        const data = await portfolioRes.json();
+        totalValue = String(data.totalValue || 0);
+        holdings = (data.allocation || []).map((a: any) => ({
+          symbol: a.symbol,
+          value: a.value,
+          percent: a.percent,
+        }));
+      }
+
+      const userSettingsData = await storage.getUserSettings(userId);
+      const token = require("crypto").randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + clampedMinutes * 60 * 1000);
+
+      const snapshot = await storage.createPortfolioSnapshot({
+        userId,
+        token,
+        totalValue,
+        holdings,
+        businessName: (userSettingsData as any)?.businessName || undefined,
+        businessLogo: (userSettingsData as any)?.businessLogo || undefined,
+        expiresAt,
+      });
+
+      res.json({
+        ...snapshot,
+        url: `/snapshot/${token}`,
+        qrUrl: `${req.protocol}://${req.get("host")}/snapshot/${token}`,
+      });
+    } catch (error) {
+      console.error("Create snapshot error:", error);
+      res.status(500).json({ message: "Failed to create snapshot" });
+    }
+  });
+
+  app.get("/api/portfolio-snapshots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const snapshots = await storage.getPortfolioSnapshotsByUser(userId);
+      res.json(snapshots);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load snapshots" });
+    }
+  });
+
+  app.delete("/api/portfolio-snapshots/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.deletePortfolioSnapshot(req.params.id, userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete snapshot" });
+    }
+  });
+
+  app.get("/api/snapshot/:token", async (req, res) => {
+    try {
+      const snapshot = await storage.getPortfolioSnapshotByToken(req.params.token);
+      if (!snapshot) {
+        return res.status(404).json({ message: "Snapshot not found" });
+      }
+      if (new Date(snapshot.expiresAt) < new Date()) {
+        return res.status(410).json({ message: "Snapshot expired" });
+      }
+      res.json({
+        totalValue: snapshot.totalValue,
+        holdings: snapshot.holdings,
+        businessName: snapshot.businessName,
+        businessLogo: snapshot.businessLogo,
+        createdAt: snapshot.createdAt,
+        expiresAt: snapshot.expiresAt,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load snapshot" });
     }
   });
 
@@ -4598,6 +4808,10 @@ function startPriceAlertChecker() {
 
   import("./services/subscription-renewal").then(({ startSubscriptionRenewalService }) => {
     startSubscriptionRenewalService();
+  });
+
+  import("./services/payment-scheduler").then(({ startPaymentScheduler }) => {
+    startPaymentScheduler();
   });
 
   setTimeout(async () => {

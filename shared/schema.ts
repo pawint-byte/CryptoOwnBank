@@ -123,6 +123,12 @@ export const userSettings = pgTable("user_settings", {
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   customVaults: jsonb("custom_vaults").default(sql`'[]'::jsonb`),
+  businessName: varchar("business_name", { length: 255 }),
+  businessLogo: varchar("business_logo", { length: 1000 }),
+  businessTagline: varchar("business_tagline", { length: 500 }),
+  businessEmail: varchar("business_email", { length: 255 }),
+  businessWebsite: varchar("business_website", { length: 500 }),
+  businessPhone: varchar("business_phone", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -438,3 +444,73 @@ export const insertUserWalletSchema = createInsertSchema(userWallets).omit({
 });
 export type UserWallet = typeof userWallets.$inferSelect;
 export type InsertUserWallet = z.infer<typeof insertUserWalletSchema>;
+
+export const scheduledPayments = pgTable("scheduled_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  payeeName: varchar("payee_name", { length: 100 }).notNull(),
+  payeeAddress: varchar("payee_address", { length: 255 }).notNull(),
+  chain: varchar("chain", { length: 20 }).notNull(),
+  amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
+  currency: varchar("currency", { length: 20 }).notNull(),
+  frequency: varchar("frequency", { length: 20 }).notNull(),
+  nextRunAt: timestamp("next_run_at").notNull(),
+  lastRunAt: timestamp("last_run_at"),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  memo: text("memo"),
+  destinationTag: varchar("destination_tag", { length: 20 }),
+  totalRuns: integer("total_runs"),
+  runsCompleted: integer("runs_completed").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_scheduled_payments_user").on(table.userId),
+  index("idx_scheduled_payments_status").on(table.status),
+  index("idx_scheduled_payments_next_run").on(table.nextRunAt),
+]);
+
+export const paymentExecutions = pgTable("payment_executions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduledPaymentId: varchar("scheduled_payment_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  xamanPayloadId: varchar("xaman_payload_id", { length: 255 }),
+  txHash: varchar("tx_hash", { length: 255 }),
+  amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
+  errorMessage: text("error_message"),
+  executedAt: timestamp("executed_at").defaultNow(),
+}, (table) => [
+  index("idx_payment_executions_scheduled").on(table.scheduledPaymentId),
+  index("idx_payment_executions_user").on(table.userId),
+]);
+
+export const insertScheduledPaymentSchema = createInsertSchema(scheduledPayments).omit({
+  id: true,
+  lastRunAt: true,
+  runsCompleted: true,
+  createdAt: true,
+});
+export const insertPaymentExecutionSchema = createInsertSchema(paymentExecutions).omit({
+  id: true,
+  executedAt: true,
+});
+
+export const portfolioSnapshots = pgTable("portfolio_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  totalValue: decimal("total_value", { precision: 18, scale: 2 }),
+  holdings: jsonb("holdings").default(sql`'[]'::jsonb`),
+  businessName: varchar("business_name", { length: 255 }),
+  businessLogo: varchar("business_logo", { length: 1000 }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_portfolio_snapshots_token").on(table.token),
+  index("idx_portfolio_snapshots_user").on(table.userId),
+]);
+
+export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
+export type ScheduledPayment = typeof scheduledPayments.$inferSelect;
+export type InsertScheduledPayment = z.infer<typeof insertScheduledPaymentSchema>;
+export type PaymentExecution = typeof paymentExecutions.$inferSelect;
+export type InsertPaymentExecution = z.infer<typeof insertPaymentExecutionSchema>;

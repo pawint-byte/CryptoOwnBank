@@ -57,6 +57,14 @@ import {
   userWallets,
   type UserWallet,
   type InsertUserWallet,
+  scheduledPayments,
+  paymentExecutions,
+  portfolioSnapshots,
+  type ScheduledPayment,
+  type InsertScheduledPayment,
+  type PaymentExecution,
+  type InsertPaymentExecution,
+  type PortfolioSnapshot,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -190,6 +198,23 @@ export interface IStorage {
   updateUserWallet(id: string, data: Partial<UserWallet>): Promise<UserWallet | undefined>;
   deleteUserWallet(id: string): Promise<void>;
   getUserWalletsByPurpose(userId: string, purpose: string): Promise<UserWallet[]>;
+
+  createScheduledPayment(payment: InsertScheduledPayment): Promise<ScheduledPayment>;
+  getScheduledPaymentsByUser(userId: string): Promise<ScheduledPayment[]>;
+  getScheduledPayment(id: string): Promise<ScheduledPayment | undefined>;
+  updateScheduledPayment(id: string, data: Partial<ScheduledPayment>): Promise<ScheduledPayment | undefined>;
+  deleteScheduledPayment(id: string): Promise<void>;
+  getDueScheduledPayments(): Promise<ScheduledPayment[]>;
+
+  createPaymentExecution(execution: InsertPaymentExecution): Promise<PaymentExecution>;
+  getPaymentExecutionsByScheduled(scheduledPaymentId: string): Promise<PaymentExecution[]>;
+  getPaymentExecutionsByUser(userId: string): Promise<PaymentExecution[]>;
+  updatePaymentExecution(id: string, data: Partial<PaymentExecution>): Promise<PaymentExecution | undefined>;
+
+  createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot>;
+  getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined>;
+  getPortfolioSnapshotsByUser(userId: string): Promise<PortfolioSnapshot[]>;
+  deletePortfolioSnapshot(id: string, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -792,6 +817,95 @@ export class DatabaseStorage implements IStorage {
   async getUserWalletsByPurpose(userId: string, purpose: string): Promise<UserWallet[]> {
     return db.select().from(userWallets)
       .where(and(eq(userWallets.userId, userId), eq(userWallets.purpose, purpose)));
+  }
+
+  async createScheduledPayment(payment: InsertScheduledPayment): Promise<ScheduledPayment> {
+    const [result] = await db.insert(scheduledPayments).values(payment).returning();
+    return result;
+  }
+
+  async getScheduledPaymentsByUser(userId: string): Promise<ScheduledPayment[]> {
+    return db.select().from(scheduledPayments)
+      .where(eq(scheduledPayments.userId, userId))
+      .orderBy(desc(scheduledPayments.createdAt));
+  }
+
+  async getScheduledPayment(id: string): Promise<ScheduledPayment | undefined> {
+    const [result] = await db.select().from(scheduledPayments)
+      .where(eq(scheduledPayments.id, id));
+    return result;
+  }
+
+  async updateScheduledPayment(id: string, data: Partial<ScheduledPayment>): Promise<ScheduledPayment | undefined> {
+    const [result] = await db.update(scheduledPayments)
+      .set(data)
+      .where(eq(scheduledPayments.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteScheduledPayment(id: string): Promise<void> {
+    await db.delete(paymentExecutions).where(eq(paymentExecutions.scheduledPaymentId, id));
+    await db.delete(scheduledPayments).where(eq(scheduledPayments.id, id));
+  }
+
+  async getDueScheduledPayments(): Promise<ScheduledPayment[]> {
+    return db.select().from(scheduledPayments)
+      .where(
+        and(
+          eq(scheduledPayments.status, "active"),
+          lte(scheduledPayments.nextRunAt, new Date())
+        )
+      );
+  }
+
+  async createPaymentExecution(execution: InsertPaymentExecution): Promise<PaymentExecution> {
+    const [result] = await db.insert(paymentExecutions).values(execution).returning();
+    return result;
+  }
+
+  async getPaymentExecutionsByScheduled(scheduledPaymentId: string): Promise<PaymentExecution[]> {
+    return db.select().from(paymentExecutions)
+      .where(eq(paymentExecutions.scheduledPaymentId, scheduledPaymentId))
+      .orderBy(desc(paymentExecutions.executedAt));
+  }
+
+  async getPaymentExecutionsByUser(userId: string): Promise<PaymentExecution[]> {
+    return db.select().from(paymentExecutions)
+      .where(eq(paymentExecutions.userId, userId))
+      .orderBy(desc(paymentExecutions.executedAt));
+  }
+
+  async updatePaymentExecution(id: string, data: Partial<PaymentExecution>): Promise<PaymentExecution | undefined> {
+    const [result] = await db.update(paymentExecutions)
+      .set(data)
+      .where(eq(paymentExecutions.id, id))
+      .returning();
+    return result;
+  }
+
+  async createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot> {
+    const [result] = await db.insert(portfolioSnapshots)
+      .values(data)
+      .returning();
+    return result;
+  }
+
+  async getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined> {
+    const [result] = await db.select().from(portfolioSnapshots)
+      .where(eq(portfolioSnapshots.token, token));
+    return result;
+  }
+
+  async getPortfolioSnapshotsByUser(userId: string): Promise<PortfolioSnapshot[]> {
+    return db.select().from(portfolioSnapshots)
+      .where(eq(portfolioSnapshots.userId, userId))
+      .orderBy(desc(portfolioSnapshots.createdAt));
+  }
+
+  async deletePortfolioSnapshot(id: string, userId: string): Promise<void> {
+    await db.delete(portfolioSnapshots)
+      .where(and(eq(portfolioSnapshots.id, id), eq(portfolioSnapshots.userId, userId)));
   }
 }
 

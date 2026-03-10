@@ -66,6 +66,11 @@ import {
   Trash2,
   Star,
   Tag,
+  Building2,
+  Globe,
+  Mail,
+  Phone,
+  ImageIcon,
 } from "lucide-react";
 import type { UserSettings, UserWallet } from "@shared/schema";
 
@@ -94,11 +99,20 @@ export default function SettingsPage() {
     isPrimary: false,
   });
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "card">("crypto");
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly" | "pro-monthly" | "pro-yearly">("monthly");
   const [selectedChain, setSelectedChain] = useState<string>("");
   const [pendingPayment, setPendingPayment] = useState<any>(null);
   const [cryptoLoading, setCryptoLoading] = useState(false);
   const [xamanPayLoading, setXamanPayLoading] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState({
+    businessName: "",
+    businessLogo: "",
+    businessTagline: "",
+    businessEmail: "",
+    businessWebsite: "",
+    businessPhone: "",
+  });
+  const [businessSaving, setBusinessSaving] = useState(false);
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
@@ -210,6 +224,14 @@ export default function SettingsPage() {
         defaultCurrency: settings.defaultCurrency || "USD",
         taxYear: settings.taxYear || undefined,
       });
+      setBusinessProfile({
+        businessName: (settings as any).businessName || "",
+        businessLogo: (settings as any).businessLogo || "",
+        businessTagline: (settings as any).businessTagline || "",
+        businessEmail: (settings as any).businessEmail || "",
+        businessWebsite: (settings as any).businessWebsite || "",
+        businessPhone: (settings as any).businessPhone || "",
+      });
     }
   }, [settings, form]);
 
@@ -243,6 +265,19 @@ export default function SettingsPage() {
 
   const onSubmit = (values: SettingsFormValues) => {
     updateMutation.mutate(values);
+  };
+
+  const handleSaveBusinessProfile = async () => {
+    setBusinessSaving(true);
+    try {
+      await apiRequest("PUT", "/api/settings", businessProfile);
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Business profile saved" });
+    } catch {
+      toast({ title: "Failed to save business profile", variant: "destructive" });
+    } finally {
+      setBusinessSaving(false);
+    }
   };
 
 
@@ -465,6 +500,118 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Business Profile
+          </CardTitle>
+          <CardDescription>
+            Add your business details to brand invoices and payment links sent to clients
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {businessProfile.businessLogo && (
+            <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
+              <img
+                src={businessProfile.businessLogo}
+                alt="Business logo"
+                className="h-12 w-12 rounded-lg object-contain border bg-white"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                data-testid="img-business-logo-preview"
+              />
+              <div>
+                <p className="font-medium">{businessProfile.businessName || "Your Business"}</p>
+                {businessProfile.businessTagline && (
+                  <p className="text-xs text-muted-foreground">{businessProfile.businessTagline}</p>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5" />
+                Business Name
+              </Label>
+              <Input
+                placeholder="Acme Corp"
+                value={businessProfile.businessName}
+                onChange={(e) => setBusinessProfile(p => ({ ...p, businessName: e.target.value }))}
+                data-testid="input-business-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <ImageIcon className="h-3.5 w-3.5" />
+                Logo URL
+              </Label>
+              <Input
+                placeholder="https://example.com/logo.png"
+                value={businessProfile.businessLogo}
+                onChange={(e) => setBusinessProfile(p => ({ ...p, businessLogo: e.target.value }))}
+                data-testid="input-business-logo"
+              />
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label>Tagline</Label>
+              <Input
+                placeholder="Your trusted crypto partner"
+                value={businessProfile.businessTagline}
+                onChange={(e) => setBusinessProfile(p => ({ ...p, businessTagline: e.target.value }))}
+                data-testid="input-business-tagline"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" />
+                Contact Email
+              </Label>
+              <Input
+                placeholder="billing@acme.com"
+                value={businessProfile.businessEmail}
+                onChange={(e) => setBusinessProfile(p => ({ ...p, businessEmail: e.target.value }))}
+                data-testid="input-business-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5" />
+                Phone
+              </Label>
+              <Input
+                placeholder="+1 (555) 123-4567"
+                value={businessProfile.businessPhone}
+                onChange={(e) => setBusinessProfile(p => ({ ...p, businessPhone: e.target.value }))}
+                data-testid="input-business-phone"
+              />
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" />
+                Website
+              </Label>
+              <Input
+                placeholder="https://acme.com"
+                value={businessProfile.businessWebsite}
+                onChange={(e) => setBusinessProfile(p => ({ ...p, businessWebsite: e.target.value }))}
+                data-testid="input-business-website"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSaveBusinessProfile}
+              disabled={businessSaving}
+              data-testid="button-save-business-profile"
+            >
+              {businessSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+              Save Business Profile
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-[#00A4E4]/30">
@@ -914,15 +1061,16 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium">Upgrade to Premium</p>
+                    <p className="text-sm font-medium">Choose Your Plan</p>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         variant={selectedPlan === "monthly" ? "default" : "outline"}
                         className={`flex flex-col h-auto py-3 gap-1 ${selectedPlan === "monthly" ? "border-amber-500 bg-amber-500/10 text-foreground ring-2 ring-amber-500" : "border-amber-500/30 hover:border-amber-500"}`}
                         onClick={() => setSelectedPlan("monthly")}
                         data-testid="button-plan-monthly"
                       >
+                        <span className="text-[10px] text-muted-foreground uppercase">Premium</span>
                         <span className="text-lg font-bold">$29</span>
                         <span className="text-xs text-muted-foreground">/month</span>
                       </Button>
@@ -935,8 +1083,22 @@ export default function SettingsPage() {
                         <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
                           Save $149
                         </Badge>
+                        <span className="text-[10px] text-muted-foreground uppercase">Premium</span>
                         <span className="text-lg font-bold">$199</span>
-                        <span className="text-xs text-muted-foreground">/year + tax reports</span>
+                        <span className="text-xs text-muted-foreground">/year</span>
+                      </Button>
+                      <Button
+                        variant={selectedPlan === "pro-monthly" ? "default" : "outline"}
+                        className={`flex flex-col h-auto py-3 gap-1 relative ${selectedPlan === "pro-monthly" ? "border-purple-500 bg-purple-500/10 text-foreground ring-2 ring-purple-500" : "border-purple-500/30 hover:border-purple-500"}`}
+                        onClick={() => setSelectedPlan("pro-monthly")}
+                        data-testid="button-plan-pro"
+                      >
+                        <Badge className="absolute -top-2 right-2 bg-purple-600 text-[10px] px-1.5">
+                          Business
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground uppercase">Pro</span>
+                        <span className="text-lg font-bold">$99</span>
+                        <span className="text-xs text-muted-foreground">/month</span>
                       </Button>
                     </div>
 

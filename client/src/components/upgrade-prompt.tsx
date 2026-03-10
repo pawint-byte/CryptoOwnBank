@@ -1,4 +1,4 @@
-import { Lock, Crown, Check, CalendarClock } from "lucide-react";
+import { Lock, Crown, Check, CalendarClock, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -6,7 +6,7 @@ import { Link } from "wouter";
 interface UpgradePromptProps {
   feature: string;
   compact?: boolean;
-  variant?: "premium" | "annual";
+  variant?: "premium" | "annual" | "pro";
 }
 
 const PREMIUM_BENEFITS = [
@@ -20,6 +20,7 @@ const PREMIUM_BENEFITS = [
   "Unlimited price alerts",
   "Auto-withdrawal from Soil vaults",
   "Statement Insights with rate comparisons",
+  "Recurring payments (personal)",
 ];
 
 const ANNUAL_BENEFITS = [
@@ -31,12 +32,23 @@ const ANNUAL_BENEFITS = [
   "Save $149/yr vs monthly billing",
 ];
 
+const PRO_BENEFITS = [
+  "Everything in Premium",
+  "DeFi Borrowing Hub — Aave, Compound, Maple, MakerDAO",
+  "Real Estate Tokenization directory — RealT, Lofty, Propy",
+  "Batch & payroll recurring payments",
+  "Treasury dashboard for business wallets",
+  "Up to 5 team member seats",
+  "XLS-66 Lending (coming Q2 2026)",
+];
+
 export function UpgradePrompt({ feature, compact = false, variant = "premium" }: UpgradePromptProps) {
   const isAnnual = variant === "annual";
-  const benefits = isAnnual ? ANNUAL_BENEFITS : PREMIUM_BENEFITS;
-  const title = isAnnual ? "Annual Plan Feature" : "Premium Feature";
-  const buttonText = isAnnual ? "Switch to Annual — $199/yr" : "Upgrade to Premium — $29/mo";
-  const Icon = isAnnual ? CalendarClock : Lock;
+  const isPro = variant === "pro";
+  const benefits = isPro ? PRO_BENEFITS : isAnnual ? ANNUAL_BENEFITS : PREMIUM_BENEFITS;
+  const title = isPro ? "Pro Feature" : isAnnual ? "Annual Plan Feature" : "Premium Feature";
+  const buttonText = isPro ? "Upgrade to Pro — $99/mo" : isAnnual ? "Switch to Annual — $199/yr" : "Upgrade to Premium — $29/mo";
+  const Icon = isPro ? Building2 : isAnnual ? CalendarClock : Lock;
 
   if (compact) {
     return (

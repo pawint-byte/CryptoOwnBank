@@ -286,3 +286,22 @@
     inset: -1px;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-testid="invoice-preview-doc"],
+  [data-testid="invoice-preview-doc"] * {
+    visibility: visible;
+  }
+  [data-testid="invoice-preview-doc"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 32px !important;
+  }
+}

@@ -410,6 +410,16 @@ const annualBonusFeatures = [
   "Save $149/yr vs monthly billing",
 ];
 
+const proFeatures = [
+  "Everything in Premium",
+  "DeFi Borrowing Hub (Aave, Compound, Maple, MakerDAO)",
+  "Real Estate Tokenization (RealT, Lofty, Propy)",
+  "Batch & payroll recurring payments",
+  "Treasury dashboard for business wallets",
+  "Up to 5 team member seats",
+  "XLS-66 Lending (coming Q2 2026)",
+];
+
 const onChainReasons = [
   {
     icon: Lock,
@@ -628,8 +638,8 @@ const faqGroups = [
     heading: "Premium, Referrals & Features",
     items: [
       {
-        q: "What\u2019s the difference between Free and Premium?",
-        a: "Free: 1 exchange connection, 1 blockchain address (across 24 chains), 1 price alert, Soil vault access, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, and 7 days of transaction history. Premium Monthly ($29/mo): unlimited exchanges and blockchain addresses across all 24 chains, full Recommendations Hub with Best in Class rankings, personalized staking guides for your exact hardware wallet, DeFi vs TradFi comparisons, 'You Hold This' badges, portfolio search/filter/sort, unlimited price alerts, CSV import, auto-withdraw interest, Statement Insights, and full transaction history. Premium Annual ($199/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
+        q: "What\u2019s the difference between Free, Premium, and Pro?",
+        a: "Free: 1 exchange, 1 blockchain address, 1 price alert, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history. Premium ($29/mo or $199/yr): unlimited exchanges and addresses across 24 chains, full Recommendations Hub, staking guides, CSV import, auto-withdraw, Statement Insights, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus DeFi Borrowing Hub, Real Estate Tokenization directory, batch/payroll payments, treasury dashboard, up to 5 team seats, and XLS-66 Lending. Pro is designed for businesses and high-value clients.",
       },
       {
         q: "How do I pay for Premium?",
@@ -1604,7 +1614,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               <Card data-testid="card-plan-free">
                 <CardContent className="p-6">
                   <h3 className="text-xl font-bold mb-1">Free Forever</h3>
@@ -1661,6 +1671,34 @@ export default function Landing() {
                   <a href="/signup">
                     <Button className="w-full bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-plan-premium">
                       Go Premium
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden border-purple-500 border-2" data-testid="card-plan-pro">
+                <div className="absolute top-0 left-0 right-0 bg-purple-600 text-white text-center text-xs font-medium py-1">
+                  Business & High-Value
+                </div>
+                <CardContent className="p-6 pt-8">
+                  <h3 className="text-xl font-bold mb-1">Pro</h3>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-3xl font-bold">$99</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-4">or $799/yr — Save $389 · Pay with crypto or card</p>
+                  <ul className="space-y-3 mb-6">
+                    {proFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="/signup">
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700" data-testid="button-plan-pro">
+                      Go Pro
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </a>

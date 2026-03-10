@@ -35,6 +35,9 @@ export default function PayPage() {
   const currency = params.get("currency") || "XRP";
   const memo = params.get("memo") || "";
   const tag = params.get("tag") || "";
+  const senderName = params.get("from") || "";
+  const senderLogo = params.get("logo") || "";
+  const invoiceRef = params.get("ref") || "";
 
   const isXrpl = currency.toUpperCase() === "XRP" || currency.toUpperCase() === "RLUSD";
   const isRlusd = currency.toUpperCase() === "RLUSD";
@@ -160,7 +163,21 @@ export default function PayPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-4">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
+          {senderLogo && (
+            <div className="flex justify-center">
+              <img
+                src={senderLogo}
+                alt={senderName || "Sender"}
+                className="h-12 w-12 rounded-xl object-contain border bg-white shadow-sm"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                data-testid="img-sender-logo"
+              />
+            </div>
+          )}
+          {senderName && (
+            <p className="text-sm font-semibold text-foreground" data-testid="text-sender-name">{senderName}</p>
+          )}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium" data-testid="badge-powered-xrpl">
             <Shield className="h-3 w-3" />
             Powered by XRPL
@@ -168,6 +185,9 @@ export default function PayPage() {
           <h1 className="text-2xl font-bold" data-testid="text-pay-title">
             Payment Request
           </h1>
+          {invoiceRef && (
+            <p className="text-xs font-mono text-muted-foreground" data-testid="text-invoice-ref">Ref: {invoiceRef}</p>
+          )}
           {memo && (
             <p className="text-sm text-muted-foreground" data-testid="text-pay-memo">{memo}</p>
           )}
@@ -321,7 +341,11 @@ export default function PayPage() {
 
         <div className="text-center space-y-2 pt-2">
           <a href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors" data-testid="link-pay-home">
-            Powered by <span className="font-semibold">CryptoOwnBank</span>
+            {senderName ? (
+              <>{senderName} <span className="text-muted-foreground/60">via</span> <span className="font-semibold">CryptoOwnBank</span></>
+            ) : (
+              <>Powered by <span className="font-semibold">CryptoOwnBank</span></>
+            )}
           </a>
           <p className="text-[10px] text-muted-foreground/60">
             Non-custodial. We never hold your funds. Payments settle directly on-chain.

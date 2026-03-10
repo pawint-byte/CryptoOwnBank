@@ -56,6 +56,14 @@ import StellarSend from "@/pages/stellar-send";
 import ChainGuide from "@/pages/chain-guide";
 import Stablecoins from "@/pages/stablecoins";
 import RwaYields from "@/pages/rwa-yields";
+import QuickStart from "@/pages/quick-start";
+import Insurance from "@/pages/insurance";
+import DeFiBorrowing from "@/pages/defi-borrowing";
+import RecurringPayments from "@/pages/recurring-payments";
+import MyCard from "@/pages/my-card";
+import Snapshot from "@/pages/snapshot";
+import PaymentQueue from "@/pages/payment-queue";
+import { OfflineBanner } from "@/components/offline-banner";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -69,6 +77,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
         <div className="bg-[#00A4E4] text-white text-center py-1 text-xs font-medium shrink-0" data-testid="banner-beta-app">
           Beta — Early Access &middot; Your feedback shapes the product
         </div>
+        <OfflineBanner />
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <div className="flex flex-col flex-1 overflow-hidden">
@@ -121,6 +130,9 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/send" component={OwnBankSend} />
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
+        <Route path="/ownbank/recurring" component={RecurringPayments} />
+        <Route path="/ownbank/my-card" component={MyCard} />
+        <Route path="/ownbank/payment-queue" component={PaymentQueue} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/price-alerts" component={PriceAlerts} />
@@ -130,6 +142,9 @@ function AuthenticatedRoutes() {
         <Route path="/chain-guide" component={ChainGuide} />
         <Route path="/rwa-yields" component={RwaYields} />
         <Route path="/stablecoins" component={Stablecoins} />
+        <Route path="/quick-start" component={QuickStart} />
+        <Route path="/insurance" component={Insurance} />
+        <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
@@ -166,11 +181,13 @@ function Router() {
         <Route path="/chain-guide" component={ChainGuide} />
         <Route path="/rwa-yields" component={RwaYields} />
         <Route path="/stablecoins" component={Stablecoins} />
+        <Route path="/insurance" component={Insurance} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
+        <Route path="/snapshot/:token" component={Snapshot} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -190,6 +207,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/yield-calculator" component={YieldCalculator} />
       <Route path="/pay" component={PayPage} />
+      <Route path="/snapshot/:token" component={Snapshot} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
