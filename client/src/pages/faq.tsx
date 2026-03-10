@@ -11,7 +11,7 @@ const faqGroups = [
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a combined crypto portfolio tracker and non-custodial XRPL yield vault. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, and get personalized recommendations for staking, DeFi, and yield opportunities \u2014 all while keeping full control via your cold wallet. We clearly distinguish on-chain options (you keep your keys) from custodial options (a company holds your assets), so you can make informed decisions about every opportunity.",
+        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL's built-in DEX, send and receive payments in seconds, and accept crypto payments for your business \u2014 all while keeping full control via your cold wallet. We clearly distinguish on-chain options (you keep your keys) from custodial options (a company holds your assets), so you can make informed decisions about every opportunity. For consumers and small businesses, CryptoOwnBank provides the tools to compete and scale using crypto without paying 2.9% to a payment processor.",
       },
       {
         q: "What blockchains does CryptoOwnBank support for portfolio tracking?",
@@ -361,6 +361,43 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Payments & Business",
+    items: [
+      {
+        q: "Can I use CryptoOwnBank to accept payments for my business?",
+        a: "Yes. Connect your XRPL wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code or wallet address with customers. When they pay, the transaction settles directly to your wallet in 4 seconds. CryptoOwnBank is the tooling layer — we give you the tools to process your own payments. We never sit between you and your customer, never hold funds, and never take a percentage. It's like having a point-of-sale terminal that runs on the blockchain instead of through a payment processor.",
+      },
+      {
+        q: "How does this compare to Stripe or PayPal for accepting payments?",
+        a: "Stripe typically charges 2.9% + $0.30 per transaction and settles in 2 days. PayPal charges around 2.99% + $0.49 and can freeze accounts. Wire transfers cost $25–50 and take 1–5 business days. The XRPL charges approximately 0.00001 XRP per transaction (a fraction of a penny) and settles in about 4 seconds — 24 hours a day, 365 days a year. There are no chargebacks, no middleman, and funds go directly to your wallet. On a $5,000 invoice, Stripe takes about $145. The XRPL network fee is negligible. The tradeoff: your customers need an XRPL wallet. But for crypto-native businesses, freelancers, and international payments, the savings are substantial.",
+      },
+      {
+        q: "Can my customer pay in one currency and I receive another?",
+        a: "Yes — the XRPL has built-in cross-currency pathfinding. XRP acts as the bridge currency. If a customer pays in EUR and you want to receive RLUSD (US dollars), the XRPL can automatically route EUR → XRP → RLUSD using the DEX order book liquidity. It all happens in one transaction, typically in 4 seconds, with no correspondent banks and no SWIFT codes. The only costs are the tiny network fee (~0.00001 XRP) and the DEX spread (the difference between buy and sell prices on the order book, which varies by pair and liquidity). This is Ripple's original vision for XRP as a bridge currency — and your business can use it today.",
+      },
+      {
+        q: "Is accepting crypto payments legal for my business?",
+        a: "In most jurisdictions, yes. Accepting cryptocurrency as payment for goods and services is legal and treated similarly to accepting any other form of payment. You'll need to track the fair market value at the time of receipt for tax purposes (our portfolio tracker and tax reports help with this). Because CryptoOwnBank is non-custodial and you process payments directly through your own wallet, there's no intermediary involved — similar to a customer handing you cash, except on-chain. We recommend consulting a tax professional for your specific situation.",
+      },
+      {
+        q: "What is a 'payment corridor' and how does XRP fit in?",
+        a: "A payment corridor is a path that moves value from one place to another — like a highway for money. Traditional corridors run through banks, SWIFT networks, and payment processors, each adding fees, delays, and rules. XRP was designed to be the universal bridge currency: any value in → XRP → any value out, in seconds, for essentially free. CryptoOwnBank gives you the tools to use this corridor directly. Send & Receive handles the payments. The DEX handles currency conversion. Token Manager handles which currencies you can hold. Together, they form a complete payment corridor that you own and control — no bank, no processor, no middleman required.",
+      },
+      {
+        q: "What about chargebacks? Can a customer reverse a crypto payment?",
+        a: "No. Crypto payments on the XRPL are final — once a transaction is confirmed (in about 4 seconds), it cannot be reversed. This is a major advantage for merchants who lose money to fraudulent chargebacks with credit card processors. Of course, this also means you should have clear refund policies and communicate them upfront. If you need to refund a customer, you can send a payment back to their address through the Send & Receive page.",
+      },
+      {
+        q: "Can freelancers and contractors use this for invoicing?",
+        a: "Absolutely. Share your XRPL address or QR code with your client, specify the amount and currency (RLUSD for dollar-equivalent payments), and they send it directly. The payment settles in 4 seconds. Save your regular clients as contacts in the address book for quick access. For international freelancers, cross-currency payments mean your client in Germany can pay in EUR and you receive RLUSD — no bank conversion fees, no waiting days for a wire, no PayPal holding your funds for 21 days.",
+      },
+      {
+        q: "Do I need Premium to accept business payments?",
+        a: "No. The Send & Receive page, Token Manager (for setting up trustlines), and DEX (for currency conversion) are all available on the free tier. Premium adds unlimited blockchain address tracking, full transaction history, and tax reports — which become valuable as your payment volume grows and you need to track everything for accounting and tax filing.",
+      },
+    ],
+  },
+  {
     heading: "Learn More",
     items: [
       {
@@ -424,7 +461,7 @@ export default function FAQ() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div>
         <h1 className="text-3xl font-bold" data-testid="faq-title">Frequently Asked Questions</h1>
-        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, XRPL tools, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>
+        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, XRPL tools, payments for consumers and businesses, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>
       </div>
       {faqGroups.map((group, groupIndex) => (
         <div key={groupIndex} className="space-y-1">

@@ -39,6 +39,11 @@ import {
   Timer,
   Building2,
   Scale,
+  Store,
+  CreditCard,
+  Receipt,
+  Handshake,
+  CircleDollarSign,
 } from "lucide-react";
 
 const xrplToolsComparison = [
@@ -69,6 +74,16 @@ const xrplToolsComparison = [
     newIcon: Send,
     newTitle: "Send & Receive",
     newDesc: "Enter address, sign with your wallet, delivered in 4 seconds, costs $0.000001",
+    link: "/ownbank/send",
+    status: "live",
+  },
+  {
+    oldIcon: CreditCard,
+    oldTitle: "Payment Processor (Stripe)",
+    oldDesc: "2.9% + $0.30 per transaction, chargebacks, account freezes, 2-day settlement",
+    newIcon: CircleDollarSign,
+    newTitle: "Payment Corridor",
+    newDesc: "Direct wallet-to-wallet payment, ~0.00001 XRP fee, 4-second settlement, no middleman",
     link: "/ownbank/send",
     status: "live",
   },
@@ -299,6 +314,18 @@ const testimonials = [
     role: "Free Tier User",
     persona: "Set-and-Forget Investor",
   },
+  {
+    quote: "I run a small web design studio. Stripe was taking 2.9% of every invoice — on a $5,000 project that's $145 gone. Now clients pay me in RLUSD, it settles in 4 seconds, and I keep every dollar. No chargebacks, no frozen accounts.",
+    author: "Nina R.",
+    role: "Business Owner",
+    persona: "Small Business Operator",
+  },
+  {
+    quote: "I freelance for clients in Europe and the US. Cross-currency payments used to mean waiting days and losing money on conversion fees. Now I send an XRPL address, they pay in whatever currency they have, and I get RLUSD instantly. Game changer for international work.",
+    author: "Carlos M.",
+    role: "Premium Member",
+    persona: "International Freelancer",
+  },
 ];
 
 const freeTierFeatures = [
@@ -403,7 +430,7 @@ const faqGroups = [
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a non-custodial dashboard that lets you track your XRP & RLUSD portfolio and earn fixed yield on RLUSD through Soil Protocol vaults \u2014 all while keeping full control via your cold wallet (Ledger or Xumm). We help you \u201Cbe your own bank\u201D: deposit RLUSD, earn 5\u20138% fixed APR, withdraw only the interest, and leave your principal locked and protected forever \u2014 without ever selling your base holdings.",
+        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL\u2019s built-in DEX, send and receive payments in seconds, and accept crypto payments for your business \u2014 all while keeping full control via your cold wallet. For consumers and small businesses, CryptoOwnBank provides the tools to compete and scale using crypto without paying 2.9% to a payment processor.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
@@ -416,6 +443,10 @@ const faqGroups = [
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
         a: "CryptoOwnBank supports 24 blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities \u2014 clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5\u20138% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
+      },
+      {
+        q: "Can my business accept crypto payments through CryptoOwnBank?",
+        a: "Yes. Connect your wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code with customers. Payments settle in 4 seconds for a fraction of a penny \u2014 no 2.9% processing fee, no chargebacks, no account freezes. We\u2019re the tooling layer (the workbench), not the payment processor. You and your customer transact directly on the XRPL. Consumers, freelancers, and small businesses can compete at scale without giving a cut to Stripe or PayPal.",
       },
       {
         q: "Why should I join now?",
@@ -974,6 +1005,132 @@ export default function Landing() {
               </a>
               <p className="text-xs text-muted-foreground mt-3">
                 All XRPL tools are non-custodial. Your keys never leave your device.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="payment-corridor" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-4">
+                  <Store className="h-3.5 w-3.5" />
+                  For Consumers & Small Businesses
+                </div>
+                <h2 className="text-3xl font-bold mb-4" data-testid="heading-payment-corridor">
+                  Your Payment Corridor — Not Stripe's
+                </h2>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Stripe charges 2.9% + $0.30 on every transaction. Wire transfers cost $25–50 and take days.
+                  PayPal freezes accounts. Every traditional payment method puts a middleman between you and your money.
+                </p>
+                <p className="text-foreground font-medium mb-6">
+                  The XRPL flips this entirely. XRP acts as the bridge currency — value moves from any point A to any point B in 4 seconds, for a fraction of a penny, 24/7/365.
+                </p>
+
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-start gap-3" data-testid="text-corridor-point-0">
+                    <div className="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Store className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Merchants & freelancers</p>
+                      <p className="text-xs text-muted-foreground">Accept RLUSD (dollar-pegged) or any XRPL token. No signup forms, no processing fees, no chargebacks. Customer scans a QR code, signs with their wallet, and payment settles in seconds.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3" data-testid="text-corridor-point-1">
+                    <div className="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Send className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Cross-currency payments</p>
+                      <p className="text-xs text-muted-foreground">Customer pays in EUR, you receive USD — XRP bridges the gap automatically using the XRPL's built-in DEX. One transaction, 4 seconds, no correspondent banks.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3" data-testid="text-corridor-point-2">
+                    <div className="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Handshake className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">No middleman, no permission</p>
+                      <p className="text-xs text-muted-foreground">CryptoOwnBank gives you the tools — you process your own payments. We're the workbench, not the payment processor. No percentage taken from every sale, no platform holding your funds.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3" data-testid="text-corridor-point-3">
+                    <div className="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Receipt className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Full payment toolkit</p>
+                      <p className="text-xs text-muted-foreground">Generate payment requests, share QR codes, track incoming payments, manage your token positions, and save contacts — all from one dashboard, all non-custodial.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <Card className="overflow-hidden border-emerald-500/20" data-testid="card-corridor-comparison">
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-4">The Real Cost of Getting Paid</h3>
+                    <div className="space-y-3">
+                      {[
+                        { method: "Stripe / PayPal", fee: "2.9% + $0.30", time: "2 days", risk: "Account freezes, chargebacks" },
+                        { method: "Wire transfer", fee: "$25–50", time: "1–5 days", risk: "Bank hours only, forms required" },
+                        { method: "Venmo / Cash App", fee: "1.9% (business)", time: "1–3 days", risk: "Personal limits, reporting" },
+                      ].map((row, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-muted/50 border">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-muted-foreground">{row.method}</span>
+                            <span className="text-sm font-bold text-red-500 dark:text-red-400">{row.fee}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{row.time} settlement · {row.risk}</p>
+                        </div>
+                      ))}
+
+                      <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">XRPL (via CryptoOwnBank)</span>
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">~0.00001 XRP</span>
+                        </div>
+                        <p className="text-xs text-emerald-700/70 dark:text-emerald-400/70">4-second settlement · No chargebacks · Direct wallet-to-wallet</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="overflow-hidden" data-testid="card-corridor-positioning">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="h-5 w-5 text-[#00A4E4]" />
+                      <h3 className="font-semibold text-lg">We're the Tooling Layer</h3>
+                    </div>
+                    <div className="space-y-3 text-sm text-muted-foreground">
+                      <p>
+                        <span className="font-medium text-foreground">Stripe</span> = "We process your payment" — they're the middleman, they take a cut, they can freeze your account.
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">CryptoOwnBank</span> = "We give you the tools to process your own payment" — we're the workbench, you're the business.
+                      </p>
+                      <p className="text-xs">
+                        Non-custodial. We never touch your funds. You and your customer transact directly on the XRPL. We sell the software, not the financial service.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div className="mt-12 text-center">
+              <a href="/signup">
+                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700" data-testid="button-corridor-cta">
+                  Start Accepting Payments — Free
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+              <p className="text-xs text-muted-foreground mt-3 max-w-lg mx-auto">
+                Connect your wallet, share your payment QR code, and get paid in seconds.
+                No forms, no fees, no waiting. Consumers and small businesses welcome.
               </p>
             </div>
           </div>
