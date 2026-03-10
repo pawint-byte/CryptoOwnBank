@@ -1234,7 +1234,7 @@ export default function Landing() {
                       Every person you help set up a wallet grows the network. A village where 20 people have XRPL wallets is a village with its own financial system — no bank branch required.
                     </p>
                     <p className="text-sm font-medium text-foreground">
-                      A street vendor in Lagos and a freelance developer in Berlin use the same tools, pay the same fees (practically zero), and settle in the same 4 seconds. The only requirement is internet. That's the whole list.
+                      And here's what levels the field completely: 1 XRP held by someone in America has the exact same value as 1 XRP held by someone in Nigeria. No currency depreciation. No exchange rate penalty for living in the wrong country. A street vendor in Lagos and a freelance developer in Berlin use the same tools, hold the same value, pay the same fees (practically zero), and settle in the same 4 seconds.
                     </p>
                   </div>
                   <div className="hidden sm:flex flex-col items-center gap-2 text-center px-4">
