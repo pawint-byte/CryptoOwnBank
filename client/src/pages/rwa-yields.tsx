@@ -265,19 +265,6 @@ const RISK_EDUCATION: RiskInfo[] = [
   },
 ];
 
-const CHAIN_LABEL: Record<string, string> = {
-  xrpl: "XRPL",
-  ethereum: "Ethereum",
-  xdc: "XDC Network",
-  solana: "Solana",
-};
-
-const RWA_CHAIN_TOKENS: Record<string, string[]> = {
-  ethereum: ["USDY", "OUSG", "Centrifuge pool tokens", "Maple LP tokens"],
-  xrpl: ["Soil vault positions (auto-tracked)"],
-  xdc: ["Trade receivable tokens"],
-  solana: ["Maple LP tokens"],
-};
 
 function getRiskBadgeVariant(level: string) {
   if (level === "Low") return "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300";
@@ -653,14 +640,12 @@ function RecommenderSection() {
   );
 }
 
-function TrackingSection() {
+function EarningStatusSection() {
   const { user } = useAuth();
   const { data: wallets } = useQuery<any[]>({
     queryKey: ["/api/wallets"],
     enabled: !!user,
   });
-
-  const rwaChains = ["ethereum", "xrpl", "xdc", "solana"];
 
   const coveredChains = new Set(
     (wallets || []).map((w: any) => {
@@ -672,8 +657,6 @@ function TrackingSection() {
     })
   );
 
-  const missingChains = rwaChains.filter((c) => !coveredChains.has(c));
-
   if (!user) {
     return (
       <Card className="border-dashed" data-testid="card-tracking-guest">
@@ -682,9 +665,9 @@ function TrackingSection() {
             <div className="flex items-start gap-3">
               <Wallet className="h-6 w-6 text-muted-foreground shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">Track Your RWA Investments</p>
+                <p className="font-semibold">Track Your Earnings</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Create a free account to track your RWA investments alongside your entire crypto portfolio. Add your wallet and we detect your RWA tokens automatically.
+                  Create a free account to track all your yield and staking positions. Add your wallet and we detect your earning tokens automatically.
                 </p>
               </div>
             </div>
@@ -700,54 +683,92 @@ function TrackingSection() {
     );
   }
 
+  const earningOpps = YIELD_OPPORTUNITIES.map((opp) => {
+    const chainKey = opp.trackingChain?.toLowerCase();
+    const isTracking = coveredChains.has(chainKey);
+    return { opp, isTracking };
+  });
+
+  const activeCount = earningOpps.filter((e) => e.isTracking).length;
+  const notEarningCount = earningOpps.filter((e) => !e.isTracking).length;
+
   return (
-    <Card data-testid="card-tracking-member">
+    <Card data-testid="card-earning-status">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Wallet className="h-5 w-5 text-[#00A4E4]" />
-          Track Your RWA Investments
+        <CardTitle className="text-base flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-[#00A4E4]" />
+            Your Earning Status
+          </span>
+          <div className="flex items-center gap-2">
+            {activeCount > 0 && (
+              <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-xs" data-testid="badge-earning-count">
+                {activeCount} tracking
+              </Badge>
+            )}
+            {notEarningCount > 0 && (
+              <Badge variant="outline" className="text-xs text-muted-foreground" data-testid="badge-not-earning-count">
+                {notEarningCount} not started
+              </Badge>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {coveredChains.size > 0 && (
-          <div className="space-y-2">
-            {rwaChains.filter((c) => coveredChains.has(c)).map((chain) => (
-              <div key={chain} className="flex items-center gap-2 text-sm" data-testid={`tracking-covered-${chain}`}>
+      <CardContent className="space-y-2">
+        {earningOpps.map(({ opp, isTracking }) => (
+          <div
+            key={opp.id}
+            className={`flex items-center justify-between rounded-md border px-3 py-2.5 ${isTracking ? "bg-green-500/5 border-green-500/20" : "bg-muted/20"}`}
+            data-testid={`earning-status-${opp.id}`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              {isTracking ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                <span>
-                  <span className="font-medium">{CHAIN_LABEL[chain]}</span>
-                  <span className="text-muted-foreground"> \u2014 {RWA_CHAIN_TOKENS[chain]?.join(", ")} will be detected automatically</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {missingChains.length > 0 && (
-          <div className="space-y-2 pt-2 border-t">
-            <p className="text-xs text-muted-foreground font-medium">Add a wallet to track more RWA protocols:</p>
-            {missingChains.map((chain) => (
-              <div key={chain} className="flex items-center justify-between" data-testid={`tracking-missing-${chain}`}>
-                <div className="flex items-center gap-2 text-sm">
-                  <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span>
-                    <span className="font-medium">{CHAIN_LABEL[chain]}</span>
-                    <span className="text-muted-foreground text-xs"> \u2014 {RWA_CHAIN_TOKENS[chain]?.join(", ")}</span>
-                  </span>
+              ) : (
+                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium">{opp.protocol}</span>
+                  <Badge variant="outline" className="text-xs">{opp.chain}</Badge>
                 </div>
-                <Link href={`/wallets?chain=${chain}`} data-testid={`link-add-wallet-${chain}`}>
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add
+                <p className="text-xs text-muted-foreground">{opp.asset} — {opp.apyRange} APY</p>
+              </div>
+            </div>
+            <div className="shrink-0 ml-2">
+              {isTracking ? (
+                <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-xs">
+                  Tracking
+                </Badge>
+              ) : opp.integrated ? (
+                <Link href="/ownbank/vaults" data-testid={`link-start-earning-${opp.id}`}>
+                  <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4] h-7 text-xs">
+                    Start Earning
+                    <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </Link>
-              </div>
-            ))}
+              ) : (
+                <a href={`#protocol-${opp.id}`} data-testid={`link-start-earning-${opp.id}`}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs">
+                    Start Earning
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
+              )}
+            </div>
           </div>
+        ))}
+
+        {notEarningCount > 0 && activeCount > 0 && (
+          <p className="text-xs text-muted-foreground pt-1">
+            You're tracking {activeCount} of {earningOpps.length} opportunities. Click "Start Earning" on any you haven't tried yet.
+          </p>
         )}
 
-        {coveredChains.size === 0 && missingChains.length === 0 && (
-          <p className="text-sm text-muted-foreground">Add a blockchain wallet to start tracking your RWA positions.</p>
+        {activeCount === 0 && (
+          <p className="text-xs text-muted-foreground pt-1">
+            You haven't started earning with any protocols yet. Pick one above to get started — Soil Protocol is the easiest (no KYC, $50 minimum).
+          </p>
         )}
       </CardContent>
     </Card>
@@ -784,6 +805,8 @@ export default function RwaYields() {
       </Card>
 
       <RecommenderSection />
+
+      <EarningStatusSection />
 
       <div>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-yield-opportunities-heading">
@@ -872,8 +895,6 @@ export default function RwaYields() {
           ))}
         </div>
       </div>
-
-      <TrackingSection />
 
       <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5" data-testid="card-rwa-cta">
         <CardContent className="p-5">
