@@ -61,6 +61,25 @@ const STABLECOINS: StablecoinEntry[] = [
     ],
   },
   {
+    id: "usdy",
+    name: "USDY",
+    symbol: "USDY",
+    issuer: "Ondo Finance",
+    chains: ["Ethereum"],
+    backingType: "Short-term US Treasuries & bank deposits",
+    regulatoryStatus: "Regulated (KYC required by Ondo)",
+    yieldOpportunities: [
+      { protocol: "Ondo Finance", apy: "~5.2%", chain: "Ethereum" },
+    ],
+    bestUseCase: "Yield-bearing treasury exposure, passive income",
+    marketCap: "$500M+",
+    description:
+      "A yield-bearing tokenized note from Ondo Finance backed by short-term US Treasuries and bank deposits. Unlike traditional stablecoins, USDY auto-accrues interest — your balance grows daily. KYC is required by Ondo (not CryptoOwnBank). Add your Ethereum wallet to track your USDY position here.",
+    whereToBuy: [
+      { name: "Ondo Finance", url: "https://app.ondo.finance" },
+    ],
+  },
+  {
     id: "usdc",
     name: "USD Coin",
     symbol: "USDC",
