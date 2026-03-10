@@ -110,6 +110,7 @@ export default function Dashboard() {
       <OnboardingChecklist
         walletCount={walletAddresses.length}
         hasExchangeData={exchangeBalances.length > 0}
+        hasXrplWallet={walletAddresses.some((w: any) => w.chain?.toLowerCase() === "xrpl" || w.chain?.toLowerCase() === "xrp")}
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">

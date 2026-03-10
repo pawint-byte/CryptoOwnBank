@@ -39,11 +39,13 @@ function storageKey(base: string): string {
 export function OnboardingChecklist({
   walletCount,
   hasExchangeData,
+  hasXrplWallet,
 }: {
   walletCount: number;
   hasExchangeData: boolean;
+  hasXrplWallet?: boolean;
 }) {
-  const { isConnected, vaultDeposits, subscriptionTier } = useXrplStore();
+  const { isConnected, walletAddress, vaultDeposits, subscriptionTier } = useXrplStore();
   const [, setLocation] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
@@ -69,7 +71,7 @@ export function OnboardingChecklist({
       href: "/ownbank",
       icon: Sprout,
       iconColor: "text-emerald-500",
-      completed: isConnected && vaultDeposits.length > 0,
+      completed: vaultDeposits.length > 0 || (walletAddress !== null && isConnected) || hasXrplWallet === true,
     },
     {
       id: "add_wallets",
