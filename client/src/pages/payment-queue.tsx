@@ -39,6 +39,7 @@ import {
   Copy,
   Share2,
   ShieldCheck,
+  Smartphone,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOnlineStatus } from "@/hooks/use-online-status";
@@ -62,6 +63,24 @@ import {
 } from "@/lib/offline-queue";
 
 const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+
+const STELLAR_ASSETS: Record<string, { issuer: string } | null> = {
+  XLM: null,
+  USDC: { issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN" },
+  EURCV: { issuer: "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE" },
+};
+
+function buildStellarUri(to: string, amount: string, currency: string, memo: string): string {
+  let uri = `web+stellar:pay?destination=${to}&amount=${amount}`;
+  const asset = STELLAR_ASSETS[currency.toUpperCase()];
+  if (asset) {
+    uri += `&asset_code=${currency}&asset_issuer=${asset.issuer}`;
+  }
+  if (memo.trim()) {
+    uri += `&memo=${encodeURIComponent(memo)}&memo_type=MEMO_TEXT`;
+  }
+  return uri;
+}
 
 function textToHex(text: string): string {
   return Array.from(new TextEncoder().encode(text))
@@ -88,6 +107,7 @@ export default function PaymentQueuePage() {
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<QueuedPayment | null>(null);
+  const [stellarSyncPayment, setStellarSyncPayment] = useState<QueuedPayment | null>(null);
   const [newPayment, setNewPayment] = useState({
     to: "",
     amount: "",
@@ -194,8 +214,11 @@ export default function PaymentQueuePage() {
           toast({ title: "Payment not completed", description: result.error || "Try again later.", variant: "destructive" });
         }
       } else {
-        updateQueueItem(payment.id, { status: "failed", errorMessage: "Stellar sync requires manual send — use the Stellar Send page" });
-        toast({ title: "Stellar payment queued", description: "Open the Stellar Send page to complete this payment.", variant: "destructive" });
+        updateQueueItem(payment.id, { status: "queued" });
+        setSyncingId(null);
+        setStellarSyncPayment(payment);
+        refreshQueue();
+        return;
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Sync failed";
@@ -214,10 +237,11 @@ export default function PaymentQueuePage() {
     }
 
     setSyncing(true);
-    const toSync = pendingPayments.filter(p => p.status === "queued" || p.status === "failed");
+    const xrplPayments = pendingPayments.filter(p => (p.status === "queued" || p.status === "failed") && p.chain === "xrpl");
+    const stellarCount = pendingPayments.filter(p => (p.status === "queued" || p.status === "failed") && p.chain === "stellar").length;
     let successCount = 0;
 
-    for (const payment of toSync) {
+    for (const payment of xrplPayments) {
       await handleSyncOne(payment);
       const updated = loadQueue().find(q => q.id === payment.id);
       if (updated?.status === "sent") successCount++;
@@ -226,7 +250,10 @@ export default function PaymentQueuePage() {
     setSyncing(false);
     refreshQueue();
     if (successCount > 0) {
-      toast({ title: `Synced ${successCount} payment${successCount !== 1 ? "s" : ""}` });
+      toast({ title: `Synced ${successCount} XRPL payment${successCount !== 1 ? "s" : ""}` });
+    }
+    if (stellarCount > 0) {
+      toast({ title: `${stellarCount} Stellar payment${stellarCount !== 1 ? "s" : ""} need individual sync`, description: "Tap the play button on each to open your Stellar wallet." });
     }
   };
 
@@ -491,45 +518,222 @@ export default function PaymentQueuePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">How Offline Payments Work</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Built for market days, field work, rural areas, and anywhere with spotty coverage.
+          </p>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                <Plus className="h-4 w-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">1. Queue</p>
-                <p className="text-xs text-muted-foreground">
-                  Create payments anytime — online or offline. They're saved on your device.
-                </p>
-              </div>
-            </div>
+        <CardContent className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-4">
             <div className="flex gap-3">
               <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
                 <Wifi className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">2. Reconnect</p>
+                <p className="text-sm font-medium">1. Load Once</p>
                 <p className="text-xs text-muted-foreground">
-                  When you're back online, the app detects connectivity automatically.
+                  Open the app while you have signal. It loads into your browser and stays there — even if your connection drops.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                <Plus className="h-4 w-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">2. Queue</p>
+                <p className="text-xs text-muted-foreground">
+                  Create payments while offline. They're saved on your device — no server needed. Your cached balance shows what you can afford.
                 </p>
               </div>
             </div>
             <div className="flex gap-3">
               <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <Wallet className="h-4 w-4 text-emerald-600" />
+                <CloudUpload className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">3. Approve</p>
+                <p className="text-sm font-medium">3. Sync</p>
                 <p className="text-xs text-muted-foreground">
-                  Each payment opens in your wallet (Xaman) for approval. We never hold your keys.
+                  When signal returns, hit "Sync All". Each payment opens in your wallet for approval — one by one.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-4 w-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">4. Proof</p>
+                <p className="text-xs text-muted-foreground">
+                  Every completed payment records the on-chain transaction hash. Both sides can verify it on the blockchain.
                 </p>
               </div>
             </div>
           </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Supported Wallets</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded bg-[#00A4E4]/10 flex items-center justify-center">
+                    <Wallet className="h-3.5 w-3.5 text-[#00A4E4]" />
+                  </div>
+                  <p className="text-sm font-medium">Xaman (XRPL)</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  XRP and RLUSD payments. Sync opens Xaman automatically — scan the QR or tap the deep link to approve.
+                </p>
+              </div>
+              <div className="rounded-lg border p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded bg-[#7B61FF]/10 flex items-center justify-center">
+                    <Wallet className="h-3.5 w-3.5 text-[#7B61FF]" />
+                  </div>
+                  <p className="text-sm font-medium">Lobstr / Solar / Freighter (Stellar)</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  XLM and USDC payments. Sync generates a Stellar deep link that opens your wallet app directly with the payment pre-filled.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Smartphone className="h-4 w-4 text-muted-foreground" />
+              Install for Full Offline Access
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Add CryptoOwnBank to your phone's home screen for true offline access. The app will load from cache even without any internet — perfect for remote areas.
+              On iPhone: tap the share button in Safari, then "Add to Home Screen". On Android: tap the menu, then "Install app" or "Add to Home Screen".
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">Important:</strong> The queue stores your payment intent — who to pay, how much, and in which currency. The actual transaction only happens when you sync and approve it in your wallet.
+              We never hold your keys or submit transactions without your approval. Your wallet balance is cached locally so you can check what you can afford while offline.
+            </p>
+          </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!stellarSyncPayment} onOpenChange={(open) => {
+        if (!open && stellarSyncPayment) {
+          setStellarSyncPayment(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-[#7B61FF]" />
+              Open in Stellar Wallet
+            </DialogTitle>
+          </DialogHeader>
+          {stellarSyncPayment && (() => {
+            const uri = buildStellarUri(stellarSyncPayment.to, stellarSyncPayment.amount, stellarSyncPayment.currency, stellarSyncPayment.memo);
+            return (
+              <div className="space-y-4" data-testid="stellar-sync-content">
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">To</span>
+                    <span className="font-mono text-xs">{stellarSyncPayment.to.slice(0, 10)}...{stellarSyncPayment.to.slice(-6)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span className="font-semibold">{stellarSyncPayment.amount} {stellarSyncPayment.currency}</span>
+                  </div>
+                  {stellarSyncPayment.memo && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Memo</span>
+                      <span>{stellarSyncPayment.memo}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Tap "Open in Wallet" to launch your Stellar wallet app (Lobstr, Solar, Freighter, or StellarTerm) with this payment pre-filled. Approve it in your wallet to complete the transaction.
+                </p>
+
+                <Button
+                  className="w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white"
+                  onClick={() => {
+                    window.open(uri, "_blank");
+                  }}
+                  data-testid="button-open-stellar-wallet"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open in Wallet
+                </Button>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(uri);
+                      toast({ title: "Stellar URI copied" });
+                    }}
+                    data-testid="button-copy-stellar-uri"
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" /> Copy URI
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(stellarSyncPayment.to);
+                      toast({ title: "Address copied" });
+                    }}
+                    data-testid="button-copy-stellar-addr"
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1" /> Copy Address
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      updateQueueItem(stellarSyncPayment.id, { status: "failed", errorMessage: "Not completed — try again later" });
+                      setStellarSyncPayment(null);
+                      refreshQueue();
+                    }}
+                    data-testid="button-stellar-cancel"
+                  >
+                    Not Yet
+                  </Button>
+                  <Button
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => {
+                      updateQueueItem(stellarSyncPayment.id, {
+                        status: "sent",
+                        syncedAt: new Date().toISOString(),
+                      });
+                      setStellarSyncPayment(null);
+                      refreshQueue();
+                      toast({ title: "Payment confirmed", description: `${stellarSyncPayment.amount} ${stellarSyncPayment.currency} marked as sent. Check your wallet for the TX hash.` });
+                    }}
+                    data-testid="button-stellar-confirm"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    I Approved It
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!receiptPayment} onOpenChange={(open) => !open && setReceiptPayment(null)}>
         <DialogContent className="sm:max-w-md">

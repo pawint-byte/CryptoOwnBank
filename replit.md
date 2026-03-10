@@ -75,3 +75,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Analytics
 -   Google Analytics 4 (GA4)
+
+## Recent Features
+
+- **Payment Queue** (`/ownbank/payment-queue`): Offline payment caching for intermittent connectivity. Queue payments while offline (saved to localStorage), auto-detects connectivity via `navigator.onLine` + events, sync all queued payments when back online. XRPL payments sync via Xaman (QR/deep link). Stellar payments sync via `web+stellar:pay` deep link to Lobstr/Solar/Freighter/StellarTerm — user confirms completion. Proof of Delivery: captures on-chain TX hash, links to XRPScan/Stellar Expert, shareable receipt. Cached balance reference with effective balance (deducts already-queued amounts). Files: `client/src/lib/offline-queue.ts`, `client/src/hooks/use-online-status.ts`, `client/src/components/offline-banner.tsx`, `client/src/pages/payment-queue.tsx`.
+- **PWA Support**: Progressive Web App via `vite-plugin-pwa`. Service worker precaches app shell so it loads from cache without internet. API calls use NetworkFirst with 10s timeout fallback. Installable to home screen on iOS/Android. Files: `vite.config.ts` (VitePWA plugin), `client/public/pwa-*.svg` (icons).

@@ -2,11 +2,76 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.png", "pwa-192x192.svg", "pwa-512x512.svg", "apple-touch-icon.svg"],
+      manifest: {
+        name: "CryptoOwnBank — Be Your Own Bank",
+        short_name: "CryptoOwnBank",
+        description: "Non-custodial crypto portfolio tracker with yield vaults, offline payment queuing, and multi-chain support.",
+        theme_color: "#00A4E4",
+        background_color: "#0a0a0a",
+        display: "standalone",
+        start_url: "/",
+        icons: [
+          {
+            src: "pwa-192x192.svg",
+            sizes: "192x192",
+            type: "image/svg+xml",
+          },
+          {
+            src: "pwa-512x512.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+          },
+          {
+            src: "pwa-512x512.svg",
+            sizes: "512x512",
+            type: "image/svg+xml",
+            purpose: "any maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "gstatic-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/api\/prices|\/api\/yields|\/api\/snapshot\//i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "public-api-cache",
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
