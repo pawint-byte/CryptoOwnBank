@@ -38,6 +38,20 @@ function textToHex(text: string): string {
   return Buffer.from(text, "utf8").toString("hex").toUpperCase();
 }
 
+function getBaseUrl(): string {
+  if (process.env.REPLIT_DOMAINS) {
+    return `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`;
+  }
+  return "https://cryptoownbank.com";
+}
+
+function buildPayLink(billingCycle: string): string {
+  const isYearly = billingCycle === "yearly";
+  const amount = isYearly ? YEARLY_PRICE_RLUSD : MONTHLY_PRICE_RLUSD;
+  const plan = isYearly ? "Annual" : "Monthly";
+  return `${getBaseUrl()}/pay?to=${COLD_WALLET}&amount=${amount}&currency=RLUSD&memo=Premium+${plan}+Renewal`;
+}
+
 async function sendXamanRenewalRequest(
   walletAddress: string,
   billingCycle: string,
@@ -46,7 +60,7 @@ async function sendXamanRenewalRequest(
 ): Promise<string | null> {
   const xumm = getXummSdk();
   if (!xumm) {
-    console.warn("[renewal] XUMM SDK not configured, cannot send wallet push");
+    console.warn("[renewal] XUMM SDK not configured, cannot create renewal payload");
     return null;
   }
 
@@ -80,22 +94,21 @@ async function sendXamanRenewalRequest(
         submit: true,
         expire: 1440,
         return_url: {
-          web: `${process.env.REPLIT_DOMAINS?.split(",")[0] ? "https://" + process.env.REPLIT_DOMAINS.split(",")[0] : "https://cryptoownbank.com"}/ownbank/settings`,
+          web: `${getBaseUrl()}/ownbank/settings`,
         },
       },
       custom_meta: {
         instruction: memo,
         blob: JSON.stringify({ type: "subscription_renewal", userId, billingCycle }),
       },
-      user_token: walletAddress,
     } as any);
 
     if (payload?.uuid) {
-      console.log(`[renewal] Sent Xaman renewal request to wallet ${walletAddress} for user ${userId}, payload: ${payload.uuid}`);
+      console.log(`[renewal] Created Xaman renewal payload ${payload.uuid} for user ${userId} (wallet: ${walletAddress})`);
       return payload.uuid;
     }
   } catch (err) {
-    console.error(`[renewal] Failed to send Xaman renewal request:`, err);
+    console.error(`[renewal] Failed to create Xaman renewal payload:`, err);
   }
   return null;
 }
@@ -112,12 +125,7 @@ async function sendEmailPayLink(
     const isYearly = billingCycle === "yearly";
     const amount = isYearly ? YEARLY_PRICE_RLUSD : MONTHLY_PRICE_RLUSD;
     const plan = isYearly ? "Annual" : "Monthly";
-
-    const baseUrl = process.env.REPLIT_DOMAINS?.split(",")[0]
-      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-      : "https://cryptoownbank.com";
-
-    const payLink = `${baseUrl}/pay?to=${COLD_WALLET}&amount=${amount}&currency=RLUSD&memo=Premium+${plan}+Renewal`;
+    const payLink = buildPayLink(billingCycle);
 
     const subject = daysLeft <= 0
       ? `Your CryptoOwnBank Premium subscription has expired`
@@ -197,6 +205,15 @@ async function checkAndRenewSubscriptions() {
       let method = "paylink";
       let paymentId: string | null = null;
 
+      const emailSent = await sendEmailPayLink(
+        settings.userId,
+        settings.subscriptionBillingCycle || "monthly",
+        daysLeft
+      );
+      if (emailSent) {
+        method = "email";
+      }
+
       if (settings.subscriptionRenewalWallet) {
         const xamanResult = await sendXamanRenewalRequest(
           settings.subscriptionRenewalWallet,
@@ -205,19 +222,8 @@ async function checkAndRenewSubscriptions() {
           daysLeft
         );
         if (xamanResult) {
-          method = "xaman";
+          method = emailSent ? "xaman+email" : "xaman";
           paymentId = xamanResult;
-        }
-      }
-
-      if (method === "paylink") {
-        const emailSent = await sendEmailPayLink(
-          settings.userId,
-          settings.subscriptionBillingCycle || "monthly",
-          daysLeft
-        );
-        if (emailSent) {
-          method = "email";
         }
       }
 

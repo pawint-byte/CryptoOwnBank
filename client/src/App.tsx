@@ -49,6 +49,7 @@ import StatementInsights from "@/pages/statement-insights";
 import Reconciliation from "@/pages/reconciliation";
 import MigrationGuide from "@/pages/migration-guide";
 import OwnBankInvoices from "@/pages/ownbank-invoices";
+import PayPage from "@/pages/pay";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -152,6 +153,7 @@ function Router() {
         <Route path="/faq" component={FAQ} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/yield-calculator" component={YieldCalculator} />
+        <Route path="/pay" component={PayPage} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -170,6 +172,7 @@ function Router() {
       <Route path="/signing-options" component={SigningOptions} />
       <Route path="/contact" component={Contact} />
       <Route path="/yield-calculator" component={YieldCalculator} />
+      <Route path="/pay" component={PayPage} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />

@@ -153,11 +153,19 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "Benqi", method: "Liquid Staking (sAVAX)", apyRange: "5.0–6.0%", apyMid: 5.5, link: "https://benqi.fi", custodyType: "on_chain", blockchain: "Avalanche" },
       { platform: "Native Delegation", method: "Validator Delegation", apyRange: "8.0–9.5%", apyMid: 8.75, link: "https://wallet.avax.network", custodyType: "on_chain", blockchain: "Avalanche" },
+      { platform: "GoGoPool", method: "Liquid Staking (ggAVAX)", apyRange: "5.5–7.0%", apyMid: 6.25, link: "https://www.gogopool.com", custodyType: "on_chain", blockchain: "Avalanche" },
     ],
     exchangeEarnOptions: [
       { exchange: "Coinbase", program: "AVAX Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
+      { exchange: "Binance", program: "AVAX Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
     ],
-    selfCustodyWallets: ["Ledger Nano X", "Core Wallet"],
+    defiAlternatives: [
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "AVAX Native Staking", defiApy: "8.0–9.5%", defiApyMid: 8.75, riskLevel: "Low", link: "https://wallet.avax.network", custodyType: "on_chain", blockchain: "Avalanche" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Benqi Liquid Staking", defiApy: "5.0–6.0%", defiApyMid: 5.5, riskLevel: "Low", link: "https://benqi.fi", custodyType: "on_chain", blockchain: "Avalanche" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Aave on Avalanche", defiApy: "2.0–5.0%", defiApyMid: 3.5, riskLevel: "Medium", link: "https://app.aave.com", custodyType: "on_chain", blockchain: "Avalanche" },
+      { tradFiProduct: "Bond Fund (4.0% APY)", tradFiApy: "4.0%", defiProtocol: "Trader Joe Liquidity", defiApy: "5.0–20.0%", defiApyMid: 10.0, riskLevel: "High", link: "https://traderjoexyz.com", custodyType: "on_chain", blockchain: "Avalanche" },
+    ],
+    selfCustodyWallets: ["Ledger Nano X", "Core Wallet", "MetaMask"],
   },
   BTC: {
     symbol: "BTC",
@@ -247,8 +255,18 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     withdrawable: true,
     stakingOptions: [
       { platform: "Native Staking", method: "Proxy Staking", apyRange: "2.5–3.5%", apyMid: 3.0, link: "https://hedera.com/staking", custodyType: "on_chain", blockchain: "Hedera" },
+      { platform: "Stader", method: "Liquid Staking (HBARX)", apyRange: "3.0–4.5%", apyMid: 3.75, link: "https://www.staderlabs.com/hedera/", custodyType: "on_chain", blockchain: "Hedera" },
+      { platform: "SaucerSwap", method: "Liquidity Provision", apyRange: "5.0–15.0%", apyMid: 8.0, link: "https://www.saucerswap.finance", custodyType: "on_chain", blockchain: "Hedera" },
     ],
-    selfCustodyWallets: ["Ledger Nano X", "HashPack"],
+    exchangeEarnOptions: [
+      { exchange: "Binance", program: "HBAR Staking", apyRange: "2.0–3.0%", apyMid: 2.5, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
+    ],
+    defiAlternatives: [
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Hedera Native Staking", defiApy: "2.5–3.5%", defiApyMid: 3.0, riskLevel: "Low", link: "https://hedera.com/staking", custodyType: "on_chain", blockchain: "Hedera" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Stader HBARX", defiApy: "3.0–4.5%", defiApyMid: 3.75, riskLevel: "Low", link: "https://www.staderlabs.com/hedera/", custodyType: "on_chain", blockchain: "Hedera" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "SaucerSwap Pools", defiApy: "5.0–15.0%", defiApyMid: 8.0, riskLevel: "Medium", link: "https://www.saucerswap.finance", custodyType: "on_chain", blockchain: "Hedera" },
+    ],
+    selfCustodyWallets: ["Ledger Nano X", "HashPack", "Blade Wallet"],
   },
   USDC: {
     symbol: "USDC",
@@ -287,12 +305,18 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "Native Delegation", method: "Validator Delegation", apyRange: "15–20%", apyMid: 17.5, link: "https://www.mintscan.io/cosmos/validators", custodyType: "on_chain", blockchain: "Cosmos" },
       { platform: "Stride", method: "Liquid Staking (stATOM)", apyRange: "14–17%", apyMid: 15.5, link: "https://stride.zone", custodyType: "on_chain", blockchain: "Cosmos" },
+      { platform: "pSTAKE", method: "Liquid Staking (stkATOM)", apyRange: "12–16%", apyMid: 14.0, link: "https://pstake.finance", custodyType: "on_chain", blockchain: "Cosmos" },
     ],
     exchangeEarnOptions: [
       { exchange: "Kraken", program: "ATOM Staking", apyRange: "10.0–14.0%", apyMid: 12.0, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
       { exchange: "Coinbase", program: "ATOM Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
     ],
-    selfCustodyWallets: ["Ledger Nano X", "Keplr", "Cosmostation"],
+    defiAlternatives: [
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Cosmos Native Staking", defiApy: "15–20%", defiApyMid: 17.5, riskLevel: "Low", link: "https://www.mintscan.io/cosmos/validators", custodyType: "on_chain", blockchain: "Cosmos" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Stride Liquid Staking", defiApy: "14–17%", defiApyMid: 15.5, riskLevel: "Medium", link: "https://stride.zone", custodyType: "on_chain", blockchain: "Cosmos" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Osmosis LP Pools", defiApy: "10–30%", defiApyMid: 15.0, riskLevel: "High", link: "https://app.osmosis.zone", custodyType: "on_chain", blockchain: "Cosmos" },
+    ],
+    selfCustodyWallets: ["Ledger Nano X", "Keplr", "Cosmostation", "Leap Wallet"],
   },
   VET: {
     symbol: "VET",

@@ -240,6 +240,18 @@ const faqGroups = [
         a: "Yes — crypto is our preferred payment method. Go to Settings → Subscription and choose 'Pay with Crypto.' Select your cryptocurrency (XRP, BTC, ETH, SOL, and more), and we'll show you the exact amount and wallet address to send to. For XRP payments, you'll also get a destination tag. Our system automatically verifies your payment on-chain within seconds and activates your Premium subscription immediately. No KYC, no bank account needed — just send crypto and you're upgraded. Card payments via Stripe are also available as a fallback option.",
       },
       {
+        q: "How does crypto subscription renewal work?",
+        a: "When you pay for Premium with crypto, your subscription is activated for 30 days (monthly) or 365 days (annual). Unlike card payments which renew automatically through Stripe, crypto is a one-time payment — so we proactively reach out before it expires. We reach you where you paid: if you have a connected XRPL wallet, we send a Xaman payment request directly to your phone — you just tap approve and you're renewed. If we can't reach your wallet, we send an email with a pay link instead. You'll get reminders at 7 days, 3 days, and 1 day before expiry. A renewal banner also appears on your dashboard. If no payment is received by the expiry date, your account reverts to the free tier — no data is lost, you just lose access to premium features until you renew.",
+      },
+      {
+        q: "How can I pay for my subscription from an exchange?",
+        a: "If you keep funds on an exchange like Coinbase, Binance, or Uphold, you can pay by withdrawing crypto to our payment address. Go to Settings → Subscription → Pay with Crypto, select your chain, and use the 'Send Manually' option. Copy the wallet address, destination tag (for XRP/RLUSD — this is critical), and exact amount. Go to your exchange's withdrawal screen, paste the details, and send. Our on-chain verifier checks every 60 seconds and will match your payment automatically. Make sure to include the destination tag — without it, we can't link the payment to your account.",
+      },
+      {
+        q: "What are all the ways I can pay with crypto?",
+        a: "There are three options for crypto payment, all leading to the same result — your payment goes directly on-chain to our cold wallet: (1) Pay with Xaman — the easiest. It opens your Xaman wallet with everything pre-filled: address, amount, destination tag. Just tap approve. (2) Scan QR Code — open any XRPL wallet on your phone and scan the code. Payment details are embedded. (3) Send Manually — copy the address, destination tag, and amount, then send from any wallet or exchange. Since we're non-custodial, there's no site balance or internal account to pay from — every payment is a direct on-chain transfer.",
+      },
+      {
         q: "How do Price Alerts work?",
         a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users can have up to 3 active alerts; Premium users get unlimited alerts.",
       },

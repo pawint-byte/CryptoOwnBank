@@ -14,7 +14,10 @@ import {
   Percent,
   Wallet,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Clock,
+  AlertTriangle,
+  Crown,
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Transaction } from "@shared/schema";
@@ -43,6 +46,17 @@ export default function Dashboard() {
 
   const { data: portfolioData } = useQuery<any>({
     queryKey: ["/api/portfolio"],
+  });
+
+  const { data: subStatus } = useQuery<{
+    tier: string;
+    paymentMethod: string | null;
+    expiresAt: string | null;
+    daysRemaining: number | null;
+    isExpired: boolean;
+    billingCycle: string | null;
+  }>({
+    queryKey: ["/api/subscription/status"],
   });
 
   const walletAddresses = (walletsData || []).map((w: any) => ({
@@ -112,6 +126,67 @@ export default function Dashboard() {
         hasExchangeData={exchangeBalances.length > 0}
         hasXrplWallet={walletAddresses.some((w: any) => w.chain?.toLowerCase() === "xrpl" || w.chain?.toLowerCase() === "xrp")}
       />
+
+      {subStatus?.paymentMethod === "crypto" && subStatus.daysRemaining !== null && subStatus.daysRemaining <= 7 && (
+        <div
+          className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${
+            subStatus.isExpired || subStatus.daysRemaining <= 0
+              ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+              : subStatus.daysRemaining <= 3
+                ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+                : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+          }`}
+          data-testid="banner-subscription-renewal"
+        >
+          <div className="flex items-start gap-3 flex-1">
+            {subStatus.isExpired || subStatus.daysRemaining <= 0 ? (
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            ) : subStatus.daysRemaining <= 3 ? (
+              <Clock className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            ) : (
+              <Crown className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className={`text-sm font-semibold ${
+                subStatus.isExpired ? "text-red-800 dark:text-red-200" :
+                subStatus.daysRemaining <= 3 ? "text-amber-800 dark:text-amber-200" :
+                "text-blue-800 dark:text-blue-200"
+              }`}>
+                {subStatus.isExpired
+                  ? "Your Premium subscription has expired"
+                  : `Premium expires in ${subStatus.daysRemaining} day${subStatus.daysRemaining === 1 ? "" : "s"}`
+                }
+              </p>
+              <p className={`text-xs mt-0.5 ${
+                subStatus.isExpired ? "text-red-700 dark:text-red-300" :
+                subStatus.daysRemaining <= 3 ? "text-amber-700 dark:text-amber-300" :
+                "text-blue-700 dark:text-blue-300"
+              }`}>
+                {subStatus.isExpired
+                  ? "Renew now to restore your premium features."
+                  : "Check your Xaman wallet for a renewal request, or renew from Settings."
+                }
+              </p>
+            </div>
+          </div>
+          <Link href="/settings">
+            <Button
+              size="sm"
+              className={
+                subStatus.isExpired
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : subStatus.daysRemaining <= 3
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : ""
+              }
+              data-testid="button-renew-subscription"
+            >
+              <Crown className="h-4 w-4 mr-1.5" />
+              Renew Now
+            </Button>
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <MetricCard

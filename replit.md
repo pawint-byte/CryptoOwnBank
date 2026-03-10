@@ -65,6 +65,9 @@ Preferred communication style: Simple, everyday language.
 - Stripe (card payments fallback)
 - Admin manages crypto payment addresses via Admin Metrics page
 - Payment verifier runs every 60s, auto-activates Premium on confirmed payment, expires pending payments after 30 minutes
+- **Crypto Subscription Lifecycle**: `subscriptionExpiresAt`, `subscriptionPaymentMethod` ("stripe"/"crypto"), `subscriptionRenewalWallet` fields on user_settings. Crypto payments set 30-day (monthly) or 365-day (yearly) expiry. Renewal service (`server/services/subscription-renewal.ts`) runs hourly: sends Xaman payment request push to wallet (7d/3d/1d before expiry), falls back to email pay link via Resend, auto-downgrades to free on expiration. Renewal notifications tracked in `renewal_notifications` table. Dashboard shows color-coded renewal banner (blue 7d, amber 3d, red expired). API: `GET /api/subscription/status`.
+- **Public Pay Page**: `/pay?to=rXXX&amount=50&currency=RLUSD&memo=...&tag=12345` — unauthenticated page for payment request links. Used by invoices, renewal emails, and shareable links. Shows Xaman button, QR code, manual send options.
+- **Invoice Generation**: `/ownbank/invoices` — localStorage-based invoice creation for freelancers/businesses. Generates shareable pay links to the public `/pay` page.
 
 ### XRPL Libraries
 - xrpl.js
