@@ -27,6 +27,7 @@ import {
   Coins,
   Plus,
   LogIn,
+  CreditCard,
 } from "lucide-react";
 
 interface YieldOpportunity {
@@ -48,11 +49,13 @@ interface YieldOpportunity {
   tokenReceived: string;
   trackingChain: string;
   steps: string[];
+  category: "yield" | "cashback";
 }
 
 const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
   {
     id: "soil",
+    category: "yield",
     protocol: "Soil Protocol",
     chain: "XRPL",
     asset: "RLUSD",
@@ -79,6 +82,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
   },
   {
     id: "ondo-usdy",
+    category: "yield",
     protocol: "Ondo Finance",
     chain: "Ethereum",
     asset: "USDY",
@@ -105,6 +109,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
   },
   {
     id: "ondo-ousg",
+    category: "yield",
     protocol: "Ondo Finance",
     chain: "Ethereum",
     asset: "OUSG",
@@ -131,6 +136,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
   },
   {
     id: "centrifuge",
+    category: "yield",
     protocol: "Centrifuge",
     chain: "Ethereum / Base",
     asset: "Various",
@@ -157,6 +163,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
   },
   {
     id: "xdc-tradefi",
+    category: "yield",
     protocol: "XDC / TradeFi",
     chain: "XDC Network",
     asset: "XDC-based",
@@ -183,6 +190,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
   },
   {
     id: "maple",
+    category: "yield",
     protocol: "Maple Finance",
     chain: "Ethereum / Solana",
     asset: "USDC / wETH",
@@ -205,6 +213,60 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
       "Choose a pool and deposit USDC or wETH (check minimum for each pool)",
       "You\u2019ll receive Maple LP tokens representing your position",
       "Add your wallet to CryptoOwnBank \u2192 we\u2019ll detect your Maple LP tokens and track your yield",
+    ],
+  },
+  {
+    id: "uphold-payroll",
+    category: "cashback",
+    protocol: "Uphold Payroll",
+    chain: "XRPL (XRP rewards)",
+    asset: "XRP",
+    apyRange: "4% back",
+    apyMid: 4.0,
+    backingType: "Payroll Direct Deposit Rewards",
+    tvl: "N/A",
+    riskLevel: "Low",
+    link: "https://uphold.com",
+    description: "Earn 4% back in XRP on qualifying salary-linked ACH direct deposits of $250+. Get paid up to 2 days early. Max reward $500/month. Available in US (excluding NY, USVI, American Samoa).",
+    integrated: false,
+    minInvestment: "$250 qualifying deposit",
+    lockup: "None \u2014 XRP rewards paid automatically",
+    kycRequired: true,
+    tokenReceived: "XRP in your Uphold account",
+    trackingChain: "xrpl",
+    steps: [
+      "Sign up at uphold.com and complete identity verification",
+      "Set up direct deposit by linking your employer\u2019s payroll to your Uphold account",
+      "Start receiving your salary via ACH direct deposit ($250+ qualifying deposit)",
+      "Earn 4% back in XRP automatically on each qualifying deposit (up to $500/month in rewards)",
+      "Add your XRPL wallet address to CryptoOwnBank to track your XRP rewards alongside your portfolio",
+    ],
+  },
+  {
+    id: "uphold-card",
+    category: "cashback",
+    protocol: "Uphold Debit Card",
+    chain: "XRPL (XRP rewards)",
+    asset: "XRP",
+    apyRange: "Up to 4% back",
+    apyMid: 3.5,
+    backingType: "Spending Cashback Rewards",
+    tvl: "N/A",
+    riskLevel: "Low",
+    link: "https://uphold.com",
+    description: "Earn up to 4% back in XRP on everyday purchases with the Uphold Debit Card. Get 4% when funding with crypto or metals, or 3% when using fiat or stablecoins (Elite tier).",
+    integrated: false,
+    minInvestment: "No minimum",
+    lockup: "None \u2014 XRP rewards on every purchase",
+    kycRequired: true,
+    tokenReceived: "XRP in your Uphold account",
+    trackingChain: "xrpl",
+    steps: [
+      "Sign up at uphold.com and complete identity verification if you haven\u2019t already",
+      "Apply for the Uphold Debit Card through your Uphold account",
+      "Choose your funding source \u2014 crypto/metals for 4% back, or fiat/stablecoins for 3% back (Elite tier)",
+      "Use the card for everyday purchases and earn XRP rewards automatically",
+      "Add your XRPL wallet to CryptoOwnBank to track your XRP cashback rewards",
     ],
   },
 ];
@@ -299,24 +361,30 @@ function ProtocolCard({ opp }: { opp: YieldOpportunity }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">Asset</p>
+            <p className="text-xs text-muted-foreground">{opp.category === "cashback" ? "Reward" : "Asset"}</p>
             <p className="text-sm font-medium" data-testid={`text-asset-${slug}`}>{opp.asset}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">APY</p>
+            <p className="text-xs text-muted-foreground">{opp.category === "cashback" ? "Rate" : "APY"}</p>
             <p className="text-sm font-semibold text-green-600 dark:text-green-400" data-testid={`text-apy-${slug}`}>{opp.apyRange}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Backing</p>
+            <p className="text-xs text-muted-foreground">{opp.category === "cashback" ? "Type" : "Backing"}</p>
             <div className="flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              {opp.category === "cashback" ? (
+                <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              ) : (
+                <Shield className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              )}
               <p className="text-sm font-medium" data-testid={`text-backing-${slug}`}>{opp.backingType}</p>
             </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">TVL</p>
-            <p className="text-sm font-medium" data-testid={`text-tvl-${slug}`}>{opp.tvl}</p>
-          </div>
+          {opp.tvl !== "N/A" && (
+            <div>
+              <p className="text-xs text-muted-foreground">TVL</p>
+              <p className="text-sm font-medium" data-testid={`text-tvl-${slug}`}>{opp.tvl}</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-1 border-t">
@@ -732,7 +800,7 @@ function EarningStatusSection() {
                   <span className="text-sm font-medium">{opp.protocol}</span>
                   <Badge variant="outline" className="text-xs">{opp.chain}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">{opp.asset} — {opp.apyRange} APY</p>
+                <p className="text-xs text-muted-foreground">{opp.asset} — {opp.apyRange}{opp.category === "yield" ? " APY" : ""}</p>
               </div>
             </div>
             <div className="shrink-0 ml-2">
@@ -783,7 +851,7 @@ export default function RwaYields() {
           Earn & Yield Explorer
         </h1>
         <p className="text-muted-foreground mt-1" data-testid="text-rwa-yields-subtitle">
-          Discover every way to earn on your crypto — staking, yield vaults, RWA lending, and DeFi — all from one place
+          Discover every way to earn on your crypto — yield vaults, RWA lending, cashback rewards, and more — all from one place
         </p>
       </div>
 
@@ -811,10 +879,27 @@ export default function RwaYields() {
       <div>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-yield-opportunities-heading">
           <TrendingUp className="h-5 w-5 text-[#00A4E4]" />
-          Yield Opportunities
+          Yield Vaults & RWA
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
-          {YIELD_OPPORTUNITIES.map((opp) => (
+          {YIELD_OPPORTUNITIES.filter((opp) => opp.category === "yield").map((opp) => (
+            <div key={opp.id} id={`protocol-${opp.id}`}>
+              <ProtocolCard opp={opp} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-cashback-opportunities-heading">
+          <CreditCard className="h-5 w-5 text-[#00A4E4]" />
+          Cashback & Rewards
+        </h2>
+        <p className="text-sm text-muted-foreground -mt-2 mb-4">
+          Earn XRP rewards on your everyday payroll and spending activity — no lockups, no deposits required.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {YIELD_OPPORTUNITIES.filter((opp) => opp.category === "cashback").map((opp) => (
             <div key={opp.id} id={`protocol-${opp.id}`}>
               <ProtocolCard opp={opp} />
             </div>
