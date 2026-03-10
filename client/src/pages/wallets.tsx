@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -774,6 +774,28 @@ export default function Wallets() {
       label: "",
     },
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const chainParam = params.get("chain");
+    if (chainParam) {
+      const chainAliases: Record<string, string> = {
+        xrpl: "xrp", eth: "ethereum", sol: "solana",
+      };
+      const validChains = [
+        "bitcoin", "ethereum", "solana", "xrp", "dogecoin", "litecoin",
+        "cardano", "avalanche", "algorand", "cosmos", "tron", "hedera",
+        "polkadot", "vechain", "digibyte", "casper", "cronos", "ton",
+        "nervos", "zilliqa", "stellar", "verge", "xdc", "polygon",
+      ];
+      const normalized = chainAliases[chainParam.toLowerCase()] || chainParam.toLowerCase();
+      if (validChains.includes(normalized)) {
+        form.setValue("chain", normalized);
+        setIsDialogOpen(true);
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: async (values: WalletFormValues) => {

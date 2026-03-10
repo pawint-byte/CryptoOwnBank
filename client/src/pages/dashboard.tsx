@@ -18,6 +18,8 @@ import {
   Clock,
   AlertTriangle,
   Crown,
+  Landmark,
+  ArrowRight,
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Transaction } from "@shared/schema";
@@ -82,6 +84,20 @@ export default function Dashboard() {
 
   const hasData = walletAddresses.length > 0 || exchangeBalances.length > 0;
 
+  const RWA_TOKENS = ["USDY", "OUSG", "DROP", "TIN", "MPL", "SOIL"];
+
+  const rwaPositions = walletAddresses.flatMap((w: any) =>
+    (w.balances || []).filter((b: any) =>
+      RWA_TOKENS.some((t) => b.assetSymbol?.toUpperCase()?.includes(t))
+    )
+  );
+
+  const rwaTotal = rwaPositions.reduce(
+    (sum: number, b: any) => sum + (parseFloat(b.usdValue) || 0),
+    0
+  );
+
+  const hasRwaPositions = rwaPositions.length > 0 && rwaTotal > 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -230,6 +246,45 @@ export default function Dashboard() {
           isLoading={isLoading}
         />
       </div>
+
+      <Card data-testid="card-rwa-discovery">
+        <CardContent className="flex items-center gap-4 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <Landmark className="h-5 w-5 text-primary" />
+          </div>
+          {hasRwaPositions ? (
+            <div className="flex flex-1 items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold" data-testid="text-rwa-title">RWA Yield Positions</p>
+                <p className="text-xs text-muted-foreground" data-testid="text-rwa-value">
+                  Estimated value: {formatCurrency(rwaTotal)} across {rwaPositions.length} token{rwaPositions.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <Link href="/rwa-yields">
+                <Button variant="outline" size="sm" data-testid="link-rwa-positions">
+                  View Details
+                  <ArrowRight className="h-4 w-4 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-1 items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold" data-testid="text-rwa-title">Real-World Asset Yields</p>
+                <p className="text-xs text-muted-foreground" data-testid="text-rwa-description">
+                  Earn 5-8% on treasuries, real estate, and trade finance
+                </p>
+              </div>
+              <Link href="/rwa-yields">
+                <Button variant="outline" size="sm" data-testid="link-explore-rwa">
+                  Explore RWA Yields
+                  <ArrowRight className="h-4 w-4 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {hasData && (
         <RecommendationsHub
