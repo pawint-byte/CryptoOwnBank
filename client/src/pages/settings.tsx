@@ -498,157 +498,190 @@ export default function SettingsPage() {
                     </div>
 
                     {(pendingPayment.chain === "xrp" || pendingPayment.chain === "rlusd") ? (
-                      <div className="space-y-4">
-                        <div className="text-center">
-                          <p className="text-xs font-medium text-muted-foreground mb-1">Choose how to pay</p>
-                        </div>
-
-                        <Button
-                          className="w-full bg-[#00A4E4] hover:bg-[#0090c9] text-white h-12 text-base"
-                          onClick={handleXamanPay}
-                          disabled={xamanPayLoading}
-                          data-testid="button-pay-xaman"
-                        >
-                          {xamanPayLoading ? (
-                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          ) : (
-                            <Wallet className="h-5 w-5 mr-2" />
-                          )}
-                          Pay with Xaman
-                        </Button>
-                        <p className="text-[11px] text-muted-foreground text-center -mt-2">
-                          Opens your Xaman wallet with everything pre-filled — just approve
-                        </p>
-
-                        <div className="relative">
-                          <div className="absolute inset-0 flex items-center">
-                            <Separator className="w-full" />
-                          </div>
-                          <div className="relative flex justify-center text-xs">
-                            <span className="bg-background px-3 text-muted-foreground">or scan QR code</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="p-3 rounded-lg border bg-white" data-testid="qr-payment-container">
-                            <img
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                                pendingPayment.chain === "rlusd"
-                                  ? `https://xrpl.to/?to=${pendingPayment.toAddress}&dt=${pendingPayment.destinationTag || ""}&amount=${pendingPayment.expectedAmount}&currency=RLUSD`
-                                  : `https://xrpl.to/?to=${pendingPayment.toAddress}&dt=${pendingPayment.destinationTag || ""}&amount=${pendingPayment.expectedAmount}`
-                              )}`}
-                              alt="Payment QR Code"
-                              className="w-40 h-40"
-                              data-testid="img-payment-qr"
-                            />
-                          </div>
-                          <p className="text-[11px] text-muted-foreground text-center">
-                            Scan with Xaman or any XRPL wallet
-                          </p>
-                        </div>
-
-                        <div className="relative">
-                          <div className="absolute inset-0 flex items-center">
-                            <Separator className="w-full" />
-                          </div>
-                          <div className="relative flex justify-center text-xs">
-                            <span className="bg-background px-3 text-muted-foreground">or send manually</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                          <div>
-                            <span className="text-[11px] text-muted-foreground block mb-0.5">To address</span>
-                            <div className="flex items-center gap-2">
-                              <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all" data-testid="text-payment-address">
-                                {pendingPayment.toAddress}
-                              </code>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => copyToClipboard(pendingPayment.toAddress, "Address")} data-testid="button-copy-address">
-                                <Copy className="h-3 w-3" />
-                              </Button>
+                      <div className="space-y-3">
+                        <div className="rounded-lg border-2 border-[#00A4E4]/40 bg-[#00A4E4]/5 p-4" data-testid="option-xaman">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-[#00A4E4]/10 flex items-center justify-center shrink-0 mt-0.5">
+                              <Wallet className="h-4 w-4 text-[#00A4E4]" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-sm font-semibold">Pay with Xaman</span>
+                                <Badge className="bg-[#00A4E4] text-[10px] px-1.5 py-0">Easiest</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Opens your Xaman wallet with the address, amount, and destination tag pre-filled. You just approve — one tap, 4 seconds, done. <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="underline text-[#00A4E4]">Get Xaman free</a>
+                              </p>
                             </div>
                           </div>
-                          {pendingPayment.destinationTag && (
+                          <Button
+                            className="w-full bg-[#00A4E4] hover:bg-[#0090c9] text-white h-11"
+                            onClick={handleXamanPay}
+                            disabled={xamanPayLoading}
+                            data-testid="button-pay-xaman"
+                          >
+                            {xamanPayLoading ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Wallet className="h-4 w-4 mr-2" />
+                            )}
+                            Open Xaman & Pay
+                          </Button>
+                        </div>
+
+                        <div className="rounded-lg border p-4" data-testid="option-qr">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                              <QrCode className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <span className="text-sm font-semibold block mb-0.5">Scan QR Code</span>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Open Xaman or any XRPL wallet on your phone and scan this code. The payment details are embedded — just confirm and send.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-center">
+                            <div className="p-3 rounded-lg border bg-white" data-testid="qr-payment-container">
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                                  pendingPayment.chain === "rlusd"
+                                    ? `https://xrpl.to/?to=${pendingPayment.toAddress}&dt=${pendingPayment.destinationTag || ""}&amount=${pendingPayment.expectedAmount}&currency=RLUSD`
+                                    : `https://xrpl.to/?to=${pendingPayment.toAddress}&dt=${pendingPayment.destinationTag || ""}&amount=${pendingPayment.expectedAmount}`
+                                )}`}
+                                alt="Payment QR Code"
+                                className="w-40 h-40"
+                                data-testid="img-payment-qr"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border p-4" data-testid="option-manual">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                              <Copy className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <span className="text-sm font-semibold block mb-0.5">Send Manually</span>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Copy the address and destination tag below and send from any XRPL-compatible wallet, exchange, or platform. Make sure to include the destination tag — without it, your payment can't be matched.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-2 bg-muted/50 rounded-lg p-3">
                             <div>
-                              <span className="text-[11px] text-muted-foreground block mb-0.5">
-                                <AlertTriangle className="h-3 w-3 inline mr-1 text-amber-500" />
-                                Destination Tag (required)
-                              </span>
+                              <span className="text-[11px] text-muted-foreground block mb-0.5">To address</span>
                               <div className="flex items-center gap-2">
-                                <code className="text-sm font-mono font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded px-2 py-1" data-testid="text-destination-tag">
-                                  {pendingPayment.destinationTag}
+                                <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all" data-testid="text-payment-address">
+                                  {pendingPayment.toAddress}
                                 </code>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard(String(pendingPayment.destinationTag), "Destination tag")} data-testid="button-copy-tag">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => copyToClipboard(pendingPayment.toAddress, "Address")} data-testid="button-copy-address">
                                   <Copy className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
-                          )}
-                          <div>
-                            <span className="text-[11px] text-muted-foreground block mb-0.5">Amount</span>
-                            <div className="flex items-center gap-2">
-                              <code className="text-xs font-mono bg-background rounded px-2 py-1" data-testid="text-manual-amount">
-                                {pendingPayment.expectedAmount} {pendingPayment.expectedAsset}
-                              </code>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard(pendingPayment.expectedAmount, "Amount")} data-testid="button-copy-amount-manual">
-                                <Copy className="h-3 w-3" />
-                              </Button>
+                            {pendingPayment.destinationTag && (
+                              <div>
+                                <span className="text-[11px] text-muted-foreground block mb-0.5">
+                                  <AlertTriangle className="h-3 w-3 inline mr-1 text-amber-500" />
+                                  Destination Tag (required)
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <code className="text-sm font-mono font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded px-2 py-1" data-testid="text-destination-tag">
+                                    {pendingPayment.destinationTag}
+                                  </code>
+                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard(String(pendingPayment.destinationTag), "Destination tag")} data-testid="button-copy-tag">
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-[11px] text-muted-foreground block mb-0.5">Amount</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs font-mono bg-background rounded px-2 py-1" data-testid="text-manual-amount">
+                                  {pendingPayment.expectedAmount} {pendingPayment.expectedAsset}
+                                </code>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard(pendingPayment.expectedAmount, "Amount")} data-testid="button-copy-amount-manual">
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          <p className="text-[11px] text-muted-foreground">
-                            Use any XRPL-compatible wallet — include the destination tag or your payment won't be matched.
-                          </p>
-                        </div>
-
-                        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3" data-testid="tip-xaman-next-time">
-                          <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5 mb-1">
-                            <Sparkles className="h-3.5 w-3.5" />
-                            Tip for next time
-                          </p>
-                          <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
-                            Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="underline font-medium">Xaman</a> on your phone and use the "Pay with Xaman" button above. It pre-fills the address, amount, and destination tag — you just approve. One tap, 4 seconds, done.
-                          </p>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1">To address</span>
-                          <div className="flex items-center gap-2">
-                            <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all" data-testid="text-payment-address">
-                              {pendingPayment.toAddress}
-                            </code>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => copyToClipboard(pendingPayment.toAddress, "Address")} data-testid="button-copy-address">
-                              <Copy className="h-3 w-3" />
-                            </Button>
+                      <div className="space-y-3">
+                        <div className="rounded-lg border p-4" data-testid="option-qr-other">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                              <QrCode className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <span className="text-sm font-semibold block mb-0.5">Scan Address QR</span>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Scan with your wallet app to get the address. Then send exactly <strong>{pendingPayment.expectedAmount} {pendingPayment.expectedAsset}</strong> — the last decimal places are unique to your order for automatic matching.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-center">
+                            <div className="p-3 rounded-lg border bg-white">
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pendingPayment.toAddress)}`}
+                                alt="Payment Address QR Code"
+                                className="w-36 h-36"
+                                data-testid="img-address-qr"
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-center gap-2 py-2">
-                          <div className="p-3 rounded-lg border bg-white">
-                            <img
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pendingPayment.toAddress)}`}
-                              alt="Payment Address QR Code"
-                              className="w-36 h-36"
-                              data-testid="img-address-qr"
-                            />
+                        <div className="rounded-lg border p-4" data-testid="option-manual-other">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                              <Copy className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <span className="text-sm font-semibold block mb-0.5">Copy & Send Manually</span>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Copy the address below and send from any wallet or exchange. Send the exact amount shown — the last decimal places identify your payment.
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-[11px] text-muted-foreground">Scan to get the address</p>
-                        </div>
-
-                        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                          <p className="text-xs text-blue-700 dark:text-blue-300">
-                            Send exactly <strong>{pendingPayment.expectedAmount} {pendingPayment.expectedAsset}</strong> — the last decimal places are unique to your order for automatic matching.
-                          </p>
+                          <div className="space-y-2 bg-muted/50 rounded-lg p-3">
+                            <div>
+                              <span className="text-[11px] text-muted-foreground block mb-0.5">To address</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs font-mono bg-background rounded px-2 py-1 flex-1 break-all" data-testid="text-payment-address">
+                                  {pendingPayment.toAddress}
+                                </code>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => copyToClipboard(pendingPayment.toAddress, "Address")} data-testid="button-copy-address">
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-[11px] text-muted-foreground block mb-0.5">Exact amount</span>
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs font-mono font-bold bg-background rounded px-2 py-1" data-testid="text-manual-amount">
+                                  {pendingPayment.expectedAmount} {pendingPayment.expectedAsset}
+                                </code>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyToClipboard(pendingPayment.expectedAmount, "Amount")} data-testid="button-copy-amount-manual">
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3" data-testid="tip-xrpl-next-time">
                           <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5 mb-1">
                             <Sparkles className="h-3.5 w-3.5" />
-                            Next time, pay with XRP or RLUSD instead
+                            Faster next time
                           </p>
                           <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
-                            Pay with XRP or RLUSD using <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="underline font-medium">Xaman</a> on your phone — one tap to approve, settles in 4 seconds, costs fractions of a penny. No copy-paste needed.
+                            Pay with XRP or RLUSD using <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="underline font-medium">Xaman</a> on your phone — one tap to approve, settles in 4 seconds, fractions of a penny. No copy-paste needed.
                           </p>
                         </div>
                       </div>
