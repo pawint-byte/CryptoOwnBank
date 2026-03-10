@@ -596,7 +596,7 @@ export default function SettingsPage() {
                         onClick={() => setSelectedPlan("monthly")}
                         data-testid="button-plan-monthly"
                       >
-                        <span className="text-lg font-bold">$9</span>
+                        <span className="text-lg font-bold">$29</span>
                         <span className="text-xs text-muted-foreground">/month</span>
                       </Button>
                       <Button
@@ -606,9 +606,9 @@ export default function SettingsPage() {
                         data-testid="button-plan-yearly"
                       >
                         <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
-                          Save $29
+                          Save $149
                         </Badge>
-                        <span className="text-lg font-bold">$79</span>
+                        <span className="text-lg font-bold">$199</span>
                         <span className="text-xs text-muted-foreground">/year + tax reports</span>
                       </Button>
                     </div>

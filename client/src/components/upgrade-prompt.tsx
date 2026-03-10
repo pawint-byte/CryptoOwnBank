@@ -28,14 +28,14 @@ const ANNUAL_BENEFITS = [
   "IRS Form 8949 / Schedule D guidance",
   "TurboTax-ready export",
   "Income tracking for staking & yield",
-  "Save $29/yr vs monthly billing",
+  "Save $149/yr vs monthly billing",
 ];
 
 export function UpgradePrompt({ feature, compact = false, variant = "premium" }: UpgradePromptProps) {
   const isAnnual = variant === "annual";
   const benefits = isAnnual ? ANNUAL_BENEFITS : PREMIUM_BENEFITS;
   const title = isAnnual ? "Annual Plan Feature" : "Premium Feature";
-  const buttonText = isAnnual ? "Switch to Annual — $79/yr" : "Upgrade to Premium — $9/mo";
+  const buttonText = isAnnual ? "Switch to Annual — $199/yr" : "Upgrade to Premium — $29/mo";
   const Icon = isAnnual ? CalendarClock : Lock;
 
   if (compact) {

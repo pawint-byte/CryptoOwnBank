@@ -346,6 +346,184 @@ export async function getSoilTransactions(
   }
 }
 
+export interface XrplTrustline {
+  currency: string;
+  issuer: string;
+  balance: string;
+  limit: string;
+  quality_in: number;
+  quality_out: number;
+  no_ripple: boolean;
+  freeze: boolean;
+}
+
+export async function getAccountTrustlines(address: string): Promise<XrplTrustline[]> {
+  try {
+    const client = await getClient();
+    const trustlines: XrplTrustline[] = [];
+    let marker: any = undefined;
+    let hasMore = true;
+
+    while (hasMore) {
+      const request: any = {
+        command: "account_lines",
+        account: address,
+        ledger_index: "validated",
+        limit: 200,
+      };
+      if (marker) request.marker = marker;
+
+      const response = await client.request(request);
+      const lines = (response.result as any).lines || [];
+
+      for (const line of lines) {
+        trustlines.push({
+          currency: line.currency === RLUSD_CURRENCY ? "RLUSD" : line.currency,
+          issuer: line.account,
+          balance: line.balance,
+          limit: line.limit,
+          quality_in: line.quality_in || 0,
+          quality_out: line.quality_out || 0,
+          no_ripple: !!line.no_ripple,
+          freeze: !!line.freeze,
+        });
+      }
+
+      marker = (response.result as any).marker;
+      hasMore = !!marker;
+    }
+
+    return trustlines;
+  } catch (error: any) {
+    if (error?.data?.error === "actNotFound") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export interface XrplOffer {
+  seq: number;
+  flags: number;
+  takerGets: { amount: string; currency: string; issuer?: string };
+  takerPays: { amount: string; currency: string; issuer?: string };
+  quality: string;
+  expiration?: number;
+}
+
+export async function getAccountOffers(address: string): Promise<XrplOffer[]> {
+  try {
+    const client = await getClient();
+    const offers: XrplOffer[] = [];
+    let marker: any = undefined;
+    let hasMore = true;
+
+    while (hasMore) {
+      const request: any = {
+        command: "account_offers",
+        account: address,
+        ledger_index: "validated",
+        limit: 200,
+      };
+      if (marker) request.marker = marker;
+
+      const response = await client.request(request);
+      const rawOffers = (response.result as any).offers || [];
+
+      for (const offer of rawOffers) {
+        offers.push({
+          seq: offer.seq,
+          flags: offer.flags || 0,
+          takerGets: parseXrplAmount(offer.taker_gets),
+          takerPays: parseXrplAmount(offer.taker_pays),
+          quality: offer.quality || "0",
+          expiration: offer.expiration,
+        });
+      }
+
+      marker = (response.result as any).marker;
+      hasMore = !!marker;
+    }
+
+    return offers;
+  } catch (error: any) {
+    if (error?.data?.error === "actNotFound") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export interface OrderBookEntry {
+  account: string;
+  amount: string;
+  price: string;
+  totalCurrency: string;
+  totalAmount: string;
+  quality: string;
+}
+
+export interface OrderBookResult {
+  bids: OrderBookEntry[];
+  asks: OrderBookEntry[];
+}
+
+export async function getOrderBook(
+  base: { currency: string; issuer?: string },
+  counter: { currency: string; issuer?: string },
+  limit: number = 20
+): Promise<OrderBookResult> {
+  try {
+    const client = await getClient();
+
+    const formatCurrency = (c: { currency: string; issuer?: string }) => {
+      if (c.currency === "XRP") return { currency: "XRP" };
+      return { currency: c.currency, issuer: c.issuer };
+    };
+
+    const [asksResponse, bidsResponse] = await Promise.all([
+      client.request({
+        command: "book_offers",
+        taker_gets: formatCurrency(base) as any,
+        taker_pays: formatCurrency(counter) as any,
+        limit,
+        ledger_index: "validated",
+      }),
+      client.request({
+        command: "book_offers",
+        taker_gets: formatCurrency(counter) as any,
+        taker_pays: formatCurrency(base) as any,
+        limit,
+        ledger_index: "validated",
+      }),
+    ]);
+
+    const parseOfferEntry = (offer: any): OrderBookEntry => {
+      const gets = parseXrplAmount(offer.TakerGets);
+      const pays = parseXrplAmount(offer.TakerPays);
+      const getsNum = parseFloat(gets.amount) || 0;
+      const paysNum = parseFloat(pays.amount) || 0;
+      const price = getsNum > 0 ? (paysNum / getsNum).toString() : "0";
+
+      return {
+        account: offer.Account || "",
+        amount: gets.amount,
+        price,
+        totalCurrency: pays.currency,
+        totalAmount: pays.amount,
+        quality: offer.quality || "0",
+      };
+    };
+
+    const asks = ((asksResponse.result as any).offers || []).map(parseOfferEntry);
+    const bids = ((bidsResponse.result as any).offers || []).map(parseOfferEntry);
+
+    return { bids, asks };
+  } catch {
+    return { bids: [], asks: [] };
+  }
+}
+
 export const SOIL_REFERRAL_CODE = "OWNBANK2026";
 export const SOIL_REFERRAL_URL = `https://xrpl.soil.co/?af=${SOIL_REFERRAL_CODE}`;
 

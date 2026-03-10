@@ -24,6 +24,9 @@ import {
   FileSearch,
   ArrowRightLeft as ReconcileIcon,
   Route,
+  Coins,
+  TrendingUp,
+  Send,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,6 +60,9 @@ const trackerItems = [
 const ownbankItems = [
   { title: "Wallet & Yield", url: "/ownbank", icon: Landmark },
   { title: "Vaults", url: "/ownbank/vaults", icon: Vault },
+  { title: "Token Manager", url: "/ownbank/tokens", icon: Coins },
+  { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp },
+  { title: "Send & Receive", url: "/ownbank/send", icon: Send },
   { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine },
   { title: "History", url: "/ownbank/history", icon: History },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users },

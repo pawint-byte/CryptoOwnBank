@@ -1950,7 +1950,7 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const { tier: taxTier, billingCycle: taxCycle } = await getEffectiveTier(userId);
       if (taxTier === "free" || taxCycle !== "yearly") {
-        return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
+        return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($199/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
       const year = parseInt(req.query.year as string) || new Date().getFullYear();
@@ -2005,7 +2005,7 @@ export async function registerRoutes(
 
       const { tier: calcTier, billingCycle: calcCycle } = await getEffectiveTier(userId);
       if (calcTier === "free" || calcCycle !== "yearly") {
-        return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
+        return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($199/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
       const { year, method } = req.body;
@@ -2076,7 +2076,7 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const { tier: exportTier, billingCycle: exportCycle } = await getEffectiveTier(userId);
       if (exportTier === "free" || exportCycle !== "yearly") {
-        return res.status(403).json({ message: "Tax report exports require an Annual Premium plan ($79/yr). Monthly subscribers can upgrade to annual for full tax report access." });
+        return res.status(403).json({ message: "Tax report exports require an Annual Premium plan ($199/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
       const year = parseInt(req.query.year as string) || new Date().getFullYear();
@@ -2437,7 +2437,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: `No payment address configured for ${chain}.` });
       }
 
-      const usdAmount = plan === "yearly" ? 79 : 9;
+      const usdAmount = plan === "yearly" ? 199 : 29;
 
       const CHAIN_TO_COINGECKO: Record<string, string> = {
         bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",
@@ -2808,7 +2808,7 @@ export async function registerRoutes(
       if (!xummSdk) {
         return res.status(500).json({ message: "Xumm SDK not configured" });
       }
-      const { TransactionType, Destination, Amount, LimitAmount } = req.body;
+      const { TransactionType, Destination, Amount, LimitAmount, TakerGets, TakerPays, OfferSequence, Flags, Memos, DestinationTag, SourceTag, ...extraFields } = req.body;
       if (!TransactionType) {
         return res.status(400).json({ message: "TransactionType is required" });
       }
@@ -2816,6 +2816,17 @@ export async function registerRoutes(
       if (Destination) txJson.Destination = Destination;
       if (Amount) txJson.Amount = Amount;
       if (LimitAmount) txJson.LimitAmount = LimitAmount;
+      if (TakerGets !== undefined) txJson.TakerGets = TakerGets;
+      if (TakerPays !== undefined) txJson.TakerPays = TakerPays;
+      if (OfferSequence !== undefined) txJson.OfferSequence = OfferSequence;
+      if (Flags !== undefined) txJson.Flags = Flags;
+      if (Memos) txJson.Memos = Memos;
+      if (DestinationTag !== undefined) txJson.DestinationTag = DestinationTag;
+      if (SourceTag !== undefined) txJson.SourceTag = SourceTag;
+      const allowedExtra = ["Fee", "Sequence", "AccountTxnID", "LastLedgerSequence", "NFTokenID", "NFTokenOffers", "Condition", "Fulfillment", "CancelAfter", "FinishAfter", "Owner", "Expiration"];
+      for (const key of allowedExtra) {
+        if (extraFields[key] !== undefined) txJson[key] = extraFields[key];
+      }
 
       const payload = await xummSdk.payload.create({ txjson: txJson } as any, true);
       if (!payload) {

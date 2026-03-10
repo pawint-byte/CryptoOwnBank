@@ -339,7 +339,7 @@ export default function OwnBankWithdraw() {
                       <div className="flex-1">
                         <p className="text-sm font-medium">Auto-Withdraw Available with Premium</p>
                         <p className="text-xs text-muted-foreground">
-                          Automatically withdraw interest weekly — upgrade to Premium ($9/mo)
+                          Automatically withdraw interest weekly — upgrade to Premium ($29/mo)
                         </p>
                       </div>
                       <Link href="/settings">

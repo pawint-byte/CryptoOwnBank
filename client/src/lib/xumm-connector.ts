@@ -132,16 +132,92 @@ export async function connectXumm(): Promise<XummSignResult> {
 export async function disconnectXumm(): Promise<void> {
 }
 
+export async function signTransaction(txJson: Record<string, any>): Promise<XummSignResult> {
+  try {
+    const res = await apiRequest("POST", "/api/xumm/payload", txJson);
+    const payload = await res.json();
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      sessionStorage.setItem(XUMM_PENDING_PAYMENT_KEY, payload.uuid);
+      window.location.href = payload.deepLink;
+      return new Promise(() => {});
+    }
+
+    return new Promise((resolve) => {
+      const txType = txJson.TransactionType || "Transaction";
+      const popup = window.open("", "XummTransaction", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
+      if (popup) {
+        popup.document.write(`
+          <!DOCTYPE html>
+          <html><head><title>Approve ${txType}</title>
+          <style>
+            body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
+            img { width:280px; height:280px; border-radius:12px; margin-bottom:16px; }
+            h3 { margin:0 0 8px; font-size:18px; }
+            p { margin:0; font-size:14px; color:#999; }
+          </style></head><body>
+            <h3>Approve ${txType}</h3>
+            <img src="${payload.qrUrl}" alt="QR Code" />
+            <p>Scan to approve this transaction</p>
+          </body></html>
+        `);
+      }
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await checkXummStatus(payload.uuid);
+          if (status.resolved) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            if (status.signed) {
+              resolve({ success: true, txHash: payload.uuid });
+            } else {
+              resolve({ success: false, error: "Transaction was declined" });
+            }
+          }
+        } catch {
+          clearInterval(pollInterval);
+          if (popup && !popup.closed) popup.close();
+          resolve({ success: false, error: "Failed to check transaction status" });
+        }
+      }, 2000);
+
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (popup && !popup.closed) popup.close();
+        resolve({ success: false, error: "Transaction timed out" });
+      }, 120000);
+    });
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to sign transaction" };
+  }
+}
+
 export async function signPayment(
   destination: string,
-  amount: string | { currency: string; value: string; issuer: string }
+  amount: string | { currency: string; value: string; issuer: string },
+  options?: { destinationTag?: number; memos?: Array<{ MemoType?: string; MemoData?: string }> }
 ): Promise<XummSignResult> {
   try {
-    const res = await apiRequest("POST", "/api/xumm/payload", {
+    const txJson: Record<string, any> = {
       TransactionType: "Payment",
       Destination: destination,
       Amount: amount,
-    });
+    };
+    if (options?.destinationTag !== undefined) {
+      txJson.DestinationTag = options.destinationTag;
+    }
+    if (options?.memos && options.memos.length > 0) {
+      const toHex = (str: string) => Array.from(new TextEncoder().encode(str)).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+      txJson.Memos = options.memos.map((m) => ({
+        Memo: {
+          ...(m.MemoType ? { MemoType: toHex(m.MemoType) } : {}),
+          ...(m.MemoData ? { MemoData: toHex(m.MemoData) } : {}),
+        },
+      }));
+    }
+    const res = await apiRequest("POST", "/api/xumm/payload", txJson);
     const payload = await res.json();
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);

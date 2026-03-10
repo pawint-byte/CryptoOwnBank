@@ -7,15 +7,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 export const PLANS = {
   monthly: {
     name: "OwnBank Premium Monthly",
-    amount: 900,
+    amount: 2900,
     interval: "month" as const,
-    description: "$9/month — Unlimited exchanges, wallets, alerts, auto-withdraw",
+    description: "$29/month — Unlimited exchanges, wallets, alerts, auto-withdraw",
   },
   yearly: {
     name: "OwnBank Premium Annual",
-    amount: 7900,
+    amount: 19900,
     interval: "year" as const,
-    description: "$79/year — Everything in monthly + tax reports, save $29",
+    description: "$199/year — Everything in monthly + tax reports, save $149",
   },
 };
 

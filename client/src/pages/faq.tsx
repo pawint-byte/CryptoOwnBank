@@ -31,7 +31,7 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (1 exchange connection, 1 blockchain address, Soil vault access, and manual withdrawals). Premium Monthly ($9/mo) for unlimited exchanges, unlimited blockchain addresses, and full portfolio management. Premium Annual ($79/yr) adds complete tax reports with PDF and TurboTax export. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
+        a: "Free tier forever (1 exchange connection, 1 blockchain address, Soil vault access, and manual withdrawals). Premium Monthly ($29/mo) for unlimited exchanges, unlimited blockchain addresses, and full portfolio management. Premium Annual ($199/yr) adds complete tax reports with PDF and TurboTax export. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
         q: "Why should I join now?",
@@ -221,7 +221,7 @@ const faqGroups = [
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, and auto-withdrawal from Soil vaults. Choose monthly ($9/mo) for portfolio management, or go annual ($79/yr) to also unlock complete tax reports with PDF and TurboTax export.",
+        a: "Premium unlocks the full cockpit \u2014 unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, and auto-withdrawal from Soil vaults. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -249,11 +249,11 @@ const faqGroups = [
       },
       {
         q: "Can I export my tax report as a PDF?",
-        a: "Yes \u2014 Annual Premium subscribers ($79/yr) can download professionally formatted PDF tax reports, CSV exports, and TurboTax-ready files. Tax reports are exclusive to the annual plan. Go to Tax Reports, select your year and method, then click the export button.",
+        a: "Yes \u2014 Annual Premium subscribers ($199/yr) can download professionally formatted PDF tax reports, CSV exports, and TurboTax-ready files. Tax reports are exclusive to the annual plan. Go to Tax Reports, select your year and method, then click the export button.",
       },
       {
         q: "Why are tax reports only on the annual plan?",
-        a: "Tax season comes once a year, so the annual plan makes the most sense for tax reporting. At $79/yr (vs $108 if you paid monthly), you save money and get full access to capital gains calculations, IRS Form 8949 data, PDF and TurboTax exports, and income tracking for staking and yield \u2014 all year round.",
+        a: "Tax season comes once a year, so the annual plan makes the most sense for tax reporting. At $199/yr (vs $348 if you paid monthly), you save $149 and get full access to capital gains calculations, IRS Form 8949 data, PDF and TurboTax exports, and income tracking for staking and yield \u2014 all year round.",
       },
       {
         q: "How does the referral program work?",
@@ -324,6 +324,64 @@ const faqGroups = [
     ],
   },
   {
+    heading: "XRPL Tools",
+    items: [
+      {
+        q: "What is the Token Manager?",
+        a: "The Token Manager lets you view and manage your XRPL trustlines \u2014 think of it like opening currency accounts at a bank, except free, instant, and fully in your control. A trustline tells the XRPL: 'I'm willing to hold this token from this issuer.' You can add trustlines for popular tokens like RLUSD (Ripple's USD stablecoin), Sologenic (SOLO), Coreum (CORE), and more with one tap, or manually enter any currency code and issuer address. Removing a trustline (only possible when balance is zero) is like closing an empty account. Everything is signed with your cold wallet \u2014 we never touch your keys. Learn more: https://xrpl.org/trust-lines-and-issuing.html",
+      },
+      {
+        q: "How does DEX Trading work?",
+        a: "The XRP Ledger has a built-in decentralized exchange (DEX) \u2014 no company runs it. When you place an order, it goes directly on the blockchain. If someone has a matching order, the trade happens automatically and settles in 4 seconds. Your funds never leave your wallet until the trade executes. Compare that to a traditional stock exchange: you call a broker, they place the order, it's matched on the NYSE, and settlement takes T+2 (two business days). On the XRPL DEX, you can place limit orders (set your price and wait for a match) or market orders (buy/sell immediately at the best available price). You can view the order book, cancel orders for free (just the tiny network fee), and all signing happens on your cold wallet. Learn more: https://xrpl.org/decentralized-exchange.html",
+      },
+      {
+        q: "How do I send and receive crypto?",
+        a: "Sending crypto on XRPL is like a wire transfer \u2014 but instead of filling out forms, paying $25\u201350, and waiting 1\u20135 business days, you enter the recipient's XRPL address, choose your amount and currency, sign with your wallet, and it arrives in 4 seconds for a fraction of a penny. You can send XRP or any token you have a trustline for. The Receive tab shows your address as a QR code for easy sharing. Safety tips: always verify the recipient address carefully, send a small test amount first for new recipients, and include a destination tag when sending to exchanges (required by most exchanges to credit your account). Learn more: https://xrpl.org/payment.html",
+      },
+      {
+        q: "Is this safe? Do you hold my funds?",
+        a: "No \u2014 CryptoOwnBank is 100% non-custodial. We never hold, control, or have access to your funds or private keys. Every transaction (trustline changes, DEX orders, payments) is built in your browser and signed on your cold wallet (Ledger or Xumm/Xaman). We only read your public address to display balances and prepare unsigned transactions for you to approve. There is zero platform risk \u2014 even if CryptoOwnBank disappeared tomorrow, your funds remain safe in your wallet on the XRPL blockchain.",
+      },
+      {
+        q: "What tokens can I trade on the XRPL DEX?",
+        a: "You can trade any token that has been issued on the XRPL \u2014 as long as you have a trustline set for it. Popular pairs include XRP/RLUSD, XRP/USD (Bitstamp), XRP/EUR (Gatehub), SOLO/XRP, and CORE/XRP. The Token Manager makes it easy to add trustlines for these tokens before you start trading. The DEX is fully permissionless \u2014 anyone can issue tokens and create markets.",
+      },
+      {
+        q: "Are there fees for using XRPL Tools?",
+        a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, or Send & Receive. The only cost is the XRPL network fee, which is approximately 0.00001 XRP per transaction \u2014 that's a fraction of a fraction of a penny. Compare that to $25\u201350 wire transfer fees, $5\u201315 stock trading commissions, or 1\u20133% exchange fees. The XRPL is one of the cheapest networks to transact on.",
+      },
+      {
+        q: "What's the difference between a limit order and a market order?",
+        a: "A limit order lets you set your price and wait for a match \u2014 like saying 'I'll buy XRP at $2.00 or less.' Your order sits in the order book until someone is willing to sell at your price. A market order executes immediately at the best available price \u2014 you get filled right away but might pay slightly more (or receive slightly less) than the current displayed price. On the XRPL DEX, limit orders use OfferCreate and market orders use OfferCreate with the Immediate or Cancel flag.",
+      },
+      {
+        q: "What is a destination tag and when do I need one?",
+        a: "A destination tag is like a memo or reference number attached to an XRPL payment. Exchanges like Binance, Coinbase, Uphold, and Kraken use a single XRPL address for all their users \u2014 the destination tag tells the exchange which user account to credit. If you're sending to an exchange, always include the destination tag they provide or your funds may be lost. If you're sending to a personal wallet (your own XRPL address), you typically don't need a destination tag.",
+      },
+    ],
+  },
+  {
+    heading: "Learn More",
+    items: [
+      {
+        q: "Where can I learn more about the XRP Ledger?",
+        a: "The official XRPL documentation at https://xrpl.org is the best resource. Key pages include: Trust Lines & Issuing (https://xrpl.org/trust-lines-and-issuing.html), Decentralized Exchange (https://xrpl.org/decentralized-exchange.html), Payment transactions (https://xrpl.org/payment.html), and the XRPL Learning Portal (https://learn.xrpl.org). The XRPL is open-source, decentralized, and has been running since 2012.",
+      },
+      {
+        q: "Where can I learn about Soil Protocol and RLUSD yield?",
+        a: "Visit the Soil Protocol documentation at https://docs.soil.id for details on how vaults work, the real-world assets backing yields, vault terms and withdrawal periods, and institutional lending mechanics. Soil Protocol lends RLUSD to institutional borrowers and passes the yield back to depositors \u2014 similar to how banks work, but you keep your keys.",
+      },
+      {
+        q: "How do I set up and use the Xaman (Xumm) wallet?",
+        a: "Download Xaman from the App Store or Google Play. The official guides are at https://support.xumm.app. Key topics: creating a new XRPL account, importing an existing account, pairing with Ledger Nano X via Bluetooth, adding trust lines for tokens like RLUSD, and signing transactions securely. Xaman is the most popular XRPL wallet and supports QR code and deep link connections.",
+      },
+      {
+        q: "How do I set up a cold wallet for maximum security?",
+        a: "For hardware wallet setup guides, visit: Ledger (https://support.ledger.com) \u2014 supports XRPL natively and pairs with Xaman via Bluetooth. ELLIPAL (https://www.ellipal.com/pages/support) \u2014 air-gapped cold wallet, add public addresses to CryptoOwnBank for tracking. CypheRock (https://cypherock.com/support) \u2014 key-splitting hardware wallet for ultimate backup security. We recommend starting with a Ledger Nano X paired with Xaman for the best combination of security and convenience. Our Setup Guide at /setup-guide has step-by-step instructions.",
+      },
+    ],
+  },
+  {
     heading: "Safety & Disclaimers",
     items: [
       {
@@ -366,7 +424,7 @@ export default function FAQ() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div>
         <h1 className="text-3xl font-bold" data-testid="faq-title">Frequently Asked Questions</h1>
-        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>
+        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, XRPL tools, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>
       </div>
       {faqGroups.map((group, groupIndex) => (
         <div key={groupIndex} className="space-y-1">

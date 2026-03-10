@@ -18,7 +18,8 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation.
 - **XRPL Integration**: xrpl.js, Xumm SDK, Ledger HW libraries.
 - **Mobile Responsiveness**: Optimized for mobile with responsive breakpoints, compact layouts, hidden columns, and abbreviated data.
-- **Key Pages**: CryptoBroker (Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings) and OwnBank XRPL (Dashboard with Soil vault tracking, Vaults, Withdraw Interest, History, Referrals).
+- **Key Pages**: CryptoBroker (Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings) and OwnBank XRPL (Dashboard with Soil vault tracking, Vaults, Token Manager, DEX Trading, Send & Receive, Withdraw Interest, History, Referrals).
+- **XRPL dApp Interface (Phase 1)**: Token Manager (trustline management with popular token quick-add), DEX Trading (order book, limit/market orders via OfferCreate/OfferCancel), Send & Receive (payments with contact book, QR receive, destination tag support). All pages include collapsible "Old Way vs New Way" educational headers and contextual tooltips.
 
 ### Backend
 - **Runtime**: Node.js with Express and TypeScript.

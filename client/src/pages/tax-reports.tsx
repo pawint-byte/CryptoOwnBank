@@ -84,8 +84,8 @@ export default function TaxReports() {
   const isMonthlyPremium = limits?.tier === "premium" && limits?.billingCycle === "monthly";
   const upgradeVariant = isMonthlyPremium ? "annual" as const : "premium" as const;
   const taxLockedMessage = isMonthlyPremium
-    ? "Tax reports are available on the Annual plan ($79/yr). Switch to annual billing to unlock full tax calculations, PDF exports, and TurboTax-ready downloads."
-    : "Tax reports require an Annual Premium plan ($79/yr). Upgrade to calculate capital gains, generate IRS-ready reports, and export for TurboTax.";
+    ? "Tax reports are available on the Annual plan ($199/yr). Switch to annual billing to unlock full tax calculations, PDF exports, and TurboTax-ready downloads."
+    : "Tax reports require an Annual Premium plan ($199/yr). Upgrade to calculate capital gains, generate IRS-ready reports, and export for TurboTax.";
 
   const { data: taxData, isLoading, refetch } = useQuery<TaxSummary>({
     queryKey: ["/api/tax-report", selectedYear, taxMethod],
@@ -116,7 +116,7 @@ export default function TaxReports() {
       if (response.status === 403) {
         toast({
           title: "Annual Plan Required",
-          description: "Tax report exports require an Annual Premium plan ($79/yr). Switch to annual billing for full access.",
+          description: "Tax report exports require an Annual Premium plan ($199/yr). Switch to annual billing for full access.",
           variant: "destructive",
         });
         return;

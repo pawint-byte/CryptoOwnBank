@@ -34,7 +34,65 @@ import {
   ArrowDownUp,
   Bell,
   Trophy,
+  Send,
+  ArrowLeftRight,
+  Timer,
+  Building2,
+  Scale,
 } from "lucide-react";
+
+const xrplToolsComparison = [
+  {
+    oldIcon: Building2,
+    oldTitle: "Brokerage Account",
+    oldDesc: "Open account, fill out forms, wait days for approval to hold foreign currencies",
+    newIcon: Coins,
+    newTitle: "Token Manager",
+    newDesc: "Set a trustline, sign with your cold wallet, hold any XRPL token in 4 seconds",
+    link: "/ownbank/tokens",
+    status: "live",
+  },
+  {
+    oldIcon: BarChart3,
+    oldTitle: "Stock Exchange (NYSE)",
+    oldDesc: "Call your broker, T+2 settlement (2 days), brokerage holds your shares",
+    newIcon: TrendingUp,
+    newTitle: "DEX Trading",
+    newDesc: "Place an order on-chain, settled in 4 seconds, tokens stay in YOUR wallet",
+    link: "/ownbank/dex",
+    status: "live",
+  },
+  {
+    oldIcon: Landmark,
+    oldTitle: "Wire Transfer (SWIFT)",
+    oldDesc: "Fill out forms, pay $25\u201350 fee, wait 1\u20135 business days, only during business hours",
+    newIcon: Send,
+    newTitle: "Send & Receive",
+    newDesc: "Enter address, sign with your wallet, delivered in 4 seconds, costs $0.000001",
+    link: "/ownbank/send",
+    status: "live",
+  },
+  {
+    oldIcon: ArrowLeftRight,
+    oldTitle: "Market Maker (Citadel)",
+    oldDesc: "Institutional firms provide liquidity, take spreads, you never see behind the curtain",
+    newIcon: RefreshCw,
+    newTitle: "AMM Pools",
+    newDesc: "Provide liquidity directly on-chain, earn fees transparently, fully decentralized",
+    link: "#",
+    status: "coming",
+  },
+  {
+    oldIcon: Scale,
+    oldTitle: "Escrow Company (Lawyers)",
+    oldDesc: "Hire attorneys, pay legal fees, wait weeks for escrow release, trust a third party",
+    newIcon: Timer,
+    newTitle: "Escrow Manager",
+    newDesc: "Create on-chain escrow with conditions, trustless release, no intermediary needed",
+    link: "#",
+    status: "coming",
+  },
+];
 
 const heroStats = [
   { label: "RLUSD Yield", value: "5–8%", sub: "Fixed APR" },
@@ -271,7 +329,7 @@ const annualBonusFeatures = [
   "Complete tax reports (CSV + PDF + TurboTax)",
   "Capital gains & losses calculation",
   "IRS Form 8949 / Schedule D guidance",
-  "Save $29/yr vs monthly billing",
+  "Save $149/yr vs monthly billing",
 ];
 
 const onChainReasons = [
@@ -353,7 +411,7 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($9/mo or $79/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
+        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($29/mo or $199/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
@@ -485,7 +543,7 @@ const faqGroups = [
     items: [
       {
         q: "What\u2019s the difference between Free and Premium?",
-        a: "Free: 1 exchange connection, 1 blockchain address (across 24 chains), 1 price alert, Soil vault access, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, and 7 days of transaction history. Premium Monthly ($9/mo): unlimited exchanges and blockchain addresses across all 24 chains, full Recommendations Hub with Best in Class rankings, personalized staking guides for your exact hardware wallet, DeFi vs TradFi comparisons, 'You Hold This' badges, portfolio search/filter/sort, unlimited price alerts, CSV import, auto-withdraw interest, Statement Insights, and full transaction history. Premium Annual ($79/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
+        a: "Free: 1 exchange connection, 1 blockchain address (across 24 chains), 1 price alert, Soil vault access, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, and 7 days of transaction history. Premium Monthly ($29/mo): unlimited exchanges and blockchain addresses across all 24 chains, full Recommendations Hub with Best in Class rankings, personalized staking guides for your exact hardware wallet, DeFi vs TradFi comparisons, 'You Hold This' badges, portfolio search/filter/sort, unlimited price alerts, CSV import, auto-withdraw interest, Statement Insights, and full transaction history. Premium Annual ($199/yr): everything in monthly plus full tax reports (FIFO/LIFO calculations, CSV export, PDF export, TurboTax-compatible format). Tax reports are annual-plan exclusive.",
       },
       {
         q: "How do I pay for Premium?",
@@ -836,6 +894,91 @@ export default function Landing() {
           </div>
         </section>
 
+        <section id="xrpl-tools" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-sm font-medium mb-4">
+                <Zap className="h-3.5 w-3.5" />
+                XRPL Native Tools
+              </div>
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-xrpl-tools">
+                Everything Your Bank Does — But You Own It
+              </h2>
+              <p className="text-muted-foreground max-w-3xl mx-auto">
+                The XRP Ledger has built-in financial tools that replace traditional intermediaries.
+                No brokers, no banks, no middlemen — just you, your wallet, and the blockchain.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center px-4 mb-2">
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-center">The Old Way</p>
+                <div className="w-8" />
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider text-center">The New Way</p>
+              </div>
+
+              {xrplToolsComparison.map((item, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-stretch" data-testid={`card-xrpl-comparison-${index}`}>
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-5 flex items-start gap-4">
+                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <item.oldIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-muted-foreground">{item.oldTitle}</h4>
+                        <p className="text-sm text-muted-foreground/70 mt-1">{item.oldDesc}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="hidden md:flex items-center justify-center">
+                    <ArrowRight className="h-5 w-5 text-[#00A4E4]" />
+                  </div>
+                  <div className="flex md:hidden items-center justify-center">
+                    <ChevronDown className="h-5 w-5 text-[#00A4E4]" />
+                  </div>
+
+                  <Card className="border-[#00A4E4]/20">
+                    <CardContent className="p-5 flex items-start gap-4">
+                      <div className="h-10 w-10 rounded-lg bg-[#00A4E4]/10 flex items-center justify-center flex-shrink-0">
+                        <item.newIcon className="h-5 w-5 text-[#00A4E4]" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold">{item.newTitle}</h4>
+                          {item.status === "coming" ? (
+                            <Badge variant="secondary" className="text-xs" data-testid={`badge-coming-soon-${index}`}>Coming Soon</Badge>
+                          ) : (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs no-default-hover-elevate no-default-active-elevate" data-testid={`badge-live-${index}`}>Live</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{item.newDesc}</p>
+                        {item.status === "live" && (
+                          <a href={item.link} className="inline-flex items-center gap-1 text-xs text-[#00A4E4] font-medium mt-2" data-testid={`link-xrpl-tool-${index}`}>
+                            Try it now <ArrowRight className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 text-center">
+              <a href="/signup">
+                <Button size="lg" className="bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-xrpl-tools-cta">
+                  Start Using XRPL Tools — Free
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+              <p className="text-xs text-muted-foreground mt-3">
+                All XRPL tools are non-custodial. Your keys never leave your device.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -1104,10 +1247,10 @@ export default function Landing() {
                 <CardContent className="p-6 pt-8">
                   <h3 className="text-xl font-bold mb-1">Premium</h3>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-3xl font-bold">$9</span>
+                    <span className="text-3xl font-bold">$29</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $79/yr — Save $29 · Pay with crypto (22 chains) or card</p>
+                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $199/yr — Save $149 · Pay with crypto (22 chains) or card</p>
                   <ul className="space-y-3 mb-4">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
@@ -1449,7 +1592,7 @@ export default function Landing() {
               </a>
               <a href="#pricing">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10" data-testid="button-cta-premium">
-                  Upgrade to Premium — $9/mo
+                  Upgrade to Premium — $29/mo
                 </Button>
               </a>
             </div>
