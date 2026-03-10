@@ -329,6 +329,18 @@ const testimonials = [
     role: "Premium Member",
     persona: "International Freelancer",
   },
+  {
+    quote: "PayPal froze my account with $4,200 in it. No warning, no explanation, no access for 180 days. I moved to the XRPL — now nobody can freeze my funds. I accept payments in RLUSD, it settles in 4 seconds, and I control my own money. That's what debanked taught me.",
+    author: "Jordan P.",
+    role: "Debanked Business Owner",
+    persona: "Debanked Entrepreneur",
+  },
+  {
+    quote: "There's no bank branch within 200km of where I live. Getting paid used to mean waiting for someone to drive to town with cash. Now my clients pay me through my XRPL wallet and I hold RLUSD. I earn more yield than a savings account I could never open. Internet is enough.",
+    author: "Amina K.",
+    role: "Free Tier User",
+    persona: "Unbanked Professional",
+  },
 ];
 
 const freeTierFeatures = [
@@ -433,7 +445,7 @@ const faqGroups = [
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL\u2019s built-in DEX, send and receive payments in seconds, and accept crypto payments for your business \u2014 all while keeping full control via your cold wallet. For consumers and small businesses, CryptoOwnBank provides the tools to compete and scale using crypto without paying 2.9% to a payment processor.",
+        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit — designed so anyone with an internet connection can participate in global commerce. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL\u2019s built-in DEX, send and receive payments in seconds, and accept crypto payments for your business \u2014 all while keeping full control via your cold wallet. Whether you\u2019re unbanked (no access to traditional finance), debanked (shut out by banks or payment processors), or simply tired of paying 2.9% to a middleman \u2014 CryptoOwnBank gives you the tools to be your own bank.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
@@ -450,6 +462,10 @@ const faqGroups = [
       {
         q: "Can my business accept crypto payments through CryptoOwnBank?",
         a: "Yes. Connect your wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code with customers. Payments settle in 4 seconds for a fraction of a penny \u2014 no 2.9% processing fee, no chargebacks, no account freezes. We\u2019re the tooling layer (the workbench), not the payment processor. You and your customer transact directly on the XRPL. Consumers, freelancers, and small businesses can compete at scale without giving a cut to Stripe or PayPal.",
+      },
+      {
+        q: "What if I don't have a bank account or got debanked?",
+        a: "CryptoOwnBank was built with you in mind. 1.4 billion people worldwide are unbanked — no access to traditional finance at all. Millions more have been debanked — accounts closed, funds frozen, services denied without explanation. The XRPL doesn\u2019t require a bank account, credit check, or government ID. If you have internet, you can create a wallet, accept payments, trade on the DEX, hold stablecoins like RLUSD, and earn yield. Same tools, same fees, same 4-second settlement — whether you\u2019re in New York or Nigeria.",
       },
       {
         q: "Why should I join now?",
