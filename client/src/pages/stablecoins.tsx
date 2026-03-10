@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import {
   Landmark,
   CreditCard,
   ArrowRightLeft,
+  ArrowRight,
   Banknote,
   Info,
   Wallet,
@@ -32,6 +34,7 @@ interface StablecoinEntry {
   bestUseCase: string;
   marketCap?: string;
   description: string;
+  whereToBuy: { name: string; url: string }[];
 }
 
 const STABLECOINS: StablecoinEntry[] = [
@@ -50,6 +53,12 @@ const STABLECOINS: StablecoinEntry[] = [
     marketCap: "$300M+",
     description:
       "Ripple-issued stablecoin with regulatory approval from the New York Department of Financial Services. Native to XRPL with deep integration into Soil Protocol vaults for yield generation.",
+    whereToBuy: [
+      { name: "Binance", url: "https://www.binance.com" },
+      { name: "Kraken", url: "https://www.kraken.com" },
+      { name: "Uphold", url: "https://uphold.com" },
+      { name: "Crypto.com", url: "https://crypto.com" },
+    ],
   },
   {
     id: "usdc",
@@ -68,6 +77,11 @@ const STABLECOINS: StablecoinEntry[] = [
     marketCap: "$33B+",
     description:
       "The most widely supported regulated stablecoin. Monthly reserve attestations by Deloitte. Available on virtually every major chain and CEX.",
+    whereToBuy: [
+      { name: "Coinbase", url: "https://www.coinbase.com" },
+      { name: "Kraken", url: "https://www.kraken.com" },
+      { name: "Circle Mint", url: "https://www.circle.com/en/usdc" },
+    ],
   },
   {
     id: "usdt",
@@ -85,6 +99,11 @@ const STABLECOINS: StablecoinEntry[] = [
     marketCap: "$140B+",
     description:
       "The largest stablecoin by market cap with the deepest liquidity across centralized and decentralized exchanges. Dominant on Tron for low-fee transfers.",
+    whereToBuy: [
+      { name: "Binance", url: "https://www.binance.com" },
+      { name: "Kraken", url: "https://www.kraken.com" },
+      { name: "OKX", url: "https://www.okx.com" },
+    ],
   },
   {
     id: "eurcv",
@@ -101,6 +120,9 @@ const STABLECOINS: StablecoinEntry[] = [
     marketCap: "$50M+",
     description:
       "MiCA-compliant euro stablecoin issued by Societe Generale. One of the first institutional-grade euro stablecoins available across multiple chains.",
+    whereToBuy: [
+      { name: "SG-FORGE", url: "https://www.sgforge.com" },
+    ],
   },
   {
     id: "pyusd",
@@ -118,6 +140,11 @@ const STABLECOINS: StablecoinEntry[] = [
     marketCap: "$800M+",
     description:
       "PayPal's regulated stablecoin issued through Paxos Trust. Bridging traditional fintech users into crypto with familiar brand trust.",
+    whereToBuy: [
+      { name: "PayPal", url: "https://www.paypal.com" },
+      { name: "Coinbase", url: "https://www.coinbase.com" },
+      { name: "Crypto.com", url: "https://crypto.com" },
+    ],
   },
   {
     id: "dai",
@@ -135,6 +162,11 @@ const STABLECOINS: StablecoinEntry[] = [
     marketCap: "$5B+",
     description:
       "The original decentralized stablecoin, now transitioning to USDS under the Sky rebrand. Backed by a diversified basket including crypto and real-world assets.",
+    whereToBuy: [
+      { name: "Uniswap", url: "https://app.uniswap.org" },
+      { name: "Coinbase", url: "https://www.coinbase.com" },
+      { name: "Kraken", url: "https://www.kraken.com" },
+    ],
   },
 ];
 
@@ -145,6 +177,8 @@ const DECISION_GUIDE = [
     recommended: ["RLUSD", "DAI"],
     reason:
       "RLUSD offers 5-8% via Soil Protocol vaults on XRPL. DAI offers competitive rates through Maker's DSR (Dai Savings Rate).",
+    link: "/ownbank/vaults",
+    linkLabel: "Open Yield Vaults",
   },
   {
     useCase: "Payments & Commerce",
@@ -152,6 +186,8 @@ const DECISION_GUIDE = [
     recommended: ["USDC", "PYUSD"],
     reason:
       "USDC has the widest merchant and payment processor support. PYUSD leverages PayPal's existing network for mainstream adoption.",
+    link: "/ownbank/send",
+    linkLabel: "Send & Receive",
   },
   {
     useCase: "Trading & Liquidity",
@@ -159,6 +195,8 @@ const DECISION_GUIDE = [
     recommended: ["USDT", "USDC"],
     reason:
       "USDT has the deepest trading pair liquidity. USDC is preferred on regulated exchanges and DeFi protocols.",
+    link: "/ownbank/dex",
+    linkLabel: "Open DEX",
   },
   {
     useCase: "Remittances",
@@ -166,6 +204,8 @@ const DECISION_GUIDE = [
     recommended: ["USDC", "RLUSD"],
     reason:
       "USDC on Stellar offers near-instant, low-fee cross-border transfers. RLUSD on XRPL provides fast settlement with Ripple's payment corridors.",
+    link: "/stellar/remittances",
+    linkLabel: "Remittance Calculator",
   },
   {
     useCase: "EU Compliance",
@@ -173,6 +213,8 @@ const DECISION_GUIDE = [
     recommended: ["EURCV", "USDC"],
     reason:
       "EURCV is MiCA-compliant and euro-denominated. USDC has received MiCA compliance from Circle for EU operations.",
+    link: "/rwa-yields",
+    linkLabel: "RWA Yield Explorer",
   },
   {
     useCase: "Censorship Resistance",
@@ -254,23 +296,59 @@ function StablecoinCard({ coin }: { coin: StablecoinEntry }) {
           <div>
             <p className="text-xs text-muted-foreground mb-2">Yield Opportunities</p>
             <div className="space-y-1.5">
-              {coin.yieldOpportunities.map((y, i) => (
-                <div
+              {coin.yieldOpportunities.map((y, i) => {
+                const yieldLink = y.protocol === "Soil Protocol" ? "/ownbank/vaults" : "/rwa-yields";
+                return (
+                  <Link href={yieldLink} key={i} data-testid={`yield-opp-link-${coin.id}-${i}`}>
+                    <div
+                      className="flex items-center justify-between rounded-md bg-muted/30 border border-muted px-3 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
+                      data-testid={`yield-opp-${coin.id}-${i}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        <span className="text-sm">{y.protocol}</span>
+                        <Badge variant="outline" className="text-xs">{y.chain}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 shrink-0">
+                          {y.apy} APY
+                        </Badge>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {coin.whereToBuy.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Where to Buy</p>
+            <div className="flex flex-wrap gap-2">
+              {coin.whereToBuy.map((exchange, i) => (
+                <a
                   key={i}
-                  className="flex items-center justify-between rounded-md bg-muted/30 border border-muted px-3 py-2"
-                  data-testid={`yield-opp-${coin.id}-${i}`}
+                  href={exchange.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid={`link-buy-${coin.id}-${exchange.name.toLowerCase().replace(/\s+/g, "-")}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                    <span className="text-sm">{y.protocol}</span>
-                    <Badge variant="outline" className="text-xs">{y.chain}</Badge>
-                  </div>
-                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 shrink-0">
-                    {y.apy} APY
-                  </Badge>
-                </div>
+                  <Button size="sm" variant="outline" className="text-xs h-7 gap-1.5">
+                    {exchange.name}
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </a>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Buy {coin.symbol}, then{" "}
+              <Link href="/wallets" className="text-[#00A4E4] underline hover:no-underline" data-testid={`link-add-wallet-${coin.id}`}>
+                add your wallet address
+              </Link>
+              {" "}to track your holdings here.
+            </p>
           </div>
         )}
       </CardContent>
@@ -416,23 +494,28 @@ export default function Stablecoins() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {coin.yieldOpportunities.map((y, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between rounded-md bg-muted/30 border border-muted px-3 py-2.5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <TrendingUp className="h-4 w-4 text-green-500 shrink-0" />
-                          <div>
-                            <span className="text-sm font-medium">{y.protocol}</span>
-                            <p className="text-xs text-muted-foreground">{y.chain}</p>
+                    {coin.yieldOpportunities.map((y, i) => {
+                      const yLink = y.protocol === "Soil Protocol" ? "/ownbank/vaults" : "/rwa-yields";
+                      return (
+                        <Link href={yLink} key={i} data-testid={`yield-map-link-${coin.id}-${i}`}>
+                          <div className="flex items-center justify-between rounded-md bg-muted/30 border border-muted px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer">
+                            <div className="flex items-center gap-3">
+                              <TrendingUp className="h-4 w-4 text-green-500 shrink-0" />
+                              <div>
+                                <span className="text-sm font-medium">{y.protocol}</span>
+                                <p className="text-xs text-muted-foreground">{y.chain}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
+                                {y.apy} APY
+                              </Badge>
+                              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
                           </div>
-                        </div>
-                        <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
-                          {y.apy} APY
-                        </Badge>
-                      </div>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -489,6 +572,14 @@ export default function Stablecoins() {
                     <p className="text-sm text-muted-foreground" data-testid={`text-guide-reason-${guide.useCase.toLowerCase().replace(/\s+/g, "-")}`}>
                       {guide.reason}
                     </p>
+                    {"link" in guide && guide.link && (
+                      <Link href={guide.link} data-testid={`link-guide-action-${guide.useCase.toLowerCase().replace(/\s+/g, "-")}`}>
+                        <Button size="sm" variant="outline" className="mt-1">
+                          {guide.linkLabel}
+                          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                        </Button>
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -521,6 +612,31 @@ export default function Stablecoins() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {userHoldings.length === 0 && (
+        <Card className="border-dashed" data-testid="card-track-holdings-cta">
+          <CardContent className="py-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <div className="h-12 w-12 rounded-lg bg-[#00A4E4]/10 flex items-center justify-center shrink-0">
+                <Wallet className="h-6 w-6 text-[#00A4E4]" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1">Track Your Stablecoin Holdings</h3>
+                <p className="text-sm text-muted-foreground">
+                  Buy stablecoins on any exchange above, withdraw to your wallet, then add your wallet address here. Your stablecoin balances will appear automatically on this page.
+                </p>
+              </div>
+              <Link href="/wallets" data-testid="link-add-wallet-cta">
+                <Button className="bg-[#00A4E4] text-white border-[#00A4E4] shrink-0">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Add Wallet Address
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

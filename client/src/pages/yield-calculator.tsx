@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -306,6 +307,18 @@ export default function YieldCalculator() {
                     </p>
                   </CardContent>
                 </Card>
+              </div>
+            )}
+
+            {amount > 0 && (
+              <div className="flex justify-center">
+                <Link href="/ownbank/vaults" data-testid="link-deposit-now">
+                  <Button className="bg-[#00A4E4] text-white border-[#00A4E4]">
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Deposit into {selectedVault.name} Vault
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               </div>
             )}
 

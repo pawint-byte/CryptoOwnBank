@@ -181,24 +181,32 @@ const features = [
     title: "One Cockpit for Everything",
     description:
       "Connect all your exchanges, cold wallets, and yield vaults across 24 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, DigiByte, Casper, Cronos, and more. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
+    link: "/portfolio",
+    linkLabel: "Open Portfolio",
   },
   {
     icon: TrendingUp,
     title: "RLUSD Yield Vaults",
     description:
       "Earn 5–8% fixed APR on Ripple's regulated stablecoin through Soil Protocol's RWA-backed institutional lending.",
+    link: "/ownbank/vaults",
+    linkLabel: "Explore Vaults",
   },
   {
     icon: FileText,
     title: "Tax Reports (FIFO/LIFO)",
     description:
       "Auto-calculate capital gains across all your holdings. Export IRS-ready CSV, PDF, or TurboTax-compatible reports with one click.",
+    link: "/tax-reports",
+    linkLabel: "View Tax Reports",
   },
   {
     icon: Trophy,
     title: "Best in Class Yield Finder",
     description:
       "Our Recommendations Hub analyzes every asset you hold and shows you the top staking, DeFi, and yield opportunities — ranked by APY. Every option is tagged as on-chain (you keep your keys) or custodial (company holds assets), with step-by-step staking guides for your exact hardware wallet.",
+    link: "/rwa-yields",
+    linkLabel: "Yield Finder",
   },
   {
     icon: Shield,
@@ -217,30 +225,40 @@ const features = [
     title: "Referral Rewards",
     description:
       "Share your link, earn bonus SEED points when friends deposit. Premium referrals earn you a free month of Premium.",
+    link: "/ownbank/referrals",
+    linkLabel: "Referral Program",
   },
   {
     icon: Bell,
     title: "Price Alerts",
     description:
       "Set alerts for any crypto — get an email when XRP hits $3, BTC breaks $100K, or any price you choose. Free users get 1 alert, Premium gets unlimited.",
+    link: "/price-alerts",
+    linkLabel: "Set Alerts",
   },
   {
     icon: Globe,
     title: "RWA Yield Explorer",
     description:
       "Earn 5–8% on tokenized treasuries and real-world assets. Compare yields from Ondo, Centrifuge, Soil, and more — all in one explorer with live APY data.",
+    link: "/rwa-yields",
+    linkLabel: "Explore RWA Yields",
   },
   {
     icon: DollarSign,
     title: "Stablecoin Dashboard",
     description:
       "Track and compare stablecoins across every chain — RLUSD, USDC, USDT, EURCV, PYUSD, DAI. See market caps, peg stability, and supported networks at a glance.",
+    link: "/stablecoins",
+    linkLabel: "Stablecoin Dashboard",
   },
   {
     icon: LinkIcon,
     title: "Real-Time Market Data",
     description:
       "Real-time pricing from CoinGecko across 24+ blockchains. We track Chainlink oracle feed availability for major assets so you know which prices have decentralized verification on-chain.",
+    link: "/portfolio",
+    linkLabel: "View Market Data",
   },
 ];
 
@@ -957,7 +975,15 @@ export default function Landing() {
                       <feature.icon className="h-6 w-6 text-[#00A4E4]" />
                     </div>
                     <h3 className="font-semibold mb-2">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                    <p className="text-sm text-muted-foreground mb-3">{feature.description}</p>
+                    {"link" in feature && feature.link && (
+                      <a href={feature.link} data-testid={`link-feature-${index}`}>
+                        <Button size="sm" variant="outline" className="border-[#00A4E4]/40 text-[#00A4E4] hover:bg-[#00A4E4]/10">
+                          {feature.linkLabel}
+                          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                        </Button>
+                      </a>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -1195,10 +1221,10 @@ export default function Landing() {
                   <span className="text-xs text-muted-foreground ml-auto">Savings &amp; Trading</span>
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> 5–8% fixed APR on RLUSD yield vaults</li>
-                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> Native DEX for token trading</li>
-                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> Non-custodial wallet management</li>
-                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> B2B invoicing &amp; payment corridors</li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/vaults" className="hover:text-[#00A4E4] hover:underline transition-colors">5–8% fixed APR on RLUSD yield vaults →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/dex" className="hover:text-[#00A4E4] hover:underline transition-colors">Native DEX for token trading →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/wallets" className="hover:text-[#00A4E4] hover:underline transition-colors">Non-custodial wallet management →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/invoices" className="hover:text-[#00A4E4] hover:underline transition-colors">B2B invoicing &amp; payment corridors →</a></li>
                 </ul>
               </div>
               <div className="p-5 rounded-xl border bg-[#7B61FF]/5 border-[#7B61FF]/20">
@@ -1208,10 +1234,10 @@ export default function Landing() {
                   <span className="text-xs text-muted-foreground ml-auto">Payments &amp; Remittances</span>
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> Path payments — send USD, they get PHP automatically</li>
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> Global anchor network for cash on/off ramps</li>
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> Remittance corridor calculator &amp; guides</li>
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> USDC &amp; EURCV stablecoin support</li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Path payments — send USD, they get PHP automatically →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Global anchor network for cash on/off ramps →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/remittances" className="hover:text-[#7B61FF] hover:underline transition-colors">Remittance corridor calculator &amp; guides →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stablecoins" className="hover:text-[#7B61FF] hover:underline transition-colors">USDC &amp; EURCV stablecoin support →</a></li>
                 </ul>
               </div>
             </div>

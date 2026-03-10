@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const faqGroups = [
@@ -101,7 +102,7 @@ const faqGroups = [
       },
       {
         q: "How do I withdraw my earned interest?",
-        a: "Go to the Withdraw Interest page, select a vault, and click \u201CWithdraw Interest.\u201D The app builds a transaction sending ONLY your accrued interest to your designated spending wallet. You sign the transaction on your Xumm or Ledger. Free users withdraw manually; Premium users can set up automatic weekly withdrawals.",
+        a: 'Go to the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a>, select a vault, and click \u201CWithdraw Interest.\u201D The app builds a transaction sending ONLY your accrued interest to your designated spending wallet. You sign the transaction on your Xumm or Ledger. Free users withdraw manually; Premium users can set up automatic weekly withdrawals.',
       },
       {
         q: "Why can\u2019t I withdraw my full principal anytime?",
@@ -217,7 +218,7 @@ const faqGroups = [
     items: [
       {
         q: "How do I start earning yield on RLUSD?",
-        a: "1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a Soil vault (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately \u2014 your principal stays locked. 5) Withdraw only the accrued interest whenever you want (manual or auto for Premium users). No KYC on our end, no bank linking required.",
+        a: '1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vault</a> (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately \u2014 your principal stays locked. 5) Withdraw only the accrued interest via the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a> whenever you want (manual or auto for Premium users). No KYC on our end, no bank linking required.',
       },
       {
         q: "Can I transfer RLUSD from Uphold to my cold wallet?",
@@ -254,7 +255,7 @@ const faqGroups = [
       },
       {
         q: "Can I use Soil vaults without Premium?",
-        a: "Yes. Connecting your XRPL wallet, depositing into Soil vaults, and manually withdrawing interest are all free. Premium adds auto-withdrawal for convenience.",
+        a: 'Yes. Connecting your XRPL wallet, depositing into <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vaults</a>, and manually <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">withdrawing interest</a> are all free. Premium adds auto-withdrawal for convenience.',
       },
       {
         q: "Why should I upgrade to Premium?",
@@ -504,6 +505,7 @@ const faqGroups = [
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const hasHtml = a.includes("<a ");
   return (
     <div className="border-b border-border last:border-0">
       <button
@@ -519,7 +521,11 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         )}
       </button>
       {open && (
-        <p className="pb-5 text-muted-foreground leading-relaxed pr-8">{a}</p>
+        hasHtml ? (
+          <p className="pb-5 text-muted-foreground leading-relaxed pr-8" dangerouslySetInnerHTML={{ __html: a }} />
+        ) : (
+          <p className="pb-5 text-muted-foreground leading-relaxed pr-8">{a}</p>
+        )
       )}
     </div>
   );

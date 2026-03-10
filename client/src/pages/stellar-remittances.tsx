@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,6 +196,8 @@ const stellarSteps = [
     step: 3,
     title: "Send via Stellar",
     description: "Use your Stellar wallet (Lobstr, StellarTerm, StellarX) to send USDC. Stellar's path payment feature automatically finds the best conversion route.",
+    link: "/stellar/send",
+    linkLabel: "Open Stellar Send Tool",
   },
   {
     step: 4,
@@ -438,6 +441,18 @@ export default function StellarRemittances() {
                       <h4 className="text-sm font-semibold" data-testid={`text-step-title-${s.step}`}>{s.title}</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">{s.description}</p>
+                    {"link" in s && s.link && (
+                      <Link href={s.link} data-testid={`link-step-action-${s.step}`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-[#7B61FF]/40 text-[#7B61FF] hover:bg-[#7B61FF]/10"
+                        >
+                          {s.linkLabel}
+                          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 ))}
               </div>
