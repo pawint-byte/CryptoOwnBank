@@ -238,11 +238,11 @@ const features = [
   },
   {
     icon: Globe,
-    title: "RWA Yield Explorer",
+    title: "Earn & Yield Explorer",
     description:
       "Earn 5–8% on tokenized treasuries and real-world assets. Compare yields from Ondo, Centrifuge, Soil, and more — all in one explorer with live APY data.",
     link: "/rwa-yields",
-    linkLabel: "Explore RWA Yields",
+    linkLabel: "Explore Earn & Yield",
   },
   {
     icon: DollarSign,
@@ -1250,7 +1250,7 @@ export default function Landing() {
               </a>
               <a href="/rwa-yields">
                 <Button variant="outline" data-testid="button-rwa-yields-cta">
-                  RWA Yield Explorer
+                  Earn & Yield Explorer
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </a>

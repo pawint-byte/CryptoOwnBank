@@ -100,7 +100,7 @@ const decisionTree = [
     bgColor: "bg-[#00A4E4]/5 border-[#00A4E4]/20",
     explanation: "RLUSD + Soil Protocol vaults offer 5-8% fixed APR with principal protection. Institutional-grade, regulated stablecoin yield.",
     link: "/rwa-yields",
-    linkLabel: "Explore RWA Yields",
+    linkLabel: "Explore Earn & Yield",
   },
   {
     goal: "Send remittances",

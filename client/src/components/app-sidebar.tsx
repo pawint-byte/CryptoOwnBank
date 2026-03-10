@@ -75,7 +75,7 @@ const allItems: NavItem[] = [
   { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "tracker" },
 
   { title: "Wallet & Yield", url: "/ownbank", icon: Landmark, color: "#00A4E4", group: "ownbank" },
-  { title: "Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
+  { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
   { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, color: "#00A4E4", group: "ownbank" },
   { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, color: "#00A4E4", group: "ownbank" },
   { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
@@ -90,7 +90,7 @@ const allItems: NavItem[] = [
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
 
   { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },
-  { title: "RWA Yields", url: "/rwa-yields", icon: Gem, group: "research" },
+  { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "research" },
   { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "research" },
   { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "research" },
   { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "research" },
@@ -98,7 +98,7 @@ const allItems: NavItem[] = [
   { title: "Contact & Feedback", url: "/contact", icon: MessageSquare, group: "research" },
 ];
 
-const DEFAULT_FAVORITES = ["/", "/portfolio", "/ownbank/vaults", "/stablecoins", "/chain-guide"];
+const DEFAULT_FAVORITES = ["/", "/portfolio", "/rwa-yields", "/stablecoins", "/chain-guide"];
 
 const STORAGE_KEY_FAVS = "sidebar-favorites";
 const STORAGE_KEY_GROUPS = "sidebar-groups-open";

@@ -277,7 +277,7 @@ export default function Dashboard() {
               </div>
               <Link href="/rwa-yields">
                 <Button variant="outline" size="sm" data-testid="link-explore-rwa">
-                  Explore RWA Yields
+                  Explore Earn & Yield
                   <ArrowRight className="h-4 w-4 ml-1.5" />
                 </Button>
               </Link>

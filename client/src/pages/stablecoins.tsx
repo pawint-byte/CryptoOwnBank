@@ -214,7 +214,7 @@ const DECISION_GUIDE = [
     reason:
       "EURCV is MiCA-compliant and euro-denominated. USDC has received MiCA compliance from Circle for EU operations.",
     link: "/rwa-yields",
-    linkLabel: "RWA Yield Explorer",
+    linkLabel: "Earn & Yield Explorer",
   },
   {
     useCase: "Censorship Resistance",

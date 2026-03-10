@@ -759,10 +759,10 @@ export default function RwaYields() {
     <div className="space-y-8 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-rwa-yields-title">
-          Real-World Asset Yield Explorer
+          Earn & Yield Explorer
         </h1>
         <p className="text-muted-foreground mt-1" data-testid="text-rwa-yields-subtitle">
-          Discover, invest, and track real-world asset yields \u2014 all from one place
+          Discover every way to earn on your crypto — staking, yield vaults, RWA lending, and DeFi — all from one place
         </p>
       </div>
 
