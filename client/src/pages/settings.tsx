@@ -52,6 +52,7 @@ import {
   Loader2,
   AlertTriangle,
   ArrowUp,
+  Sparkles,
 } from "lucide-react";
 import type { UserSettings } from "@shared/schema";
 
@@ -598,6 +599,16 @@ export default function SettingsPage() {
                             Use any XRPL-compatible wallet — include the destination tag or your payment won't be matched.
                           </p>
                         </div>
+
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3" data-testid="tip-xaman-next-time">
+                          <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5 mb-1">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Tip for next time
+                          </p>
+                          <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                            Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="underline font-medium">Xaman</a> on your phone and use the "Pay with Xaman" button above. It pre-fills the address, amount, and destination tag — you just approve. One tap, 4 seconds, done.
+                          </p>
+                        </div>
                       </div>
                     ) : (
                       <div className="bg-muted/50 rounded-lg p-4 space-y-3">
@@ -628,6 +639,16 @@ export default function SettingsPage() {
                         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                           <p className="text-xs text-blue-700 dark:text-blue-300">
                             Send exactly <strong>{pendingPayment.expectedAmount} {pendingPayment.expectedAsset}</strong> — the last decimal places are unique to your order for automatic matching.
+                          </p>
+                        </div>
+
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3" data-testid="tip-xrpl-next-time">
+                          <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5 mb-1">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Next time, pay with XRP or RLUSD instead
+                          </p>
+                          <p className="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                            Pay with XRP or RLUSD using <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="underline font-medium">Xaman</a> on your phone — one tap to approve, settles in 4 seconds, costs fractions of a penny. No copy-paste needed.
                           </p>
                         </div>
                       </div>
