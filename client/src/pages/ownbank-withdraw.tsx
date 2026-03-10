@@ -1,9 +1,17 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
@@ -29,6 +37,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import type { UserWallet } from "@shared/schema";
 
 export default function OwnBankWithdraw() {
   const {
@@ -44,6 +53,17 @@ export default function OwnBankWithdraw() {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedWithdrawWallet, setSelectedWithdrawWallet] = useState<string>("");
+
+  const { data: savedWallets = [] } = useQuery<UserWallet[]>({
+    queryKey: ["/api/user-wallets"],
+  });
+
+  const xrplWallets = savedWallets.filter((w) => w.chain === "xrpl");
+  const yieldWallets = xrplWallets.filter((w) => w.purpose === "yield" || w.purpose === "spending");
+  const primaryXrplWallet = xrplWallets.find((w) => w.isPrimary) || xrplWallets[0];
+  const defaultWithdrawAddress = yieldWallets.length > 0 ? yieldWallets[0].address : (primaryXrplWallet?.address || spendingWallet);
+  const withdrawTarget = selectedWithdrawWallet || defaultWithdrawAddress;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", {
@@ -58,10 +78,10 @@ export default function OwnBankWithdraw() {
   }, 0);
 
   const handleWithdrawClick = (vaultId: string) => {
-    if (!spendingWallet) {
+    if (!withdrawTarget) {
       toast({
-        title: "No Spending Wallet Set",
-        description: "Please set a spending wallet address in Settings before withdrawing.",
+        title: "No Wallet Set",
+        description: "Please add a wallet in Settings before withdrawing.",
         variant: "destructive",
       });
       return;
@@ -71,7 +91,7 @@ export default function OwnBankWithdraw() {
   };
 
   const handleConfirmWithdraw = async () => {
-    if (!selectedVaultId || !spendingWallet) return;
+    if (!selectedVaultId || !withdrawTarget) return;
 
     const deposit = vaultDeposits.find((d) => d.vaultId === selectedVaultId);
     if (!deposit) return;
@@ -95,7 +115,7 @@ export default function OwnBankWithdraw() {
     setIsProcessing(true);
     try {
       if (walletType === "xumm") {
-        const result = await signPayment(spendingWallet, {
+        const result = await signPayment(withdrawTarget, {
           currency: "RLUSD",
           value: interest.toFixed(6),
           issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
@@ -183,7 +203,7 @@ export default function OwnBankWithdraw() {
             Withdraw only earned interest — your principal stays protected forever
           </p>
         </div>
-        {!spendingWallet && (
+        {!withdrawTarget && (
           <Link href="/settings">
             <Button variant="outline" data-testid="button-set-spending-wallet">
               <Settings className="h-4 w-4 mr-2" />
@@ -234,13 +254,28 @@ export default function OwnBankWithdraw() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
                 <Wallet className="h-5 w-5 text-purple-500" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Spending Wallet</p>
-                <p className="text-sm font-mono truncate max-w-[150px]" data-testid="text-spending-wallet">
-                  {spendingWallet
-                    ? `${spendingWallet.slice(0, 8)}...${spendingWallet.slice(-6)}`
-                    : "Not set"}
-                </p>
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">Withdraw To</p>
+                {xrplWallets.length >= 1 ? (
+                  <Select value={selectedWithdrawWallet || withdrawTarget} onValueChange={setSelectedWithdrawWallet}>
+                    <SelectTrigger className="h-7 text-xs font-mono w-[180px] mt-0.5" data-testid="select-withdraw-wallet">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {xrplWallets.map((w) => (
+                        <SelectItem key={w.id} value={w.address}>
+                          {w.label} ({w.address.slice(0, 6)}...{w.address.slice(-4)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm font-mono truncate max-w-[150px]" data-testid="text-spending-wallet">
+                    {withdrawTarget
+                      ? `${withdrawTarget.slice(0, 8)}...${withdrawTarget.slice(-6)}`
+                      : "Not set"}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -413,7 +448,7 @@ export default function OwnBankWithdraw() {
                     Sending To
                   </span>
                   <span className="text-sm font-mono truncate max-w-[200px]">
-                    {spendingWallet}
+                    {withdrawTarget}
                   </span>
                 </div>
               </div>

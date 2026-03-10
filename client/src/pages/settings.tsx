@@ -35,6 +35,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { signPayment } from "@/lib/xumm-connector";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   User,
   Settings2,
   Moon,
@@ -54,8 +61,13 @@ import {
   ArrowUp,
   Sparkles,
   QrCode,
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  Tag,
 } from "lucide-react";
-import type { UserSettings } from "@shared/schema";
+import type { UserSettings, UserWallet } from "@shared/schema";
 
 const settingsFormSchema = z.object({
   taxMethod: z.enum(["FIFO", "LIFO"]),
@@ -70,8 +82,17 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const { spendingWallet, setSpendingWallet, subscriptionTier } = useXrplStore();
-  const [walletInput, setWalletInput] = useState(spendingWallet);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<UserWallet | null>(null);
+  const [walletForm, setWalletForm] = useState({
+    label: "",
+    address: "",
+    chain: "xrpl",
+    purpose: "general",
+    destinationTag: "",
+    isPrimary: false,
+  });
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "card">("crypto");
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
   const [selectedChain, setSelectedChain] = useState<string>("");
@@ -96,6 +117,75 @@ export default function SettingsPage() {
     enabled: !!pendingPayment?.id && pendingPayment?.status === "pending",
     refetchInterval: 5000,
   });
+
+  const { data: myWallets = [], isLoading: walletsLoading } = useQuery<UserWallet[]>({
+    queryKey: ["/api/user-wallets"],
+  });
+
+  const createWalletMutation = useMutation({
+    mutationFn: (data: typeof walletForm) => apiRequest("POST", "/api/user-wallets", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-wallets"] });
+      setWalletDialogOpen(false);
+      toast({ title: "Wallet saved" });
+    },
+    onError: () => toast({ title: "Failed to save wallet", variant: "destructive" }),
+  });
+
+  const updateWalletMutation = useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & typeof walletForm) =>
+      apiRequest("PUT", `/api/user-wallets/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-wallets"] });
+      setWalletDialogOpen(false);
+      setEditingWallet(null);
+      toast({ title: "Wallet updated" });
+    },
+    onError: () => toast({ title: "Failed to update wallet", variant: "destructive" }),
+  });
+
+  const deleteWalletMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/user-wallets/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-wallets"] });
+      toast({ title: "Wallet removed" });
+    },
+    onError: () => toast({ title: "Failed to remove wallet", variant: "destructive" }),
+  });
+
+  const openAddWallet = () => {
+    setEditingWallet(null);
+    setWalletForm({ label: "", address: "", chain: "xrpl", purpose: "general", destinationTag: "", isPrimary: false });
+    setWalletDialogOpen(true);
+  };
+
+  const openEditWallet = (w: UserWallet) => {
+    setEditingWallet(w);
+    setWalletForm({
+      label: w.label,
+      address: w.address,
+      chain: w.chain,
+      purpose: w.purpose,
+      destinationTag: w.destinationTag || "",
+      isPrimary: w.isPrimary || false,
+    });
+    setWalletDialogOpen(true);
+  };
+
+  const handleSaveWallet = () => {
+    if (!walletForm.label.trim() || !walletForm.address.trim()) {
+      toast({ title: "Label and address are required", variant: "destructive" });
+      return;
+    }
+    if (editingWallet) {
+      updateWalletMutation.mutate({ id: editingWallet.id, ...walletForm });
+    } else {
+      createWalletMutation.mutate(walletForm);
+    }
+    if (walletForm.purpose === "yield" || walletForm.purpose === "spending") {
+      setSpendingWallet(walletForm.address.trim());
+    }
+  };
 
   useEffect(() => {
     if (subscriptionData?.tier === "premium" && subscriptionTier !== "premium") {
@@ -155,18 +245,6 @@ export default function SettingsPage() {
     updateMutation.mutate(values);
   };
 
-  const handleSaveSpendingWallet = () => {
-    if (walletInput && !walletInput.startsWith("r")) {
-      toast({
-        title: "Invalid XRPL Address",
-        description: "XRPL addresses must start with 'r'.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setSpendingWallet(walletInput);
-    toast({ title: "Spending wallet saved" });
-  };
 
   useEffect(() => {
     if (paymentStatus && (paymentStatus as any).status === "confirmed") {
@@ -391,36 +469,112 @@ export default function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-[#00A4E4]/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-[#00A4E4]" />
-              OwnBank Spending Wallet
-            </CardTitle>
-            <CardDescription>
-              Set an XRPL address where interest withdrawals will be sent
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="spending-wallet">XRPL Wallet Address</Label>
-              <Input
-                id="spending-wallet"
-                placeholder="rXXXX...XXXX"
-                value={walletInput}
-                onChange={(e) => setWalletInput(e.target.value)}
-                className="font-mono text-sm"
-                data-testid="input-spending-wallet"
-              />
-              <p className="text-xs text-muted-foreground">
-                Must be a valid XRPL address (starts with 'r'). Can be a cold wallet, exchange, or any XRPL address.
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-[#00A4E4]" />
+                  My Wallets
+                </CardTitle>
+                <CardDescription>
+                  Organize your wallets by purpose — yield, spending, receiving, savings, or trading
+                </CardDescription>
+              </div>
+              <Button size="sm" onClick={openAddWallet} data-testid="button-add-wallet">
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
             </div>
-            <Button
-              onClick={handleSaveSpendingWallet}
-              className="bg-[#00A4E4] hover:bg-[#0090cc] text-white"
-              data-testid="button-save-spending-wallet"
-            >
-              Save Spending Wallet
-            </Button>
+          </CardHeader>
+          <CardContent>
+            {walletsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : myWallets.length === 0 ? (
+              <div className="text-center py-8 space-y-3">
+                <Wallet className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">No wallets saved yet</p>
+                <p className="text-xs text-muted-foreground">Add wallets for different purposes — yield, spending, receiving, and more</p>
+                {spendingWallet ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setWalletForm({
+                        label: "My XRPL Wallet",
+                        address: spendingWallet,
+                        chain: "xrpl",
+                        purpose: "yield",
+                        destinationTag: "",
+                        isPrimary: true,
+                      });
+                      setEditingWallet(null);
+                      setWalletDialogOpen(true);
+                    }}
+                    data-testid="button-migrate-wallet"
+                  >
+                    <ArrowUp className="h-4 w-4 mr-1" /> Import Existing Wallet ({spendingWallet.slice(0, 8)}...)
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={openAddWallet} data-testid="button-add-first-wallet">
+                    <Plus className="h-4 w-4 mr-1" /> Add Your First Wallet
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {myWallets.map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+                    data-testid={`wallet-item-${w.id}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm truncate" data-testid={`text-wallet-label-${w.id}`}>{w.label}</span>
+                          {w.isPrimary && <Star className="h-3 w-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground truncate max-w-[220px]" data-testid={`text-wallet-address-${w.id}`}>
+                          {w.address.length > 20 ? `${w.address.slice(0, 10)}...${w.address.slice(-8)}` : w.address}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge variant="outline" className="text-[10px] px-1.5 capitalize" data-testid={`badge-chain-${w.id}`}>
+                        {w.chain === "xrpl" ? "XRPL" : w.chain}
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className={`text-[10px] px-1.5 capitalize ${
+                          w.purpose === "yield" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                          w.purpose === "spending" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                          w.purpose === "receiving" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" :
+                          w.purpose === "savings" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                          w.purpose === "trading" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                          ""
+                        }`}
+                        data-testid={`badge-purpose-${w.id}`}
+                      >
+                        {w.purpose}
+                      </Badge>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditWallet(w)} data-testid={`button-edit-wallet-${w.id}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => deleteWalletMutation.mutate(w.id)}
+                        data-testid={`button-delete-wallet-${w.id}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1034,6 +1188,126 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingWallet ? "Edit Wallet" : "Add Wallet"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="wallet-label">Label</Label>
+              <Input
+                id="wallet-label"
+                placeholder="e.g. My Cold Storage, Trading Wallet"
+                value={walletForm.label}
+                onChange={(e) => setWalletForm((f) => ({ ...f, label: e.target.value }))}
+                data-testid="input-wallet-label"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wallet-chain">Blockchain</Label>
+              <Select
+                value={walletForm.chain}
+                onValueChange={(v) => setWalletForm((f) => ({ ...f, chain: v }))}
+              >
+                <SelectTrigger data-testid="select-wallet-chain">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
+                  <SelectItem value="ethereum">Ethereum</SelectItem>
+                  <SelectItem value="solana">Solana</SelectItem>
+                  <SelectItem value="bitcoin">Bitcoin</SelectItem>
+                  <SelectItem value="cardano">Cardano</SelectItem>
+                  <SelectItem value="polkadot">Polkadot</SelectItem>
+                  <SelectItem value="cosmos">Cosmos</SelectItem>
+                  <SelectItem value="avalanche">Avalanche</SelectItem>
+                  <SelectItem value="hedera">Hedera</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wallet-address">Wallet Address</Label>
+              <Input
+                id="wallet-address"
+                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "ethereum" ? "0x..." : "Enter address"}
+                value={walletForm.address}
+                onChange={(e) => setWalletForm((f) => ({ ...f, address: e.target.value }))}
+                className="font-mono text-sm"
+                data-testid="input-wallet-address"
+              />
+            </div>
+            {(walletForm.chain === "xrpl") && (
+              <div className="space-y-2">
+                <Label htmlFor="wallet-tag">Destination Tag (optional)</Label>
+                <Input
+                  id="wallet-tag"
+                  placeholder="e.g. 12345"
+                  value={walletForm.destinationTag}
+                  onChange={(e) => setWalletForm((f) => ({ ...f, destinationTag: e.target.value }))}
+                  data-testid="input-wallet-tag"
+                />
+                <p className="text-xs text-muted-foreground">Required for exchange wallets</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Purpose</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "yield", label: "Yield", color: "border-green-500 bg-green-50 dark:bg-green-900/20" },
+                  { value: "spending", label: "Spending", color: "border-blue-500 bg-blue-50 dark:bg-blue-900/20" },
+                  { value: "receiving", label: "Receiving", color: "border-purple-500 bg-purple-50 dark:bg-purple-900/20" },
+                  { value: "savings", label: "Savings", color: "border-amber-500 bg-amber-50 dark:bg-amber-900/20" },
+                  { value: "trading", label: "Trading", color: "border-red-500 bg-red-50 dark:bg-red-900/20" },
+                  { value: "general", label: "General", color: "border-gray-400 bg-gray-50 dark:bg-gray-900/20" },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setWalletForm((f) => ({ ...f, purpose: p.value }))}
+                    className={`px-3 py-2 rounded-md border text-xs font-medium transition-colors ${
+                      walletForm.purpose === p.value
+                        ? `${p.color} ring-2 ring-offset-1 ring-[#00A4E4]`
+                        : "border-border hover:bg-accent"
+                    }`}
+                    data-testid={`button-purpose-${p.value}`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="wallet-primary"
+                checked={walletForm.isPrimary}
+                onChange={(e) => setWalletForm((f) => ({ ...f, isPrimary: e.target.checked }))}
+                className="rounded border-gray-300"
+                data-testid="checkbox-wallet-primary"
+              />
+              <Label htmlFor="wallet-primary" className="text-sm font-normal">
+                Set as primary wallet
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWalletDialogOpen(false)} data-testid="button-cancel-wallet">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveWallet}
+              disabled={createWalletMutation.isPending || updateWalletMutation.isPending}
+              className="bg-[#00A4E4] hover:bg-[#0090cc] text-white"
+              data-testid="button-save-wallet"
+            >
+              {(createWalletMutation.isPending || updateWalletMutation.isPending) ? "Saving..." : editingWallet ? "Update" : "Add Wallet"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -54,6 +54,9 @@ import {
   type InsertCryptoPayment,
   type RenewalNotification,
   type InsertRenewalNotification,
+  userWallets,
+  type UserWallet,
+  type InsertUserWallet,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -180,6 +183,13 @@ export interface IStorage {
   createRenewalNotification(notification: InsertRenewalNotification): Promise<RenewalNotification>;
   getRenewalNotificationsByUser(userId: string): Promise<RenewalNotification[]>;
   hasRecentRenewalNotification(userId: string, type: string, withinHours: number): Promise<boolean>;
+
+  createUserWallet(wallet: InsertUserWallet): Promise<UserWallet>;
+  getUserWallets(userId: string): Promise<UserWallet[]>;
+  getUserWallet(id: string): Promise<UserWallet | undefined>;
+  updateUserWallet(id: string, data: Partial<UserWallet>): Promise<UserWallet | undefined>;
+  deleteUserWallet(id: string): Promise<void>;
+  getUserWalletsByPurpose(userId: string, purpose: string): Promise<UserWallet[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -748,6 +758,40 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return results.length > 0;
+  }
+
+  async createUserWallet(wallet: InsertUserWallet): Promise<UserWallet> {
+    const [result] = await db.insert(userWallets).values(wallet).returning();
+    return result;
+  }
+
+  async getUserWallets(userId: string): Promise<UserWallet[]> {
+    return db.select().from(userWallets)
+      .where(eq(userWallets.userId, userId))
+      .orderBy(desc(userWallets.createdAt));
+  }
+
+  async getUserWallet(id: string): Promise<UserWallet | undefined> {
+    const [result] = await db.select().from(userWallets)
+      .where(eq(userWallets.id, id));
+    return result;
+  }
+
+  async updateUserWallet(id: string, data: Partial<UserWallet>): Promise<UserWallet | undefined> {
+    const [result] = await db.update(userWallets)
+      .set(data)
+      .where(eq(userWallets.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteUserWallet(id: string): Promise<void> {
+    await db.delete(userWallets).where(eq(userWallets.id, id));
+  }
+
+  async getUserWalletsByPurpose(userId: string, purpose: string): Promise<UserWallet[]> {
+    return db.select().from(userWallets)
+      .where(and(eq(userWallets.userId, userId), eq(userWallets.purpose, purpose)));
   }
 }
 

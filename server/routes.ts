@@ -3377,6 +3377,101 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/user-wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const walletList = await storage.getUserWallets(userId);
+      res.json(walletList);
+    } catch (error) {
+      console.error("Get user wallets error:", error);
+      res.status(500).json({ message: "Failed to fetch wallets" });
+    }
+  });
+
+  app.post("/api/user-wallets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { label, address, chain, purpose, destinationTag, isPrimary } = req.body;
+      if (!label || !address || !chain) {
+        return res.status(400).json({ message: "Label, address, and chain are required" });
+      }
+      const validPurposes = ["yield", "spending", "receiving", "savings", "trading", "general"];
+      const walletPurpose = validPurposes.includes(purpose) ? purpose : "general";
+
+      if (isPrimary) {
+        const existing = await storage.getUserWallets(userId);
+        for (const w of existing) {
+          if (w.isPrimary) {
+            await storage.updateUserWallet(w.id, { isPrimary: false });
+          }
+        }
+      }
+
+      const wallet = await storage.createUserWallet({
+        userId,
+        label,
+        address: address.trim(),
+        chain,
+        purpose: walletPurpose,
+        destinationTag: destinationTag || null,
+        isPrimary: isPrimary || false,
+      });
+      res.json(wallet);
+    } catch (error) {
+      console.error("Create user wallet error:", error);
+      res.status(500).json({ message: "Failed to create wallet" });
+    }
+  });
+
+  app.put("/api/user-wallets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getUserWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      const { label, address, chain, purpose, destinationTag, isPrimary } = req.body;
+      const validPurposes = ["yield", "spending", "receiving", "savings", "trading", "general"];
+
+      if (isPrimary) {
+        const existing = await storage.getUserWallets(userId);
+        for (const w of existing) {
+          if (w.isPrimary && w.id !== wallet.id) {
+            await storage.updateUserWallet(w.id, { isPrimary: false });
+          }
+        }
+      }
+
+      const updated = await storage.updateUserWallet(wallet.id, {
+        ...(label && { label }),
+        ...(address && { address: address.trim() }),
+        ...(chain && { chain }),
+        ...(purpose && validPurposes.includes(purpose) && { purpose }),
+        ...(destinationTag !== undefined && { destinationTag: destinationTag || null }),
+        ...(isPrimary !== undefined && { isPrimary }),
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Update user wallet error:", error);
+      res.status(500).json({ message: "Failed to update wallet" });
+    }
+  });
+
+  app.delete("/api/user-wallets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getUserWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      await storage.deleteUserWallet(wallet.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete user wallet error:", error);
+      res.status(500).json({ message: "Failed to delete wallet" });
+    }
+  });
+
   app.get("/api/wallets/portfolio", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

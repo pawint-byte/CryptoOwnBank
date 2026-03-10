@@ -417,3 +417,24 @@ export type InsertCryptoPayment = z.infer<typeof insertCryptoPaymentSchema>;
 export const insertRenewalNotificationSchema = createInsertSchema(renewalNotifications).omit({ id: true, sentAt: true });
 export type RenewalNotification = typeof renewalNotifications.$inferSelect;
 export type InsertRenewalNotification = z.infer<typeof insertRenewalNotificationSchema>;
+
+export const userWallets = pgTable("user_wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  label: varchar("label", { length: 100 }).notNull(),
+  address: varchar("address", { length: 255 }).notNull(),
+  chain: varchar("chain", { length: 30 }).notNull(),
+  purpose: varchar("purpose", { length: 30 }).notNull().default("general"),
+  destinationTag: varchar("destination_tag", { length: 20 }),
+  isPrimary: boolean("is_primary").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_user_wallets_user").on(table.userId),
+]);
+
+export const insertUserWalletSchema = createInsertSchema(userWallets).omit({
+  id: true,
+  createdAt: true,
+});
+export type UserWallet = typeof userWallets.$inferSelect;
+export type InsertUserWallet = z.infer<typeof insertUserWalletSchema>;

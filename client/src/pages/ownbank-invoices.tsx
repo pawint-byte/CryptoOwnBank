@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { UserWallet } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +143,14 @@ export default function OwnBankInvoices() {
   const { toast } = useToast();
   const { walletAddress, isConnected } = useXrplStore();
 
+  const { data: savedWallets = [] } = useQuery<UserWallet[]>({
+    queryKey: ["/api/user-wallets"],
+  });
+
+  const receivingWallets = savedWallets.filter((w) => w.purpose === "receiving" || w.purpose === "general");
+  const defaultReceivingAddress = receivingWallets.length > 0 ? receivingWallets[0].address : (walletAddress || "");
+  const defaultTag = receivingWallets.length > 0 ? (receivingWallets[0].destinationTag || "") : "";
+
   const [invoices, setInvoices] = useState<Invoice[]>(loadInvoices);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -152,8 +162,8 @@ export default function OwnBankInvoices() {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("XRP");
   const [dueDate, setDueDate] = useState("");
-  const [invoiceWallet, setInvoiceWallet] = useState(walletAddress || "");
-  const [destinationTag, setDestinationTag] = useState("");
+  const [invoiceWallet, setInvoiceWallet] = useState(defaultReceivingAddress);
+  const [destinationTag, setDestinationTag] = useState(defaultTag);
 
   function resetForm() {
     setRecipientName("");
@@ -161,8 +171,8 @@ export default function OwnBankInvoices() {
     setAmount("");
     setCurrency("XRP");
     setDueDate("");
-    setInvoiceWallet(walletAddress || "");
-    setDestinationTag("");
+    setInvoiceWallet(defaultReceivingAddress);
+    setDestinationTag(defaultTag);
   }
 
   function handleCreateInvoice() {
@@ -512,6 +522,29 @@ export default function OwnBankInvoices() {
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Your Wallet Address</label>
+              {savedWallets.length > 0 && (
+                <Select
+                  value=""
+                  onValueChange={(walletId) => {
+                    const w = savedWallets.find((sw) => sw.id === walletId);
+                    if (w) {
+                      setInvoiceWallet(w.address);
+                      setDestinationTag(w.destinationTag || "");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="mb-2" data-testid="select-saved-wallet">
+                    <SelectValue placeholder="Pick from saved wallets..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {savedWallets.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.label} — {w.address.slice(0, 8)}...{w.address.slice(-4)} ({w.chain})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Input
                 placeholder="rXXXXXXXXXXXXXXXXXXXXXXXX"
                 value={invoiceWallet}

@@ -35,10 +35,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL with Drizzle ORM.
-- **Key Models**: Users, API Credentials, Accounts, Transactions, Positions, Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances.
+- **Key Models**: Users, API Credentials, Accounts, Transactions, Positions, Tax Lots & Gain Events, Assets, User Settings, Price Alerts, Wallets, Wallet Balances, User Wallets (multi-purpose labeled wallets).
 - **Manual Entry**: Supports manual position creation for assets without automated feeds.
 - **Cost Basis Management**: Wallet balances have `averageCost` and `totalCostBasis` fields, auto-populated from on-chain transaction imports and manually editable. Purchase lots can be added/edited/deleted per wallet balance. API endpoints: `PATCH /api/wallet-balances/:id/cost`, `GET/POST /api/wallet-balances/:id/lots`, `PATCH/DELETE /api/wallet-balances/:balanceId/lots/:lotId`.
 - **Asset Categories**: Categorizes 150+ crypto symbols into sectors (Layer 1, DeFi, AI, Stablecoin, etc.).
+- **User Wallets**: `user_wallets` table — chain-agnostic labeled wallet addresses with purpose tags (yield, spending, receiving, savings, trading, general). CRUD via `/api/user-wallets`. Used in Settings (wallet manager), Invoices (wallet picker for receiving), and Withdraw Interest (wallet picker for destination). Replaces the old single "Spending Wallet" localStorage field. The Zustand `spendingWallet` field remains as a backward-compatible fallback.
 - **Client-side Storage (Zustand)**: Stores wallet state, XRPL balances, vault deposits, and referral data.
 
 ### Monetization (Freemium)
