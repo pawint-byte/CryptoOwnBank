@@ -65,6 +65,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Lido stETH", defiApy: "3.2%", defiApyMid: 3.2, riskLevel: "Low", link: "https://lido.fi", custodyType: "on_chain", blockchain: "Ethereum" },
       { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave ETH Lending", defiApy: "2.0–4.0%", defiApyMid: 3.0, riskLevel: "Medium", link: "https://aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Compound ETH", defiApy: "1.5–3.5%", defiApyMid: 2.5, riskLevel: "Low", link: "https://compound.finance", custodyType: "on_chain", blockchain: "Ethereum" },
+      { tradFiProduct: "Bond Fund (4.0% APY)", tradFiApy: "4.0%", defiProtocol: "Curve ETH/stETH Pool", defiApy: "2.0–5.0%", defiApyMid: 3.5, riskLevel: "Medium", link: "https://curve.fi", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     warnings: ["Never share your seed phrase", "Verify staking contracts before depositing"],
     selfCustodyWallets: ["Ledger Nano X", "Trezor Model T", "MetaMask (software)"],
@@ -86,6 +88,9 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Jito Staking", defiApy: "7.5%", defiApyMid: 7.5, riskLevel: "Low", link: "https://www.jito.network", custodyType: "on_chain", blockchain: "Solana" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Marinade DeFi", defiApy: "6.5–7.5%", defiApyMid: 7.0, riskLevel: "Low", link: "https://marinade.finance", custodyType: "on_chain", blockchain: "Solana" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Raydium SOL Pools", defiApy: "5.0–12.0%", defiApyMid: 8.0, riskLevel: "Medium", link: "https://raydium.io", custodyType: "on_chain", blockchain: "Solana" },
+      { tradFiProduct: "Bond Fund (4.0% APY)", tradFiApy: "4.0%", defiProtocol: "Orca Whirlpools", defiApy: "4.0–15.0%", defiApyMid: 8.5, riskLevel: "High", link: "https://www.orca.so", custodyType: "on_chain", blockchain: "Solana" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Phantom (software)", "Solflare (software)"],
   },
@@ -105,12 +110,19 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     withdrawable: true,
     stakingOptions: [
       { platform: "Native Delegation", method: "Stake Pool Delegation", apyRange: "3.0–5.0%", apyMid: 4.0, link: "https://pool.pm", custodyType: "on_chain", blockchain: "Cardano" },
+      { platform: "SundaeSwap", method: "Liquidity Provision", apyRange: "5.0–15.0%", apyMid: 10.0, link: "https://sundaeswap.finance", custodyType: "on_chain", blockchain: "Cardano" },
+      { platform: "Minswap", method: "Yield Farming", apyRange: "4.0–12.0%", apyMid: 8.0, link: "https://minswap.org", custodyType: "on_chain", blockchain: "Cardano" },
     ],
     exchangeEarnOptions: [
       { exchange: "Kraken", program: "ADA Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
       { exchange: "Binance", program: "ADA Staking", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
     ],
-    selfCustodyWallets: ["Ledger Nano X", "Daedalus", "Yoroi"],
+    defiAlternatives: [
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Native ADA Staking", defiApy: "3.0–5.0%", defiApyMid: 4.0, riskLevel: "Low", link: "https://pool.pm", custodyType: "on_chain", blockchain: "Cardano" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Minswap ADA Pools", defiApy: "4.0–12.0%", defiApyMid: 8.0, riskLevel: "Medium", link: "https://minswap.org", custodyType: "on_chain", blockchain: "Cardano" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "SundaeSwap Liquidity", defiApy: "5.0–15.0%", defiApyMid: 10.0, riskLevel: "High", link: "https://sundaeswap.finance", custodyType: "on_chain", blockchain: "Cardano" },
+    ],
+    selfCustodyWallets: ["Ledger Nano X", "Daedalus", "Yoroi", "Eternl"],
   },
   DOT: {
     symbol: "DOT",
@@ -120,12 +132,18 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "Native Nomination", method: "Nominating Validators", apyRange: "12–15%", apyMid: 13.5, link: "https://polkadot.js.org/apps/#/staking", custodyType: "on_chain", blockchain: "Polkadot" },
       { platform: "Bifrost", method: "Liquid Staking (vDOT)", apyRange: "10–13%", apyMid: 11.5, link: "https://bifrost.finance", custodyType: "on_chain", blockchain: "Polkadot" },
+      { platform: "Acala", method: "Liquid Staking (LDOT)", apyRange: "10–14%", apyMid: 12.0, link: "https://acala.network", custodyType: "on_chain", blockchain: "Polkadot" },
     ],
     exchangeEarnOptions: [
       { exchange: "Kraken", program: "DOT Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
       { exchange: "Binance", program: "DOT Staking", apyRange: "10.0–12.0%", apyMid: 11.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
     ],
-    selfCustodyWallets: ["Ledger Nano X", "Polkadot.js", "Nova Wallet"],
+    defiAlternatives: [
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Polkadot Native Staking", defiApy: "12–15%", defiApyMid: 13.5, riskLevel: "Low", link: "https://polkadot.js.org/apps/#/staking", custodyType: "on_chain", blockchain: "Polkadot" },
+      { tradFiProduct: "1-Year CD (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Bifrost Liquid Staking", defiApy: "10–13%", defiApyMid: 11.5, riskLevel: "Medium", link: "https://bifrost.finance", custodyType: "on_chain", blockchain: "Polkadot" },
+      { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Acala LDOT", defiApy: "10–14%", defiApyMid: 12.0, riskLevel: "Medium", link: "https://acala.network", custodyType: "on_chain", blockchain: "Polkadot" },
+    ],
+    selfCustodyWallets: ["Ledger Nano X", "Polkadot.js", "Nova Wallet", "Talisman"],
   },
   AVAX: {
     symbol: "AVAX",

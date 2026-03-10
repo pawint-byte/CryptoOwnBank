@@ -47,10 +47,13 @@ import {
   type AlertLog,
   cryptoPaymentAddresses,
   cryptoPayments,
+  renewalNotifications,
   type CryptoPaymentAddress,
   type InsertCryptoPaymentAddress,
   type CryptoPayment,
   type InsertCryptoPayment,
+  type RenewalNotification,
+  type InsertRenewalNotification,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -172,6 +175,11 @@ export interface IStorage {
   getPendingCryptoPayments(): Promise<CryptoPayment[]>;
   updateCryptoPaymentStatus(id: string, status: string, txHash?: string): Promise<CryptoPayment | undefined>;
   getRecentCryptoPayments(limit: number): Promise<CryptoPayment[]>;
+
+  getExpiringCryptoSubscriptions(withinDays: number): Promise<UserSettings[]>;
+  createRenewalNotification(notification: InsertRenewalNotification): Promise<RenewalNotification>;
+  getRenewalNotificationsByUser(userId: string): Promise<RenewalNotification[]>;
+  hasRecentRenewalNotification(userId: string, type: string, withinHours: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -702,6 +710,44 @@ export class DatabaseStorage implements IStorage {
 
   async getRecentCryptoPayments(limit: number): Promise<CryptoPayment[]> {
     return db.select().from(cryptoPayments).orderBy(desc(cryptoPayments.createdAt)).limit(limit);
+  }
+
+  async getExpiringCryptoSubscriptions(withinDays: number): Promise<UserSettings[]> {
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + withinDays);
+    return db.select().from(userSettings)
+      .where(
+        and(
+          eq(userSettings.subscriptionTier, "premium"),
+          eq(userSettings.subscriptionPaymentMethod, "crypto"),
+          lte(userSettings.subscriptionExpiresAt, deadline)
+        )
+      );
+  }
+
+  async createRenewalNotification(notification: InsertRenewalNotification): Promise<RenewalNotification> {
+    const [result] = await db.insert(renewalNotifications).values(notification).returning();
+    return result;
+  }
+
+  async getRenewalNotificationsByUser(userId: string): Promise<RenewalNotification[]> {
+    return db.select().from(renewalNotifications)
+      .where(eq(renewalNotifications.userId, userId))
+      .orderBy(desc(renewalNotifications.sentAt));
+  }
+
+  async hasRecentRenewalNotification(userId: string, type: string, withinHours: number): Promise<boolean> {
+    const since = new Date();
+    since.setHours(since.getHours() - withinHours);
+    const results = await db.select().from(renewalNotifications)
+      .where(
+        and(
+          eq(renewalNotifications.userId, userId),
+          eq(renewalNotifications.type, type),
+          gte(renewalNotifications.sentAt, since)
+        )
+      );
+    return results.length > 0;
   }
 }
 

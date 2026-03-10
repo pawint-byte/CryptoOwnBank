@@ -27,6 +27,7 @@ import {
   Coins,
   TrendingUp,
   Send,
+  FileText as InvoiceIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -63,6 +64,7 @@ const ownbankItems = [
   { title: "Token Manager", url: "/ownbank/tokens", icon: Coins },
   { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp },
   { title: "Send & Receive", url: "/ownbank/send", icon: Send },
+  { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon },
   { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine },
   { title: "History", url: "/ownbank/history", icon: History },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users },

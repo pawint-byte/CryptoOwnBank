@@ -48,6 +48,7 @@ import WalletsPage from "@/pages/wallets";
 import StatementInsights from "@/pages/statement-insights";
 import Reconciliation from "@/pages/reconciliation";
 import MigrationGuide from "@/pages/migration-guide";
+import OwnBankInvoices from "@/pages/ownbank-invoices";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
@@ -111,6 +112,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/tokens" component={OwnBankTokens} />
         <Route path="/ownbank/dex" component={OwnBankDex} />
         <Route path="/ownbank/send" component={OwnBankSend} />
+        <Route path="/ownbank/invoices" component={OwnBankInvoices} />
         <Route path="/price-alerts" component={PriceAlerts} />
         <Route path="/wallets" component={WalletsPage} />
         <Route path="/statement-insights" component={StatementInsights} />

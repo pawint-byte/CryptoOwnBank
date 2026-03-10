@@ -764,16 +764,36 @@ const CHAIN_CHECKERS: Record<string, (p: CryptoPayment) => Promise<CheckResult>>
 async function activateSubscription(payment: CryptoPayment) {
   const billingCycle = payment.plan === "yearly" ? "yearly" : "monthly";
   const existing = await storage.getUserSettings(payment.userId);
+
+  const expiresAt = new Date();
+  if (billingCycle === "yearly") {
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  } else {
+    expiresAt.setDate(expiresAt.getDate() + 30);
+  }
+
+  let renewalWallet = existing?.subscriptionRenewalWallet || null;
+  if (!renewalWallet) {
+    try {
+      const wallets = await storage.getWalletsByUser(payment.userId);
+      const xrplWallet = wallets.find(w => w.chain === "xrp" || w.chain === "xrpl");
+      if (xrplWallet) {
+        renewalWallet = xrplWallet.address;
+      }
+    } catch {}
+  }
+
   await storage.upsertUserSettings({
     userId: payment.userId,
     subscriptionTier: "premium",
     subscriptionBillingCycle: billingCycle,
+    subscriptionExpiresAt: expiresAt,
+    subscriptionPaymentMethod: "crypto",
+    subscriptionRenewalWallet: renewalWallet,
     stripeCustomerId: existing?.stripeCustomerId || null,
     stripeSubscriptionId: existing?.stripeSubscriptionId || null,
-    autoWithdrawEnabled: existing?.autoWithdrawEnabled ?? false,
-    autoWithdrawWallet: existing?.autoWithdrawWallet || null,
   });
-  console.log(`[crypto-verify] Activated ${billingCycle} premium for user ${payment.userId} via ${payment.chain} payment ${payment.id}`);
+  console.log(`[crypto-verify] Activated ${billingCycle} premium for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
 }
 
 async function verifyPendingPayments() {

@@ -53,6 +53,7 @@ import {
   AlertTriangle,
   ArrowUp,
   Sparkles,
+  QrCode,
 } from "lucide-react";
 import type { UserSettings } from "@shared/schema";
 

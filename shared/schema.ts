@@ -117,12 +117,26 @@ export const userSettings = pgTable("user_settings", {
   taxYear: integer("tax_year"),
   subscriptionTier: varchar("subscription_tier", { length: 20 }).default("free"),
   subscriptionBillingCycle: varchar("subscription_billing_cycle", { length: 20 }),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  subscriptionPaymentMethod: varchar("subscription_payment_method", { length: 20 }),
+  subscriptionRenewalWallet: varchar("subscription_renewal_wallet", { length: 255 }),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   customVaults: jsonb("custom_vaults").default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const renewalNotifications = pgTable("renewal_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  type: varchar("type", { length: 20 }).notNull(),
+  method: varchar("method", { length: 20 }).notNull(),
+  paymentId: varchar("payment_id", { length: 255 }),
+  sentAt: timestamp("sent_at").defaultNow(),
+}, (table) => [
+  index("idx_renewal_notifications_user").on(table.userId),
+]);
 
 export type CustomVault = {
   address: string;
@@ -399,3 +413,7 @@ export type CryptoPaymentAddress = typeof cryptoPaymentAddresses.$inferSelect;
 export type InsertCryptoPaymentAddress = z.infer<typeof insertCryptoPaymentAddressSchema>;
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;
 export type InsertCryptoPayment = z.infer<typeof insertCryptoPaymentSchema>;
+
+export const insertRenewalNotificationSchema = createInsertSchema(renewalNotifications).omit({ id: true, sentAt: true });
+export type RenewalNotification = typeof renewalNotifications.$inferSelect;
+export type InsertRenewalNotification = z.infer<typeof insertRenewalNotificationSchema>;

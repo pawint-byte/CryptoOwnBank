@@ -1906,6 +1906,30 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/subscription/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      const { tier } = await getEffectiveTier(userId);
+
+      const expiresAt = settings?.subscriptionExpiresAt ? new Date(settings.subscriptionExpiresAt) : null;
+      const daysRemaining = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+
+      res.json({
+        tier,
+        billingCycle: settings?.subscriptionBillingCycle || null,
+        paymentMethod: settings?.subscriptionPaymentMethod || null,
+        expiresAt: expiresAt?.toISOString() || null,
+        daysRemaining,
+        renewalWallet: settings?.subscriptionRenewalWallet || null,
+        isExpired: expiresAt ? expiresAt.getTime() < Date.now() : false,
+      });
+    } catch (error) {
+      console.error("Subscription status error:", error);
+      res.status(500).json({ message: "Failed to load subscription status" });
+    }
+  });
+
   app.get("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -2331,6 +2355,9 @@ export async function registerRoutes(
               defaultCurrency: existing?.defaultCurrency || "USD",
               subscriptionTier: "premium",
               subscriptionBillingCycle: billingCycle,
+              subscriptionPaymentMethod: "stripe",
+              subscriptionExpiresAt: null,
+              subscriptionRenewalWallet: existing?.subscriptionRenewalWallet || null,
               stripeCustomerId: session.customer,
               stripeSubscriptionId: session.subscription,
             });
@@ -2354,6 +2381,8 @@ export async function registerRoutes(
                 defaultCurrency: s.defaultCurrency || "USD",
                 subscriptionTier: "free",
                 subscriptionBillingCycle: null,
+                subscriptionPaymentMethod: null,
+                subscriptionExpiresAt: null,
                 stripeCustomerId: s.stripeCustomerId,
                 stripeSubscriptionId: s.stripeSubscriptionId,
               });
@@ -2382,6 +2411,9 @@ export async function registerRoutes(
             defaultCurrency: existing?.defaultCurrency || "USD",
             subscriptionTier: "premium",
             subscriptionBillingCycle: billingCycle,
+            subscriptionPaymentMethod: "stripe",
+            subscriptionExpiresAt: null,
+            subscriptionRenewalWallet: existing?.subscriptionRenewalWallet || null,
             stripeCustomerId: session.customer,
             stripeSubscriptionId: session.subscription,
           });
@@ -4445,6 +4477,10 @@ function startPriceAlertChecker() {
 
   import("./services/crypto-payment-verifier").then(({ startCryptoPaymentVerifier }) => {
     startCryptoPaymentVerifier();
+  });
+
+  import("./services/subscription-renewal").then(({ startSubscriptionRenewalService }) => {
+    startSubscriptionRenewalService();
   });
 
   setTimeout(async () => {
