@@ -4034,7 +4034,17 @@ export async function registerRoutes(
           products: savedProducts,
           comparisons: limits.statementComparisons ? comparisons : null,
           comparisonsLocked: !limits.statementComparisons,
+          selfDestructMinutes: 15,
         });
+
+        setTimeout(async () => {
+          try {
+            await storage.deleteStatementUpload(upload.id);
+            console.log(`[statement] Self-destructed upload ${upload.id} (${req.file.originalname})`);
+          } catch (err) {
+            console.error(`[statement] Self-destruct failed for ${upload.id}:`, err);
+          }
+        }, 15 * 60 * 1000);
       } catch (parseError: any) {
         await storage.updateStatementUpload(upload.id, { status: "failed" });
         console.error("Statement parse error:", parseError?.message || parseError);

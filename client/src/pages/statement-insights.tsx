@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,14 @@ import {
   Plus,
   Check,
   Minus,
+  Sparkles,
+  ExternalLink,
+  Globe,
+  Shield,
+  HardDrive,
+  ThumbsUp,
+  ThumbsDown,
+  ArrowRight,
 } from "lucide-react";
 import {
   Table,
@@ -115,6 +123,33 @@ export default function StatementInsights() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedUploadId, setSelectedUploadId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selfDestructTimers, setSelfDestructTimers] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const hasTimers = Object.values(selfDestructTimers).some(t => t > 0);
+    if (!hasTimers) return;
+
+    const interval = setInterval(() => {
+      setSelfDestructTimers(prev => {
+        const next: Record<string, number> = {};
+        let anyExpired = false;
+        for (const [id, remaining] of Object.entries(prev)) {
+          const newVal = Math.max(0, remaining - 1);
+          if (newVal > 0) {
+            next[id] = newVal;
+          } else {
+            anyExpired = true;
+          }
+        }
+        if (anyExpired) {
+          queryClient.invalidateQueries({ queryKey: ["/api/statements"] });
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [Object.keys(selfDestructTimers).length]);
 
   const { data: limits } = useQuery<any>({ queryKey: ["/api/subscription/limits"] });
 
@@ -151,7 +186,12 @@ export default function StatementInsights() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/statements"] });
       setSelectedUploadId(data.upload.id);
-      toast({ title: "Statement analyzed", description: `Found ${data.products.length} financial product(s)` });
+      const selfDestructMinutes = data.selfDestructMinutes || 15;
+      setSelfDestructTimers(prev => ({ ...prev, [data.upload.id]: selfDestructMinutes * 60 }));
+      toast({
+        title: "Statement analyzed",
+        description: `Found ${data.products.length} financial product(s). Data self-destructs in ${selfDestructMinutes} minutes.`,
+      });
     },
     onError: (error: Error) => {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
@@ -271,6 +311,11 @@ export default function StatementInsights() {
   }, []);
 
   if (selectedUploadId && uploadDetail) {
+    const remainingSeconds = selfDestructTimers[selectedUploadId] || 0;
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    const isExpiring = remainingSeconds > 0 && remainingSeconds <= 120;
+
     return (
       <div className="space-y-4 sm:space-y-6" data-testid="page-statement-detail">
         <div className="flex items-center gap-3">
@@ -287,6 +332,25 @@ export default function StatementInsights() {
             </p>
           </div>
         </div>
+
+        {remainingSeconds > 0 && (
+          <div className={`flex items-center gap-3 p-3 rounded-lg border ${
+            isExpiring
+              ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30"
+              : "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30"
+          }`} data-testid="self-destruct-banner">
+            <Shield className={`h-5 w-5 shrink-0 ${isExpiring ? "text-red-500 animate-pulse" : "text-amber-500"}`} />
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${isExpiring ? "text-red-800 dark:text-red-200" : "text-amber-800 dark:text-amber-200"}`}>
+                {isExpiring ? "Self-destructing soon" : "This analysis will self-destruct"}
+              </p>
+              <p className={`text-xs ${isExpiring ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}`}>
+                Your statement data is never stored permanently. Make your decisions now — this analysis disappears in{" "}
+                <span className="font-mono font-bold">{minutes}:{seconds.toString().padStart(2, "0")}</span>.
+              </p>
+            </div>
+          </div>
+        )}
 
         <DisclaimerBanner variant="persistent" />
 
@@ -488,6 +552,8 @@ export default function StatementInsights() {
                 );
               })}
             </div>
+
+            <CryptoOpportunities products={uploadDetail.products} />
           </div>
         )}
       </div>
@@ -557,7 +623,7 @@ export default function StatementInsights() {
                     Bank statements, brokerage statements, CD summaries &middot; PDF only &middot; 10MB max
                   </p>
                   <p className="text-[10px] text-muted-foreground/60 mt-2 max-w-sm mx-auto">
-                    We extract account types, balances, rates, and maturity dates — then show you how your money compares across traditional and decentralized options. You decide what to do with it.
+                    We extract account types, balances, rates, and maturity dates — then show you how your money compares across traditional and decentralized options. You decide what to do with it. All data self-destructs after 15 minutes.
                   </p>
                 </div>
               </div>
@@ -566,7 +632,7 @@ export default function StatementInsights() {
           <div className="flex items-start gap-2 mt-3">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
             <p className="text-[10px] sm:text-xs text-muted-foreground">
-              Your statement is processed in memory and deleted immediately after analysis. We never store your banking documents.
+              Your PDF is processed in memory and never saved. Extracted data self-destructs after 15 minutes — Mission Impossible style. We never store your banking documents.
             </p>
           </div>
         </CardContent>
@@ -692,6 +758,297 @@ export default function StatementInsights() {
           Statement Insights is a Premium feature. Upgrade to unlock unlimited statement analysis, rate comparisons, and yield optimization insights.
         </div>
       )}
+    </div>
+  );
+}
+
+interface CryptoOpp {
+  id: string;
+  title: string;
+  description: string;
+  currentProduct: string;
+  currentRate: string;
+  cryptoAlternative: string;
+  cryptoRate: string;
+  chain: string;
+  riskNote: string;
+  link: string;
+  category: "yield" | "stablecoin" | "rwa";
+}
+
+function generateCryptoOpportunities(products: any[]): CryptoOpp[] {
+  const opps: CryptoOpp[] = [];
+  const totalBalance = products.reduce((sum: number, p: any) => sum + (parseFloat(p.balance) || 0), 0);
+
+  const hasSavings = products.some((p: any) => ["savings", "money_market", "checking"].includes(p.productType));
+  const hasCd = products.some((p: any) => p.productType === "cd");
+  const hasBrokerage = products.some((p: any) => p.productType === "brokerage");
+
+  const savingsProducts = products.filter((p: any) => ["savings", "money_market"].includes(p.productType));
+  const avgSavingsRate = savingsProducts.length > 0
+    ? savingsProducts.reduce((sum: number, p: any) => sum + (parseFloat(p.apy || p.interestRate || "0")), 0) / savingsProducts.length
+    : 0;
+
+  if (hasSavings || hasCd) {
+    opps.push({
+      id: "soil-credit-plus",
+      title: "Soil Credit+ Vault (RLUSD)",
+      description: `Your ${hasSavings ? "savings" : "CD"} earns ${avgSavingsRate > 0 ? avgSavingsRate.toFixed(2) + "%" : "a low rate"}. Soil's Credit+ vault earns ~8% APY on RLUSD stablecoin — fully on-chain, non-custodial, $50 minimum.`,
+      currentProduct: hasSavings ? "Savings/Money Market" : "Certificate of Deposit",
+      currentRate: avgSavingsRate > 0 ? `${avgSavingsRate.toFixed(2)}%` : "Low",
+      cryptoAlternative: "Soil Credit+ Vault",
+      cryptoRate: "~8% APY",
+      chain: "XRPL",
+      riskNote: "Smart contract risk. Not FDIC insured. You keep your keys via Xaman wallet.",
+      link: "/ownbank/vaults",
+      category: "yield",
+    });
+
+    opps.push({
+      id: "soil-liquid",
+      title: "Soil Liquid Vault (RLUSD)",
+      description: "If you prefer more flexibility, the Liquid vault earns ~5% APY with easier withdrawal — still on XRPL, still non-custodial.",
+      currentProduct: hasSavings ? "Savings Account" : "CD",
+      currentRate: avgSavingsRate > 0 ? `${avgSavingsRate.toFixed(2)}%` : "Low",
+      cryptoAlternative: "Soil Liquid Vault",
+      cryptoRate: "~5% APY",
+      chain: "XRPL",
+      riskNote: "Smart contract risk. Flexible withdrawal. Not FDIC insured.",
+      link: "/ownbank/vaults",
+      category: "yield",
+    });
+  }
+
+  if (totalBalance > 5000) {
+    opps.push({
+      id: "ondo-usdy",
+      title: "Ondo USDY (Tokenized Treasuries)",
+      description: "Earn ~5.2% APY backed by US Treasury bonds — tokenized on Ethereum. Institutional grade, transparent collateral. Requires Ondo KYC.",
+      currentProduct: "Traditional Savings/CDs",
+      currentRate: avgSavingsRate > 0 ? `${avgSavingsRate.toFixed(2)}%` : "Variable",
+      cryptoAlternative: "Ondo USDY",
+      cryptoRate: "~5.2% APY",
+      chain: "Ethereum",
+      riskNote: "KYC required by Ondo (not us). Backed by short-term US Treasuries. Smart contract risk.",
+      link: "/rwa-yields#protocol-ondo-usdy",
+      category: "rwa",
+    });
+  }
+
+  if (totalBalance > 25000) {
+    opps.push({
+      id: "ondo-ousg",
+      title: "Ondo OUSG (Short-Term US Govt Bonds)",
+      description: "For larger positions — ~4.8% APY backed by short-duration US government bonds. $5,000+ minimum. Institutional-grade RWA.",
+      currentProduct: "CD/Bond Portfolio",
+      currentRate: avgSavingsRate > 0 ? `${avgSavingsRate.toFixed(2)}%` : "Variable",
+      cryptoAlternative: "Ondo OUSG",
+      cryptoRate: "~4.8% APY",
+      chain: "Ethereum",
+      riskNote: "KYC required by Ondo. Accredited investor requirements may apply. $5K minimum.",
+      link: "/rwa-yields#protocol-ondo-ousg",
+      category: "rwa",
+    });
+  }
+
+  if (hasBrokerage || totalBalance > 10000) {
+    opps.push({
+      id: "centrifuge",
+      title: "Centrifuge (Real-World Lending)",
+      description: "Earn 4–10% APY from tokenized invoices, mortgages, and trade finance — real economic activity, not speculation.",
+      currentProduct: "Brokerage/Investment Account",
+      currentRate: "Market returns",
+      cryptoAlternative: "Centrifuge Pools",
+      cryptoRate: "4–10% APY",
+      chain: "Ethereum",
+      riskNote: "Credit risk on underlying loans. Smart contract risk. Various pool minimums.",
+      link: "/rwa-yields#protocol-centrifuge",
+      category: "rwa",
+    });
+  }
+
+  return opps;
+}
+
+function CryptoOpportunities({ products }: { products: any[] }) {
+  const [decisions, setDecisions] = useState<Record<string, "accepted" | "declined">>({});
+  const opps = generateCryptoOpportunities(products);
+
+  if (opps.length === 0) return null;
+
+  const handleDecision = (oppId: string, decision: "accepted" | "declined") => {
+    setDecisions(prev => ({ ...prev, [oppId]: decision }));
+  };
+
+  const undecided = opps.filter(o => !decisions[o.id]);
+  const accepted = opps.filter(o => decisions[o.id] === "accepted");
+  const declined = opps.filter(o => decisions[o.id] === "declined");
+
+  return (
+    <div className="space-y-4" data-testid="section-crypto-opportunities">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-amber-500" />
+        <h2 className="text-base sm:text-lg font-semibold">Crypto Yield Alternatives</h2>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Based on what we found in your statement, here are crypto alternatives that could earn more on the same capital — all non-custodial, meaning you keep your keys. Review each one and decide if it's worth exploring.
+      </p>
+
+      {undecided.length > 0 && (
+        <div className="space-y-3">
+          {undecided.map(opp => (
+            <Card key={opp.id} data-testid={`crypto-opp-${opp.id}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                      <Globe className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{opp.title}</p>
+                      <Badge variant="outline" className="text-[10px] mt-0.5">{opp.chain}</Badge>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 shrink-0">
+                    {opp.cryptoRate}
+                  </Badge>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-3">{opp.description}</p>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="p-2 rounded bg-muted/50 text-center">
+                    <p className="text-[10px] text-muted-foreground">Your Current</p>
+                    <p className="text-sm font-semibold">{opp.currentRate}</p>
+                    <p className="text-[10px] text-muted-foreground">{opp.currentProduct}</p>
+                  </div>
+                  <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/20 text-center">
+                    <p className="text-[10px] text-muted-foreground">Crypto Alternative</p>
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{opp.cryptoRate}</p>
+                    <p className="text-[10px] text-muted-foreground">{opp.cryptoAlternative}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-1.5 mb-3 p-2 rounded bg-amber-50 dark:bg-amber-950/20">
+                  <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-amber-700 dark:text-amber-300">{opp.riskNote}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    onClick={() => handleDecision(opp.id, "accepted")}
+                    data-testid={`button-accept-${opp.id}`}
+                  >
+                    <ThumbsUp className="h-3.5 w-3.5 mr-1.5" />
+                    I'm Interested
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleDecision(opp.id, "declined")}
+                    data-testid={`button-decline-${opp.id}`}
+                  >
+                    <ThumbsDown className="h-3.5 w-3.5 mr-1.5" />
+                    Not Now
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {accepted.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+            <ThumbsUp className="h-3.5 w-3.5" />
+            You're Interested ({accepted.length})
+          </h3>
+          {accepted.map(opp => (
+            <div key={opp.id} className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/10" data-testid={`accepted-opp-${opp.id}`}>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">{opp.title}</p>
+                  <p className="text-xs text-muted-foreground">{opp.cryptoRate} on {opp.chain}</p>
+                </div>
+              </div>
+              <a href={opp.link} data-testid={`link-explore-${opp.id}`}>
+                <Button size="sm" variant="default" className="bg-emerald-600 hover:bg-emerald-700">
+                  <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                  Explore
+                </Button>
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {declined.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-1.5 text-muted-foreground">
+            <ThumbsDown className="h-3.5 w-3.5" />
+            Passed ({declined.length})
+          </h3>
+          {declined.map(opp => (
+            <div key={opp.id} className="flex items-center justify-between p-2 rounded-lg border bg-muted/30" data-testid={`declined-opp-${opp.id}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{opp.title}</span>
+                <Badge variant="outline" className="text-[10px]">{opp.cryptoRate}</Badge>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs h-7"
+                onClick={() => setDecisions(prev => {
+                  const next = { ...prev };
+                  delete next[opp.id];
+                  return next;
+                })}
+                data-testid={`button-reconsider-${opp.id}`}
+              >
+                Reconsider
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <HardDrive className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Need a Cold Wallet?</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                To use any of these crypto alternatives, you'll need a wallet to hold your keys. Check the Cold Wallets tab in your Recommendations Hub to find the right one for your needs.
+              </p>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <a href="/ownbank" data-testid="link-cold-wallets-from-statements">
+                  <Button size="sm" variant="outline" className="text-xs h-7">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Cold Wallet Guide
+                  </Button>
+                </a>
+                <a href="/setup-guide" data-testid="link-setup-from-statements">
+                  <Button size="sm" variant="outline" className="text-xs h-7">
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Setup Guide
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <p className="text-[10px] text-muted-foreground text-center max-w-md mx-auto">
+        These suggestions are informational only. Crypto investments carry risk and are not FDIC insured. Upload new statements anytime to get updated recommendations as rates change.
+      </p>
     </div>
   );
 }

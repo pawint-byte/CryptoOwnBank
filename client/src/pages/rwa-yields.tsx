@@ -838,6 +838,13 @@ function EarningStatusSection() {
             You haven't started earning with any protocols yet. Pick one above to get started — Soil Protocol is the easiest (no KYC, $50 minimum).
           </p>
         )}
+
+        <div className="pt-3 mt-3 border-t border-muted">
+          <a href="/ownbank" className="text-xs text-primary hover:underline flex items-center gap-1.5" data-testid="link-cold-wallet-guide">
+            <Shield className="h-3.5 w-3.5" />
+            Need a cold wallet? Compare wallets based on your portfolio →
+          </a>
+        </div>
       </CardContent>
     </Card>
   );

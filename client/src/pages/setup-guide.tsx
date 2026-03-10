@@ -111,7 +111,7 @@ const toolkits: Toolkit[] = [
           "IMPORTANT: Always buy directly from the manufacturer's website — never from third-party Amazon/eBay sellers (risk of tampered devices)",
           "While waiting for your cold wallet to arrive, you can proceed with steps 3-5 using just the Xaman hot wallet. Add the cold wallet connection later",
         ],
-        tip: "The Ledger Nano X is the most common choice for XRPL because it pairs directly with Xaman via Bluetooth. But any of these work — pick the one that fits your budget and comfort level.",
+        tip: "The Ledger Nano X is the most common choice for XRPL because it pairs directly with Xaman via Bluetooth. But any of these work — pick the one that fits your budget and comfort level. Compare all cold wallets in the Cold Wallets tab of your Recommendations Hub on the OwnBank dashboard.",
       },
       {
         number: 3,

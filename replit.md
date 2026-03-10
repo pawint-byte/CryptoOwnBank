@@ -55,7 +55,7 @@ Preferred communication style: Simple, everyday language.
 - **Tiers**: Free, Premium (monthly/annual), and future Pro. Features gated by tier (e.g., number of exchanges/wallets, history depth, tax reports).
 - **Gating**: Server-side enforced limits with 403 responses and frontend `UpgradePrompt`. Admin bypass for testing.
 - **CSV Import**: Supports Ledger Live, Yahoo Finance, CoinTracker, and generic CSV formats.
-- **Statement Insights**: PDF statement upload for comparing financial products against alternatives (Soil Treasury, HY Savings, T-Bills).
+- **Statement Insights**: PDF statement upload for comparing financial products against alternatives (Soil Treasury, HY Savings, T-Bills). Now includes "Crypto Yield Alternatives" section showing accept/decline recommendations (Soil vaults, Ondo, Centrifuge) based on detected traditional products. All statement data self-destructs after 15 minutes — PDF is never stored, extracted data auto-deleted from database via server-side timer. Frontend shows live countdown banner. Privacy-first "Mission Impossible" approach.
 - **Onboarding Checklist**: 4-step guided funnel on dashboard for new users: (1) Earn Yield (connect XRPL wallet + deposit to Soil), (2) Add Wallet Addresses (paste cold wallet addresses across 24 chains), (3) Get Evaluated (Recommendations Hub analysis), (4) Go Premium. Auto-detects completion from existing state (XRPL store, wallet count, explicit user clicks). Client-side only (localStorage), dismissible, collapses when minimized. Component: `client/src/components/onboarding-checklist.tsx`.
 - **Migration Guide**: Guided walkthrough for new users transitioning from other platforms.
 - **Data Reconciliation**: Dedicated page for reviewing and truing up portfolio data, including duplicate detection, side-by-side comparison, and purchase lot management for wallet entries.
@@ -95,3 +95,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Analytics
 - Google Analytics 4 (GA4)
+
+### Recent Features
+- **Cold Wallets Tab** (`recommendations-hub.tsx`): Portfolio-aware cold wallet guide inside the Recommendations Hub. Data model in `client/src/lib/cold-wallet-data.ts` covers 9 wallets (Ledger Nano X/S+/Stax, ELLIPAL, Arculus, SafePal, Trezor T/Safe 3, CypheRock). Personalized ranking by portfolio coverage %, quick picks, chain filter, earning opportunities per wallet, buy buttons. Premium-gated for personalized recommendations. Cross-linked from Earn & Yield EarningStatusSection and Setup Guide.
+- **Statement Self-Destruct**: All statement analysis data auto-deletes from database 15 minutes after upload via server-side `setTimeout`. Frontend shows live countdown banner (amber → red at 2min). PDF buffer is never stored. Privacy-first approach.

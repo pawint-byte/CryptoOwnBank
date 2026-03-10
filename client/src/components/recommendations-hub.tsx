@@ -16,12 +16,15 @@ import {
   getAssetWarnings,
   getBestInClass,
 } from "@/lib/custody-knowledge";
+import { getWalletRecommendations, getQuickPicks, COLD_WALLETS } from "@/lib/cold-wallet-data";
+import type { ColdWallet, WalletRecommendation } from "@/lib/cold-wallet-data";
 import type { AssetRecommendation, StakedContext, CustodyType, BestInClassEntry } from "@/lib/custody-knowledge";
 import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
   CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
   Zap, Lock, Sparkles, Globe, Building2, Trophy, Crown, ShieldCheck,
+  HardDrive, ShoppingCart, Star, Cpu, CreditCard, Wifi, WifiOff,
 } from "lucide-react";
 
 interface WalletData {
@@ -249,6 +252,10 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
             <TabsTrigger value="defi" data-testid="tab-defi-tradfi">DeFi vs TradFi</TabsTrigger>
             <TabsTrigger value="prices" data-testid="tab-prices">Prices</TabsTrigger>
             <TabsTrigger value="alerts" data-testid="tab-alerts">Alerts</TabsTrigger>
+            <TabsTrigger value="coldwallets" data-testid="tab-coldwallets">
+              <HardDrive className="h-3.5 w-3.5 mr-1" />
+              Cold Wallets
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="optimize" data-testid="tab-content-optimize">
@@ -837,9 +844,402 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="coldwallets" data-testid="tab-content-coldwallets">
+            <ColdWalletTab heldAssets={Object.keys(consolidatedAssets)} isFullHub={isFullHub} />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
+  );
+}
+
+function ColdWalletTab({ heldAssets, isFullHub }: { heldAssets: string[]; isFullHub: boolean }) {
+  const [expandedWallet, setExpandedWallet] = useState<string | null>(null);
+  const [filterChain, setFilterChain] = useState<string>("all");
+
+  const walletRecs = getWalletRecommendations(heldAssets);
+  const quickPicks = getQuickPicks();
+  const hasAssets = heldAssets.length > 0;
+
+  const allChains = Array.from(new Set(COLD_WALLETS.flatMap(w => w.supportedChains))).sort();
+
+  const filteredWallets = filterChain === "all"
+    ? COLD_WALLETS
+    : COLD_WALLETS.filter(w => w.supportedChains.some(c => c.toLowerCase() === filterChain.toLowerCase()));
+
+  const walletTypeIcon = (type: ColdWallet["type"]) => {
+    switch (type) {
+      case "hardware": return <Cpu className="h-4 w-4" />;
+      case "card": return <CreditCard className="h-4 w-4" />;
+      case "air-gapped": return <WifiOff className="h-4 w-4" />;
+    }
+  };
+
+  const topRec = walletRecs[0];
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <HardDrive className="h-5 w-5 text-blue-500" />
+        <h3 className="font-semibold">Cold Wallet Guide</h3>
+      </div>
+      <p className="text-sm text-muted-foreground mb-5">
+        Compare cold wallets based on your holdings, find which one covers the most of what you own, and discover earning opportunities you might be missing.
+      </p>
+
+      {hasAssets && isFullHub && topRec && (
+        <div className="border border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 mb-6" data-testid="cold-wallet-recommendation">
+          <div className="flex items-start gap-3">
+            <Shield className="h-8 w-8 text-blue-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-lg text-blue-800 dark:text-blue-200">
+                Top Pick for Your Portfolio: {topRec.wallet.name}
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Covers {topRec.coveredAssets.length} of {heldAssets.length} assets you hold ({topRec.coveragePercent}% coverage)
+                {topRec.uncoveredAssets.length > 0 && (
+                  <span> — not covered: {topRec.uncoveredAssets.join(", ")}</span>
+                )}
+              </p>
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                <Badge variant="outline" className="text-xs border-blue-300 dark:border-blue-700">{topRec.wallet.price}</Badge>
+                <Badge variant="outline" className="text-xs border-blue-300 dark:border-blue-700">{topRec.wallet.type}</Badge>
+                {topRec.wallet.xrplCompatible && <Badge className="text-xs bg-blue-600">XRPL</Badge>}
+                {topRec.wallet.stellarCompatible && <Badge className="text-xs bg-purple-600">Stellar</Badge>}
+                <a
+                  href={topRec.wallet.buyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto"
+                  data-testid="button-buy-top-pick"
+                >
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                    Buy {topRec.wallet.name}
+                  </Button>
+                </a>
+              </div>
+
+              {topRec.missedEarnings.length > 0 && (
+                <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-1.5 mb-2">
+                    <Sparkles className="h-4 w-4" />
+                    Earning opportunities you'd unlock with this wallet:
+                  </p>
+                  <div className="space-y-1.5">
+                    {topRec.missedEarnings.map((opp, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span className="text-amber-800 dark:text-amber-200">{opp.protocol}</span>
+                          <span className="text-xs text-muted-foreground">({opp.chain})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{opp.apy} APY</Badge>
+                          <a href={opp.link} className="text-primary hover:underline" data-testid={`missed-earning-link-${i}`}>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {hasAssets && !isFullHub && (
+        <PremiumLock feature="Upgrade to see personalized cold wallet recommendations based on your portfolio, coverage analysis, and missed earning opportunities." />
+      )}
+
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Star className="h-4 w-4 text-amber-500" />
+          <h4 className="font-medium">Quick Picks</h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {quickPicks.map(pick => {
+            const wallet = COLD_WALLETS.find(w => w.id === pick.walletId);
+            if (!wallet) return null;
+            return (
+              <div
+                key={pick.label}
+                className="border rounded-lg p-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer"
+                onClick={() => setExpandedWallet(expandedWallet === wallet.id ? null : wallet.id)}
+                data-testid={`quick-pick-${pick.label.replace(/\s+/g, "-").toLowerCase()}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="secondary" className="text-xs">{pick.label}</Badge>
+                  <span className="text-xs text-muted-foreground ml-auto">{wallet.price}</span>
+                </div>
+                <p className="font-medium text-sm">{wallet.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{pick.reason}</p>
+                <a
+                  href={wallet.buyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                  onClick={e => e.stopPropagation()}
+                  data-testid={`quick-pick-buy-${wallet.id}`}
+                >
+                  <ShoppingCart className="h-3 w-3" />
+                  Buy Now
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {hasAssets && isFullHub && walletRecs.length > 1 && (
+        <div className="mb-6">
+          <h4 className="font-medium mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Coverage Ranking for Your Portfolio
+          </h4>
+          <p className="text-xs text-muted-foreground mb-3">
+            Ranked by how many of your {heldAssets.length} assets each wallet supports.
+          </p>
+          <div className="space-y-2">
+            {walletRecs.map((rec, i) => (
+              <div
+                key={rec.wallet.id}
+                className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                  i === 0 ? "border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-950/10" : "hover:border-muted-foreground/30"
+                } ${expandedWallet === rec.wallet.id ? "ring-1 ring-blue-400" : ""}`}
+                onClick={() => setExpandedWallet(expandedWallet === rec.wallet.id ? null : rec.wallet.id)}
+                data-testid={`wallet-rank-${rec.wallet.id}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-muted-foreground w-6">#{i + 1}</span>
+                    <span className="shrink-0">{walletTypeIcon(rec.wallet.type)}</span>
+                    <div>
+                      <span className="font-medium">{rec.wallet.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{rec.wallet.price}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">{rec.coveragePercent}%</p>
+                      <p className="text-xs text-muted-foreground">{rec.coveredAssets.length}/{heldAssets.length} assets</p>
+                    </div>
+                    <div className="w-16 bg-muted rounded-full h-2">
+                      <div className="bg-blue-500 rounded-full h-2 transition-all" style={{ width: `${rec.coveragePercent}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {expandedWallet === rec.wallet.id && (
+                  <div className="mt-3 pt-3 border-t space-y-3" onClick={e => e.stopPropagation()}>
+                    <div className="flex flex-wrap gap-1.5">
+                      {rec.wallet.xrplCompatible && <Badge className="text-xs bg-blue-600">XRPL</Badge>}
+                      {rec.wallet.ethereumCompatible && <Badge className="text-xs bg-indigo-600">Ethereum</Badge>}
+                      {rec.wallet.stellarCompatible && <Badge className="text-xs bg-purple-600">Stellar</Badge>}
+                      {rec.wallet.features.map(f => (
+                        <Badge key={f} variant="outline" className="text-xs">{f}</Badge>
+                      ))}
+                    </div>
+                    {rec.coveredAssets.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">Covers your: {rec.coveredAssets.join(", ")}</p>
+                      </div>
+                    )}
+                    {rec.uncoveredAssets.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Does NOT cover: {rec.uncoveredAssets.join(", ")}</p>
+                      </div>
+                    )}
+                    {rec.wallet.earningOpps.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Earning opportunities accessible:</p>
+                        <div className="space-y-1">
+                          {rec.wallet.earningOpps.map((opp, oi) => (
+                            <div key={oi} className="flex items-center justify-between text-xs px-2 py-1 bg-muted/50 rounded">
+                              <span>{opp.protocol} ({opp.chain})</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium">{opp.apy}</span>
+                                <a href={opp.link} className="text-primary hover:underline">
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <a href={rec.wallet.buyUrl} target="_blank" rel="noopener noreferrer" data-testid={`buy-wallet-${rec.wallet.id}`}>
+                        <Button size="sm" variant="default">
+                          <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                          Buy {rec.wallet.name}
+                        </Button>
+                      </a>
+                      <a href="/setup-guide" data-testid={`setup-link-${rec.wallet.id}`}>
+                        <Button size="sm" variant="outline">Setup Guide</Button>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            All Cold Wallets — Comparison
+          </h4>
+          <select
+            value={filterChain}
+            onChange={e => setFilterChain(e.target.value)}
+            className="text-xs border rounded px-2 py-1 bg-background"
+            data-testid="select-filter-chain"
+          >
+            <option value="all">All Chains</option>
+            {allChains.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          {filteredWallets.map(wallet => {
+            const isExpanded = expandedWallet === wallet.id;
+            return (
+              <div
+                key={wallet.id}
+                className={`border rounded-lg p-3 cursor-pointer transition-colors hover:border-muted-foreground/30 ${isExpanded ? "ring-1 ring-blue-400" : ""}`}
+                onClick={() => setExpandedWallet(isExpanded ? null : wallet.id)}
+                data-testid={`wallet-card-${wallet.id}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="shrink-0">{walletTypeIcon(wallet.type)}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{wallet.name}</span>
+                        <Badge variant="outline" className="text-xs capitalize">{wallet.type === "air-gapped" ? "Air-Gapped" : wallet.type}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{wallet.bestFor}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-semibold text-sm">{wallet.price}</span>
+                    <a
+                      href={wallet.buyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      data-testid={`buy-link-${wallet.id}`}
+                    >
+                      <Button size="sm" variant="outline" className="h-7">
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        Buy
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {wallet.xrplCompatible && <Badge className="text-[10px] px-1.5 py-0 h-4 bg-blue-600">XRPL</Badge>}
+                  {wallet.ethereumCompatible && <Badge className="text-[10px] px-1.5 py-0 h-4 bg-indigo-600">ETH</Badge>}
+                  {wallet.stellarCompatible && <Badge className="text-[10px] px-1.5 py-0 h-4 bg-purple-600">XLM</Badge>}
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">{wallet.supportedChains.length} chains</Badge>
+                </div>
+
+                {isExpanded && (
+                  <div className="mt-3 pt-3 border-t space-y-3" onClick={e => e.stopPropagation()}>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Features</p>
+                      <div className="flex flex-wrap gap-1">
+                        {wallet.features.map(f => (
+                          <Badge key={f} variant="outline" className="text-xs">{f}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Supported Chains ({wallet.supportedChains.length})</p>
+                      <div className="flex flex-wrap gap-1">
+                        {wallet.supportedChains.map(c => (
+                          <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    {wallet.earningOpps.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1.5">Earning Opportunities ({wallet.earningOpps.length})</p>
+                        <div className="space-y-1">
+                          {wallet.earningOpps.map((opp, oi) => (
+                            <div key={oi} className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/50 rounded">
+                              <div className="flex items-center gap-1.5">
+                                <Globe className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <span>{opp.protocol}</span>
+                                <span className="text-muted-foreground">({opp.chain})</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className="text-xs">{opp.apy}</Badge>
+                                <a href={opp.link} className="text-primary hover:underline" data-testid={`wallet-opp-${wallet.id}-${oi}`}>
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <a href={wallet.buyUrl} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm">
+                          <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                          Buy {wallet.name}
+                        </Button>
+                      </a>
+                      <a href="/setup-guide">
+                        <Button size="sm" variant="outline">Setup Guide</Button>
+                      </a>
+                      <a href="/rwa-yields">
+                        <Button size="sm" variant="outline">Earn & Yield</Button>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+        <div className="flex items-start gap-2">
+          <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium text-blue-800 dark:text-blue-200">Your Keys, Your Crypto</p>
+            <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
+              Cold wallets store your private keys offline so no exchange or app can freeze, seize, or lose your funds. CryptoOwnBank never holds your keys — we help you manage what's already yours.
+            </p>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <a href="/setup-guide" className="text-xs text-primary hover:underline flex items-center gap-1" data-testid="link-setup-guide-cta">
+                XRPL Setup Guide <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+              <a href="/rwa-yields" className="text-xs text-primary hover:underline flex items-center gap-1" data-testid="link-earn-yield-cta">
+                Earn & Yield Explorer <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+              <a href="/chain-guide" className="text-xs text-primary hover:underline flex items-center gap-1" data-testid="link-chain-guide-cta">
+                Chain Guide <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
