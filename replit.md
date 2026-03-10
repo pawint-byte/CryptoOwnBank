@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation.
 - **XRPL Integration**: xrpl.js, Xumm SDK, Ledger HW libraries.
 - **Mobile Responsiveness**: Optimized for mobile with responsive breakpoints, compact layouts, hidden columns, and abbreviated data.
-- **Key Pages**: CryptoBroker (Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings) and OwnBank XRPL (Dashboard with Soil vault tracking, Vaults, Token Manager, DEX Trading, Send & Receive, Withdraw Interest, History, Referrals).
+- **Key Pages**: CryptoBroker (Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings) and OwnBank XRPL (Dashboard with Soil vault tracking, Vaults, Token Manager, DEX Trading, Send & Receive, Transfer Between Wallets, Withdraw Interest, History, Referrals).
 - **XRPL dApp Interface (Phase 1)**: Token Manager (trustline management with popular token quick-add), DEX Trading (order book, limit/market orders via OfferCreate/OfferCancel), Send & Receive (payments with contact book, QR receive, destination tag support). All pages include collapsible "Old Way vs New Way" educational headers and contextual tooltips.
 - **Payment Corridor Messaging**: Landing page and FAQ position CryptoOwnBank as a non-custodial payment tooling layer for consumers and small businesses — alternative to Stripe/PayPal with XRPL's bridge currency (XRP) enabling cross-currency payments in 4 seconds for $0.000001. Key distinction: "We're the workbench, not the payment processor." Dedicated landing section with fee comparison table, FAQ group ("Payments & Business") with 8 items covering merchant usage, Stripe comparison, cross-currency, chargebacks, freelancer invoicing, legal considerations.
 

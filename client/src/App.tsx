@@ -39,6 +39,7 @@ import SigningOptions from "@/pages/signing-options";
 import OwnBankTokens from "@/pages/ownbank-tokens";
 import OwnBankDex from "@/pages/ownbank-dex";
 import OwnBankSend from "@/pages/ownbank-send";
+import OwnBankTransfer from "@/pages/ownbank-transfer";
 import Contact from "@/pages/contact";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
@@ -113,6 +114,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/tokens" component={OwnBankTokens} />
         <Route path="/ownbank/dex" component={OwnBankDex} />
         <Route path="/ownbank/send" component={OwnBankSend} />
+        <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
         <Route path="/price-alerts" component={PriceAlerts} />
         <Route path="/wallets" component={WalletsPage} />
