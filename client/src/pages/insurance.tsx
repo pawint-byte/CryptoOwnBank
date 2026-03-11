@@ -46,12 +46,12 @@ const INSURANCE_PROTOCOLS: InsuranceProtocol[] = [
     description: "The largest and most established DeFi insurance protocol. Nexus Mutual operates as a discretionary mutual where members share risk. It covers smart contract failures, protocol exploits, and custodian hacks.",
     coverTypes: ["Smart Contract Cover", "Protocol Cover", "Custody Cover", "Yield Token Cover"],
     minCover: "No strict minimum (gas fees apply)",
-    premiumRange: "2\u20138% annually depending on protocol risk",
+    premiumRange: "2–8% annually depending on protocol risk",
     claimProcess: "File claim with evidence \u2192 Community assessment \u2192 Vote \u2192 Payout if approved",
     steps: [
       "Visit app.nexusmutual.io and connect your Ethereum wallet",
-      "Browse available cover products \u2014 search by protocol name or category",
-      "Select your cover amount and duration (30\u2013365 days)",
+      "Browse available cover products — search by protocol name or category",
+      "Select your cover amount and duration (30–365 days)",
       "Pay the premium in ETH or NXM tokens",
       "If a covered event occurs, file a claim through the app with supporting evidence",
     ],
@@ -66,14 +66,14 @@ const INSURANCE_PROTOCOLS: InsuranceProtocol[] = [
     description: "A multi-chain DeFi insurance protocol offering portfolio cover across many chains and protocols. InsurAce stands out with its low premiums and ability to bundle multiple covers into a single policy.",
     coverTypes: ["Smart Contract Cover", "Stablecoin De-peg Cover", "Bridge Cover", "CEX Cover"],
     minCover: "$100 equivalent",
-    premiumRange: "1\u20135% annually (portfolio discounts available)",
+    premiumRange: "1–5% annually (portfolio discounts available)",
     claimProcess: "File claim within 15 days \u2192 Advisory committee review \u2192 Community vote \u2192 Payout",
     steps: [
       "Visit app.insurace.io and connect your wallet on the chain of your choice",
       "Browse the cover marketplace or use the portfolio builder to bundle multiple covers",
       "Select cover amount, duration, and review the premium quote",
       "Purchase cover by paying the premium in the supported token",
-      "Monitor your active covers in the dashboard \u2014 file a claim if a covered event occurs",
+      "Monitor your active covers in the dashboard — file a claim if a covered event occurs",
     ],
   },
   {
@@ -86,7 +86,7 @@ const INSURANCE_PROTOCOLS: InsuranceProtocol[] = [
     description: "A decentralized, peer-to-peer insurance platform where anyone can create coverage pools and provide liquidity to earn premiums. Offers a permissionless model where the community decides what gets covered.",
     coverTypes: ["Smart Contract Cover", "Stablecoin Cover", "Exchange Cover", "Custom Pools"],
     minCover: "Varies by pool",
-    premiumRange: "2\u20137% annually depending on pool",
+    premiumRange: "2–7% annually depending on pool",
     claimProcess: "File claim \u2192 Voting period (7 days) \u2192 Appeal option \u2192 Final decision \u2192 Payout",
     steps: [
       "Visit app.bridgemutual.io and connect your Ethereum, BSC, or Polygon wallet",
@@ -101,7 +101,7 @@ const INSURANCE_PROTOCOLS: InsuranceProtocol[] = [
     name: "Etherisc",
     covers: "Parametric Insurance (Flight Delay, Crop Insurance, Crypto Wallet Protection)",
     chains: ["Ethereum", "Gnosis Chain"],
-    howItWorks: "Etherisc focuses on parametric insurance \u2014 policies that pay out automatically based on verifiable data (e.g., flight delays confirmed by oracles). No manual claim process needed for parametric products. Smart contracts trigger payouts when predefined conditions are met, using on-chain oracles for data verification.",
+    howItWorks: "Etherisc focuses on parametric insurance — policies that pay out automatically based on verifiable data (e.g., flight delays confirmed by oracles). No manual claim process needed for parametric products. Smart contracts trigger payouts when predefined conditions are met, using on-chain oracles for data verification.",
     link: "https://etherisc.com",
     description: "A decentralized insurance protocol specializing in parametric insurance products. Unlike traditional DeFi insurance focused on smart contract risk, Etherisc bridges blockchain insurance with real-world events like flight delays and crop failures.",
     coverTypes: ["Flight Delay Insurance", "Crop Insurance", "Crypto Wallet Protection", "Parametric Products"],
@@ -113,7 +113,7 @@ const INSURANCE_PROTOCOLS: InsuranceProtocol[] = [
       "Choose a product (e.g., flight delay insurance for an upcoming trip)",
       "Enter the required details (flight number, date, etc.) and review the quote",
       "Purchase the policy by paying the premium with supported tokens",
-      "For parametric products, payouts are triggered automatically \u2014 no claim filing needed",
+      "For parametric products, payouts are triggered automatically — no claim filing needed",
     ],
   },
 ];
@@ -127,7 +127,7 @@ interface RecommendationItem {
 const RECOMMENDATIONS: RecommendationItem[] = [
   {
     title: "Cover your DeFi positions first",
-    description: "If you\u2019re depositing into yield protocols like Soil, Centrifuge, or Maple Finance, consider smart contract cover from Nexus Mutual or InsurAce. This protects against protocol exploits \u2014 the biggest risk in DeFi.",
+    description: "If you're depositing into yield protocols like Soil, Centrifuge, or Maple Finance, consider smart contract cover from Nexus Mutual or InsurAce. This protects against protocol exploits — the biggest risk in DeFi.",
     icon: Shield,
   },
   {
@@ -137,12 +137,12 @@ const RECOMMENDATIONS: RecommendationItem[] = [
   },
   {
     title: "Bundle covers to save on premiums",
-    description: "InsurAce offers portfolio discounts when you bundle multiple covers. If you\u2019re using several protocols, this can significantly reduce your overall premium cost.",
+    description: "InsurAce offers portfolio discounts when you bundle multiple covers. If you're using several protocols, this can significantly reduce your overall premium cost.",
     icon: Layers,
   },
   {
     title: "Understand the limitations",
-    description: "DeFi insurance is not the same as traditional insurance. It doesn\u2019t cover market losses, impermanent loss, or regulatory actions. It specifically covers technical failures like smart contract exploits and oracle manipulation.",
+    description: "DeFi insurance is not the same as traditional insurance. It doesn't cover market losses, impermanent loss, or regulatory actions. It specifically covers technical failures like smart contract exploits and oracle manipulation.",
     icon: AlertTriangle,
   },
 ];

@@ -73,7 +73,7 @@ const xrplToolsComparison = [
   {
     oldIcon: Landmark,
     oldTitle: "Wire Transfer (SWIFT)",
-    oldDesc: "Fill out forms, pay $25\u201350 fee, wait 1\u20135 business days, only during business hours",
+    oldDesc: "Fill out forms, pay $25–50 fee, wait 1–5 business days, only during business hours",
     newIcon: Send,
     newTitle: "Send & Receive",
     newDesc: "Enter address, sign with your wallet, delivered in 4 seconds, costs $0.000001",
@@ -427,19 +427,19 @@ const onChainReasons = [
     points: [
       "When you connect your cold wallet (Ledger or Xumm), your private keys never leave your device.",
       "We never see them, store them, or have any ability to move your funds.",
-      "Direct bank integrations require someone to handle your fiat and personal banking details \u2014 introducing KYC requirements, potential data breaches, and counterparty risk.",
+      "Direct bank integrations require someone to handle your fiat and personal banking details — introducing KYC requirements, potential data breaches, and counterparty risk.",
     ],
-    highlight: "Your assets stay in your control, not ours or anyone else\u2019s. That\u2019s what \u201Cbe your own bank\u201D really means.",
+    highlight: "Your assets stay in your control, not ours or anyone else's. That's what \u201Cbe your own bank\u201D really means.",
   },
   {
     icon: Ban,
     title: "No Regulatory Overload = Faster, Simpler Experience",
     points: [
       "No ID, proof of address, or banking info required to use the site.",
-      "Instant onboarding in seconds \u2014 not days or weeks.",
+      "Instant onboarding in seconds — not days or weeks.",
       "No hidden compliance fees or account freezes.",
     ],
-    highlight: "We keep things non-custodial and permissionless \u2014 exactly how the blockchain was designed to work.",
+    highlight: "We keep things non-custodial and permissionless — exactly how the blockchain was designed to work.",
   },
   {
     icon: DollarSign,
@@ -447,9 +447,9 @@ const onChainReasons = [
     points: [
       "Every layer of fiat handling adds fees (bank wires, ACH, compliance overhead, partner cuts).",
       "By keeping everything on-chain (RLUSD \u2192 Soil vaults \u2192 interest withdrawals), we avoid those costs entirely.",
-      "You keep more of your 5\u20138% fixed yield with no hidden \u201Cprocessing\u201D or \u201Cwithdrawal\u201D fees from us.",
+      "You keep more of your 5–8% fixed yield with no hidden \u201Cprocessing\u201D or \u201Cwithdrawal\u201D fees from us.",
     ],
-    highlight: "The system stays lean so we can focus on features like auto-withdrawals and XLS-66 lending \u2014 not compliance paperwork.",
+    highlight: "The system stays lean so we can focus on features like auto-withdrawals and XLS-66 lending — not compliance paperwork.",
   },
 ];
 
@@ -459,13 +459,13 @@ const onChainSteps = [
     icon: Coins,
     title: "Buy RLUSD",
     description: "Use any trusted exchange (Binance, Kraken, Coinbase, etc.). Buy RLUSD and withdraw it directly to your XRPL wallet address.",
-    note: "We provide affiliate links so you may earn rewards for using them \u2014 disclosed transparently.",
+    note: "We provide affiliate links so you may earn rewards for using them — disclosed transparently.",
   },
   {
     step: 2,
     icon: Fingerprint,
     title: "Connect Your Cold Wallet",
-    description: "Scan with Xumm or plug in Ledger. Takes seconds \u2014 no forms, no ID, no waiting.",
+    description: "Scan with Xumm or plug in Ledger. Takes seconds — no forms, no ID, no waiting.",
   },
   {
     step: 3,
@@ -487,35 +487,35 @@ const faqGroups = [
     items: [
       {
         q: "Why was CryptoOwnBank created? (And why should I use it?)",
-        a: "CryptoOwnBank was created for one reason: to help people truly become their own bank \u2014 without giving up control of their assets. Most tools today force you to choose between: custodial platforms (Uphold, Binance, Coinbase) that hold your keys and pay low yields (3\u20136%), traditional banks that pay almost nothing (0.01\u20134.5%) and control your money, or raw blockchain explorers and DeFi apps that feel complicated and overwhelming. We built CryptoOwnBank to fix all three problems at once: (1) Full ownership \u2014 your cold wallet (Ledger, ELLIPAL, Arculus, etc.) stays in control; we never see or store your private keys. (2) Real, higher yields \u2014 earn 5\u20138% fixed APR on RLUSD through Soil Protocol\u2019s real-world-asset vaults (Treasuries, private credit) with automatic compounding if you don\u2019t withdraw interest. (3) Simplicity & power \u2014 one clean dashboard to connect your wallet, track your XRPL portfolio, deposit to vaults, withdraw only the interest you want, and see everything in real time. No copy-pasting addresses, no switching apps. (4) Future-proof \u2014 built for XRPL today (RLUSD + Soil), ready for tomorrow (XLS-66 XRP lending, more protocols, multi-chain support) \u2014 all while keeping you non-custodial. The world is shifting to on-chain finance. Banks fight to keep yields low and control high. Exchanges hold your keys and limit what you can do. CryptoOwnBank flips the script: you earn more, own everything, and stay in full control. Bottom line: if you want higher yields than Uphold/Binance, true self-custody instead of trusting a third party, and a dashboard that grows with the XRPL ecosystem \u2014 CryptoOwnBank was built exactly for you. Connect your cold wallet (free, no KYC) and start today.",
+        a: "CryptoOwnBank was created for one reason: to help people truly become their own bank — without giving up control of their assets. Most tools today force you to choose between: custodial platforms (Uphold, Binance, Coinbase) that hold your keys and pay low yields (3–6%), traditional banks that pay almost nothing (0.01–4.5%) and control your money, or raw blockchain explorers and DeFi apps that feel complicated and overwhelming. We built CryptoOwnBank to fix all three problems at once: (1) Full ownership — your cold wallet (Ledger, ELLIPAL, Arculus, etc.) stays in control; we never see or store your private keys. (2) Real, higher yields — earn 5–8% fixed APR on RLUSD through Soil Protocol's real-world-asset vaults (Treasuries, private credit) with automatic compounding if you don't withdraw interest. (3) Simplicity & power — one clean dashboard to connect your wallet, track your XRPL portfolio, deposit to vaults, withdraw only the interest you want, and see everything in real time. No copy-pasting addresses, no switching apps. (4) Future-proof — built for XRPL today (RLUSD + Soil), ready for tomorrow (XLS-66 XRP lending, more protocols, multi-chain support) — all while keeping you non-custodial. The world is shifting to on-chain finance. Banks fight to keep yields low and control high. Exchanges hold your keys and limit what you can do. CryptoOwnBank flips the script: you earn more, own everything, and stay in full control. Bottom line: if you want higher yields than Uphold/Binance, true self-custody instead of trusting a third party, and a dashboard that grows with the XRPL ecosystem — CryptoOwnBank was built exactly for you. Connect your cold wallet (free, no KYC) and start today.",
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit — designed so anyone with an internet connection can participate in global commerce. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL\u2019s built-in DEX, send and receive payments in seconds, and accept crypto payments for your business \u2014 all while keeping full control via your cold wallet. Whether you\u2019re unbanked (no access to traditional finance), debanked (shut out by banks or payment processors), or simply tired of paying 2.9% to a middleman \u2014 CryptoOwnBank gives you the tools to be your own bank.",
+        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit — designed so anyone with an internet connection can participate in global commerce. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL's built-in DEX, send and receive payments in seconds, and accept crypto payments for your business — all while keeping full control via your cold wallet. Whether you're unbanked (no access to traditional finance), debanked (shut out by banks or payment processors), or simply tired of paying 2.9% to a middleman — CryptoOwnBank gives you the tools to be your own bank.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
-        a: "Banks offer 0.01\u20134.5% yield but you\u2019re an unsecured creditor \u2014 they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5\u20138% fixed APR with automatic compounding, and you own 100% \u2014 keys stay on your cold wallet, every action requires your signature. Other advantages: no KYC on our end, no bank linking, low XRPL fees (~0.0001 XRP vs $15\u201330 wire fees), interest-only withdrawals so principal keeps earning, and future XLS-66 XRP lending from the same dashboard. Banks and exchanges are convenient but take custody and pay less. CryptoOwnBank flips the script: full control, higher yields, complete transparency.",
+        a: "Banks offer 0.01–4.5% yield but you're an unsecured creditor — they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5–8% fixed APR with automatic compounding, and you own 100% — keys stay on your cold wallet, every action requires your signature. Other advantages: no KYC on our end, no bank linking, low XRPL fees (~0.0001 XRP vs $15–30 wire fees), interest-only withdrawals so principal keeps earning, and future XLS-66 XRP lending from the same dashboard. Banks and exchanges are convenient but take custody and pay less. CryptoOwnBank flips the script: full control, higher yields, complete transparency.",
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($29/mo or $199/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral \u2014 we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
+        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($29/mo or $199/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral — we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
-        a: "CryptoOwnBank supports 24 blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities \u2014 clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5\u20138% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
+        a: "CryptoOwnBank supports 24 blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities — clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5–8% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
       },
       {
         q: "Can my business accept crypto payments through CryptoOwnBank?",
-        a: "Yes. Connect your wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code with customers. Payments settle in 4 seconds for a fraction of a penny \u2014 no 2.9% processing fee, no chargebacks, no account freezes. We\u2019re the tooling layer (the workbench), not the payment processor. You and your customer transact directly on the XRPL. Consumers, freelancers, and small businesses can compete at scale without giving a cut to Stripe or PayPal.",
+        a: "Yes. Connect your wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code with customers. Payments settle in 4 seconds for a fraction of a penny — no 2.9% processing fee, no chargebacks, no account freezes. We're the tooling layer (the workbench), not the payment processor. You and your customer transact directly on the XRPL. Consumers, freelancers, and small businesses can compete at scale without giving a cut to Stripe or PayPal.",
       },
       {
         q: "What if I don't have a bank account or got debanked?",
-        a: "CryptoOwnBank was built with you in mind. 1.4 billion people worldwide are unbanked — no access to traditional finance at all. Millions more have been debanked — accounts closed, funds frozen, services denied without explanation. The XRPL doesn\u2019t require a bank account, credit check, or government ID. You don\u2019t even need to 'buy' crypto through an exchange — you can earn it directly by selling goods and services. A farmer sells produce, a buyer scans a QR code, and RLUSD lands in the farmer\u2019s wallet in 4 seconds. Then save it in a yield vault earning 5-8%, spend it by paying others who accept it, and send it to family anywhere in the world. No bank touches the money at any point. See our step-by-step guide at /setup-guide.",
+        a: "CryptoOwnBank was built with you in mind. 1.4 billion people worldwide are unbanked — no access to traditional finance at all. Millions more have been debanked — accounts closed, funds frozen, services denied without explanation. The XRPL doesn't require a bank account, credit check, or government ID. You don't even need to 'buy' crypto through an exchange — you can earn it directly by selling goods and services. A farmer sells produce, a buyer scans a QR code, and RLUSD lands in the farmer's wallet in 4 seconds. Then save it in a yield vault earning 5-8%, spend it by paying others who accept it, and send it to family anywhere in the world. No bank touches the money at any point. See our step-by-step guide at /setup-guide.",
       },
       {
         q: "Why should I join now?",
-        a: "Regulatory clarity is advancing, RLUSD is growing as the compliant stablecoin of choice, and institutional DeFi is expanding. Banks are still offering minimal yields. CryptoOwnBank lets you start earning real, fixed yield today while keeping full control of your assets \u2014 no waiting for traditional finance to catch up.",
+        a: "Regulatory clarity is advancing, RLUSD is growing as the compliant stablecoin of choice, and institutional DeFi is expanding. Banks are still offering minimal yields. CryptoOwnBank lets you start earning real, fixed yield today while keeping full control of your assets — no waiting for traditional finance to catch up.",
       },
     ],
   },
@@ -524,35 +524,35 @@ const faqGroups = [
     items: [
       {
         q: "Why do I need a cold wallet to use CryptoOwnBank?",
-        a: "To keep you in full control. We are 100% non-custodial \u2014 your private keys never leave your Ledger, ELLIPAL, Arculus, SafePal, etc. The site only reads public data and builds transactions for you to sign. Without a cold wallet, there\u2019s no way to approve deposits or withdrawals.",
+        a: "To keep you in full control. We are 100% non-custodial — your private keys never leave your Ledger, ELLIPAL, Arculus, SafePal, etc. The site only reads public data and builds transactions for you to sign. Without a cold wallet, there's no way to approve deposits or withdrawals.",
       },
       {
         q: "Is this a wallet? Do you hold my funds?",
-        a: "No \u2014 we are 100% non-custodial. We never hold, control, or have access to your funds or private keys. All actions (deposits, withdrawals) are signed directly from your own cold wallet. The dashboard is just a secure interface to view balances and interact with XRPL + Soil. Your keys stay on your Ledger or Xumm device at all times.",
+        a: "No — we are 100% non-custodial. We never hold, control, or have access to your funds or private keys. All actions (deposits, withdrawals) are signed directly from your own cold wallet. The dashboard is just a secure interface to view balances and interact with XRPL + Soil. Your keys stay on your Ledger or Xumm device at all times.",
       },
       {
         q: "What wallets and hardware devices are supported?",
-        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking: paste any wallet address from Ledger, CypheRock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet \u2014 we support 24 blockchains. We provide wallet-specific staking guides for each hardware wallet, so you get step-by-step instructions tailored to your exact device. Ethereum addresses automatically detect all ERC-20 tokens. Hedera pulls your full HBAR balance including staked amounts. VeChain auto-detects VET + VTHO. Cosmos includes staking delegations. For exchanges: connect via API keys (Coinbase, Kraken, Crypto.com, Binance, and more). You can also import transactions from Ledger Live or Yahoo Finance CSV files.",
+        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking: paste any wallet address from Ledger, CypheRock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet — we support 24 blockchains. We provide wallet-specific staking guides for each hardware wallet, so you get step-by-step instructions tailored to your exact device. Ethereum addresses automatically detect all ERC-20 tokens. Hedera pulls your full HBAR balance including staked amounts. VeChain auto-detects VET + VTHO. Cosmos includes staking delegations. For exchanges: connect via API keys (Coinbase, Kraken, Crypto.com, Binance, and more). You can also import transactions from Ledger Live or Yahoo Finance CSV files.",
       },
       {
         q: "Do Ledger Nano X and Xaman show the same address for RLUSD?",
-        a: "Yes \u2014 when you pair Ledger Nano X with Xaman, Xaman displays the exact XRPL address controlled by your Ledger device. There is only one address. Xaman is the bridge that sends signing requests to Ledger \u2014 the keys stay on Ledger.",
+        a: "Yes — when you pair Ledger Nano X with Xaman, Xaman displays the exact XRPL address controlled by your Ledger device. There is only one address. Xaman is the bridge that sends signing requests to Ledger — the keys stay on Ledger.",
       },
       {
         q: "Does every transaction require Ledger signing even if I use Xaman?",
-        a: "Yes. Xaman builds the transaction and forwards it to your paired Ledger for offline approval. You physically confirm on the Ledger device every time. This is the security model \u2014 no keys ever leave hardware.",
+        a: "Yes. Xaman builds the transaction and forwards it to your paired Ledger for offline approval. You physically confirm on the Ledger device every time. This is the security model — no keys ever leave hardware.",
       },
       {
         q: "How do I connect my Ledger Nano X with Xaman?",
-        a: "1) Install Xaman (App Store/Google Play) and Ledger Live. 2) Open Xaman \u2192 Settings \u2192 Hardware Wallets \u2192 Ledger \u2192 enable Bluetooth \u2192 unlock Ledger \u2192 open XRP app \u2192 pairs automatically. 3) Add RLUSD trust line: tap \u201C+\u201D Add Token \u2192 RLUSD \u2192 Setup Trust Line \u2192 sign on Ledger. 4) On CryptoOwnBank, click \u201CConnect Wallet\u201D \u2192 Xumm/Xaman \u2192 approve in Xaman (Ledger confirms if needed). Done \u2014 deposit RLUSD to Soil vaults and sign with your Ledger/Xaman combo. Full guide: /setup-guide",
+        a: "1) Install Xaman (App Store/Google Play) and Ledger Live. 2) Open Xaman \u2192 Settings \u2192 Hardware Wallets \u2192 Ledger \u2192 enable Bluetooth \u2192 unlock Ledger \u2192 open XRP app \u2192 pairs automatically. 3) Add RLUSD trust line: tap \u201C+\u201D Add Token \u2192 RLUSD \u2192 Setup Trust Line \u2192 sign on Ledger. 4) On CryptoOwnBank, click \u201CConnect Wallet\u201D \u2192 Xumm/Xaman \u2192 approve in Xaman (Ledger confirms if needed). Done — deposit RLUSD to Soil vaults and sign with your Ledger/Xaman combo. Full guide: /setup-guide",
       },
       {
         q: "Do I need a destination tag/memo when transferring RLUSD?",
-        a: "No \u2014 RLUSD on XRPL does not require tags or memos (unlike XLM on Stellar). Just send to your correct XRPL address (starts with \u201Cr\u2026\u201D). Always double-check the address before sending.",
+        a: "No — RLUSD on XRPL does not require tags or memos (unlike XLM on Stellar). Just send to your correct XRPL address (starts with \u201Cr\u2026\u201D). Always double-check the address before sending.",
       },
       {
         q: "How does Hedera (HBAR) tracking work? What about staking?",
-        a: "Super simple \u2014 just paste your Hedera account ID (it looks like 0.0.12345) into the wallet address field. Our system uses the Hedera Mirror Node API to pull your full HBAR balance, including staked HBAR. If you stake through Stader, HashPack, or any other provider, your HBAR stays in your account with a staking delegation \u2014 it doesn't move to a different address. So one account ID captures everything.",
+        a: "Super simple — just paste your Hedera account ID (it looks like 0.0.12345) into the wallet address field. Our system uses the Hedera Mirror Node API to pull your full HBAR balance, including staked HBAR. If you stake through Stader, HashPack, or any other provider, your HBAR stays in your account with a staking delegation — it doesn't move to a different address. So one account ID captures everything.",
       },
       {
         q: "Which tokens are auto-detected on each chain?",
@@ -560,11 +560,11 @@ const faqGroups = [
       },
       {
         q: "I have crypto on multiple hardware wallets (Ledger, Cypherock, Ellipal). Can I track them all?",
-        a: "Yes! Premium users can add unlimited wallet addresses. Use the label feature to organize them \u2014 label each wallet 'Ledger X', 'Cypherock', 'Ellipal', etc. Previously used labels appear as quick-pick buttons so you don't have to retype them. You can even add suffixes like 'Ledger X - Dad' or 'Ledger X - Kids' to distinguish multiple devices of the same type.",
+        a: "Yes! Premium users can add unlimited wallet addresses. Use the label feature to organize them — label each wallet 'Ledger X', 'Cypherock', 'Ellipal', etc. Previously used labels appear as quick-pick buttons so you don't have to retype them. You can even add suffixes like 'Ledger X - Dad' or 'Ledger X - Kids' to distinguish multiple devices of the same type.",
       },
       {
         q: "Is my data secure?",
-        a: "Your exchange API keys are encrypted at rest using AES-256. Your XRPL wallet connection is read-only \u2014 we only see your public address. All transaction signing happens on your device. We use secure authentication and Stripe for payment processing. We never store private keys or seed phrases.",
+        a: "Your exchange API keys are encrypted at rest using AES-256. Your XRPL wallet connection is read-only — we only see your public address. All transaction signing happens on your device. We use secure authentication and Stripe for payment processing. We never store private keys or seed phrases.",
       },
     ],
   },
@@ -573,35 +573,35 @@ const faqGroups = [
     items: [
       {
         q: "What is RLUSD and how do the yield vaults work?",
-        a: "RLUSD is Ripple\u2019s regulated stablecoin, pegged 1:1 to the US Dollar and backed by cash and cash equivalents. The yield comes from Soil Protocol, which lends your RLUSD to institutional borrowers \u2014 similar to how traditional banks make money, except the interest goes to you. The Treasury Vault (5.2% APR) is backed by US government securities. The CREDIT+ Vault (8.0% APR) is backed by diversified private credit pools.",
+        a: "RLUSD is Ripple's regulated stablecoin, pegged 1:1 to the US Dollar and backed by cash and cash equivalents. The yield comes from Soil Protocol, which lends your RLUSD to institutional borrowers — similar to how traditional banks make money, except the interest goes to you. The Treasury Vault (5.2% APR) is backed by US government securities. The CREDIT+ Vault (8.0% APR) is backed by diversified private credit pools.",
       },
       {
-        q: "Which vault should I choose \u2014 Treasury (5.2%) or CREDIT+ (8.0%)?",
-        a: "It depends on your risk tolerance and how soon you might need your funds. The Treasury Vault (5.2% APR) is backed by US government securities \u2014 essentially the safest asset class in the world. It has a short 3-day rolling withdrawal period, so you can access your funds quickly. Best for: stability and liquidity. The CREDIT+ Vault (8.0% APR) is backed by diversified private credit pools (institutional lending). It pays more but requires a 90-day notice + 10-day cooldown to withdraw, and carries higher default risk than Treasuries. Best for: users willing to lock funds longer for bigger returns. You can also split your RLUSD across both vaults \u2014 for example, put some in Treasury for quick access and some in Private Credit for higher yield. The vault cards on the Vaults page show risk level, withdrawal terms, and a \u201CBest for\u201D recommendation to help you decide at a glance.",
+        q: "Which vault should I choose — Treasury (5.2%) or CREDIT+ (8.0%)?",
+        a: "It depends on your risk tolerance and how soon you might need your funds. The Treasury Vault (5.2% APR) is backed by US government securities — essentially the safest asset class in the world. It has a short 3-day rolling withdrawal period, so you can access your funds quickly. Best for: stability and liquidity. The CREDIT+ Vault (8.0% APR) is backed by diversified private credit pools (institutional lending). It pays more but requires a 90-day notice + 10-day cooldown to withdraw, and carries higher default risk than Treasuries. Best for: users willing to lock funds longer for bigger returns. You can also split your RLUSD across both vaults — for example, put some in Treasury for quick access and some in Private Credit for higher yield. The vault cards on the Vaults page show risk level, withdrawal terms, and a \u201CBest for\u201D recommendation to help you decide at a glance.",
       },
       {
         q: "Does interest in Soil vaults compound automatically?",
-        a: "Yes. If you do not withdraw the earned interest, it is automatically added to your position in the vault and starts earning additional yield right away. Example: Deposit $10,000 RLUSD at 6% APR. After one month \u2248 $50 interest is earned. If left in the vault, your new balance becomes ~$10,050. Next month\u2019s interest is calculated on the larger amount \u2014 this is automatic compounding. There is no \u201Creinvest\u201D button because it happens by default. You can withdraw only the interest anytime (manually or auto-scheduled with Premium). The principal plus any unwithdrawn interest stays in the vault and continues growing. This gives you higher effective returns than most banks or custodial platforms while keeping full control of your keys.",
+        a: "Yes. If you do not withdraw the earned interest, it is automatically added to your position in the vault and starts earning additional yield right away. Example: Deposit $10,000 RLUSD at 6% APR. After one month \u2248 $50 interest is earned. If left in the vault, your new balance becomes ~$10,050. Next month's interest is calculated on the larger amount — this is automatic compounding. There is no \u201Creinvest\u201D button because it happens by default. You can withdraw only the interest anytime (manually or auto-scheduled with Premium). The principal plus any unwithdrawn interest stays in the vault and continues growing. This gives you higher effective returns than most banks or custodial platforms while keeping full control of your keys.",
       },
       {
-        q: "How does Soil compare to Uphold\u2019s 3.75% yield?",
-        a: "Soil offers 5\u20138% fixed APR (real RWA-backed yield from Treasuries and private credit) with automatic compounding \u2014 usually higher than Uphold\u2019s ~3.75%. Plus you get full self-custody (your keys stay on your cold wallet) instead of Uphold holding everything custodially. The trade-off: Uphold is simpler to start with, but you give up ownership and earn less.",
+        q: "How does Soil compare to Uphold's 3.75% yield?",
+        a: "Soil offers 5–8% fixed APR (real RWA-backed yield from Treasuries and private credit) with automatic compounding — usually higher than Uphold's ~3.75%. Plus you get full self-custody (your keys stay on your cold wallet) instead of Uphold holding everything custodially. The trade-off: Uphold is simpler to start with, but you give up ownership and earn less.",
       },
       {
         q: "How do I withdraw my earned interest?",
         a: "Go to the Withdraw Interest page, select a vault, and click \u201CWithdraw Interest.\u201D The app builds a transaction sending ONLY your accrued interest to your designated spending wallet. You sign the transaction on your Xumm or Ledger. Free users withdraw manually; Premium users can set up automatic weekly withdrawals.",
       },
       {
-        q: "Why can\u2019t I withdraw my full principal anytime?",
-        a: "Soil vaults are lending pools backed by real-world assets (U.S. Treasuries, private credit, etc.). Withdrawal rules depend on the vault: Liquid/Treasury vaults have a 3-day rolling period. Credit vaults require a 90-day notice + 10-day cooldown (interest continues during notice). Your funds earn during notice periods, but the lock-up aligns with underlying assets for stability. This is standard for fixed-yield RWA protocols \u2014 check each vault\u2019s details on the site.",
+        q: "Why can't I withdraw my full principal anytime?",
+        a: "Soil vaults are lending pools backed by real-world assets (U.S. Treasuries, private credit, etc.). Withdrawal rules depend on the vault: Liquid/Treasury vaults have a 3-day rolling period. Credit vaults require a 90-day notice + 10-day cooldown (interest continues during notice). Your funds earn during notice periods, but the lock-up aligns with underlying assets for stability. This is standard for fixed-yield RWA protocols — check each vault's details on the site.",
       },
       {
         q: "How safe is my principal?",
-        a: "Your principal is protected in two ways: 1) Non-custodial design \u2014 keys never leave your cold wallet. 2) Soil vaults are backed by real-world assets (Treasuries, credit funds) with institutional-grade underwriting. Yields are fixed and predictable, but crypto/blockchain always carries risks (smart contract bugs, protocol changes, market events). We display real-time data but never guarantee returns. Always DYOR.",
+        a: "Your principal is protected in two ways: 1) Non-custodial design — keys never leave your cold wallet. 2) Soil vaults are backed by real-world assets (Treasuries, credit funds) with institutional-grade underwriting. Yields are fixed and predictable, but crypto/blockchain always carries risks (smart contract bugs, protocol changes, market events). We display real-time data but never guarantee returns. Always DYOR.",
       },
       {
         q: "What happens if Soil or XRPL has issues?",
-        a: "Soil is a compliant RWA protocol on XRPL \u2014 funds are loaned to Soil Ltd. (backed by real assets), not algorithmic or high-risk DeFi. If issues arise (rare), withdrawals follow vault rules (notice periods). XRPL itself is battle-tested and decentralized. Your assets stay on-chain in your wallet \u2014 we can\u2019t access or lose them.",
+        a: "Soil is a compliant RWA protocol on XRPL — funds are loaned to Soil Ltd. (backed by real assets), not algorithmic or high-risk DeFi. If issues arise (rare), withdrawals follow vault rules (notice periods). XRPL itself is battle-tested and decentralized. Your assets stay on-chain in your wallet — we can't access or lose them.",
       },
     ],
   },
@@ -610,27 +610,27 @@ const faqGroups = [
     items: [
       {
         q: "How do I start earning yield on RLUSD?",
-        a: "1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a Soil vault (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately \u2014 your principal stays locked. 5) Withdraw only the accrued interest whenever you want (manual or auto for Premium users). No KYC on our end, no bank linking required.",
+        a: "1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a Soil vault (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately — your principal stays locked. 5) Withdraw only the accrued interest whenever you want (manual or auto for Premium users). No KYC on our end, no bank linking required.",
       },
       {
         q: "Can I transfer RLUSD from Uphold to my cold wallet?",
-        a: "Yes \u2014 Uphold supports XRPL withdrawals. Go to Withdraw \u2192 RLUSD \u2192 XRPL network \u2192 paste your wallet address. Test with a small amount first. Make sure your trust line to RLUSD is set in Xaman/Ledger before sending. Funds typically arrive in seconds with fees around ~0.0001 XRP.",
+        a: "Yes — Uphold supports XRPL withdrawals. Go to Withdraw \u2192 RLUSD \u2192 XRPL network \u2192 paste your wallet address. Test with a small amount first. Make sure your trust line to RLUSD is set in Xaman/Ledger before sending. Funds typically arrive in seconds with fees around ~0.0001 XRP.",
       },
       {
         q: "Which exchange should I recommend for buying RLUSD?",
-        a: "Binance usually offers the best liquidity and lowest fees for RLUSD. Kraken is great for low-cost XRPL withdrawals. Crypto.com and Uphold are beginner-friendly. Use the referral links on the My Referrals page to help others \u2014 you may earn rewards when they sign up and buy.",
+        a: "Binance usually offers the best liquidity and lowest fees for RLUSD. Kraken is great for low-cost XRPL withdrawals. Crypto.com and Uphold are beginner-friendly. Use the referral links on the My Referrals page to help others — you may earn rewards when they sign up and buy.",
       },
       {
         q: "Should I route through an exchange to earn referral rewards on my own transfer?",
-        a: "Not worth it for your own funds. Referral commissions only trigger for new users signing up via your link \u2014 self-referral usually doesn\u2019t pay and adds extra fees/steps. Transfer directly from Uphold (or wherever your RLUSD is) to your cold wallet, then use your referral links to help others buy RLUSD.",
+        a: "Not worth it for your own funds. Referral commissions only trigger for new users signing up via your link — self-referral usually doesn't pay and adds extra fees/steps. Transfer directly from Uphold (or wherever your RLUSD is) to your cold wallet, then use your referral links to help others buy RLUSD.",
       },
       {
-        q: "Why don\u2019t you connect directly to my bank account?",
-        a: "We deliberately stay on-chain only to keep things simple, secure, and non-custodial. Bank integrations would require us to handle fiat, trigger money transmitter rules (federal MSB registration + state licenses), and force KYC/AML on users \u2014 adding delays, fees, and risks. By skipping banks, we avoid all that: no middleman, no data collection, no compliance overhead. You buy RLUSD on exchanges, deposit on-chain, and manage everything from your wallet \u2014 faster, cheaper, and truly in your control.",
+        q: "Why don't you connect directly to my bank account?",
+        a: "We deliberately stay on-chain only to keep things simple, secure, and non-custodial. Bank integrations would require us to handle fiat, trigger money transmitter rules (federal MSB registration + state licenses), and force KYC/AML on users — adding delays, fees, and risks. By skipping banks, we avoid all that: no middleman, no data collection, no compliance overhead. You buy RLUSD on exchanges, deposit on-chain, and manage everything from your wallet — faster, cheaper, and truly in your control.",
       },
       {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
-        a: "Absolutely \u2014 CryptoOwnBank is a full multi-chain portfolio tracker across 24 blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Connect exchange accounts to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities \u2014 with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
+        a: "Absolutely — CryptoOwnBank is a full multi-chain portfolio tracker across 24 blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Connect exchange accounts to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
       },
     ],
   },
@@ -638,7 +638,7 @@ const faqGroups = [
     heading: "Premium, Referrals & Features",
     items: [
       {
-        q: "What\u2019s the difference between Free, Premium, and Pro?",
+        q: "What's the difference between Free, Premium, and Pro?",
         a: "Free: 1 exchange, 1 blockchain address, 1 price alert, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history. Premium ($29/mo or $199/yr): unlimited exchanges and addresses across 24 chains, full Recommendations Hub, staking guides, CSV import, auto-withdraw, Statement Insights, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus DeFi Borrowing Hub, Real Estate Tokenization directory, batch/payroll payments, treasury dashboard, up to 5 team seats, and XLS-66 Lending. Pro is designed for businesses and high-value clients.",
       },
       {
@@ -651,11 +651,11 @@ const faqGroups = [
       },
       {
         q: "What is the Yield Calculator?",
-        a: "The Yield Calculator is a free public tool (no login required) that lets you estimate how much you\u2019d earn by depositing RLUSD into Soil vaults. Enter any amount, choose Treasury (5.2% APR) or CREDIT+ (8.0% APR), and toggle between simple and compound interest to see projected daily, weekly, monthly, and yearly earnings. Try it at /yield-calculator.",
+        a: "The Yield Calculator is a free public tool (no login required) that lets you estimate how much you'd earn by depositing RLUSD into Soil vaults. Enter any amount, choose Treasury (5.2% APR) or CREDIT+ (8.0% APR), and toggle between simple and compound interest to see projected daily, weekly, monthly, and yearly earnings. Try it at /yield-calculator.",
       },
       {
         q: "Can I export my tax report as a PDF?",
-        a: "Yes \u2014 Premium users can download a professionally formatted PDF tax report with a summary of short-term and long-term gains/losses, a full table of all gain events, and a disclaimer footer. Free users can still export CSV files. Go to Tax Reports, select your year and method, then click the PDF button.",
+        a: "Yes — Premium users can download a professionally formatted PDF tax report with a summary of short-term and long-term gains/losses, a full table of all gain events, and a disclaimer footer. Free users can still export CSV files. Go to Tax Reports, select your year and method, then click the PDF button.",
       },
       {
         q: "How does the referral program work?",
@@ -672,11 +672,11 @@ const faqGroups = [
     items: [
       {
         q: "Is this financial advice?",
-        a: "No \u2014 this is not financial, investment, or tax advice. Crypto and yield protocols involve risk of loss. Past performance isn\u2019t indicative of future results. Always do your own research (DYOR) and consider your own situation. We provide tools and information only.",
+        a: "No — this is not financial, investment, or tax advice. Crypto and yield protocols involve risk of loss. Past performance isn't indicative of future results. Always do your own research (DYOR) and consider your own situation. We provide tools and information only.",
       },
       {
         q: "What if I have more questions or issues?",
-        a: "Use the in-site contact form or join XRPL community channels. Note: we can\u2019t help with wallet recovery or fund issues since we\u2019re non-custodial \u2014 only you control your keys.",
+        a: "Use the in-site contact form or join XRPL community channels. Note: we can't help with wallet recovery or fund issues since we're non-custodial — only you control your keys.",
       },
     ],
   },
@@ -1464,7 +1464,7 @@ export default function Landing() {
                       {[
                         { label: "Ownership", value: "100%" },
                         { label: "Keys Stored", value: "Zero" },
-                        { label: "Yield", value: "5\u20138%" },
+                        { label: "Yield", value: "5–8%" },
                         { label: "Friction", value: "None" },
                       ].map((stat, i) => (
                         <div key={i} className="p-3 rounded-lg bg-muted/60 text-center">

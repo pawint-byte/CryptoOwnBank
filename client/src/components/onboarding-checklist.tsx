@@ -66,7 +66,7 @@ export function OnboardingChecklist({
       title: "Start Earning Yield",
       subtitle: "Make money first",
       description:
-        "Connect your XRPL wallet (Xaman or Ledger) and deposit RLUSD into a Soil vault. Earn 5\u20138% fixed APR \u2014 backed by real-world assets, fully non-custodial.",
+        "Connect your XRPL wallet (Xaman or Ledger) and deposit RLUSD into a Soil vault. Earn 5–8% fixed APR — backed by real-world assets, fully non-custodial.",
       cta: "Connect Wallet & Earn",
       href: "/ownbank",
       icon: Sprout,
@@ -78,7 +78,7 @@ export function OnboardingChecklist({
       title: "Add Your Wallet Addresses",
       subtitle: "Show us what you hold",
       description:
-        "Paste your cold wallet addresses (Ledger, ELLIPAL, Cypherock, etc.) across 24 blockchains. We\u2019ll pull balances and transaction history \u2014 read-only, no keys needed.",
+        "Paste your cold wallet addresses (Ledger, ELLIPAL, Cypherock, etc.) across 24 blockchains. We'll pull balances and transaction history — read-only, no keys needed.",
       cta: "Add Wallet Addresses",
       href: "/wallets",
       icon: Wallet,
@@ -90,7 +90,7 @@ export function OnboardingChecklist({
       title: "Get Your Portfolio Evaluated",
       subtitle: "See what you're missing",
       description:
-        "Our Recommendations Hub analyzes every asset you hold and shows you exactly where you\u2019re leaving money on the table \u2014 better staking rates, on-chain yield, and optimization opportunities.",
+        "Our Recommendations Hub analyzes every asset you hold and shows you exactly where you're leaving money on the table — better staking rates, on-chain yield, and optimization opportunities.",
       cta: "View Recommendations",
       href: "/",
       icon: BarChart3,
@@ -103,7 +103,7 @@ export function OnboardingChecklist({
       title: "Unlock Full Power",
       subtitle: "Unlimited everything",
       description:
-        "Go Premium to unlock unlimited wallets, full Recommendations Hub with staking guides, portfolio search/filter/sort, unlimited alerts, and tax reports. Pay with crypto \u2014 it\u2019s our preferred method.",
+        "Go Premium to unlock unlimited wallets, full Recommendations Hub with staking guides, portfolio search/filter/sort, unlimited alerts, and tax reports. Pay with crypto — it's our preferred method.",
       cta: "Upgrade to Premium",
       href: "/settings",
       icon: Crown,

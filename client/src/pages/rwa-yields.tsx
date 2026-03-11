@@ -64,7 +64,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     protocol: "Soil Protocol",
     chain: "XRPL",
     asset: "RLUSD",
-    apyRange: "5\u20138%",
+    apyRange: "5–8%",
     apyMid: 6.5,
     backingType: "Private Credit & Treasuries",
     tvl: "$12M+",
@@ -73,16 +73,16 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "Earn yield on RLUSD through institutional-grade credit vaults on the XRP Ledger. Backed by real-world loan portfolios and short-term treasuries.",
     integrated: true,
     minInvestment: "$50",
-    lockup: "Liquid vault: instant \u2022 Credit+ vault: 7-day notice",
+    lockup: "Liquid vault: instant • Credit+ vault: 7-day notice",
     kycRequired: false,
     tokenReceived: "RLUSD vault receipt on XRPL",
     trackingChain: "xrpl",
     steps: [
       "Connect your XRPL wallet via Xaman (formerly Xumm)",
-      "Make sure you have RLUSD in your wallet \u2014 you can get it on the XRPL DEX or from a supported exchange",
-      "Click \u201cDeposit Now\u201d below to go to our integrated Vaults page",
+      "Make sure you have RLUSD in your wallet — you can get it on the XRPL DEX or from a supported exchange",
+      "Click \u201CDeposit Now\u201D below to go to our integrated Vaults page",
       "Choose Credit+ vault (8% APY) or Liquid vault (5% APY) based on your needs",
-      "Sign the deposit transaction in Xaman \u2014 done! Your position is tracked automatically right here in CryptoOwnBank",
+      "Sign the deposit transaction in Xaman — done! Your position is tracked automatically right here in CryptoOwnBank",
     ],
   },
   {
@@ -106,10 +106,10 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     trackingChain: "ethereum",
     steps: [
       "Visit app.ondo.finance and create an account",
-      "Complete identity verification (KYC) on Ondo\u2019s platform \u2014 typically takes 1\u20132 business days (this is Ondo\u2019s requirement, not ours)",
+      "Complete identity verification (KYC) on Ondo's platform — typically takes 1–2 business days (this is Ondo's requirement, not ours)",
       "Connect your Ethereum wallet (MetaMask, WalletConnect, or similar)",
-      "Deposit USDC to mint USDY tokens \u2014 they\u2019ll appear in your Ethereum wallet",
-      "Come back to CryptoOwnBank \u2192 add your Ethereum wallet address on the Blockchain Addresses page \u2192 we\u2019ll automatically detect your USDY balance and track your yield",
+      "Deposit USDC to mint USDY tokens — they'll appear in your Ethereum wallet",
+      "Come back to CryptoOwnBank \u2192 add your Ethereum wallet address on the Blockchain Addresses page \u2192 we'll automatically detect your USDY balance and track your yield",
     ],
   },
   {
@@ -132,8 +132,8 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     tokenReceived: "OUSG token on Ethereum",
     trackingChain: "ethereum",
     steps: [
-      "Visit app.ondo.finance \u2014 OUSG requires accredited investor status",
-      "Complete enhanced KYC/AML verification and accreditation check on Ondo\u2019s platform (this is Ondo\u2019s requirement, not ours)",
+      "Visit app.ondo.finance — OUSG requires accredited investor status",
+      "Complete enhanced KYC/AML verification and accreditation check on Ondo's platform (this is Ondo's requirement, not ours)",
       "Connect your Ethereum wallet (MetaMask, WalletConnect, etc.)",
       "Deposit minimum $100,000 USDC to mint OUSG tokens",
       "Add your Ethereum wallet to CryptoOwnBank to track your OUSG position automatically",
@@ -145,7 +145,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     protocol: "Centrifuge",
     chain: "Ethereum / Base",
     asset: "Various",
-    apyRange: "4\u201310%",
+    apyRange: "4–10%",
     apyMid: 7.0,
     backingType: "Invoices / Real Estate / Trade Finance",
     tvl: "$250M+",
@@ -154,16 +154,16 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "Centrifuge tokenizes real-world assets like invoices, real estate mortgages, and trade finance receivables into on-chain pools. Variable yields depending on pool risk.",
     integrated: false,
     minInvestment: "Varies by pool (typically $5,000+)",
-    lockup: "Varies by pool \u2014 some have redemption periods",
+    lockup: "Varies by pool — some have redemption periods",
     kycRequired: true,
     tokenReceived: "Pool tokens (DROP/TIN) on Ethereum",
     trackingChain: "ethereum",
     steps: [
       "Visit app.centrifuge.io and browse available investment pools",
-      "Choose a pool based on your risk preference \u2014 real estate, trade finance, or invoice pools \u2014 and review the pool terms",
+      "Choose a pool based on your risk preference — real estate, trade finance, or invoice pools — and review the pool terms",
       "Complete KYC verification for your chosen pool (each pool issuer may have their own requirements)",
       "Connect your Ethereum wallet and invest in the pool",
-      "Add your Ethereum wallet to CryptoOwnBank \u2192 we\u2019ll detect your pool tokens (DROP/TIN) and track your position",
+      "Add your Ethereum wallet to CryptoOwnBank \u2192 we'll detect your pool tokens (DROP/TIN) and track your position",
     ],
   },
   {
@@ -172,7 +172,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     protocol: "XDC / TradeFi",
     chain: "XDC Network",
     asset: "XDC-based",
-    apyRange: "5\u20139%",
+    apyRange: "5–9%",
     apyMid: 7.0,
     backingType: "Trade Receivables",
     tvl: "$100M+",
@@ -181,7 +181,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "XDC Network focuses on tokenized trade finance. Platforms like Tradeteq and Yodaplus offer exposure to global trade receivables with attractive yields.",
     integrated: false,
     minInvestment: "$1,000",
-    lockup: "Varies \u2014 typically 30\u201390 day terms matching trade finance cycles",
+    lockup: "Varies — typically 30–90 day terms matching trade finance cycles",
     kycRequired: true,
     tokenReceived: "Trade receivable tokens on XDC Network",
     trackingChain: "xdc",
@@ -199,7 +199,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     protocol: "Maple Finance",
     chain: "Ethereum / Solana",
     asset: "USDC / wETH",
-    apyRange: "6\u201312%",
+    apyRange: "6–12%",
     apyMid: 9.0,
     backingType: "Institutional Lending",
     tvl: "$100M+",
@@ -208,16 +208,16 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "Maple provides under-collateralized lending pools for institutional borrowers. Higher yields but with credit exposure to vetted corporate borrowers.",
     integrated: false,
     minInvestment: "$1,000",
-    lockup: "Varies by pool \u2014 some pools have lock-up periods",
+    lockup: "Varies by pool — some pools have lock-up periods",
     kycRequired: false,
     tokenReceived: "Maple LP tokens on Ethereum or Solana",
     trackingChain: "ethereum",
     steps: [
       "Visit app.maple.finance and connect your Ethereum or Solana wallet",
-      "Browse available lending pools \u2014 review borrower quality, historical performance, and pool terms",
+      "Browse available lending pools — review borrower quality, historical performance, and pool terms",
       "Choose a pool and deposit USDC or wETH (check minimum for each pool)",
-      "You\u2019ll receive Maple LP tokens representing your position",
-      "Add your wallet to CryptoOwnBank \u2192 we\u2019ll detect your Maple LP tokens and track your yield",
+      "You'll receive Maple LP tokens representing your position",
+      "Add your wallet to CryptoOwnBank \u2192 we'll detect your Maple LP tokens and track your yield",
     ],
   },
   {
@@ -235,13 +235,13 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "Earn 4% back in XRP on qualifying salary-linked ACH direct deposits of $250+. Get paid up to 2 days early. Max reward $500/month. Available in US (excluding NY, USVI, American Samoa).",
     integrated: false,
     minInvestment: "$250 qualifying deposit",
-    lockup: "None \u2014 XRP rewards paid automatically",
+    lockup: "None — XRP rewards paid automatically",
     kycRequired: true,
     tokenReceived: "XRP in your Uphold account",
     trackingChain: "xrpl",
     steps: [
       "Sign up at uphold.com and complete identity verification",
-      "Set up direct deposit by linking your employer\u2019s payroll to your Uphold account",
+      "Set up direct deposit by linking your employer's payroll to your Uphold account",
       "Start receiving your salary via ACH direct deposit ($250+ qualifying deposit)",
       "Earn 4% back in XRP automatically on each qualifying deposit (up to $500/month in rewards)",
       "Add your XRPL wallet address to CryptoOwnBank to track your XRP rewards alongside your portfolio",
@@ -262,14 +262,14 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "Earn up to 4% back in XRP on everyday purchases with the Uphold Debit Card. Get 4% when funding with crypto or metals, or 3% when using fiat or stablecoins (Elite tier).",
     integrated: false,
     minInvestment: "No minimum",
-    lockup: "None \u2014 XRP rewards on every purchase",
+    lockup: "None — XRP rewards on every purchase",
     kycRequired: true,
     tokenReceived: "XRP in your Uphold account",
     trackingChain: "xrpl",
     steps: [
-      "Sign up at uphold.com and complete identity verification if you haven\u2019t already",
+      "Sign up at uphold.com and complete identity verification if you haven't already",
       "Apply for the Uphold Debit Card through your Uphold account",
-      "Choose your funding source \u2014 crypto/metals for 4% back, or fiat/stablecoins for 3% back (Elite tier)",
+      "Choose your funding source — crypto/metals for 4% back, or fiat/stablecoins for 3% back (Elite tier)",
       "Use the card for everyday purchases and earn XRP rewards automatically",
       "Add your XRPL wallet to CryptoOwnBank to track your XRP cashback rewards",
     ],
@@ -280,7 +280,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     protocol: "RealT",
     chain: "Ethereum / Gnosis",
     asset: "Rental Income Tokens",
-    apyRange: "8\u201312%",
+    apyRange: "8–12%",
     apyMid: 10.0,
     backingType: "Tokenized US Rental Properties",
     tvl: "$100M+",
@@ -289,7 +289,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "RealT tokenizes US residential rental properties on Ethereum and Gnosis chain. Each token represents fractional ownership in a specific property, and holders receive daily rental income paid in stablecoins.",
     integrated: false,
     minInvestment: "$50",
-    lockup: "None \u2014 tokens tradeable on secondary markets",
+    lockup: "None — tokens tradeable on secondary markets",
     kycRequired: true,
     tokenReceived: "RealTokens (ERC-20) on Ethereum/Gnosis",
     trackingChain: "ethereum",
@@ -297,9 +297,9 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     locationType: "US Cities (Detroit, Chicago, etc.)",
     steps: [
       "Visit realt.co and create an account",
-      "Complete identity verification (KYC) \u2014 RealT requires this for all investors due to SEC regulations",
-      "Browse available properties \u2014 each listing shows property details, rental yield, and token price",
-      "Purchase RealTokens starting from $50 \u2014 pay with crypto or bank transfer",
+      "Complete identity verification (KYC) — RealT requires this for all investors due to SEC regulations",
+      "Browse available properties — each listing shows property details, rental yield, and token price",
+      "Purchase RealTokens starting from $50 — pay with crypto or bank transfer",
       "Receive daily rental income in USDC/xDAI directly to your wallet",
       "Add your Ethereum or Gnosis wallet to CryptoOwnBank to track your RealT positions and rental income",
     ],
@@ -310,7 +310,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     protocol: "Lofty",
     chain: "Algorand",
     asset: "Property Tokens",
-    apyRange: "5\u20138%",
+    apyRange: "5–8%",
     apyMid: 6.5,
     backingType: "Tokenized US Rental Properties",
     tvl: "$50M+",
@@ -319,7 +319,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     description: "Lofty tokenizes US rental properties on Algorand, offering fractional ownership with daily rental income. Low minimums and near-instant settlement make it accessible to retail investors.",
     integrated: false,
     minInvestment: "$50",
-    lockup: "None \u2014 sell anytime on Lofty marketplace",
+    lockup: "None — sell anytime on Lofty marketplace",
     kycRequired: true,
     tokenReceived: "Lofty property tokens on Algorand",
     trackingChain: "algorand",
@@ -327,8 +327,8 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     locationType: "US Cities (various markets)",
     steps: [
       "Visit lofty.ai and create an account",
-      "Complete identity verification (KYC) \u2014 required for all US property investments",
-      "Browse listed properties \u2014 each shows estimated rental yield, property details, and neighborhood data",
+      "Complete identity verification (KYC) — required for all US property investments",
+      "Browse listed properties — each shows estimated rental yield, property details, and neighborhood data",
       "Purchase property tokens starting from $50 using crypto or fiat",
       "Receive daily rental income distributions to your Lofty account",
       "Track your Lofty positions in CryptoOwnBank by adding your Algorand wallet address",
@@ -346,10 +346,10 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     tvl: "$4B+ in transactions",
     riskLevel: "Medium",
     link: "https://propy.com",
-    description: "Propy enables real estate transactions on the blockchain through NFT-based property transfers. Buyers can purchase entire properties as NFTs, with legal title transfer handled through Propy\u2019s platform.",
+    description: "Propy enables real estate transactions on the blockchain through NFT-based property transfers. Buyers can purchase entire properties as NFTs, with legal title transfer handled through Propy's platform.",
     integrated: false,
     minInvestment: "Varies by property",
-    lockup: "Property ownership \u2014 sell via Propy marketplace",
+    lockup: "Property ownership — sell via Propy marketplace",
     kycRequired: true,
     tokenReceived: "Property NFT on Ethereum",
     trackingChain: "ethereum",
@@ -359,7 +359,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
       "Visit propy.com and create an account",
       "Complete identity verification and link your Ethereum wallet",
       "Browse available properties or list your own for sale as an NFT",
-      "Purchase a property NFT \u2014 Propy handles legal title transfer and escrow",
+      "Purchase a property NFT — Propy handles legal title transfer and escrow",
       "Hold the property NFT representing your ownership on Ethereum",
       "Add your Ethereum wallet to CryptoOwnBank to track your property NFT holdings",
     ],
@@ -379,8 +379,8 @@ const COMPARISON_DATA: ComparisonRow[] = [
   { type: "Traditional", product: "High-Yield Savings", apy: "~4.5%", apyNum: 4.5, notes: "Online banks, FDIC insured, variable rate" },
   { type: "Traditional", product: "Money Market Fund", apy: "~5.0%", apyNum: 5.0, notes: "Not FDIC insured, daily liquidity, government bonds" },
   { type: "Tokenized", product: "USDY (Ondo)", apy: "~5.2%", apyNum: 5.2, notes: "Tokenized treasuries, 24/7 settlement, blockchain-native" },
-  { type: "Tokenized", product: "Soil RLUSD Vaults", apy: "5\u20138%", apyNum: 6.5, notes: "XRPL-native, credit-backed, non-custodial" },
-  { type: "Tokenized", product: "Centrifuge Pools", apy: "4\u201310%", apyNum: 7.0, notes: "Real estate, invoices, trade finance pools" },
+  { type: "Tokenized", product: "Soil RLUSD Vaults", apy: "5–8%", apyNum: 6.5, notes: "XRPL-native, credit-backed, non-custodial" },
+  { type: "Tokenized", product: "Centrifuge Pools", apy: "4–10%", apyNum: 7.0, notes: "Real estate, invoices, trade finance pools" },
 ];
 
 interface RiskInfo {
@@ -693,7 +693,7 @@ function ProtocolCard({ opp }: { opp: YieldOpportunity }) {
             data-testid={`button-steps-${slug}`}
           >
             {showSteps ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-            {showSteps ? "Hide Steps" : "Get Started \u2014 Step by Step"}
+            {showSteps ? "Hide Steps" : "Get Started — Step by Step"}
           </Button>
         </div>
 
@@ -757,8 +757,8 @@ function getRecommendations(quiz: QuizState): { id: string; reason: string }[] {
     results.push({
       id: "soil",
       reason: quiz.chain === "xrpl"
-        ? "You\u2019re on XRPL \u2014 Soil is directly integrated, no KYC needed, and you can start with as little as $50."
-        : "Soil on XRPL is the easiest entry point \u2014 fully integrated, no KYC, deposit in seconds.",
+        ? "You're on XRPL — Soil is directly integrated, no KYC needed, and you can start with as little as $50."
+        : "Soil on XRPL is the easiest entry point — fully integrated, no KYC, deposit in seconds.",
     });
   }
 
@@ -766,7 +766,7 @@ function getRecommendations(quiz: QuizState): { id: string; reason: string }[] {
     if (quiz.risk === "conservative") {
       results.push({
         id: "ondo-usdy",
-        reason: "USDY is backed by US Treasuries with next-day redemption \u2014 the closest crypto equivalent to a money market fund.",
+        reason: "USDY is backed by US Treasuries with next-day redemption — the closest crypto equivalent to a money market fund.",
       });
       if (quiz.size === "xlarge") {
         results.push({
@@ -778,13 +778,13 @@ function getRecommendations(quiz: QuizState): { id: string; reason: string }[] {
     if (quiz.risk === "moderate") {
       results.push({
         id: "centrifuge",
-        reason: "Centrifuge offers diversified real-world asset pools \u2014 real estate, trade finance \u2014 with moderate risk and 4\u201310% yields.",
+        reason: "Centrifuge offers diversified real-world asset pools — real estate, trade finance — with moderate risk and 4–10% yields.",
       });
     }
     if (quiz.risk === "growth") {
       results.push({
         id: "maple",
-        reason: "Maple\u2019s institutional lending pools offer the highest yields (6\u201312%) with credit exposure to vetted corporate borrowers.",
+        reason: "Maple's institutional lending pools offer the highest yields (6–12%) with credit exposure to vetted corporate borrowers.",
       });
     }
   }
@@ -793,7 +793,7 @@ function getRecommendations(quiz: QuizState): { id: string; reason: string }[] {
     if (quiz.risk === "growth" && !results.find(r => r.id === "maple")) {
       results.push({
         id: "maple",
-        reason: "Maple Finance is available on Solana \u2014 institutional lending pools with 6\u201312% yields.",
+        reason: "Maple Finance is available on Solana — institutional lending pools with 6–12% yields.",
       });
     }
   }
@@ -806,7 +806,7 @@ function getRecommendations(quiz: QuizState): { id: string; reason: string }[] {
     if (!results.find(r => r.id === "xdc-tradefi") && quiz.risk === "moderate") {
       results.push({
         id: "xdc-tradefi",
-        reason: "XDC\u2019s trade finance ecosystem offers unique exposure to global trade receivables \u2014 a real-economy yield source.",
+        reason: "XDC's trade finance ecosystem offers unique exposure to global trade receivables — a real-economy yield source.",
       });
     }
   }
@@ -814,11 +814,11 @@ function getRecommendations(quiz: QuizState): { id: string; reason: string }[] {
   if (results.length === 0) {
     results.push({
       id: "soil",
-      reason: "Soil is the easiest starting point \u2014 no KYC, low minimum, and fully integrated with CryptoOwnBank.",
+      reason: "Soil is the easiest starting point — no KYC, low minimum, and fully integrated with CryptoOwnBank.",
     });
     results.push({
       id: "ondo-usdy",
-      reason: "USDY is the most popular tokenized treasury product \u2014 backed by US Treasuries with transparent, regulated yield.",
+      reason: "USDY is the most popular tokenized treasury product — backed by US Treasuries with transparent, regulated yield.",
     });
   }
 
@@ -895,8 +895,8 @@ function RecommenderSection() {
               "size",
               [
                 { value: "small", label: "Under $1K" },
-                { value: "medium", label: "$1K\u2013$10K" },
-                { value: "large", label: "$10K\u2013$100K" },
+                { value: "medium", label: "$1K–$10K" },
+                { value: "large", label: "$10K–$100K" },
                 { value: "xlarge", label: "$100K+" },
               ],
               "quiz-size"
@@ -912,7 +912,7 @@ function RecommenderSection() {
               "quiz-withdrawal"
             )}
             {radioGroup(
-              "What\u2019s your risk preference?",
+              "What's your risk preference?",
               "risk",
               [
                 { value: "conservative", label: "Conservative (govt bonds)" },
@@ -935,7 +935,7 @@ function RecommenderSection() {
                     <div key={rec.id} className="rounded-lg border p-3 bg-muted/20" data-testid={`rec-${rec.id}`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-semibold">{opp.protocol} \u2014 {opp.asset}</p>
+                          <p className="text-sm font-semibold">{opp.protocol} — {opp.asset}</p>
                           <p className="text-xs text-green-600 dark:text-green-400 font-medium">{opp.apyRange} APY</p>
                         </div>
                         <Badge className={`shrink-0 text-xs ${getRiskBadgeVariant(opp.riskLevel)}`}>
@@ -974,6 +974,10 @@ function EarningStatusSection() {
       return chain;
     })
   );
+
+  if ((user as any)?.xrplWalletAddress) {
+    coveredChains.add("xrpl");
+  }
 
   if (!user) {
     return (
@@ -1119,10 +1123,10 @@ export default function RwaYields() {
             <div className="space-y-2">
               <p className="text-sm font-medium">What are Real-World Assets (RWAs)?</p>
               <p className="text-sm text-muted-foreground">
-                RWA tokens represent ownership or exposure to real-world assets \u2014 like US Treasury bonds, real estate mortgages, trade invoices, or corporate loans \u2014 on the blockchain. Instead of earning yield from speculative crypto trading, RWA yields come from tangible economic activity: governments paying interest on bonds, businesses paying invoices, or borrowers repaying loans.
+                RWA tokens represent ownership or exposure to real-world assets — like US Treasury bonds, real estate mortgages, trade invoices, or corporate loans — on the blockchain. Instead of earning yield from speculative crypto trading, RWA yields come from tangible economic activity: governments paying interest on bonds, businesses paying invoices, or borrowers repaying loans.
               </p>
               <p className="text-sm text-muted-foreground">
-                This means more predictable, sustainable returns compared to volatile DeFi farming \u2014 often with institutional-grade backing and transparent collateral.
+                This means more predictable, sustainable returns compared to volatile DeFi farming — often with institutional-grade backing and transparent collateral.
               </p>
             </div>
           </div>
@@ -1263,7 +1267,7 @@ export default function RwaYields() {
               <div>
                 <p className="font-semibold">Ready to earn RWA yield?</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Soil Protocol is fully integrated \u2014 deposit RLUSD and start earning 5\u20138% APY backed by real-world credit. No KYC, no minimum lockup.
+                  Soil Protocol is fully integrated — deposit RLUSD and start earning 5–8% APY backed by real-world credit. No KYC, no minimum lockup.
                 </p>
               </div>
             </div>
