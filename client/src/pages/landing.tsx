@@ -1300,7 +1300,7 @@ export default function Landing() {
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> Your keys never leave your device</li>
                     <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> Transfer, trade, earn — no permission needed</li>
-                    <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> No one can freeze or restrict your assets</li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> Decentralized assets stay under your control</li>
                     <li className="flex items-start gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> Walk away anytime — no lawyers, no paperwork</li>
                   </ul>
                 </CardContent>
@@ -1312,12 +1312,12 @@ export default function Landing() {
                     <Eye className="h-5 w-5 text-red-500" />
                   </div>
                   <h3 className="font-semibold mb-1">CBDCs</h3>
-                  <p className="text-xs text-red-500 font-medium mb-2">They own it. They control it.</p>
+                  <p className="text-xs text-red-500 font-medium mb-2">Designed for issuer control.</p>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Programmable — code decides what you can buy</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Expiration dates on your own money</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Accounts frozen based on criteria you never agreed to</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Full surveillance of every transaction</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Programmable — spending rules set by the issuer</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Some designs allow expiration or usage limits</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Account restrictions possible without your input</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" /> Transaction visibility built into the architecture</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -1328,12 +1328,12 @@ export default function Landing() {
                     <Building2 className="h-5 w-5 text-amber-500" />
                   </div>
                   <h3 className="font-semibold mb-1">Custodial Services</h3>
-                  <p className="text-xs text-amber-500 font-medium mb-2">They hold it. They decide.</p>
+                  <p className="text-xs text-amber-500 font-medium mb-2">Someone else holds the keys.</p>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> A company holds your keys for you</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> Can freeze your account at will</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> Bankruptcy = you're a creditor in line</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> Thousands in fees for the privilege</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> A company manages your private keys</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> Account access subject to their terms</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> If they go under, you join a creditor queue</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" /> Ongoing custody and management fees</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -1344,12 +1344,12 @@ export default function Landing() {
                     <Landmark className="h-5 w-5 text-gray-500" />
                   </div>
                   <h3 className="font-semibold mb-1">Traditional Banks</h3>
-                  <p className="text-xs text-gray-500 font-medium mb-2">They own it. You ask nicely.</p>
+                  <p className="text-xs text-gray-500 font-medium mb-2">Your deposit becomes their balance sheet.</p>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Your deposit is their asset, not yours</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Close accounts without explanation</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> 0.01–4.5% yield while they earn 10%+</li>
-                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Lawyers needed to untangle anything</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Deposits are legally the bank's asset</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Accounts can be closed or limited at discretion</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Yield typically trails what the bank earns</li>
+                    <li className="flex items-start gap-2"><Ban className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" /> Disputes often require legal involvement</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -1364,13 +1364,13 @@ export default function Landing() {
                   <div>
                     <h3 className="font-semibold text-lg mb-2" data-testid="text-xrp-philosophy">The XRP Principle</h3>
                     <p className="text-muted-foreground leading-relaxed mb-3">
-                      Ripple controls the release of 1 billion XRP per month from escrow. But once that XRP is in your wallet, Ripple has zero ability to stop you from spending it, trading it, or sending it anywhere in the world. That's the design. The same principle applies to every asset you manage through CryptoOwnBank.
+                      Ripple manages the release of 1 billion XRP per month from escrow. But once that XRP reaches your wallet, the protocol doesn't give Ripple any mechanism to restrict how you use it. That's how the XRPL was designed. The same principle guides how we think about self-custody for decentralized assets.
                     </p>
                     <p className="text-muted-foreground leading-relaxed mb-3">
-                      We provide the tools — portfolio tracking, yield vaults, DEX trading, payment processing. But the moment your assets are in your wallet, no one stands between you and what you do with them. No uninvited third party in your decisions. No one who needs to approve your transactions. Either side of any deal can walk away without lawyers or government involvement.
+                      We provide the tools — portfolio tracking, yield vaults, DEX trading, payment processing. But we don't stand between you and your assets. You decide when to move them, where to send them, and what to do with them. That direct relationship between you and your wallet is what self-custody is about.
                     </p>
                     <p className="text-sm font-medium text-foreground">
-                      With crypto on a decentralized blockchain, the code serves you. With CBDCs, the code serves whoever wrote it. That's the difference between being your own bank and being given a digital leash that looks like a bank account.
+                      With decentralized crypto, the protocol works for the holder. With centrally issued digital currencies, the design priorities may differ. Understanding that distinction is worth your time.
                     </p>
                   </div>
                 </div>
