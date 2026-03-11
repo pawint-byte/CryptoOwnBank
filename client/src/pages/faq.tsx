@@ -489,6 +489,31 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Secure Crypto Storage Options",
+    items: [
+      {
+        q: "What is Web3 and how does it relate to storing my crypto?",
+        a: "Web3 is the decentralized internet built on blockchain technology. The core idea is simple: you own your data and your assets directly, without relying on a company to hold them for you. In crypto, this comes down to one principle \u2014 if you don't control your private keys, you don't truly own your crypto. CryptoOwnBank is built around this idea. We never hold your keys or your funds. Instead, you keep your assets in your own cold wallet (Ledger, ELLIPAL, Arculus, CypheRock, SafePal, etc.) while we provide non-custodial tools for tracking your portfolio across 24+ blockchains, trading on the XRPL DEX, earning 5\u20138% yield on RLUSD through Soil Protocol vaults, and sending payments \u2014 all signed directly on your device.",
+      },
+      {
+        q: "Why should I avoid keeping my crypto on an exchange?",
+        a: "When your crypto sits on an exchange like Coinbase, Binance, or Uphold, the exchange holds your private keys \u2014 not you. That means they control your assets. If the exchange gets hacked, goes bankrupt (remember FTX), freezes your account, or faces regulatory issues, your funds are at risk and you may not be able to access them. CryptoOwnBank takes a different approach. Our dashboard connects to exchanges using read-only API keys just to display your balances. Your assets stay where they are \u2014 we can't move, trade, or withdraw anything. For active use, we recommend moving assets to your own cold wallet and using XRPL tools for direct DEX trading and payments. This is especially important for anyone new to crypto who wants to avoid the risks that come with trusting a centralized platform.",
+      },
+      {
+        q: "Are cold wallets really safe? How does CryptoOwnBank work with them?",
+        a: "Cold wallets are the gold standard for crypto security. Devices like the Ledger Nano X store your private keys completely offline, which means they can't be stolen through phishing, malware, or exchange hacks. CryptoOwnBank focuses exclusively on cold wallet users \u2014 we don't support hot wallets or ask for seed phrases. Here's how it works in practice: connect your cold wallet (through Xaman for XRPL, or by adding your public address for other chains), and we automatically detect your tokens, show your balances, and surface yield opportunities. When you want to deposit into a Soil vault or make a payment, every transaction is built in your browser and signed on your physical device. Your keys never leave the hardware. We simply provide the interface \u2014 you keep full control.",
+      },
+      {
+        q: "Is there a better option than just using an exchange or a cold wallet alone?",
+        a: "A cold wallet gives you ownership. CryptoOwnBank gives you the tools to actually do something with it. Most people who self-custody end up juggling multiple apps \u2014 one to check balances, another to trade, another to track prices, another to figure out taxes. We bring all of that into one place without ever asking for your keys. You get portfolio tracking across 24 blockchains and multiple exchanges, real-time yield recommendations that tell you what you could be earning on assets you already hold, direct access to XRPL vaults paying 5\u20138% fixed APR on RLUSD, and built-in payment tools for sending and receiving crypto. It's the combination of cold wallet security with the convenience of a full financial dashboard \u2014 built for people who want real ownership, whether you're brand new to crypto or managing a significant portfolio.",
+      },
+      {
+        q: "Do you ever have access to my crypto? What if CryptoOwnBank shuts down?",
+        a: "No \u2014 at no point do we have access to your crypto. We are 100% non-custodial. We never see your private keys, never hold your funds, and never have the ability to move your assets. Every vault deposit, withdrawal, trade, and payment is signed by you on your own device. If CryptoOwnBank shut down tomorrow, your crypto would be completely unaffected. Your funds live on the blockchain in your wallet, not on our servers. You could continue using your cold wallet with any other XRPL-compatible app, access your Soil vault positions directly through Soil Protocol, and view your balances on any blockchain explorer. We're a tool layer on top of your self-custody \u2014 not a custodian.",
+      },
+    ],
+  },
+  {
     heading: "Safety & Disclaimers",
     items: [
       {
