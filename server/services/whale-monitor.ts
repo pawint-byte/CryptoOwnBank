@@ -13,8 +13,8 @@ const XRPL_SERVERS = [
 const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
 const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
 
-const DEFAULT_XRP_THRESHOLD = 1_000_000;
-const DEFAULT_RLUSD_THRESHOLD = 500_000;
+const CAPTURE_XRP_THRESHOLD = 100_000;
+const CAPTURE_RLUSD_THRESHOLD = 10_000;
 
 let whaleClient: Client | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,8 +57,8 @@ async function handleTransaction(tx: any) {
 
     const { amount, currency } = parsed;
 
-    if (currency === "XRP" && amount < DEFAULT_XRP_THRESHOLD) return;
-    if (currency === "RLUSD" && amount < DEFAULT_RLUSD_THRESHOLD) return;
+    if (currency === "XRP" && amount < CAPTURE_XRP_THRESHOLD) return;
+    if (currency === "RLUSD" && amount < CAPTURE_RLUSD_THRESHOLD) return;
     if (currency !== "XRP" && currency !== "RLUSD") return;
 
     const rippleEpoch = 946684800;

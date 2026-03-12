@@ -4487,8 +4487,19 @@ export async function registerRoutes(
         since = new Date(Date.now() - 24 * 60 * 60 * 1000);
       }
 
-      const alerts = await storage.getWhaleAlerts(limit, since);
-      res.json({ alerts, tierRestricted: tier === "free" });
+      let xrpThreshold = 1_000_000;
+      let rlusdThreshold = 500_000;
+
+      if (tier !== "free") {
+        const userSettings = await storage.getWhaleAlertSettings(userId);
+        if (userSettings) {
+          if (userSettings.xrpThreshold) xrpThreshold = Number(userSettings.xrpThreshold);
+          if (userSettings.rlusdThreshold) rlusdThreshold = Number(userSettings.rlusdThreshold);
+        }
+      }
+
+      const alerts = await storage.getWhaleAlerts(limit, since, xrpThreshold, rlusdThreshold);
+      res.json({ alerts, tierRestricted: tier === "free", xrpThreshold, rlusdThreshold });
     } catch (error) {
       console.error("Whale alerts error:", error);
       res.status(500).json({ message: "Failed to fetch whale alerts" });

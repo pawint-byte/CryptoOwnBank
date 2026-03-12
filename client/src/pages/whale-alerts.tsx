@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,13 @@ interface WhaleAlertSettings {
   enabled: boolean;
 }
 
+interface WhaleAlertsResponse {
+  alerts: WhaleAlert[];
+  tierRestricted: boolean;
+  xrpThreshold: number;
+  rlusdThreshold: number;
+}
+
 function truncateAddress(addr: string) {
   if (!addr || addr.length < 12) return addr;
   return `${addr.slice(0, 6)}...${addr.slice(-6)}`;
@@ -48,6 +55,12 @@ function formatAmount(amount: string, currency: string) {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M ${currency}`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K ${currency}`;
   return `${num.toLocaleString()} ${currency}`;
+}
+
+function formatThreshold(val: number) {
+  if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(0)}M`;
+  if (val >= 1_000) return `${(val / 1_000).toFixed(0)}K`;
+  return val.toLocaleString();
 }
 
 function formatUsd(usdValue: string | null) {
@@ -75,6 +88,7 @@ function timeAgo(dateStr: string) {
 export default function WhaleAlerts() {
   const { toast } = useToast();
   const [showSettings, setShowSettings] = useState(false);
+  const prevAlertIdsRef = useRef<Set<string>>(new Set());
 
   const { data: subLimits } = useQuery<{ tier: string }>({
     queryKey: ["/api/subscription/limits"],
@@ -83,10 +97,7 @@ export default function WhaleAlerts() {
   const tier = subLimits?.tier || "free";
   const isPaidUser = tier === "premium" || tier === "pro";
 
-  const { data: alertsData, isLoading: alertsLoading } = useQuery<{
-    alerts: WhaleAlert[];
-    tierRestricted: boolean;
-  }>({
+  const { data: alertsData, isLoading: alertsLoading } = useQuery<WhaleAlertsResponse>({
     queryKey: ["/api/whale-alerts"],
     refetchInterval: 30_000,
   });
@@ -106,7 +117,8 @@ export default function WhaleAlerts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whale-alerts/settings"] });
-      toast({ title: "Settings updated", description: "Your whale alert preferences have been saved." });
+      queryClient.invalidateQueries({ queryKey: ["/api/whale-alerts"] });
+      toast({ title: "Settings updated", description: "Your whale alert preferences have been saved. The feed now reflects your custom thresholds." });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message || "Failed to update settings", variant: "destructive" });
@@ -115,6 +127,28 @@ export default function WhaleAlerts() {
 
   const alerts = alertsData?.alerts || [];
   const tierRestricted = alertsData?.tierRestricted ?? true;
+  const activeXrpThreshold = alertsData?.xrpThreshold ?? 1_000_000;
+  const activeRlusdThreshold = alertsData?.rlusdThreshold ?? 500_000;
+
+  const isNotificationsEnabled = settings?.enabled !== false;
+
+  useEffect(() => {
+    if (!isNotificationsEnabled || alerts.length === 0) return;
+    const currentIds = new Set(alerts.map((a) => a.id));
+    const prevIds = prevAlertIdsRef.current;
+
+    if (prevIds.size > 0) {
+      const newAlerts = alerts.filter((a) => !prevIds.has(a.id));
+      if (newAlerts.length > 0) {
+        const latest = newAlerts[0];
+        toast({
+          title: `New whale detected`,
+          description: `${formatAmount(latest.amount, latest.currency)} ${latest.usdValue ? `(${formatUsd(latest.usdValue)})` : ""} moved on XRPL`,
+        });
+      }
+    }
+    prevAlertIdsRef.current = currentIds;
+  }, [alerts, isNotificationsEnabled, toast]);
 
   const xrpAlerts = alerts.filter((a) => a.currency === "XRP");
   const rlusdAlerts = alerts.filter((a) => a.currency === "RLUSD");
@@ -179,7 +213,7 @@ export default function WhaleAlerts() {
               XRP Whales
             </div>
             <p className="text-2xl font-bold">{xrpAlerts.length}</p>
-            <p className="text-xs text-muted-foreground">Threshold: 1M+ XRP</p>
+            <p className="text-xs text-muted-foreground">Threshold: {formatThreshold(activeXrpThreshold)}+ XRP</p>
           </CardContent>
         </Card>
         <Card data-testid="card-whale-stat-rlusd">
@@ -189,7 +223,7 @@ export default function WhaleAlerts() {
               RLUSD Whales
             </div>
             <p className="text-2xl font-bold">{rlusdAlerts.length}</p>
-            <p className="text-xs text-muted-foreground">Threshold: 500K+ RLUSD</p>
+            <p className="text-xs text-muted-foreground">Threshold: {formatThreshold(activeRlusdThreshold)}+ RLUSD</p>
           </CardContent>
         </Card>
       </div>
@@ -220,24 +254,26 @@ export default function WhaleAlerts() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="xrp-threshold">XRP Threshold (minimum)</Label>
+                <Label htmlFor="xrp-threshold">XRP Threshold (minimum 100,000)</Label>
                 <Input
                   id="xrp-threshold"
                   type="number"
                   value={xrpThreshold}
                   onChange={(e) => setXrpThreshold(e.target.value)}
                   placeholder="1000000"
+                  min={100000}
                   data-testid="input-xrp-threshold"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rlusd-threshold">RLUSD Threshold (minimum)</Label>
+                <Label htmlFor="rlusd-threshold">RLUSD Threshold (minimum 10,000)</Label>
                 <Input
                   id="rlusd-threshold"
                   type="number"
                   value={rlusdThreshold}
                   onChange={(e) => setRlusdThreshold(e.target.value)}
                   placeholder="500000"
+                  min={10000}
                   data-testid="input-rlusd-threshold"
                 />
               </div>
@@ -248,8 +284,11 @@ export default function WhaleAlerts() {
                 onCheckedChange={setAlertsEnabled}
                 data-testid="switch-whale-enabled"
               />
-              <Label>Enable whale alerts</Label>
+              <Label>Enable in-app whale notifications</Label>
             </div>
+            <p className="text-xs text-muted-foreground">
+              When enabled, you will receive a toast notification whenever a new whale transaction matching your thresholds is detected during auto-refresh.
+            </p>
             <Button
               onClick={() =>
                 settingsMutation.mutate({
@@ -293,7 +332,7 @@ export default function WhaleAlerts() {
               <Fish className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No whale transactions detected yet</p>
               <p className="text-sm mt-1">
-                The monitor is watching for XRP transfers over 1M and RLUSD transfers over 500K.
+                Monitoring for XRP transfers over {formatThreshold(activeXrpThreshold)} and RLUSD transfers over {formatThreshold(activeRlusdThreshold)}.
                 Large transactions will appear here automatically.
               </p>
             </div>
