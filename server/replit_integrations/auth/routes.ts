@@ -522,6 +522,22 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
+  app.post("/api/admin/bulk-verify", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const result = await db
+        .update(users)
+        .set({ emailVerified: true, emailVerifyToken: null, updatedAt: new Date() })
+        .where(eq(users.emailVerified, false))
+        .returning({ id: users.id, email: users.email });
+
+      console.log(`[admin] Bulk verified ${result.length} users`);
+      res.json({ verified: result.length, users: result });
+    } catch (error) {
+      console.error("Error bulk verifying users:", error);
+      res.status(500).json({ message: "Failed to bulk verify users" });
+    }
+  });
+
   app.post("/api/admin/migrate-auth", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { userId } = req.body;

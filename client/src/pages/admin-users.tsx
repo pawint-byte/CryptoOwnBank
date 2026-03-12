@@ -48,6 +48,28 @@ export default function AdminUsers() {
     enabled: adminStatus?.isAdmin === true,
   });
 
+  const unverifiedCount = users?.filter((u) => !u.emailVerified).length || 0;
+
+  const bulkVerifyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/bulk-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Users Verified", description: `${data.verified} users have been verified and can now log in.` });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const migrateMutation = useMutation({
     mutationFn: async (userId: string) => {
       const res = await fetch("/api/admin/migrate-auth", {
@@ -133,6 +155,19 @@ export default function AdminUsers() {
             data-testid="input-admin-search"
           />
         </div>
+        {unverifiedCount > 0 && (
+          <Button
+            variant="default"
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700"
+            onClick={() => bulkVerifyMutation.mutate()}
+            disabled={bulkVerifyMutation.isPending}
+            data-testid="button-bulk-verify"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            {bulkVerifyMutation.isPending ? "Verifying..." : `Verify All (${unverifiedCount})`}
+          </Button>
+        )}
       </div>
 
       <Card>
