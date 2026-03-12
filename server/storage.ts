@@ -74,6 +74,9 @@ import {
   errorLogs,
   type ErrorLog,
   type InsertErrorLog,
+  userAddons,
+  type UserAddon,
+  type InsertUserAddon,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
@@ -236,6 +239,15 @@ export interface IStorage {
   updateErrorLogStatus(id: string, status: string): Promise<ErrorLog | undefined>;
   getErrorStats(): Promise<{ totalToday: number; uniqueToday: number; mostFrequent: { fingerprint: string; message: string; count: number } | null }>;
   getErrorLogCount(options: { source?: string; status?: string; search?: string }): Promise<number>;
+
+  createUserAddon(addon: InsertUserAddon): Promise<UserAddon>;
+  getUserAddons(userId: string): Promise<UserAddon[]>;
+  getActiveUserAddons(userId: string): Promise<UserAddon[]>;
+  getUserAddon(id: string): Promise<UserAddon | undefined>;
+  getUserAddonByKey(userId: string, addonKey: string): Promise<UserAddon | undefined>;
+  cancelUserAddon(id: string): Promise<UserAddon | undefined>;
+  updateUserAddonStatus(id: string, status: string): Promise<UserAddon | undefined>;
+  getExpiringAddons(withinDays: number): Promise<UserAddon[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1068,6 +1080,45 @@ export class DatabaseStorage implements IStorage {
     }
     const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(errorLogs);
     return result?.count || 0;
+  }
+
+  async createUserAddon(addon: InsertUserAddon): Promise<UserAddon> {
+    const [result] = await db.insert(userAddons).values(addon).returning();
+    return result;
+  }
+
+  async getUserAddons(userId: string): Promise<UserAddon[]> {
+    return db.select().from(userAddons).where(eq(userAddons.userId, userId)).orderBy(desc(userAddons.createdAt));
+  }
+
+  async getActiveUserAddons(userId: string): Promise<UserAddon[]> {
+    return db.select().from(userAddons).where(and(eq(userAddons.userId, userId), eq(userAddons.status, "active")));
+  }
+
+  async getUserAddon(id: string): Promise<UserAddon | undefined> {
+    const [result] = await db.select().from(userAddons).where(eq(userAddons.id, id));
+    return result;
+  }
+
+  async getUserAddonByKey(userId: string, addonKey: string): Promise<UserAddon | undefined> {
+    const [result] = await db.select().from(userAddons).where(and(eq(userAddons.userId, userId), eq(userAddons.addonKey, addonKey), eq(userAddons.status, "active")));
+    return result;
+  }
+
+  async cancelUserAddon(id: string): Promise<UserAddon | undefined> {
+    const [result] = await db.update(userAddons).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(userAddons.id, id)).returning();
+    return result;
+  }
+
+  async updateUserAddonStatus(id: string, status: string): Promise<UserAddon | undefined> {
+    const [result] = await db.update(userAddons).set({ status }).where(eq(userAddons.id, id)).returning();
+    return result;
+  }
+
+  async getExpiringAddons(withinDays: number): Promise<UserAddon[]> {
+    const future = new Date();
+    future.setDate(future.getDate() + withinDays);
+    return db.select().from(userAddons).where(and(eq(userAddons.status, "active"), lte(userAddons.expiresAt, future)));
   }
 }
 

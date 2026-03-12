@@ -37,6 +37,75 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS;
 
+export const ADDONS = {
+  "chain-ethereum": {
+    name: "Multi-Chain: Ethereum",
+    type: "multi_chain",
+    key: "chain-ethereum",
+    amount: 499,
+    interval: "month" as const,
+    description: "Track Ethereum wallets & tokens — $4.99/mo",
+  },
+  "chain-bitcoin": {
+    name: "Multi-Chain: Bitcoin",
+    type: "multi_chain",
+    key: "chain-bitcoin",
+    amount: 499,
+    interval: "month" as const,
+    description: "Track Bitcoin wallets & UTXOs — $4.99/mo",
+  },
+  "chain-solana": {
+    name: "Multi-Chain: Solana",
+    type: "multi_chain",
+    key: "chain-solana",
+    amount: 499,
+    interval: "month" as const,
+    description: "Track Solana wallets & SPL tokens — $4.99/mo",
+  },
+  "chain-stellar": {
+    name: "Multi-Chain: Stellar",
+    type: "multi_chain",
+    key: "chain-stellar",
+    amount: 499,
+    interval: "month" as const,
+    description: "Track Stellar wallets & anchored assets — $4.99/mo",
+  },
+  "chain-cardano": {
+    name: "Multi-Chain: Cardano",
+    type: "multi_chain",
+    key: "chain-cardano",
+    amount: 499,
+    interval: "month" as const,
+    description: "Track Cardano wallets & native tokens — $4.99/mo",
+  },
+  "chain-polygon": {
+    name: "Multi-Chain: Polygon",
+    type: "multi_chain",
+    key: "chain-polygon",
+    amount: 499,
+    interval: "month" as const,
+    description: "Track Polygon wallets & tokens — $4.99/mo",
+  },
+  "technical-analysis": {
+    name: "Technical Analysis Indicators",
+    type: "technical_analysis",
+    key: "technical-analysis",
+    amount: 999,
+    interval: "month" as const,
+    description: "RSI, MACD, Bollinger Bands & more — $9.99/mo",
+  },
+  "payments": {
+    name: "XRP/XLM Payment Tools",
+    type: "payments",
+    key: "payments",
+    amount: 799,
+    interval: "month" as const,
+    description: "Send/receive XRP & XLM, recurring payments — $7.99/mo",
+  },
+};
+
+export type AddonKey = keyof typeof ADDONS;
+
 export async function createCheckoutSession(
   userId: string,
   plan: PlanKey,
@@ -70,6 +139,46 @@ export async function createCheckoutSession(
       userId,
       plan,
       tier: planConfig.tier,
+    },
+  });
+
+  return session;
+}
+
+export async function createAddonCheckoutSession(
+  userId: string,
+  addonKey: AddonKey,
+  successUrl: string,
+  cancelUrl: string
+) {
+  const addonConfig = ADDONS[addonKey];
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: addonConfig.name,
+            description: addonConfig.description,
+          },
+          unit_amount: addonConfig.amount,
+          recurring: {
+            interval: addonConfig.interval,
+          },
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      userId,
+      addonKey,
+      addonType: addonConfig.type,
+      isAddon: "true",
     },
   });
 

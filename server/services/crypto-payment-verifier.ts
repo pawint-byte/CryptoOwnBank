@@ -762,6 +762,31 @@ const CHAIN_CHECKERS: Record<string, (p: CryptoPayment) => Promise<CheckResult>>
 };
 
 async function activateSubscription(payment: CryptoPayment) {
+  if (payment.plan.startsWith("addon:")) {
+    const addonKey = payment.plan.replace("addon:", "");
+    const { ADDONS } = await import("../stripe");
+    const addonConfig = ADDONS[addonKey as keyof typeof ADDONS];
+    if (!addonConfig) {
+      console.error(`[crypto-verify] Unknown addon key: ${addonKey}`);
+      return;
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    await storage.createUserAddon({
+      userId: payment.userId,
+      addonType: addonConfig.type,
+      addonKey,
+      status: "active",
+      paymentMethod: "crypto",
+      stripeSubscriptionId: null,
+      expiresAt,
+    });
+    console.log(`[crypto-verify] Activated addon ${addonKey} for user ${payment.userId} via ${payment.chain}, expires ${expiresAt.toISOString()}`);
+    return;
+  }
+
   const billingCycle = (payment.plan === "yearly" || payment.plan === "pro-yearly") ? "yearly" : "monthly";
   const tier = (payment.plan === "pro-monthly" || payment.plan === "pro-yearly") ? "pro" : "premium";
   const existing = await storage.getUserSettings(payment.userId);

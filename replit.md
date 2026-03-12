@@ -44,6 +44,12 @@ Preferred communication style: Simple, everyday language.
 ### Monetization
 -   **Tiers**: Freemium model with Free, Premium, and Pro tiers, gated by features.
 -   **Payment Processing**: Crypto payments (XRP, BTC, ETH, SOL, etc.) with on-chain verification; Stripe for card payments fallback.
+-   **A La Carte Add-Ons**: Monthly add-on subscriptions available on any tier (including free). Users can purchase individual features without upgrading. Add-ons include:
+    -   **Multi-Chain** ($4.99/mo per chain): Unlock additional blockchain tracking (Ethereum, Bitcoin, Solana, Stellar, Cardano, Polygon). Free users get XRPL only by default.
+    -   **Technical Analysis** ($9.99/mo): Unlock chart indicators (RSI, MACD, Bollinger Bands, etc.).
+    -   **Payments** ($7.99/mo): Unlock XRP/XLM send/receive and recurring payment features.
+    -   Add-on catalog defined in `server/stripe.ts` (ADDONS constant). User subscriptions tracked in `user_addons` table. Subscription limits endpoint merges add-ons with base tier.
+    -   Both Stripe and crypto payment flows support add-on purchases. Crypto add-on payments use the `addon:` prefix in the plan field.
 -   **Statement Insights**: PDF statement upload for comparing financial products against crypto alternatives, with privacy-first auto-deletion of extracted data after 15 minutes.
 -   **Onboarding**: Guided onboarding checklist for new users.
 

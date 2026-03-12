@@ -239,8 +239,25 @@ async function checkAndRenewSubscriptions() {
   }
 }
 
+async function checkAndExpireAddons() {
+  try {
+    const expiringAddons = await storage.getExpiringAddons(0);
+    const now = new Date();
+    for (const addon of expiringAddons) {
+      if (addon.expiresAt && new Date(addon.expiresAt) < now) {
+        await storage.updateUserAddonStatus(addon.id, "expired");
+        console.log(`[renewal] Expired addon ${addon.addonKey} for user ${addon.userId}`);
+      }
+    }
+  } catch (err) {
+    console.error("[renewal] Error checking addon expiry:", err);
+  }
+}
+
 export function startSubscriptionRenewalService() {
   console.log("[renewal] Starting subscription renewal service (checks every hour)");
   setInterval(checkAndRenewSubscriptions, 60 * 60 * 1000);
+  setInterval(checkAndExpireAddons, 60 * 60 * 1000);
   setTimeout(checkAndRenewSubscriptions, 30_000);
+  setTimeout(checkAndExpireAddons, 35_000);
 }

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, type CustomVault } from "@shared/schema";
-import { createCheckoutSession, PLANS } from "./stripe";
+import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
 import multer from "multer";
 import { db } from "./db";
@@ -2387,10 +2387,29 @@ export async function registerRoutes(
         if (event.type === "checkout.session.completed") {
           const session = event.data.object;
           const userId = session.metadata?.userId;
-          const plan = session.metadata?.plan || "monthly";
-          const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
-          const tier = session.metadata?.tier || "premium";
-          if (userId) {
+          const isAddon = session.metadata?.isAddon === "true";
+
+          if (isAddon && userId) {
+            const addonKey = session.metadata?.addonKey;
+            const addonType = session.metadata?.addonType;
+            if (addonKey && addonType) {
+              const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
+              if (!existingAddon) {
+                await storage.createUserAddon({
+                  userId,
+                  addonType,
+                  addonKey,
+                  status: "active",
+                  paymentMethod: "stripe",
+                  stripeSubscriptionId: session.subscription || null,
+                  expiresAt: null,
+                });
+              }
+            }
+          } else if (userId) {
+            const plan = session.metadata?.plan || "monthly";
+            const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
+            const tier = session.metadata?.tier || "premium";
             const existing = await storage.getUserSettings(userId);
             await storage.upsertUserSettings({
               userId,
@@ -2413,22 +2432,30 @@ export async function registerRoutes(
           const status = subscription.status;
           const customerId = subscription.customer;
           if (status === "canceled" || status === "unpaid") {
+            const { userAddons: userAddonsTable } = await import("@shared/schema");
+            const addonSubs = await db.select().from(userAddonsTable).where(eq(userAddonsTable.stripeSubscriptionId, subscription.id as string));
+            for (const addon of addonSubs) {
+              await storage.cancelUserAddon(addon.id);
+            }
+
             const allSettings = await db
               .select()
               .from(userSettingsTable)
               .where(eq(userSettingsTable.stripeCustomerId, customerId as string));
             for (const s of allSettings) {
-              await storage.upsertUserSettings({
-                userId: s.userId,
-                taxMethod: s.taxMethod || "FIFO",
-                defaultCurrency: s.defaultCurrency || "USD",
-                subscriptionTier: "free",
-                subscriptionBillingCycle: null,
-                subscriptionPaymentMethod: null,
-                subscriptionExpiresAt: null,
-                stripeCustomerId: s.stripeCustomerId,
-                stripeSubscriptionId: s.stripeSubscriptionId,
-              });
+              if (s.stripeSubscriptionId === subscription.id) {
+                await storage.upsertUserSettings({
+                  userId: s.userId,
+                  taxMethod: s.taxMethod || "FIFO",
+                  defaultCurrency: s.defaultCurrency || "USD",
+                  subscriptionTier: "free",
+                  subscriptionBillingCycle: null,
+                  subscriptionPaymentMethod: null,
+                  subscriptionExpiresAt: null,
+                  stripeCustomerId: s.stripeCustomerId,
+                  stripeSubscriptionId: s.stripeSubscriptionId,
+                });
+              }
             }
           }
         }
@@ -2445,10 +2472,29 @@ export async function registerRoutes(
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as any;
         const userId = session.metadata?.userId;
-        const plan = session.metadata?.plan || "monthly";
-        const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
-        const tier = session.metadata?.tier || "premium";
-        if (userId) {
+        const isAddon = session.metadata?.isAddon === "true";
+
+        if (isAddon && userId) {
+          const addonKey = session.metadata?.addonKey;
+          const addonType = session.metadata?.addonType;
+          if (addonKey && addonType) {
+            const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
+            if (!existingAddon) {
+              await storage.createUserAddon({
+                userId,
+                addonType,
+                addonKey,
+                status: "active",
+                paymentMethod: "stripe",
+                stripeSubscriptionId: session.subscription || null,
+                expiresAt: null,
+              });
+            }
+          }
+        } else if (userId) {
+          const plan = session.metadata?.plan || "monthly";
+          const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
+          const tier = session.metadata?.tier || "premium";
           const existing = await storage.getUserSettings(userId);
           await storage.upsertUserSettings({
             userId,
@@ -2463,6 +2509,40 @@ export async function registerRoutes(
             stripeSubscriptionId: session.subscription,
           });
         }
+      } else if (
+        event.type === "customer.subscription.deleted" ||
+        event.type === "customer.subscription.updated"
+      ) {
+        const subscription = event.data.object as any;
+        const status = subscription.status;
+        const customerId = subscription.customer;
+        if (status === "canceled" || status === "unpaid") {
+          const { userAddons: userAddonsTable } = await import("@shared/schema");
+          const addonSubs = await db.select().from(userAddonsTable).where(eq(userAddonsTable.stripeSubscriptionId, subscription.id as string));
+          for (const addon of addonSubs) {
+            await storage.cancelUserAddon(addon.id);
+          }
+
+          const allSettings = await db
+            .select()
+            .from(userSettingsTable)
+            .where(eq(userSettingsTable.stripeCustomerId, customerId as string));
+          for (const s of allSettings) {
+            if (s.stripeSubscriptionId === subscription.id) {
+              await storage.upsertUserSettings({
+                userId: s.userId,
+                taxMethod: s.taxMethod || "FIFO",
+                defaultCurrency: s.defaultCurrency || "USD",
+                subscriptionTier: "free",
+                subscriptionBillingCycle: null,
+                subscriptionPaymentMethod: null,
+                subscriptionExpiresAt: null,
+                stripeCustomerId: s.stripeCustomerId,
+                stripeSubscriptionId: s.stripeSubscriptionId,
+              });
+            }
+          }
+        }
       }
 
       res.json({ received: true });
@@ -2474,6 +2554,219 @@ export async function registerRoutes(
 
   app.get("/api/stripe/plans", (_req, res) => {
     res.json(PLANS);
+  });
+
+  app.get("/api/addons/catalog", (_req, res) => {
+    res.json(ADDONS);
+  });
+
+  app.get("/api/addons", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const addons = await storage.getActiveUserAddons(userId);
+      res.json(addons);
+    } catch (error) {
+      console.error("Get addons error:", error);
+      res.status(500).json({ message: "Failed to load add-ons" });
+    }
+  });
+
+  app.get("/api/addons/all", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const addons = await storage.getUserAddons(userId);
+      res.json(addons);
+    } catch (error) {
+      console.error("Get all addons error:", error);
+      res.status(500).json({ message: "Failed to load add-ons" });
+    }
+  });
+
+  app.post("/api/addons/stripe-checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { addonKey } = req.body;
+
+      if (!addonKey || !ADDONS[addonKey as AddonKey]) {
+        return res.status(400).json({ message: "Invalid add-on key." });
+      }
+
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "premium" || tier === "pro") {
+        return res.status(400).json({ message: "This feature is already included in your plan." });
+      }
+
+      const existing = await storage.getUserAddonByKey(userId, addonKey);
+      if (existing) {
+        return res.status(400).json({ message: "You already have this add-on active." });
+      }
+
+      const baseUrl = process.env.REPLIT_DOMAINS
+        ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+        : "http://localhost:5000";
+
+      const session = await createAddonCheckoutSession(
+        userId,
+        addonKey as AddonKey,
+        `${baseUrl}/settings?addon_success=true`,
+        `${baseUrl}/settings?addon_cancelled=true`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Addon Stripe checkout error:", error);
+      res.status(500).json({ message: "Failed to create addon checkout" });
+    }
+  });
+
+  app.post("/api/addons/crypto-purchase", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { addonKey, chain } = req.body;
+
+      if (!addonKey || !ADDONS[addonKey as AddonKey]) {
+        return res.status(400).json({ message: "Invalid add-on key." });
+      }
+      if (!chain) {
+        return res.status(400).json({ message: "Chain is required." });
+      }
+
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "premium" || tier === "pro") {
+        return res.status(400).json({ message: "This feature is already included in your plan." });
+      }
+
+      const existing = await storage.getUserAddonByKey(userId, addonKey);
+      if (existing) {
+        return res.status(400).json({ message: "You already have this add-on active." });
+      }
+
+      const pendingPayments = await storage.getCryptoPaymentsByUser(userId);
+      const hasPending = pendingPayments.some(p => p.plan === `addon:${addonKey}` && p.status === "pending");
+      if (hasPending) {
+        return res.status(400).json({ message: "You already have a pending payment for this add-on." });
+      }
+
+      const addonConfig = ADDONS[addonKey as AddonKey];
+      const usdAmount = addonConfig.amount / 100;
+
+      const ALL_SUPPORTED_CHAINS = [
+        "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
+        "cardano", "avalanche", "algorand", "cosmos", "tron", "hedera",
+        "polkadot", "vechain", "digibyte", "casper", "cronos", "nervos",
+        "zilliqa", "ton", "stellar", "verge", "xdc", "polygon",
+      ];
+      if (!ALL_SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
+        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
+      }
+
+      const addresses = await storage.getCryptoPaymentAddresses(true);
+      const paymentAddr = addresses.find(a => a.chain.toLowerCase() === chain.toLowerCase());
+      if (!paymentAddr) {
+        return res.status(400).json({ message: `No payment address configured for ${chain}.` });
+      }
+
+      const CHAIN_TO_COINGECKO: Record<string, string> = {
+        bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",
+        xrp: "ripple", rlusd: "ripple-usd", dogecoin: "dogecoin", litecoin: "litecoin",
+        cardano: "cardano", avalanche: "avalanche-2", algorand: "algorand",
+        cosmos: "cosmos", tron: "tron", hedera: "hedera-hashgraph",
+        polkadot: "polkadot", vechain: "vechain", stellar: "stellar",
+        ton: "the-open-network", polygon: "matic-network", cronos: "crypto-com-chain",
+        xdc: "xdce-crowd-sale", digibyte: "digibyte", casper: "casper-network",
+        nervos: "nervos-network", zilliqa: "zilliqa", verge: "verge",
+      };
+
+      const coingeckoId = CHAIN_TO_COINGECKO[chain.toLowerCase()];
+      if (!coingeckoId) {
+        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
+      }
+
+      const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoId}&vs_currencies=usd`);
+      const priceData = await priceRes.json();
+      const price = priceData[coingeckoId]?.usd;
+      if (!price || price <= 0) {
+        return res.status(500).json({ message: "Failed to fetch current price." });
+      }
+
+      let cryptoAmount = usdAmount / price;
+      const uniqueSuffix = Math.floor(Math.random() * 900 + 100) / 1e8;
+      cryptoAmount += uniqueSuffix;
+
+      const CHAIN_TO_ASSET: Record<string, string> = {
+        bitcoin: "BTC", ethereum: "ETH", solana: "SOL", xrp: "XRP", rlusd: "RLUSD",
+        dogecoin: "DOGE", litecoin: "LTC", cardano: "ADA", avalanche: "AVAX",
+        algorand: "ALGO", cosmos: "ATOM", tron: "TRX", hedera: "HBAR",
+        polkadot: "DOT", vechain: "VET", stellar: "XLM", ton: "TON",
+        polygon: "MATIC", cronos: "CRO", xdc: "XDC", digibyte: "DGB",
+        casper: "CSPR", nervos: "CKB", zilliqa: "ZIL", verge: "XVG",
+      };
+
+      let destinationTag: number | null = null;
+      if (chain.toLowerCase() === "xrp" || chain.toLowerCase() === "rlusd") {
+        destinationTag = Math.floor(Math.random() * 2_000_000_000) + 1;
+      }
+
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const payment = await storage.createCryptoPayment({
+        userId,
+        plan: `addon:${addonKey}`,
+        chain: chain.toLowerCase(),
+        toAddress: paymentAddr.address,
+        expectedAmount: cryptoAmount.toFixed(8),
+        expectedAsset: CHAIN_TO_ASSET[chain.toLowerCase()] || chain.toUpperCase(),
+        usdAmount: usdAmount.toFixed(2),
+        destinationTag,
+        status: "pending",
+        expiresAt,
+      });
+
+      res.json({
+        id: payment.id,
+        toAddress: payment.toAddress,
+        expectedAmount: payment.expectedAmount,
+        expectedAsset: payment.expectedAsset,
+        usdAmount: payment.usdAmount,
+        destinationTag: payment.destinationTag,
+        expiresAt: payment.expiresAt,
+        status: payment.status,
+        chain: payment.chain,
+        addonKey,
+      });
+    } catch (error) {
+      console.error("Addon crypto purchase error:", error);
+      res.status(500).json({ message: "Failed to create addon crypto payment" });
+    }
+  });
+
+  app.post("/api/addons/:id/cancel", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const addon = await storage.getUserAddon(req.params.id);
+
+      if (!addon || addon.userId !== userId) {
+        return res.status(404).json({ message: "Add-on not found." });
+      }
+      if (addon.status !== "active") {
+        return res.status(400).json({ message: "Add-on is not active." });
+      }
+
+      if (addon.stripeSubscriptionId) {
+        try {
+          const { stripe } = await import("./stripe");
+          await stripe.subscriptions.cancel(addon.stripeSubscriptionId);
+        } catch (err) {
+          console.error("Failed to cancel Stripe addon subscription:", err);
+        }
+      }
+
+      const cancelled = await storage.cancelUserAddon(addon.id);
+      res.json(cancelled);
+    } catch (error) {
+      console.error("Cancel addon error:", error);
+      res.status(500).json({ message: "Failed to cancel add-on" });
+    }
   });
 
   app.get("/api/crypto-payment/addresses", async (_req, res) => {
@@ -2804,10 +3097,30 @@ export async function registerRoutes(
       const credentials = await storage.getApiCredentialsByUser(userId);
       const userWallets = await storage.getWalletsByUser(userId);
       const activeAlerts = await storage.countActiveAlertsByUser(userId);
+      const activeAddons = await storage.getActiveUserAddons(userId);
 
       const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       const hasAnnualPlan = billingCycle === "yearly";
       const taxReportsUnlocked = tier !== "free" && hasAnnualPlan;
+
+      const addonKeys = activeAddons.map(a => a.addonKey);
+      const hasAddon = (key: string) => addonKeys.includes(key);
+      const hasTechnicalAnalysis = hasAddon("technical-analysis") || tier === "premium" || tier === "pro";
+      const hasPayments = hasAddon("payments") || tier === "premium" || tier === "pro";
+
+      const unlockedChains = ["xrpl"];
+      if (tier === "premium" || tier === "pro") {
+        unlockedChains.push("ethereum", "bitcoin", "solana", "stellar", "cardano", "polygon");
+      } else {
+        for (const addon of activeAddons) {
+          if (addon.addonType === "multi_chain") {
+            const chainName = addon.addonKey.replace("chain-", "");
+            if (!unlockedChains.includes(chainName)) {
+              unlockedChains.push(chainName);
+            }
+          }
+        }
+      }
 
       res.json({
         tier,
@@ -2824,12 +3137,16 @@ export async function registerRoutes(
         statementComparisons: limits.statementComparisons,
         portfolioSearch: limits.portfolioSearch,
         recommendationsHub: limits.recommendationsHub,
-        recurringPayments: limits.recurringPayments,
+        recurringPayments: hasPayments ? true : limits.recurringPayments,
         recurringPaymentsBatch: limits.recurringPaymentsBatch,
         defiBorrowing: limits.defiBorrowing,
         realEstateTokens: limits.realEstateTokens,
         maxTeamMembers: limits.maxTeamMembers,
         treasuryDashboard: limits.treasuryDashboard,
+        technicalAnalysis: hasTechnicalAnalysis,
+        paymentsAddon: hasPayments,
+        unlockedChains,
+        activeAddons: activeAddons.map(a => ({ id: a.id, addonKey: a.addonKey, addonType: a.addonType, status: a.status })),
       });
     } catch (error) {
       console.error("Subscription limits error:", error);

@@ -385,7 +385,7 @@ export const cryptoPaymentAddresses = pgTable("crypto_payment_addresses", {
 export const cryptoPayments = pgTable("crypto_payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
-  plan: varchar("plan", { length: 20 }).notNull(),
+  plan: varchar("plan", { length: 50 }).notNull(),
   chain: varchar("chain", { length: 30 }).notNull(),
   toAddress: text("to_address").notNull(),
   expectedAmount: decimal("expected_amount", { precision: 18, scale: 8 }).notNull(),
@@ -564,6 +564,31 @@ export type InsertWhaleAlert = z.infer<typeof insertWhaleAlertSchema>;
 export type WhaleAlertSettings = typeof whaleAlertSettings.$inferSelect;
 export type InsertWhaleAlertSettings = z.infer<typeof insertWhaleAlertSettingsSchema>;
 export type WalletIdentityCache = typeof walletIdentityCache.$inferSelect;
+
+export const userAddons = pgTable("user_addons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  addonType: varchar("addon_type", { length: 50 }).notNull(),
+  addonKey: varchar("addon_key", { length: 50 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  paymentMethod: varchar("payment_method", { length: 20 }).notNull(),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  cancelledAt: timestamp("cancelled_at"),
+}, (table) => [
+  index("idx_user_addons_user").on(table.userId),
+  index("idx_user_addons_status").on(table.status),
+]);
+
+export const insertUserAddonSchema = createInsertSchema(userAddons).omit({
+  id: true,
+  createdAt: true,
+  cancelledAt: true,
+});
+
+export type UserAddon = typeof userAddons.$inferSelect;
+export type InsertUserAddon = z.infer<typeof insertUserAddonSchema>;
 
 export const errorLogs = pgTable("error_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

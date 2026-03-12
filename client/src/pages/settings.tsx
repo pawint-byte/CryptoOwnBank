@@ -113,6 +113,11 @@ export default function SettingsPage() {
     businessPhone: "",
   });
   const [businessSaving, setBusinessSaving] = useState(false);
+  const [addonCheckoutLoading, setAddonCheckoutLoading] = useState<string | null>(null);
+  const [addonPaymentMethod, setAddonPaymentMethod] = useState<"crypto" | "card">("card");
+  const [addonSelectedChain, setAddonSelectedChain] = useState<string>("");
+  const [addonCryptoLoading, setAddonCryptoLoading] = useState(false);
+  const [pendingAddonPayment, setPendingAddonPayment] = useState<any>(null);
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["/api/settings"],
@@ -134,6 +139,20 @@ export default function SettingsPage() {
 
   const { data: myWallets = [], isLoading: walletsLoading } = useQuery<UserWallet[]>({
     queryKey: ["/api/user-wallets"],
+  });
+
+  const { data: addonCatalog = {} } = useQuery<Record<string, any>>({
+    queryKey: ["/api/addons/catalog"],
+  });
+
+  const { data: activeAddons = [] } = useQuery<any[]>({
+    queryKey: ["/api/addons"],
+  });
+
+  const { data: addonPaymentStatus } = useQuery({
+    queryKey: ["/api/crypto-payment/status", pendingAddonPayment?.id],
+    enabled: !!pendingAddonPayment?.id && pendingAddonPayment?.status === "pending",
+    refetchInterval: 5000,
   });
 
   const createWalletMutation = useMutation({
@@ -291,6 +310,15 @@ export default function SettingsPage() {
     }
   }, [paymentStatus]);
 
+  useEffect(() => {
+    if (addonPaymentStatus && (addonPaymentStatus as any).status === "confirmed") {
+      setPendingAddonPayment(null);
+      toast({ title: "Add-on activated!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/addons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/limits"] });
+    }
+  }, [addonPaymentStatus]);
+
   const handleUpgrade = async (plan: "monthly" | "yearly" | "pro-monthly" | "pro-yearly") => {
     setCheckoutLoading(plan);
     try {
@@ -325,6 +353,54 @@ export default function SettingsPage() {
       toast({ title: "Failed to create payment", variant: "destructive" });
     } finally {
       setCryptoLoading(false);
+    }
+  };
+
+  const handleAddonStripeCheckout = async (addonKey: string) => {
+    setAddonCheckoutLoading(addonKey);
+    try {
+      const res = await apiRequest("POST", "/api/addons/stripe-checkout", { addonKey });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({ title: data.message || "Failed to start checkout", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to start add-on checkout", variant: "destructive" });
+    } finally {
+      setAddonCheckoutLoading(null);
+    }
+  };
+
+  const handleAddonCryptoPayment = async (addonKey: string) => {
+    if (!addonSelectedChain) {
+      toast({ title: "Please select a cryptocurrency", variant: "destructive" });
+      return;
+    }
+    setAddonCryptoLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/addons/crypto-purchase", {
+        addonKey,
+        chain: addonSelectedChain,
+      });
+      const data = await res.json();
+      setPendingAddonPayment(data);
+    } catch {
+      toast({ title: "Failed to create add-on payment", variant: "destructive" });
+    } finally {
+      setAddonCryptoLoading(false);
+    }
+  };
+
+  const handleCancelAddon = async (addonId: string) => {
+    try {
+      await apiRequest("POST", `/api/addons/${addonId}/cancel`);
+      queryClient.invalidateQueries({ queryKey: ["/api/addons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/limits"] });
+      toast({ title: "Add-on cancelled" });
+    } catch {
+      toast({ title: "Failed to cancel add-on", variant: "destructive" });
     }
   };
 
@@ -1243,6 +1319,190 @@ export default function SettingsPage() {
                   </div>
                 )}
               </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-500/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-blue-500" />
+              Add-Ons
+            </CardTitle>
+            <CardDescription>
+              Unlock individual features without upgrading your plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activeAddons.length > 0 && (
+              <div className="space-y-2" data-testid="active-addons-list">
+                <p className="text-sm font-medium">Active Add-Ons</p>
+                {activeAddons.map((addon: any) => {
+                  const catalogItem = addonCatalog[addon.addonKey];
+                  return (
+                    <div key={addon.id} className="flex items-center justify-between rounded-lg border p-3" data-testid={`addon-active-${addon.addonKey}`}>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">{catalogItem?.name || addon.addonKey}</span>
+                        <p className="text-xs text-muted-foreground">
+                          {addon.paymentMethod === "stripe" ? "Card" : "Crypto"} — {addon.expiresAt ? `Expires ${new Date(addon.expiresAt).toLocaleDateString()}` : "Active"}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleCancelAddon(addon.id)}
+                        data-testid={`button-cancel-addon-${addon.addonKey}`}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  );
+                })}
+                <Separator className="my-3" />
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Available Add-Ons</p>
+
+              {Object.entries(addonCatalog).map(([key, addon]: [string, any]) => {
+                const isActive = activeAddons.some((a: any) => a.addonKey === key);
+                if (isActive) return null;
+                const isPremiumOrPro = subscriptionTier === "premium" || subscriptionTier === "pro";
+                const isIncluded = isPremiumOrPro && (addon.type === "multi_chain" || addon.type === "technical_analysis" || addon.type === "payments");
+                return (
+                  <div key={key} className={`rounded-lg border p-4 ${isIncluded ? "opacity-60" : ""}`} data-testid={`addon-card-${key}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-semibold">{addon.name}</span>
+                          {isIncluded && (
+                            <Badge variant="secondary" className="text-[10px]">Included</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{addon.description}</p>
+                      </div>
+                      {!isIncluded && (
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => handleAddonStripeCheckout(key)}
+                            disabled={addonCheckoutLoading === key}
+                            data-testid={`button-addon-card-${key}`}
+                          >
+                            {addonCheckoutLoading === key ? (
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            ) : (
+                              <CreditCard className="h-3 w-3 mr-1" />
+                            )}
+                            Card
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => {
+                              setAddonPaymentMethod("crypto");
+                              setAddonCheckoutLoading(key);
+                              setPendingAddonPayment({ selectingChain: true, addonKey: key });
+                            }}
+                            disabled={addonCheckoutLoading === key && addonPaymentMethod !== "crypto"}
+                            data-testid={`button-addon-crypto-${key}`}
+                          >
+                            <Coins className="h-3 w-3 mr-1" />
+                            Crypto
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {pendingAddonPayment?.selectingChain && (
+              <div className="space-y-3 rounded-lg border-2 border-blue-500/30 p-4" data-testid="addon-crypto-selector">
+                <p className="text-sm font-medium">
+                  Pay for {addonCatalog[pendingAddonPayment.addonKey]?.name} with crypto
+                </p>
+                <Select value={addonSelectedChain} onValueChange={setAddonSelectedChain}>
+                  <SelectTrigger className="h-9 text-sm" data-testid="select-addon-crypto-chain">
+                    <SelectValue placeholder="Select cryptocurrency..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cryptoAddresses.map((addr: any) => (
+                      <SelectItem key={addr.id} value={addr.chain}>
+                        {CHAIN_LABELS[addr.chain] || addr.chain.toUpperCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    size="sm"
+                    onClick={() => handleAddonCryptoPayment(pendingAddonPayment.addonKey)}
+                    disabled={!addonSelectedChain || addonCryptoLoading}
+                    data-testid="button-addon-pay-crypto"
+                  >
+                    {addonCryptoLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Coins className="h-3 w-3 mr-1" />}
+                    Pay ${(addonCatalog[pendingAddonPayment.addonKey]?.amount / 100).toFixed(2)}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setPendingAddonPayment(null); setAddonCheckoutLoading(null); }}
+                    data-testid="button-addon-cancel-crypto"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {pendingAddonPayment && !pendingAddonPayment.selectingChain && pendingAddonPayment.status === "pending" && (
+              <div className="space-y-3 rounded-lg border-2 border-blue-500/30 p-4" data-testid="addon-crypto-pending">
+                <div className="flex items-center gap-2 text-blue-600">
+                  <Clock className="h-4 w-4 animate-pulse" />
+                  <span className="text-sm font-medium">Awaiting add-on payment...</span>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-muted-foreground">Send exactly</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono font-bold text-xs">{pendingAddonPayment.expectedAmount} {pendingAddonPayment.expectedAsset}</span>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => copyToClipboard(pendingAddonPayment.expectedAmount, "Amount")} data-testid="button-copy-addon-amount">
+                        <Copy className="h-2.5 w-2.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs text-muted-foreground">To address</span>
+                    <div className="flex items-center gap-1">
+                      <code className="text-[10px] font-mono truncate max-w-[200px]">{pendingAddonPayment.toAddress}</code>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => copyToClipboard(pendingAddonPayment.toAddress, "Address")} data-testid="button-copy-addon-address">
+                        <Copy className="h-2.5 w-2.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  {pendingAddonPayment.destinationTag && (
+                    <div className="flex justify-between">
+                      <span className="text-xs text-muted-foreground">Destination Tag</span>
+                      <span className="font-mono text-xs">{pendingAddonPayment.destinationTag}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Checking for payment every 5 seconds...</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => { setPendingAddonPayment(null); setAddonCheckoutLoading(null); }} className="text-xs" data-testid="button-cancel-addon-payment">
+                  Cancel
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
