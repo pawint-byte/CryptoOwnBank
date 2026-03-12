@@ -130,7 +130,7 @@ export default function WhaleAlerts() {
   const activeXrpThreshold = alertsData?.xrpThreshold ?? 1_000_000;
   const activeRlusdThreshold = alertsData?.rlusdThreshold ?? 500_000;
 
-  const isNotificationsEnabled = settings?.enabled !== false;
+  const isNotificationsEnabled = isPaidUser && settings?.enabled !== false;
 
   useEffect(() => {
     if (!isNotificationsEnabled || alerts.length === 0) return;

@@ -1,4 +1,4 @@
-import { Client } from "xrpl";
+import { Client, type SubscribeRequest } from "xrpl";
 import { storage } from "../storage";
 import { db } from "../db";
 import { priceCache as priceCacheTable } from "@shared/schema";
@@ -101,10 +101,11 @@ async function connectAndSubscribe() {
       whaleClient = new Client(server);
       await whaleClient.connect();
 
-      await whaleClient.request({
+      const subscribeReq: SubscribeRequest = {
         command: "subscribe",
         streams: ["transactions"],
-      } as any);
+      };
+      await whaleClient.request(subscribeReq);
 
       whaleClient.on("transaction", (tx: any) => {
         handleTransaction(tx).catch(() => {});
