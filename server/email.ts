@@ -45,26 +45,37 @@ async function getResendClient() {
   };
 }
 
+const PRIMARY_FROM = "CryptoOwnBank <noreply@cryptoownbank.com>";
 const FALLBACK_FROM = "CryptoOwnBank <notification@pawint-app.com>";
 
 export async function sendEmail(to: string, subject: string, html: string, attachments?: { filename: string; content: Buffer }[]) {
-  try {
-    const { client, fromEmail } = await getResendClient();
-    const from = fromEmail ? `CryptoOwnBank <${fromEmail}>` : FALLBACK_FROM;
-    const emailData: any = {
-      from,
-      to,
-      subject,
-      html,
-    };
-    if (attachments && attachments.length > 0) {
-      emailData.attachments = attachments;
+  const { client, fromEmail } = await getResendClient();
+  const fromAddresses = [
+    fromEmail ? `CryptoOwnBank <${fromEmail}>` : null,
+    PRIMARY_FROM,
+    FALLBACK_FROM,
+  ].filter(Boolean) as string[];
+
+  for (const from of fromAddresses) {
+    try {
+      const emailData: any = { from, to, subject, html };
+      if (attachments && attachments.length > 0) {
+        emailData.attachments = attachments;
+      }
+      await client.emails.send(emailData);
+      console.log(`Email sent to ${to}: ${subject} (from: ${from})`);
+      return;
+    } catch (error: any) {
+      const msg = error?.message || "";
+      if (msg.includes("not verified") || msg.includes("not found") || msg.includes("domain")) {
+        console.warn(`[email] Domain not verified for ${from}, trying fallback...`);
+        continue;
+      }
+      console.error("Failed to send email:", error);
+      return;
     }
-    await client.emails.send(emailData);
-    console.log(`Email sent to ${to}: ${subject}`);
-  } catch (error) {
-    console.error("Failed to send email:", error);
   }
+  console.error(`[email] All from addresses failed for: ${to} — ${subject}`);
 }
 
 export async function sendWelcomeEmail(to: string, name: string) {
