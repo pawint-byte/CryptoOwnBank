@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -347,6 +348,11 @@ export default function MigrationGuide() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6" data-testid="page-migration-guide">
+      <SeoHead
+        title="Migration Guide — CryptoOwnBank | Import Your Portfolio"
+        description="Migrate from spreadsheets and Yahoo Finance to live portfolio tracking. Import CSV files, connect exchanges, add blockchain wallets — step by step."
+        path="/migration-guide"
+      />
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Badge className="bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/20 text-[10px]">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -263,6 +264,11 @@ function ProtocolCard({ protocol }: { protocol: InsuranceProtocol }) {
 export default function Insurance() {
   return (
     <div className="max-w-5xl mx-auto space-y-8" data-testid="page-insurance">
+      <SeoHead
+        title="DeFi Insurance Directory — CryptoOwnBank | Protect Your Crypto"
+        description="Compare decentralized insurance protocols to protect your crypto, DeFi positions, and smart contract risk. Nexus Mutual, InsurAce, Etherisc, and more."
+        path="/insurance"
+      />
       <div>
         <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">DeFi Insurance Directory</h1>
         <p className="text-muted-foreground mt-1" data-testid="text-page-subtitle">

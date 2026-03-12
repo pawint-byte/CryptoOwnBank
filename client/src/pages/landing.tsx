@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SeoHead } from "@/components/seo-head";
 import {
   Shield,
   TrendingUp,
@@ -706,8 +707,50 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Landing() {
+  const landingJsonLd = useMemo(() => [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "CryptoOwnBank",
+      url: "https://cryptoownbank.com",
+      logo: "https://cryptoownbank.com/favicon.png",
+      description: "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR.",
+      sameAs: [],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "CryptoOwnBank",
+      url: "https://cryptoownbank.com",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://cryptoownbank.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "CryptoOwnBank",
+      operatingSystem: "Web",
+      applicationCategory: "FinanceApplication",
+      description: "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR. Connect your cold wallet, track your portfolio across 24 blockchains, and earn real yield.",
+      offers: [
+        { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free tier" },
+        { "@type": "Offer", price: "29", priceCurrency: "USD", description: "Premium Monthly" },
+        { "@type": "Offer", price: "199", priceCurrency: "USD", description: "Premium Annual" },
+      ],
+    },
+  ], []);
+
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title="CryptoOwnBank — Be Your Own Bank | Track Crypto & Earn Yield"
+        description="Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR. Connect your cold wallet, track your portfolio, and earn real yield — principal always protected."
+        path="/"
+        jsonLd={landingJsonLd}
+      />
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#00A4E4] text-white text-center py-1.5 text-xs font-medium" data-testid="banner-beta">
         Beta — Early Access &middot; We're actively building. Your feedback shapes the product.
       </div>

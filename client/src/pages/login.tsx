@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SeoHead
+        title="Log In — CryptoOwnBank"
+        description="Log in to your CryptoOwnBank account. Track your crypto portfolio, manage yield vaults, and access your dashboard."
+        path="/login"
+      />
       <header className="border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">

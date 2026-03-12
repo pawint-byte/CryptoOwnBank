@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,6 +131,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <SeoHead
+        title="Contact & Feedback — CryptoOwnBank"
+        description="Send us feedback, report bugs, or request features for CryptoOwnBank. We read every message and respond quickly."
+        path="/contact"
+      />
       <div className="max-w-lg mx-auto space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-[#00A4E4]/10 mx-auto">

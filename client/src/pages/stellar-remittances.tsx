@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -235,6 +236,11 @@ export default function StellarRemittances() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Stellar Remittance Calculator — CryptoOwnBank | Compare Transfer Fees"
+        description="Compare remittance fees across providers. See how Stellar saves money on cross-border transfers vs Western Union, Wise, and PayPal."
+        path="/stellar/remittances"
+      />
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-remittances-title">
           Stellar Remittance Calculator

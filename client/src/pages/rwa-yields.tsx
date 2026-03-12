@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1107,6 +1108,11 @@ function EarningStatusSection() {
 export default function RwaYields() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
+      <SeoHead
+        title="Earn & Yield Explorer — CryptoOwnBank | RWA Yields, Vaults & Cashback"
+        description="Discover yield opportunities on tokenized real-world assets. Compare Soil Protocol, Ondo, Centrifuge, Maple Finance, and more — earn 5-12% on stablecoins and crypto."
+        path="/rwa-yields"
+      />
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-rwa-yields-title">
           Earn & Yield Explorer

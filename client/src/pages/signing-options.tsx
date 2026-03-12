@@ -1,3 +1,4 @@
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
@@ -89,6 +90,11 @@ const options = [
 export default function SigningOptions() {
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Signing Options — CryptoOwnBank | Choose Your Security Level"
+        description="Compare wallet signing options for CryptoOwnBank. Ledger Nano X, Xaman (Xumm), and software signing — understand the security tradeoffs for your XRPL transactions."
+        path="/signing-options"
+      />
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-signing-title">
           Signing Options — Choose Your Security Level

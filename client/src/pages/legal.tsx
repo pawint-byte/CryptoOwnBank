@@ -1,10 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SeoHead } from "@/components/seo-head";
 import { Wallet, ArrowLeft } from "lucide-react";
 
 export default function Legal() {
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title="Legal & Disclaimers — CryptoOwnBank"
+        description="Legal disclaimers, terms of use, and regulatory information for CryptoOwnBank. Non-custodial dashboard — we never hold your funds or keys."
+        path="/legal"
+      />
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">

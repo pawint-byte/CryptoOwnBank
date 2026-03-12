@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -415,6 +416,11 @@ export default function Stablecoins() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Stablecoin Command Center — CryptoOwnBank | RLUSD, USDC, USDT & More"
+        description="Compare stablecoins across every chain — RLUSD, USDC, USDT, EURCV, PYUSD, DAI. See market caps, peg stability, yield opportunities, and find the right stablecoin for your needs."
+        path="/stablecoins"
+      />
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-stablecoins-title">
           Stablecoin Command Center

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,6 +122,11 @@ export default function StellarSend() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Stellar Send — CryptoOwnBank | Send Payments via Stellar Network"
+        description="Send payments via Stellar network with automatic currency conversion. Fast, low-cost cross-border transfers using XLM, USDC, and more."
+        path="/stellar/send"
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-stellar-send-title">

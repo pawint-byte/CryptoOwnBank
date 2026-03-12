@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -162,6 +163,11 @@ export default function PayPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+      <SeoHead
+        title="Pay — CryptoOwnBank | Send Crypto Payments"
+        description="Send and receive crypto payments on XRPL. Fast, low-cost wallet-to-wallet transfers with QR codes and payment links."
+        path="/pay"
+      />
       <div className="max-w-md w-full space-y-4">
         <div className="text-center space-y-3">
           {senderLogo && (

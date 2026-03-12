@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { SeoHead } from "@/components/seo-head";
 
 const faqGroups = [
   {
@@ -565,8 +566,29 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function FAQ() {
+  const faqJsonLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqGroups.flatMap((group) =>
+      group.items.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.a.replace(/<[^>]*>/g, ""),
+        },
+      }))
+    ),
+  }), []);
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
+      <SeoHead
+        title="FAQ — CryptoOwnBank | Frequently Asked Questions"
+        description="Get answers about CryptoOwnBank — portfolio tracking across 24 blockchains, RLUSD yield vaults, cold wallet security, exchange API keys, stablecoins, and more."
+        path="/faq"
+        jsonLd={faqJsonLd}
+      />
       <div>
         <h1 className="text-3xl font-bold" data-testid="faq-title">Frequently Asked Questions</h1>
         <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank — portfolio tracking, XRPL tools, payments for consumers and businesses, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>

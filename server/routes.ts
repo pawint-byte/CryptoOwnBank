@@ -67,6 +67,40 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  app.get("/sitemap.xml", (_req, res) => {
+    const baseUrl = "https://cryptoownbank.com";
+    const publicRoutes = [
+      { path: "/", priority: "1.0", changefreq: "daily" },
+      { path: "/yield-calculator", priority: "0.8", changefreq: "weekly" },
+      { path: "/chain-guide", priority: "0.8", changefreq: "monthly" },
+      { path: "/rwa-yields", priority: "0.8", changefreq: "weekly" },
+      { path: "/stablecoins", priority: "0.8", changefreq: "weekly" },
+      { path: "/insurance", priority: "0.7", changefreq: "monthly" },
+      { path: "/migration-guide", priority: "0.7", changefreq: "monthly" },
+      { path: "/faq", priority: "0.8", changefreq: "monthly" },
+      { path: "/setup-guide", priority: "0.7", changefreq: "monthly" },
+      { path: "/signing-options", priority: "0.6", changefreq: "monthly" },
+      { path: "/contact", priority: "0.5", changefreq: "monthly" },
+      { path: "/pay", priority: "0.6", changefreq: "monthly" },
+      { path: "/legal", priority: "0.3", changefreq: "yearly" },
+      { path: "/privacy", priority: "0.3", changefreq: "yearly" },
+      { path: "/login", priority: "0.5", changefreq: "monthly" },
+      { path: "/signup", priority: "0.5", changefreq: "monthly" },
+      { path: "/stellar/send", priority: "0.6", changefreq: "monthly" },
+      { path: "/stellar/remittances", priority: "0.6", changefreq: "monthly" },
+    ];
+    const today = new Date().toISOString().split("T")[0];
+    const urls = publicRoutes
+      .map(
+        (r) =>
+          `  <url>\n    <loc>${baseUrl}${r.path}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`
+      )
+      .join("\n");
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+  });
+
   app.get("/api/wallet", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

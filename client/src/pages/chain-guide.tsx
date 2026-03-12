@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -214,6 +215,11 @@ export default function ChainGuide() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      <SeoHead
+        title="XRP vs XLM Chain Guide — CryptoOwnBank | Compare XRPL & Stellar"
+        description="Compare XRP Ledger and Stellar (XLM) side by side. Learn when to use each chain for savings, payments, remittances, and DeFi — all from one non-custodial dashboard."
+        path="/chain-guide"
+      />
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-chain-guide-title">
           XRP vs XLM: When to Use Which

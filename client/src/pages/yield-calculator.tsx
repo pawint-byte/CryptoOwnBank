@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,26 +85,13 @@ export default function YieldCalculator() {
     [amount, selectedVault.apr, isCompound]
   );
 
-  useEffect(() => {
-    document.title = "Yield Calculator — CryptoOwnBank | Estimate RLUSD Earnings";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    const content =
-      "Calculate your projected earnings on RLUSD with Soil Protocol vaults. Compare Treasury (5.2% APR) and CREDIT+ (8.0% APR) returns with compound or simple interest.";
-    if (metaDesc) {
-      metaDesc.setAttribute("content", content);
-    } else {
-      const meta = document.createElement("meta");
-      meta.name = "description";
-      meta.content = content;
-      document.head.appendChild(meta);
-    }
-    return () => {
-      document.title = "CryptoOwnBank";
-    };
-  }, []);
-
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title="Yield Calculator — CryptoOwnBank | Estimate RLUSD Earnings"
+        description="Calculate your projected earnings on RLUSD with Soil Protocol vaults. Compare Treasury (5.2% APR) and CREDIT+ (8.0% APR) returns with compound or simple interest."
+        path="/yield-calculator"
+      />
       <header className="sticky top-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex h-14 items-center justify-between gap-4">

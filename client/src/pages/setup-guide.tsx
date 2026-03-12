@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SeoHead } from "@/components/seo-head";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -789,6 +790,11 @@ export default function SetupGuide() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SeoHead
+        title="Setup Guide — CryptoOwnBank | Getting Started with Cold Wallets & XRPL"
+        description="Step-by-step guides to set up your cold wallet, connect to CryptoOwnBank, and start earning yield on RLUSD. Toolkits for beginners, businesses, and advanced users."
+        path="/setup-guide"
+      />
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
