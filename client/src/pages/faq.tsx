@@ -252,7 +252,7 @@ const faqGroups = [
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit — unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, and auto-withdrawal from Soil vaults. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
+        a: "Premium unlocks the full cockpit — unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, auto-withdrawal from Soil vaults, extended Whale Alerts history with customizable thresholds, and Technical Analysis with all indicators (EMA, RSI, MACD, Bollinger Bands) plus up to 1 year of candlestick data. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -392,6 +392,22 @@ const faqGroups = [
       {
         q: "Are there fees for using XRPL Tools?",
         a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, or Send & Receive. The only cost is the XRPL network fee, which is approximately 0.00001 XRP per transaction — that's a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. The XRPL is one of the cheapest networks to transact on.",
+      },
+      {
+        q: "What are Whale Alerts?",
+        a: "Whale Alerts is real-time monitoring of large XRP and RLUSD transfers on the XRP Ledger. The system watches for transactions of 1 million XRP or more, and 500,000 RLUSD or more. You see the amount, direction, and identified wallets (e.g. Binance, Ripple, Kraken, Bitstamp) in real time — so you know when big players are moving funds. Free users see the last 24 hours of whale activity; Premium and Pro users see extended history.",
+      },
+      {
+        q: "Can I customize whale alert thresholds?",
+        a: "Yes — Premium and Pro users can set custom minimum thresholds for both XRP and RLUSD whale alerts. The defaults are 1 million XRP and 500,000 RLUSD. You can lower them to a minimum of 100,000 XRP and 10,000 RLUSD to catch smaller whale movements, or raise them to focus only on the biggest transfers.",
+      },
+      {
+        q: "How does whale wallet identification work?",
+        a: "We maintain a curated database of known XRPL wallet addresses covering major exchanges (Binance, Kraken, Coinbase, Bitstamp, Uphold, and more), Ripple-associated wallets, escrow accounts, token issuers, and DeFi protocols. When a whale transaction occurs, we look up both the sender and receiver to show you human-readable labels like 'Binance Hot Wallet' or 'Ripple Escrow' instead of just raw addresses. Unknown wallets still show the raw address.",
+      },
+      {
+        q: "What technical analysis indicators are available?",
+        a: "Free users get Simple Moving Average (SMA) at 20, 50, and 200 periods with up to 30 days of data. Premium and Pro users unlock all indicators: Exponential Moving Average (EMA 12/26), Relative Strength Index (RSI, 14-period), MACD (12/26/9 with signal line and histogram), and Bollinger Bands (20-period, 2 standard deviations) — with up to 1 year of candlestick data. Charts support interactive zoom and pan across 21 supported crypto assets including BTC, ETH, XRP, SOL, XLM, ADA, and more.",
       },
       {
         q: "What's the difference between a limit order and a market order?",
@@ -585,7 +601,7 @@ export default function FAQ() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <SeoHead
         title="FAQ — CryptoOwnBank | Frequently Asked Questions"
-        description="Get answers about CryptoOwnBank — portfolio tracking across 24 blockchains, RLUSD yield vaults, cold wallet security, exchange API keys, stablecoins, and more."
+        description="Get answers about CryptoOwnBank — portfolio tracking across 24 blockchains, RLUSD yield vaults, cold wallet security, whale alerts, technical analysis, exchange API keys, stablecoins, and more."
         path="/faq"
         jsonLd={faqJsonLd}
       />

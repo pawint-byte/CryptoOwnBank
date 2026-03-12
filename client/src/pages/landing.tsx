@@ -48,6 +48,8 @@ import {
   Wifi,
   UserX,
   MapPin,
+  Waves,
+  CandlestickChart,
 } from "lucide-react";
 
 const xrplToolsComparison = [
@@ -261,6 +263,22 @@ const features = [
     link: "/portfolio",
     linkLabel: "View Market Data",
   },
+  {
+    icon: Waves,
+    title: "XRPL Whale Alerts",
+    description:
+      "Real-time monitoring of large XRP and RLUSD transactions on the XRP Ledger. See whale movements as they happen — amounts, direction, and identified wallets like Binance, Ripple, and Kraken. Free users see the last 24 hours; Premium and Pro get extended history with customizable thresholds.",
+    link: "/whale-alerts",
+    linkLabel: "View Whale Alerts",
+  },
+  {
+    icon: CandlestickChart,
+    title: "Technical Analysis",
+    description:
+      "Interactive candlestick charts with SMA, EMA, RSI, MACD, and Bollinger Bands for 21 crypto assets. Zoom and pan across timeframes. Free tier includes SMA indicators with up to 30 days of data; Premium and Pro unlock all indicators with up to 1 year of history.",
+    link: "/technical-analysis",
+    linkLabel: "Open Charts",
+  },
 ];
 
 const memberStories = [
@@ -402,6 +420,8 @@ const premiumFeatures = [
   "Auto-withdrawal from Soil vaults",
   "Portfolio search, filter & sort",
   "Statement Insights with rate comparisons",
+  "Whale Alerts — extended history + custom thresholds",
+  "Technical Analysis — all indicators + 1-year charts",
 ];
 
 const annualBonusFeatures = [
