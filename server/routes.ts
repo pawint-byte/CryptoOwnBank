@@ -4642,6 +4642,120 @@ export async function registerRoutes(
     }
   });
 
+  const { captureError } = await import("./errorMonitor");
+
+  const clientErrorRateMap = new Map<string, number>();
+  const CLIENT_ERROR_RATE_LIMIT_MS = 5000;
+  const CLIENT_ERROR_RATE_LIMIT_CLEANUP = 60000;
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, ts] of clientErrorRateMap) {
+      if (now - ts > CLIENT_ERROR_RATE_LIMIT_CLEANUP) clientErrorRateMap.delete(key);
+    }
+  }, CLIENT_ERROR_RATE_LIMIT_CLEANUP);
+
+  app.post("/api/errors/report", async (req: any, res) => {
+    try {
+      const { message, stack, route, source, metadata } = req.body;
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ message: "Error message is required" });
+      }
+
+      const ip = req.ip || req.connection?.remoteAddress || "unknown";
+      const rateKey = `${ip}:${String(message).slice(0, 100)}`;
+      const now = Date.now();
+      const lastReport = clientErrorRateMap.get(rateKey);
+      if (lastReport && now - lastReport < CLIENT_ERROR_RATE_LIMIT_MS) {
+        return res.json({ success: true, throttled: true });
+      }
+      clientErrorRateMap.set(rateKey, now);
+
+      const userId = req.user?.claims?.sub || null;
+      const userEmail = req.user?.claims?.email || null;
+
+      const allowedSeverities = ["info", "warning", "error"];
+      const safeSeverity = allowedSeverities.includes(req.body.severity) ? req.body.severity : "error";
+
+      await captureError({
+        message: String(message).slice(0, 2000),
+        stack: stack ? String(stack).slice(0, 5000) : undefined,
+        source: source || "client",
+        route: route ? String(route).slice(0, 500) : undefined,
+        severity: safeSeverity,
+        userId,
+        userEmail,
+        userAgent: req.headers["user-agent"],
+        metadata: metadata || null,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error report endpoint failed:", error);
+      res.status(500).json({ message: "Failed to report error" });
+    }
+  });
+
+  app.get("/api/admin/errors/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const stats = await storage.getErrorStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load error stats" });
+    }
+  });
+
+  app.get("/api/admin/errors", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const { source, status, search, limit, offset } = req.query;
+      const errors = await storage.getErrorLogs({
+        source: source || undefined,
+        status: status || undefined,
+        search: search || undefined,
+        limit: parseInt(limit as string) || 50,
+        offset: parseInt(offset as string) || 0,
+      });
+      const total = await storage.getErrorLogCount({
+        source: source || undefined,
+        status: status || undefined,
+        search: search || undefined,
+      });
+      res.json({ errors, total });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load error logs" });
+    }
+  });
+
+  app.patch("/api/admin/errors/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const { status } = req.body;
+      if (!["open", "resolved", "ignored"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status. Must be open, resolved, or ignored." });
+      }
+      const updated = await storage.updateErrorLogStatus(req.params.id, status);
+      if (!updated) {
+        return res.status(404).json({ message: "Error log not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update error status" });
+    }
+  });
+
   startPriceAlertChecker();
   seedPriceCache();
 

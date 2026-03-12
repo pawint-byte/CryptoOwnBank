@@ -554,3 +554,34 @@ export type WhaleAlert = typeof whaleAlerts.$inferSelect;
 export type InsertWhaleAlert = z.infer<typeof insertWhaleAlertSchema>;
 export type WhaleAlertSettings = typeof whaleAlertSettings.$inferSelect;
 export type InsertWhaleAlertSettings = z.infer<typeof insertWhaleAlertSettingsSchema>;
+
+export const errorLogs = pgTable("error_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  message: text("message").notNull(),
+  stack: text("stack"),
+  source: varchar("source", { length: 50 }).notNull().default("server"),
+  route: varchar("route", { length: 500 }),
+  severity: varchar("severity", { length: 20 }).notNull().default("error"),
+  userId: varchar("user_id"),
+  userEmail: varchar("user_email"),
+  statusCode: integer("status_code"),
+  requestMethod: varchar("request_method", { length: 10 }),
+  userAgent: text("user_agent"),
+  metadata: jsonb("metadata"),
+  fingerprint: varchar("fingerprint", { length: 64 }),
+  status: varchar("status", { length: 20 }).notNull().default("open"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_error_logs_created_at").on(table.createdAt),
+  index("idx_error_logs_source").on(table.source),
+  index("idx_error_logs_fingerprint").on(table.fingerprint),
+  index("idx_error_logs_status").on(table.status),
+]);
+
+export const insertErrorLogSchema = createInsertSchema(errorLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ErrorLog = typeof errorLogs.$inferSelect;
+export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;

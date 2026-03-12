@@ -71,6 +71,9 @@ import {
   type InsertWhaleAlert,
   type WhaleAlertSettings,
   type InsertWhaleAlertSettings,
+  errorLogs,
+  type ErrorLog,
+  type InsertErrorLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -226,6 +229,13 @@ export interface IStorage {
   getWhaleAlerts(limit: number, since?: Date, xrpThreshold?: number, rlusdThreshold?: number): Promise<WhaleAlert[]>;
   getWhaleAlertSettings(userId: string): Promise<WhaleAlertSettings | undefined>;
   upsertWhaleAlertSettings(userId: string, data: { xrpThreshold?: string; rlusdThreshold?: string; enabled?: boolean }): Promise<WhaleAlertSettings>;
+
+  createErrorLog(data: InsertErrorLog): Promise<ErrorLog>;
+  getErrorLogs(options: { limit?: number; offset?: number; source?: string; status?: string; search?: string }): Promise<ErrorLog[]>;
+  getErrorLogById(id: string): Promise<ErrorLog | undefined>;
+  updateErrorLogStatus(id: string, status: string): Promise<ErrorLog | undefined>;
+  getErrorStats(): Promise<{ totalToday: number; uniqueToday: number; mostFrequent: { fingerprint: string; message: string; count: number } | null }>;
+  getErrorLogCount(options: { source?: string; status?: string; search?: string }): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -969,6 +979,92 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return result;
+  }
+
+  async createErrorLog(data: InsertErrorLog): Promise<ErrorLog> {
+    const [result] = await db.insert(errorLogs).values(data).returning();
+    return result;
+  }
+
+  async getErrorLogs(options: { limit?: number; offset?: number; source?: string; status?: string; search?: string }): Promise<ErrorLog[]> {
+    const conditions = [];
+    if (options.source) conditions.push(eq(errorLogs.source, options.source));
+    if (options.status) conditions.push(eq(errorLogs.status, options.status));
+    if (options.search) {
+      conditions.push(sql`(${errorLogs.message} ILIKE ${'%' + options.search + '%'} OR ${errorLogs.route} ILIKE ${'%' + options.search + '%'} OR ${errorLogs.userEmail} ILIKE ${'%' + options.search + '%'})`);
+    }
+    const query = db.select().from(errorLogs);
+    if (conditions.length > 0) {
+      return query
+        .where(and(...conditions))
+        .orderBy(desc(errorLogs.createdAt))
+        .limit(options.limit || 100)
+        .offset(options.offset || 0);
+    }
+    return query
+      .orderBy(desc(errorLogs.createdAt))
+      .limit(options.limit || 100)
+      .offset(options.offset || 0);
+  }
+
+  async getErrorLogById(id: string): Promise<ErrorLog | undefined> {
+    const [result] = await db.select().from(errorLogs).where(eq(errorLogs.id, id));
+    return result;
+  }
+
+  async updateErrorLogStatus(id: string, status: string): Promise<ErrorLog | undefined> {
+    const [result] = await db.update(errorLogs)
+      .set({ status })
+      .where(eq(errorLogs.id, id))
+      .returning();
+    return result;
+  }
+
+  async getErrorStats(): Promise<{ totalToday: number; uniqueToday: number; mostFrequent: { fingerprint: string; message: string; count: number } | null }> {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [totalResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(errorLogs)
+      .where(gte(errorLogs.createdAt, todayStart));
+
+    const [uniqueResult] = await db.select({ count: sql<number>`count(distinct ${errorLogs.fingerprint})::int` })
+      .from(errorLogs)
+      .where(gte(errorLogs.createdAt, todayStart));
+
+    const mostFrequentRows = await db.select({
+      fingerprint: errorLogs.fingerprint,
+      message: errorLogs.message,
+      count: sql<number>`count(*)::int`,
+    })
+      .from(errorLogs)
+      .where(gte(errorLogs.createdAt, todayStart))
+      .groupBy(errorLogs.fingerprint, errorLogs.message)
+      .orderBy(sql`count(*) DESC`)
+      .limit(1);
+
+    return {
+      totalToday: totalResult?.count || 0,
+      uniqueToday: uniqueResult?.count || 0,
+      mostFrequent: mostFrequentRows.length > 0
+        ? { fingerprint: mostFrequentRows[0].fingerprint || "", message: mostFrequentRows[0].message, count: mostFrequentRows[0].count }
+        : null,
+    };
+  }
+
+  async getErrorLogCount(options: { source?: string; status?: string; search?: string }): Promise<number> {
+    const conditions = [];
+    if (options.source) conditions.push(eq(errorLogs.source, options.source));
+    if (options.status) conditions.push(eq(errorLogs.status, options.status));
+    if (options.search) {
+      conditions.push(sql`(${errorLogs.message} ILIKE ${'%' + options.search + '%'} OR ${errorLogs.route} ILIKE ${'%' + options.search + '%'} OR ${errorLogs.userEmail} ILIKE ${'%' + options.search + '%'})`);
+    }
+    if (conditions.length > 0) {
+      const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(errorLogs).where(and(...conditions));
+      return result?.count || 0;
+    }
+    const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(errorLogs);
+    return result?.count || 0;
   }
 }
 

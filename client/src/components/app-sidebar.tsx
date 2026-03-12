@@ -45,6 +45,7 @@ import {
   QrCode,
   CloudUpload,
   Fish,
+  Bug,
 } from "lucide-react";
 import {
   Sidebar,
@@ -389,6 +390,18 @@ export function AppSidebar() {
                     <Link href="/admin/users">
                       <Users className="h-4 w-4 text-amber-500" />
                       <span>User Management</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === "/admin/errors"}
+                    data-testid="nav-admin-errors"
+                  >
+                    <Link href="/admin/errors">
+                      <Bug className="h-4 w-4 text-amber-500" />
+                      <span>Error Monitor</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { useToast } from "@/hooks/use-toast";
+import { ErrorBoundary, installGlobalErrorHandlers } from "@/components/error-boundary";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -65,6 +66,7 @@ import Snapshot from "@/pages/snapshot";
 import PaymentQueue from "@/pages/payment-queue";
 import WhaleAlerts from "@/pages/whale-alerts";
 import TechnicalAnalysis from "@/pages/technical-analysis";
+import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import { OfflineBanner } from "@/components/offline-banner";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -153,6 +155,7 @@ function AuthenticatedRoutes() {
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
+        <Route path="/admin/errors" component={AdminErrorMonitor} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>
@@ -243,17 +246,21 @@ function ReferralDetector() {
   return null;
 }
 
+installGlobalErrorHandlers();
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="cryptobroker-theme">
-        <TooltipProvider>
-          <ReferralDetector />
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="system" storageKey="cryptobroker-theme">
+          <TooltipProvider>
+            <ReferralDetector />
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

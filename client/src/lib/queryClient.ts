@@ -3,6 +3,22 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    if (res.status >= 500) {
+      try {
+        fetch("/api/errors/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: `API Error ${res.status}: ${text.slice(0, 500)}`,
+            source: "api-client",
+            route: res.url,
+            severity: "error",
+            metadata: { status: res.status },
+          }),
+          credentials: "include",
+        }).catch(() => {});
+      } catch {}
+    }
     throw new Error(`${res.status}: ${text}`);
   }
 }
