@@ -4510,6 +4510,71 @@ export async function registerRoutes(
     }
   });
 
+  const TA_COINGECKO_IDS: Record<string, string> = {
+    BTC: "bitcoin", ETH: "ethereum", XRP: "ripple", SOL: "solana",
+    ADA: "cardano", DOT: "polkadot", XLM: "stellar", DOGE: "dogecoin",
+    LTC: "litecoin", BNB: "binancecoin", AVAX: "avalanche-2", TRX: "tron",
+    MATIC: "polygon-ecosystem-token", HBAR: "hedera-hashgraph", ALGO: "algorand",
+    XDC: "xdcinnetwork", CRO: "crypto-com-chain", VET: "vechain",
+    TON: "the-open-network", USDT: "tether", USDC: "usd-coin",
+  };
+
+  const ohlcCache = new Map<string, { data: any; expiry: number }>();
+
+  app.get("/api/technical-analysis/ohlc/:symbol", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+
+      const symbol = (req.params.symbol as string).toUpperCase();
+      const maxDays = tier === "free" ? 30 : 365;
+      const rawDays = parseInt(req.query.days as string);
+      const days = Math.max(1, Math.min(Number.isFinite(rawDays) ? rawDays : 90, maxDays));
+
+      const cgId = TA_COINGECKO_IDS[symbol];
+      if (!cgId) {
+        return res.status(400).json({ message: `Unsupported symbol: ${symbol}` });
+      }
+
+      const cacheKey = `${cgId}-${days}`;
+      const cached = ohlcCache.get(cacheKey);
+      if (cached && cached.expiry > Date.now()) {
+        return res.json({ symbol, days, ohlc: cached.data });
+      }
+
+      const url = `https://api.coingecko.com/api/v3/coins/${cgId}/ohlc?vs_currency=usd&days=${days}`;
+      const resp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; CryptoOwnBank/1.0)" },
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!resp.ok) {
+        console.error(`[ta] CoinGecko OHLC error: ${resp.status} for ${symbol}`);
+        return res.status(502).json({ message: "Failed to fetch OHLC data from provider" });
+      }
+
+      const raw = await resp.json();
+      const ohlc = (raw as number[][]).map((candle: number[]) => ({
+        timestamp: candle[0],
+        open: candle[1],
+        high: candle[2],
+        low: candle[3],
+        close: candle[4],
+      }));
+
+      ohlcCache.set(cacheKey, { data: ohlc, expiry: Date.now() + 2 * 60 * 60 * 1000 });
+
+      res.json({ symbol, days, ohlc });
+    } catch (error) {
+      console.error("Technical analysis OHLC error:", error);
+      res.status(500).json({ message: "Failed to fetch OHLC data" });
+    }
+  });
+
+  app.get("/api/technical-analysis/symbols", isAuthenticated, async (_req: any, res) => {
+    res.json({ symbols: Object.keys(TA_COINGECKO_IDS) });
+  });
+
   app.get("/api/whale-alerts", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
