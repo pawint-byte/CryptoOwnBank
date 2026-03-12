@@ -16,6 +16,46 @@ export interface XummSignInPayload {
 const XUMM_PENDING_KEY = "xumm_pending_signin";
 const XUMM_PENDING_PAYMENT_KEY = "xumm_pending_payment";
 
+export function hasPendingXummPayment(): boolean {
+  return !!sessionStorage.getItem(XUMM_PENDING_PAYMENT_KEY);
+}
+
+export function getPendingXummPaymentUuid(): string | null {
+  return sessionStorage.getItem(XUMM_PENDING_PAYMENT_KEY);
+}
+
+export async function completePendingXummPayment(): Promise<XummSignResult> {
+  const uuid = sessionStorage.getItem(XUMM_PENDING_PAYMENT_KEY);
+  if (!uuid) {
+    return { success: false, error: "No pending payment" };
+  }
+
+  const maxAttempts = 30;
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const status = await checkXummStatus(uuid);
+      if (status.resolved) {
+        sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
+        if (status.signed) {
+          return { success: true, txHash: uuid };
+        }
+        return { success: false, error: "Payment was declined" };
+      }
+    } catch {
+      sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
+      return { success: false, error: "Failed to check payment status" };
+    }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
+  sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
+  return { success: false, error: "Payment timed out. Please try again." };
+}
+
+export function clearPendingXummPayment(): void {
+  sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
+}
+
 export async function createXummSignIn(): Promise<XummSignInPayload> {
   const res = await apiRequest("POST", "/api/xumm/signin");
   return res.json();

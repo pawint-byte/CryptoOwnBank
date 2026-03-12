@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ import {
   calculateAccruedInterest,
 } from "@/lib/xrpl-client";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
-import { signPayment } from "@/lib/xumm-connector";
+import { signPayment, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
 
@@ -78,6 +78,50 @@ export default function OwnBankVaults() {
   } = useXrplStore();
 
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
+
+  useEffect(() => {
+    if (!hasPendingXummPayment()) return;
+    const metaStr = sessionStorage.getItem("xumm_pending_deposit_meta");
+    setIsDepositing(true);
+
+    completePendingXummPayment().then((result) => {
+      setIsDepositing(false);
+      sessionStorage.removeItem("xumm_pending_deposit_meta");
+
+      if (result.success) {
+        if (metaStr) {
+          try {
+            const meta = JSON.parse(metaStr);
+            addVaultDeposit({
+              vaultId: meta.vaultId,
+              vaultName: meta.vaultName,
+              principal: meta.principal,
+              depositDate: new Date().toISOString(),
+              apr: meta.apr,
+              txHash: result.txHash,
+            });
+          } catch {}
+        }
+        try {
+          const { walletAddress } = useXrplStore.getState();
+          apiRequest("POST", "/api/soil/sync", {
+            walletAddress,
+            walletType: walletType || "xumm",
+          }).catch(() => {});
+        } catch {}
+        toast({
+          title: "Deposit Successful",
+          description: "Your Xaman payment was confirmed. Transaction recorded and synced.",
+        });
+      } else if (result.error && result.error !== "No pending payment") {
+        toast({
+          title: "Deposit Failed",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
+    });
+  }, []);
 
   const [depositModalOpen, setDepositModalOpen] = useState(false);
   const [selectedVault, setSelectedVault] = useState<(typeof SOIL_VAULTS)[0] | null>(null);
@@ -154,6 +198,12 @@ export default function OwnBankVaults() {
       let result: { success: boolean; txHash?: string; error?: string };
 
       if (walletType === "xumm") {
+        sessionStorage.setItem("xumm_pending_deposit_meta", JSON.stringify({
+          vaultId: selectedVault.id,
+          vaultName: selectedVault.name,
+          principal: amount,
+          apr: selectedVault.apr,
+        }));
         result = await signPayment(selectedVault.address, {
           currency: RLUSD_CURRENCY,
           value: amount.toString(),
@@ -170,6 +220,7 @@ export default function OwnBankVaults() {
       }
 
       if (result.success) {
+        sessionStorage.removeItem("xumm_pending_deposit_meta");
         const deposit: VaultDeposit = {
           vaultId: selectedVault.id,
           vaultName: selectedVault.name,
