@@ -70,6 +70,25 @@ export default function AdminUsers() {
     },
   });
 
+  const sendActivationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/send-activation-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Emails Sent", description: `Activation emails sent to ${data.sent} users. ${data.failed > 0 ? `${data.failed} failed.` : ""}` });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const migrateMutation = useMutation({
     mutationFn: async (userId: string) => {
       const res = await fetch("/api/admin/migrate-auth", {
@@ -168,6 +187,17 @@ export default function AdminUsers() {
             {bulkVerifyMutation.isPending ? "Verifying..." : `Verify All (${unverifiedCount})`}
           </Button>
         )}
+        <Button
+          variant="default"
+          size="sm"
+          className="bg-[#00A4E4] hover:bg-[#0093cc]"
+          onClick={() => sendActivationMutation.mutate()}
+          disabled={sendActivationMutation.isPending}
+          data-testid="button-send-activation"
+        >
+          <Mail className="h-4 w-4 mr-2" />
+          {sendActivationMutation.isPending ? "Sending..." : "Send Activation Emails"}
+        </Button>
       </div>
 
       <Card>

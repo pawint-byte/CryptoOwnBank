@@ -14,6 +14,7 @@ import {
 import {
   sendEmailVerification,
   sendPasswordReset,
+  sendAccountActivatedEmail,
 } from "../../email";
 
 const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
@@ -535,6 +536,38 @@ export function registerAuthRoutes(app: Express): void {
     } catch (error) {
       console.error("Error bulk verifying users:", error);
       res.status(500).json({ message: "Failed to bulk verify users" });
+    }
+  });
+
+  app.post("/api/admin/send-activation-emails", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allUsers = await db
+        .select({ id: users.id, email: users.email, firstName: users.firstName })
+        .from(users)
+        .where(eq(users.emailVerified, true));
+
+      const nonAdminUsers = allUsers.filter(
+        (u) => u.email && !ADMIN_EMAILS.includes(u.email.toLowerCase())
+      );
+
+      let sent = 0;
+      let failed = 0;
+      for (const user of nonAdminUsers) {
+        try {
+          await sendAccountActivatedEmail(user.email!, user.firstName || "there");
+          sent++;
+          await new Promise((r) => setTimeout(r, 200));
+        } catch (err) {
+          console.error(`Failed to send activation email to ${user.email}:`, err);
+          failed++;
+        }
+      }
+
+      console.log(`[admin] Sent ${sent} activation emails, ${failed} failed`);
+      res.json({ sent, failed, total: nonAdminUsers.length });
+    } catch (error) {
+      console.error("Error sending activation emails:", error);
+      res.status(500).json({ message: "Failed to send activation emails" });
     }
   });
 

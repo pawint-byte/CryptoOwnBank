@@ -99,6 +99,48 @@ export async function sendWelcomeEmail(to: string, name: string) {
   await sendEmail(to, "Welcome to CryptoOwnBank", html);
 }
 
+export async function sendAccountActivatedEmail(to: string, name: string) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Your Account is Ready, ${name}!</h2>
+        <p style="color: #555; line-height: 1.6;">
+          Great news — your account has been verified and is ready to use. We apologize for the delay
+          and appreciate your patience.
+        </p>
+        <p style="color: #555; line-height: 1.6;">
+          You can now log in with the email and password you used when you signed up and start exploring:
+        </p>
+        <ul style="color: #555; line-height: 2; padding-left: 20px;">
+          <li>Track your crypto portfolio across multiple chains</li>
+          <li>Deposit RLUSD into yield vaults and earn up to 8% APR</li>
+          <li>Send payments, swap tokens on the DEX</li>
+          <li>Monitor whale wallets and real-time alerts</li>
+        </ul>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="https://cryptoownbank.com/login" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Log In Now
+          </a>
+        </div>
+        <div style="background: #f0f9ff; border-left: 4px solid #00A4E4; padding: 15px; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0; color: #555;">
+            <strong>Your keys, your crypto.</strong> We never store your private keys. All transactions
+            are signed client-side via your own wallet.
+          </p>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, "Your CryptoOwnBank Account is Ready!", html);
+}
+
 export async function sendDepositConfirmation(
   to: string,
   vaultName: string,
