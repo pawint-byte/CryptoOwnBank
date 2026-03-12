@@ -48,6 +48,8 @@ import {
   Loader2,
   RotateCcw,
   Coins,
+  Clock,
+  CalendarDays,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 
@@ -736,18 +738,84 @@ export default function OwnBankDashboard() {
                 })()}
               </div>
 
-              {soilSummary.firstDepositDate && (
-                <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-muted-foreground">Active since</span>
-                    <span className="font-medium">{new Date(soilSummary.firstDepositDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+              {soilSummary.firstDepositDate && (() => {
+                const totalDep = parseFloat(soilSummary.totalDeposited);
+                const apr = parseFloat(soilSummary.weightedApr || "6.5") / 100;
+                const dailyYield = totalDep * apr / 365;
+                const weeklyYield = dailyYield * 7;
+                const monthlyYield = dailyYield * 30;
+                const firstDate = new Date(soilSummary.firstDepositDate!);
+                const daysSinceFirst = Math.max(0, Math.floor((Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24)));
+                const yieldAmt = parseFloat(soilSummary.totalYieldReceived || "0");
+                const PAYOUT_CYCLE_DAYS = 7;
+                const daysSinceLastPayout = yieldAmt > 0
+                  ? (() => {
+                      const yieldTxns = soilSummary.transactions?.filter(t => t.type === "yield") || [];
+                      if (yieldTxns.length > 0) {
+                        const lastYield = yieldTxns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                        return Math.floor((Date.now() - new Date(lastYield.date).getTime()) / (1000 * 60 * 60 * 24));
+                      }
+                      return daysSinceFirst;
+                    })()
+                  : daysSinceFirst;
+                const daysUntilNext = Math.max(0, PAYOUT_CYCLE_DAYS - (daysSinceLastPayout % PAYOUT_CYCLE_DAYS));
+                const nextPayoutDate = new Date(Date.now() + daysUntilNext * 24 * 60 * 60 * 1000);
+                const pendingYield = dailyYield * daysSinceLastPayout;
+
+                return (
+                  <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">Active since</span>
+                      <span className="font-medium">{firstDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} ({daysSinceFirst}d)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Blended APR</span>
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">{soilSummary.weightedApr || "6.5"}%</span>
+                    </div>
+
+                    <div className="border-t pt-2 mt-1">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <CalendarDays className="h-3.5 w-3.5 text-blue-500" />
+                        <p className="text-[10px] sm:text-xs font-medium">Yield Projections</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center">
+                          <p className="text-[10px] text-muted-foreground">Daily</p>
+                          <p className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">+${dailyYield.toFixed(2)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-muted-foreground">Weekly</p>
+                          <p className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">+${weeklyYield.toFixed(2)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-muted-foreground">Monthly</p>
+                          <p className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">+${monthlyYield.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-2 mt-1">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Clock className="h-3.5 w-3.5 text-amber-500" />
+                        <p className="text-[10px] sm:text-xs font-medium">Next Payout Estimate</p>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground text-xs">Expected around</span>
+                        <span className="text-xs font-medium">
+                          {daysUntilNext === 0 ? "Any day now" : `~${nextPayoutDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} (${daysUntilNext}d)`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-0.5">
+                        <span className="text-muted-foreground text-xs">Pending yield (est.)</span>
+                        <span className="text-xs font-bold font-mono text-amber-600 dark:text-amber-400">~${pendingYield.toFixed(2)}</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground mt-1 italic">
+                        Soil pays yield periodically (~weekly). Exact timing may vary.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Blended APR</span>
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">{soilSummary.weightedApr || "6.5"}%</span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {soilSummary.vaults && soilSummary.vaults.length > 0 && (
                 <div className="space-y-1.5">
