@@ -77,6 +77,12 @@ import {
   userAddons,
   type UserAddon,
   type InsertUserAddon,
+  autoCompoundSettings,
+  type AutoCompoundSettings,
+  type InsertAutoCompoundSettings,
+  yieldPositions,
+  type YieldPosition,
+  type InsertYieldPosition,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
@@ -248,6 +254,19 @@ export interface IStorage {
   cancelUserAddon(id: string): Promise<UserAddon | undefined>;
   updateUserAddonStatus(id: string, status: string): Promise<UserAddon | undefined>;
   getExpiringAddons(withinDays: number): Promise<UserAddon[]>;
+
+  getAutoCompoundSettings(userId: string): Promise<AutoCompoundSettings[]>;
+  getAutoCompoundSetting(userId: string, vaultAddress: string): Promise<AutoCompoundSettings | undefined>;
+  upsertAutoCompoundSetting(userId: string, vaultAddress: string, enabled: boolean): Promise<AutoCompoundSettings>;
+  updateAutoCompoundYield(id: string, yieldAmount: string, yieldDate: Date): Promise<AutoCompoundSettings | undefined>;
+  getEnabledAutoCompoundUsers(): Promise<AutoCompoundSettings[]>;
+
+  createYieldPosition(position: InsertYieldPosition): Promise<YieldPosition>;
+  getYieldPositionsByUser(userId: string): Promise<YieldPosition[]>;
+  getYieldPosition(id: string): Promise<YieldPosition | undefined>;
+  updateYieldPosition(id: string, data: Partial<YieldPosition>): Promise<YieldPosition | undefined>;
+  deleteYieldPosition(id: string): Promise<void>;
+  getActiveYieldPositionsByUser(userId: string): Promise<YieldPosition[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1119,6 +1138,61 @@ export class DatabaseStorage implements IStorage {
     const future = new Date();
     future.setDate(future.getDate() + withinDays);
     return db.select().from(userAddons).where(and(eq(userAddons.status, "active"), lte(userAddons.expiresAt, future)));
+  }
+
+  async getAutoCompoundSettings(userId: string): Promise<AutoCompoundSettings[]> {
+    return db.select().from(autoCompoundSettings).where(eq(autoCompoundSettings.userId, userId));
+  }
+
+  async getAutoCompoundSetting(userId: string, vaultAddress: string): Promise<AutoCompoundSettings | undefined> {
+    const [result] = await db.select().from(autoCompoundSettings).where(and(eq(autoCompoundSettings.userId, userId), eq(autoCompoundSettings.vaultAddress, vaultAddress)));
+    return result;
+  }
+
+  async upsertAutoCompoundSetting(userId: string, vaultAddress: string, enabled: boolean): Promise<AutoCompoundSettings> {
+    const existing = await this.getAutoCompoundSetting(userId, vaultAddress);
+    if (existing) {
+      const [result] = await db.update(autoCompoundSettings).set({ enabled, updatedAt: new Date() }).where(eq(autoCompoundSettings.id, existing.id)).returning();
+      return result;
+    }
+    const [result] = await db.insert(autoCompoundSettings).values({ userId, vaultAddress, enabled }).returning();
+    return result;
+  }
+
+  async updateAutoCompoundYield(id: string, yieldAmount: string, yieldDate: Date): Promise<AutoCompoundSettings | undefined> {
+    const [result] = await db.update(autoCompoundSettings).set({ lastYieldDetected: yieldAmount, lastYieldDate: yieldDate, lastNotifiedAt: new Date(), updatedAt: new Date() }).where(eq(autoCompoundSettings.id, id)).returning();
+    return result;
+  }
+
+  async getEnabledAutoCompoundUsers(): Promise<AutoCompoundSettings[]> {
+    return db.select().from(autoCompoundSettings).where(eq(autoCompoundSettings.enabled, true));
+  }
+
+  async createYieldPosition(position: InsertYieldPosition): Promise<YieldPosition> {
+    const [result] = await db.insert(yieldPositions).values(position).returning();
+    return result;
+  }
+
+  async getYieldPositionsByUser(userId: string): Promise<YieldPosition[]> {
+    return db.select().from(yieldPositions).where(eq(yieldPositions.userId, userId)).orderBy(desc(yieldPositions.createdAt));
+  }
+
+  async getYieldPosition(id: string): Promise<YieldPosition | undefined> {
+    const [result] = await db.select().from(yieldPositions).where(eq(yieldPositions.id, id));
+    return result;
+  }
+
+  async updateYieldPosition(id: string, data: Partial<YieldPosition>): Promise<YieldPosition | undefined> {
+    const [result] = await db.update(yieldPositions).set({ ...data, updatedAt: new Date() }).where(eq(yieldPositions.id, id)).returning();
+    return result;
+  }
+
+  async deleteYieldPosition(id: string): Promise<void> {
+    await db.delete(yieldPositions).where(eq(yieldPositions.id, id));
+  }
+
+  async getActiveYieldPositionsByUser(userId: string): Promise<YieldPosition[]> {
+    return db.select().from(yieldPositions).where(and(eq(yieldPositions.userId, userId), eq(yieldPositions.status, "active"))).orderBy(desc(yieldPositions.createdAt));
   }
 }
 

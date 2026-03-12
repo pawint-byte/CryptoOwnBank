@@ -379,3 +379,40 @@ export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   `;
   await sendEmail(to, "Welcome to CryptoOwnBank Premium!", html);
 }
+
+export async function sendYieldNotificationEmail(to: string, name: string, yieldAmount: string, vaultName: string, walletBalance: string) {
+  const reDepositUrl = `https://cryptoownbank.com/ownbank-xrpl/vaults?redeposit=${walletBalance}&vault=auto`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #22c55e; margin: 5px 0 0; font-weight: 600;">Yield Received!</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hey ${name},</h2>
+        <p style="color: #555; line-height: 1.6;">
+          Great news! Your <strong>${vaultName}</strong> vault just paid out <strong>${yieldAmount} RLUSD</strong> in yield to your wallet.
+        </p>
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <p style="color: #166534; margin: 0 0 8px; font-weight: 600;">Auto-Compound Enabled</p>
+          <p style="color: #15803d; margin: 0; font-size: 14px;">
+            You have auto-compound turned on for this vault. Re-deposit your yield to maximize earnings.
+          </p>
+        </div>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="${reDepositUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Re-Deposit Yield Now
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center;">
+          Or open Xaman and re-deposit manually from your wallet.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because auto-compound is enabled on your vault. You can disable it from the OwnBank dashboard.</p>
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Yield Received: ${yieldAmount} RLUSD from ${vaultName}`, html);
+}

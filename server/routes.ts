@@ -691,6 +691,129 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/auto-compound", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getAutoCompoundSettings(userId);
+      res.json({ settings });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch auto-compound settings" });
+    }
+  });
+
+  app.post("/api/auto-compound", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { vaultAddress, enabled } = req.body;
+      if (!vaultAddress || typeof vaultAddress !== "string" || vaultAddress.length > 255) {
+        return res.status(400).json({ message: "Valid vaultAddress is required" });
+      }
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({ message: "enabled must be a boolean" });
+      }
+      const setting = await storage.upsertAutoCompoundSetting(userId, vaultAddress, enabled);
+      res.json({ success: true, setting });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to update auto-compound setting" });
+    }
+  });
+
+  app.get("/api/yield-positions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const positions = await storage.getYieldPositionsByUser(userId);
+      res.json({ positions });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to fetch yield positions" });
+    }
+  });
+
+  app.post("/api/yield-positions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { protocol, chain, asset, walletAddress, depositAmount, apr, trackingLevel, externalLink, notes, depositDate } = req.body;
+      if (!protocol || typeof protocol !== "string" || protocol.length > 100) {
+        return res.status(400).json({ message: "Valid protocol name is required (max 100 chars)" });
+      }
+      if (!chain || typeof chain !== "string" || chain.length > 50) {
+        return res.status(400).json({ message: "Valid chain is required" });
+      }
+      if (!asset || typeof asset !== "string" || asset.length > 50) {
+        return res.status(400).json({ message: "Valid asset is required" });
+      }
+      const depAmt = parseFloat(depositAmount);
+      const aprVal = parseFloat(apr);
+      if (isNaN(depAmt) || depAmt <= 0) {
+        return res.status(400).json({ message: "depositAmount must be a positive number" });
+      }
+      if (isNaN(aprVal) || aprVal < 0 || aprVal > 1000) {
+        return res.status(400).json({ message: "apr must be between 0 and 1000" });
+      }
+      const position = await storage.createYieldPosition({
+        userId,
+        protocol: protocol.slice(0, 100),
+        chain: chain.slice(0, 50),
+        asset: asset.slice(0, 50),
+        walletAddress: walletAddress ? String(walletAddress).slice(0, 255) : null,
+        depositAmount: depAmt.toString(),
+        apr: aprVal.toString(),
+        trackingLevel: [2, 3].includes(trackingLevel) ? trackingLevel : 2,
+        externalLink: externalLink ? String(externalLink).slice(0, 500) : null,
+        notes: notes ? String(notes).slice(0, 1000) : null,
+        depositDate: depositDate ? new Date(depositDate) : new Date(),
+        status: "active",
+      });
+      res.json({ success: true, position });
+    } catch (error: any) {
+      console.error("Create yield position error:", error);
+      res.status(500).json({ message: "Failed to create yield position" });
+    }
+  });
+
+  app.patch("/api/yield-positions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const position = await storage.getYieldPosition(req.params.id);
+      if (!position || position.userId !== userId) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      const allowedFields: Record<string, any> = {};
+      if (req.body.depositAmount !== undefined) {
+        const val = parseFloat(req.body.depositAmount);
+        if (!isNaN(val) && val > 0) allowedFields.depositAmount = val.toString();
+      }
+      if (req.body.apr !== undefined) {
+        const val = parseFloat(req.body.apr);
+        if (!isNaN(val) && val >= 0 && val <= 1000) allowedFields.apr = val.toString();
+      }
+      if (req.body.status && ["active", "closed"].includes(req.body.status)) {
+        allowedFields.status = req.body.status;
+      }
+      if (req.body.notes !== undefined) allowedFields.notes = String(req.body.notes).slice(0, 1000);
+      if (req.body.walletAddress !== undefined) allowedFields.walletAddress = String(req.body.walletAddress).slice(0, 255);
+      if (req.body.externalLink !== undefined) allowedFields.externalLink = String(req.body.externalLink).slice(0, 500);
+
+      const updated = await storage.updateYieldPosition(req.params.id, allowedFields);
+      res.json({ success: true, position: updated });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to update yield position" });
+    }
+  });
+
+  app.delete("/api/yield-positions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const position = await storage.getYieldPosition(req.params.id);
+      if (!position || position.userId !== userId) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      await storage.deleteYieldPosition(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to delete yield position" });
+    }
+  });
+
   async function enrichWalletBalances(walletBals: any[]): Promise<any[]> {
     const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
     const zeroBalances = walletBals.filter(wb => {

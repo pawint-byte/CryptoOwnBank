@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, boolean, integer, serial, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, boolean, integer, serial, index, jsonb, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -620,3 +620,57 @@ export const insertErrorLogSchema = createInsertSchema(errorLogs).omit({
 
 export type ErrorLog = typeof errorLogs.$inferSelect;
 export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;
+
+export const autoCompoundSettings = pgTable("auto_compound_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  vaultAddress: varchar("vault_address", { length: 255 }).notNull(),
+  enabled: boolean("enabled").notNull().default(false),
+  lastYieldDetected: decimal("last_yield_detected", { precision: 18, scale: 8 }),
+  lastYieldDate: timestamp("last_yield_date"),
+  lastNotifiedAt: timestamp("last_notified_at"),
+  totalAutoCompounded: decimal("total_auto_compounded", { precision: 18, scale: 8 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_auto_compound_user").on(table.userId),
+  unique("uq_auto_compound_user_vault").on(table.userId, table.vaultAddress),
+]);
+
+export const insertAutoCompoundSettingsSchema = createInsertSchema(autoCompoundSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type AutoCompoundSettings = typeof autoCompoundSettings.$inferSelect;
+export type InsertAutoCompoundSettings = z.infer<typeof insertAutoCompoundSettingsSchema>;
+
+export const yieldPositions = pgTable("yield_positions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  protocol: varchar("protocol", { length: 100 }).notNull(),
+  chain: varchar("chain", { length: 50 }).notNull(),
+  asset: varchar("asset", { length: 50 }).notNull(),
+  walletAddress: varchar("wallet_address", { length: 255 }),
+  depositAmount: decimal("deposit_amount", { precision: 18, scale: 8 }).notNull(),
+  currentValue: decimal("current_value", { precision: 18, scale: 8 }),
+  apr: decimal("apr", { precision: 8, scale: 4 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  trackingLevel: integer("tracking_level").notNull().default(2),
+  externalLink: varchar("external_link", { length: 500 }),
+  notes: text("notes"),
+  depositDate: timestamp("deposit_date").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_yield_positions_user").on(table.userId),
+  index("idx_yield_positions_status").on(table.status),
+]);
+
+export const insertYieldPositionSchema = createInsertSchema(yieldPositions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type YieldPosition = typeof yieldPositions.$inferSelect;
+export type InsertYieldPosition = z.infer<typeof insertYieldPositionSchema>;

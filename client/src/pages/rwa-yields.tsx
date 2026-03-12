@@ -32,6 +32,7 @@ import {
   CreditCard,
   Home,
   MapPin,
+  Loader2,
 } from "lucide-react";
 
 interface YieldOpportunity {
@@ -1105,6 +1106,442 @@ function EarningStatusSection() {
   );
 }
 
+const PROTOCOL_OPTIONS = [
+  { value: "soil", label: "Soil Protocol", chain: "XRPL", trackingLevel: 3 },
+  { value: "ondo-usdy", label: "Ondo Finance (USDY)", chain: "Ethereum", trackingLevel: 2 },
+  { value: "ondo-ousg", label: "Ondo Finance (OUSG)", chain: "Ethereum", trackingLevel: 2 },
+  { value: "centrifuge", label: "Centrifuge", chain: "Ethereum", trackingLevel: 2 },
+  { value: "maple", label: "Maple Finance", chain: "Ethereum", trackingLevel: 2 },
+  { value: "aave", label: "Aave", chain: "Ethereum", trackingLevel: 2 },
+  { value: "compound", label: "Compound", chain: "Ethereum", trackingLevel: 2 },
+  { value: "ultrastellar", label: "UltraStellar", chain: "Stellar", trackingLevel: 3 },
+  { value: "lumenswap", label: "Lumenswap", chain: "Stellar", trackingLevel: 3 },
+  { value: "custom", label: "Other Protocol", chain: "", trackingLevel: 2 },
+];
+
+const CHAIN_OPTIONS = ["XRPL", "Ethereum", "Stellar", "Polygon", "Arbitrum", "Base", "Solana", "Avalanche"];
+
+const DEEP_LINKS: Record<string, string> = {
+  "ondo-usdy": "https://app.ondo.finance",
+  "ondo-ousg": "https://app.ondo.finance",
+  "centrifuge": "https://app.centrifuge.io",
+  "maple": "https://app.maple.finance",
+  "aave": "https://app.aave.com",
+  "compound": "https://app.compound.finance",
+};
+
+function MyYieldPositions() {
+  const { user } = useAuth();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [selectedProtocol, setSelectedProtocol] = useState("");
+  const [customProtocol, setCustomProtocol] = useState("");
+  const [chain, setChain] = useState("");
+  const [asset, setAsset] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [apr, setApr] = useState("");
+  const [externalLink, setExternalLink] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { data: positionsData, refetch } = useQuery<{ positions: any[] }>({
+    queryKey: ["/api/yield-positions"],
+    enabled: !!user,
+  });
+
+  const positions = positionsData?.positions || [];
+
+  if (!user) return null;
+
+  const resetForm = () => {
+    setSelectedProtocol("");
+    setCustomProtocol("");
+    setChain("");
+    setAsset("");
+    setWalletAddress("");
+    setDepositAmount("");
+    setApr("");
+    setExternalLink("");
+    setNotes("");
+  };
+
+  const handleProtocolChange = (val: string) => {
+    setSelectedProtocol(val);
+    const opt = PROTOCOL_OPTIONS.find(p => p.value === val);
+    if (opt && opt.chain) setChain(opt.chain);
+    if (val === "soil") { setAsset("RLUSD"); setApr("6.5"); }
+    else if (val === "ondo-usdy") { setAsset("USDY"); setApr("5.2"); }
+    else if (val === "ondo-ousg") { setAsset("OUSG"); setApr("4.8"); }
+    else if (val === "aave") { setAsset("USDC"); setApr("4.5"); }
+    else if (val === "compound") { setAsset("USDC"); setApr("4.0"); }
+    else if (val === "centrifuge") { setAsset("Various"); setApr("7.0"); }
+    else if (val === "maple") { setAsset("USDC"); setApr("8.5"); }
+    else { setAsset(""); setApr(""); }
+
+    if (val !== "custom") {
+      const link = DEEP_LINKS[val];
+      if (link) setExternalLink(link);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const protocolName = selectedProtocol === "custom"
+      ? customProtocol
+      : PROTOCOL_OPTIONS.find(p => p.value === selectedProtocol)?.label || selectedProtocol;
+    if (!protocolName || !chain || !asset || !depositAmount || !apr) return;
+
+    setSubmitting(true);
+    try {
+      const opt = PROTOCOL_OPTIONS.find(p => p.value === selectedProtocol);
+      const res = await fetch("/api/yield-positions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          protocol: protocolName,
+          chain,
+          asset,
+          walletAddress: walletAddress || null,
+          depositAmount: parseFloat(depositAmount),
+          apr: parseFloat(apr),
+          trackingLevel: opt?.trackingLevel || 2,
+          externalLink: externalLink || null,
+          notes: notes || null,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to save" }));
+        console.error("Failed to create position:", err.message);
+        return;
+      }
+      resetForm();
+      setShowAddForm(false);
+      refetch();
+    } catch (e) {
+      console.error("Create position error:", e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/yield-positions/${id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) {
+        console.error("Failed to delete position");
+        return;
+      }
+      refetch();
+    } catch (e) {
+      console.error("Delete position error:", e);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const calcProjectedYield = (amount: number, aprVal: number, days: number) => {
+    return amount * (aprVal / 100) * (days / 365);
+  };
+
+  const totalDeposited = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + parseFloat(p.depositAmount || "0"), 0);
+  const weightedApr = totalDeposited > 0
+    ? positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + parseFloat(p.depositAmount || "0") * parseFloat(p.apr || "0"), 0) / totalDeposited
+    : 0;
+  const totalDailyYield = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + calcProjectedYield(parseFloat(p.depositAmount || "0"), parseFloat(p.apr || "0"), 1), 0);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2" data-testid="text-my-positions-heading">
+          <Wallet className="h-5 w-5 text-[#00A4E4]" />
+          My Yield Positions
+        </h2>
+        <Button
+          size="sm"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="gap-1.5"
+          data-testid="button-add-position"
+        >
+          <Plus className="h-4 w-4" />
+          Track Position
+        </Button>
+      </div>
+
+      {showAddForm && (
+        <Card className="mb-4 border-[#00A4E4]/30" data-testid="card-add-position-form">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-medium">Add Yield Position</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Protocol</label>
+                <select
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  value={selectedProtocol}
+                  onChange={(e) => handleProtocolChange(e.target.value)}
+                  data-testid="select-protocol"
+                >
+                  <option value="">Select protocol...</option>
+                  {PROTOCOL_OPTIONS.map((p) => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+              {selectedProtocol === "custom" && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Protocol Name</label>
+                  <input
+                    className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                    placeholder="Protocol name"
+                    value={customProtocol}
+                    onChange={(e) => setCustomProtocol(e.target.value)}
+                    data-testid="input-custom-protocol"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-xs text-muted-foreground">Chain</label>
+                <select
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  value={chain}
+                  onChange={(e) => setChain(e.target.value)}
+                  data-testid="select-chain"
+                >
+                  <option value="">Select chain...</option>
+                  {CHAIN_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Asset</label>
+                <input
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  placeholder="e.g. USDC, RLUSD, USDY"
+                  value={asset}
+                  onChange={(e) => setAsset(e.target.value)}
+                  data-testid="input-asset"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Deposit Amount ($)</label>
+                <input
+                  type="number"
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  placeholder="1000"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  data-testid="input-deposit-amount"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">APR (%)</label>
+                <input
+                  type="number"
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  placeholder="5.0"
+                  value={apr}
+                  onChange={(e) => setApr(e.target.value)}
+                  data-testid="input-apr"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Wallet Address (optional)</label>
+                <input
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  placeholder="0x... or r..."
+                  value={walletAddress}
+                  onChange={(e) => setWalletAddress(e.target.value)}
+                  data-testid="input-wallet-address"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">External Link (optional)</label>
+                <input
+                  className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                  placeholder="https://..."
+                  value={externalLink}
+                  onChange={(e) => setExternalLink(e.target.value)}
+                  data-testid="input-external-link"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground">Notes (optional)</label>
+              <input
+                className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                placeholder="Any notes about this position"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                data-testid="input-notes"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={submitting || !selectedProtocol || !chain || !asset || !depositAmount || !apr}
+                data-testid="button-save-position"
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+                Save Position
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(false); resetForm(); }} data-testid="button-cancel-position">
+                Cancel
+              </Button>
+            </div>
+
+            {selectedProtocol && PROTOCOL_OPTIONS.find(p => p.value === selectedProtocol)?.trackingLevel === 2 && (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-700 dark:text-amber-300">
+                  <p className="font-medium">Level 2 Tracking</p>
+                  <p>This protocol runs on an external chain. We'll track your position here and provide deep links to manage it on the protocol's app. On-chain balance sync coming soon.</p>
+                </div>
+              </div>
+            )}
+            {selectedProtocol && PROTOCOL_OPTIONS.find(p => p.value === selectedProtocol)?.trackingLevel === 3 && (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-emerald-700 dark:text-emerald-300">
+                  <p className="font-medium">Level 3 Tracking — Full Integration</p>
+                  <p>Deposits, withdrawals, and yield are tracked automatically through CryptoOwnBank. No need to leave the app.</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {positions.length > 0 ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <Card>
+              <CardContent className="p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">Total Deposited</p>
+                <p className="text-lg font-bold font-mono" data-testid="text-total-positions-deposited">
+                  ${totalDeposited.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">Blended APR</p>
+                <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-blended-apr">
+                  {weightedApr.toFixed(1)}%
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <p className="text-[10px] text-muted-foreground">Est. Daily Yield</p>
+                <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400" data-testid="text-daily-yield">
+                  +${totalDailyYield.toFixed(2)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {positions.map((pos: any) => {
+            const depAmt = parseFloat(pos.depositAmount || "0");
+            const aprVal = parseFloat(pos.apr || "0");
+            const dailyYield = calcProjectedYield(depAmt, aprVal, 1);
+            const monthlyYield = calcProjectedYield(depAmt, aprVal, 30);
+            const yearlyYield = calcProjectedYield(depAmt, aprVal, 365);
+            const deepLink = DEEP_LINKS[PROTOCOL_OPTIONS.find(p => p.label === pos.protocol)?.value || ""];
+            const isLevel3 = pos.trackingLevel === 3;
+
+            return (
+              <Card key={pos.id} data-testid={`card-position-${pos.id}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm" data-testid={`text-position-protocol-${pos.id}`}>{pos.protocol}</p>
+                        <Badge variant="outline" className="text-[10px]">{pos.chain}</Badge>
+                        {isLevel3 ? (
+                          <Badge className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">L3 Integrated</Badge>
+                        ) : (
+                          <Badge className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">L2 Tracked</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{pos.asset} · {aprVal.toFixed(1)}% APR</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      onClick={() => handleDelete(pos.id)}
+                      disabled={deletingId === pos.id}
+                      data-testid={`button-delete-position-${pos.id}`}
+                    >
+                      {deletingId === pos.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <span>Remove</span>}
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-3 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Deposited</p>
+                      <p className="text-sm font-bold font-mono">${depAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Daily</p>
+                      <p className="text-sm font-mono text-emerald-600 dark:text-emerald-400">+${dailyYield.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Monthly</p>
+                      <p className="text-sm font-mono text-emerald-600 dark:text-emerald-400">+${monthlyYield.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Yearly</p>
+                      <p className="text-sm font-mono text-emerald-600 dark:text-emerald-400">+${yearlyYield.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  {(pos.walletAddress || deepLink || pos.externalLink) && (
+                    <div className="flex items-center gap-2 mt-3 pt-2 border-t">
+                      {pos.walletAddress && (
+                        <p className="text-[10px] text-muted-foreground font-mono truncate flex-1">{pos.walletAddress}</p>
+                      )}
+                      {(deepLink || pos.externalLink) && (
+                        <a href={pos.externalLink || deepLink} target="_blank" rel="noopener noreferrer" data-testid={`link-manage-${pos.id}`}>
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1">
+                            <ExternalLink className="h-3 w-3" />
+                            Manage on {pos.protocol}
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {pos.notes && (
+                    <p className="text-[10px] text-muted-foreground mt-2 italic">{pos.notes}</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="border-dashed" data-testid="card-no-positions">
+          <CardContent className="p-6 text-center">
+            <Compass className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm font-medium">No yield positions tracked yet</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Click "Track Position" to add your first yield position — whether it's on Soil, Ondo, Aave, or any other protocol.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 export default function RwaYields() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -1142,6 +1579,8 @@ export default function RwaYields() {
       <RecommenderSection />
 
       <EarningStatusSection />
+
+      <MyYieldPositions />
 
       <div>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-yield-opportunities-heading">
