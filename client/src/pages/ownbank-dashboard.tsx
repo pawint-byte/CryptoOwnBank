@@ -678,8 +678,9 @@ export default function OwnBankDashboard() {
                 {(() => {
                   const yieldAmt = parseFloat(soilSummary.totalYieldReceived || "0");
                   const MIN_RLUSD_RESERVE = 0.01;
+                  const MIN_DEPOSIT = 10;
                   const maxRedeposit = Math.max(0, Math.floor((rlusdBalance - MIN_RLUSD_RESERVE) * 100) / 100);
-                  const canRedeposit = maxRedeposit >= 0.01;
+                  const canRedeposit = maxRedeposit >= MIN_DEPOSIT;
                   if (yieldAmt <= 0 && rlusdBalance <= 0) return null;
                   return (
                     <div className="col-span-2 rounded-lg border bg-card p-2 sm:p-3 bg-gradient-to-br from-amber-500/5 to-transparent">
@@ -724,8 +725,8 @@ export default function OwnBankDashboard() {
                               </Button>
                             </Link>
                           ) : (
-                            <div className="text-[10px] text-muted-foreground text-right italic">
-                              {rlusdBalance < 0.01 ? "Insufficient RLUSD" : "Waiting for yield"}
+                            <div className="text-[10px] text-muted-foreground text-right italic max-w-[100px] text-right">
+                              {rlusdBalance < MIN_DEPOSIT ? `Min ${MIN_DEPOSIT} RLUSD to re-deposit` : "Waiting for yield"}
                             </div>
                           )}
                         </div>
