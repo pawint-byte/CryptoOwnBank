@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +23,11 @@ import {
   ComposedChart,
   Bar,
   CartesianGrid,
+  Brush,
+  Cell,
+  Rectangle,
 } from "recharts";
-import { BarChart3, Lock, ArrowRight, TrendingUp } from "lucide-react";
+import { BarChart3, Lock, ArrowRight, TrendingUp, AlertTriangle } from "lucide-react";
 import {
   calculateSMA,
   calculateEMA,
@@ -55,6 +58,17 @@ const INDICATOR_COLORS: Record<IndicatorKey, string> = {
   bollinger: "#6366f1",
 };
 
+const INDICATOR_MIN_PERIODS: Record<IndicatorKey, number> = {
+  sma20: 20,
+  sma50: 50,
+  sma200: 200,
+  ema12: 12,
+  ema26: 26,
+  rsi: 15,
+  macd: 35,
+  bollinger: 20,
+};
+
 const FREE_INDICATORS: IndicatorKey[] = ["sma20", "sma50", "sma200"];
 const PAID_INDICATORS: IndicatorKey[] = ["ema12", "ema26", "rsi", "macd", "bollinger"];
 
@@ -78,12 +92,57 @@ function formatPrice(val: number) {
   return `$${val.toFixed(6)}`;
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CandlestickShape(props: any) {
+  const { x, y, width, height, payload } = props;
+  if (!payload) return null;
+  const { open, close, high, low } = payload;
+  if (open == null || close == null || high == null || low == null) return null;
+
+  const isUp = close >= open;
+  const color = isUp ? "#22c55e" : "#ef4444";
+
+  const yScale = props.yAxis;
+  if (!yScale) return null;
+
+  const yHigh = yScale.scale(high);
+  const yLow = yScale.scale(low);
+  const yOpen = yScale.scale(open);
+  const yClose = yScale.scale(close);
+
+  const bodyTop = Math.min(yOpen, yClose);
+  const bodyHeight = Math.max(Math.abs(yOpen - yClose), 1);
+  const candleX = x + width / 2;
+  const bodyWidth = Math.max(width * 0.6, 2);
+
+  return (
+    <g>
+      <line
+        x1={candleX}
+        y1={yHigh}
+        x2={candleX}
+        y2={yLow}
+        stroke={color}
+        strokeWidth={1}
+      />
+      <rect
+        x={candleX - bodyWidth / 2}
+        y={bodyTop}
+        width={bodyWidth}
+        height={bodyHeight}
+        fill={isUp ? color : color}
+        stroke={color}
+        strokeWidth={1}
+      />
+    </g>
+  );
+}
+
+function CustomTooltip({ active, payload }: any) {
   if (!active || !payload || payload.length === 0) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-xs space-y-1">
+    <div className="bg-popover border rounded-lg shadow-lg p-3 text-xs space-y-1 z-50">
       <p className="font-medium text-foreground">{d.dateLabel}</p>
       {d.open !== undefined && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
@@ -93,16 +152,14 @@ function CustomTooltip({ active, payload, label }: any) {
           <span className="text-muted-foreground">Close</span><span className="font-medium">{formatPrice(d.close)}</span>
         </div>
       )}
-      {payload.map((p: any) => {
-        if (["close", "candleBody", "candleShadow", "open", "high", "low", "dateLabel", "timestamp", "bbUpper", "bbLower", "bbMiddle"].includes(p.dataKey)) return null;
-        if (p.value === undefined || p.value === null) return null;
-        return (
+      {payload
+        .filter((p: any) => !["candleBody", "open", "high", "low", "close", "dateLabel", "timestamp", "bbUpper", "bbLower", "bbMiddle"].includes(p.dataKey) && p.value != null)
+        .map((p: any) => (
           <div key={p.dataKey} className="flex justify-between gap-4">
             <span style={{ color: p.color }}>{p.name || p.dataKey}</span>
-            <span className="font-medium">{typeof p.value === "number" ? p.value.toFixed(2) : p.value}</span>
+            <span className="font-medium">{typeof p.value === "number" ? formatPrice(p.value) : p.value}</span>
           </div>
-        );
-      })}
+        ))}
     </div>
   );
 }
@@ -169,6 +226,17 @@ export default function TechnicalAnalysis() {
     });
   };
 
+  const insufficientIndicators = useMemo(() => {
+    const result: string[] = [];
+    for (const key of activeIndicators) {
+      const minPeriods = INDICATOR_MIN_PERIODS[key];
+      if (rawOhlc.length < minPeriods) {
+        result.push(`${key.toUpperCase()} requires ${minPeriods} data points (have ${rawOhlc.length})`);
+      }
+    }
+    return result;
+  }, [rawOhlc.length, activeIndicators]);
+
   const computed = useMemo(() => {
     if (rawOhlc.length === 0) return { chartData: [], rsiData: [], macdData: [] };
 
@@ -210,6 +278,7 @@ export default function TechnicalAnalysis() {
         high: c.high,
         low: c.low,
         close: c.close,
+        candleBody: Math.abs(c.close - c.open) || 0.001,
         sma20: sma20Map.get(c.timestamp),
         sma50: sma50Map.get(c.timestamp),
         sma200: sma200Map.get(c.timestamp),
@@ -245,6 +314,20 @@ export default function TechnicalAnalysis() {
   const firstPrice = rawOhlc.length > 0 ? rawOhlc[0].close : 0;
   const priceChange = firstPrice > 0 ? ((latestPrice - firstPrice) / firstPrice) * 100 : 0;
 
+  const yDomain = useMemo(() => {
+    if (computed.chartData.length === 0) return [0, 1];
+    let min = Infinity;
+    let max = -Infinity;
+    for (const d of computed.chartData) {
+      if (d.low < min) min = d.low;
+      if (d.high > max) max = d.high;
+      if (d.bbLower && d.bbLower < min) min = d.bbLower;
+      if (d.bbUpper && d.bbUpper > max) max = d.bbUpper;
+    }
+    const padding = (max - min) * 0.05;
+    return [min - padding, max + padding];
+  }, [computed.chartData]);
+
   const allIndicators: { key: IndicatorKey; label: string; isPaid: boolean }[] = [
     { key: "sma20", label: "SMA 20", isPaid: false },
     { key: "sma50", label: "SMA 50", isPaid: false },
@@ -268,7 +351,7 @@ export default function TechnicalAnalysis() {
             Technical Analysis
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Price charts with technical indicators
+            Candlestick charts with technical indicators
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -355,12 +438,32 @@ export default function TechnicalAnalysis() {
         </CardContent>
       </Card>
 
+      {insufficientIndicators.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20" data-testid="card-ta-insufficient">
+          <CardContent className="p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Insufficient data for some indicators</p>
+              <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                {insufficientIndicators.map((msg) => (
+                  <li key={msg}>{msg}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-1">Try a longer timeframe to get enough data points.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card data-testid="card-ta-chart">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            {symbol} Price Chart
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              {symbol} Candlestick Chart
+            </CardTitle>
+            <span className="text-xs text-muted-foreground">Drag the brush below to zoom &amp; pan</span>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -374,9 +477,9 @@ export default function TechnicalAnalysis() {
               </div>
             </div>
           ) : (
-            <div className="h-[400px]">
+            <div className="h-[440px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={computed.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <ComposedChart data={computed.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis
                     dataKey="dateLabel"
@@ -387,7 +490,7 @@ export default function TechnicalAnalysis() {
                     minTickGap={50}
                   />
                   <YAxis
-                    domain={["auto", "auto"]}
+                    domain={yDomain as [number, number]}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
@@ -395,6 +498,13 @@ export default function TechnicalAnalysis() {
                     width={70}
                   />
                   <Tooltip content={<CustomTooltip />} />
+                  <Brush
+                    dataKey="dateLabel"
+                    height={25}
+                    stroke="hsl(var(--border))"
+                    fill="hsl(var(--muted))"
+                    travellerWidth={8}
+                  />
 
                   {activeIndicators.has("bollinger") && (
                     <>
@@ -423,12 +533,56 @@ export default function TechnicalAnalysis() {
                     </>
                   )}
 
+                  <Bar
+                    dataKey="candleBody"
+                    barSize={Math.max(2, Math.min(8, 600 / computed.chartData.length))}
+                    isAnimationActive={false}
+                    name="Candle"
+                    shape={(props: any) => {
+                      const d = props.payload;
+                      if (!d) return null;
+                      const isUp = d.close >= d.open;
+                      const color = isUp ? "#22c55e" : "#ef4444";
+                      const { x, width } = props;
+                      const yAxis = props.background ? undefined : props;
+
+                      return (
+                        <g>
+                          <line
+                            x1={x + width / 2}
+                            y1={props.y}
+                            x2={x + width / 2}
+                            y2={props.y + props.height}
+                            stroke={color}
+                            strokeWidth={1}
+                          />
+                          <rect
+                            x={x}
+                            y={props.y + (isUp ? props.height * 0.2 : props.height * 0.3)}
+                            width={width}
+                            height={Math.max(props.height * 0.5, 1)}
+                            fill={color}
+                            stroke={color}
+                          />
+                        </g>
+                      );
+                    }}
+                  >
+                    {computed.chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.close >= entry.open ? "#22c55e" : "#ef4444"}
+                      />
+                    ))}
+                  </Bar>
+
                   <Line
                     dataKey="close"
                     stroke="hsl(var(--chart-1))"
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                     dot={false}
-                    name="Price"
+                    name="Close"
+                    strokeOpacity={0.6}
                   />
 
                   {activeIndicators.has("sma20") && (
@@ -529,10 +683,15 @@ export default function TechnicalAnalysis() {
                   <Bar
                     dataKey="histogram"
                     name="Histogram"
-                    fill="#22c55e"
-                    stroke="none"
                     isAnimationActive={false}
-                  />
+                  >
+                    {computed.macdData.map((entry, index) => (
+                      <Cell
+                        key={`macd-${index}`}
+                        fill={entry.histogram != null && entry.histogram >= 0 ? "#22c55e" : "#ef4444"}
+                      />
+                    ))}
+                  </Bar>
                   <Line dataKey="macd" stroke="#10b981" strokeWidth={1.5} dot={false} connectNulls={false} name="MACD" />
                   <Line dataKey="signal" stroke="#f59e0b" strokeWidth={1.5} dot={false} connectNulls={false} name="Signal" />
                 </ComposedChart>
