@@ -9,19 +9,37 @@ export const PLANS = {
     name: "OwnBank Premium Monthly",
     amount: 2900,
     interval: "month" as const,
+    tier: "premium" as const,
     description: "$29/month — Unlimited exchanges, wallets, alerts, auto-withdraw",
   },
   yearly: {
     name: "OwnBank Premium Annual",
     amount: 19900,
     interval: "year" as const,
+    tier: "premium" as const,
     description: "$199/year — Everything in monthly + tax reports, save $149",
+  },
+  "pro-monthly": {
+    name: "OwnBank Pro Monthly",
+    amount: 9900,
+    interval: "month" as const,
+    tier: "pro" as const,
+    description: "$99/month — Everything in Premium + priority support, API access, advanced analytics",
+  },
+  "pro-yearly": {
+    name: "OwnBank Pro Annual",
+    amount: 79900,
+    interval: "year" as const,
+    tier: "pro" as const,
+    description: "$799/year — Everything in Pro monthly, save $389",
   },
 };
 
+export type PlanKey = keyof typeof PLANS;
+
 export async function createCheckoutSession(
   userId: string,
-  plan: "monthly" | "yearly",
+  plan: PlanKey,
   successUrl: string,
   cancelUrl: string
 ) {
@@ -51,6 +69,7 @@ export async function createCheckoutSession(
     metadata: {
       userId,
       plan,
+      tier: planConfig.tier,
     },
   });
 

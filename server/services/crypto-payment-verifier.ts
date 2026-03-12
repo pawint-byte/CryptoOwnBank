@@ -762,7 +762,8 @@ const CHAIN_CHECKERS: Record<string, (p: CryptoPayment) => Promise<CheckResult>>
 };
 
 async function activateSubscription(payment: CryptoPayment) {
-  const billingCycle = payment.plan === "yearly" ? "yearly" : "monthly";
+  const billingCycle = (payment.plan === "yearly" || payment.plan === "pro-yearly") ? "yearly" : "monthly";
+  const tier = (payment.plan === "pro-monthly" || payment.plan === "pro-yearly") ? "pro" : "premium";
   const existing = await storage.getUserSettings(payment.userId);
 
   const expiresAt = new Date();
@@ -785,7 +786,7 @@ async function activateSubscription(payment: CryptoPayment) {
 
   await storage.upsertUserSettings({
     userId: payment.userId,
-    subscriptionTier: "premium",
+    subscriptionTier: tier,
     subscriptionBillingCycle: billingCycle,
     subscriptionExpiresAt: expiresAt,
     subscriptionPaymentMethod: "crypto",
@@ -793,7 +794,7 @@ async function activateSubscription(payment: CryptoPayment) {
     stripeCustomerId: existing?.stripeCustomerId || null,
     stripeSubscriptionId: existing?.stripeSubscriptionId || null,
   });
-  console.log(`[crypto-verify] Activated ${billingCycle} premium for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
+  console.log(`[crypto-verify] Activated ${billingCycle} ${tier} for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
 }
 
 async function verifyPendingPayments() {

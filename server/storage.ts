@@ -76,7 +76,7 @@ import {
   type InsertErrorLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 const ENCRYPTION_KEY = process.env.SESSION_SECRET!;
@@ -774,7 +774,10 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(userSettings)
       .where(
         and(
-          eq(userSettings.subscriptionTier, "premium"),
+          or(
+            eq(userSettings.subscriptionTier, "premium"),
+            eq(userSettings.subscriptionTier, "pro"),
+          ),
           eq(userSettings.subscriptionPaymentMethod, "crypto"),
           lte(userSettings.subscriptionExpiresAt, deadline)
         )

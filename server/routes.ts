@@ -2206,7 +2206,7 @@ export async function registerRoutes(
         res.send(csv);
       } else if (format === "pdf") {
         const settings = await storage.getUserSettings(userId);
-        if (!settings || settings.subscriptionTier !== "premium") {
+        if (!settings || (settings.subscriptionTier !== "premium" && settings.subscriptionTier !== "pro")) {
           return res.status(403).json({ message: "PDF export is a Premium feature. Please upgrade to access." });
         }
 
@@ -2354,8 +2354,9 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const { plan } = req.body;
 
-      if (!plan || !["monthly", "yearly"].includes(plan)) {
-        return res.status(400).json({ message: "Invalid plan. Use 'monthly' or 'yearly'." });
+      const validPlans = ["monthly", "yearly", "pro-monthly", "pro-yearly"];
+      if (!plan || !validPlans.includes(plan)) {
+        return res.status(400).json({ message: "Invalid plan. Use 'monthly', 'yearly', 'pro-monthly', or 'pro-yearly'." });
       }
 
       const host = req.headers.host || "localhost:5000";
@@ -2364,7 +2365,7 @@ export async function registerRoutes(
 
       const session = await createCheckoutSession(
         userId,
-        plan as "monthly" | "yearly",
+        plan as "monthly" | "yearly" | "pro-monthly" | "pro-yearly",
         `${baseUrl}/settings?subscription=success`,
         `${baseUrl}/settings?subscription=cancelled`
       );
@@ -2386,14 +2387,16 @@ export async function registerRoutes(
         if (event.type === "checkout.session.completed") {
           const session = event.data.object;
           const userId = session.metadata?.userId;
-          const billingCycle = session.metadata?.plan || "monthly";
+          const plan = session.metadata?.plan || "monthly";
+          const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
+          const tier = session.metadata?.tier || "premium";
           if (userId) {
             const existing = await storage.getUserSettings(userId);
             await storage.upsertUserSettings({
               userId,
               taxMethod: existing?.taxMethod || "FIFO",
               defaultCurrency: existing?.defaultCurrency || "USD",
-              subscriptionTier: "premium",
+              subscriptionTier: tier,
               subscriptionBillingCycle: billingCycle,
               subscriptionPaymentMethod: "stripe",
               subscriptionExpiresAt: null,
@@ -2442,14 +2445,16 @@ export async function registerRoutes(
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as any;
         const userId = session.metadata?.userId;
-        const billingCycle = session.metadata?.plan || "monthly";
+        const plan = session.metadata?.plan || "monthly";
+        const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
+        const tier = session.metadata?.tier || "premium";
         if (userId) {
           const existing = await storage.getUserSettings(userId);
           await storage.upsertUserSettings({
             userId,
             taxMethod: existing?.taxMethod || "FIFO",
             defaultCurrency: existing?.defaultCurrency || "USD",
-            subscriptionTier: "premium",
+            subscriptionTier: tier,
             subscriptionBillingCycle: billingCycle,
             subscriptionPaymentMethod: "stripe",
             subscriptionExpiresAt: null,
@@ -2486,8 +2491,9 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const { plan, chain } = req.body;
 
-      if (!plan || !["monthly", "yearly"].includes(plan)) {
-        return res.status(400).json({ message: "Invalid plan. Use 'monthly' or 'yearly'." });
+      const validPlans = ["monthly", "yearly", "pro-monthly", "pro-yearly"];
+      if (!plan || !validPlans.includes(plan)) {
+        return res.status(400).json({ message: "Invalid plan. Use 'monthly', 'yearly', 'pro-monthly', or 'pro-yearly'." });
       }
       if (!chain) {
         return res.status(400).json({ message: "Chain is required." });
@@ -2509,7 +2515,13 @@ export async function registerRoutes(
         return res.status(400).json({ message: `No payment address configured for ${chain}.` });
       }
 
-      const usdAmount = plan === "yearly" ? 199 : 29;
+      const USD_AMOUNTS: Record<string, number> = {
+        monthly: 29,
+        yearly: 199,
+        "pro-monthly": 99,
+        "pro-yearly": 799,
+      };
+      const usdAmount = USD_AMOUNTS[plan];
 
       const CHAIN_TO_COINGECKO: Record<string, string> = {
         bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",

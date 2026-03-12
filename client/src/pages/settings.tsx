@@ -291,7 +291,7 @@ export default function SettingsPage() {
     }
   }, [paymentStatus]);
 
-  const handleUpgrade = async (plan: "monthly" | "yearly") => {
+  const handleUpgrade = async (plan: "monthly" | "yearly" | "pro-monthly" | "pro-yearly") => {
     setCheckoutLoading(plan);
     try {
       const res = await apiRequest("POST", "/api/stripe/create-checkout", { plan });
@@ -1063,7 +1063,7 @@ export default function SettingsPage() {
                   <div className="space-y-4">
                     <p className="text-sm font-medium">Choose Your Plan</p>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <Button
                         variant={selectedPlan === "monthly" ? "default" : "outline"}
                         className={`flex flex-col h-auto py-3 gap-1 ${selectedPlan === "monthly" ? "border-amber-500 bg-amber-500/10 text-foreground ring-2 ring-amber-500" : "border-amber-500/30 hover:border-amber-500"}`}
@@ -1099,6 +1099,19 @@ export default function SettingsPage() {
                         <span className="text-[10px] text-muted-foreground uppercase">Pro</span>
                         <span className="text-lg font-bold">$99</span>
                         <span className="text-xs text-muted-foreground">/month</span>
+                      </Button>
+                      <Button
+                        variant={selectedPlan === "pro-yearly" ? "default" : "outline"}
+                        className={`flex flex-col h-auto py-3 gap-1 relative ${selectedPlan === "pro-yearly" ? "border-purple-500 bg-purple-500/10 text-foreground ring-2 ring-purple-500" : "border-purple-500/30 hover:border-purple-500"}`}
+                        onClick={() => setSelectedPlan("pro-yearly")}
+                        data-testid="button-plan-pro-yearly"
+                      >
+                        <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
+                          Save $389
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground uppercase">Pro</span>
+                        <span className="text-lg font-bold">$799</span>
+                        <span className="text-xs text-muted-foreground">/year</span>
                       </Button>
                     </div>
 
@@ -1181,7 +1194,7 @@ export default function SettingsPage() {
                               ) : (
                                 <Coins className="h-4 w-4 mr-2" />
                               )}
-                              Pay ${selectedPlan === "yearly" ? "79" : "9"} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"}
+                              Pay ${selectedPlan === "yearly" ? "199" : selectedPlan === "pro-monthly" ? "99" : selectedPlan === "pro-yearly" ? "799" : "29"} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"}
                             </Button>
                           </>
                         )}
