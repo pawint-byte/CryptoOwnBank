@@ -514,3 +514,43 @@ export type ScheduledPayment = typeof scheduledPayments.$inferSelect;
 export type InsertScheduledPayment = z.infer<typeof insertScheduledPaymentSchema>;
 export type PaymentExecution = typeof paymentExecutions.$inferSelect;
 export type InsertPaymentExecution = z.infer<typeof insertPaymentExecutionSchema>;
+
+export const whaleAlerts = pgTable("whale_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  txHash: varchar("tx_hash", { length: 255 }).notNull().unique(),
+  amount: decimal("amount", { precision: 28, scale: 8 }).notNull(),
+  currency: varchar("currency", { length: 20 }).notNull(),
+  senderAddress: varchar("sender_address", { length: 255 }).notNull(),
+  receiverAddress: varchar("receiver_address", { length: 255 }).notNull(),
+  usdValue: decimal("usd_value", { precision: 18, scale: 2 }),
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_whale_alerts_timestamp").on(table.timestamp),
+  index("idx_whale_alerts_currency").on(table.currency),
+]);
+
+export const whaleAlertSettings = pgTable("whale_alert_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  xrpThreshold: decimal("xrp_threshold", { precision: 28, scale: 8 }).default("1000000"),
+  rlusdThreshold: decimal("rlusd_threshold", { precision: 28, scale: 8 }).default("500000"),
+  enabled: boolean("enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertWhaleAlertSchema = createInsertSchema(whaleAlerts).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertWhaleAlertSettingsSchema = createInsertSchema(whaleAlertSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type WhaleAlert = typeof whaleAlerts.$inferSelect;
+export type InsertWhaleAlert = z.infer<typeof insertWhaleAlertSchema>;
+export type WhaleAlertSettings = typeof whaleAlertSettings.$inferSelect;
+export type InsertWhaleAlertSettings = z.infer<typeof insertWhaleAlertSettingsSchema>;

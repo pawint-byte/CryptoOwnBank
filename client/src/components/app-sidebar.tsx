@@ -44,6 +44,7 @@ import {
   CalendarClock,
   QrCode,
   CloudUpload,
+  Fish,
 } from "lucide-react";
 import {
   Sidebar,
@@ -80,6 +81,7 @@ const allItems: NavItem[] = [
   { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "tracker" },
   { title: "Integrations", url: "/integrations", icon: Link2, group: "tracker" },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "tracker" },
+  { title: "Whale Alerts", url: "/whale-alerts", icon: Fish, group: "tracker" },
 
   { title: "Wallet & Yield", url: "/ownbank", icon: Landmark, color: "#00A4E4", group: "ownbank" },
   { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },

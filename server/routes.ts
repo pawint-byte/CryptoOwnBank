@@ -4476,11 +4476,70 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/whale-alerts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 200);
+
+      let since: Date | undefined;
+      if (tier === "free") {
+        since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      }
+
+      const alerts = await storage.getWhaleAlerts(limit, since);
+      res.json({ alerts, tierRestricted: tier === "free" });
+    } catch (error) {
+      console.error("Whale alerts error:", error);
+      res.status(500).json({ message: "Failed to fetch whale alerts" });
+    }
+  });
+
+  app.get("/api/whale-alerts/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getWhaleAlertSettings(userId);
+      res.json(settings || { xrpThreshold: "1000000", rlusdThreshold: "500000", enabled: true });
+    } catch (error) {
+      console.error("Whale alert settings error:", error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.put("/api/whale-alerts/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "free") {
+        return res.status(403).json({ message: "Custom whale alert settings require Premium or Pro" });
+      }
+      const { xrpThreshold, rlusdThreshold, enabled } = req.body;
+      const xrpNum = xrpThreshold !== undefined ? Number(xrpThreshold) : undefined;
+      const rlusdNum = rlusdThreshold !== undefined ? Number(rlusdThreshold) : undefined;
+      if ((xrpNum !== undefined && (!Number.isFinite(xrpNum) || xrpNum < 100_000)) ||
+          (rlusdNum !== undefined && (!Number.isFinite(rlusdNum) || rlusdNum < 10_000))) {
+        return res.status(400).json({ message: "Invalid thresholds. XRP minimum is 100,000 and RLUSD minimum is 10,000." });
+      }
+      const settings = await storage.upsertWhaleAlertSettings(userId, {
+        xrpThreshold: xrpNum !== undefined ? xrpNum.toString() : undefined,
+        rlusdThreshold: rlusdNum !== undefined ? rlusdNum.toString() : undefined,
+        enabled: enabled !== undefined ? Boolean(enabled) : true,
+      });
+      res.json(settings);
+    } catch (error) {
+      console.error("Whale alert settings update error:", error);
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
   startPriceAlertChecker();
   seedPriceCache();
 
   const { startMarketDataScheduler } = await import("./services/market-data");
   startMarketDataScheduler(2);
+
+  const { startWhaleMonitor } = await import("./services/whale-monitor");
+  startWhaleMonitor();
 
   return httpServer;
 }

@@ -65,6 +65,12 @@ import {
   type PaymentExecution,
   type InsertPaymentExecution,
   type PortfolioSnapshot,
+  whaleAlerts,
+  whaleAlertSettings,
+  type WhaleAlert,
+  type InsertWhaleAlert,
+  type WhaleAlertSettings,
+  type InsertWhaleAlertSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -215,6 +221,11 @@ export interface IStorage {
   getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined>;
   getPortfolioSnapshotsByUser(userId: string): Promise<PortfolioSnapshot[]>;
   deletePortfolioSnapshot(id: string, userId: string): Promise<void>;
+
+  createWhaleAlert(alert: InsertWhaleAlert): Promise<WhaleAlert | undefined>;
+  getWhaleAlerts(limit: number, since?: Date): Promise<WhaleAlert[]>;
+  getWhaleAlertSettings(userId: string): Promise<WhaleAlertSettings | undefined>;
+  upsertWhaleAlertSettings(userId: string, data: { xrpThreshold?: string; rlusdThreshold?: string; enabled?: boolean }): Promise<WhaleAlertSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -906,6 +917,43 @@ export class DatabaseStorage implements IStorage {
   async deletePortfolioSnapshot(id: string, userId: string): Promise<void> {
     await db.delete(portfolioSnapshots)
       .where(and(eq(portfolioSnapshots.id, id), eq(portfolioSnapshots.userId, userId)));
+  }
+
+  async createWhaleAlert(alert: InsertWhaleAlert): Promise<WhaleAlert | undefined> {
+    const [result] = await db.insert(whaleAlerts)
+      .values(alert)
+      .onConflictDoNothing({ target: whaleAlerts.txHash })
+      .returning();
+    return result;
+  }
+
+  async getWhaleAlerts(limit: number, since?: Date): Promise<WhaleAlert[]> {
+    if (since) {
+      return db.select().from(whaleAlerts)
+        .where(gte(whaleAlerts.timestamp, since))
+        .orderBy(desc(whaleAlerts.timestamp))
+        .limit(limit);
+    }
+    return db.select().from(whaleAlerts)
+      .orderBy(desc(whaleAlerts.timestamp))
+      .limit(limit);
+  }
+
+  async getWhaleAlertSettings(userId: string): Promise<WhaleAlertSettings | undefined> {
+    const [result] = await db.select().from(whaleAlertSettings)
+      .where(eq(whaleAlertSettings.userId, userId));
+    return result;
+  }
+
+  async upsertWhaleAlertSettings(userId: string, data: { xrpThreshold?: string; rlusdThreshold?: string; enabled?: boolean }): Promise<WhaleAlertSettings> {
+    const [result] = await db.insert(whaleAlertSettings)
+      .values({ userId, ...data })
+      .onConflictDoUpdate({
+        target: whaleAlertSettings.userId,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
   }
 }
 

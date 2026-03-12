@@ -63,6 +63,7 @@ import RecurringPayments from "@/pages/recurring-payments";
 import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
 import PaymentQueue from "@/pages/payment-queue";
+import WhaleAlerts from "@/pages/whale-alerts";
 import { OfflineBanner } from "@/components/offline-banner";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -136,6 +137,7 @@ function AuthenticatedRoutes() {
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/price-alerts" component={PriceAlerts} />
+        <Route path="/whale-alerts" component={WhaleAlerts} />
         <Route path="/wallets" component={WalletsPage} />
         <Route path="/statement-insights" component={StatementInsights} />
         <Route path="/reconciliation" component={Reconciliation} />
