@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { db } from "../db";
 import { priceCache as priceCacheTable } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { setSharedXrplClient, resolveWalletLabels } from "./wallet-identity-resolver";
 
 const XRPL_SERVERS = [
   "wss://xrplcluster.com",
@@ -77,17 +78,34 @@ async function handleTransaction(tx: any) {
     const hash = txData.hash || tx.hash || "";
     if (!hash) return;
 
+    const sender = txData.Account || "";
+    const receiver = txData.Destination || "";
+
+    let senderLabel: string | null = null;
+    let receiverLabel: string | null = null;
+    try {
+      const labels = await resolveWalletLabels(sender, receiver);
+      senderLabel = labels.senderLabel;
+      receiverLabel = labels.receiverLabel;
+    } catch (resolveErr: unknown) {
+      console.error("[whale-monitor] Label resolution failed:", resolveErr instanceof Error ? resolveErr.message : String(resolveErr));
+    }
+
     await storage.createWhaleAlert({
       txHash: hash,
       amount: amount.toString(),
       currency,
-      senderAddress: txData.Account || "",
-      receiverAddress: txData.Destination || "",
+      senderAddress: sender,
+      receiverAddress: receiver,
+      senderLabel,
+      receiverLabel,
       usdValue: usdValue || null,
       timestamp,
     });
 
-    console.log(`[whale-monitor] Detected ${currency} whale: ${amount.toLocaleString()} ${currency} ($${usdValue || "?"}) - ${hash.slice(0, 12)}...`);
+    const senderInfo = senderLabel ? `${senderLabel} (${sender.slice(0, 8)}...)` : `${sender.slice(0, 12)}...`;
+    const receiverInfo = receiverLabel ? `${receiverLabel} (${receiver.slice(0, 8)}...)` : `${receiver.slice(0, 12)}...`;
+    console.log(`[whale-monitor] Detected ${currency} whale: ${amount.toLocaleString()} ${currency} ($${usdValue || "?"}) ${senderInfo} -> ${receiverInfo} - ${hash.slice(0, 12)}...`);
   } catch (err: any) {
     if (!err?.message?.includes("duplicate key")) {
       console.error("[whale-monitor] Error processing transaction:", err?.message);
@@ -116,6 +134,7 @@ async function connectAndSubscribe() {
         scheduleReconnect();
       });
 
+      setSharedXrplClient(whaleClient);
       console.log(`[whale-monitor] Connected to ${server}, monitoring whale transactions`);
       return;
     } catch (err: any) {

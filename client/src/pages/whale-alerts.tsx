@@ -27,6 +27,8 @@ interface WhaleAlert {
   currency: string;
   senderAddress: string;
   receiverAddress: string;
+  senderLabel: string | null;
+  receiverLabel: string | null;
   usdValue: string | null;
   timestamp: string;
 }
@@ -379,9 +381,19 @@ export default function WhaleAlerts() {
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 flex-wrap">
-                      <span title={alert.senderAddress}>{truncateAddress(alert.senderAddress)}</span>
+                      <span title={alert.senderAddress} className="inline-flex items-center gap-1" data-testid={`sender-${alert.id}`}>
+                        {alert.senderLabel && (
+                          <Badge variant="secondary" className="text-xs font-medium py-0 px-1.5">{alert.senderLabel}</Badge>
+                        )}
+                        <span>{truncateAddress(alert.senderAddress)}</span>
+                      </span>
                       <ArrowRight className="h-3 w-3" />
-                      <span title={alert.receiverAddress}>{truncateAddress(alert.receiverAddress)}</span>
+                      <span title={alert.receiverAddress} className="inline-flex items-center gap-1" data-testid={`receiver-${alert.id}`}>
+                        {alert.receiverLabel && (
+                          <Badge variant="secondary" className="text-xs font-medium py-0 px-1.5">{alert.receiverLabel}</Badge>
+                        )}
+                        <span>{truncateAddress(alert.receiverAddress)}</span>
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

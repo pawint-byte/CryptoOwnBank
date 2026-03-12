@@ -522,6 +522,8 @@ export const whaleAlerts = pgTable("whale_alerts", {
   currency: varchar("currency", { length: 20 }).notNull(),
   senderAddress: varchar("sender_address", { length: 255 }).notNull(),
   receiverAddress: varchar("receiver_address", { length: 255 }).notNull(),
+  senderLabel: varchar("sender_label", { length: 255 }),
+  receiverLabel: varchar("receiver_label", { length: 255 }),
   usdValue: decimal("usd_value", { precision: 18, scale: 2 }),
   timestamp: timestamp("timestamp").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -540,6 +542,13 @@ export const whaleAlertSettings = pgTable("whale_alert_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const walletIdentityCache = pgTable("wallet_identity_cache", {
+  address: varchar("address", { length: 255 }).primaryKey(),
+  label: varchar("label", { length: 255 }),
+  source: varchar("source", { length: 50 }).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertWhaleAlertSchema = createInsertSchema(whaleAlerts).omit({
   id: true,
   createdAt: true,
@@ -554,6 +563,7 @@ export type WhaleAlert = typeof whaleAlerts.$inferSelect;
 export type InsertWhaleAlert = z.infer<typeof insertWhaleAlertSchema>;
 export type WhaleAlertSettings = typeof whaleAlertSettings.$inferSelect;
 export type InsertWhaleAlertSettings = z.infer<typeof insertWhaleAlertSettingsSchema>;
+export type WalletIdentityCache = typeof walletIdentityCache.$inferSelect;
 
 export const errorLogs = pgTable("error_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
