@@ -579,7 +579,7 @@ export async function registerRoutes(
         ? deposits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
         : null;
 
-      const vaultBreakdown: Record<string, { principal: number; apr: number; name: string; deposits: Array<{amount: number; date: string}> }> = {};
+      const vaultBreakdown: Record<string, { principal: number; apr: number; name: string; deposits: Array<{amount: number; date: string}>; yieldReceived: number }> = {};
       for (const dep of deposits) {
         const addr = dep.vaultAddress || SOIL_VAULT_ADDRESSES[0];
         if (!vaultBreakdown[addr]) {
@@ -588,6 +588,7 @@ export async function registerRoutes(
             apr: SOIL_VAULT_APR[addr] || 0.065,
             name: SOIL_VAULT_NAMES[addr] || "Vault",
             deposits: [],
+            yieldReceived: 0,
           };
         }
         vaultBreakdown[addr].principal += dep.amount;
@@ -597,6 +598,12 @@ export async function registerRoutes(
         const addr = wd.vaultAddress || SOIL_VAULT_ADDRESSES[0];
         if (vaultBreakdown[addr]) {
           vaultBreakdown[addr].principal -= wd.amount;
+        }
+      }
+      for (const yp of yieldPayments) {
+        const addr = yp.vaultAddress || SOIL_VAULT_ADDRESSES[0];
+        if (vaultBreakdown[addr]) {
+          vaultBreakdown[addr].yieldReceived += yp.amount;
         }
       }
 
@@ -632,6 +639,7 @@ export async function registerRoutes(
           principal: Math.max(0, info.principal).toFixed(2),
           apr: (info.apr * 100).toFixed(1),
           interest: vaultInterest.toFixed(2),
+          yieldReceived: info.yieldReceived.toFixed(4),
         };
       });
 

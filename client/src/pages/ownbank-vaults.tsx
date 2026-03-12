@@ -78,6 +78,7 @@ export default function OwnBankVaults() {
   } = useXrplStore();
 
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
+  const [autoDepositHandled, setAutoDepositHandled] = useState(false);
 
   useEffect(() => {
     if (!hasPendingXummPayment()) return;
@@ -129,6 +130,27 @@ export default function OwnBankVaults() {
   const [isDepositing, setIsDepositing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  useEffect(() => {
+    if (autoDepositHandled || !isConnected) return;
+    const params = new URLSearchParams(window.location.search);
+    const redeposit = params.get("redeposit");
+    const vaultAddr = params.get("vault");
+    if (!redeposit) return;
+    setAutoDepositHandled(true);
+    const amount = parseFloat(redeposit);
+    if (isNaN(amount) || amount < 0.01) return;
+    let targetVault = SOIL_VAULTS[0];
+    if (vaultAddr) {
+      const found = SOIL_VAULTS.find(v => v.address === vaultAddr);
+      if (found) targetVault = found;
+    }
+    setSelectedVault(targetVault);
+    setDepositAmount(amount.toFixed(2));
+    setShowPreview(false);
+    setDepositModalOpen(true);
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [isConnected, autoDepositHandled]);
+
   function getUserDeposit(vaultId: string): VaultDeposit | undefined {
     return vaultDeposits.find((d) => d.vaultId === vaultId);
   }
@@ -166,10 +188,11 @@ export default function OwnBankVaults() {
       });
       return;
     }
-    if (amount > rlusdBalance) {
+    const safeMax = Math.max(0, Math.floor((rlusdBalance - 0.01) * 100) / 100);
+    if (amount > safeMax) {
       toast({
-        title: "Insufficient Balance",
-        description: `You only have ${formatCurrency(rlusdBalance)} RLUSD available.`,
+        title: "Exceeds Safe Maximum",
+        description: `You can deposit up to ${formatCurrency(safeMax)} RLUSD while keeping a small reserve for your wallet to stay functional.`,
         variant: "destructive",
       });
       return;
@@ -514,16 +537,27 @@ export default function OwnBankVaults() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setDepositAmount(rlusdBalance.toString())}
-                    disabled={rlusdBalance === 0}
+                    onClick={() => {
+                      const safeMax = Math.max(0, Math.floor((rlusdBalance - 0.01) * 100) / 100);
+                      setDepositAmount(safeMax > 0 ? safeMax.toString() : "");
+                    }}
+                    disabled={rlusdBalance < (selectedVault?.minDeposit || 10)}
                     data-testid="button-max-amount"
                   >
                     Max
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Available: {formatCurrency(rlusdBalance)} RLUSD
-                </p>
+                <div className="space-y-0.5 mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    Available: <span className="font-mono font-medium">{formatCurrency(rlusdBalance)}</span> RLUSD
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Min deposit: <span className="font-mono font-medium">{formatCurrency(selectedVault?.minDeposit || 10)}</span>
+                    {rlusdBalance > 0 && (
+                      <> · Safe max: <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(Math.max(0, Math.floor((rlusdBalance - 0.01) * 100) / 100))}</span></>
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div className="rounded-md bg-[#00A4E4]/5 border border-[#00A4E4]/20 p-3">
