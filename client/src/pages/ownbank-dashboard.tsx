@@ -87,7 +87,7 @@ export default function OwnBankDashboard() {
     effectiveYieldPercent: string;
     weightedApr?: string;
     firstDepositDate: string | null;
-    vaults?: Array<{ address: string; name: string; principal: string; apr: string; interest: string }>;
+    vaults?: Array<{ address: string; name: string; totalDeposited: string; principal: string; apr: string; interest: string }>;
     transactions: Array<{ hash: string; type: string; amount: string; currency: string; date: string; vaultName?: string }>;
   } | null>(null);
   const [soilSynced, setSoilSynced] = useState(false);
@@ -657,7 +657,7 @@ export default function OwnBankDashboard() {
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Total Deposited</p>
                   </div>
                   <p className="text-sm sm:text-lg font-bold font-mono" data-testid="text-soil-total-deposited">
-                    ${parseFloat(soilSummary.currentPrincipal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${parseFloat(soilSummary.totalDeposited).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-muted-foreground">{soilSummary.deposits} deposit{soilSummary.deposits !== 1 ? "s" : ""}</p>
                 </div>
@@ -699,7 +699,7 @@ export default function OwnBankDashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-[10px] text-muted-foreground">Deposited</p>
-                            <p className="text-sm font-bold font-mono">${parseFloat(v.principal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-sm font-bold font-mono">${parseFloat(v.totalDeposited || v.principal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] text-muted-foreground">Interest (est.)</p>

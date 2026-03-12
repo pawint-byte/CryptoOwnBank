@@ -455,9 +455,11 @@ export async function registerRoutes(
             if (src === walletAddress && dest === walletAddress) continue;
 
             const isDeposit = src === walletAddress && allKnownVaultAddresses.has(dest);
-            const isWithdrawal = dest === walletAddress && allKnownVaultAddresses.has(src);
+            const isVaultToWallet = dest === walletAddress && allKnownVaultAddresses.has(src);
+            const isWithdrawal = isVaultToWallet && amount >= 50;
+            const isYieldPayment = isVaultToWallet && amount < 50;
 
-            if (!isDeposit && !isWithdrawal) {
+            if (!isDeposit && !isWithdrawal && !isYieldPayment) {
               if (amount >= 10) {
                 const isOutgoing = src === walletAddress;
                 const counterparty = isOutgoing ? dest : src;
@@ -479,11 +481,11 @@ export async function registerRoutes(
             }
 
             const vaultAddr = isDeposit ? dest : src;
-            const txType = isDeposit ? "deposit" : "withdrawal";
+            const txType = isDeposit ? "deposit" : isYieldPayment ? "yield" : "withdrawal";
             console.log(`[Soil sync] Found ${txType}: ${amount} ${currency} | ${src.slice(0,8)}->${dest.slice(0,8)} | vault=${vaultAddr.slice(0,8)} | hash=${hash.slice(0,12)}`);
             soilTxns.push({
               hash,
-              type: txType,
+              type: txType as any,
               amount,
               currency,
               date,
@@ -532,8 +534,10 @@ export async function registerRoutes(
 
       const deposits = soilTxns.filter(t => t.type === "deposit");
       const withdrawals = soilTxns.filter(t => t.type === "withdrawal");
+      const yieldPayments = soilTxns.filter(t => t.type === "yield");
       const totalDeposited = deposits.reduce((sum, t) => sum + t.amount, 0);
       const totalWithdrawn = withdrawals.reduce((sum, t) => sum + t.amount, 0);
+      const totalYieldReceived = yieldPayments.reduce((sum, t) => sum + t.amount, 0);
 
       const currentPrincipal = totalDeposited - totalWithdrawn;
 
@@ -615,6 +619,7 @@ export async function registerRoutes(
 
       const vaults = Object.entries(vaultBreakdown).map(([addr, info]) => {
         let vaultInterest = 0;
+        const vaultTotalDeposited = info.deposits.reduce((s, d) => s + d.amount, 0);
         for (const dep of info.deposits) {
           const depositDate = new Date(dep.date);
           const daysSince = Math.max(0, (Date.now() - depositDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -623,6 +628,7 @@ export async function registerRoutes(
         return {
           address: addr,
           name: info.name,
+          totalDeposited: vaultTotalDeposited.toFixed(2),
           principal: Math.max(0, info.principal).toFixed(2),
           apr: (info.apr * 100).toFixed(1),
           interest: vaultInterest.toFixed(2),
@@ -652,6 +658,8 @@ export async function registerRoutes(
           totalDeposited: totalDeposited.toFixed(2),
           withdrawals: withdrawals.length,
           totalWithdrawn: totalWithdrawn.toFixed(2),
+          yieldPayments: yieldPayments.length,
+          totalYieldReceived: totalYieldReceived.toFixed(4),
           currentPrincipal: currentPrincipal.toFixed(2),
           calculatedInterest: calculatedInterest.toFixed(4),
           effectiveYieldPercent: effectiveYieldPercent.toFixed(2),
