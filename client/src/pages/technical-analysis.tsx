@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ import {
   CartesianGrid,
   Brush,
   Cell,
-  Rectangle,
+  Customized,
 } from "recharts";
 import { BarChart3, Lock, ArrowRight, TrendingUp, AlertTriangle } from "lucide-react";
 import {
@@ -90,51 +90,6 @@ function formatPrice(val: number) {
   if (val >= 1) return `$${val.toFixed(2)}`;
   if (val >= 0.01) return `$${val.toFixed(4)}`;
   return `$${val.toFixed(6)}`;
-}
-
-function CandlestickShape(props: any) {
-  const { x, y, width, height, payload } = props;
-  if (!payload) return null;
-  const { open, close, high, low } = payload;
-  if (open == null || close == null || high == null || low == null) return null;
-
-  const isUp = close >= open;
-  const color = isUp ? "#22c55e" : "#ef4444";
-
-  const yScale = props.yAxis;
-  if (!yScale) return null;
-
-  const yHigh = yScale.scale(high);
-  const yLow = yScale.scale(low);
-  const yOpen = yScale.scale(open);
-  const yClose = yScale.scale(close);
-
-  const bodyTop = Math.min(yOpen, yClose);
-  const bodyHeight = Math.max(Math.abs(yOpen - yClose), 1);
-  const candleX = x + width / 2;
-  const bodyWidth = Math.max(width * 0.6, 2);
-
-  return (
-    <g>
-      <line
-        x1={candleX}
-        y1={yHigh}
-        x2={candleX}
-        y2={yLow}
-        stroke={color}
-        strokeWidth={1}
-      />
-      <rect
-        x={candleX - bodyWidth / 2}
-        y={bodyTop}
-        width={bodyWidth}
-        height={bodyHeight}
-        fill={isUp ? color : color}
-        stroke={color}
-        strokeWidth={1}
-      />
-    </g>
-  );
 }
 
 function CustomTooltip({ active, payload }: any) {
@@ -278,7 +233,6 @@ export default function TechnicalAnalysis() {
         high: c.high,
         low: c.low,
         close: c.close,
-        candleBody: Math.abs(c.close - c.open) || 0.001,
         sma20: sma20Map.get(c.timestamp),
         sma50: sma50Map.get(c.timestamp),
         sma200: sma200Map.get(c.timestamp),
@@ -533,56 +487,62 @@ export default function TechnicalAnalysis() {
                     </>
                   )}
 
-                  <Bar
-                    dataKey="candleBody"
-                    barSize={Math.max(2, Math.min(8, 600 / computed.chartData.length))}
-                    isAnimationActive={false}
-                    name="Candle"
-                    shape={(props: any) => {
-                      const d = props.payload;
-                      if (!d) return null;
-                      const isUp = d.close >= d.open;
-                      const color = isUp ? "#22c55e" : "#ef4444";
-                      const { x, width } = props;
-                      const yAxis = props.background ? undefined : props;
+                  <Customized
+                    component={(props: any) => {
+                      const { formattedGraphicalItems, xAxisMap, yAxisMap } = props;
+                      if (!xAxisMap || !yAxisMap) return null;
+                      const xAxis = Object.values(xAxisMap)[0] as any;
+                      const yAxis = Object.values(yAxisMap)[0] as any;
+                      if (!xAxis?.scale || !yAxis?.scale) return null;
+
+                      const data = computed.chartData;
+                      const bandWidth = xAxis.bandSize || (xAxis.width / data.length);
+                      const candleWidth = Math.max(2, Math.min(10, bandWidth * 0.6));
 
                       return (
                         <g>
-                          <line
-                            x1={x + width / 2}
-                            y1={props.y}
-                            x2={x + width / 2}
-                            y2={props.y + props.height}
-                            stroke={color}
-                            strokeWidth={1}
-                          />
-                          <rect
-                            x={x}
-                            y={props.y + (isUp ? props.height * 0.2 : props.height * 0.3)}
-                            width={width}
-                            height={Math.max(props.height * 0.5, 1)}
-                            fill={color}
-                            stroke={color}
-                          />
+                          {data.map((d, i) => {
+                            const xPos = xAxis.scale(i != null ? d.dateLabel : i);
+                            if (xPos == null || isNaN(xPos)) return null;
+                            const yHigh = yAxis.scale(d.high);
+                            const yLow = yAxis.scale(d.low);
+                            const yOpen = yAxis.scale(d.open);
+                            const yClose = yAxis.scale(d.close);
+                            if ([yHigh, yLow, yOpen, yClose].some((v) => v == null || isNaN(v))) return null;
+
+                            const isUp = d.close >= d.open;
+                            const color = isUp ? "#22c55e" : "#ef4444";
+                            const bodyTop = Math.min(yOpen, yClose);
+                            const bodyHeight = Math.max(Math.abs(yOpen - yClose), 1);
+                            const cx = xPos + bandWidth / 2;
+
+                            return (
+                              <g key={`candle-${i}`}>
+                                <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth={1} />
+                                <rect
+                                  x={cx - candleWidth / 2}
+                                  y={bodyTop}
+                                  width={candleWidth}
+                                  height={bodyHeight}
+                                  fill={color}
+                                  stroke={color}
+                                  strokeWidth={0.5}
+                                />
+                              </g>
+                            );
+                          })}
                         </g>
                       );
                     }}
-                  >
-                    {computed.chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.close >= entry.open ? "#22c55e" : "#ef4444"}
-                      />
-                    ))}
-                  </Bar>
+                  />
 
                   <Line
                     dataKey="close"
-                    stroke="hsl(var(--chart-1))"
-                    strokeWidth={1.5}
+                    stroke="transparent"
+                    strokeWidth={0}
                     dot={false}
                     name="Close"
-                    strokeOpacity={0.6}
+                    activeDot={false}
                   />
 
                   {activeIndicators.has("sma20") && (
