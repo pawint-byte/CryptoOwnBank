@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useXrplStore } from "@/lib/xrpl-store";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import {
   Landmark,
@@ -33,6 +34,7 @@ import {
   Home,
   MapPin,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 
 interface YieldOpportunity {
@@ -1022,92 +1024,102 @@ function EarningStatusSection() {
   return (
     <Card data-testid="card-earning-status">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-[#00A4E4]" />
-            Your Earning Status
-          </span>
-          <div className="flex items-center gap-2">
-            {activeCount > 0 && (
-              <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-xs" data-testid="badge-earning-count">
-                {activeCount} earning
-              </Badge>
-            )}
-            {notEarningCount > 0 && (
-              <Badge variant="outline" className="text-xs text-muted-foreground" data-testid="badge-not-earning-count">
-                {notEarningCount} not started
-              </Badge>
-            )}
-          </div>
+        <CardTitle className="text-base flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-[#00A4E4]" />
+          {activeCount > 0 ? "Your Earnings" : "Start Earning Yield"}
         </CardTitle>
+        {activeCount === 0 && (
+          <p className="text-sm text-muted-foreground -mt-1">
+            Your crypto could be earning for you. Here are opportunities matched to your portfolio.
+          </p>
+        )}
       </CardHeader>
-      <CardContent className="space-y-2">
-        {earningOpps.map(({ opp, hasWallet, isTracking }) => (
-          <div
-            key={opp.id}
-            className={`flex items-center justify-between rounded-md border px-3 py-2.5 ${isTracking ? "bg-green-500/5 border-green-500/20" : hasWallet ? "bg-blue-500/5 border-blue-500/10" : "bg-muted/20"}`}
-            data-testid={`earning-status-${opp.id}`}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              {isTracking ? (
-                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-              ) : hasWallet ? (
-                <Wallet className="h-4 w-4 text-[#00A4E4] shrink-0" />
-              ) : (
-                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium">{opp.protocol}</span>
-                  <Badge variant="outline" className="text-xs">{opp.chain}</Badge>
+      <CardContent className="space-y-4">
+        {activeCount > 0 && (
+          <div className="space-y-2" data-testid="section-active-earnings">
+            {earningOpps.filter(e => e.isTracking).map(({ opp }) => (
+              <div
+                key={opp.id}
+                className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/5 px-4 py-3"
+                data-testid={`earning-active-${opp.id}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium">{opp.protocol}</span>
+                    <p className="text-xs text-green-700 dark:text-green-400 font-medium">{opp.apyRange} APY on {opp.asset}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{opp.asset} — {opp.apyRange}{opp.category === "yield" ? " APY" : ""}</p>
-              </div>
-            </div>
-            <div className="shrink-0 ml-2">
-              {isTracking ? (
-                <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-xs">
-                  Tracking
-                </Badge>
-              ) : opp.integrated ? (
-                <Link href="/ownbank/vaults" data-testid={`link-start-earning-${opp.id}`}>
-                  <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4] h-7 text-xs">
-                    Start Earning
+                <Link href="/ownbank/vaults" data-testid={`link-view-earnings-${opp.id}`}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs border-green-500/30 text-green-700 dark:text-green-400">
+                    View
                     <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </Link>
-              ) : hasWallet ? (
-                <a href={`#protocol-${opp.id}`} data-testid={`link-start-earning-${opp.id}`}>
-                  <Button size="sm" variant="outline" className="h-7 text-xs border-[#00A4E4]/30 text-[#00A4E4]">
-                    Start Earning
-                    <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-              ) : (
-                <a href={`#protocol-${opp.id}`} data-testid={`link-start-earning-${opp.id}`}>
-                  <Button size="sm" variant="outline" className="h-7 text-xs">
-                    Learn More
-                    <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </a>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
 
-        {notEarningCount > 0 && activeCount > 0 && (
-          <p className="text-xs text-muted-foreground pt-1">
-            You're actively earning with {activeCount} of {earningOpps.length} opportunities. Click "Start Earning" on any you'd like to try.
-          </p>
+        {notEarningCount > 0 && (
+          <div className="space-y-1.5" data-testid="section-opportunities">
+            {activeCount > 0 && (
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1">More Opportunities</p>
+            )}
+            {earningOpps.filter(e => !e.isTracking).map(({ opp, hasWallet }) => (
+              <div
+                key={opp.id}
+                className="flex items-center justify-between rounded-md border px-3 py-2.5 hover:bg-muted/40 transition-colors"
+                data-testid={`earning-status-${opp.id}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{opp.protocol}</span>
+                      <Badge variant="outline" className="text-xs">{opp.chain}</Badge>
+                      {hasWallet && (
+                        <Badge className="bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/20 text-[10px] px-1.5 py-0">
+                          Wallet Ready
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{opp.asset} — {opp.apyRange}{opp.category === "yield" ? " APY" : ""}</p>
+                  </div>
+                </div>
+                <div className="shrink-0 ml-2">
+                  {opp.integrated ? (
+                    <Link href="/ownbank/vaults" data-testid={`link-start-earning-${opp.id}`}>
+                      <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4] h-7 text-xs">
+                        Start Earning
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <a href={`#protocol-${opp.id}`} data-testid={`link-explore-${opp.id}`}>
+                      <Button size="sm" variant="outline" className="h-7 text-xs">
+                        Explore
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {activeCount === 0 && (
-          <p className="text-xs text-muted-foreground pt-1">
-            You haven't started earning with any protocols yet. Pick one above to get started — Soil Protocol is the easiest (no KYC, $50 minimum).
-          </p>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-[#00A4E4]/5 border border-[#00A4E4]/15">
+            <Sparkles className="h-4 w-4 text-[#00A4E4] shrink-0 mt-0.5" />
+            <div className="text-xs text-muted-foreground">
+              <p><span className="font-medium text-foreground">Easiest way to start:</span> Soil Protocol lets you earn 5–8% APY on RLUSD with no KYC and just $50 minimum — and it's fully integrated right here in CryptoOwnBank.</p>
+            </div>
+          </div>
         )}
 
-        <div className="pt-3 mt-3 border-t border-muted">
+        <div className="pt-3 mt-1 border-t border-muted">
           <a href="/ownbank" className="text-xs text-primary hover:underline flex items-center gap-1.5" data-testid="link-cold-wallet-guide">
             <Shield className="h-3.5 w-3.5" />
             Need a cold wallet? Compare wallets based on your portfolio →
@@ -1144,6 +1156,7 @@ const DEEP_LINKS: Record<string, string> = {
 
 function MyYieldPositions() {
   const { user } = useAuth();
+  const { vaultDeposits, isConnected } = useXrplStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -1164,6 +1177,8 @@ function MyYieldPositions() {
   });
 
   const positions = positionsData?.positions || [];
+  const hasVaultDeposits = vaultDeposits.length > 0;
+  const totalVaultPrincipal = vaultDeposits.reduce((sum, d) => sum + d.principal, 0);
 
   if (!user) return null;
 
@@ -1258,11 +1273,14 @@ function MyYieldPositions() {
     return amount * (aprVal / 100) * (days / 365);
   };
 
-  const totalDeposited = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + parseFloat(p.depositAmount || "0"), 0);
-  const weightedApr = totalDeposited > 0
-    ? positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + parseFloat(p.depositAmount || "0") * parseFloat(p.apr || "0"), 0) / totalDeposited
-    : 0;
-  const totalDailyYield = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + calcProjectedYield(parseFloat(p.depositAmount || "0"), parseFloat(p.apr || "0"), 1), 0);
+  const manualDeposited = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + parseFloat(p.depositAmount || "0"), 0);
+  const totalDeposited = manualDeposited + totalVaultPrincipal;
+  const vaultWeightedAprSum = vaultDeposits.reduce((sum, d) => sum + d.principal * d.apr, 0);
+  const manualWeightedAprSum = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + parseFloat(p.depositAmount || "0") * parseFloat(p.apr || "0"), 0);
+  const weightedApr = totalDeposited > 0 ? (manualWeightedAprSum + vaultWeightedAprSum) / totalDeposited : 0;
+  const vaultDailyYield = vaultDeposits.reduce((sum, d) => sum + calcProjectedYield(d.principal, d.apr, 1), 0);
+  const manualDailyYield = positions.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + calcProjectedYield(parseFloat(p.depositAmount || "0"), parseFloat(p.apr || "0"), 1), 0);
+  const totalDailyYield = vaultDailyYield + manualDailyYield;
 
   return (
     <div>
@@ -1430,8 +1448,48 @@ function MyYieldPositions() {
         </Card>
       )}
 
-      {positions.length > 0 ? (
+      {(positions.length > 0 || hasVaultDeposits) ? (
         <div className="space-y-3">
+          {hasVaultDeposits && (
+            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-soil-vault-inline">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Soil Protocol</p>
+                      <p className="text-xs text-muted-foreground">XRPL — RLUSD</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold font-mono text-green-700 dark:text-green-400">
+                      ${totalVaultPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{vaultDeposits.length} vault{vaultDeposits.length > 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {vaultDeposits.map((dep) => (
+                    <div key={dep.vaultId} className="bg-background/60 rounded-md px-3 py-2 border border-green-500/10">
+                      <p className="text-xs font-medium truncate">{dep.vaultName}</p>
+                      <p className="text-sm font-mono font-semibold">${dep.principal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] text-green-600 dark:text-green-400">{dep.apr}% APR</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <Link href="/ownbank/vaults" data-testid="link-manage-vaults-inline">
+                    <Button size="sm" variant="outline" className="h-7 text-xs border-green-500/30 text-green-700 dark:text-green-400">
+                      Manage Vaults
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <div className="grid grid-cols-3 gap-3 mb-3">
             <Card>
               <CardContent className="p-3 text-center">
@@ -1540,15 +1598,61 @@ function MyYieldPositions() {
           })}
         </div>
       ) : (
-        <Card className="border-dashed" data-testid="card-no-positions">
-          <CardContent className="p-6 text-center">
-            <Compass className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm font-medium">No yield positions tracked yet</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Click "Track Position" to add your first yield position — whether it's on Soil, Ondo, Aave, or any other protocol.
+        <div className="space-y-3" data-testid="card-no-positions">
+          <Card className="border-dashed" data-testid="card-get-started">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-[#00A4E4]/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-5 w-5 text-[#00A4E4]" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Start earning yield on your RLUSD</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Soil Protocol offers 5–8% APY on RLUSD with no KYC and a $50 minimum. Fully integrated — deposit and manage everything right here.
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    {isConnected ? (
+                      <Link href="/ownbank/vaults" data-testid="link-deposit-now">
+                        <Button size="sm" className="bg-[#00A4E4] text-white h-7 text-xs">
+                          Deposit Now
+                          <ArrowRight className="h-3 w-3 ml-1" />
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href="/ownbank" data-testid="link-connect-wallet">
+                        <Button size="sm" className="bg-[#00A4E4] text-white h-7 text-xs">
+                          Connect Wallet
+                          <ArrowRight className="h-3 w-3 ml-1" />
+                        </Button>
+                      </Link>
+                    )}
+                    <a href="#protocol-soil" data-testid="link-learn-soil">
+                      <Button size="sm" variant="ghost" className="h-7 text-xs">
+                        Learn More
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-between p-3 rounded-md border border-dashed">
+            <p className="text-xs text-muted-foreground">
+              Tracking yield on other protocols like Ondo, Aave, or Centrifuge? Add them here to see everything in one place.
             </p>
-          </CardContent>
-        </Card>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAddForm(true)}
+              className="h-7 text-xs shrink-0 ml-3"
+              data-testid="button-track-other"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Track Position
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
