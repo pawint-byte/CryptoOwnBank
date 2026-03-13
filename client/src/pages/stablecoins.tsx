@@ -242,6 +242,8 @@ const DECISION_GUIDE = [
     recommended: ["DAI"],
     reason:
       "DAI is the only major stablecoin with no centralized issuer who can freeze or blacklist addresses. Fully governed by DAO.",
+    link: "/rwa-yields",
+    linkLabel: "Earn & Yield Explorer",
   },
 ];
 
