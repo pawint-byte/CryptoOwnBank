@@ -5047,26 +5047,15 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limit = Math.min(parseInt(req.query.limit as string) || 100, 200);
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
 
       let since: Date | undefined;
       if (tier === "free") {
         since = new Date(Date.now() - 24 * 60 * 60 * 1000);
       }
 
-      let xrpThreshold = 1_000_000;
-      let rlusdThreshold = 500_000;
-
-      if (tier !== "free") {
-        const userSettings = await storage.getWhaleAlertSettings(userId);
-        if (userSettings) {
-          if (userSettings.xrpThreshold) xrpThreshold = Number(userSettings.xrpThreshold);
-          if (userSettings.rlusdThreshold) rlusdThreshold = Number(userSettings.rlusdThreshold);
-        }
-      }
-
-      const alerts = await storage.getWhaleAlerts(limit, since, xrpThreshold, rlusdThreshold);
-      res.json({ alerts, tierRestricted: tier === "free", xrpThreshold, rlusdThreshold });
+      const alerts = await storage.getWhaleAlerts(limit, since);
+      res.json({ alerts, tierRestricted: tier === "free" });
     } catch (error) {
       console.error("Whale alerts error:", error);
       res.status(500).json({ message: "Failed to fetch whale alerts" });
@@ -5077,7 +5066,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const settings = await storage.getWhaleAlertSettings(userId);
-      res.json(settings || { xrpThreshold: "1000000", rlusdThreshold: "500000", enabled: true });
+      res.json(settings || { xrpThreshold: "100000", rlusdThreshold: "10000", enabled: true });
     } catch (error) {
       console.error("Whale alert settings error:", error);
       res.status(500).json({ message: "Failed to fetch settings" });

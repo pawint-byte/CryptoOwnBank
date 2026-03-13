@@ -235,7 +235,7 @@ export interface IStorage {
   deletePortfolioSnapshot(id: string, userId: string): Promise<void>;
 
   createWhaleAlert(alert: InsertWhaleAlert): Promise<WhaleAlert | undefined>;
-  getWhaleAlerts(limit: number, since?: Date, xrpThreshold?: number, rlusdThreshold?: number): Promise<WhaleAlert[]>;
+  getWhaleAlerts(limit: number, since?: Date): Promise<WhaleAlert[]>;
   getWhaleAlertSettings(userId: string): Promise<WhaleAlertSettings | undefined>;
   upsertWhaleAlertSettings(userId: string, data: { xrpThreshold?: string; rlusdThreshold?: string; enabled?: boolean }): Promise<WhaleAlertSettings>;
 
@@ -971,30 +971,19 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getWhaleAlerts(limit: number, since?: Date, xrpThreshold?: number, rlusdThreshold?: number): Promise<WhaleAlert[]> {
+  async getWhaleAlerts(limit: number, since?: Date): Promise<WhaleAlert[]> {
     const conditions = [];
     if (since) {
       conditions.push(gte(whaleAlerts.timestamp, since));
     }
-    if (xrpThreshold || rlusdThreshold) {
-      const xrpMin = (xrpThreshold || 1_000_000).toString();
-      const rlusdMin = (rlusdThreshold || 500_000).toString();
-      conditions.push(
-        sql`(
-          (${whaleAlerts.currency} = 'XRP' AND CAST(${whaleAlerts.amount} AS NUMERIC) >= ${xrpMin}::numeric)
-          OR
-          (${whaleAlerts.currency} = 'RLUSD' AND CAST(${whaleAlerts.amount} AS NUMERIC) >= ${rlusdMin}::numeric)
-        )`
-      );
-    }
     if (conditions.length > 0) {
       return db.select().from(whaleAlerts)
         .where(and(...conditions))
-        .orderBy(desc(whaleAlerts.timestamp))
+        .orderBy(sql`CAST(${whaleAlerts.amount} AS NUMERIC) DESC`)
         .limit(limit);
     }
     return db.select().from(whaleAlerts)
-      .orderBy(desc(whaleAlerts.timestamp))
+      .orderBy(sql`CAST(${whaleAlerts.amount} AS NUMERIC) DESC`)
       .limit(limit);
   }
 

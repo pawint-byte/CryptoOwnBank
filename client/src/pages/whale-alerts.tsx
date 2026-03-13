@@ -4,7 +4,6 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,8 +44,6 @@ interface WhaleAlertSettings {
 interface WhaleAlertsResponse {
   alerts: WhaleAlert[];
   tierRestricted: boolean;
-  xrpThreshold: number;
-  rlusdThreshold: number;
 }
 
 interface XrpMarketStats {
@@ -70,12 +67,6 @@ function formatAmount(amount: string, currency: string) {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M ${currency}`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K ${currency}`;
   return `${num.toLocaleString()} ${currency}`;
-}
-
-function formatThreshold(val: number) {
-  if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(0)}M`;
-  if (val >= 1_000) return `${(val / 1_000).toFixed(0)}K`;
-  return val.toLocaleString();
 }
 
 function formatLargeNumber(num: number, isSupply = false): string {
@@ -158,8 +149,6 @@ export default function WhaleAlerts() {
     refetchInterval: 5 * 60 * 1000,
   });
 
-  const [xrpThreshold, setXrpThreshold] = useState("");
-  const [rlusdThreshold, setRlusdThreshold] = useState("");
   const [alertsEnabled, setAlertsEnabled] = useState(true);
 
   const settingsMutation = useMutation({
@@ -179,8 +168,6 @@ export default function WhaleAlerts() {
 
   const alerts = alertsData?.alerts || [];
   const tierRestricted = alertsData?.tierRestricted ?? true;
-  const activeXrpThreshold = alertsData?.xrpThreshold ?? 1_000_000;
-  const activeRlusdThreshold = alertsData?.rlusdThreshold ?? 500_000;
 
   const isNotificationsEnabled = isPaidUser && settings?.enabled !== false;
 
@@ -236,8 +223,6 @@ export default function WhaleAlerts() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setXrpThreshold(settings?.xrpThreshold || "1000000");
-                setRlusdThreshold(settings?.rlusdThreshold || "500000");
                 setAlertsEnabled(settings?.enabled ?? true);
                 setShowSettings(!showSettings);
               }}
@@ -268,7 +253,7 @@ export default function WhaleAlerts() {
               XRP Whales
             </div>
             <p className="text-2xl font-bold">{xrpAlerts.length}</p>
-            <p className="text-xs text-muted-foreground">Threshold: {formatThreshold(activeXrpThreshold)}+ XRP</p>
+            <p className="text-xs text-muted-foreground">Largest XRP transfers</p>
           </CardContent>
         </Card>
         <Card data-testid="card-whale-stat-rlusd">
@@ -278,7 +263,7 @@ export default function WhaleAlerts() {
               RLUSD Whales
             </div>
             <p className="text-2xl font-bold">{rlusdAlerts.length}</p>
-            <p className="text-xs text-muted-foreground">Threshold: {formatThreshold(activeRlusdThreshold)}+ RLUSD</p>
+            <p className="text-xs text-muted-foreground">Largest RLUSD transfers</p>
           </CardContent>
         </Card>
         <Card data-testid="card-whale-stat-escrow" className="border-amber-500/20">
@@ -344,32 +329,6 @@ export default function WhaleAlerts() {
             <CardTitle className="text-lg">Alert Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="xrp-threshold">XRP Threshold (minimum 100,000)</Label>
-                <Input
-                  id="xrp-threshold"
-                  type="number"
-                  value={xrpThreshold}
-                  onChange={(e) => setXrpThreshold(e.target.value)}
-                  placeholder="1000000"
-                  min={100000}
-                  data-testid="input-xrp-threshold"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rlusd-threshold">RLUSD Threshold (minimum 10,000)</Label>
-                <Input
-                  id="rlusd-threshold"
-                  type="number"
-                  value={rlusdThreshold}
-                  onChange={(e) => setRlusdThreshold(e.target.value)}
-                  placeholder="500000"
-                  min={10000}
-                  data-testid="input-rlusd-threshold"
-                />
-              </div>
-            </div>
             <div className="flex items-center gap-3">
               <Switch
                 checked={alertsEnabled}
@@ -379,13 +338,11 @@ export default function WhaleAlerts() {
               <Label>Enable in-app whale notifications</Label>
             </div>
             <p className="text-xs text-muted-foreground">
-              When enabled, you will receive a toast notification whenever a new whale transaction matching your thresholds is detected during auto-refresh.
+              When enabled, you will receive a toast notification whenever a new large transaction is detected during auto-refresh. The feed always shows the top largest transactions sorted by amount.
             </p>
             <Button
               onClick={() =>
                 settingsMutation.mutate({
-                  xrpThreshold,
-                  rlusdThreshold,
                   enabled: alertsEnabled,
                 })
               }
@@ -402,7 +359,7 @@ export default function WhaleAlerts() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
-              Live Feed
+              Top Largest Transactions
               <Badge variant="outline" className="text-xs font-normal">
                 Auto-refreshes every 30s
               </Badge>
@@ -424,8 +381,8 @@ export default function WhaleAlerts() {
               <Fish className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No whale transactions detected yet</p>
               <p className="text-sm mt-1">
-                Monitoring for XRP transfers over {formatThreshold(activeXrpThreshold)} and RLUSD transfers over {formatThreshold(activeRlusdThreshold)}.
-                Large transactions will appear here automatically.
+                Monitoring for the largest XRP and RLUSD transfers on the ledger.
+                Large transactions and Ripple escrow events will appear here automatically.
               </p>
             </div>
           ) : (
