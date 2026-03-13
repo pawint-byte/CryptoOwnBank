@@ -4,6 +4,7 @@ const BASE_URL = "https://cryptoownbank.com";
 const SITE_NAME = "CryptoOwnBank";
 const DEFAULT_TITLE = "CryptoOwnBank — Be Your Own Bank | Track Crypto & Earn Yield";
 const DEFAULT_DESCRIPTION = "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR. Connect your cold wallet, track your portfolio, and earn real yield — principal always protected.";
+const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 interface SeoHeadProps {
   title?: string;
@@ -62,9 +63,13 @@ export function SeoHead({
     setMetaTag("og:description", ogDescription || fullDescription, true);
     setMetaTag("og:type", ogType, true);
     setMetaTag("og:url", canonicalUrl, true);
+    setMetaTag("og:image", DEFAULT_OG_IMAGE, true);
+    setMetaTag("og:image:width", "1200", true);
+    setMetaTag("og:image:height", "675", true);
 
     setMetaTag("twitter:title", ogTitle || fullTitle);
     setMetaTag("twitter:description", ogDescription || fullDescription);
+    setMetaTag("twitter:image", DEFAULT_OG_IMAGE);
 
     let jsonLdScript: HTMLScriptElement | null = null;
     if (jsonLd) {
