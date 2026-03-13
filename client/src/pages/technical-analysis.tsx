@@ -95,7 +95,53 @@ function formatPrice(val: number) {
   return `$${val.toFixed(6)}`;
 }
 
-function CustomTooltip({ active, payload }: any) {
+interface TooltipPayloadEntry {
+  dataKey: string;
+  value: number | string | null;
+  color: string;
+  name: string;
+  payload: ChartDataPoint;
+}
+
+interface ChartDataPoint {
+  timestamp: number;
+  dateLabel: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  sma20?: number;
+  sma50?: number;
+  sma200?: number;
+  ema12?: number;
+  ema26?: number;
+  bbUpper?: number;
+  bbMiddle?: number;
+  bbLower?: number;
+}
+
+interface RSIDataPoint {
+  timestamp: number;
+  dateLabel: string;
+  rsi?: number;
+}
+
+interface MACDDataPoint {
+  timestamp: number;
+  dateLabel: string;
+  macd?: number;
+  signal?: number;
+  histogram?: number;
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+}
+
+const HIDDEN_TOOLTIP_KEYS = new Set(["candleBody", "open", "high", "low", "close", "dateLabel", "timestamp", "bbUpper", "bbLower", "bbMiddle"]);
+
+function CustomTooltip({ active, payload }: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
@@ -111,8 +157,8 @@ function CustomTooltip({ active, payload }: any) {
         </div>
       )}
       {payload
-        .filter((p: any) => !["candleBody", "open", "high", "low", "close", "dateLabel", "timestamp", "bbUpper", "bbLower", "bbMiddle"].includes(p.dataKey) && p.value != null)
-        .map((p: any) => (
+        .filter((p) => !HIDDEN_TOOLTIP_KEYS.has(p.dataKey) && p.value != null)
+        .map((p) => (
           <div key={p.dataKey} className="flex justify-between gap-4">
             <span style={{ color: p.color }}>{p.name || p.dataKey}</span>
             <span className="font-medium">{typeof p.value === "number" ? formatPrice(p.value) : p.value}</span>
@@ -122,7 +168,7 @@ function CustomTooltip({ active, payload }: any) {
   );
 }
 
-function RSITooltip({ active, payload }: any) {
+function RSITooltip({ active, payload }: { active?: boolean; payload?: { payload: RSIDataPoint }[] }) {
   if (!active || !payload || payload.length === 0) return null;
   const d = payload[0]?.payload;
   return (
@@ -133,7 +179,7 @@ function RSITooltip({ active, payload }: any) {
   );
 }
 
-function MACDTooltip({ active, payload }: any) {
+function MACDTooltip({ active, payload }: { active?: boolean; payload?: { payload: MACDDataPoint }[] }) {
   if (!active || !payload || payload.length === 0) return null;
   const d = payload[0]?.payload;
   return (
@@ -141,7 +187,7 @@ function MACDTooltip({ active, payload }: any) {
       <p className="text-muted-foreground">{d?.dateLabel}</p>
       <p style={{ color: "#10b981" }}>MACD: {d?.macd?.toFixed(4)}</p>
       <p style={{ color: "#f59e0b" }}>Signal: {d?.signal?.toFixed(4)}</p>
-      <p style={{ color: d?.histogram >= 0 ? "#22c55e" : "#ef4444" }}>Histogram: {d?.histogram?.toFixed(4)}</p>
+      <p style={{ color: d?.histogram != null && d.histogram >= 0 ? "#22c55e" : "#ef4444" }}>Histogram: {d?.histogram?.toFixed(4)}</p>
     </div>
   );
 }
@@ -491,11 +537,12 @@ export default function TechnicalAnalysis() {
                   )}
 
                   <Customized
-                    component={(props: any) => {
-                      const { formattedGraphicalItems, xAxisMap, yAxisMap } = props;
+                    component={(props: Record<string, unknown>) => {
+                      const xAxisMap = props.xAxisMap as Record<string, { scale: (v: string | number) => number; bandSize?: number; width: number }> | undefined;
+                      const yAxisMap = props.yAxisMap as Record<string, { scale: (v: number) => number }> | undefined;
                       if (!xAxisMap || !yAxisMap) return null;
-                      const xAxis = Object.values(xAxisMap)[0] as any;
-                      const yAxis = Object.values(yAxisMap)[0] as any;
+                      const xAxis = Object.values(xAxisMap)[0];
+                      const yAxis = Object.values(yAxisMap)[0];
                       if (!xAxis?.scale || !yAxis?.scale) return null;
 
                       const data = computed.chartData;
