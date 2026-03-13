@@ -33,6 +33,8 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface WhaleAlert {
@@ -206,6 +208,7 @@ function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
 export default function WhaleAlerts() {
   const { toast } = useToast();
   const [showSettings, setShowSettings] = useState(false);
+  const [showList, setShowList] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange | null>(null);
   const prevAlertIdsRef = useRef<Set<string>>(new Set());
@@ -784,7 +787,11 @@ export default function WhaleAlerts() {
       )}
 
       <Card data-testid="card-whale-feed">
-        <CardHeader>
+        <CardHeader
+          className="cursor-pointer select-none hover:bg-muted/30 transition-colors rounded-t-lg"
+          onClick={() => setShowList(!showList)}
+          data-testid="button-toggle-list"
+        >
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               All Transactions
@@ -792,12 +799,15 @@ export default function WhaleAlerts() {
                 Sorted by amount
               </Badge>
             </CardTitle>
-            {alerts.length > 0 && (
-              <span className="text-xs text-muted-foreground">{alerts.length} transactions</span>
-            )}
+            <div className="flex items-center gap-2">
+              {alerts.length > 0 && (
+                <span className="text-xs text-muted-foreground">{alerts.length} transactions</span>
+              )}
+              {showList ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
+        {showList && <CardContent>
           {alertsLoading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -880,7 +890,7 @@ export default function WhaleAlerts() {
               })}
             </div>
           )}
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {marketStats && (
