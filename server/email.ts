@@ -380,6 +380,111 @@ export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   await sendEmail(to, "Welcome to CryptoOwnBank Premium!", html);
 }
 
+export async function sendReEngagementEmail(to: string, name: string) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hey ${name},</h2>
+        <p style="color: #555; line-height: 1.6;">
+          We've been busy building — CryptoOwnBank just got a major upgrade and we wanted you to be the first to know.
+        </p>
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p style="color: #0369a1; font-weight: 600; margin: 0 0 12px;">What's new:</p>
+          <ul style="color: #555; line-height: 2; margin: 0; padding-left: 20px;">
+            <li><strong>Earn 5–8% fixed APR</strong> on RLUSD — fully non-custodial</li>
+            <li><strong>Portfolio tracker</strong> — track all your crypto in one place</li>
+            <li><strong>Technical analysis</strong> — charts, indicators & signals</li>
+            <li><strong>RWA yield discovery</strong> — find real-world asset yields</li>
+            <li><strong>Stablecoin dashboard</strong> — monitor stablecoin metrics</li>
+            <li><strong>Referral rewards</strong> — earn SEED points & free Premium months</li>
+          </ul>
+        </div>
+        <p style="color: #555; line-height: 1.6;">
+          Your account is ready and waiting. Sign in to explore everything that's new.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://cryptoownbank.com/login" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Sign In Now
+          </a>
+        </div>
+        <p style="color: #555; font-size: 14px; text-align: center; line-height: 1.6;">
+          Not sure where to start? <a href="https://cryptoownbank.com/faq" style="color: #00A4E4; text-decoration: none; font-weight: 600;">Read our FAQ</a> to see how CryptoOwnBank can help you be your own bank.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because you signed up for CryptoOwnBank. If you no longer wish to receive emails, reply with "unsubscribe."</p>
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, "CryptoOwnBank just got a major upgrade — come check it out", html);
+}
+
+export async function sendInactivityReminderEmail(to: string, name: string, daysInactive: number) {
+  const is60Day = daysInactive >= 60;
+  const subject = is60Day
+    ? "We miss you — your CryptoOwnBank account is waiting"
+    : "It's been a while — new opportunities on CryptoOwnBank";
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hey ${name},</h2>
+        ${is60Day ? `
+        <p style="color: #555; line-height: 1.6;">
+          It's been about 2 months since you last signed in. A lot has changed — we've added new features and yield opportunities you might want to check out.
+        </p>
+        <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <p style="color: #92400e; font-weight: 600; margin: 0 0 8px;">Don't miss out</p>
+          <p style="color: #a16207; margin: 0; font-size: 14px;">
+            Markets move fast. Your portfolio tracker, yield vaults, and market signals are all ready for you — just sign in to see what's new.
+          </p>
+        </div>
+        ` : `
+        <p style="color: #555; line-height: 1.6;">
+          It's been about a month since you last checked in. We wanted to let you know there may be new opportunities waiting for you.
+        </p>
+        `}
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <p style="color: #0369a1; font-weight: 600; margin: 0 0 12px;">Recently added:</p>
+          <ul style="color: #555; margin: 0; padding-left: 20px; line-height: 2;">
+            <li><strong>RLUSD Yield Vaults</strong> — earn 5–8% fixed APR, fully non-custodial</li>
+            <li><strong>Multi-chain portfolio tracker</strong> — XRP, BTC, ETH, SOL & more in one view</li>
+            <li><strong>Technical analysis</strong> — interactive charts with indicators & signals</li>
+            <li><strong>RWA yield discovery</strong> — find real-world asset opportunities</li>
+            <li><strong>Stablecoin dashboard</strong> — live metrics for all major stablecoins</li>
+            <li><strong>Referral rewards</strong> — earn SEED points & free Premium months</li>
+          </ul>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://cryptoownbank.com/login" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Sign In & Explore
+          </a>
+        </div>
+        <p style="color: #555; font-size: 14px; text-align: center; line-height: 1.6;">
+          Have questions? <a href="https://cryptoownbank.com/faq" style="color: #00A4E4; text-decoration: none; font-weight: 600;">Read our FAQ</a> to learn how CryptoOwnBank can help you manage your crypto like your own bank.
+        </p>
+        <p style="color: #888; font-size: 13px; text-align: center;">
+          Your account and data are exactly where you left them.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because you signed up for CryptoOwnBank. If you no longer wish to receive emails, reply with "unsubscribe."</p>
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, subject, html);
+}
+
 export async function sendYieldNotificationEmail(to: string, name: string, yieldAmount: string, vaultName: string, walletBalance: string) {
   const reDepositUrl = `https://cryptoownbank.com/ownbank-xrpl/vaults?redeposit=${walletBalance}&vault=auto`;
   const html = `

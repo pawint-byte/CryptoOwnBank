@@ -158,6 +158,8 @@ export function registerAuthRoutes(app: Express): void {
         await db.update(users).set({ isAdmin: true, updatedAt: new Date() }).where(eq(users.id, dbUser.id));
       }
 
+      await db.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, dbUser.id));
+
       const user = { claims: { sub: dbUser.id }, authProvider: "email" };
       req.login(user, (err: any) => {
         if (err) {

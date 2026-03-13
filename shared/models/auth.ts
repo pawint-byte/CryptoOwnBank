@@ -26,6 +26,8 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false).notNull(),
   xrplWalletAddress: varchar("xrpl_wallet_address"),
   xrplWalletType: varchar("xrpl_wallet_type", { length: 20 }),
+  lastLoginAt: timestamp("last_login_at"),
+  lastReminderSentAt: timestamp("last_reminder_sent_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

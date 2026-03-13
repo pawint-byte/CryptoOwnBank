@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
-import { sendFeedbackNotification, sendPriceAlertEmail } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail } from "./email";
 import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -5254,6 +5254,44 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/send-bulk-email", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const allUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+      }).from(users);
+
+      const validUsers = allUsers.filter(u => u.email && !u.email.endsWith("@example.com") && !u.email.endsWith("@test.com"));
+
+      let sent = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (const u of validUsers) {
+        try {
+          await sendReEngagementEmail(u.email!, u.firstName || "there");
+          sent++;
+          await new Promise(r => setTimeout(r, 500));
+        } catch (err: any) {
+          failed++;
+          errors.push(`${u.email}: ${err.message}`);
+        }
+      }
+
+      res.json({ sent, failed, total: validUsers.length, errors: errors.slice(0, 10) });
+    } catch (error: any) {
+      console.error("Bulk email error:", error);
+      res.status(500).json({ message: "Failed to send bulk emails", error: error.message });
+    }
+  });
+
   startPriceAlertChecker();
   seedPriceCache();
 
@@ -5262,6 +5300,9 @@ export async function registerRoutes(
 
   const { startWhaleMonitor } = await import("./services/whale-monitor");
   startWhaleMonitor();
+
+  const { startInactivityReminder } = await import("./services/inactivity-reminder");
+  startInactivityReminder();
 
   return httpServer;
 }
