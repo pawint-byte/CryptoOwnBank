@@ -525,11 +525,13 @@ export const whaleAlerts = pgTable("whale_alerts", {
   senderLabel: varchar("sender_label", { length: 255 }),
   receiverLabel: varchar("receiver_label", { length: 255 }),
   usdValue: decimal("usd_value", { precision: 18, scale: 2 }),
+  txType: varchar("tx_type", { length: 30 }).default("payment"),
   timestamp: timestamp("timestamp").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_whale_alerts_timestamp").on(table.timestamp),
   index("idx_whale_alerts_currency").on(table.currency),
+  index("idx_whale_alerts_tx_type").on(table.txType),
 ]);
 
 export const whaleAlertSettings = pgTable("whale_alert_settings", {

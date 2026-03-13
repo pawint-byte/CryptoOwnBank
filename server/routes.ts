@@ -5110,6 +5110,47 @@ export async function registerRoutes(
     }
   });
 
+  let xrpMarketCache: { data: any; expiry: number } | null = null;
+
+  app.get("/api/xrp-market-stats", isAuthenticated, async (_req: any, res) => {
+    try {
+      if (xrpMarketCache && xrpMarketCache.expiry > Date.now()) {
+        return res.json(xrpMarketCache.data);
+      }
+
+      const resp = await fetch(
+        "https://api.coingecko.com/api/v3/coins/ripple?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false",
+        {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; CryptoOwnBank/1.0)" },
+          signal: AbortSignal.timeout(10000),
+        }
+      );
+
+      if (!resp.ok) {
+        return res.status(502).json({ message: "Failed to fetch XRP market data" });
+      }
+
+      const coin = await resp.json() as any;
+      const md = coin.market_data || {};
+
+      const data = {
+        price: md.current_price?.usd || 0,
+        priceChange24h: md.price_change_percentage_24h || 0,
+        marketCap: md.market_cap?.usd || 0,
+        circulatingSupply: md.circulating_supply || 0,
+        totalSupply: md.total_supply || 0,
+        maxSupply: md.max_supply || 100_000_000_000,
+        fullyDilutedValuation: md.fully_diluted_valuation?.usd || 0,
+      };
+
+      xrpMarketCache = { data, expiry: Date.now() + 5 * 60 * 1000 };
+      res.json(data);
+    } catch (error) {
+      console.error("XRP market stats error:", error);
+      res.status(500).json({ message: "Failed to fetch XRP market stats" });
+    }
+  });
+
   const { captureError } = await import("./errorMonitor");
 
   const clientErrorRateMap = new Map<string, number>();
