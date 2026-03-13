@@ -4995,7 +4995,7 @@ export async function registerRoutes(
       const { tier } = await getEffectiveTier(userId);
 
       const symbol = (req.params.symbol as string).toUpperCase();
-      const maxDays = tier === "free" ? 30 : 365;
+      const maxDays = tier === "free" ? 30 : 3650;
       const rawDays = parseInt(req.query.days as string);
       const days = Math.max(1, Math.min(Number.isFinite(rawDays) ? rawDays : 90, maxDays));
 

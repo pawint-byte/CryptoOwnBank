@@ -43,6 +43,9 @@ const TIMEFRAMES = [
   { label: "1M", days: 30, free: true },
   { label: "3M", days: 90, free: false },
   { label: "1Y", days: 365, free: false },
+  { label: "3Y", days: 1095, free: false },
+  { label: "5Y", days: 1825, free: false },
+  { label: "10Y", days: 3650, free: false },
 ];
 
 type IndicatorKey = "sma20" | "sma50" | "sma200" | "ema12" | "ema26" | "rsi" | "macd" | "bollinger";
