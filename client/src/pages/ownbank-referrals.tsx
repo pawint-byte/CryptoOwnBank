@@ -18,9 +18,11 @@ import {
   ExternalLink,
   Share2,
   ShieldCheck,
+  Smartphone,
 } from "lucide-react";
 import { SiBinance, SiCoinbase, SiUphold } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
+import { SocialShare } from "@/components/social-share";
 
 function truncateAddress(address: string): string {
   if (address.length <= 12) return address;
@@ -172,35 +174,55 @@ export default function OwnBankReferrals() {
         </CardHeader>
         <CardContent className="space-y-4">
           {referralLink ? (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div
-                className="flex-1 rounded-md border bg-muted/50 px-4 py-2.5 text-sm font-mono break-all"
-                data-testid="text-referral-link"
-              >
-                {referralLink}
-              </div>
-              <Button
-                onClick={handleCopyLink}
-                variant="outline"
-                data-testid="button-copy-referral"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 mr-2" />
-                ) : (
-                  <Copy className="h-4 w-4 mr-2" />
-                )}
-                {copied ? "Copied" : "Copy Link"}
-              </Button>
-              <a
-                href={`https://x.com/intent/tweet?text=${encodeURIComponent("Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.\n\n")}${encodeURIComponent(referralLink)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline" data-testid="button-share-x">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share on X
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div
+                  className="flex-1 rounded-md border bg-muted/50 px-4 py-2.5 text-sm font-mono break-all"
+                  data-testid="text-referral-link"
+                >
+                  {referralLink}
+                </div>
+                <Button
+                  onClick={handleCopyLink}
+                  variant="outline"
+                  data-testid="button-copy-referral"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Copy className="h-4 w-4 mr-2" />
+                  )}
+                  {copied ? "Copied" : "Copy Link"}
                 </Button>
-              </a>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {typeof navigator !== "undefined" && navigator.share && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-[#00A4E4] text-white"
+                    onClick={async () => {
+                      try {
+                        await navigator.share({
+                          title: "CryptoOwnBank — Earn Yield on RLUSD",
+                          text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.",
+                          url: referralLink,
+                        });
+                      } catch {}
+                    }}
+                    data-testid="button-native-share"
+                  >
+                    <Smartphone className="h-4 w-4 mr-1.5" />
+                    Share via SMS / Message
+                  </Button>
+                )}
+                <SocialShare
+                  url={referralLink}
+                  text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
+                  buttonLabel="Share on Social"
+                  data-testid="button-share-social"
+                />
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
@@ -289,6 +311,36 @@ export default function OwnBankReferrals() {
                           <Copy className="h-3 w-3" />
                         )}
                       </Button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <SocialShare
+                        url={exchange.url}
+                        text={`Sign up on ${exchange.name} and start buying crypto. ${exchange.description}`}
+                        buttonLabel="Share"
+                        buttonSize="sm"
+                        data-testid={`button-share-${exchange.name.toLowerCase()}`}
+                      />
+                      {typeof navigator !== "undefined" && navigator.share && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={async () => {
+                            try {
+                              await navigator.share({
+                                title: `Join ${exchange.name}`,
+                                text: exchange.description,
+                                url: exchange.url,
+                              });
+                            } catch {}
+                          }}
+                          data-testid={`button-sms-${exchange.name.toLowerCase()}`}
+                        >
+                          <Smartphone className="h-3 w-3 mr-1" />
+                          SMS
+                        </Button>
+                      )}
                     </div>
 
                     <p className="text-[10px] text-muted-foreground text-center">
@@ -382,6 +434,36 @@ export default function OwnBankReferrals() {
                           <Copy className="h-3 w-3" />
                         )}
                       </Button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <SocialShare
+                        url={wallet.url}
+                        text={`Protect your crypto with ${wallet.name}. ${wallet.description}`}
+                        buttonLabel="Share"
+                        buttonSize="sm"
+                        data-testid={`button-share-wallet-${wallet.name.toLowerCase()}`}
+                      />
+                      {typeof navigator !== "undefined" && navigator.share && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={async () => {
+                            try {
+                              await navigator.share({
+                                title: `Get a ${wallet.name} Cold Wallet`,
+                                text: wallet.description,
+                                url: wallet.url,
+                              });
+                            } catch {}
+                          }}
+                          data-testid={`button-sms-wallet-${wallet.name.toLowerCase()}`}
+                        >
+                          <Smartphone className="h-3 w-3 mr-1" />
+                          SMS
+                        </Button>
+                      )}
                     </div>
 
                     <p className="text-[10px] text-muted-foreground text-center">

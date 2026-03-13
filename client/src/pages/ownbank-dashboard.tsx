@@ -53,6 +53,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
+import { SocialShare } from "@/components/social-share";
 
 function truncateAddress(addr: string): string {
   if (addr.length <= 12) return addr;
@@ -1253,36 +1254,57 @@ export default function OwnBankDashboard() {
           <p className="text-sm text-muted-foreground mb-3">
             Share this link with friends — when they sign up and deposit RLUSD, you both earn bonus SEED points.
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <code
-              className="flex-1 min-w-0 truncate rounded-md bg-muted px-3 py-2 text-sm font-mono"
-              data-testid="text-referral-link"
-            >
-              {referralLink || `${SITE_DOMAIN}/?ref=...`}
-            </code>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyReferral}
-              data-testid="button-copy-referral"
-            >
-              {copied ? (
-                <Check className="h-4 w-4 mr-1" />
-              ) : (
-                <Copy className="h-4 w-4 mr-1" />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </Button>
-            <a
-              href={`https://x.com/intent/tweet?text=${encodeURIComponent("Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.\n\n")}${encodeURIComponent(referralLink || `${SITE_DOMAIN}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="outline" size="sm" data-testid="button-share-x">
-                <Share2 className="h-4 w-4 mr-1" />
-                Share on X
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <code
+                className="flex-1 min-w-0 truncate rounded-md bg-muted px-3 py-2 text-sm font-mono"
+                data-testid="text-referral-link"
+              >
+                {referralLink || `${SITE_DOMAIN}/?ref=...`}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyReferral}
+                data-testid="button-copy-referral"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 mr-1" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-1" />
+                )}
+                {copied ? "Copied" : "Copy"}
               </Button>
-            </a>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {typeof navigator !== "undefined" && navigator.share && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-[#00A4E4] text-white"
+                  onClick={async () => {
+                    try {
+                      await navigator.share({
+                        title: "CryptoOwnBank — Earn Yield on RLUSD",
+                        text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.",
+                        url: referralLink || `${SITE_DOMAIN}`,
+                      });
+                    } catch {}
+                  }}
+                  data-testid="button-native-share"
+                >
+                  <Share2 className="h-4 w-4 mr-1.5" />
+                  Share via SMS / Message
+                </Button>
+              )}
+              <SocialShare
+                url={referralLink || `${SITE_DOMAIN}`}
+                text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
+                buttonLabel="Share on Social"
+                buttonSize="sm"
+                data-testid="button-share-social"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
