@@ -1011,8 +1011,9 @@ function EarningStatusSection() {
 
   const earningOpps = YIELD_OPPORTUNITIES.map((opp) => {
     const chainKey = opp.trackingChain?.toLowerCase();
-    const isTracking = coveredChains.has(chainKey);
-    return { opp, isTracking };
+    const hasWallet = coveredChains.has(chainKey);
+    const isIntegratedAndActive = opp.integrated && hasWallet;
+    return { opp, hasWallet, isTracking: isIntegratedAndActive };
   });
 
   const activeCount = earningOpps.filter((e) => e.isTracking).length;
@@ -1029,7 +1030,7 @@ function EarningStatusSection() {
           <div className="flex items-center gap-2">
             {activeCount > 0 && (
               <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 text-xs" data-testid="badge-earning-count">
-                {activeCount} tracking
+                {activeCount} earning
               </Badge>
             )}
             {notEarningCount > 0 && (
@@ -1041,15 +1042,17 @@ function EarningStatusSection() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {earningOpps.map(({ opp, isTracking }) => (
+        {earningOpps.map(({ opp, hasWallet, isTracking }) => (
           <div
             key={opp.id}
-            className={`flex items-center justify-between rounded-md border px-3 py-2.5 ${isTracking ? "bg-green-500/5 border-green-500/20" : "bg-muted/20"}`}
+            className={`flex items-center justify-between rounded-md border px-3 py-2.5 ${isTracking ? "bg-green-500/5 border-green-500/20" : hasWallet ? "bg-blue-500/5 border-blue-500/10" : "bg-muted/20"}`}
             data-testid={`earning-status-${opp.id}`}
           >
             <div className="flex items-center gap-3 min-w-0">
               {isTracking ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+              ) : hasWallet ? (
+                <Wallet className="h-4 w-4 text-[#00A4E4] shrink-0" />
               ) : (
                 <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
               )}
@@ -1073,10 +1076,17 @@ function EarningStatusSection() {
                     <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </Link>
+              ) : hasWallet ? (
+                <a href={`#protocol-${opp.id}`} data-testid={`link-start-earning-${opp.id}`}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs border-[#00A4E4]/30 text-[#00A4E4]">
+                    Start Earning
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </a>
               ) : (
                 <a href={`#protocol-${opp.id}`} data-testid={`link-start-earning-${opp.id}`}>
                   <Button size="sm" variant="outline" className="h-7 text-xs">
-                    Start Earning
+                    Learn More
                     <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </a>
@@ -1087,7 +1097,7 @@ function EarningStatusSection() {
 
         {notEarningCount > 0 && activeCount > 0 && (
           <p className="text-xs text-muted-foreground pt-1">
-            You're tracking {activeCount} of {earningOpps.length} opportunities. Click "Start Earning" on any you haven't tried yet.
+            You're actively earning with {activeCount} of {earningOpps.length} opportunities. Click "Start Earning" on any you'd like to try.
           </p>
         )}
 
