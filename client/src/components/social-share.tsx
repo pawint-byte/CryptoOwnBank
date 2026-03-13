@@ -20,30 +20,46 @@ interface SocialShareProps {
   "data-testid"?: string;
 }
 
-const SHARE_PLATFORMS = [
+interface SharePlatform {
+  name: string;
+  icon: any;
+  getUrl: (text: string, url: string) => string;
+  popup?: boolean;
+  popupSize?: { w: number; h: number };
+}
+
+const SHARE_PLATFORMS: SharePlatform[] = [
   {
     name: "X (Twitter)",
     icon: SiX,
     getUrl: (text: string, url: string) =>
-      `https://x.com/intent/tweet?text=${encodeURIComponent(text + "\n\n")}${encodeURIComponent(url)}`,
+      `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    popup: true,
+    popupSize: { w: 550, h: 420 },
   },
   {
     name: "Facebook",
     icon: SiFacebook,
     getUrl: (_text: string, url: string) =>
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(_text)}`,
+    popup: true,
+    popupSize: { w: 600, h: 500 },
   },
   {
     name: "Reddit",
     icon: SiReddit,
     getUrl: (text: string, url: string) =>
       `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
+    popup: true,
+    popupSize: { w: 600, h: 500 },
   },
   {
     name: "LinkedIn",
     icon: SiLinkedin,
-    getUrl: (text: string, url: string) =>
+    getUrl: (_text: string, url: string) =>
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+    popup: true,
+    popupSize: { w: 600, h: 500 },
   },
   {
     name: "Telegram",
@@ -65,6 +81,18 @@ const SHARE_PLATFORMS = [
   },
 ];
 
+function openShareWindow(shareUrl: string, size?: { w: number; h: number }) {
+  const w = size?.w || 600;
+  const h = size?.h || 500;
+  const left = window.screenX + (window.outerWidth - w) / 2;
+  const top = window.screenY + (window.outerHeight - h) / 2;
+  window.open(
+    shareUrl,
+    "share_window",
+    `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+  );
+}
+
 export function SocialShare({
   url,
   text,
@@ -75,6 +103,15 @@ export function SocialShare({
   ...props
 }: SocialShareProps) {
   const [open, setOpen] = useState(false);
+
+  const handleClick = (platform: SharePlatform, e: React.MouseEvent) => {
+    const shareUrl = platform.getUrl(text, url);
+    if (platform.popup) {
+      e.preventDefault();
+      openShareWindow(shareUrl, platform.popupSize);
+    }
+    setOpen(false);
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -91,17 +128,29 @@ export function SocialShare({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         {SHARE_PLATFORMS.map((platform) => (
-          <DropdownMenuItem key={platform.name} asChild>
-            <a
-              href={platform.getUrl(text, url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 cursor-pointer"
-              data-testid={`share-${platform.name.toLowerCase().replace(/[^a-z]/g, "")}`}
-            >
-              <platform.icon className="h-4 w-4" />
-              {platform.name}
-            </a>
+          <DropdownMenuItem
+            key={platform.name}
+            className="flex items-center gap-2 cursor-pointer"
+            data-testid={`share-${platform.name.toLowerCase().replace(/[^a-z]/g, "")}`}
+            onClick={(e) => handleClick(platform, e)}
+            asChild={!platform.popup}
+          >
+            {platform.popup ? (
+              <div className="flex items-center gap-2">
+                <platform.icon className="h-4 w-4" />
+                {platform.name}
+              </div>
+            ) : (
+              <a
+                href={platform.getUrl(text, url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2"
+              >
+                <platform.icon className="h-4 w-4" />
+                {platform.name}
+              </a>
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
