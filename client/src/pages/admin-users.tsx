@@ -89,6 +89,25 @@ export default function AdminUsers() {
     },
   });
 
+  const sendBulkReEngagementMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/send-bulk-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Bulk Email Sent", description: `Sent to ${data.sent} users. ${data.failed > 0 ? `${data.failed} failed.` : "All successful!"}` });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const migrateMutation = useMutation({
     mutationFn: async (userId: string) => {
       const res = await fetch("/api/admin/migrate-auth", {
@@ -197,6 +216,21 @@ export default function AdminUsers() {
         >
           <Mail className="h-4 w-4 mr-2" />
           {sendActivationMutation.isPending ? "Sending..." : "Send Activation Emails"}
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          className="bg-amber-600 hover:bg-amber-700"
+          onClick={() => {
+            if (window.confirm("Send re-engagement email to ALL users? This will email everyone.")) {
+              sendBulkReEngagementMutation.mutate();
+            }
+          }}
+          disabled={sendBulkReEngagementMutation.isPending}
+          data-testid="button-send-bulk-email"
+        >
+          <Mail className="h-4 w-4 mr-2" />
+          {sendBulkReEngagementMutation.isPending ? "Sending to all users..." : "Send Re-Engagement Email"}
         </Button>
       </div>
 
