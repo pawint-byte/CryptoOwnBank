@@ -45,14 +45,14 @@ async function getResendClient() {
   };
 }
 
-const PRIMARY_FROM = "CryptoOwnBank <noreply@cryptoownbank.com>";
-const FALLBACK_FROM = "CryptoOwnBank <notification@pawint-app.com>";
+const PRIMARY_FROM = "CryptoOwnBank <notification@pawint-app.com>";
+const FALLBACK_FROM = "CryptoOwnBank <noreply@cryptoownbank.com>";
 
 export async function sendEmail(to: string, subject: string, html: string, attachments?: { filename: string; content: Buffer }[]) {
   const { client, fromEmail } = await getResendClient();
   const fromAddresses = [
-    fromEmail ? `CryptoOwnBank <${fromEmail}>` : null,
     PRIMARY_FROM,
+    fromEmail ? `CryptoOwnBank <${fromEmail}>` : null,
     FALLBACK_FROM,
   ].filter(Boolean) as string[];
 

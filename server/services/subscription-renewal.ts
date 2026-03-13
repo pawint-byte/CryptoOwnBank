@@ -135,7 +135,7 @@ async function sendEmailPayLink(
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from: "CryptoOwnBank <noreply@cryptoownbank.com>",
+      from: "CryptoOwnBank <notification@pawint-app.com>",
       to: user.email,
       subject,
       html: `
