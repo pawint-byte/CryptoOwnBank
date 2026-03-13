@@ -308,7 +308,7 @@ export default function TechnicalAnalysis() {
             Technical Analysis
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Candlestick charts with technical indicators
+            Candlestick charts with technical indicators — up to 10 years of history
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
