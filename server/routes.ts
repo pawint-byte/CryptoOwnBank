@@ -5047,7 +5047,7 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+      const limit = Math.min(parseInt(req.query.limit as string) || 500, 1000);
 
       let since: Date | undefined;
       if (tier === "free") {

@@ -128,6 +128,7 @@ function formatUsd(usdValue: string | null) {
 }
 
 function formatYAxis(val: number) {
+  if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)}B`;
   if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
   if (val >= 1_000) return `${(val / 1_000).toFixed(0)}K`;
   return val.toLocaleString();
@@ -225,7 +226,7 @@ export default function WhaleAlerts() {
   const isPaidUser = tier === "premium" || tier === "pro";
 
   const { data: alertsData, isLoading: alertsLoading } = useQuery<WhaleAlertsResponse>({
-    queryKey: ["/api/whale-alerts"],
+    queryKey: ["/api/whale-alerts?limit=500"],
     refetchInterval: 30_000,
   });
 
@@ -397,9 +398,11 @@ export default function WhaleAlerts() {
   }, []);
 
   const yDomain = useMemo(() => {
-    if (visibleData.length === 0) return [0, 1000000];
-    const maxY = Math.max(...visibleData.map((d) => d.y));
-    return [0, maxY * 1.15];
+    if (visibleData.length === 0) return [1000, 2000000000];
+    const amounts = visibleData.map((d) => d.y);
+    const minY = Math.max(Math.min(...amounts) * 0.5, 1000);
+    const maxY = Math.max(...amounts) * 1.5;
+    return [minY, maxY];
   }, [visibleData]);
 
   const xTicks = useMemo(() => {
@@ -647,12 +650,14 @@ export default function WhaleAlerts() {
                     <YAxis
                       type="number"
                       dataKey="y"
+                      scale="log"
                       domain={yDomain as [number, number]}
                       tickFormatter={formatYAxis}
                       axisLine={false}
                       tickLine={false}
                       tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                       width={60}
+                      allowDataOverflow
                     />
                     <ZAxis type="number" dataKey="amount" range={[60, 400]} />
                     <Tooltip content={<TimelineTooltip />} cursor={false} />
