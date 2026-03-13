@@ -559,6 +559,66 @@ export default function OwnBankReferrals() {
         </Card>
       </div>
 
+      {referralLink && (
+        <Card className="border-[#00A4E4]/20 bg-[#00A4E4]/5" data-testid="card-share-cta">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-[#00A4E4]/10 flex items-center justify-center shrink-0">
+                  <UserPlus className="h-5 w-5 text-[#00A4E4]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Invite more friends to earn rewards</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Every friend who joins earns you SEED points. If they go Premium, you get a free month.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                {typeof navigator !== "undefined" && navigator.share && (
+                  <Button
+                    size="sm"
+                    className="bg-[#00A4E4] text-white"
+                    onClick={async () => {
+                      try {
+                        await navigator.share({
+                          title: "CryptoOwnBank — Earn Yield on RLUSD",
+                          text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.",
+                          url: referralLink,
+                        });
+                      } catch {}
+                    }}
+                    data-testid="button-cta-native-share"
+                  >
+                    <Smartphone className="h-4 w-4 mr-1.5" />
+                    Send to a Friend
+                  </Button>
+                )}
+                <SocialShare
+                  url={referralLink}
+                  text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
+                  buttonLabel="Post on Social"
+                  data-testid="button-cta-social-share"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  data-testid="button-cta-copy"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 mr-1" />
+                  ) : (
+                    <Copy className="h-4 w-4 mr-1" />
+                  )}
+                  {copied ? "Copied" : "Copy Link"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="flex items-center gap-2">
@@ -567,7 +627,7 @@ export default function OwnBankReferrals() {
           </CardTitle>
           <Badge variant="secondary">Bonus</Badge>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             If your referral upgrades to Premium, you get{" "}
             <span className="font-semibold text-foreground">1 free month</span>{" "}
@@ -575,11 +635,40 @@ export default function OwnBankReferrals() {
             upgrade, the more free months you earn.
           </p>
           {premiumUpgrades > 0 && (
-            <p className="text-sm mt-2 text-[#00A4E4]">
+            <p className="text-sm text-[#00A4E4]">
               {premiumUpgrades} referral{premiumUpgrades !== 1 ? "s" : ""}{" "}
               upgraded — you've earned {premiumUpgrades} free month
               {premiumUpgrades !== 1 ? "s" : ""}.
             </p>
+          )}
+          {referralLink && (
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-muted">
+              {typeof navigator !== "undefined" && navigator.share && (
+                <Button
+                  size="sm"
+                  className="bg-[#00A4E4] text-white"
+                  onClick={async () => {
+                    try {
+                      await navigator.share({
+                        title: "CryptoOwnBank — Earn Yield on RLUSD",
+                        text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC required, just connect your cold wallet and start earning.",
+                        url: referralLink,
+                      });
+                    } catch {}
+                  }}
+                  data-testid="button-bonus-native-share"
+                >
+                  <Smartphone className="h-4 w-4 mr-1.5" />
+                  Share & Earn
+                </Button>
+              )}
+              <SocialShare
+                url={referralLink}
+                text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
+                buttonLabel="Post on Social"
+                data-testid="button-bonus-social-share"
+              />
+            </div>
           )}
         </CardContent>
       </Card>
