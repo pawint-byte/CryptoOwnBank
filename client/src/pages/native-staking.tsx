@@ -69,7 +69,8 @@ const STAKING_CHAINS: StakingChain[] = [
     ],
     whyNative: "No smart contracts, no bridges, no third-party dependencies. Lending is built directly into the XRPL transaction engine. Your cold wallet signs every transaction via Xaman — keys never leave your device.",
     considerations: [
-      "XLS-65 is currently in validator voting (~17% of 80% needed)",
+      "XLS-65 is currently in validator voting (~17% of 80% needed to activate)",
+      "How voting works: Validators don't vote yes or no — they signal support by upgrading their server software (rippled 3.1+). Validators on older versions haven't rejected it, they simply haven't upgraded yet. When 80% of validators are running the new version for 2 continuous weeks, the amendment activates automatically. The timeline depends on how quickly validator operators choose to upgrade.",
       "Yield rates will depend on vault operators and market demand",
       "Evaluate vault operators carefully — CryptoOwnBank shows on-chain data but does not endorse any vault",
       "No lock-up period expected — you can withdraw anytime",

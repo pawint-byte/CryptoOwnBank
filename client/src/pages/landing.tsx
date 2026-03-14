@@ -686,6 +686,10 @@ const faqGroups = [
         q: "What is XLS-65/66 Lending?",
         a: "XLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) are proposed XRPL amendments for native on-ledger lending. They're currently in validator voting and require 80% consensus for 2 weeks to activate. When live, you'll be able to lend XRP directly from your cold wallet into on-ledger vaults — no bridges, no smart contracts, no custody risk. CryptoOwnBank is fully built and ready to activate the moment the amendments pass. Pro members get access.",
       },
+      {
+        q: "How does the XRPL amendment voting process work?",
+        a: "XRPL amendments don't work like a ballot where validators vote yes or no. Instead, validators signal support passively by upgrading their server software (rippled) to a version that includes the amendment code. When a validator upgrades to the required version, their server automatically signals 'I support this amendment' in every ledger validation it publishes. Validators on older versions simply don't signal — they haven't said no, they just haven't upgraded yet. There is no 'reject' mechanism. For an amendment to activate, 80% of the validators on the Unique Node List (UNL) must be running the new version, and that 80% threshold must be sustained continuously for 2 full weeks. Once those conditions are met, the amendment activates automatically on the next flag ledger — no human action needed. So when you see '17% support,' that means 17% of validators have upgraded so far. The remaining 83% haven't voted against it — they simply haven't upgraded their software yet. The timeline depends entirely on how quickly validator operators (Ripple, exchanges, universities, independent operators) choose to upgrade. Some move fast, some are cautious. That's why there's no guaranteed activation date.",
+      },
     ],
   },
   {
