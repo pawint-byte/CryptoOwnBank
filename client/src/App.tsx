@@ -56,6 +56,7 @@ import PayPage from "@/pages/pay";
 import StellarRemittances from "@/pages/stellar-remittances";
 import StellarSend from "@/pages/stellar-send";
 import ChainGuide from "@/pages/chain-guide";
+import NativeStaking from "@/pages/native-staking";
 import Stablecoins from "@/pages/stablecoins";
 import RwaYields from "@/pages/rwa-yields";
 import QuickStart from "@/pages/quick-start";
@@ -154,6 +155,7 @@ function AuthenticatedRoutes() {
         <Route path="/insurance" component={Insurance} />
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
+        <Route path="/native-staking" component={NativeStaking} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />
@@ -196,6 +198,7 @@ function Router() {
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />
+        <Route path="/native-staking" component={NativeStaking} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
         <Route path="/snapshot/:token" component={Snapshot} />

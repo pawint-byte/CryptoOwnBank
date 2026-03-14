@@ -46,6 +46,7 @@ import {
   CloudUpload,
   Fish,
   Bug,
+  Pickaxe,
 } from "lucide-react";
 import {
   Sidebar,
@@ -105,6 +106,7 @@ const allItems: NavItem[] = [
 
   { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },
   { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "research" },
+  { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "research" },
   { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "research" },
   { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "research" },
   { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "research" },
