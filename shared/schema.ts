@@ -770,3 +770,13 @@ export const insertXls66LoanOfferSchema = createInsertSchema(xls66LoanOffers).om
 });
 export type Xls66LoanOffer = typeof xls66LoanOffers.$inferSelect;
 export type InsertXls66LoanOffer = z.infer<typeof insertXls66LoanOfferSchema>;
+
+export const xls66VaultBlocklist = pgTable("xls66_vault_blocklist", {
+  id: serial("id").primaryKey(),
+  vaultId: varchar("vault_id", { length: 255 }).notNull().unique(),
+  reason: text("reason"),
+  blockedBy: varchar("blocked_by", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Xls66VaultBlock = typeof xls66VaultBlocklist.$inferSelect;

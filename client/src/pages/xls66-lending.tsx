@@ -40,20 +40,17 @@ import {
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 
-interface Xls66Vault {
-  id: string;
+interface OnLedgerVault {
   vaultId: string;
+  owner: string;
   asset: string;
-  ownerAddress: string;
-  name: string;
-  description: string | null;
-  aprBps: number;
-  totalDeposited: string | null;
-  maxCapacity: string | null;
-  minDeposit: string | null;
-  lockDays: number | null;
-  riskLevel: string;
-  status: string;
+  assetRaw: any;
+  assetsTotal: string;
+  assetsAvailable: string;
+  shareMptId: string | null;
+  lossUnrealized: string;
+  flags: number;
+  hasFirstLossCapital: boolean;
 }
 
 interface Xls66Position {
@@ -71,10 +68,19 @@ interface Xls66Position {
 }
 
 interface AmendmentStatus {
-  amendmentActive: boolean;
+  xls65Active: boolean;
+  xls66Active: boolean;
+  vaultsLive: boolean;
+  lendingLive: boolean;
   featureEnabled: boolean;
-  estimatedActivation: string;
   rippled_minimum: string;
+}
+
+interface VaultsResponse {
+  onLedgerVaults: OnLedgerVault[];
+  vaultsLive: boolean;
+  lendingLive: boolean;
+  disclaimer: string;
 }
 
 interface YieldCalcResult {
@@ -137,13 +143,33 @@ const COMMON_TRUSTLINES = [
 ];
 
 function AmendmentBanner({ status }: { status: AmendmentStatus }) {
-  if (status.amendmentActive) {
+  if (status.vaultsLive && status.lendingLive) {
     return (
       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-center gap-3" data-testid="amendment-active-banner">
         <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
         <div>
-          <p className="font-medium text-emerald-700 dark:text-emerald-400">XLS-66 Amendment Active</p>
-          <p className="text-sm text-muted-foreground">Native XRPL lending and Single Asset Vaults are live on mainnet. All features are fully operational.</p>
+          <p className="font-medium text-emerald-700 dark:text-emerald-400">XLS-65 + XLS-66 Active on Mainnet</p>
+          <p className="text-sm text-muted-foreground">Single Asset Vaults and the Lending Protocol are both live. All features are fully operational.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status.vaultsLive && !status.lendingLive) {
+    return (
+      <div className="space-y-2">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-center gap-3" data-testid="amendment-vaults-active">
+          <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+          <div>
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">XLS-65 Vaults — Active on Mainnet</p>
+            <p className="text-sm text-muted-foreground">Single Asset Vaults are live. You can browse on-ledger vaults and deposit.</p>
+          </div>
+        </div>
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3" data-testid="amendment-lending-pending">
+          <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-amber-700 dark:text-amber-400">XLS-66 Lending Protocol</span> — still in validator voting (~17% of 80% needed). Lending features activate automatically when it passes.
+          </p>
         </div>
       </div>
     );
@@ -153,28 +179,36 @@ function AmendmentBanner({ status }: { status: AmendmentStatus }) {
     <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex items-center gap-3" data-testid="amendment-pending-banner">
       <Clock className="h-5 w-5 text-amber-500 shrink-0" />
       <div>
-        <p className="font-medium text-amber-700 dark:text-amber-400">Amendment Pending — Expected {status.estimatedActivation}</p>
+        <p className="font-medium text-amber-700 dark:text-amber-400">Amendments Pending — Validator Voting in Progress</p>
         <p className="text-sm text-muted-foreground">
-          XLS-66 (Single Asset Vaults) requires rippled {status.rippled_minimum}+. While pending, you can explore vaults, run yield calculations, and set up trustlines. Deposits activate the moment the amendment goes live.
+          XLS-65 (Vaults) and XLS-66 (Lending) require 80% validator consensus for 2 weeks on rippled {status.rippled_minimum}+. While pending, you can run yield calculations and set up trustlines. Features activate automatically the moment amendments pass.
         </p>
       </div>
     </div>
   );
 }
 
-function VaultCard({ vault, amendmentActive, onDeposit }: { vault: Xls66Vault; amendmentActive: boolean; onDeposit: (v: Xls66Vault) => void }) {
-  const apr = vault.aprBps / 100;
-  const totalDeposited = parseFloat(vault.totalDeposited || "0");
-  const maxCapacity = vault.maxCapacity ? parseFloat(vault.maxCapacity) : null;
-  const utilization = maxCapacity ? (totalDeposited / maxCapacity) * 100 : null;
-  const riskColors: Record<string, string> = {
-    low: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-    medium: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
-    high: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30",
-  };
+function truncAddr(addr: string) {
+  return addr ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : "Unknown";
+}
+
+function formatLedgerAmount(amount: string, asset: string): string {
+  const n = parseFloat(amount);
+  if (isNaN(n)) return "0";
+  if (asset === "XRP") return (n / 1000000).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function OnLedgerVaultCard({ vault, vaultsLive, onDeposit }: { vault: OnLedgerVault; vaultsLive: boolean; onDeposit: (v: OnLedgerVault) => void }) {
+  const totalDisplay = formatLedgerAmount(vault.assetsTotal, vault.asset);
+  const availableDisplay = formatLedgerAmount(vault.assetsAvailable, vault.asset);
+  const totalNum = parseFloat(vault.assetsTotal) || 0;
+  const availableNum = parseFloat(vault.assetsAvailable) || 0;
+  const utilization = totalNum > 0 ? ((totalNum - availableNum) / totalNum) * 100 : 0;
+  const hasLoss = parseFloat(vault.lossUnrealized) > 0;
 
   return (
-    <Card className="hover:shadow-md transition-shadow" data-testid={`vault-card-${vault.id}`}>
+    <Card className="hover:shadow-md transition-shadow" data-testid={`vault-card-${vault.vaultId.slice(0, 8)}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
@@ -182,49 +216,34 @@ function VaultCard({ vault, amendmentActive, onDeposit }: { vault: Xls66Vault; a
               <Vault className="h-5 w-5 text-[#00A4E4]" />
             </div>
             <div>
-              <CardTitle className="text-base">{vault.name}</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">{vault.asset} Vault</p>
+              <CardTitle className="text-base">{vault.asset} Vault</CardTitle>
+              <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{truncAddr(vault.vaultId)}</p>
             </div>
           </div>
-          <Badge variant="outline" className={riskColors[vault.riskLevel] || riskColors.medium}>
-            {vault.riskLevel} risk
-          </Badge>
+          <Badge variant="outline" className="text-[10px]">On-Ledger</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{apr.toFixed(2)}%</span>
-          <span className="text-sm text-muted-foreground">APR</span>
-        </div>
-
-        {vault.description && (
-          <p className="text-xs text-muted-foreground">{vault.description}</p>
-        )}
-
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="bg-muted/50 rounded-md p-2">
-            <p className="text-muted-foreground">Total Deposited</p>
-            <p className="font-medium">{totalDeposited.toLocaleString()} {vault.asset}</p>
+            <p className="text-muted-foreground">Total Assets</p>
+            <p className="font-medium">{totalDisplay} {vault.asset}</p>
           </div>
           <div className="bg-muted/50 rounded-md p-2">
-            <p className="text-muted-foreground">Lock Period</p>
-            <p className="font-medium">{vault.lockDays ? `${vault.lockDays} days` : "None"}</p>
+            <p className="text-muted-foreground">Available</p>
+            <p className="font-medium">{availableDisplay} {vault.asset}</p>
           </div>
-          {vault.minDeposit && parseFloat(vault.minDeposit) > 0 && (
-            <div className="bg-muted/50 rounded-md p-2">
-              <p className="text-muted-foreground">Min. Deposit</p>
-              <p className="font-medium">{parseFloat(vault.minDeposit).toLocaleString()} {vault.asset}</p>
-            </div>
-          )}
-          {utilization !== null && (
-            <div className="bg-muted/50 rounded-md p-2">
-              <p className="text-muted-foreground">Utilization</p>
-              <p className="font-medium">{utilization.toFixed(1)}%</p>
-            </div>
-          )}
+          <div className="bg-muted/50 rounded-md p-2">
+            <p className="text-muted-foreground">Vault Owner</p>
+            <p className="font-medium font-mono">{truncAddr(vault.owner)}</p>
+          </div>
+          <div className="bg-muted/50 rounded-md p-2">
+            <p className="text-muted-foreground">Utilization</p>
+            <p className="font-medium">{utilization.toFixed(1)}%</p>
+          </div>
         </div>
 
-        {utilization !== null && (
+        {totalNum > 0 && (
           <div className="w-full bg-muted rounded-full h-1.5">
             <div
               className="bg-[#00A4E4] h-1.5 rounded-full transition-all"
@@ -233,24 +252,46 @@ function VaultCard({ vault, amendmentActive, onDeposit }: { vault: Xls66Vault; a
           </div>
         )}
 
-        <Button
-          className="w-full"
-          onClick={() => onDeposit(vault)}
-          disabled={!amendmentActive}
-          data-testid={`deposit-vault-${vault.id}`}
-        >
-          {amendmentActive ? (
-            <>
-              <Coins className="h-4 w-4 mr-2" />
-              Deposit {vault.asset}
-            </>
-          ) : (
-            <>
-              <Lock className="h-4 w-4 mr-2" />
-              Available When Live
-            </>
-          )}
-        </Button>
+        {hasLoss && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>Unrealized loss reported: {vault.lossUnrealized}</span>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            className="flex-1"
+            size="sm"
+            onClick={() => onDeposit(vault)}
+            disabled={!vaultsLive}
+            data-testid={`deposit-vault-${vault.vaultId.slice(0, 8)}`}
+          >
+            {vaultsLive ? (
+              <>
+                <Coins className="h-3.5 w-3.5 mr-1.5" />
+                Deposit
+              </>
+            ) : (
+              <>
+                <Lock className="h-3.5 w-3.5 mr-1.5" />
+                Pending
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(`https://livenet.xrpl.org/accounts/${vault.owner}`, "_blank")}
+            data-testid={`inspect-vault-${vault.vaultId.slice(0, 8)}`}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        <p className="text-[10px] text-muted-foreground italic leading-tight">
+          On-chain data only. CryptoOwnBank does not endorse this vault. DYOR.
+        </p>
       </CardContent>
     </Card>
   );
@@ -717,7 +758,7 @@ export default function XLS66LendingPage() {
     enabled: !!user,
   });
 
-  const vaultsQuery = useQuery<{ vaults: Xls66Vault[]; amendmentActive: boolean }>({
+  const vaultsQuery = useQuery<VaultsResponse>({
     queryKey: ["/api/xls66/vaults"],
     enabled: !!user && limitsQuery.data?.xls66Lending === true,
   });
@@ -739,7 +780,7 @@ export default function XLS66LendingPage() {
   });
 
   const depositMutation = useMutation({
-    mutationFn: async (vault: Xls66Vault) => {
+    mutationFn: async (vault: OnLedgerVault) => {
       const res = await apiRequest("POST", "/api/xls66/vault-deposit", {
         vaultId: vault.vaultId,
         amount: "100",
@@ -801,9 +842,9 @@ export default function XLS66LendingPage() {
     );
   }
 
-  const vaults = vaultsQuery.data?.vaults || [];
+  const onLedgerVaults = vaultsQuery.data?.onLedgerVaults || [];
+  const vaultsLive = vaultsQuery.data?.vaultsLive || status?.vaultsLive || false;
   const positions = positionsQuery.data?.positions || [];
-  const amendmentActive = status?.amendmentActive || false;
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6" data-testid="xls66-lending-page">
@@ -886,13 +927,25 @@ export default function XLS66LendingPage() {
         </TabsList>
 
         <TabsContent value="vaults" className="mt-4 space-y-4">
-          {vaults.length > 0 ? (
+          {vaultsQuery.data?.disclaimer && (
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2" data-testid="vault-disclaimer">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">{vaultsQuery.data.disclaimer}</p>
+            </div>
+          )}
+
+          {vaultsQuery.isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Querying XRPL ledger for vaults...</span>
+            </div>
+          ) : onLedgerVaults.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {vaults.map((vault) => (
-                <VaultCard
-                  key={vault.id}
+              {onLedgerVaults.map((vault) => (
+                <OnLedgerVaultCard
+                  key={vault.vaultId}
                   vault={vault}
-                  amendmentActive={amendmentActive}
+                  vaultsLive={vaultsLive}
                   onDeposit={(v) => depositMutation.mutate(v)}
                 />
               ))}
@@ -901,11 +954,11 @@ export default function XLS66LendingPage() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Vault className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-medium text-lg">No Vaults Available Yet</h3>
+                <h3 className="font-medium text-lg">No On-Ledger Vaults Found</h3>
                 <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-                  {amendmentActive
-                    ? "No vaults have been registered yet. Vault operators can create Single Asset Vaults once they deploy their vault contracts on XRPL."
-                    : "XLS-66 vaults will appear here once the amendment activates on XRPL mainnet. In the meantime, explore the yield calculator and set up your trustlines."}
+                  {vaultsLive
+                    ? "No Vault objects discovered on the XRPL ledger yet. Vault operators can create Single Asset Vaults using the VaultCreate transaction type."
+                    : "XLS-65 vaults will appear here once the amendment activates on XRPL mainnet. While pending, explore the yield calculator and set up your trustlines."}
                 </p>
                 <div className="flex items-center justify-center gap-3 mt-4">
                   <Button variant="outline" onClick={() => setActiveTab("calculator")} data-testid="cta-calculator">

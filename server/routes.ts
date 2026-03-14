@@ -3416,12 +3416,108 @@ export async function registerRoutes(
   // ===== XLS-66 Native Lending & Single Asset Vaults =====
   const XLS66_LIVE = process.env.XLS66_LIVE === "true";
 
+  let xls65AmendmentActive: boolean | null = null;
+  let xls66AmendmentActive: boolean | null = null;
+  let lastAmendmentCheck = 0;
+  const AMENDMENT_CHECK_INTERVAL = 10 * 60 * 1000;
+
+  async function checkAmendmentStatus(): Promise<{ xls65: boolean; xls66: boolean }> {
+    const now = Date.now();
+    if (xls65AmendmentActive !== null && xls66AmendmentActive !== null && now - lastAmendmentCheck < AMENDMENT_CHECK_INTERVAL) {
+      return { xls65: xls65AmendmentActive, xls66: xls66AmendmentActive };
+    }
+    try {
+      const { Client } = await import("xrpl");
+      const client = new Client("wss://xrplcluster.com");
+      await client.connect();
+      const response = await client.request({ command: "feature" as any } as any);
+      await client.disconnect();
+      const features = (response?.result as any)?.features || {};
+      xls65AmendmentActive = false;
+      xls66AmendmentActive = false;
+      for (const [_hash, info] of Object.entries(features)) {
+        const feat = info as any;
+        if (feat.name === "SingleAssetVault" && feat.enabled === true) xls65AmendmentActive = true;
+        if (feat.name === "LendingProtocol" && feat.enabled === true) xls66AmendmentActive = true;
+      }
+      lastAmendmentCheck = now;
+    } catch (error) {
+      console.error("[XLS-66] Amendment check failed:", (error as any)?.message);
+      if (xls65AmendmentActive === null) xls65AmendmentActive = false;
+      if (xls66AmendmentActive === null) xls66AmendmentActive = false;
+    }
+    return { xls65: xls65AmendmentActive, xls66: xls66AmendmentActive };
+  }
+
+  let discoveredVaultsCache: any[] = [];
+  let lastVaultDiscovery = 0;
+  const VAULT_DISCOVERY_INTERVAL = 5 * 60 * 1000;
+
+  async function discoverOnLedgerVaults(): Promise<any[]> {
+    const now = Date.now();
+    if (discoveredVaultsCache.length > 0 && now - lastVaultDiscovery < VAULT_DISCOVERY_INTERVAL) {
+      return discoveredVaultsCache;
+    }
+    const amendments = await checkAmendmentStatus();
+    if (!amendments.xls65 && !XLS66_LIVE) {
+      return discoveredVaultsCache;
+    }
+    try {
+      const { Client } = await import("xrpl");
+      const client = new Client("wss://xrplcluster.com");
+      await client.connect();
+      const response = await client.request({
+        command: "ledger_data",
+        type: "vault",
+        limit: 100,
+      } as any);
+      await client.disconnect();
+      const state = (response?.result as any)?.state || [];
+      const blocklist = await storage.getXls66VaultBlocklist();
+      const blockedIds = new Set(blocklist.map(b => b.vaultId));
+      const vaults = state
+        .filter((entry: any) => entry.LedgerEntryType === "Vault" && !blockedIds.has(entry.index))
+        .map((entry: any) => {
+          const asset = entry.Asset;
+          let assetDisplay = "XRP";
+          if (typeof asset === "object") {
+            assetDisplay = asset.currency?.length === 40
+              ? Buffer.from(asset.currency, "hex").toString("utf8").replace(/\0/g, "")
+              : asset.currency || "Unknown";
+          }
+          return {
+            vaultId: entry.index,
+            owner: entry.Owner,
+            asset: assetDisplay,
+            assetRaw: asset,
+            assetsTotal: entry.AssetsTotal || "0",
+            assetsAvailable: entry.AssetsAvailable || "0",
+            shareMptId: entry.ShareMPTID || null,
+            lossUnrealized: entry.LossUnrealized || "0",
+            flags: entry.Flags || 0,
+            ageDays: entry.PreviousTxnLgrSeq ? null : null,
+            hasFirstLossCapital: false,
+          };
+        });
+      discoveredVaultsCache = vaults;
+      lastVaultDiscovery = now;
+      console.log(`[XLS-66] Discovered ${vaults.length} vaults on-ledger (${blockedIds.size} blocked)`);
+      return vaults;
+    } catch (error) {
+      console.error("[XLS-66] Vault discovery error:", (error as any)?.message);
+      return discoveredVaultsCache;
+    }
+  }
+
   app.get("/api/xls66/status", isAuthenticated, async (_req: any, res) => {
     try {
+      const amendments = await checkAmendmentStatus();
       res.json({
-        amendmentActive: XLS66_LIVE,
-        featureEnabled: XLS66_LIVE,
-        estimatedActivation: "Q2 2026",
+        xls65Active: amendments.xls65,
+        xls66Active: amendments.xls66,
+        vaultsLive: amendments.xls65 || XLS66_LIVE,
+        lendingLive: amendments.xls66 || XLS66_LIVE,
+        featureEnabled: amendments.xls65 || amendments.xls66 || XLS66_LIVE,
         rippled_minimum: "3.1.0",
       });
     } catch (error) {
@@ -3437,8 +3533,20 @@ export async function registerRoutes(
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
-      const vaults = await storage.getXls66Vaults("active");
-      res.json({ vaults, amendmentActive: XLS66_LIVE });
+      const amendments = await checkAmendmentStatus();
+      const vaultsLive = amendments.xls65 || XLS66_LIVE;
+      let onLedgerVaults: any[] = [];
+      if (vaultsLive) {
+        onLedgerVaults = await discoverOnLedgerVaults();
+      }
+      const dbVaults = await storage.getXls66Vaults("active");
+      res.json({
+        onLedgerVaults,
+        registeredVaults: dbVaults,
+        vaultsLive,
+        lendingLive: amendments.xls66 || XLS66_LIVE,
+        disclaimer: "CryptoOwnBank does not endorse, audit, or guarantee any vault. All data shown is sourced directly from the XRP Ledger. You are responsible for evaluating vault operators. Never deposit more than you can afford to lose.",
+      });
     } catch (error) {
       console.error("XLS-66 vaults error:", error);
       res.status(500).json({ message: "Failed to fetch vaults" });
@@ -3729,6 +3837,59 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("XLS-66 vault withdraw error:", error?.message);
       res.status(500).json({ message: error.message || "Failed to create withdraw transaction" });
+    }
+  });
+
+  app.get("/api/xls66/admin/blocklist", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select({ email: users.email, isAdmin: users.isAdmin }).from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const blocklist = await storage.getXls66VaultBlocklist();
+      res.json({ blocklist });
+    } catch (error) {
+      console.error("XLS-66 blocklist fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch blocklist" });
+    }
+  });
+
+  app.post("/api/xls66/admin/blocklist", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select({ email: users.email, isAdmin: users.isAdmin }).from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const { vaultId, reason } = req.body;
+      if (!vaultId) {
+        return res.status(400).json({ message: "vaultId is required" });
+      }
+      const entry = await storage.addToXls66VaultBlocklist(vaultId, reason || "Blocked by admin", user.email || userId);
+      discoveredVaultsCache = [];
+      lastVaultDiscovery = 0;
+      res.json({ success: true, entry });
+    } catch (error) {
+      console.error("XLS-66 blocklist add error:", error);
+      res.status(500).json({ message: "Failed to add to blocklist" });
+    }
+  });
+
+  app.delete("/api/xls66/admin/blocklist/:vaultId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select({ email: users.email, isAdmin: users.isAdmin }).from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      await storage.removeFromXls66VaultBlocklist(req.params.vaultId);
+      discoveredVaultsCache = [];
+      lastVaultDiscovery = 0;
+      res.json({ success: true });
+    } catch (error) {
+      console.error("XLS-66 blocklist remove error:", error);
+      res.status(500).json({ message: "Failed to remove from blocklist" });
     }
   });
 

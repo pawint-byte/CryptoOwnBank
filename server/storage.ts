@@ -86,12 +86,14 @@ import {
   xls66Vaults,
   xls66Positions,
   xls66LoanOffers,
+  xls66VaultBlocklist,
   type Xls66Vault,
   type InsertXls66Vault,
   type Xls66Position,
   type InsertXls66Position,
   type Xls66LoanOffer,
   type InsertXls66LoanOffer,
+  type Xls66VaultBlock,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
@@ -292,6 +294,11 @@ export interface IStorage {
   getXls66LoanOffer(id: string): Promise<Xls66LoanOffer | undefined>;
   createXls66LoanOffer(offer: InsertXls66LoanOffer): Promise<Xls66LoanOffer>;
   updateXls66LoanOffer(id: string, data: Partial<Xls66LoanOffer>): Promise<Xls66LoanOffer | undefined>;
+
+  getXls66VaultBlocklist(): Promise<Xls66VaultBlock[]>;
+  addToXls66VaultBlocklist(vaultId: string, reason: string, blockedBy: string): Promise<Xls66VaultBlock>;
+  removeFromXls66VaultBlocklist(vaultId: string): Promise<void>;
+  isXls66VaultBlocked(vaultId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1271,6 +1278,24 @@ export class DatabaseStorage implements IStorage {
   async updateXls66LoanOffer(id: string, data: Partial<Xls66LoanOffer>): Promise<Xls66LoanOffer | undefined> {
     const [result] = await db.update(xls66LoanOffers).set({ ...data, updatedAt: new Date() }).where(eq(xls66LoanOffers.id, id)).returning();
     return result;
+  }
+
+  async getXls66VaultBlocklist(): Promise<Xls66VaultBlock[]> {
+    return db.select().from(xls66VaultBlocklist).orderBy(desc(xls66VaultBlocklist.createdAt));
+  }
+
+  async addToXls66VaultBlocklist(vaultId: string, reason: string, blockedBy: string): Promise<Xls66VaultBlock> {
+    const [result] = await db.insert(xls66VaultBlocklist).values({ vaultId, reason, blockedBy }).returning();
+    return result;
+  }
+
+  async removeFromXls66VaultBlocklist(vaultId: string): Promise<void> {
+    await db.delete(xls66VaultBlocklist).where(eq(xls66VaultBlocklist.vaultId, vaultId));
+  }
+
+  async isXls66VaultBlocked(vaultId: string): Promise<boolean> {
+    const [result] = await db.select().from(xls66VaultBlocklist).where(eq(xls66VaultBlocklist.vaultId, vaultId));
+    return !!result;
   }
 }
 
