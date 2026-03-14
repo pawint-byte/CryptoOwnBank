@@ -690,6 +690,14 @@ const faqGroups = [
         q: "How does the XRPL amendment voting process work?",
         a: "XRPL amendments don't work like a ballot where validators vote yes or no. Instead, validators signal support passively by upgrading their server software (rippled) to a version that includes the amendment code. When a validator upgrades to the required version, their server automatically signals 'I support this amendment' in every ledger validation it publishes. Validators on older versions simply don't signal — they haven't said no, they just haven't upgraded yet. There is no 'reject' mechanism. For an amendment to activate, 80% of the validators on the Unique Node List (UNL) must be running the new version, and that 80% threshold must be sustained continuously for 2 full weeks. Once those conditions are met, the amendment activates automatically on the next flag ledger — no human action needed. So when you see '17% support,' that means 17% of validators have upgraded so far. The remaining 83% haven't voted against it — they simply haven't upgraded their software yet. The timeline depends entirely on how quickly validator operators (Ripple, exchanges, universities, independent operators) choose to upgrade. Some move fast, some are cautious. That's why there's no guaranteed activation date.",
       },
+      {
+        q: "How do I prepare my XRP cold wallets for XLS-65 lending?",
+        a: "If you want to lend XRP from your cold wallets, the good news is: you're already set up. XRP is the native asset on the XRPL, so no trustline is needed — every XRPL wallet can send and receive XRP by default. When you deposit into an XLS-65 vault, you receive vault shares as Multi-Purpose Tokens (MPTs), which are a new XRPL object type that don't use the old trustline system either. Your wallet receives them automatically as part of the VaultDeposit transaction. So your Day 1 checklist is: (1) Make sure each cold wallet is imported into Xaman — see our Setup Guide for a full walkthrough. (2) That's it. When XLS-65 activates, come to CryptoOwnBank, browse the on-ledger vaults, pick one, click Deposit, enter your amount, and sign in Xaman from whichever cold wallet you want to use. For straight XRP lending, there's nothing to configure — you're just waiting on the validators to upgrade.",
+      },
+      {
+        q: "Do I need a trustline to lend XRP?",
+        a: "No. XRP is the native asset on the XRPL — it doesn't need a trustline. Trustlines are only required for issued tokens (like RLUSD, USD, EUR) because those tokens are created by a specific issuer, and your wallet needs to explicitly authorize holding tokens from that issuer. XRP has no issuer — it's built into the ledger itself, so every wallet can hold and transact with it automatically. If you want to deposit XRP into an XLS-65 vault, you just sign the VaultDeposit transaction in Xaman and you're done. No trustline setup, no extra steps.",
+      },
     ],
   },
   {
