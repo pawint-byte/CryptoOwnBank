@@ -35,6 +35,7 @@ import {
   Maximize2,
   ChevronDown,
   ChevronUp,
+  BookOpen,
 } from "lucide-react";
 
 interface WhaleAlert {
@@ -202,6 +203,50 @@ function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
       <div className="border-t pt-1.5 mt-1.5 text-muted-foreground">
         <p>{d.senderLabel || truncateAddress(d.senderAddress)} → {d.receiverLabel || truncateAddress(d.receiverAddress)}</p>
       </div>
+    </div>
+  );
+}
+
+function WhaleChartGuide() {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="mb-3">
+      <button
+        onClick={() => setShow(!show)}
+        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        data-testid="button-toggle-whale-guide"
+      >
+        <BookOpen className="h-3.5 w-3.5" />
+        <span>How to read this chart</span>
+        {show ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+      </button>
+      {show && (
+        <div className="mt-2 rounded-lg bg-muted/50 p-3 text-xs space-y-2 border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <p className="font-medium mb-1">What you're looking at</p>
+              <ul className="space-y-1 text-muted-foreground">
+                <li><span className="font-medium text-foreground">Each dot</span> = one large whale transaction on the XRP Ledger</li>
+                <li><span className="font-medium text-foreground">Dot size</span> = relative amount — bigger dots mean bigger transfers</li>
+                <li><span className="font-medium text-foreground">Horizontal axis</span> = when it happened (time)</li>
+                <li><span className="font-medium text-foreground">Vertical axis</span> = how much was moved (log scale — each step up is 10x bigger)</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium mb-1">What the colors mean</p>
+              <ul className="space-y-1 text-muted-foreground">
+                <li><span className="inline-block w-2 h-2 rounded-full bg-[#00A4E4] mr-1" /><span className="font-medium text-foreground">Blue</span> = XRP transfer between wallets</li>
+                <li><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1" /><span className="font-medium text-foreground">Green</span> = RLUSD stablecoin transfer</li>
+                <li><span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1" /><span className="font-medium text-foreground">Amber</span> = Escrow event (Ripple's monthly release or escrow finish)</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t pt-2 text-muted-foreground">
+            <p className="font-medium text-foreground mb-1">Why this matters</p>
+            <p>Large transfers (whales) can signal upcoming price moves. A cluster of exchange-bound XRP transfers may mean selling pressure. Large RLUSD movements often signal institutional activity. Escrow events are Ripple's scheduled releases — mostly re-escrowed, but worth watching.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -619,6 +664,7 @@ export default function WhaleAlerts() {
           </div>
         </CardHeader>
         <CardContent>
+          <WhaleChartGuide />
           {alertsLoading ? (
             <Skeleton className="h-[340px] w-full rounded-lg" />
           ) : alerts.length === 0 ? (
