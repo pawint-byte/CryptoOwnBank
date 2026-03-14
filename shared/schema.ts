@@ -780,3 +780,18 @@ export const xls66VaultBlocklist = pgTable("xls66_vault_blocklist", {
 });
 
 export type Xls66VaultBlock = typeof xls66VaultBlocklist.$inferSelect;
+
+export const xamanConnections = pgTable("xaman_connections", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  xrpAddress: varchar("xrp_address", { length: 100 }).notNull(),
+  accountLabel: varchar("account_label", { length: 100 }),
+  connectedAt: timestamp("connected_at").defaultNow(),
+}, (table) => [
+  index("idx_xaman_conn_user").on(table.userId),
+  unique("uq_xaman_conn_user_addr").on(table.userId, table.xrpAddress),
+]);
+
+export type XamanConnection = typeof xamanConnections.$inferSelect;
+export const insertXamanConnectionSchema = createInsertSchema(xamanConnections).omit({ id: true, connectedAt: true });
+export type InsertXamanConnection = z.infer<typeof insertXamanConnectionSchema>;

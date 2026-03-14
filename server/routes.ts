@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, type CustomVault } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail } from "./email";
 import multer from "multer";
@@ -132,6 +132,57 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[wallet-save] ERROR:", error);
       res.status(500).json({ message: "Failed to save wallet" });
+    }
+  });
+
+  app.get("/api/xaman-connections", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connections = await db.select().from(xamanConnections).where(eq(xamanConnections.userId, userId));
+      res.json(connections);
+    } catch (error: any) {
+      console.error("[xaman-connections] GET error:", error);
+      res.status(500).json({ message: "Failed to load Xaman connections" });
+    }
+  });
+
+  app.post("/api/xaman-connections", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { xrpAddress, accountLabel } = req.body;
+      if (!xrpAddress || !xrpAddress.startsWith("r")) {
+        return res.status(400).json({ message: "Valid XRP address required" });
+      }
+      const existing = await db.select().from(xamanConnections)
+        .where(eq(xamanConnections.userId, userId));
+      const alreadyLinked = existing.find(c => c.xrpAddress.toLowerCase() === xrpAddress.toLowerCase());
+      if (alreadyLinked) {
+        return res.json({ success: true, alreadyLinked: true, connection: alreadyLinked });
+      }
+      const [connection] = await db.insert(xamanConnections).values({
+        userId,
+        xrpAddress,
+        accountLabel: accountLabel || null,
+      }).returning();
+      res.json({ success: true, connection });
+    } catch (error: any) {
+      console.error("[xaman-connections] POST error:", error);
+      res.status(500).json({ message: "Failed to save Xaman connection" });
+    }
+  });
+
+  app.delete("/api/xaman-connections/:address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { address } = req.params;
+      const { and } = await import("drizzle-orm");
+      await db.delete(xamanConnections).where(
+        and(eq(xamanConnections.userId, userId), eq(xamanConnections.xrpAddress, address))
+      );
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[xaman-connections] DELETE error:", error);
+      res.status(500).json({ message: "Failed to remove Xaman connection" });
     }
   });
 

@@ -769,7 +769,16 @@ export default function Wallets() {
     queryKey: ["/api/wallet"],
   });
 
+  const { data: xamanConnections = [], refetch: refetchXamanConnections } = useQuery<Array<{ id: number; xrpAddress: string; accountLabel: string | null; connectedAt: string }>>({
+    queryKey: ["/api/xaman-connections"],
+  });
+
   const connectedXrplAddress = xrplStore.walletAddress || xrplWalletData?.walletAddress || null;
+
+  const isXamanLinked = (address: string) => {
+    if (connectedXrplAddress && address.toLowerCase() === connectedXrplAddress.toLowerCase()) return true;
+    return xamanConnections.some(c => c.xrpAddress.toLowerCase() === address.toLowerCase());
+  };
 
   const toggleGroup = (groupKey: string) => {
     setCollapsedGroups((prev) => ({ ...(prev || {}), [groupKey]: !(prev?.[groupKey] ?? true) }));
@@ -1376,7 +1385,7 @@ export default function Wallets() {
                     );
                     const isCollapsed = collapsedGroups?.[groupName] ?? true;
                     const hasXamanSigning = groupWallets.some(
-                      (w) => w.chain === "xrp" && connectedXrplAddress && w.address.toLowerCase() === connectedXrplAddress.toLowerCase()
+                      (w) => w.chain === "xrp" && isXamanLinked(w.address)
                     );
                     return (
                       <Card key={groupName} data-testid={`wallet-group-${groupName.toLowerCase().replace(/\s+/g, "-")}`}>

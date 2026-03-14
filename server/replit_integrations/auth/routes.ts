@@ -19,6 +19,16 @@ import {
 
 const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
 
+function getAppUrl(req: any): string {
+  const customDomain = "https://cryptoownbank.com";
+  const host = req.get("host") || req.hostname;
+  if (host.includes("cryptoownbank.com")) {
+    return customDomain;
+  }
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+  return `${protocol}://${host}`;
+}
+
 export function registerAuthRoutes(app: Express): void {
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
@@ -96,8 +106,7 @@ export function registerAuthRoutes(app: Express): void {
         });
       }
 
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const appUrl = `${protocol}://${req.hostname}`;
+      const appUrl = getAppUrl(req);
       const verifyUrl = `${appUrl}/verify-email/${verifyToken}`;
 
       try {
@@ -195,6 +204,48 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
+  app.post("/api/auth/resend-verification", async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const [dbUser] = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.email}) = LOWER(${email})`);
+
+      if (!dbUser) {
+        return res.json({ message: "If an account exists with that email, a new verification link has been sent." });
+      }
+
+      if (dbUser.emailVerified) {
+        return res.json({ message: "Your email is already verified. You can log in now." });
+      }
+
+      const newToken = generateToken();
+      await db
+        .update(users)
+        .set({ emailVerifyToken: newToken, updatedAt: new Date() })
+        .where(eq(users.id, dbUser.id));
+
+      const appUrl = getAppUrl(req);
+      const verifyUrl = `${appUrl}/verify-email/${newToken}`;
+
+      try {
+        await sendEmailVerification(dbUser.email!, dbUser.firstName || "there", verifyUrl);
+      } catch (emailErr) {
+        console.error("Failed to resend verification email:", emailErr);
+      }
+
+      res.json({ message: "A new verification link has been sent to your email." });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification email" });
+    }
+  });
+
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
       const { email } = req.body;
@@ -219,8 +270,7 @@ export function registerAuthRoutes(app: Express): void {
         .set({ passwordResetToken: resetToken, passwordResetExpires: expires, updatedAt: new Date() })
         .where(eq(users.id, dbUser.id));
 
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const appUrl = `${protocol}://${req.hostname}`;
+      const appUrl = getAppUrl(req);
       const resetUrl = `${appUrl}/reset-password/${resetToken}`;
 
       try {
@@ -600,8 +650,7 @@ export function registerAuthRoutes(app: Express): void {
       const resetToken = generateToken();
       const expires = new Date(Date.now() + 72 * 60 * 60 * 1000);
 
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const appUrl = `${protocol}://${req.hostname}`;
+      const appUrl = getAppUrl(req);
       const resetUrl = `${appUrl}/reset-password/${resetToken}`;
 
       try {

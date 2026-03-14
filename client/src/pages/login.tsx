@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Eye, EyeOff, AlertCircle, Mail } from "lucide-react";
+import { Wallet, Eye, EyeOff, AlertCircle, Mail, RefreshCw } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 
 export default function Login() {
@@ -18,6 +18,26 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorState, setErrorState] = useState<{ message: string; code?: string } | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+
+  const handleResendVerification = async () => {
+    if (!email) return;
+    setResendingVerification(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      toast({ title: "Verification Email Sent", description: data.message });
+      setErrorState(null);
+    } catch {
+      toast({ title: "Error", description: "Failed to resend verification email. Please try again.", variant: "destructive" });
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   const loginMutation = useMutation({
     mutationFn: async () => {
@@ -80,15 +100,43 @@ export default function Login() {
             </div>
 
             {errorState && (
-              <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+              <div className={`mb-6 p-4 rounded-lg border ${errorState.code === "EMAIL_NOT_VERIFIED" ? "bg-blue-50 dark:bg-blue-950/30 border-[#00A4E4]/30" : "bg-destructive/10 border-destructive/20"}`}>
                 <div className="flex items-start gap-3">
                   {errorState.code === "EMAIL_NOT_VERIFIED" ? (
                     <Mail className="h-5 w-5 text-[#00A4E4] mt-0.5 flex-shrink-0" />
                   ) : (
                     <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
                   )}
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium">{errorState.message}</p>
+                    {errorState.code === "EMAIL_NOT_VERIFIED" && (
+                      <div className="mt-3">
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Didn't get the email or link didn't work? We'll send a new one.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResendVerification}
+                          disabled={resendingVerification || !email}
+                          className="border-[#00A4E4] text-[#00A4E4] hover:bg-[#00A4E4]/10"
+                          data-testid="button-resend-verification"
+                        >
+                          {resendingVerification ? (
+                            <>
+                              <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="h-3.5 w-3.5 mr-1.5" />
+                              Resend Verification Email
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                     {errorState.code === "NO_ACCOUNT" && (
                       <a href="/signup" className="text-sm text-[#00A4E4] hover:underline mt-1 inline-block" data-testid="link-create-account">
                         Create an Account
