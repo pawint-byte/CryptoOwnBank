@@ -338,19 +338,6 @@ export function AppSidebar() {
           "OwnBank XRPL",
           ownbankItems,
           "#00A4E4",
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild data-testid="nav-ownbank-xls66">
-              <Link href="/xls66-lending">
-                <Zap className="h-4 w-4 text-[#00A4E4]" />
-                <span className="flex items-center gap-2">
-                  XLS-66 Lending
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    Pro
-                  </Badge>
-                </span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         )}
 
         {renderCollapsibleGroup("stellar", "Stellar", stellarItems, "#7B61FF")}

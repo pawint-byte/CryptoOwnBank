@@ -438,7 +438,7 @@ const proFeatures = [
   "Batch & payroll recurring payments",
   "Treasury dashboard for business wallets",
   "Up to 5 team member seats",
-  "XLS-66 Lending (coming Q2 2026)",
+  "XLS-65/66 Lending (pending validator vote)",
 ];
 
 const onChainReasons = [
@@ -683,8 +683,8 @@ const faqGroups = [
         a: "Share your unique referral link with friends. When they sign up and deposit RLUSD, you earn bonus SEED points through Soil Protocol, which can boost your yields over time. If a referred friend upgrades to Premium, you get one free month of Premium.",
       },
       {
-        q: "What is XLS-66 Lending?",
-        a: "XLS-66 is a proposed XRPL amendment for native on-ledger lending. When it goes live (expected Q2 2026), OwnBank will integrate it so you can lend directly on the XRPL without any intermediary. Premium members get early access.",
+        q: "What is XLS-65/66 Lending?",
+        a: "XLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) are proposed XRPL amendments for native on-ledger lending. They're currently in validator voting and require 80% consensus for 2 weeks to activate. When live, you'll be able to lend XRP directly from your cold wallet into on-ledger vaults — no bridges, no smart contracts, no custody risk. CryptoOwnBank is fully built and ready to activate the moment the amendments pass. Pro members get access.",
       },
     ],
   },
