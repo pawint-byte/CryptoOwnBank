@@ -27,7 +27,7 @@ import {
   Cell,
   Customized,
 } from "recharts";
-import { BarChart3, Lock, ArrowRight, TrendingUp, AlertTriangle } from "lucide-react";
+import { BarChart3, Lock, ArrowRight, TrendingUp, AlertTriangle, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import {
   calculateSMA,
   calculateEMA,
@@ -710,6 +710,238 @@ export default function TechnicalAnalysis() {
           </CardContent>
         </Card>
       )}
+
+      <ChartPatternsGuide />
     </div>
+  );
+}
+
+function ChartPatternsGuide() {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const toggle = (id: string) => setExpanded(expanded === id ? null : id);
+
+  const candlestickPatterns = [
+    {
+      id: "single",
+      title: "Single Candle Patterns",
+      patterns: [
+        { name: "Doji", signal: "Neutral", description: "Open and close are nearly equal. Shows indecision — the market is unsure. Watch the next candle for direction.", visual: "─ ┃ ─", color: "text-muted-foreground" },
+        { name: "Hammer", signal: "Bullish", description: "Small body at top, long lower wick. After a downtrend, buyers stepped in and pushed price back up. Potential reversal signal.", visual: "▪\n│", color: "text-emerald-500" },
+        { name: "Inverted Hammer", signal: "Bullish", description: "Small body at bottom, long upper wick. After a downtrend, buyers tried to push higher. Confirmation needed on next candle.", visual: "│\n▪", color: "text-emerald-500" },
+        { name: "Shooting Star", signal: "Bearish", description: "Small body at bottom, long upper wick. After an uptrend, sellers rejected higher prices. Watch for downside follow-through.", visual: "│\n▪", color: "text-red-500" },
+        { name: "Hanging Man", signal: "Bearish", description: "Small body at top, long lower wick. After an uptrend, selling pressure appeared but buyers recovered — barely. Weakness signal.", visual: "▪\n│", color: "text-red-500" },
+        { name: "Marubozu", signal: "Strong Trend", description: "Full body with no wicks. Strong conviction — buyers (green) or sellers (red) dominated the entire session. Trend continuation.", visual: "█", color: "text-blue-500" },
+      ],
+    },
+    {
+      id: "double",
+      title: "Double Candle Patterns",
+      patterns: [
+        { name: "Bullish Engulfing", signal: "Bullish", description: "A large green candle completely engulfs the previous red candle. Buyers overwhelmed sellers — strong reversal signal after a downtrend.", visual: "▪ █", color: "text-emerald-500" },
+        { name: "Bearish Engulfing", signal: "Bearish", description: "A large red candle completely engulfs the previous green candle. Sellers overwhelmed buyers — strong reversal signal after an uptrend.", visual: "█ ▪", color: "text-red-500" },
+        { name: "Tweezer Top", signal: "Bearish", description: "Two candles with matching highs. Price hit the same ceiling twice and got rejected both times — resistance is holding.", visual: "▪▪", color: "text-red-500" },
+        { name: "Tweezer Bottom", signal: "Bullish", description: "Two candles with matching lows. Price hit the same floor twice and bounced both times — support is holding.", visual: "▪▪", color: "text-emerald-500" },
+        { name: "Piercing Line", signal: "Bullish", description: "After a downtrend, a green candle opens below the prior close but closes above 50% of the prior red candle. Buyers are fighting back.", visual: "█ █", color: "text-emerald-500" },
+        { name: "Dark Cloud Cover", signal: "Bearish", description: "After an uptrend, a red candle opens above the prior close but closes below 50% of the prior green candle. Sellers taking control.", visual: "█ █", color: "text-red-500" },
+      ],
+    },
+    {
+      id: "triple",
+      title: "Triple Candle Patterns",
+      patterns: [
+        { name: "Morning Star", signal: "Bullish", description: "Red candle → small body (doji-like) → green candle. The star shows indecision, then buyers take over. Strong bottom reversal.", visual: "█ ▪ █", color: "text-emerald-500" },
+        { name: "Evening Star", signal: "Bearish", description: "Green candle → small body → red candle. The star shows momentum fading, then sellers take over. Strong top reversal.", visual: "█ ▪ █", color: "text-red-500" },
+        { name: "Three White Soldiers", signal: "Bullish", description: "Three consecutive green candles, each closing higher than the last. Strong buying momentum — uptrend beginning or continuing.", visual: "█ █ █", color: "text-emerald-500" },
+        { name: "Three Black Crows", signal: "Bearish", description: "Three consecutive red candles, each closing lower than the last. Strong selling pressure — downtrend beginning or continuing.", visual: "█ █ █", color: "text-red-500" },
+      ],
+    },
+  ];
+
+  const chartPatterns = [
+    {
+      id: "reversal",
+      title: "Reversal Chart Patterns",
+      patterns: [
+        { name: "Head & Shoulders", signal: "Bearish Reversal", description: "Three peaks: left shoulder, higher head, right shoulder. When price breaks below the 'neckline' (support connecting the two troughs), it signals the uptrend is over. Target: distance from head to neckline, projected downward.", color: "text-red-500" },
+        { name: "Inverse Head & Shoulders", signal: "Bullish Reversal", description: "Three troughs: left shoulder, lower head, right shoulder — upside down. When price breaks above the neckline, it signals the downtrend is over. Target: distance from head to neckline, projected upward.", color: "text-emerald-500" },
+        { name: "Double Top (M)", signal: "Bearish Reversal", description: "Price hits the same resistance level twice and fails both times, forming an 'M' shape. Break below the middle support confirms the reversal. Strong sellers are defending that price level.", color: "text-red-500" },
+        { name: "Double Bottom (W)", signal: "Bullish Reversal", description: "Price hits the same support level twice and bounces both times, forming a 'W' shape. Break above the middle resistance confirms the reversal. Strong buyers are defending that price level.", color: "text-emerald-500" },
+        { name: "Rounding Bottom", signal: "Bullish Reversal", description: "A gradual U-shaped transition from selling pressure to buying pressure. Takes time to form — the longer it takes, the more significant the reversal. Often seen before major uptrends.", color: "text-emerald-500" },
+      ],
+    },
+    {
+      id: "continuation",
+      title: "Continuation Chart Patterns",
+      patterns: [
+        { name: "Bull Flag", signal: "Bullish Continuation", description: "Sharp price rise (the 'pole') followed by a small downward-sloping channel (the 'flag'). The flag is just a breather — when price breaks above the flag, the uptrend resumes. Target: length of the pole.", color: "text-emerald-500" },
+        { name: "Bear Flag", signal: "Bearish Continuation", description: "Sharp price drop (the 'pole') followed by a small upward-sloping channel (the 'flag'). Temporary bounce before sellers push price lower. Break below the flag resumes the downtrend.", color: "text-red-500" },
+        { name: "Ascending Triangle", signal: "Bullish", description: "Flat resistance on top, rising support on bottom. Buyers keep pushing higher lows while sellers defend the same level. Eventually, buyers overwhelm — breakout above resistance.", color: "text-emerald-500" },
+        { name: "Descending Triangle", signal: "Bearish", description: "Flat support on bottom, falling resistance on top. Sellers keep making lower highs while buyers defend the same level. Eventually, sellers overwhelm — breakdown below support.", color: "text-red-500" },
+        { name: "Symmetrical Triangle", signal: "Neutral", description: "Converging trendlines with lower highs and higher lows. Compression builds energy. The breakout direction determines the trend — watch volume for confirmation.", color: "text-blue-500" },
+        { name: "Cup & Handle", signal: "Bullish", description: "A U-shaped 'cup' followed by a small downward drift 'handle.' After the cup forms, a small pullback creates a buying opportunity. Break above the handle confirms continuation.", color: "text-emerald-500" },
+      ],
+    },
+  ];
+
+  const indicatorGuide = [
+    { name: "SMA (Simple Moving Average)", what: "Average closing price over X periods.", howToUse: "Price above SMA = bullish, below = bearish. SMA 50 crossing above SMA 200 = 'Golden Cross' (very bullish). SMA 50 crossing below SMA 200 = 'Death Cross' (very bearish)." },
+    { name: "EMA (Exponential Moving Average)", what: "Like SMA but gives more weight to recent prices — reacts faster.", howToUse: "EMA 12 crossing above EMA 26 = buy signal. Crossing below = sell signal. Better for short-term trading than SMA." },
+    { name: "RSI (Relative Strength Index)", what: "Measures momentum on a 0-100 scale.", howToUse: "Above 70 = overbought (price may pull back). Below 30 = oversold (price may bounce). Divergence between RSI and price = potential reversal." },
+    { name: "MACD", what: "Shows relationship between two EMAs and their momentum.", howToUse: "MACD line crossing above signal line = buy. Crossing below = sell. Histogram getting bigger = momentum increasing. Histogram shrinking = momentum fading." },
+    { name: "Bollinger Bands", what: "SMA with upper/lower bands at 2 standard deviations.", howToUse: "Price touching upper band = potentially overbought. Touching lower band = potentially oversold. Bands squeezing tight = big move coming. Price outside bands = extreme move, likely to revert." },
+  ];
+
+  return (
+    <Card data-testid="card-patterns-guide">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-[#00A4E4]" />
+          Chart Patterns & Indicators Guide
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Learn to read candlestick patterns, chart formations, and technical indicators to make informed decisions
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#00A4E4]" />
+            Candlestick Patterns
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Each candle shows the open, high, low, and close for a time period.
+            <span className="text-emerald-500 font-medium"> Green = price went up. </span>
+            <span className="text-red-500 font-medium"> Red = price went down. </span>
+            The body shows open-to-close range. The wicks show the high and low.
+          </p>
+          <div className="space-y-2">
+            {candlestickPatterns.map((group) => (
+              <div
+                key={group.id}
+                className="rounded-lg border overflow-hidden"
+              >
+                <button
+                  onClick={() => toggle(`candle-${group.id}`)}
+                  className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+                  data-testid={`button-toggle-${group.id}`}
+                >
+                  <span className="text-sm font-medium">{group.title}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{group.patterns.length} patterns</Badge>
+                    {expanded === `candle-${group.id}` ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </button>
+                {expanded === `candle-${group.id}` && (
+                  <div className="border-t divide-y">
+                    {group.patterns.map((p) => (
+                      <div key={p.name} className="p-3 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium">{p.name}</span>
+                          <Badge className={`text-[10px] px-1.5 py-0 ${
+                            p.signal === "Bullish" || p.signal === "Strong Trend"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                              : p.signal === "Bearish"
+                                ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30"
+                                : "bg-muted text-muted-foreground border border-muted"
+                          }`} variant="outline">
+                            {p.signal}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{p.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            Chart Patterns
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Chart patterns form over days, weeks, or months. They show the battle between buyers and sellers and help predict where price is headed next.
+          </p>
+          <div className="space-y-2">
+            {chartPatterns.map((group) => (
+              <div
+                key={group.id}
+                className="rounded-lg border overflow-hidden"
+              >
+                <button
+                  onClick={() => toggle(`chart-${group.id}`)}
+                  className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left"
+                  data-testid={`button-toggle-chart-${group.id}`}
+                >
+                  <span className="text-sm font-medium">{group.title}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{group.patterns.length} patterns</Badge>
+                    {expanded === `chart-${group.id}` ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </button>
+                {expanded === `chart-${group.id}` && (
+                  <div className="border-t divide-y">
+                    {group.patterns.map((p) => (
+                      <div key={p.name} className="p-3 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium">{p.name}</span>
+                          <Badge className={`text-[10px] px-1.5 py-0 ${
+                            p.signal.includes("Bullish")
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                              : p.signal.includes("Bearish")
+                                ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30"
+                                : "bg-muted text-muted-foreground border border-muted"
+                          }`} variant="outline">
+                            {p.signal}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{p.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            How to Read the Indicators Above
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {indicatorGuide.map((ind) => (
+              <div key={ind.name} className="rounded-lg border p-3">
+                <p className="text-sm font-medium mb-1">{ind.name}</p>
+                <p className="text-xs text-muted-foreground mb-2"><span className="font-medium text-foreground">What it is:</span> {ind.what}</p>
+                <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">How to use it:</span> {ind.howToUse}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-[#00A4E4]/5 border border-[#00A4E4]/20 p-4">
+          <p className="text-xs font-medium mb-1">Pro Tip: Don't rely on any single pattern or indicator</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The best traders use <span className="font-medium text-foreground">confirmation</span> — look for multiple signals pointing the same direction.
+            For example: a bullish engulfing pattern + RSI bouncing off oversold + price above the 50 SMA = strong buy signal.
+            A single pattern alone can be misleading. Always check the bigger picture.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
