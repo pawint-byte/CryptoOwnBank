@@ -87,6 +87,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
+import { useXrplStore } from "@/lib/xrpl-store";
+import { Smartphone, Link2 } from "lucide-react";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
 interface SubscriptionLimits {
@@ -157,6 +159,19 @@ const CHAIN_COLORS: Record<string, string> = {
 const CHART_COLORS = [
   "#00A4E4", "#F7931A", "#627EEA", "#9945FF", "#C2A633",
   "#345D9D", "#0033AD", "#E91E63", "#4CAF50", "#FF9800",
+];
+
+const WALLET_PRESETS = [
+  "Ledger Nano X",
+  "Ledger Nano S Plus",
+  "Ledger Stax",
+  "Trezor",
+  "ELLIPAL",
+  "SafePal",
+  "CypheRock",
+  "Arculus",
+  "Tangem",
+  "Xaman",
 ];
 
 interface WalletWithBalances extends WalletType {
@@ -746,7 +761,13 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
 export default function Wallets() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const xrplStore = useXrplStore();
+
+  const toggleGroup = (groupKey: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  };
 
   const { data: userWallets = [], isLoading } = useQuery<WalletWithBalances[]>({
     queryKey: ["/api/wallets"],
@@ -1043,9 +1064,9 @@ export default function Wallets() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-wallets-title">Blockchain Addresses</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-wallets-title">Wallets & Addresses</h1>
           <p className="text-muted-foreground">
-            Paste any public address to automatically pull on-chain balances and transaction history — read-only, no keys needed
+            Track your cold wallets and blockchain addresses — see balances, signing relationships, and transaction history in one place
           </p>
         </div>
         <div className="flex gap-2">
@@ -1131,45 +1152,63 @@ export default function Wallets() {
                   <FormField
                     control={form.control}
                     name="label"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Label (Optional)</FormLabel>
-                        {savedLabels.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pb-1" data-testid="saved-labels">
-                            {savedLabels.map((lbl) => (
+                    render={({ field }) => {
+                      const allOptions = [...new Set([...savedLabels, ...WALLET_PRESETS.filter((p) => !savedLabels.some((s) => s.toLowerCase() === p.toLowerCase()))])];
+                      return (
+                        <FormItem>
+                          <FormLabel>Wallet Name</FormLabel>
+                          <p className="text-xs text-muted-foreground">
+                            Which wallet or device holds the keys for this address?
+                          </p>
+                          {savedLabels.length > 0 && (
+                            <>
+                              <p className="text-xs font-medium text-muted-foreground pt-1">Your wallets</p>
+                              <div className="flex flex-wrap gap-1.5" data-testid="saved-labels">
+                                {savedLabels.map((lbl) => (
+                                  <Button
+                                    key={lbl}
+                                    type="button"
+                                    variant={field.value?.toLowerCase() === lbl.toLowerCase() ? "default" : "outline"}
+                                    size="sm"
+                                    className="h-7 text-xs px-2.5"
+                                    onClick={() => field.onChange(lbl)}
+                                    data-testid={`label-quick-pick-${lbl.toLowerCase().replace(/\s+/g, "-")}`}
+                                  >
+                                    {lbl}
+                                  </Button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          <p className="text-xs font-medium text-muted-foreground pt-1">
+                            {savedLabels.length > 0 ? "Or pick a wallet type" : "Pick a wallet type"}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5" data-testid="wallet-presets">
+                            {WALLET_PRESETS.filter((p) => !savedLabels.some((s) => s.toLowerCase() === p.toLowerCase())).map((preset) => (
                               <Button
-                                key={lbl}
+                                key={preset}
                                 type="button"
-                                variant={field.value?.toLowerCase().startsWith(lbl.toLowerCase()) ? "default" : "outline"}
+                                variant={field.value?.toLowerCase() === preset.toLowerCase() ? "default" : "outline"}
                                 size="sm"
                                 className="h-7 text-xs px-2.5"
-                                onClick={() => {
-                                  field.onChange(lbl);
-                                  setTimeout(() => {
-                                    const input = document.querySelector('[data-testid="input-wallet-label"]') as HTMLInputElement;
-                                    if (input) {
-                                      input.focus();
-                                      input.setSelectionRange(lbl.length, lbl.length);
-                                    }
-                                  }, 0);
-                                }}
-                                data-testid={`label-quick-pick-${lbl.toLowerCase().replace(/\s+/g, "-")}`}
+                                onClick={() => field.onChange(preset)}
+                                data-testid={`label-preset-${preset.toLowerCase().replace(/\s+/g, "-")}`}
                               >
-                                {lbl}
+                                {preset}
                               </Button>
                             ))}
                           </div>
-                        )}
-                        <FormControl>
-                          <Input
-                            placeholder={savedLabels.length > 0 ? "Pick above or type a new label..." : "e.g. My Ledger, Cold Storage, Trading..."}
-                            {...field}
-                            data-testid="input-wallet-label"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                          <FormControl>
+                            <Input
+                              placeholder="Or type a custom wallet name..."
+                              {...field}
+                              data-testid="input-wallet-label"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
 
                   {selectedChain && (
@@ -1298,7 +1337,7 @@ export default function Wallets() {
           <TabsList data-testid="tabs-wallet-views">
             <TabsTrigger value="source" data-testid="tab-by-source">
               <Layers className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">By Source</span>
+              <span className="hidden sm:inline">By Wallet</span>
             </TabsTrigger>
             <TabsTrigger value="asset" data-testid="tab-by-asset">
               <BarChart3 className="h-4 w-4 sm:mr-2" />
@@ -1317,161 +1356,225 @@ export default function Wallets() {
           <TabsContent value="source" className="space-y-4">
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
-                {userWallets.map((w) => {
-                  const totalVal = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
-                  return (
-                    <Card key={w.id} data-testid={`wallet-card-${w.id}`}>
-                      <CardHeader className="pb-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div
-                              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-lg shrink-0"
-                              style={{ backgroundColor: CHAIN_COLORS[w.chain] || "#666" }}
-                            >
-                              {CHAIN_LABELS[w.chain] || "?"}
-                            </div>
-                            <div className="min-w-0">
-                              <CardTitle className="text-sm sm:text-base truncate">
-                                {w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`}
-                              </CardTitle>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <code className="text-xs text-muted-foreground truncate">
-                                  {truncateAddress(w.address)}
-                                </code>
-                                <button
-                                  onClick={() => handleCopy(w.address)}
-                                  className="text-muted-foreground hover:text-foreground shrink-0"
-                                  data-testid={`button-copy-${w.id}`}
-                                >
-                                  {copiedAddress === w.address ? (
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
+                {(() => {
+                  const groups: Record<string, WalletWithBalances[]> = {};
+                  for (const w of userWallets) {
+                    const key = (w.label || "Unlabeled").trim();
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(w);
+                  }
+                  return Object.entries(groups).map(([groupName, groupWallets]) => {
+                    const groupTotal = groupWallets.reduce(
+                      (s, w) => s + w.balances.reduce((bs, b) => bs + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0),
+                      0
+                    );
+                    const isCollapsed = collapsedGroups[groupName] ?? false;
+                    const hasXamanSigning = groupWallets.some(
+                      (w) => w.chain === "xrp" && xrplStore.walletAddress && w.address.toLowerCase() === xrplStore.walletAddress.toLowerCase()
+                    );
+                    return (
+                      <Card key={groupName} data-testid={`wallet-group-${groupName.toLowerCase().replace(/\s+/g, "-")}`}>
+                        <CardHeader className="pb-2">
+                          <button
+                            className="flex items-center justify-between w-full text-left group"
+                            onClick={() => toggleGroup(groupName)}
+                            data-testid={`toggle-group-${groupName.toLowerCase().replace(/\s+/g, "-")}`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <Wallet className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-base">{groupName}</span>
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {groupWallets.length} address{groupWallets.length !== 1 ? "es" : ""}
+                                  </Badge>
+                                  {hasXamanSigning && (
+                                    <Badge variant="outline" className="text-[10px] border-[#00A4E4] text-[#00A4E4]" data-testid={`badge-xaman-signing-${groupName.toLowerCase().replace(/\s+/g, "-")}`}>
+                                      <Smartphone className="h-3 w-3 mr-1" />
+                                      Xaman Signing
+                                    </Badge>
                                   )}
-                                </button>
-                                <a
-                                  href={getExplorerUrl(w.chain, w.address)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-muted-foreground hover:text-foreground shrink-0"
-                                  data-testid={`link-explorer-${w.id}`}
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {groupWallets.map((w) => CHAIN_LABELS[w.chain] || w.chain.toUpperCase()).join(", ")}
+                                </p>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 justify-between sm:justify-end">
-                            <span className="text-base sm:text-lg font-bold font-mono">
-                              {formatUsd(totalVal)}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => syncMutation.mutate(w.id)}
-                                disabled={syncMutation.isPending}
-                                data-testid={`button-sync-${w.id}`}
-                              >
-                                <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive"
-                                    data-testid={`button-delete-${w.id}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Remove wallet?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will remove the wallet and its balance data from your portfolio. You can always add it back.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteMutation.mutate(w.id)}>
-                                      Remove
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="text-lg font-bold font-mono">{formatUsd(groupTotal)}</span>
+                              {isCollapsed ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronUp className="h-5 w-5 text-muted-foreground" />}
                             </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      {w.balances.length > 0 && (
-                        <CardContent className="pt-0">
-                          <div className="space-y-2">
-                            {w.balances.map((b) => {
-                              const balVal = parseFloat(b.balance);
-                              const usdVal = getEnrichedUsdValue(b.assetSymbol, balVal, b.usdValue);
-                              const pricePerUnit = balVal > 0 ? usdVal / balVal : 0;
+                          </button>
+                        </CardHeader>
+                        {!isCollapsed && (
+                          <CardContent className="pt-0 space-y-3">
+                            {groupWallets.map((w) => {
+                              const totalVal = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
+                              const isXamanConnected = w.chain === "xrp" && xrplStore.walletAddress && w.address.toLowerCase() === xrplStore.walletAddress.toLowerCase();
                               return (
-                                <div
-                                  key={b.id}
-                                  className="py-2 border-t"
-                                  data-testid={`balance-${b.assetSymbol}-${w.id}`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                        <span className="text-[10px] sm:text-xs font-bold text-primary">
-                                          {b.assetSymbol.slice(0, 2)}
-                                        </span>
+                                <div key={w.id} className="rounded-lg border p-3" data-testid={`wallet-card-${w.id}`}>
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div
+                                        className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                                        style={{ backgroundColor: CHAIN_COLORS[w.chain] || "#666" }}
+                                      >
+                                        {CHAIN_LABELS[w.chain] || "?"}
                                       </div>
                                       <div className="min-w-0">
-                                        <span className="font-medium text-sm truncate block">{b.assetSymbol}</span>
-                                        <div className="text-xs text-muted-foreground font-mono truncate">
-                                          {formatBalance(balVal, 4)}
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium text-sm">{CHAIN_LABELS[w.chain] || w.chain}</span>
+                                          {isXamanConnected && (
+                                            <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400" data-testid={`badge-xaman-connected-${w.id}`}>
+                                              <Link2 className="h-3 w-3 mr-1" />
+                                              Connected
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                          <code className="text-xs text-muted-foreground truncate">
+                                            {truncateAddress(w.address)}
+                                          </code>
+                                          <button
+                                            onClick={() => handleCopy(w.address)}
+                                            className="text-muted-foreground hover:text-foreground shrink-0"
+                                            data-testid={`button-copy-${w.id}`}
+                                          >
+                                            {copiedAddress === w.address ? (
+                                              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                            ) : (
+                                              <Copy className="h-3 w-3" />
+                                            )}
+                                          </button>
+                                          <a
+                                            href={getExplorerUrl(w.chain, w.address)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-muted-foreground hover:text-foreground shrink-0"
+                                            data-testid={`link-explorer-${w.id}`}
+                                          >
+                                            <ExternalLink className="h-3 w-3" />
+                                          </a>
                                         </div>
                                       </div>
                                     </div>
-                                    <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
-                                      {formatUsd(usdVal)}
-                                    </span>
+                                    <div className="flex items-center gap-2 justify-between sm:justify-end">
+                                      <span className="text-sm font-bold font-mono">
+                                        {formatUsd(totalVal)}
+                                      </span>
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => syncMutation.mutate(w.id)}
+                                          disabled={syncMutation.isPending}
+                                          data-testid={`button-sync-${w.id}`}
+                                        >
+                                          <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
+                                        </Button>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 text-destructive hover:text-destructive"
+                                              data-testid={`button-delete-${w.id}`}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Remove wallet?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                This will remove the wallet and its balance data from your portfolio. You can always add it back.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => deleteMutation.mutate(w.id)}>
+                                                Remove
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <CostBasisPanel balance={b} currentPrice={pricePerUnit} />
+                                  {w.balances.length > 0 && (
+                                    <div className="mt-2 space-y-2">
+                                      {w.balances.map((b) => {
+                                        const balVal = parseFloat(b.balance);
+                                        const usdVal = getEnrichedUsdValue(b.assetSymbol, balVal, b.usdValue);
+                                        const pricePerUnit = balVal > 0 ? usdVal / balVal : 0;
+                                        return (
+                                          <div
+                                            key={b.id}
+                                            className="py-2 border-t"
+                                            data-testid={`balance-${b.assetSymbol}-${w.id}`}
+                                          >
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                                  <span className="text-[10px] sm:text-xs font-bold text-primary">
+                                                    {b.assetSymbol.slice(0, 2)}
+                                                  </span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                  <span className="font-medium text-sm truncate block">{b.assetSymbol}</span>
+                                                  <div className="text-xs text-muted-foreground font-mono truncate">
+                                                    {formatBalance(balVal, 4)}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
+                                                {formatUsd(usdVal)}
+                                              </span>
+                                            </div>
+                                            <CostBasisPanel balance={b} currentPrice={pricePerUnit} />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  {w.balances.length === 0 && (
+                                    <div className="mt-2">
+                                      {["polkadot", "cosmos", "tron", "cronos", "algorand"].includes(w.chain) ? (
+                                        <div className="space-y-2">
+                                          <p className="text-sm text-muted-foreground">
+                                            No balances found. Try syncing this wallet.
+                                          </p>
+                                          <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-md p-2">
+                                            <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                            <span>
+                                              If your assets are staked through a platform like Ledger Earn or a nomination pool, they may have been moved to a pool address. On-chain tracking only sees balances at your address — staked assets held by pools won't appear here.
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                          No balances found. Try syncing this wallet.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                  {w.lastSyncAt && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                      Last synced: {format(new Date(w.lastSyncAt), "MMM d, yyyy h:mm a")}
+                                    </p>
+                                  )}
                                 </div>
                               );
                             })}
-                          </div>
-                          {w.lastSyncAt && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              Last synced: {format(new Date(w.lastSyncAt), "MMM d, yyyy h:mm a")}
-                            </p>
-                          )}
-                        </CardContent>
-                      )}
-                      {w.balances.length === 0 && (
-                        <CardContent className="pt-0">
-                          {["polkadot", "cosmos", "tron", "cronos", "algorand"].includes(w.chain) ? (
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">
-                                No balances found. Try syncing this wallet.
-                              </p>
-                              <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-md p-2">
-                                <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                <span>
-                                  If your assets are staked through a platform like Ledger Earn or a nomination pool, they may have been moved to a pool address. On-chain tracking only sees balances at your address — staked assets held by pools won't appear here.
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              No balances found. Try syncing this wallet.
-                            </p>
-                          )}
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })}
+                          </CardContent>
+                        )}
+                      </Card>
+                    );
+                  });
+                })()}
               </div>
 
               {bySourceData.length > 0 && (

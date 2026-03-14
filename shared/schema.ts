@@ -250,7 +250,6 @@ export const wallets = pgTable("wallets", {
   chain: varchar("chain", { length: 20 }).notNull(),
   address: varchar("address", { length: 255 }).notNull(),
   label: varchar("label", { length: 100 }),
-  deviceType: varchar("device_type", { length: 30 }),
   lastSyncAt: timestamp("last_sync_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [

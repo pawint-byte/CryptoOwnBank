@@ -77,7 +77,7 @@ const allItems: NavItem[] = [
   { title: "Overview", url: "/", icon: LayoutDashboard, group: "tracker" },
   { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "tracker" },
   { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "tracker" },
-  { title: "Blockchain Addresses", url: "/wallets", icon: Wallet, group: "tracker" },
+  { title: "Wallets & Addresses", url: "/wallets", icon: Wallet, group: "tracker" },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "tracker" },
   { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "tracker" },
   { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "tracker" },
