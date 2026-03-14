@@ -189,13 +189,27 @@ interface TimelineTooltipProps {
   payload?: { payload: ScatterPoint }[];
 }
 
+function getFlowHint(senderLabel: string | null, receiverLabel: string | null): string | null {
+  const s = (senderLabel || "").toLowerCase();
+  const r = (receiverLabel || "").toLowerCase();
+  const exchanges = ["binance", "kraken", "coinbase", "bitstamp", "uphold", "bitfinex", "huobi", "okx", "bybit", "kucoin", "crypto.com"];
+  const sIsExchange = exchanges.some((e) => s.includes(e));
+  const rIsExchange = exchanges.some((e) => r.includes(e));
+  if (sIsExchange && !rIsExchange) return "Exchange → Wallet: may signal accumulation (withdrawal to cold storage)";
+  if (!sIsExchange && rIsExchange) return "Wallet → Exchange: may signal intent to sell or trade";
+  if (sIsExchange && rIsExchange) return "Exchange → Exchange: liquidity rebalancing between platforms";
+  if (s.includes("ripple") || s.includes("escrow")) return "Ripple/Escrow release: part of Ripple's scheduled monthly unlock";
+  return null;
+}
+
 function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
   const typeInfo = getTxTypeInfo(d.txType);
+  const flowHint = getFlowHint(d.senderLabel, d.receiverLabel);
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-xs space-y-1.5 z-50 max-w-[280px]">
+    <div className="bg-popover border rounded-lg shadow-lg p-3 text-xs space-y-1.5 z-50 max-w-[300px]">
       <p className="font-semibold text-foreground">{formatAmount(d.amount.toString(), d.currency)}</p>
       {d.usdValue && <p className="text-muted-foreground">{formatUsd(d.usdValue)} USD value</p>}
       {typeInfo.label && <p className="text-amber-600 dark:text-amber-400 font-medium">{typeInfo.label}</p>}
@@ -203,6 +217,9 @@ function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
       <div className="border-t pt-1.5 mt-1.5 text-muted-foreground">
         <p>{d.senderLabel || truncateAddress(d.senderAddress)} → {d.receiverLabel || truncateAddress(d.receiverAddress)}</p>
       </div>
+      {flowHint && (
+        <p className="text-[11px] text-muted-foreground italic">{flowHint}</p>
+      )}
     </div>
   );
 }
