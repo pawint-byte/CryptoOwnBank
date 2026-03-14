@@ -1391,6 +1391,84 @@ export default function Wallets() {
         </div>
       )}
 
+      {(() => {
+        const xrpWallets = userWallets.filter(w => w.chain === "xrp");
+        if (xrpWallets.length === 0) return null;
+        return (
+          <Card data-testid="xaman-connections-panel">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-[#00A4E4]" />
+                  <CardTitle className="text-base">Xaman Wallet Connections</CardTitle>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {xrpWallets.filter(w => isXamanLinked(w.address)).length}/{xrpWallets.length} linked
+                </Badge>
+              </div>
+              <CardDescription className="text-xs">
+                Link each XRP address to Xaman so the site can build transactions for your cold wallets. Switch to the matching account in Xaman before approving.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              {xrpWallets.map((w) => {
+                const linked = isXamanLinked(w.address);
+                return (
+                  <div key={w.id} className="flex items-center justify-between gap-3 p-2.5 rounded-lg border" data-testid={`xaman-row-${w.id}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                        style={{ backgroundColor: "#00A4E4" }}
+                      >
+                        XRP
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{w.label || "Unlabeled"}</span>
+                          {linked && (
+                            <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400">
+                              <Link2 className="h-3 w-3 mr-1" />
+                              Xaman Linked
+                            </Badge>
+                          )}
+                        </div>
+                        <code className="text-xs text-muted-foreground">
+                          {w.address.slice(0, 8)}...{w.address.slice(-6)}
+                        </code>
+                      </div>
+                    </div>
+                    {linked ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 border-[#00A4E4] text-[#00A4E4] hover:bg-[#00A4E4]/10"
+                        onClick={() => handleLinkXaman(w.address)}
+                        disabled={linkingAddress === w.address}
+                        data-testid={`button-link-xaman-panel-${w.id}`}
+                      >
+                        {linkingAddress === w.address ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                            Linking...
+                          </>
+                        ) : (
+                          <>
+                            <LinkIcon className="h-4 w-4 mr-1.5" />
+                            Link Xaman
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {userWallets.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
