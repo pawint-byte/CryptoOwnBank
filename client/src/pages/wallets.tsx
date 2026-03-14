@@ -828,7 +828,7 @@ export default function Wallets() {
       if (isMobile) {
         const payload = await createXummLinkPayload(expectedAddress);
         setMobileLinkPayload(payload);
-        const cancel = await pollXummLinkStatus(payload.uuid, (result) => {
+        const cancel = pollXummLinkStatus(payload.uuid, (result) => {
           handleLinkResolved(result, expectedAddress);
         });
         cancelPollRef.current = cancel;

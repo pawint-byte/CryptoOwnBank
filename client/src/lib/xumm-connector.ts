@@ -181,41 +181,60 @@ export async function createXummLinkPayload(expectedAddress: string): Promise<Xu
   };
 }
 
-export async function pollXummLinkStatus(
+export function pollXummLinkStatus(
   uuid: string,
   onResolved: (result: XummSignResult) => void,
-  onPoll?: () => void,
-): Promise<() => void> {
+): () => void {
   let cancelled = false;
+  let resolved = false;
+  const startTime = Date.now();
+  const TIMEOUT_MS = 3 * 60 * 1000;
 
-  const poll = async () => {
-    const maxAttempts = 90;
-    for (let i = 0; i < maxAttempts && !cancelled; i++) {
-      try {
-        onPoll?.();
-        const status = await checkXummStatus(uuid);
-        if (status.resolved) {
-          if (status.signed && status.account) {
-            onResolved({ success: true, address: status.account });
-          } else {
-            onResolved({ success: false, error: "Sign-in was declined" });
-          }
-          return;
+  const doCheck = async () => {
+    if (cancelled || resolved) return;
+    if (Date.now() - startTime > TIMEOUT_MS) {
+      resolved = true;
+      onResolved({ success: false, error: "Sign-in timed out. Please try again." });
+      cleanup();
+      return;
+    }
+    try {
+      const status = await checkXummStatus(uuid);
+      if (status.resolved) {
+        resolved = true;
+        if (status.signed && status.account) {
+          onResolved({ success: true, address: status.account });
+        } else {
+          onResolved({ success: false, error: "Sign-in was declined" });
         }
-      } catch {
-        onResolved({ success: false, error: "Failed to check sign-in status" });
+        cleanup();
         return;
       }
-      await new Promise(r => setTimeout(r, 2000));
-    }
-    if (!cancelled) {
-      onResolved({ success: false, error: "Sign-in timed out. Please try again." });
+    } catch {
+      // don't give up on transient errors, keep polling
     }
   };
 
-  poll();
+  const intervalId = setInterval(doCheck, 2500);
 
-  return () => { cancelled = true; };
+  doCheck();
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState === "visible" && !cancelled && !resolved) {
+      doCheck();
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibilityChange);
+
+  const cleanup = () => {
+    clearInterval(intervalId);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+  };
+
+  return () => {
+    cancelled = true;
+    cleanup();
+  };
 }
 
 export async function connectXummForLinkDesktop(expectedAddress: string): Promise<XummSignResult> {
