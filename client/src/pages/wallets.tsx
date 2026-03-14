@@ -89,7 +89,7 @@ import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { Smartphone, Link2, LinkIcon, Loader2 } from "lucide-react";
-import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn } from "@/lib/xumm-connector";
+import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
@@ -822,16 +822,29 @@ export default function Wallets() {
     }
   };
 
+  const startPollingForLink = (uuid: string, expectedAddress: string) => {
+    if (cancelPollRef.current) {
+      cancelPollRef.current();
+    }
+    const cancel = pollXummLinkStatus(uuid, (result) => {
+      clearPendingXummLink();
+      handleLinkResolved(result, expectedAddress);
+    });
+    cancelPollRef.current = cancel;
+  };
+
   const handleLinkXaman = async (expectedAddress: string) => {
     setLinkingAddress(expectedAddress);
     try {
       if (isMobile) {
         const payload = await createXummLinkPayload(expectedAddress);
         setMobileLinkPayload(payload);
-        const cancel = pollXummLinkStatus(payload.uuid, (result) => {
-          handleLinkResolved(result, expectedAddress);
-        });
-        cancelPollRef.current = cancel;
+        localStorage.setItem("xumm_pending_link", JSON.stringify({
+          uuid: payload.uuid,
+          expectedAddress,
+          timestamp: Date.now(),
+        }));
+        startPollingForLink(payload.uuid, expectedAddress);
       } else {
         const result = await connectXummForLinkDesktop(expectedAddress);
         await handleLinkResolved(result, expectedAddress);
@@ -848,12 +861,25 @@ export default function Wallets() {
       cancelPollRef.current();
       cancelPollRef.current = null;
     }
+    clearPendingXummLink();
     setLinkingAddress(null);
     setMobileLinkPayload(null);
   };
 
   useEffect(() => {
-    if (hasPendingXummSignIn()) {
+    if (hasPendingXummLink()) {
+      const pending = getPendingXummLink();
+      if (pending) {
+        setLinkingAddress(pending.expectedAddress);
+        setMobileLinkPayload({
+          uuid: pending.uuid,
+          expectedAddress: pending.expectedAddress,
+          qrUrl: "",
+          deepLink: `https://xumm.app/sign/${pending.uuid}`,
+        });
+        startPollingForLink(pending.uuid, pending.expectedAddress);
+      }
+    } else if (hasPendingXummSignIn()) {
       completePendingXummSignIn().then(async (result) => {
         if (result.success && result.address) {
           await saveLinkResult(result.address);
