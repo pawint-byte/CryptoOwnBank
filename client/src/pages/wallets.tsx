@@ -88,7 +88,8 @@ import {
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { Smartphone, Link2 } from "lucide-react";
+import { Smartphone, Link2, LinkIcon, Loader2 } from "lucide-react";
+import { connectXumm, completePendingXummSignIn, hasPendingXummSignIn } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
 interface SubscriptionLimits {
@@ -775,10 +776,73 @@ export default function Wallets() {
 
   const connectedXrplAddress = xrplStore.walletAddress || xrplWalletData?.walletAddress || null;
 
+  const [linkingAddress, setLinkingAddress] = useState<string | null>(null);
+
   const isXamanLinked = (address: string) => {
     if (connectedXrplAddress && address.toLowerCase() === connectedXrplAddress.toLowerCase()) return true;
     return xamanConnections.some(c => c.xrpAddress.toLowerCase() === address.toLowerCase());
   };
+
+  const handleLinkXaman = async (expectedAddress: string) => {
+    setLinkingAddress(expectedAddress);
+    try {
+      const result = await connectXumm();
+      if (result.success && result.address) {
+        if (result.address.toLowerCase() !== expectedAddress.toLowerCase()) {
+          toast({
+            title: "Wrong account",
+            description: `Xaman returned ${result.address.slice(0, 8)}... but we expected ${expectedAddress.slice(0, 8)}... — switch to the correct account in Xaman and try again.`,
+            variant: "destructive",
+          });
+          setLinkingAddress(null);
+          return;
+        }
+        await apiRequest("POST", "/api/xaman-connections", {
+          xrpAddress: result.address,
+        });
+        await apiRequest("POST", "/api/wallet", {
+          walletAddress: result.address,
+          walletType: "xumm",
+        });
+        xrplStore.connect(result.address, "xumm");
+        await refetchXamanConnections();
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+        toast({
+          title: "Xaman linked!",
+          description: `${result.address.slice(0, 8)}...${result.address.slice(-6)} is now connected via Xaman.`,
+        });
+      } else if (result.error) {
+        toast({ title: "Connection failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to connect Xaman", variant: "destructive" });
+    } finally {
+      setLinkingAddress(null);
+    }
+  };
+
+  useEffect(() => {
+    if (hasPendingXummSignIn()) {
+      completePendingXummSignIn().then(async (result) => {
+        if (result.success && result.address) {
+          await apiRequest("POST", "/api/xaman-connections", {
+            xrpAddress: result.address,
+          });
+          await apiRequest("POST", "/api/wallet", {
+            walletAddress: result.address,
+            walletType: "xumm",
+          });
+          xrplStore.connect(result.address, "xumm");
+          await refetchXamanConnections();
+          queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+          toast({
+            title: "Xaman linked!",
+            description: `${result.address.slice(0, 8)}...${result.address.slice(-6)} is now connected via Xaman.`,
+          });
+        }
+      });
+    }
+  }, []);
 
   const toggleGroup = (groupKey: string) => {
     setCollapsedGroups((prev) => ({ ...(prev || {}), [groupKey]: !(prev?.[groupKey] ?? true) }));
@@ -1427,7 +1491,8 @@ export default function Wallets() {
                           <CardContent className="pt-0 space-y-3">
                             {groupWallets.map((w) => {
                               const totalVal = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
-                              const isXamanConnected = w.chain === "xrp" && connectedXrplAddress && w.address.toLowerCase() === connectedXrplAddress.toLowerCase();
+                              const xamanLinked = w.chain === "xrp" && isXamanLinked(w.address);
+                              const isXrpAddress = w.chain === "xrp";
                               return (
                                 <div key={w.id} className="rounded-lg border p-3" data-testid={`wallet-card-${w.id}`}>
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1439,13 +1504,30 @@ export default function Wallets() {
                                         {CHAIN_LABELS[w.chain] || "?"}
                                       </div>
                                       <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                           <span className="font-medium text-sm">{CHAIN_LABELS[w.chain] || w.chain}</span>
-                                          {isXamanConnected && (
+                                          {xamanLinked && (
                                             <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400" data-testid={`badge-xaman-connected-${w.id}`}>
                                               <Link2 className="h-3 w-3 mr-1" />
-                                              Connected
+                                              Xaman Linked
                                             </Badge>
+                                          )}
+                                          {isXrpAddress && !xamanLinked && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-5 text-[10px] px-2 border-[#00A4E4] text-[#00A4E4] hover:bg-[#00A4E4]/10"
+                                              onClick={() => handleLinkXaman(w.address)}
+                                              disabled={linkingAddress === w.address}
+                                              data-testid={`button-link-xaman-${w.id}`}
+                                            >
+                                              {linkingAddress === w.address ? (
+                                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                              ) : (
+                                                <LinkIcon className="h-3 w-3 mr-1" />
+                                              )}
+                                              Link Xaman
+                                            </Button>
                                           )}
                                         </div>
                                         <div className="flex items-center gap-2 mt-0.5">
