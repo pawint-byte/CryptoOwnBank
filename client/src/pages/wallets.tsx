@@ -761,12 +761,18 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
 export default function Wallets() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean> | null>(null);
   const { toast } = useToast();
   const xrplStore = useXrplStore();
 
+  const { data: xrplWalletData } = useQuery<{ walletAddress: string; walletType: string }>({
+    queryKey: ["/api/wallet"],
+  });
+
+  const connectedXrplAddress = xrplStore.walletAddress || xrplWalletData?.walletAddress || null;
+
   const toggleGroup = (groupKey: string) => {
-    setCollapsedGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+    setCollapsedGroups((prev) => ({ ...(prev || {}), [groupKey]: !(prev?.[groupKey] ?? true) }));
   };
 
   const { data: userWallets = [], isLoading } = useQuery<WalletWithBalances[]>({
@@ -1368,9 +1374,9 @@ export default function Wallets() {
                       (s, w) => s + w.balances.reduce((bs, b) => bs + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0),
                       0
                     );
-                    const isCollapsed = collapsedGroups[groupName] ?? false;
+                    const isCollapsed = collapsedGroups?.[groupName] ?? true;
                     const hasXamanSigning = groupWallets.some(
-                      (w) => w.chain === "xrp" && xrplStore.walletAddress && w.address.toLowerCase() === xrplStore.walletAddress.toLowerCase()
+                      (w) => w.chain === "xrp" && connectedXrplAddress && w.address.toLowerCase() === connectedXrplAddress.toLowerCase()
                     );
                     return (
                       <Card key={groupName} data-testid={`wallet-group-${groupName.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -1412,7 +1418,7 @@ export default function Wallets() {
                           <CardContent className="pt-0 space-y-3">
                             {groupWallets.map((w) => {
                               const totalVal = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
-                              const isXamanConnected = w.chain === "xrp" && xrplStore.walletAddress && w.address.toLowerCase() === xrplStore.walletAddress.toLowerCase();
+                              const isXamanConnected = w.chain === "xrp" && connectedXrplAddress && w.address.toLowerCase() === connectedXrplAddress.toLowerCase();
                               return (
                                 <div key={w.id} className="rounded-lg border p-3" data-testid={`wallet-card-${w.id}`}>
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
