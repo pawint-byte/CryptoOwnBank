@@ -89,7 +89,7 @@ import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { Smartphone, Link2, LinkIcon, Loader2 } from "lucide-react";
-import { connectXumm, completePendingXummSignIn, hasPendingXummSignIn } from "@/lib/xumm-connector";
+import { connectXumm, connectXummForLink, completePendingXummLink, hasPendingXummLink, getPendingXummLink, clearPendingXummLink, completePendingXummSignIn, hasPendingXummSignIn } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
 interface SubscriptionLimits {
@@ -783,10 +783,22 @@ export default function Wallets() {
     return xamanConnections.some(c => c.xrpAddress.toLowerCase() === address.toLowerCase());
   };
 
+  const saveLinkResult = async (address: string) => {
+    await apiRequest("POST", "/api/xaman-connections", { xrpAddress: address });
+    await apiRequest("POST", "/api/wallet", { walletAddress: address, walletType: "xumm" });
+    xrplStore.connect(address, "xumm");
+    await refetchXamanConnections();
+    queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+    toast({
+      title: "Xaman linked!",
+      description: `${address.slice(0, 8)}...${address.slice(-6)} is now connected via Xaman.`,
+    });
+  };
+
   const handleLinkXaman = async (expectedAddress: string) => {
     setLinkingAddress(expectedAddress);
     try {
-      const result = await connectXumm();
+      const result = await connectXummForLink(expectedAddress);
       if (result.success && result.address) {
         if (result.address.toLowerCase() !== expectedAddress.toLowerCase()) {
           toast({
@@ -797,20 +809,7 @@ export default function Wallets() {
           setLinkingAddress(null);
           return;
         }
-        await apiRequest("POST", "/api/xaman-connections", {
-          xrpAddress: result.address,
-        });
-        await apiRequest("POST", "/api/wallet", {
-          walletAddress: result.address,
-          walletType: "xumm",
-        });
-        xrplStore.connect(result.address, "xumm");
-        await refetchXamanConnections();
-        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-        toast({
-          title: "Xaman linked!",
-          description: `${result.address.slice(0, 8)}...${result.address.slice(-6)} is now connected via Xaman.`,
-        });
+        await saveLinkResult(result.address);
       } else if (result.error) {
         toast({ title: "Connection failed", description: result.error, variant: "destructive" });
       }
@@ -822,23 +821,34 @@ export default function Wallets() {
   };
 
   useEffect(() => {
-    if (hasPendingXummSignIn()) {
+    if (hasPendingXummLink()) {
+      const pending = getPendingXummLink();
+      if (pending) {
+        setLinkingAddress(pending.expectedAddress);
+        completePendingXummLink().then(async (result) => {
+          if (result.success && result.address) {
+            if (result.expectedAddress && result.address.toLowerCase() !== result.expectedAddress.toLowerCase()) {
+              toast({
+                title: "Wrong account",
+                description: `Xaman returned ${result.address.slice(0, 8)}... but we expected ${result.expectedAddress.slice(0, 8)}... — switch to the correct account in Xaman and try again.`,
+                variant: "destructive",
+              });
+            } else {
+              await saveLinkResult(result.address);
+            }
+          } else if (result.error) {
+            toast({ title: "Link failed", description: result.error, variant: "destructive" });
+          }
+          setLinkingAddress(null);
+        }).catch(() => {
+          clearPendingXummLink();
+          setLinkingAddress(null);
+        });
+      }
+    } else if (hasPendingXummSignIn()) {
       completePendingXummSignIn().then(async (result) => {
         if (result.success && result.address) {
-          await apiRequest("POST", "/api/xaman-connections", {
-            xrpAddress: result.address,
-          });
-          await apiRequest("POST", "/api/wallet", {
-            walletAddress: result.address,
-            walletType: "xumm",
-          });
-          xrplStore.connect(result.address, "xumm");
-          await refetchXamanConnections();
-          queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-          toast({
-            title: "Xaman linked!",
-            description: `${result.address.slice(0, 8)}...${result.address.slice(-6)} is now connected via Xaman.`,
-          });
+          await saveLinkResult(result.address);
         }
       });
     }

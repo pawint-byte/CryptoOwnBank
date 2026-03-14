@@ -15,6 +15,7 @@ export interface XummSignInPayload {
 
 const XUMM_PENDING_KEY = "xumm_pending_signin";
 const XUMM_PENDING_PAYMENT_KEY = "xumm_pending_payment";
+const XUMM_PENDING_LINK_KEY = "xumm_pending_link";
 
 export function hasPendingXummPayment(): boolean {
   return !!sessionStorage.getItem(XUMM_PENDING_PAYMENT_KEY);
@@ -96,6 +97,146 @@ export async function completePendingXummSignIn(): Promise<XummSignResult> {
 
   sessionStorage.removeItem(XUMM_PENDING_KEY);
   return { success: false, error: "Sign-in timed out. Please try again." };
+}
+
+export interface PendingLink {
+  uuid: string;
+  expectedAddress: string;
+  timestamp: number;
+}
+
+export function hasPendingXummLink(): boolean {
+  const raw = localStorage.getItem(XUMM_PENDING_LINK_KEY);
+  if (!raw) return false;
+  try {
+    const data: PendingLink = JSON.parse(raw);
+    if (Date.now() - data.timestamp > 5 * 60 * 1000) {
+      localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+    return false;
+  }
+}
+
+export function getPendingXummLink(): PendingLink | null {
+  const raw = localStorage.getItem(XUMM_PENDING_LINK_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+    return null;
+  }
+}
+
+export function clearPendingXummLink(): void {
+  localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+}
+
+export async function completePendingXummLink(): Promise<XummSignResult & { expectedAddress?: string }> {
+  const pending = getPendingXummLink();
+  if (!pending) {
+    return { success: false, error: "No pending link" };
+  }
+
+  const maxAttempts = 30;
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const status = await checkXummStatus(pending.uuid);
+      if (status.resolved) {
+        localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+        if (status.signed && status.account) {
+          return { success: true, address: status.account, expectedAddress: pending.expectedAddress };
+        }
+        return { success: false, error: "Sign-in was declined" };
+      }
+    } catch {
+      localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+      return { success: false, error: "Failed to check sign-in status" };
+    }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
+  localStorage.removeItem(XUMM_PENDING_LINK_KEY);
+  return { success: false, error: "Sign-in timed out. Please try again." };
+}
+
+export async function connectXummForLink(expectedAddress: string): Promise<XummSignResult> {
+  try {
+    const payload = await createXummSignIn();
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      localStorage.setItem(XUMM_PENDING_LINK_KEY, JSON.stringify({
+        uuid: payload.uuid,
+        expectedAddress,
+        timestamp: Date.now(),
+      }));
+      window.location.href = payload.deepLink;
+      return new Promise(() => {});
+    }
+
+    return new Promise((resolve) => {
+      const popup = window.open("", "XummLinkIn", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
+      if (popup) {
+        popup.document.write(`
+          <!DOCTYPE html>
+          <html><head><title>Link with Xaman</title>
+          <style>
+            body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
+            img { width:280px; height:280px; border-radius:12px; margin-bottom:16px; }
+            h3 { margin:0 0 8px; font-size:18px; }
+            p { margin:0; font-size:14px; color:#999; }
+          </style></head><body>
+            <h3>Link with Xaman</h3>
+            <img src="${payload.qrUrl}" alt="QR Code" />
+            <p>Open Xaman → switch to the matching account → scan</p>
+          </body></html>
+        `);
+      }
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await checkXummStatus(payload.uuid);
+          if (status.resolved) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            if (status.signed && status.account) {
+              resolve({ success: true, address: status.account });
+            } else {
+              resolve({ success: false, error: "Sign-in was declined" });
+            }
+          }
+        } catch {
+          clearInterval(pollInterval);
+          if (popup && !popup.closed) popup.close();
+          resolve({ success: false, error: "Failed to check sign-in status" });
+        }
+      }, 2000);
+
+      if (popup) {
+        const popupCheck = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(popupCheck);
+            setTimeout(() => {
+              clearInterval(pollInterval);
+            }, 5000);
+          }
+        }, 1000);
+      }
+
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (popup && !popup.closed) popup.close();
+        resolve({ success: false, error: "Sign-in timed out. Please try again." });
+      }, 120000);
+    });
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to connect Xumm" };
+  }
 }
 
 export async function connectXumm(): Promise<XummSignResult> {
