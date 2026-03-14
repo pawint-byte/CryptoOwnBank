@@ -458,6 +458,8 @@ export default function TechnicalAnalysis() {
         </Card>
       )}
 
+      <CandlestickExplainer />
+
       <Card data-testid="card-ta-chart">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -713,6 +715,127 @@ export default function TechnicalAnalysis() {
 
       <ChartPatternsGuide />
     </div>
+  );
+}
+
+function CandlestickExplainer() {
+  const [show, setShow] = useState(false);
+
+  return (
+    <Card className="border-[#00A4E4]/20" data-testid="card-candlestick-explainer">
+      <CardContent className="p-0">
+        <button
+          onClick={() => setShow(!show)}
+          className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left"
+          data-testid="button-toggle-explainer"
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-[#00A4E4]" />
+            <span className="text-sm font-medium">How to Read This Chart</span>
+            <Badge variant="outline" className="text-[10px]">New to charts?</Badge>
+          </div>
+          {show ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+
+        {show && (
+          <div className="px-4 pb-4 space-y-4 border-t pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Anatomy of a Candlestick</h4>
+                <div className="flex gap-6 justify-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-muted-foreground">High</span>
+                      <div className="w-[2px] h-6 bg-emerald-500" />
+                      <div className="w-8 h-12 bg-emerald-500 rounded-sm flex flex-col items-center justify-between py-1">
+                        <span className="text-[8px] text-white font-medium">Close</span>
+                        <span className="text-[8px] text-white font-medium">Open</span>
+                      </div>
+                      <div className="w-[2px] h-4 bg-emerald-500" />
+                      <span className="text-[10px] text-muted-foreground">Low</span>
+                    </div>
+                    <span className="text-[11px] font-medium text-emerald-500">Bullish</span>
+                    <span className="text-[10px] text-muted-foreground">Price went UP</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-muted-foreground">High</span>
+                      <div className="w-[2px] h-4 bg-red-500" />
+                      <div className="w-8 h-12 bg-red-500 rounded-sm flex flex-col items-center justify-between py-1">
+                        <span className="text-[8px] text-white font-medium">Open</span>
+                        <span className="text-[8px] text-white font-medium">Close</span>
+                      </div>
+                      <div className="w-[2px] h-6 bg-red-500" />
+                      <span className="text-[10px] text-muted-foreground">Low</span>
+                    </div>
+                    <span className="text-[11px] font-medium text-red-500">Bearish</span>
+                    <span className="text-[10px] text-muted-foreground">Price went DOWN</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">What Each Part Means</h4>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex gap-2">
+                    <div className="w-8 h-4 bg-emerald-500/20 border border-emerald-500 rounded-sm shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium">Body (thick part)</span>
+                      <p className="text-muted-foreground">Shows the range between open and close price. Green = closed higher than it opened. Red = closed lower.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex flex-col items-center shrink-0 mt-0.5">
+                      <div className="w-[2px] h-4 bg-muted-foreground" />
+                    </div>
+                    <div>
+                      <span className="font-medium">Wicks / Shadows (thin lines)</span>
+                      <p className="text-muted-foreground">Upper wick = highest price reached. Lower wick = lowest price reached. Long wicks mean the price was rejected at that level.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-8 h-4 shrink-0 mt-0.5 flex items-center justify-center">
+                      <div className="w-6 h-[2px] bg-muted-foreground" />
+                    </div>
+                    <div>
+                      <span className="font-medium">Doji (tiny body)</span>
+                      <p className="text-muted-foreground">Open and close are almost the same. The market is undecided — could go either way. Wait for the next candle to confirm direction.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs font-medium mb-1.5">Quick Decision Framework</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-500 font-bold text-sm leading-none mt-0.5">+</span>
+                  <div>
+                    <span className="font-medium">Bullish signs:</span>
+                    <p className="text-muted-foreground">Long green candles, candles closing near highs, higher lows forming</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-red-500 font-bold text-sm leading-none mt-0.5">-</span>
+                  <div>
+                    <span className="font-medium">Bearish signs:</span>
+                    <p className="text-muted-foreground">Long red candles, candles closing near lows, lower highs forming</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-500 font-bold text-sm leading-none mt-0.5">?</span>
+                  <div>
+                    <span className="font-medium">Caution signs:</span>
+                    <p className="text-muted-foreground">Long wicks (rejection), dojis (indecision), shrinking candle bodies (momentum fading)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
