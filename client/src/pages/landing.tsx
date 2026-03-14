@@ -275,7 +275,7 @@ const features = [
     icon: CandlestickChart,
     title: "Technical Analysis",
     description:
-      "Interactive candlestick charts with SMA, EMA, RSI, MACD, and Bollinger Bands for 21 crypto assets. Zoom and pan across timeframes. Free tier includes SMA indicators with up to 30 days of data; Premium and Pro unlock all indicators with up to 1 year of history.",
+      "Interactive candlestick charts with live pattern detection — the chart identifies Doji, Hammer, Engulfing, Morning Star, and 10+ more patterns as you hover, explaining what each means in plain English. Includes SMA, EMA, RSI, MACD, and Bollinger Bands for 21 crypto assets. Free tier includes SMA indicators with up to 30 days of data; Premium and Pro unlock all indicators with up to 10 years of history.",
     link: "/technical-analysis",
     linkLabel: "Open Charts",
   },
@@ -421,7 +421,7 @@ const premiumFeatures = [
   "Portfolio search, filter & sort",
   "Statement Insights with rate comparisons",
   "Whale Alerts — extended history + custom thresholds",
-  "Technical Analysis — all indicators + 1-year charts",
+  "Technical Analysis — all indicators, pattern detection + 10-year charts",
 ];
 
 const annualBonusFeatures = [

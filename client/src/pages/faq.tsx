@@ -252,7 +252,7 @@ const faqGroups = [
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit — unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, auto-withdrawal from Soil vaults, extended Whale Alerts history with customizable thresholds, and Technical Analysis with all indicators (EMA, RSI, MACD, Bollinger Bands) plus up to 10 years of candlestick data. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
+        a: "Premium unlocks the full cockpit — unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, auto-withdrawal from Soil vaults, extended Whale Alerts history with customizable thresholds, and Technical Analysis with all indicators (EMA, RSI, MACD, Bollinger Bands), live candlestick pattern detection, and up to 10 years of chart data. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -284,7 +284,7 @@ const faqGroups = [
       },
       {
         q: "How do Price Alerts work?",
-        a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users can have up to 3 active alerts; Premium users get unlimited alerts.",
+        a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users can have 1 active alert; Premium users get unlimited alerts.",
       },
       {
         q: "What is the Yield Calculator?",
@@ -408,6 +408,10 @@ const faqGroups = [
       {
         q: "What technical analysis indicators are available?",
         a: "Free users get Simple Moving Average (SMA) at 20, 50, and 200 periods with up to 30 days of data. Premium and Pro users unlock all indicators: Exponential Moving Average (EMA 12/26), Relative Strength Index (RSI, 14-period), MACD (12/26/9 with signal line and histogram), and Bollinger Bands (20-period, 2 standard deviations) — with up to 10 years of candlestick data (1D, 1W, 1M, 3M, 1Y, 3Y, 5Y, and 10Y timeframes). Charts support interactive zoom and pan across 21 supported crypto assets including BTC, ETH, XRP, SOL, XLM, ADA, and more.",
+      },
+      {
+        q: "Does the chart tell me what the candlestick patterns mean?",
+        a: "Yes — the chart has live pattern detection built in. When you hover over any candle, the tooltip automatically identifies if it matches a known pattern (Doji, Hammer, Shooting Star, Bullish/Bearish Engulfing, Morning Star, Evening Star, Marubozu, Piercing Line, Dark Cloud Cover, Three White Soldiers, Three Black Crows, and more). Each pattern shows a colored badge (green for bullish, red for bearish, yellow for neutral) and a plain-English explanation of what it means — like 'Buyers pushed price back up' or '3-candle reversal — uptrend may be ending.' Small diamond markers also appear on the chart where patterns are detected, so you can spot signals at a glance. There's also a collapsible 'How to Read This Chart' section right above the chart that teaches you the anatomy of candlesticks — what the body, wicks, and shapes mean — plus a full Chart Patterns & Indicators Guide below with deeper education on single, double, and triple candle patterns, reversal/continuation chart formations, and indicator explanations.",
       },
       {
         q: "What's the difference between a limit order and a market order?",
