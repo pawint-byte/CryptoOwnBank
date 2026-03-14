@@ -67,6 +67,7 @@ import PaymentQueue from "@/pages/payment-queue";
 import WhaleAlerts from "@/pages/whale-alerts";
 import TechnicalAnalysis from "@/pages/technical-analysis";
 import AdminErrorMonitor from "@/pages/admin-error-monitor";
+import XLS66Lending from "@/pages/xls66-lending";
 import { OfflineBanner } from "@/components/offline-banner";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -151,6 +152,7 @@ function AuthenticatedRoutes() {
         <Route path="/quick-start" component={QuickStart} />
         <Route path="/insurance" component={Insurance} />
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
+        <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/admin/users" component={AdminUsers} />

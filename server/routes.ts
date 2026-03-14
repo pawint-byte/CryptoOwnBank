@@ -3393,7 +3393,7 @@ export async function registerRoutes(
       if (Memos) txJson.Memos = Memos;
       if (DestinationTag !== undefined) txJson.DestinationTag = DestinationTag;
       if (SourceTag !== undefined) txJson.SourceTag = SourceTag;
-      const allowedExtra = ["Fee", "Sequence", "AccountTxnID", "LastLedgerSequence", "NFTokenID", "NFTokenOffers", "Condition", "Fulfillment", "CancelAfter", "FinishAfter", "Owner", "Expiration"];
+      const allowedExtra = ["Fee", "Sequence", "AccountTxnID", "LastLedgerSequence", "NFTokenID", "NFTokenOffers", "Condition", "Fulfillment", "CancelAfter", "FinishAfter", "Owner", "Expiration", "VaultID", "Asset", "MPTokenIssuanceID", "SharesIn", "SharesOut", "AssetMaximum", "Data", "LoanAmount", "CollateralAmount", "InterestRate", "LoanTerm", "LoanID"];
       for (const key of allowedExtra) {
         if (extraFields[key] !== undefined) txJson[key] = extraFields[key];
       }
@@ -3410,6 +3410,325 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Xumm payload error:", error?.message);
       res.status(500).json({ message: error.message || "Failed to create payload" });
+    }
+  });
+
+  // ===== XLS-66 Native Lending & Single Asset Vaults =====
+  const XLS66_LIVE = process.env.XLS66_LIVE === "true";
+
+  app.get("/api/xls66/status", isAuthenticated, async (_req: any, res) => {
+    try {
+      res.json({
+        amendmentActive: XLS66_LIVE,
+        featureEnabled: XLS66_LIVE,
+        estimatedActivation: "Q2 2026",
+        rippled_minimum: "3.1.0",
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check XLS-66 status" });
+    }
+  });
+
+  app.get("/api/xls66/vaults", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      const vaults = await storage.getXls66Vaults("active");
+      res.json({ vaults, amendmentActive: XLS66_LIVE });
+    } catch (error) {
+      console.error("XLS-66 vaults error:", error);
+      res.status(500).json({ message: "Failed to fetch vaults" });
+    }
+  });
+
+  app.get("/api/xls66/positions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      const positions = await storage.getXls66PositionsByUser(userId);
+      res.json({ positions });
+    } catch (error) {
+      console.error("XLS-66 positions error:", error);
+      res.status(500).json({ message: "Failed to fetch positions" });
+    }
+  });
+
+  app.post("/api/xls66/positions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      if (!XLS66_LIVE) {
+        return res.status(400).json({ message: "XLS-66 amendment is not yet active on XRPL" });
+      }
+      const { vaultId, walletAddress, depositAmount, depositTxHash, sharesHeld } = req.body;
+      if (!vaultId || !walletAddress || !depositAmount) {
+        return res.status(400).json({ message: "vaultId, walletAddress, and depositAmount are required" });
+      }
+      const position = await storage.createXls66Position({
+        userId,
+        vaultId,
+        walletAddress,
+        depositAmount,
+        sharesHeld: sharesHeld || "0",
+        depositTxHash: depositTxHash || null,
+        status: "active",
+      });
+      res.json({ position });
+    } catch (error) {
+      console.error("XLS-66 create position error:", error);
+      res.status(500).json({ message: "Failed to create position" });
+    }
+  });
+
+  app.patch("/api/xls66/positions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const position = await storage.getXls66Position(req.params.id);
+      if (!position || position.userId !== userId) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      const updated = await storage.updateXls66Position(req.params.id, req.body);
+      res.json({ position: updated });
+    } catch (error) {
+      console.error("XLS-66 update position error:", error);
+      res.status(500).json({ message: "Failed to update position" });
+    }
+  });
+
+  app.post("/api/xls66/positions/:id/auto-reinvest", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const position = await storage.getXls66Position(req.params.id);
+      if (!position || position.userId !== userId) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      const updated = await storage.updateXls66Position(req.params.id, {
+        autoReinvest: req.body.enabled === true,
+      });
+      res.json({ position: updated });
+    } catch (error) {
+      console.error("XLS-66 auto-reinvest error:", error);
+      res.status(500).json({ message: "Failed to toggle auto-reinvest" });
+    }
+  });
+
+  app.get("/api/xls66/loans", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      const loans = await storage.getXls66LoanOffersByUser(userId);
+      res.json({ loans, amendmentActive: XLS66_LIVE });
+    } catch (error) {
+      console.error("XLS-66 loans error:", error);
+      res.status(500).json({ message: "Failed to fetch loans" });
+    }
+  });
+
+  app.post("/api/xls66/loans", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      if (!XLS66_LIVE) {
+        return res.status(400).json({ message: "XLS-66 amendment is not yet active on XRPL" });
+      }
+      const { walletAddress, loanType, collateralAsset, collateralAmount, borrowAsset, borrowAmount, interestRateBps, termDays, ltvRatio, liquidationThreshold, onLedgerTxHash } = req.body;
+      if (!walletAddress || !loanType || !collateralAsset || !collateralAmount || !borrowAsset || !borrowAmount || !interestRateBps || !termDays) {
+        return res.status(400).json({ message: "Missing required loan fields" });
+      }
+      const loan = await storage.createXls66LoanOffer({
+        userId,
+        walletAddress,
+        loanType,
+        collateralAsset,
+        collateralAmount,
+        borrowAsset,
+        borrowAmount,
+        interestRateBps,
+        termDays,
+        ltvRatio: ltvRatio || null,
+        liquidationThreshold: liquidationThreshold || null,
+        onLedgerTxHash: onLedgerTxHash || null,
+        status: "active",
+      });
+      res.json({ loan });
+    } catch (error) {
+      console.error("XLS-66 create loan error:", error);
+      res.status(500).json({ message: "Failed to create loan" });
+    }
+  });
+
+  app.post("/api/xls66/calculate-yield", isAuthenticated, async (req: any, res) => {
+    try {
+      const { amount, aprBps, days, compounding } = req.body;
+      if (!amount || !aprBps || !days) {
+        return res.status(400).json({ message: "amount, aprBps, and days are required" });
+      }
+      const principal = parseFloat(amount);
+      const apr = aprBps / 10000;
+      const daysNum = parseInt(days);
+      let finalAmount: number;
+      let yieldEarned: number;
+      if (compounding === "daily") {
+        const dailyRate = apr / 365;
+        finalAmount = principal * Math.pow(1 + dailyRate, daysNum);
+      } else if (compounding === "weekly") {
+        const weeklyRate = apr / 52;
+        const weeks = daysNum / 7;
+        finalAmount = principal * Math.pow(1 + weeklyRate, weeks);
+      } else if (compounding === "monthly") {
+        const monthlyRate = apr / 12;
+        const months = daysNum / 30;
+        finalAmount = principal * Math.pow(1 + monthlyRate, months);
+      } else {
+        finalAmount = principal * (1 + apr * (daysNum / 365));
+      }
+      yieldEarned = finalAmount - principal;
+      const effectiveApy = compounding && compounding !== "none"
+        ? (Math.pow(1 + apr / (compounding === "daily" ? 365 : compounding === "weekly" ? 52 : 12), compounding === "daily" ? 365 : compounding === "weekly" ? 52 : 12) - 1) * 100
+        : apr * 100;
+      res.json({
+        principal,
+        finalAmount: parseFloat(finalAmount.toFixed(6)),
+        yieldEarned: parseFloat(yieldEarned.toFixed(6)),
+        apr: apr * 100,
+        effectiveApy: parseFloat(effectiveApy.toFixed(4)),
+        days: daysNum,
+        compounding: compounding || "none",
+      });
+    } catch (error) {
+      console.error("Yield calculator error:", error);
+      res.status(500).json({ message: "Failed to calculate yield" });
+    }
+  });
+
+  app.post("/api/xls66/trustline", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!xummSdk) {
+        return res.status(500).json({ message: "Xumm SDK not configured" });
+      }
+      const { currency, issuer, limit } = req.body;
+      if (!currency || !issuer) {
+        return res.status(400).json({ message: "currency and issuer are required" });
+      }
+      const payload = await xummSdk.payload.create({
+        txjson: {
+          TransactionType: "TrustSet",
+          LimitAmount: {
+            currency,
+            issuer,
+            value: limit || "1000000000",
+          },
+        },
+      } as any, true);
+      if (!payload) {
+        return res.status(500).json({ message: "Failed to create trustline payload" });
+      }
+      res.json({
+        uuid: payload.uuid,
+        qrUrl: payload.refs.qr_png,
+        deepLink: payload.next.always,
+      });
+    } catch (error: any) {
+      console.error("XLS-66 trustline error:", error?.message);
+      res.status(500).json({ message: error.message || "Failed to create trustline" });
+    }
+  });
+
+  app.post("/api/xls66/vault-deposit", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!xummSdk) {
+        return res.status(500).json({ message: "Xumm SDK not configured" });
+      }
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      if (!XLS66_LIVE) {
+        return res.status(400).json({ message: "XLS-66 amendment is not yet active. Deposits will be enabled once the amendment activates on XRPL mainnet." });
+      }
+      const { vaultId, amount, asset } = req.body;
+      if (!vaultId || !amount) {
+        return res.status(400).json({ message: "vaultId and amount are required" });
+      }
+      const txJson: any = {
+        TransactionType: "VaultDeposit",
+        VaultID: vaultId,
+        Amount: asset && asset !== "XRP"
+          ? { currency: asset, value: amount, issuer: req.body.issuer || "" }
+          : (parseFloat(amount) * 1000000).toString(),
+      };
+      const payload = await xummSdk.payload.create({ txjson: txJson } as any, true);
+      if (!payload) {
+        return res.status(500).json({ message: "Failed to create deposit payload" });
+      }
+      res.json({
+        uuid: payload.uuid,
+        qrUrl: payload.refs.qr_png,
+        deepLink: payload.next.always,
+      });
+    } catch (error: any) {
+      console.error("XLS-66 vault deposit error:", error?.message);
+      res.status(500).json({ message: error.message || "Failed to create deposit transaction" });
+    }
+  });
+
+  app.post("/api/xls66/vault-withdraw", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!xummSdk) {
+        return res.status(500).json({ message: "Xumm SDK not configured" });
+      }
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = tierLimits[tier];
+      if (!limits.xls66Lending) {
+        return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
+      }
+      if (!XLS66_LIVE) {
+        return res.status(400).json({ message: "XLS-66 amendment is not yet active" });
+      }
+      const { vaultId, shares } = req.body;
+      if (!vaultId || !shares) {
+        return res.status(400).json({ message: "vaultId and shares are required" });
+      }
+      const txJson: any = {
+        TransactionType: "VaultWithdraw",
+        VaultID: vaultId,
+        SharesOut: shares,
+      };
+      const payload = await xummSdk.payload.create({ txjson: txJson } as any, true);
+      if (!payload) {
+        return res.status(500).json({ message: "Failed to create withdraw payload" });
+      }
+      res.json({
+        uuid: payload.uuid,
+        qrUrl: payload.refs.qr_png,
+        deepLink: payload.next.always,
+      });
+    } catch (error: any) {
+      console.error("XLS-66 vault withdraw error:", error?.message);
+      res.status(500).json({ message: error.message || "Failed to create withdraw transaction" });
     }
   });
 

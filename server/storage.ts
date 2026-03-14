@@ -83,6 +83,15 @@ import {
   yieldPositions,
   type YieldPosition,
   type InsertYieldPosition,
+  xls66Vaults,
+  xls66Positions,
+  xls66LoanOffers,
+  type Xls66Vault,
+  type InsertXls66Vault,
+  type Xls66Position,
+  type InsertXls66Position,
+  type Xls66LoanOffer,
+  type InsertXls66LoanOffer,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
@@ -267,6 +276,22 @@ export interface IStorage {
   updateYieldPosition(id: string, data: Partial<YieldPosition>): Promise<YieldPosition | undefined>;
   deleteYieldPosition(id: string): Promise<void>;
   getActiveYieldPositionsByUser(userId: string): Promise<YieldPosition[]>;
+
+  getXls66Vaults(status?: string): Promise<Xls66Vault[]>;
+  getXls66Vault(id: string): Promise<Xls66Vault | undefined>;
+  createXls66Vault(vault: InsertXls66Vault): Promise<Xls66Vault>;
+  updateXls66Vault(id: string, data: Partial<Xls66Vault>): Promise<Xls66Vault | undefined>;
+
+  getXls66PositionsByUser(userId: string): Promise<Xls66Position[]>;
+  getXls66Position(id: string): Promise<Xls66Position | undefined>;
+  createXls66Position(position: InsertXls66Position): Promise<Xls66Position>;
+  updateXls66Position(id: string, data: Partial<Xls66Position>): Promise<Xls66Position | undefined>;
+  getActiveXls66PositionsByUser(userId: string): Promise<Xls66Position[]>;
+
+  getXls66LoanOffersByUser(userId: string): Promise<Xls66LoanOffer[]>;
+  getXls66LoanOffer(id: string): Promise<Xls66LoanOffer | undefined>;
+  createXls66LoanOffer(offer: InsertXls66LoanOffer): Promise<Xls66LoanOffer>;
+  updateXls66LoanOffer(id: string, data: Partial<Xls66LoanOffer>): Promise<Xls66LoanOffer | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1182,6 +1207,70 @@ export class DatabaseStorage implements IStorage {
 
   async getActiveYieldPositionsByUser(userId: string): Promise<YieldPosition[]> {
     return db.select().from(yieldPositions).where(and(eq(yieldPositions.userId, userId), eq(yieldPositions.status, "active"))).orderBy(desc(yieldPositions.createdAt));
+  }
+
+  async getXls66Vaults(status?: string): Promise<Xls66Vault[]> {
+    if (status) {
+      return db.select().from(xls66Vaults).where(eq(xls66Vaults.status, status)).orderBy(desc(xls66Vaults.aprBps));
+    }
+    return db.select().from(xls66Vaults).orderBy(desc(xls66Vaults.aprBps));
+  }
+
+  async getXls66Vault(id: string): Promise<Xls66Vault | undefined> {
+    const [result] = await db.select().from(xls66Vaults).where(eq(xls66Vaults.id, id));
+    return result;
+  }
+
+  async createXls66Vault(vault: InsertXls66Vault): Promise<Xls66Vault> {
+    const [result] = await db.insert(xls66Vaults).values(vault).returning();
+    return result;
+  }
+
+  async updateXls66Vault(id: string, data: Partial<Xls66Vault>): Promise<Xls66Vault | undefined> {
+    const [result] = await db.update(xls66Vaults).set({ ...data, updatedAt: new Date() }).where(eq(xls66Vaults.id, id)).returning();
+    return result;
+  }
+
+  async getXls66PositionsByUser(userId: string): Promise<Xls66Position[]> {
+    return db.select().from(xls66Positions).where(eq(xls66Positions.userId, userId)).orderBy(desc(xls66Positions.createdAt));
+  }
+
+  async getXls66Position(id: string): Promise<Xls66Position | undefined> {
+    const [result] = await db.select().from(xls66Positions).where(eq(xls66Positions.id, id));
+    return result;
+  }
+
+  async createXls66Position(position: InsertXls66Position): Promise<Xls66Position> {
+    const [result] = await db.insert(xls66Positions).values(position).returning();
+    return result;
+  }
+
+  async updateXls66Position(id: string, data: Partial<Xls66Position>): Promise<Xls66Position | undefined> {
+    const [result] = await db.update(xls66Positions).set({ ...data, updatedAt: new Date() }).where(eq(xls66Positions.id, id)).returning();
+    return result;
+  }
+
+  async getActiveXls66PositionsByUser(userId: string): Promise<Xls66Position[]> {
+    return db.select().from(xls66Positions).where(and(eq(xls66Positions.userId, userId), eq(xls66Positions.status, "active"))).orderBy(desc(xls66Positions.createdAt));
+  }
+
+  async getXls66LoanOffersByUser(userId: string): Promise<Xls66LoanOffer[]> {
+    return db.select().from(xls66LoanOffers).where(eq(xls66LoanOffers.userId, userId)).orderBy(desc(xls66LoanOffers.createdAt));
+  }
+
+  async getXls66LoanOffer(id: string): Promise<Xls66LoanOffer | undefined> {
+    const [result] = await db.select().from(xls66LoanOffers).where(eq(xls66LoanOffers.id, id));
+    return result;
+  }
+
+  async createXls66LoanOffer(offer: InsertXls66LoanOffer): Promise<Xls66LoanOffer> {
+    const [result] = await db.insert(xls66LoanOffers).values(offer).returning();
+    return result;
+  }
+
+  async updateXls66LoanOffer(id: string, data: Partial<Xls66LoanOffer>): Promise<Xls66LoanOffer | undefined> {
+    const [result] = await db.update(xls66LoanOffers).set({ ...data, updatedAt: new Date() }).where(eq(xls66LoanOffers.id, id)).returning();
+    return result;
   }
 }
 

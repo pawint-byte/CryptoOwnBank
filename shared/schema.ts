@@ -676,3 +676,97 @@ export const insertYieldPositionSchema = createInsertSchema(yieldPositions).omit
 });
 export type YieldPosition = typeof yieldPositions.$inferSelect;
 export type InsertYieldPosition = z.infer<typeof insertYieldPositionSchema>;
+
+export const xls66Vaults = pgTable("xls66_vaults", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultId: varchar("vault_id", { length: 255 }).notNull(),
+  asset: varchar("asset", { length: 50 }).notNull(),
+  ownerAddress: varchar("owner_address", { length: 255 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  aprBps: integer("apr_bps").notNull(),
+  totalDeposited: decimal("total_deposited", { precision: 18, scale: 8 }).default("0"),
+  maxCapacity: decimal("max_capacity", { precision: 18, scale: 8 }),
+  minDeposit: decimal("min_deposit", { precision: 18, scale: 8 }).default("0"),
+  lockDays: integer("lock_days").default(0),
+  riskLevel: varchar("risk_level", { length: 20 }).notNull().default("medium"),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_xls66_vaults_asset").on(table.asset),
+  index("idx_xls66_vaults_status").on(table.status),
+]);
+
+export const insertXls66VaultSchema = createInsertSchema(xls66Vaults).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type Xls66Vault = typeof xls66Vaults.$inferSelect;
+export type InsertXls66Vault = z.infer<typeof insertXls66VaultSchema>;
+
+export const xls66Positions = pgTable("xls66_positions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  vaultId: varchar("vault_id").notNull(),
+  walletAddress: varchar("wallet_address", { length: 255 }).notNull(),
+  depositAmount: decimal("deposit_amount", { precision: 18, scale: 8 }).notNull(),
+  sharesHeld: decimal("shares_held", { precision: 18, scale: 8 }).notNull().default("0"),
+  yieldEarned: decimal("yield_earned", { precision: 18, scale: 8 }).notNull().default("0"),
+  yieldClaimed: decimal("yield_claimed", { precision: 18, scale: 8 }).notNull().default("0"),
+  autoReinvest: boolean("auto_reinvest").default(false),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  depositTxHash: varchar("deposit_tx_hash", { length: 255 }),
+  lastYieldAt: timestamp("last_yield_at"),
+  depositedAt: timestamp("deposited_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_xls66_positions_user").on(table.userId),
+  index("idx_xls66_positions_vault").on(table.vaultId),
+  index("idx_xls66_positions_status").on(table.status),
+]);
+
+export const insertXls66PositionSchema = createInsertSchema(xls66Positions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type Xls66Position = typeof xls66Positions.$inferSelect;
+export type InsertXls66Position = z.infer<typeof insertXls66PositionSchema>;
+
+export const xls66LoanOffers = pgTable("xls66_loan_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  walletAddress: varchar("wallet_address", { length: 255 }).notNull(),
+  loanType: varchar("loan_type", { length: 20 }).notNull(),
+  collateralAsset: varchar("collateral_asset", { length: 50 }).notNull(),
+  collateralAmount: decimal("collateral_amount", { precision: 18, scale: 8 }).notNull(),
+  borrowAsset: varchar("borrow_asset", { length: 50 }).notNull(),
+  borrowAmount: decimal("borrow_amount", { precision: 18, scale: 8 }).notNull(),
+  interestRateBps: integer("interest_rate_bps").notNull(),
+  termDays: integer("term_days").notNull(),
+  ltvRatio: decimal("ltv_ratio", { precision: 5, scale: 2 }),
+  liquidationThreshold: decimal("liquidation_threshold", { precision: 5, scale: 2 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  onLedgerTxHash: varchar("on_ledger_tx_hash", { length: 255 }),
+  onLedgerOfferId: varchar("on_ledger_offer_id", { length: 255 }),
+  metadata: jsonb("metadata"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_xls66_loans_user").on(table.userId),
+  index("idx_xls66_loans_status").on(table.status),
+  index("idx_xls66_loans_type").on(table.loanType),
+]);
+
+export const insertXls66LoanOfferSchema = createInsertSchema(xls66LoanOffers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type Xls66LoanOffer = typeof xls66LoanOffers.$inferSelect;
+export type InsertXls66LoanOffer = z.infer<typeof insertXls66LoanOfferSchema>;
