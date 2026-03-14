@@ -81,6 +81,123 @@ interface OHLCResponse {
   ohlc: OHLCDataPoint[];
 }
 
+interface CandlePattern {
+  name: string;
+  sentiment: "bullish" | "bearish" | "neutral";
+  hint: string;
+}
+
+function detectCandlePattern(
+  data: OHLCDataPoint[],
+  index: number
+): CandlePattern | null {
+  const c = data[index];
+  if (!c) return null;
+  const body = Math.abs(c.close - c.open);
+  const range = c.high - c.low;
+  if (range === 0) return null;
+  const bodyRatio = body / range;
+  const upperWick = c.high - Math.max(c.open, c.close);
+  const lowerWick = Math.min(c.open, c.close) - c.low;
+  const isUp = c.close >= c.open;
+
+  const prev = index > 0 ? data[index - 1] : null;
+  const prev2 = index > 1 ? data[index - 2] : null;
+  const prevBody = prev ? Math.abs(prev.close - prev.open) : 0;
+  const prevIsUp = prev ? prev.close >= prev.open : false;
+  const prev2IsUp = prev2 ? prev2.close >= prev2.open : false;
+
+  if (prev && prev2) {
+    const p2Body = Math.abs(prev2.close - prev2.open);
+    if (
+      !prev2IsUp && !prevIsUp &&
+      bodyRatio < 0.15 &&
+      isUp &&
+      p2Body > 0 &&
+      prevBody < p2Body * 0.5 &&
+      c.close > (prev2.open + prev2.close) / 2
+    ) {
+      return { name: "Morning Star", sentiment: "bullish", hint: "3-candle reversal — downtrend may be ending" };
+    }
+    if (
+      prev2IsUp && prevIsUp &&
+      bodyRatio < 0.15 &&
+      !isUp &&
+      p2Body > 0 &&
+      prevBody < p2Body * 0.5 &&
+      c.close < (prev2.open + prev2.close) / 2
+    ) {
+      return { name: "Evening Star", sentiment: "bearish", hint: "3-candle reversal — uptrend may be ending" };
+    }
+    if (!prev2IsUp && !prevIsUp && isUp && prevIsUp === false) {
+      const allUp = isUp && c.close > prev.close && prev.close > prev2.close;
+      if (allUp && body > range * 0.5 && prevBody > (prev.high - prev.low) * 0.5) {
+        return { name: "Three White Soldiers", sentiment: "bullish", hint: "3 strong green candles — strong buying pressure" };
+      }
+    }
+    if (prev2IsUp && prevIsUp && !isUp) {
+      const allDown = !isUp && c.close < prev.close && prev.close < prev2.close;
+      if (allDown && body > range * 0.5 && prevBody > (prev.high - prev.low) * 0.5) {
+        return { name: "Three Black Crows", sentiment: "bearish", hint: "3 strong red candles — strong selling pressure" };
+      }
+    }
+  }
+
+  if (prev) {
+    if (!prevIsUp && isUp && c.close > prev.open && c.open < prev.close && body > prevBody) {
+      return { name: "Bullish Engulfing", sentiment: "bullish", hint: "Green candle fully covers previous red — buyers taking over" };
+    }
+    if (prevIsUp && !isUp && c.close < prev.open && c.open > prev.close && body > prevBody) {
+      return { name: "Bearish Engulfing", sentiment: "bearish", hint: "Red candle fully covers previous green — sellers taking over" };
+    }
+    if (!prevIsUp && isUp && c.close > (prev.open + prev.close) / 2 && c.open < prev.close) {
+      return { name: "Piercing Line", sentiment: "bullish", hint: "Green candle pierces past midpoint of previous red — reversal signal" };
+    }
+    if (prevIsUp && !isUp && c.close < (prev.open + prev.close) / 2 && c.open > prev.close) {
+      return { name: "Dark Cloud Cover", sentiment: "bearish", hint: "Red candle drops past midpoint of previous green — reversal signal" };
+    }
+  }
+
+  if (bodyRatio < 0.08 && range > 0) {
+    if (upperWick > body * 3 && lowerWick > body * 3) {
+      return { name: "Doji", sentiment: "neutral", hint: "Open ≈ Close — market is undecided, watch the next candle" };
+    }
+    if (lowerWick > body * 3 && upperWick < body * 1.5) {
+      return { name: "Dragonfly Doji", sentiment: "bullish", hint: "Long lower shadow, no upper — buyers pushed price back up" };
+    }
+    if (upperWick > body * 3 && lowerWick < body * 1.5) {
+      return { name: "Gravestone Doji", sentiment: "bearish", hint: "Long upper shadow, no lower — sellers pushed price back down" };
+    }
+    return { name: "Doji", sentiment: "neutral", hint: "Open ≈ Close — market is undecided, watch the next candle" };
+  }
+
+  if (lowerWick > body * 2 && upperWick < body * 0.5 && bodyRatio < 0.35) {
+    if (isUp) {
+      return { name: "Hammer", sentiment: "bullish", hint: "Long lower wick, small body at top — sellers tried but buyers won" };
+    }
+    return { name: "Hanging Man", sentiment: "bearish", hint: "Looks like a hammer but in an uptrend — warns of potential reversal" };
+  }
+
+  if (upperWick > body * 2 && lowerWick < body * 0.5 && bodyRatio < 0.35) {
+    if (!isUp) {
+      return { name: "Shooting Star", sentiment: "bearish", hint: "Long upper wick, body at bottom — price was rejected at highs" };
+    }
+    return { name: "Inverted Hammer", sentiment: "bullish", hint: "Long upper wick after a decline — potential reversal coming" };
+  }
+
+  if (bodyRatio > 0.85) {
+    return {
+      name: isUp ? "Bullish Marubozu" : "Bearish Marubozu",
+      sentiment: isUp ? "bullish" : "bearish",
+      hint: isUp
+        ? "Full green body, almost no wicks — very strong buying"
+        : "Full red body, almost no wicks — very strong selling",
+    };
+  }
+
+  return null;
+}
+
 function formatDate(ts: number, days: number) {
   const d = new Date(ts);
   if (days <= 1) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -118,6 +235,7 @@ interface ChartDataPoint {
   bbUpper?: number;
   bbMiddle?: number;
   bbLower?: number;
+  pattern?: CandlePattern | null;
 }
 
 interface RSIDataPoint {
@@ -145,8 +263,10 @@ function CustomTooltip({ active, payload }: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const d = payload[0]?.payload;
   if (!d) return null;
+  const pattern = d.pattern;
+  const sentimentColor = pattern?.sentiment === "bullish" ? "#22c55e" : pattern?.sentiment === "bearish" ? "#ef4444" : "#f59e0b";
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-xs space-y-1 z-50">
+    <div className="bg-popover border rounded-lg shadow-lg p-3 text-xs space-y-1.5 z-50 max-w-[280px]">
       <p className="font-medium text-foreground">{d.dateLabel}</p>
       {d.open !== undefined && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
@@ -154,6 +274,26 @@ function CustomTooltip({ active, payload }: ChartTooltipProps) {
           <span className="text-muted-foreground">High</span><span>{formatPrice(d.high)}</span>
           <span className="text-muted-foreground">Low</span><span>{formatPrice(d.low)}</span>
           <span className="text-muted-foreground">Close</span><span className="font-medium">{formatPrice(d.close)}</span>
+        </div>
+      )}
+      {pattern && (
+        <div className="border-t pt-1.5 mt-1">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-2 h-2 rounded-full"
+              style={{ backgroundColor: sentimentColor }}
+            />
+            <span className="font-semibold" style={{ color: sentimentColor }}>
+              {pattern.name}
+            </span>
+            <span className="text-[10px] px-1 py-0.5 rounded font-medium" style={{
+              backgroundColor: `${sentimentColor}15`,
+              color: sentimentColor,
+            }}>
+              {pattern.sentiment}
+            </span>
+          </div>
+          <p className="text-muted-foreground mt-0.5 leading-snug">{pattern.hint}</p>
         </div>
       )}
       {payload
@@ -273,8 +413,9 @@ export default function TechnicalAnalysis() {
     const macdMap = new Map<number, { macd: number; signal: number; histogram: number }>();
     macd.forEach((p) => macdMap.set(p.timestamp, { macd: p.macd, signal: p.signal, histogram: p.histogram }));
 
-    const chartData = rawOhlc.map((c) => {
+    const chartData = rawOhlc.map((c, i) => {
       const bbPoint = bbMap.get(c.timestamp);
+      const pattern = detectCandlePattern(rawOhlc, i);
       return {
         timestamp: c.timestamp,
         dateLabel: formatDate(c.timestamp, days),
@@ -290,6 +431,7 @@ export default function TechnicalAnalysis() {
         bbUpper: bbPoint?.upper,
         bbMiddle: bbPoint?.middle,
         bbLower: bbPoint?.lower,
+        pattern,
       };
     });
 
@@ -568,6 +710,9 @@ export default function TechnicalAnalysis() {
                             const bodyHeight = Math.max(Math.abs(yOpen - yClose), 1);
                             const cx = xPos + bandWidth / 2;
 
+                            const pat = d.pattern;
+                            const patColor = pat?.sentiment === "bullish" ? "#22c55e" : pat?.sentiment === "bearish" ? "#ef4444" : "#f59e0b";
+
                             return (
                               <g key={`candle-${i}`}>
                                 <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth={1} />
@@ -580,6 +725,15 @@ export default function TechnicalAnalysis() {
                                   stroke={color}
                                   strokeWidth={0.5}
                                 />
+                                {pat && (
+                                  <g>
+                                    <polygon
+                                      points={`${cx},${(pat.sentiment === "bearish" ? yHigh - 14 : yLow + 14) - 4} ${cx - 4},${pat.sentiment === "bearish" ? yHigh - 14 : yLow + 14} ${cx},${(pat.sentiment === "bearish" ? yHigh - 14 : yLow + 14) + 4} ${cx + 4},${pat.sentiment === "bearish" ? yHigh - 14 : yLow + 14}`}
+                                      fill={patColor}
+                                      opacity={0.85}
+                                    />
+                                  </g>
+                                )}
                               </g>
                             );
                           })}
