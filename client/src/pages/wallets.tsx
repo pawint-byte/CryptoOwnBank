@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -89,7 +89,8 @@ import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { Smartphone, Link2, LinkIcon, Loader2 } from "lucide-react";
-import { connectXumm, connectXummForLink, completePendingXummLink, hasPendingXummLink, getPendingXummLink, clearPendingXummLink, completePendingXummSignIn, hasPendingXummSignIn } from "@/lib/xumm-connector";
+import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn } from "@/lib/xumm-connector";
+import type { XummLinkPayload } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
 interface SubscriptionLimits {
@@ -777,6 +778,8 @@ export default function Wallets() {
   const connectedXrplAddress = xrplStore.walletAddress || xrplWalletData?.walletAddress || null;
 
   const [linkingAddress, setLinkingAddress] = useState<string | null>(null);
+  const [mobileLinkPayload, setMobileLinkPayload] = useState<XummLinkPayload | null>(null);
+  const cancelPollRef = useRef<(() => void) | null>(null);
 
   const isXamanLinked = (address: string) => {
     if (connectedXrplAddress && address.toLowerCase() === connectedXrplAddress.toLowerCase()) return true;
@@ -795,57 +798,62 @@ export default function Wallets() {
     });
   };
 
-  const handleLinkXaman = async (expectedAddress: string) => {
-    setLinkingAddress(expectedAddress);
-    try {
-      const result = await connectXummForLink(expectedAddress);
-      if (result.success && result.address) {
-        if (result.address.toLowerCase() !== expectedAddress.toLowerCase()) {
-          toast({
-            title: "Wrong account",
-            description: `Xaman returned ${result.address.slice(0, 8)}... but we expected ${expectedAddress.slice(0, 8)}... — switch to the correct account in Xaman and try again.`,
-            variant: "destructive",
-          });
-          setLinkingAddress(null);
-          return;
-        }
+  const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  const handleLinkResolved = async (result: { success: boolean; address?: string; error?: string }, expectedAddress: string) => {
+    if (result.success && result.address) {
+      if (result.address.toLowerCase() !== expectedAddress.toLowerCase()) {
+        toast({
+          title: "Wrong account",
+          description: `Xaman returned ${result.address.slice(0, 8)}... but we expected ${expectedAddress.slice(0, 8)}... — switch to the correct account in Xaman and try again.`,
+          variant: "destructive",
+        });
+      } else {
         await saveLinkResult(result.address);
-      } else if (result.error) {
-        toast({ title: "Connection failed", description: result.error, variant: "destructive" });
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to connect Xaman", variant: "destructive" });
-    } finally {
-      setLinkingAddress(null);
+    } else if (result.error) {
+      toast({ title: "Connection failed", description: result.error, variant: "destructive" });
+    }
+    setLinkingAddress(null);
+    setMobileLinkPayload(null);
+    if (cancelPollRef.current) {
+      cancelPollRef.current();
+      cancelPollRef.current = null;
     }
   };
 
-  useEffect(() => {
-    if (hasPendingXummLink()) {
-      const pending = getPendingXummLink();
-      if (pending) {
-        setLinkingAddress(pending.expectedAddress);
-        completePendingXummLink().then(async (result) => {
-          if (result.success && result.address) {
-            if (result.expectedAddress && result.address.toLowerCase() !== result.expectedAddress.toLowerCase()) {
-              toast({
-                title: "Wrong account",
-                description: `Xaman returned ${result.address.slice(0, 8)}... but we expected ${result.expectedAddress.slice(0, 8)}... — switch to the correct account in Xaman and try again.`,
-                variant: "destructive",
-              });
-            } else {
-              await saveLinkResult(result.address);
-            }
-          } else if (result.error) {
-            toast({ title: "Link failed", description: result.error, variant: "destructive" });
-          }
-          setLinkingAddress(null);
-        }).catch(() => {
-          clearPendingXummLink();
-          setLinkingAddress(null);
+  const handleLinkXaman = async (expectedAddress: string) => {
+    setLinkingAddress(expectedAddress);
+    try {
+      if (isMobile) {
+        const payload = await createXummLinkPayload(expectedAddress);
+        setMobileLinkPayload(payload);
+        const cancel = await pollXummLinkStatus(payload.uuid, (result) => {
+          handleLinkResolved(result, expectedAddress);
         });
+        cancelPollRef.current = cancel;
+      } else {
+        const result = await connectXummForLinkDesktop(expectedAddress);
+        await handleLinkResolved(result, expectedAddress);
       }
-    } else if (hasPendingXummSignIn()) {
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to connect Xaman", variant: "destructive" });
+      setLinkingAddress(null);
+      setMobileLinkPayload(null);
+    }
+  };
+
+  const cancelMobileLink = () => {
+    if (cancelPollRef.current) {
+      cancelPollRef.current();
+      cancelPollRef.current = null;
+    }
+    setLinkingAddress(null);
+    setMobileLinkPayload(null);
+  };
+
+  useEffect(() => {
+    if (hasPendingXummSignIn()) {
       completePendingXummSignIn().then(async (result) => {
         if (result.success && result.address) {
           await saveLinkResult(result.address);
@@ -2290,6 +2298,55 @@ export default function Wallets() {
           </TabsContent>
         </Tabs>
       )}
+
+      <Dialog open={!!mobileLinkPayload} onOpenChange={(open) => { if (!open) cancelMobileLink(); }}>
+        <DialogContent className="max-w-sm" data-testid="dialog-mobile-xaman-link">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-[#00A4E4]" />
+              Link with Xaman
+            </DialogTitle>
+            <DialogDescription>
+              {mobileLinkPayload && (
+                <>
+                  Linking address: <code className="text-xs">{mobileLinkPayload.expectedAddress.slice(0, 10)}...{mobileLinkPayload.expectedAddress.slice(-6)}</code>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium">Step 1: Open Xaman and switch to the matching account</p>
+              <p className="text-xs text-muted-foreground">Make sure the active account in Xaman matches the address above</p>
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium">Step 2: Tap the button below to approve in Xaman</p>
+            </div>
+            {mobileLinkPayload && (
+              <a
+                href={mobileLinkPayload.deepLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#00A4E4] text-white px-6 py-3 text-base font-semibold shadow-lg active:bg-[#0090c8] w-full"
+                data-testid="link-open-xaman"
+              >
+                <Smartphone className="h-5 w-5" />
+                Open Xaman to Approve
+              </a>
+            )}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Waiting for Xaman approval...
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              After approving in Xaman, come back here. The connection will be saved automatically.
+            </p>
+            <Button variant="ghost" size="sm" onClick={cancelMobileLink} data-testid="button-cancel-link">
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

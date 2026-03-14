@@ -164,20 +164,63 @@ export async function completePendingXummLink(): Promise<XummSignResult & { expe
   return { success: false, error: "Sign-in timed out. Please try again." };
 }
 
-export async function connectXummForLink(expectedAddress: string): Promise<XummSignResult> {
+export interface XummLinkPayload {
+  uuid: string;
+  qrUrl: string;
+  deepLink: string;
+  expectedAddress: string;
+}
+
+export async function createXummLinkPayload(expectedAddress: string): Promise<XummLinkPayload> {
+  const payload = await createXummSignIn();
+  return {
+    uuid: payload.uuid,
+    qrUrl: payload.qrUrl,
+    deepLink: payload.deepLink,
+    expectedAddress,
+  };
+}
+
+export async function pollXummLinkStatus(
+  uuid: string,
+  onResolved: (result: XummSignResult) => void,
+  onPoll?: () => void,
+): Promise<() => void> {
+  let cancelled = false;
+
+  const poll = async () => {
+    const maxAttempts = 90;
+    for (let i = 0; i < maxAttempts && !cancelled; i++) {
+      try {
+        onPoll?.();
+        const status = await checkXummStatus(uuid);
+        if (status.resolved) {
+          if (status.signed && status.account) {
+            onResolved({ success: true, address: status.account });
+          } else {
+            onResolved({ success: false, error: "Sign-in was declined" });
+          }
+          return;
+        }
+      } catch {
+        onResolved({ success: false, error: "Failed to check sign-in status" });
+        return;
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    if (!cancelled) {
+      onResolved({ success: false, error: "Sign-in timed out. Please try again." });
+    }
+  };
+
+  poll();
+
+  return () => { cancelled = true; };
+}
+
+export async function connectXummForLinkDesktop(expectedAddress: string): Promise<XummSignResult> {
   try {
     const payload = await createXummSignIn();
-
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      localStorage.setItem(XUMM_PENDING_LINK_KEY, JSON.stringify({
-        uuid: payload.uuid,
-        expectedAddress,
-        timestamp: Date.now(),
-      }));
-      window.location.href = payload.deepLink;
-      return new Promise(() => {});
-    }
 
     return new Promise((resolve) => {
       const popup = window.open("", "XummLinkIn", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
