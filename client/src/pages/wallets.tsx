@@ -802,14 +802,27 @@ export default function Wallets() {
 
   const handleLinkResolved = async (result: { success: boolean; address?: string; error?: string }, expectedAddress: string) => {
     if (result.success && result.address) {
-      if (result.address.toLowerCase() !== expectedAddress.toLowerCase()) {
+      const returnedAddr = result.address.toLowerCase();
+      const xrpWallets = userWallets.filter(w => w.chain === "xrp");
+      const matchedWallet = xrpWallets.find(w => w.address.toLowerCase() === returnedAddr);
+
+      if (matchedWallet) {
+        if (!isXamanLinked(matchedWallet.address)) {
+          await saveLinkResult(matchedWallet.address);
+        } else {
+          toast({
+            title: "Already linked",
+            description: `${matchedWallet.label || matchedWallet.address.slice(0, 8) + "..."} is already connected via Xaman.`,
+          });
+        }
+      } else {
+        const unlinkedWallets = xrpWallets.filter(w => !isXamanLinked(w.address));
+        const walletNames = unlinkedWallets.map(w => w.label || w.address.slice(0, 8) + "...").join(", ");
         toast({
-          title: "Wrong account",
-          description: `Xaman returned ${result.address.slice(0, 8)}... but we expected ${expectedAddress.slice(0, 8)}... — switch to the correct account in Xaman and try again.`,
+          title: "Address not recognized",
+          description: `Xaman returned ${result.address.slice(0, 8)}... which doesn't match any of your XRP addresses. In Xaman, switch to one of these accounts: ${walletNames}`,
           variant: "destructive",
         });
-      } else {
-        await saveLinkResult(result.address);
       }
     } else if (result.error) {
       toast({ title: "Connection failed", description: result.error, variant: "destructive" });
