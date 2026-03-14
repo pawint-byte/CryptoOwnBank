@@ -18,12 +18,16 @@ import {
   Shield,
   Smartphone,
   HardDrive,
-  CircleDollarSign,
   ClipboardList,
   Building2,
   Link2,
+  Lock,
+  Play,
+  Pause,
+  RotateCcw,
+  Zap,
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useXrplStore } from "@/lib/xrpl-store";
 
 interface UserInventory {
@@ -31,6 +35,8 @@ interface UserInventory {
   hasColdWallet: boolean | null;
   hasHotWallet: boolean | null;
 }
+
+type StepStatus = "completed" | "in_progress" | "ready" | "blocked" | "not_started";
 
 interface OnboardingStep {
   id: string;
@@ -42,28 +48,62 @@ interface OnboardingStep {
   href: string;
   icon: any;
   iconColor: string;
-  completed: boolean;
+  autoCompleted: boolean;
+  requires: string[];
+  parallelWith?: string[];
   onClick?: () => void;
 }
 
-const PHASE_LABELS: Record<string, { label: string; color: string }> = {
-  foundation: { label: "Set Up Your Foundation", color: "text-blue-500" },
-  connect: { label: "Connect Your Assets", color: "text-amber-500" },
-  earn: { label: "Start Earning", color: "text-emerald-500" },
+const PHASE_META: Record<string, { label: string; color: string; dot: string }> = {
+  foundation: { label: "Set Up Your Foundation", color: "text-blue-500", dot: "bg-blue-500" },
+  connect: { label: "Connect Your Assets", color: "text-amber-500", dot: "bg-amber-500" },
+  earn: { label: "Start Earning", color: "text-emerald-500", dot: "bg-emerald-500" },
 };
 
 function getStoredInventory(): UserInventory | null {
   const raw = localStorage.getItem("onboarding-inventory");
   if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
 function storeInventory(inv: UserInventory) {
   localStorage.setItem("onboarding-inventory", JSON.stringify(inv));
+}
+
+function getManualStatuses(): Record<string, "in_progress" | "done"> {
+  const raw = localStorage.getItem("onboarding-step-status");
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
+function setManualStatus(stepId: string, status: "in_progress" | "done" | null) {
+  const current = getManualStatuses();
+  if (status === null) {
+    delete current[stepId];
+  } else {
+    current[stepId] = status;
+  }
+  localStorage.setItem("onboarding-step-status", JSON.stringify(current));
+}
+
+function resolveStatus(
+  step: OnboardingStep,
+  allSteps: OnboardingStep[],
+  manualStatuses: Record<string, "in_progress" | "done">
+): StepStatus {
+  if (step.autoCompleted || manualStatuses[step.id] === "done") return "completed";
+  if (manualStatuses[step.id] === "in_progress") return "in_progress";
+
+  if (step.requires.length > 0) {
+    const allRequirementsMet = step.requires.every((reqId) => {
+      const reqStep = allSteps.find((s) => s.id === reqId);
+      if (!reqStep) return true;
+      return reqStep.autoCompleted || manualStatuses[reqId] === "done";
+    });
+    if (!allRequirementsMet) return "blocked";
+  }
+
+  return "ready";
 }
 
 function InventoryQuiz({ onComplete, onSkip }: { onComplete: (inv: UserInventory) => void; onSkip: () => void }) {
@@ -220,7 +260,9 @@ function buildSteps(
       href: "/setup-guide",
       icon: HardDrive,
       iconColor: "text-blue-500",
-      completed: false,
+      autoCompleted: false,
+      requires: [],
+      parallelWith: needsHotWallet ? ["get_hot_wallet"] : undefined,
     });
   }
 
@@ -236,7 +278,9 @@ function buildSteps(
       href: "/setup-guide",
       icon: Smartphone,
       iconColor: "text-blue-500",
-      completed: false,
+      autoCompleted: false,
+      requires: [],
+      parallelWith: needsColdWallet ? ["get_cold_wallet"] : undefined,
     });
   }
 
@@ -252,7 +296,9 @@ function buildSteps(
       href: "/wallets",
       icon: Wallet,
       iconColor: "text-amber-500",
-      completed: liveState.walletCount >= 1,
+      autoCompleted: liveState.walletCount >= 1,
+      requires: needsColdWallet ? ["get_cold_wallet"] : [],
+      parallelWith: hasCryptoOnExchange ? ["add_exchange"] : undefined,
     });
   }
 
@@ -268,7 +314,9 @@ function buildSteps(
       href: "/integrations",
       icon: Building2,
       iconColor: "text-amber-500",
-      completed: liveState.hasExchangeData,
+      autoCompleted: liveState.hasExchangeData,
+      requires: [],
+      parallelWith: hasCryptoInWallet || inventory.hasColdWallet ? ["add_wallets"] : undefined,
     });
   }
 
@@ -284,10 +332,13 @@ function buildSteps(
       href: "/wallets",
       icon: Wallet,
       iconColor: "text-amber-500",
-      completed: liveState.walletCount >= 1 || liveState.hasExchangeData,
+      autoCompleted: liveState.walletCount >= 1 || liveState.hasExchangeData,
+      requires: needsColdWallet ? ["get_cold_wallet"] : [],
     });
   }
 
+  const xrplRequires: string[] = [];
+  if (needsHotWallet) xrplRequires.push("get_hot_wallet");
   steps.push({
     id: "connect_xrpl",
     phase: "connect",
@@ -299,7 +350,8 @@ function buildSteps(
     href: "/ownbank",
     icon: Link2,
     iconColor: "text-amber-500",
-    completed: liveState.isXrplConnected || liveState.hasXrplWallet,
+    autoCompleted: liveState.isXrplConnected || liveState.hasXrplWallet,
+    requires: xrplRequires,
   });
 
   steps.push({
@@ -313,7 +365,8 @@ function buildSteps(
     href: "/ownbank",
     icon: Sprout,
     iconColor: "text-emerald-500",
-    completed: liveState.hasVaultDeposits,
+    autoCompleted: liveState.hasVaultDeposits,
+    requires: ["connect_xrpl"],
   });
 
   steps.push({
@@ -327,7 +380,9 @@ function buildSteps(
     href: "/",
     icon: BarChart3,
     iconColor: "text-emerald-500",
-    completed: (liveState.walletCount >= 1 || liveState.hasExchangeData) && liveState.recsViewed,
+    autoCompleted: (liveState.walletCount >= 1 || liveState.hasExchangeData) && liveState.recsViewed,
+    requires: [],
+    parallelWith: ["earn_yield"],
     onClick: liveState.markRecsViewed,
   });
 
@@ -342,10 +397,129 @@ function buildSteps(
     href: "/settings",
     icon: Crown,
     iconColor: "text-emerald-500",
-    completed: liveState.subscriptionTier === "premium" || liveState.subscriptionTier === "pro",
+    autoCompleted: liveState.subscriptionTier === "premium" || liveState.subscriptionTier === "pro",
+    requires: [],
   });
 
   return steps;
+}
+
+function StatusBadge({ status }: { status: StepStatus }) {
+  switch (status) {
+    case "completed":
+      return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-600 border-emerald-300 dark:text-emerald-400 dark:border-emerald-700">Done</Badge>;
+    case "in_progress":
+      return <Badge className="bg-amber-500 text-[10px] px-1.5 py-0">In Progress</Badge>;
+    case "ready":
+      return <Badge className="bg-[#00A4E4] text-[10px] px-1.5 py-0">Ready</Badge>;
+    case "blocked":
+      return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground border-muted-foreground/30">Blocked</Badge>;
+    default:
+      return null;
+  }
+}
+
+function StatusIcon({ status, step }: { status: StepStatus; step: OnboardingStep }) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />;
+    case "in_progress":
+      return <Play className="h-4 w-4 text-amber-500 fill-amber-500" />;
+    case "blocked":
+      return <Lock className="h-4 w-4 text-muted-foreground/50" />;
+    default:
+      return <step.icon className={`h-4 w-4 ${status === "ready" ? step.iconColor : "text-muted-foreground"}`} />;
+  }
+}
+
+function StepActions({
+  step,
+  status,
+  allSteps,
+  onStatusChange,
+  onNavigate,
+}: {
+  step: OnboardingStep;
+  status: StepStatus;
+  allSteps: OnboardingStep[];
+  onStatusChange: (stepId: string, status: "in_progress" | "done" | null) => void;
+  onNavigate: (step: OnboardingStep) => void;
+}) {
+  if (status === "completed") return null;
+
+  if (status === "blocked") {
+    const blockers = step.requires
+      .map((id) => allSteps.find((s) => s.id === id))
+      .filter(Boolean)
+      .map((s) => s!.title);
+    return (
+      <p className="text-[11px] text-muted-foreground/70 italic mt-1">
+        Requires: {blockers.join(", ")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-2">
+      {status === "in_progress" ? (
+        <>
+          <Button
+            size="sm"
+            className="bg-[#00A4E4] hover:bg-[#0090c9] text-white h-7 text-xs"
+            onClick={() => onNavigate(step)}
+            data-testid={`button-continue-${step.id}`}
+          >
+            Continue
+            <ArrowRight className="h-3 w-3 ml-1" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => onStatusChange(step.id, "done")}
+            data-testid={`button-mark-done-${step.id}`}
+          >
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Mark Done
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-muted-foreground"
+            onClick={() => onStatusChange(step.id, null)}
+            data-testid={`button-reset-${step.id}`}
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button
+            size="sm"
+            className="bg-[#00A4E4] hover:bg-[#0090c9] text-white h-7 text-xs"
+            onClick={() => {
+              onStatusChange(step.id, "in_progress");
+              onNavigate(step);
+            }}
+            data-testid={`button-start-${step.id}`}
+          >
+            {step.cta}
+            <ArrowRight className="h-3 w-3 ml-1" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs text-muted-foreground"
+            onClick={() => onStatusChange(step.id, "done")}
+            data-testid={`button-skip-${step.id}`}
+          >
+            Already done
+          </Button>
+        </>
+      )}
+    </div>
+  );
 }
 
 export function OnboardingChecklist({
@@ -361,21 +535,22 @@ export function OnboardingChecklist({
   const [, setLocation] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [inventory, setInventory] = useState<UserInventory | null>(() => getStoredInventory());
-  const [dismissed, setDismissed] = useState(() => {
-    return localStorage.getItem("onboarding-dismissed") === "true";
-  });
-  const [recsViewed, setRecsViewed] = useState(() => {
-    return localStorage.getItem("recommendations-viewed") === "true";
-  });
+  const [dismissed, setDismissed] = useState(() =>
+    localStorage.getItem("onboarding-dismissed") === "true"
+  );
+  const [recsViewed, setRecsViewed] = useState(() =>
+    localStorage.getItem("recommendations-viewed") === "true"
+  );
+  const [manualStatuses, setManualStatuses] = useState<Record<string, "in_progress" | "done">>(
+    () => getManualStatuses()
+  );
 
   const markRecsViewed = useCallback(() => {
     localStorage.setItem("recommendations-viewed", "true");
     setRecsViewed(true);
   }, []);
 
-  const handleQuizComplete = (inv: UserInventory) => {
-    setInventory(inv);
-  };
+  const handleQuizComplete = (inv: UserInventory) => setInventory(inv);
 
   const handleDismiss = () => {
     setDismissed(true);
@@ -384,7 +559,19 @@ export function OnboardingChecklist({
 
   const handleResetQuiz = () => {
     localStorage.removeItem("onboarding-inventory");
+    localStorage.removeItem("onboarding-step-status");
     setInventory(null);
+    setManualStatuses({});
+  };
+
+  const handleStatusChange = (stepId: string, status: "in_progress" | "done" | null) => {
+    setManualStatus(stepId, status);
+    setManualStatuses(getManualStatuses());
+  };
+
+  const handleNavigate = (step: OnboardingStep) => {
+    if (step.onClick) step.onClick();
+    setLocation(step.href);
   };
 
   if (dismissed) return null;
@@ -401,30 +588,33 @@ export function OnboardingChecklist({
     hasVaultDeposits: vaultDeposits.length > 0,
     subscriptionTier,
     recsViewed,
-    markRecsViewed: markRecsViewed,
+    markRecsViewed,
   });
 
-  const completedCount = steps.filter((s) => s.completed).length;
+  const statuses = steps.map((s) => resolveStatus(s, steps, manualStatuses));
+  const completedCount = statuses.filter((s) => s === "completed").length;
+  const inProgressCount = statuses.filter((s) => s === "in_progress").length;
   const allDone = completedCount === steps.length;
   const progressPercent = (completedCount / steps.length) * 100;
-  const currentStepIndex = steps.findIndex((s) => !s.completed);
-  const currentStep = currentStepIndex >= 0 ? steps[currentStepIndex] : null;
 
   if (allDone) return null;
-
-  const handleStepClick = (step: OnboardingStep) => {
-    if (step.onClick) step.onClick();
-    setLocation(step.href);
-  };
 
   const phases = ["foundation", "connect", "earn"] as const;
   const stepsByPhase = phases
     .map((phase) => ({
       phase,
-      ...PHASE_LABELS[phase],
-      steps: steps.filter((s) => s.phase === phase),
+      ...PHASE_META[phase],
+      items: steps
+        .map((s, i) => ({ step: s, status: statuses[i] }))
+        .filter(({ step }) => step.phase === phase),
     }))
-    .filter((p) => p.steps.length > 0);
+    .filter((p) => p.items.length > 0);
+
+  const firstReadyOrInProgress = steps.findIndex(
+    (_, i) => statuses[i] === "ready" || statuses[i] === "in_progress"
+  );
+  const focusStep = firstReadyOrInProgress >= 0 ? steps[firstReadyOrInProgress] : null;
+  const focusStatus = firstReadyOrInProgress >= 0 ? statuses[firstReadyOrInProgress] : null;
 
   return (
     <Card className="border-[#00A4E4]/30 bg-gradient-to-r from-[#00A4E4]/5 to-transparent" data-testid="card-onboarding">
@@ -439,7 +629,10 @@ export function OnboardingChecklist({
                 Your Path — {completedCount} of {steps.length} complete
               </h3>
               <p className="text-xs text-muted-foreground">
-                Personalized steps to get you earning
+                {inProgressCount > 0
+                  ? `${inProgressCount} step${inProgressCount > 1 ? "s" : ""} in progress — pick up where you left off`
+                  : "Personalized steps to get you earning"
+                }
               </p>
             </div>
           </div>
@@ -470,100 +663,121 @@ export function OnboardingChecklist({
         {!collapsed && (
           <div className="space-y-4">
             {stepsByPhase.map((phaseGroup) => {
-              const phaseCompleted = phaseGroup.steps.every((s) => s.completed);
+              const phaseComplete = phaseGroup.items.every(({ status }) => status === "completed");
+              const readyCount = phaseGroup.items.filter(({ status }) => status === "ready").length;
               return (
                 <div key={phaseGroup.phase}>
                   <div className="flex items-center gap-2 mb-2">
-                    {phaseCompleted ? (
+                    {phaseComplete ? (
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                     ) : (
-                      <div className={`h-2 w-2 rounded-full ${
-                        phaseGroup.phase === "foundation" ? "bg-blue-500" :
-                        phaseGroup.phase === "connect" ? "bg-amber-500" : "bg-emerald-500"
-                      }`} />
+                      <div className={`h-2 w-2 rounded-full ${phaseGroup.dot}`} />
                     )}
                     <span className={`text-xs font-semibold uppercase tracking-wider ${
-                      phaseCompleted ? "text-emerald-500 line-through" : phaseGroup.color
+                      phaseComplete ? "text-emerald-500 line-through" : phaseGroup.color
                     }`}>
                       {phaseGroup.label}
                     </span>
+                    {readyCount > 1 && !phaseComplete && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground border-muted-foreground/30 ml-auto">
+                        <Zap className="h-2.5 w-2.5 mr-0.5" />
+                        {readyCount} can be done at once
+                      </Badge>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    {phaseGroup.steps.map((step) => {
-                      const isCurrent = steps.indexOf(step) === currentStepIndex;
-                      const isPast = step.completed;
+                    {phaseGroup.items.map(({ step, status }) => {
+                      const isExpanded = status === "ready" || status === "in_progress";
 
                       return (
                         <div
                           key={step.id}
                           className={`rounded-lg border transition-all ${
-                            isCurrent
-                              ? "border-[#00A4E4]/40 bg-[#00A4E4]/5 shadow-sm"
-                              : isPast
-                                ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"
-                                : "border-muted bg-muted/30 opacity-60"
-                          } ${isCurrent ? "p-4" : "p-3"}`}
+                            status === "completed"
+                              ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"
+                              : status === "in_progress"
+                                ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm"
+                                : status === "ready"
+                                  ? "border-[#00A4E4]/40 bg-[#00A4E4]/5 shadow-sm"
+                                  : "border-muted bg-muted/30 opacity-50"
+                          } ${isExpanded ? "p-4" : "p-3"}`}
                           data-testid={`step-${step.id}`}
                         >
                           <div className="flex items-center gap-3">
                             <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                              isPast
+                              status === "completed"
                                 ? "bg-emerald-100 dark:bg-emerald-900/40"
-                                : isCurrent
-                                  ? "bg-[#00A4E4]/10"
-                                  : "bg-muted"
+                                : status === "in_progress"
+                                  ? "bg-amber-100 dark:bg-amber-900/40"
+                                  : status === "ready"
+                                    ? "bg-[#00A4E4]/10"
+                                    : "bg-muted"
                             }`}>
-                              {isPast ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                              ) : (
-                                <step.icon className={`h-4 w-4 ${isCurrent ? step.iconColor : "text-muted-foreground"}`} />
-                              )}
+                              <StatusIcon status={status} step={step} />
                             </div>
 
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-medium ${isPast ? "line-through text-muted-foreground" : ""}`}>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-sm font-medium ${
+                                  status === "completed" ? "line-through text-muted-foreground" :
+                                  status === "blocked" ? "text-muted-foreground" : ""
+                                }`}>
                                   {step.title}
                                 </span>
-                                {isCurrent && (
-                                  <Badge className="bg-[#00A4E4] text-[10px] px-1.5 py-0">Next</Badge>
-                                )}
-                                {isPast && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-600 border-emerald-300">Done</Badge>
-                                )}
+                                <StatusBadge status={status} />
                               </div>
-                              {!isCurrent && (
+                              {!isExpanded && (
                                 <p className="text-xs text-muted-foreground">{step.subtitle}</p>
                               )}
                             </div>
 
-                            {isCurrent && (
+                            {status === "in_progress" && (
                               <Button
                                 size="sm"
-                                className="bg-[#00A4E4] hover:bg-[#0090c9] text-white shrink-0 hidden sm:flex"
-                                onClick={() => handleStepClick(step)}
-                                data-testid={`button-${step.id}`}
+                                className="bg-amber-500 hover:bg-amber-600 text-white shrink-0 hidden sm:flex h-7 text-xs"
+                                onClick={() => handleNavigate(step)}
+                                data-testid={`button-continue-desktop-${step.id}`}
                               >
-                                {step.cta}
+                                Continue
                                 <ArrowRight className="h-3 w-3 ml-1" />
                               </Button>
                             )}
                           </div>
 
-                          {isCurrent && (
+                          {isExpanded && (
                             <div className="mt-3 ml-11">
-                              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                              <p className="text-xs text-muted-foreground leading-relaxed">
                                 {step.description}
                               </p>
-                              <Button
-                                size="sm"
-                                className="bg-[#00A4E4] hover:bg-[#0090c9] text-white w-full sm:hidden"
-                                onClick={() => handleStepClick(step)}
-                                data-testid={`button-${step.id}-mobile`}
-                              >
-                                {step.cta}
-                                <ArrowRight className="h-3 w-3 ml-1" />
-                              </Button>
+                              {step.parallelWith && step.parallelWith.length > 0 && status !== "completed" && (
+                                <p className="text-[11px] text-[#00A4E4] mt-1.5 flex items-center gap-1">
+                                  <Zap className="h-3 w-3" />
+                                  Can be done at the same time as: {step.parallelWith.map((id) => {
+                                    const s = steps.find((x) => x.id === id);
+                                    return s?.title || id;
+                                  }).join(", ")}
+                                </p>
+                              )}
+                              <StepActions
+                                step={step}
+                                status={status}
+                                allSteps={steps}
+                                onStatusChange={handleStatusChange}
+                                onNavigate={handleNavigate}
+                              />
+                            </div>
+                          )}
+
+                          {status === "blocked" && (
+                            <div className="mt-2 ml-11">
+                              <StepActions
+                                step={step}
+                                status={status}
+                                allSteps={steps}
+                                onStatusChange={handleStatusChange}
+                                onNavigate={handleNavigate}
+                              />
                             </div>
                           )}
                         </div>
@@ -585,17 +799,31 @@ export function OnboardingChecklist({
           </div>
         )}
 
-        {collapsed && currentStep && (
+        {collapsed && focusStep && (
           <div
-            className="flex items-center justify-between p-3 rounded-lg border border-[#00A4E4]/30 bg-[#00A4E4]/5 cursor-pointer hover:bg-[#00A4E4]/10 transition-colors"
-            onClick={() => handleStepClick(currentStep)}
+            className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+              focusStatus === "in_progress"
+                ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                : "border-[#00A4E4]/30 bg-[#00A4E4]/5 hover:bg-[#00A4E4]/10"
+            }`}
+            onClick={() => {
+              if (focusStatus !== "in_progress") {
+                handleStatusChange(focusStep.id, "in_progress");
+              }
+              handleNavigate(focusStep);
+            }}
             data-testid="button-collapsed-step"
           >
             <div className="flex items-center gap-3">
-              <currentStep.icon className={`h-4 w-4 ${currentStep.iconColor}`} />
+              <StatusIcon status={focusStatus || "ready"} step={focusStep} />
               <div>
-                <span className="text-sm font-medium">{currentStep.title}</span>
-                <p className="text-xs text-muted-foreground">{currentStep.subtitle}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{focusStep.title}</span>
+                  <StatusBadge status={focusStatus || "ready"} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {focusStatus === "in_progress" ? "Pick up where you left off" : focusStep.subtitle}
+                </p>
               </div>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
