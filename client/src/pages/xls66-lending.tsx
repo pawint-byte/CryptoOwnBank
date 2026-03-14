@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
@@ -686,6 +687,182 @@ function BorrowingHub() {
   );
 }
 
+function DepositModal({ vault, open, onClose }: { vault: OnLedgerVault | null; open: boolean; onClose: () => void }) {
+  const { toast } = useToast();
+  const [amount, setAmount] = useState("");
+  const [payloadUuid, setPayloadUuid] = useState<string | null>(null);
+  const [pollStatus, setPollStatus] = useState<"idle" | "waiting" | "signed" | "rejected">("idle");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const cleanUp = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    setPayloadUuid(null);
+    setPollStatus("idle");
+    setAmount("");
+  }, []);
+
+  useEffect(() => {
+    if (!open) cleanUp();
+    return () => cleanUp();
+  }, [open, cleanUp]);
+
+  useEffect(() => {
+    if (!payloadUuid || pollStatus !== "waiting") return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/xumm/status/${payloadUuid}`);
+        const data = await res.json();
+        if (data.resolved) {
+          if (data.signed) {
+            setPollStatus("signed");
+            toast({ title: "Transaction Signed", description: `VaultDeposit signed by ${data.account?.slice(0, 8)}...` });
+            queryClient.invalidateQueries({ queryKey: ["/api/xls66/positions"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/xls66/vaults"] });
+          } else {
+            setPollStatus("rejected");
+            toast({ title: "Transaction Rejected", description: "You declined the deposit in Xaman.", variant: "destructive" });
+          }
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      } catch { }
+    }, 3000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [payloadUuid, pollStatus, toast]);
+
+  const depositMutation = useMutation({
+    mutationFn: async () => {
+      if (!vault) throw new Error("No vault selected");
+      const res = await apiRequest("POST", "/api/xls66/vault-deposit", {
+        vaultId: vault.vaultId,
+        amount,
+        asset: vault.asset,
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setPayloadUuid(data.uuid);
+      setPollStatus("waiting");
+      if (data.deepLink) {
+        window.open(data.deepLink, "_blank");
+      }
+      toast({ title: "Deposit Request Created", description: "Open Xaman to sign the VaultDeposit transaction." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Deposit Failed", description: error.message || "Could not create deposit request", variant: "destructive" });
+    },
+  });
+
+  const parsedAmount = parseFloat(amount);
+  const isValid = !isNaN(parsedAmount) && parsedAmount > 0;
+
+  if (!vault) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="sm:max-w-md" data-testid="deposit-modal">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-[#00A4E4]" />
+            Deposit into Vault
+          </DialogTitle>
+          <DialogDescription>
+            {vault.asset} vault owned by {truncAddr(vault.owner)}
+          </DialogDescription>
+        </DialogHeader>
+
+        {pollStatus === "idle" && (
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-muted-foreground">Vault ID</p>
+                <p className="font-mono font-medium">{truncAddr(vault.vaultId)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Available</p>
+                <p className="font-medium">{formatLedgerAmount(vault.assetsAvailable, vault.asset)} {vault.asset}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deposit-amount">Amount to Deposit</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="deposit-amount"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder={`e.g. 100 ${vault.asset}`}
+                  min="0"
+                  step="any"
+                  data-testid="input-deposit-amount"
+                />
+                <Badge variant="outline" className="shrink-0 self-center px-3 py-1.5">{vault.asset}</Badge>
+              </div>
+            </div>
+
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-md p-2.5 flex items-start gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-muted-foreground">
+                You will sign a VaultDeposit transaction in Xaman. CryptoOwnBank never has custody of your funds. Verify the vault operator before depositing.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {pollStatus === "waiting" && (
+          <div className="py-8 text-center space-y-3">
+            <Loader2 className="h-10 w-10 animate-spin text-[#00A4E4] mx-auto" />
+            <p className="font-medium">Waiting for Xaman signature...</p>
+            <p className="text-sm text-muted-foreground">Open Xaman on your phone and approve the VaultDeposit transaction for {amount} {vault.asset}.</p>
+          </div>
+        )}
+
+        {pollStatus === "signed" && (
+          <div className="py-8 text-center space-y-3">
+            <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto" />
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">Deposit Signed Successfully</p>
+            <p className="text-sm text-muted-foreground">Your VaultDeposit of {amount} {vault.asset} has been signed and submitted to the XRPL.</p>
+          </div>
+        )}
+
+        {pollStatus === "rejected" && (
+          <div className="py-8 text-center space-y-3">
+            <XCircle className="h-10 w-10 text-red-500 mx-auto" />
+            <p className="font-medium text-red-700 dark:text-red-400">Deposit Rejected</p>
+            <p className="text-sm text-muted-foreground">You declined the transaction in Xaman. No funds were moved.</p>
+          </div>
+        )}
+
+        <DialogFooter>
+          {pollStatus === "idle" && (
+            <Button
+              onClick={() => depositMutation.mutate()}
+              disabled={!isValid || depositMutation.isPending}
+              className="w-full"
+              data-testid="button-confirm-deposit"
+            >
+              {depositMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Coins className="h-4 w-4 mr-2" />
+              )}
+              Deposit {isValid ? `${parsedAmount} ${vault.asset}` : vault.asset}
+            </Button>
+          )}
+          {(pollStatus === "signed" || pollStatus === "rejected") && (
+            <Button onClick={onClose} className="w-full" variant={pollStatus === "signed" ? "default" : "outline"} data-testid="button-close-deposit">
+              {pollStatus === "signed" ? "Done" : "Close"}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function XLS66Guide() {
   const [show, setShow] = useState(false);
   return (
@@ -704,8 +881,8 @@ function XLS66Guide() {
       {show && (
         <div className="px-3 pb-3 space-y-3 text-sm text-muted-foreground">
           <div>
-            <p className="font-medium text-foreground mb-1">Single Asset Vaults (XLS-66)</p>
-            <p>XLS-66 introduces native, on-ledger yield vaults to the XRP Ledger. Unlike DeFi protocols on Ethereum that rely on smart contracts, XLS-66 vaults are built directly into the XRPL's transaction engine (rippled v3.1+). This means:</p>
+            <p className="font-medium text-foreground mb-1">Single Asset Vaults (XLS-65) &amp; Lending Protocol (XLS-66)</p>
+            <p>XLS-65 introduces native, on-ledger Single Asset Vaults to the XRP Ledger. XLS-66 adds the Lending Protocol on top. Unlike DeFi on Ethereum that relies on smart contracts, these are built directly into the XRPL's transaction engine (rippled v3.1+). This means:</p>
             <ul className="mt-2 space-y-1 ml-4 list-disc">
               <li><strong>On-ledger execution</strong> — no smart contract risk, no bridge risk. Everything happens natively on XRPL.</li>
               <li><strong>Non-custodial</strong> — you deposit from your own wallet and receive vault shares as Multi-Purpose Tokens (MPTs). Your keys, your assets.</li>
@@ -747,6 +924,7 @@ export default function XLS66LendingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("vaults");
+  const [depositVault, setDepositVault] = useState<OnLedgerVault | null>(null);
 
   const statusQuery = useQuery<AmendmentStatus>({
     queryKey: ["/api/xls66/status"],
@@ -776,33 +954,6 @@ export default function XLS66LendingPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/xls66/positions"] });
       toast({ title: "Updated", description: "Auto-reinvest setting saved." });
-    },
-  });
-
-  const depositMutation = useMutation({
-    mutationFn: async (vault: OnLedgerVault) => {
-      const res = await apiRequest("POST", "/api/xls66/vault-deposit", {
-        vaultId: vault.vaultId,
-        amount: "100",
-        asset: vault.asset,
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.deepLink) {
-        window.open(data.deepLink, "_blank");
-      }
-      toast({
-        title: "Deposit Request Created",
-        description: "Open Xaman (Xumm) to sign the VaultDeposit transaction.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Deposit Failed",
-        description: error.message || "Could not create deposit request",
-        variant: "destructive",
-      });
     },
   });
 
@@ -946,7 +1097,7 @@ export default function XLS66LendingPage() {
                   key={vault.vaultId}
                   vault={vault}
                   vaultsLive={vaultsLive}
-                  onDeposit={(v) => depositMutation.mutate(v)}
+                  onDeposit={(v) => setDepositVault(v)}
                 />
               ))}
             </div>
@@ -989,6 +1140,12 @@ export default function XLS66LendingPage() {
           <BorrowingHub />
         </TabsContent>
       </Tabs>
+
+      <DepositModal
+        vault={depositVault}
+        open={!!depositVault}
+        onClose={() => setDepositVault(null)}
+      />
     </div>
   );
 }

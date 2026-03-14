@@ -403,6 +403,18 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === "/admin/vault-blocklist"}
+                    data-testid="nav-admin-vault-blocklist"
+                  >
+                    <Link href="/admin/vault-blocklist">
+                      <Shield className="h-4 w-4 text-amber-500" />
+                      <span>Vault Blocklist</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

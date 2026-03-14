@@ -44,6 +44,7 @@ import OwnBankTransfer from "@/pages/ownbank-transfer";
 import Contact from "@/pages/contact";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
+import AdminVaultBlocklist from "@/pages/admin-vault-blocklist";
 import YieldCalculator from "@/pages/yield-calculator";
 import PriceAlerts from "@/pages/price-alerts";
 import WalletsPage from "@/pages/wallets";
@@ -158,6 +159,7 @@ function AuthenticatedRoutes() {
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
         <Route path="/admin/errors" component={AdminErrorMonitor} />
+        <Route path="/admin/vault-blocklist" component={AdminVaultBlocklist} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>
