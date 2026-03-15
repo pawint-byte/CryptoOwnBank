@@ -179,6 +179,61 @@ const PAIR_CATEGORIES: PairCategory[] = [
         base: { currency: "XRP", display: "XRP" },
         counter: { currency: "SOL", issuer: "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL", display: "SOL" },
       },
+      {
+        label: "XRP / DGB (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "DGB", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "DGB" },
+      },
+      {
+        label: "XRP / CRO (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "CRO", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "CRO" },
+      },
+      {
+        label: "XRP / EOS (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "EOS", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "EOS" },
+      },
+      {
+        label: "XRP / FLR (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "FLR", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "FLR" },
+      },
+      {
+        label: "XRP / ICP (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "ICP", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ICP" },
+      },
+      {
+        label: "XRP / LINK (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "4C494E4B00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "LINK" },
+      },
+      {
+        label: "XRP / ONDO (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "4F4E444F00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ONDO" },
+      },
+      {
+        label: "XRP / TON (Sologenic)",
+        base: { currency: "TON", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "TON" },
+        counter: { currency: "XRP", display: "XRP" },
+      },
+      {
+        label: "XRP / SUI (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "SUI", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "SUI" },
+      },
+      {
+        label: "XRP / TRX (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "TRX", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "TRX" },
+      },
+      {
+        label: "XRP / ZBCN (Sologenic)",
+        base: { currency: "5A42434E00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ZBCN" },
+        counter: { currency: "XRP", display: "XRP" },
+      },
     ],
   },
   {
