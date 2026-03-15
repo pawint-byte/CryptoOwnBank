@@ -234,6 +234,61 @@ const PAIR_CATEGORIES: PairCategory[] = [
         base: { currency: "5A42434E00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ZBCN" },
         counter: { currency: "XRP", display: "XRP" },
       },
+      {
+        label: "XRP / DOT (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "DOT", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "DOT" },
+      },
+      {
+        label: "XRP / AVAX (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "4156415800000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "AVAX" },
+      },
+      {
+        label: "XRP / ATOM (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "41544F4D00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ATOM" },
+      },
+      {
+        label: "XRP / ALGO (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "414C474F00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ALGO" },
+      },
+      {
+        label: "XRP / NEAR (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "4E45415200000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "NEAR" },
+      },
+      {
+        label: "XRP / APT (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "APT", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "APT" },
+      },
+      {
+        label: "XRP / PEPE (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "5045504500000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "PEPE" },
+      },
+      {
+        label: "XRP / BONK (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "424F4E4B00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "BONK" },
+      },
+      {
+        label: "XRP / UNI (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "UNI", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "UNI" },
+      },
+      {
+        label: "XRP / AAVE (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "4141564500000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "AAVE" },
+      },
+      {
+        label: "XRP / MATIC (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "4D41544943000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "MATIC" },
+      },
     ],
   },
   {
