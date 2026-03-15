@@ -665,7 +665,7 @@ const faqGroups = [
       },
       {
         q: "How do I pay for Premium?",
-        a: "We accept crypto payments on 22 blockchains — RLUSD, XRP, Bitcoin, Ethereum, Solana, Dogecoin, Litecoin, Cardano, Avalanche, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, Cronos, XDC, DigiByte, and Verge. Crypto is our preferred payment method — just select your chain, send the exact amount to the address shown, and your account is upgraded automatically within 60 seconds. For XRP and RLUSD payments, include the Destination Tag we provide so we can match your payment. For all other chains, we match by the exact amount (the last few decimal places are unique to your order). Need to swap first? We show links to the best DEX for each chain (Uniswap, Jupiter, Osmosis, etc.). Credit/debit card via Stripe is also available as a fallback.",
+        a: "We accept crypto payments on 25 blockchains — XRP, RLUSD, Bitcoin, Ethereum, Solana, Stellar, Dogecoin, Litecoin, Cardano, Avalanche, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, TON, Polygon, Cronos, XDC, DigiByte, Casper, Nervos, Zilliqa, and Verge. Crypto is our preferred payment method — we practice what we preach. Select your chain, send the exact amount to our cold wallet address, and your account is upgraded automatically. For XRP and RLUSD payments, include the Destination Tag we provide so we can match your payment. For all other chains, we match by the exact amount (the last few decimal places are unique to your order). Every payment is verified directly on-chain — no payment processor involved. Credit/debit card via Stripe is also available as a fallback for members who aren't on-chain yet.",
       },
       {
         q: "How do Price Alerts work?",
@@ -1409,7 +1409,7 @@ export default function Landing() {
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/vaults" className="hover:text-[#00A4E4] hover:underline transition-colors">5–8% fixed APR on RLUSD yield vaults →</a></li>
-                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/dex" className="hover:text-[#00A4E4] hover:underline transition-colors">Native DEX for token trading →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/dex" className="hover:text-[#00A4E4] hover:underline transition-colors">Built-in DEX — no smart contracts, no middleman apps →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/wallets" className="hover:text-[#00A4E4] hover:underline transition-colors">Non-custodial wallet management →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#00A4E4] mt-0.5">✓</span> <a href="/ownbank/invoices" className="hover:text-[#00A4E4] hover:underline transition-colors">B2B invoicing &amp; payment corridors →</a></li>
                 </ul>
@@ -1421,6 +1421,7 @@ export default function Landing() {
                   <span className="text-xs text-muted-foreground ml-auto">Payments &amp; Remittances</span>
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/dex" className="hover:text-[#7B61FF] hover:underline transition-colors">Built-in DEX — trade XLM, USDC, EURC, BTC and more →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Path payments — send USD, they get PHP automatically →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Global anchor network for cash on/off ramps →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/remittances" className="hover:text-[#7B61FF] hover:underline transition-colors">Remittance corridor calculator &amp; guides →</a></li>
@@ -1930,7 +1931,7 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$29</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $199/yr — Save $149 · Pay with crypto (22 chains) or card</p>
+                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $199/yr — Save $149 · Pay with crypto (25 chains) or card</p>
                   <ul className="space-y-3 mb-4">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
