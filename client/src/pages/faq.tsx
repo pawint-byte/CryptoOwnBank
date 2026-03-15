@@ -449,11 +449,11 @@ const faqGroups = [
       },
       {
         q: "What tokens can I trade on the XRPL DEX?",
-        a: "You can trade any token that has been issued on the XRPL — as long as you have a trustline set for it. Popular pairs are organized into categories: Stablecoins (XRP/RLUSD, XRP/USD via Bitstamp, XRP/USD via GateHub, XRP/EUR), Crypto (XRP/BTC, XRP/ETH, SOLO/XRP, CORE/XRP), and Fiat (XRP/GBP, XRP/CNY). The Token Manager makes it easy to add trustlines for these tokens before you start trading. The DEX is fully permissionless — anyone can issue tokens and create markets.",
+        a: "You can trade any token that has been issued on the XRPL — as long as you have a trustline set for it. We currently list 21 pairs organized into categories: Stablecoins (XRP/RLUSD, XRP/USD via Bitstamp, XRP/USD via GateHub, XRP/EUR), Crypto (XRP/BTC, XRP/ETH, XRP/XLM, XRP/LTC, XRP/DOGE, XRP/SOL, XRP/ADA, XRP/VET, XRP/ZIL, XRP/XDC, XRP/SHIB, XRP/HBAR, SOLO/XRP, CORE/XRP, ELS/XRP, CSC/XRP), and Fiat (XRP/GBP, XRP/CNY). Notice that XRP connects every pair — it's the bridge currency that links stablecoins, crypto, and fiat all through one native DEX. The Token Manager makes it easy to add trustlines for these tokens before you start trading. The DEX is fully permissionless — anyone can issue tokens and create markets.",
       },
       {
         q: "What tokens can I trade on the Stellar DEX?",
-        a: "On the Stellar DEX, you can trade: Stablecoins (XLM/USDC, XLM/EURC, XLM/USDT, USDC/EURC) and Crypto (XLM/BTC, XLM/ETH, XLM/AQUA, XLM/yXLM). XLM acts as the bridge currency, just like XRP does on the XRPL. You need a trustline for any token you want to hold — most Stellar wallets (LOBSTR, Freighter) make adding trustlines easy. We show live order book data from the Stellar Horizon API and link you to LOBSTR, StellarTerm, or StellarX to execute trades in your own wallet.",
+        a: "On the Stellar DEX, we list 13 pairs across two categories: Stablecoins (XLM/USDC, XLM/EURC, XLM/USDT, USDC/EURC) and Crypto (XLM/BTC, XLM/ETH, XLM/XRP, XLM/DOGE, XLM/AQUA, XLM/yXLM, XLM/SHX, XLM/RMT, XLM/MOBI). XLM acts as the bridge currency, just like XRP does on the XRPL — and you can even trade XLM/XRP directly, bridging both ecosystems. You need a trustline for any token you want to hold — most Stellar wallets (LOBSTR, Freighter) make adding trustlines easy. We show live order book data from the Stellar Horizon API and link you to LOBSTR, StellarTerm, or StellarX to execute trades in your own wallet.",
       },
       {
         q: "Are there fees for using XRPL Tools?",

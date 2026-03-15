@@ -71,6 +71,11 @@ const BTC_ULTRA: StellarAsset = { code: "BTC", issuer: "GAUTUYY2THLF7SGITDFMXJVY
 const ETH_ULTRA: StellarAsset = { code: "ETH", issuer: "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF", display: "ETH", type: "credit_alphanum4" };
 const AQUA_STELLAR: StellarAsset = { code: "AQUA", issuer: "GBNZILSTVQZ4R7IKQDGHYGY2QXL5QOFJYQMXPKWRRM5PAV7Y4M67AQUA", display: "AQUA", type: "credit_alphanum4" };
 const yXLM_STELLAR: StellarAsset = { code: "yXLM", issuer: "GARDNV3Q7YGT4AKSDF25LT32YSCCW4EV22Y2TV3I2PU2MMXJTEDL5T55", display: "yXLM", type: "credit_alphanum4" };
+const XRP_STELLAR: StellarAsset = { code: "XRP", issuer: "GBXRPL45NPHCVMFFAYZVUVFFVKSIZ362ZXFP7I2ETNOJEMON2KWSSVAIX", display: "XRP", type: "credit_alphanum4" };
+const DOGE_ULTRA: StellarAsset = { code: "DOGE", issuer: "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF", display: "DOGE", type: "credit_alphanum4" };
+const SHX_STELLAR: StellarAsset = { code: "SHX", issuer: "GDSTRSHXHGJ7ZIVRBXEYE5Q74XUVCUSEZ6JHR5PX7CXZJOQL5WFHAVPS", display: "SHX", type: "credit_alphanum4" };
+const RMT_STELLAR: StellarAsset = { code: "RMT", issuer: "GDEGOXPCHXWFYY234D2YNNFBY5HACK47Q7BWIV6SLLIUG55TP5MHKM6S", display: "RMT", type: "credit_alphanum4" };
+const MOBI_STELLAR: StellarAsset = { code: "MOBI", issuer: "GA6HCMBLTZS5VYYBCATRBRZ3BZJMAFUDKYYF6AH6MVCMGWMRDNSWJPIH", display: "MOBI", type: "credit_alphanum4" };
 
 const STELLAR_PAIRS: StellarPair[] = [
   { label: "XLM / USDC", base: XLM_NATIVE, quote: USDC_STELLAR, category: "Stablecoins" },
@@ -79,8 +84,13 @@ const STELLAR_PAIRS: StellarPair[] = [
   { label: "USDC / EURC", base: USDC_STELLAR, quote: EURC_STELLAR, category: "Stablecoins" },
   { label: "XLM / BTC", base: XLM_NATIVE, quote: BTC_ULTRA, category: "Crypto" },
   { label: "XLM / ETH", base: XLM_NATIVE, quote: ETH_ULTRA, category: "Crypto" },
+  { label: "XLM / XRP", base: XLM_NATIVE, quote: XRP_STELLAR, category: "Crypto" },
+  { label: "XLM / DOGE", base: XLM_NATIVE, quote: DOGE_ULTRA, category: "Crypto" },
   { label: "XLM / AQUA", base: XLM_NATIVE, quote: AQUA_STELLAR, category: "Crypto" },
   { label: "XLM / yXLM", base: XLM_NATIVE, quote: yXLM_STELLAR, category: "Crypto" },
+  { label: "XLM / SHX", base: XLM_NATIVE, quote: SHX_STELLAR, category: "Crypto" },
+  { label: "XLM / RMT", base: XLM_NATIVE, quote: RMT_STELLAR, category: "Crypto" },
+  { label: "XLM / MOBI", base: XLM_NATIVE, quote: MOBI_STELLAR, category: "Crypto" },
 ];
 
 const PAIR_CATEGORIES = ["Stablecoins", "Crypto"];

@@ -110,6 +110,21 @@ const PAIR_CATEGORIES: PairCategory[] = [
         counter: { currency: "ETH", issuer: "rcA8X3TVMST1n3CJeAdGk1RdRCHii7N2h", display: "ETH" },
       },
       {
+        label: "XRP / XLM (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "XLM", issuer: "rKiCet8SdvWxPXnAgYarFUXMh1zCPz432Y", display: "XLM" },
+      },
+      {
+        label: "XRP / LTC (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "LTC", issuer: "rcRzGWq6Ng3jeYhqnmM4zcWcUh69hrQ8V", display: "LTC" },
+      },
+      {
+        label: "XRP / DOGE (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "DOG", issuer: "rLqUC2eCPohYvJCEBJ77eCCqVL2uEiczjA", display: "DOGE" },
+      },
+      {
         label: "SOLO / XRP",
         base: { currency: "534F4C4F00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "SOLO" },
         counter: { currency: "XRP", display: "XRP" },
@@ -118,6 +133,51 @@ const PAIR_CATEGORIES: PairCategory[] = [
         label: "CORE / XRP",
         base: { currency: "434F524500000000000000000000000000000000", issuer: "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D", display: "CORE" },
         counter: { currency: "XRP", display: "XRP" },
+      },
+      {
+        label: "ELS / XRP",
+        base: { currency: "454C5300000000000000000000000000000000000", issuer: "rHXuEaRYnnJHbDeuBH5w8yPh5uwNVh5zAg", display: "ELS" },
+        counter: { currency: "XRP", display: "XRP" },
+      },
+      {
+        label: "CSC / XRP",
+        base: { currency: "CSC", issuer: "rCSCManTZ8ME9EoLrSHHYKW8PPwWMgkwr", display: "CSC" },
+        counter: { currency: "XRP", display: "XRP" },
+      },
+      {
+        label: "XRP / ADA (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "ADA", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ADA" },
+      },
+      {
+        label: "XRP / VET (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "VET", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "VET" },
+      },
+      {
+        label: "XRP / ZIL (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "ZIL", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "ZIL" },
+      },
+      {
+        label: "XRP / XDC (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "XDC", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "XDC" },
+      },
+      {
+        label: "XRP / SHIB (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "534849420000000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "SHIB" },
+      },
+      {
+        label: "XRP / HBAR (Sologenic)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "484241520000000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "HBAR" },
+      },
+      {
+        label: "XRP / SOL (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "SOL", issuer: "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL", display: "SOL" },
       },
     ],
   },
