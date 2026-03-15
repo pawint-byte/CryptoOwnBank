@@ -516,6 +516,10 @@ const faqGroups = [
         a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit — designed so anyone with an internet connection can participate in global commerce. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL's built-in DEX, send and receive payments in seconds, and accept crypto payments for your business — all while keeping full control via your cold wallet. Whether you're unbanked (no access to traditional finance), debanked (shut out by banks or payment processors), or simply tired of paying 2.9% to a middleman — CryptoOwnBank gives you the tools to be your own bank.",
       },
       {
+        q: "Why does CryptoOwnBank focus on XRPL and Stellar instead of Ethereum or Solana?",
+        a: "Because we don't believe in patchwork. On Ethereum, a simple swap requires MetaMask, Uniswap (a third-party smart contract), ETH for gas ($5–50), and hope the contract hasn't been exploited. On BNB Chain: different wallet, different DEX (PancakeSwap), different gas token. Solana: another wallet, another aggregator (Jupiter), another set of permissions. Every layer is another company, another point of failure. The XRP Ledger and Stellar are different — the decentralized exchange is built into the protocol itself. No third-party app runs it. No smart contract to exploit. No governance token to hold. You open your wallet, pick a pair, sign the trade, and it settles in 4 seconds. Our philosophy: get your assets on the blockchain, use XRP as your bridge currency, and the native DEX handles the rest. One chain, one wallet, one bridge — not five apps, three gas tokens, and two browser extensions.",
+      },
+      {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
         a: "Banks offer 0.01–4.5% yield but you're an unsecured creditor — they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5–8% fixed APR with automatic compounding, and you own 100% — keys stay on your cold wallet, every action requires your signature. Other advantages: no KYC on our end, no bank linking, low XRPL fees (~0.0001 XRP vs $15–30 wire fees), interest-only withdrawals so principal keeps earning, and future XLS-66 XRP lending from the same dashboard. Banks and exchanges are convenient but take custody and pay less. CryptoOwnBank flips the script: full control, higher yields, complete transparency.",
       },
@@ -1428,6 +1432,18 @@ export default function Landing() {
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stablecoins" className="hover:text-[#7B61FF] hover:underline transition-colors">USDC &amp; EURCV stablecoin support →</a></li>
                 </ul>
               </div>
+            </div>
+            <div className="mt-8 p-6 rounded-xl border border-amber-500/20 bg-amber-500/5">
+              <h3 className="font-semibold mb-3 text-center" data-testid="heading-why-native">Why We Build on Native Blockchain Rails — Not Third-Party Apps</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                Most crypto platforms today patch together a maze of third-party apps to make things work. Want to swap tokens on Ethereum? You need MetaMask, then Uniswap, then ETH for gas, then hope the smart contract hasn't been exploited. Want to trade on BNB Chain? Different wallet, different DEX (PancakeSwap), different gas token. Solana? Another wallet, another app (Jupiter), another set of permissions. Every layer is another company, another point of failure, another entity that can go offline, get hacked, or change the rules.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                CryptoOwnBank takes a fundamentally different approach. We chose the XRP Ledger and Stellar because they have something almost no other blockchain has: <span className="text-foreground font-medium">a decentralized exchange built into the protocol itself</span>. The DEX isn't an app someone built on top — it's part of the chain, run by the same validators that process every transaction. No smart contracts to exploit. No front-end website to hack. No company to shut it down. No governance token you need to buy. No wrapped tokens adding another layer of risk.
+              </p>
+              <p className="text-sm text-foreground font-medium leading-relaxed">
+                Our philosophy is simple: get your assets on the blockchain, use XRP as your bridge currency, and the native DEX handles the rest. One chain, one wallet, one bridge — not a patchwork of five apps, three gas tokens, and two browser extensions. That's what "be your own bank" actually looks like.
+              </p>
             </div>
             <div className="mt-6 text-center flex flex-wrap items-center justify-center gap-3">
               <a href="/chain-guide">
