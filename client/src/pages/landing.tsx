@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -714,6 +715,107 @@ const faqGroups = [
     ],
   },
 ];
+
+function AmendmentTracker() {
+  const { data } = useQuery<{
+    xls65: { name: string; enabled: boolean; count: number; threshold: number; validatorCount: number; percentage: number } | null;
+    xls66: { name: string; enabled: boolean; count: number; threshold: number; validatorCount: number; percentage: number } | null;
+    lastChecked: string | null;
+  }>({
+    queryKey: ["/api/xls66/amendment-progress"],
+    refetchInterval: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (!data || (!data.xls65 && !data.xls66)) return null;
+
+  const timeAgo = data.lastChecked ? (() => {
+    const mins = Math.round((Date.now() - new Date(data.lastChecked!).getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    return `${Math.round(mins / 60)}h ago`;
+  })() : null;
+
+  const renderBar = (item: NonNullable<typeof data.xls65>, label: string) => {
+    const pct = item.percentage;
+    const barColor = item.enabled ? "bg-emerald-500" : pct >= 60 ? "bg-amber-400" : "bg-[#00A4E4]";
+    return (
+      <div className="space-y-2" data-testid={`landing-voting-${label.replace(/\s/g, "-").toLowerCase()}`}>
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-semibold">{label}</span>
+          <span className="text-sm">
+            {item.enabled ? (
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Active on Mainnet</Badge>
+            ) : (
+              <span className="text-muted-foreground">{item.count}/{item.validatorCount} validators ({pct}%)</span>
+            )}
+          </span>
+        </div>
+        <div className="relative w-full bg-muted rounded-full h-3 overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+          {!item.enabled && (
+            <div className="absolute top-0 h-full" style={{ left: "80%" }}>
+              <div className="w-0.5 h-full bg-white/50" />
+            </div>
+          )}
+        </div>
+        {!item.enabled && (
+          <p className="text-xs text-muted-foreground">Needs {item.threshold} of {item.validatorCount} validators (80%) for 2 consecutive weeks to activate</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-background" data-testid="section-amendment-tracker">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-10">
+          <Badge className="mb-4 bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30">Live from XRPL</Badge>
+          <h2 className="text-3xl font-bold mb-3" data-testid="heading-amendment-tracker">XRPL Amendment Progress</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Two new XRPL amendments are being voted on by validators right now. When they reach 80% support for 2 weeks, 
+            non-custodial lending vaults go live — and CryptoOwnBank is ready from day one.
+          </p>
+        </div>
+        <Card className="border-2">
+          <CardContent className="p-6 space-y-6">
+            {data.xls65 && renderBar(data.xls65, "XLS-65 Single Asset Vaults")}
+            {data.xls66 && renderBar(data.xls66, "XLS-66 Lending Protocol")}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <RefreshCw className="h-3 w-3" />
+                <span>Live data from XRPL validators{timeAgo ? ` · Updated ${timeAgo}` : ""}</span>
+              </div>
+              <a href="/login">
+                <Button size="sm" className="bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-amendment-signup">
+                  Get Ready — Sign Up Free
+                  <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div className="p-4 rounded-lg bg-muted/50">
+            <Wallet className="h-5 w-5 mx-auto mb-2 text-[#00A4E4]" />
+            <p className="text-sm font-medium">Link Your Cold Wallets</p>
+            <p className="text-xs text-muted-foreground mt-1">Connect via Xaman so you're ready to deposit the moment vaults go live</p>
+          </div>
+          <div className="p-4 rounded-lg bg-muted/50">
+            <Shield className="h-5 w-5 mx-auto mb-2 text-emerald-500" />
+            <p className="text-sm font-medium">100% Non-Custodial</p>
+            <p className="text-xs text-muted-foreground mt-1">Your keys never leave your hardware device — we build transactions, you sign them</p>
+          </div>
+          <div className="p-4 rounded-lg bg-muted/50">
+            <TrendingUp className="h-5 w-5 mx-auto mb-2 text-amber-500" />
+            <p className="text-sm font-medium">Earn Yield on XRP</p>
+            <p className="text-xs text-muted-foreground mt-1">Lend XRP directly from your cold wallet and earn interest — no intermediary</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -2181,6 +2283,8 @@ export default function Landing() {
             </div>
           </div>
         </section>
+
+        <AmendmentTracker />
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#00A4E4] text-white">
           <div className="max-w-3xl mx-auto text-center">

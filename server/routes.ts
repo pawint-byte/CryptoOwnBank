@@ -3625,6 +3625,33 @@ export async function registerRoutes(
     }
   }
 
+  app.get("/api/xls66/amendment-progress", async (_req: any, res) => {
+    try {
+      const voting = await checkAmendmentVoting();
+      res.json({
+        xls65: voting.xls65 ? {
+          name: "XLS-65 Single Asset Vaults",
+          enabled: voting.xls65.enabled,
+          count: voting.xls65.count,
+          threshold: voting.xls65.threshold,
+          validatorCount: voting.xls65.validatorCount,
+          percentage: voting.xls65.percentage,
+        } : null,
+        xls66: voting.xls66 ? {
+          name: "XLS-66 Lending Protocol",
+          enabled: voting.xls66.enabled,
+          count: voting.xls66.count,
+          threshold: voting.xls66.threshold,
+          validatorCount: voting.xls66.validatorCount,
+          percentage: voting.xls66.percentage,
+        } : null,
+        lastChecked: voting.checkedAt ? new Date(voting.checkedAt).toISOString() : null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check amendment progress" });
+    }
+  });
+
   app.get("/api/xls66/status", isAuthenticated, async (_req: any, res) => {
     try {
       const voting = await checkAmendmentVoting();
