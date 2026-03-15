@@ -2345,21 +2345,19 @@ export default function Wallets() {
               <Smartphone className="h-5 w-5 text-[#00A4E4]" />
               Link with Xaman
             </DialogTitle>
-            <DialogDescription>
-              {mobileLinkPayload && (
-                <>
-                  Linking address: <code className="text-xs">{mobileLinkPayload.expectedAddress.slice(0, 10)}...{mobileLinkPayload.expectedAddress.slice(-6)}</code>
-                </>
-              )}
-            </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="text-center space-y-2">
-              <p className="text-sm font-medium">Step 1: Open Xaman and switch to the matching account</p>
-              <p className="text-xs text-muted-foreground">Make sure the active account in Xaman matches the address above</p>
-            </div>
-            <div className="text-center space-y-2">
-              <p className="text-sm font-medium">Step 2: Tap the button below to approve in Xaman</p>
+          <div className="flex flex-col items-center gap-4 py-3">
+            <div className="w-full rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
+              <p className="text-sm font-bold text-amber-400 mb-2">IMPORTANT — Do this first:</p>
+              <ol className="text-xs text-amber-200/90 space-y-1.5 list-decimal list-inside">
+                <li>Open <strong>Xaman</strong> on your phone</li>
+                <li>Tap the account switcher (top of screen)</li>
+                <li>Switch to your <strong>{linkingAddress ? (() => {
+                  const wallet = userWallets.find(w => w.address === linkingAddress);
+                  return wallet?.label || linkingAddress.slice(0, 8) + "...";
+                })() : "cold wallet"}</strong> read-only account</li>
+                <li>Come back here and tap the button below</li>
+              </ol>
             </div>
             {mobileLinkPayload && (
               <a
@@ -2375,7 +2373,7 @@ export default function Wallets() {
             )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Waiting for Xaman approval...
+              Waiting for approval...
             </div>
             <p className="text-xs text-muted-foreground text-center">
               After approving in Xaman, come back here. The connection will be saved automatically.
