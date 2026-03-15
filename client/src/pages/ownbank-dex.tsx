@@ -65,28 +65,81 @@ interface TradingPair {
   counter: { currency: string; issuer?: string; display: string };
 }
 
-const COMMON_PAIRS: TradingPair[] = [
+interface PairCategory {
+  label: string;
+  pairs: TradingPair[];
+}
+
+const PAIR_CATEGORIES: PairCategory[] = [
   {
-    label: "XRP / RLUSD",
-    base: { currency: "XRP", display: "XRP" },
-    counter: { currency: RLUSD_CURRENCY, issuer: RLUSD_ISSUER, display: "RLUSD" },
+    label: "Stablecoins",
+    pairs: [
+      {
+        label: "XRP / RLUSD",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: RLUSD_CURRENCY, issuer: RLUSD_ISSUER, display: "RLUSD" },
+      },
+      {
+        label: "XRP / USD (Bitstamp)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "USD", issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B", display: "USD" },
+      },
+      {
+        label: "XRP / EUR (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "EUR", issuer: "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq", display: "EUR" },
+      },
+      {
+        label: "XRP / USD (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "USD", issuer: "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq", display: "USD (GH)" },
+      },
+    ],
   },
   {
-    label: "XRP / USD (Bitstamp)",
-    base: { currency: "XRP", display: "XRP" },
-    counter: { currency: "USD", issuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B", display: "USD" },
+    label: "Crypto",
+    pairs: [
+      {
+        label: "XRP / BTC (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "BTC", issuer: "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL", display: "BTC" },
+      },
+      {
+        label: "XRP / ETH (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "ETH", issuer: "rcA8X3TVMST1n3CJeAdGk1RdRCHii7N2h", display: "ETH" },
+      },
+      {
+        label: "SOLO / XRP",
+        base: { currency: "534F4C4F00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "SOLO" },
+        counter: { currency: "XRP", display: "XRP" },
+      },
+      {
+        label: "CORE / XRP",
+        base: { currency: "434F524500000000000000000000000000000000", issuer: "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D", display: "CORE" },
+        counter: { currency: "XRP", display: "XRP" },
+      },
+    ],
   },
   {
-    label: "XRP / EUR (Gatehub)",
-    base: { currency: "EUR", issuer: "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq", display: "EUR" },
-    counter: { currency: "XRP", display: "XRP" },
-  },
-  {
-    label: "SOLO / XRP",
-    base: { currency: "534F4C4F00000000000000000000000000000000", issuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", display: "SOLO" },
-    counter: { currency: "XRP", display: "XRP" },
+    label: "Fiat",
+    pairs: [
+      {
+        label: "XRP / GBP (GateHub)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "GBP", issuer: "r4GN9eEoz9K4BhMQXe4H1eYNwne3YtRhK", display: "GBP" },
+      },
+      {
+        label: "XRP / CNY (RippleFox)",
+        base: { currency: "XRP", display: "XRP" },
+        counter: { currency: "CNY", issuer: "rKiCet8SdvWxPXnAgYarFUXMh1zCPz432Y", display: "CNY" },
+      },
+    ],
   },
 ];
+
+const ALL_PAIRS: TradingPair[] = PAIR_CATEGORIES.flatMap(c => c.pairs);
+const COMMON_PAIRS = ALL_PAIRS;
 
 function formatAmount(val: string | number, decimals = 6): string {
   const num = typeof val === "string" ? parseFloat(val) : val;
@@ -364,15 +417,23 @@ export default function OwnBankDex() {
           value={selectedPairIndex.toString()}
           onValueChange={(val) => setSelectedPairIndex(parseInt(val))}
         >
-          <SelectTrigger className="w-full sm:w-64" data-testid="select-trading-pair">
+          <SelectTrigger className="w-full sm:w-72" data-testid="select-trading-pair">
             <SelectValue placeholder="Select trading pair" />
           </SelectTrigger>
           <SelectContent>
-            {COMMON_PAIRS.map((p, i) => (
-              <SelectItem key={i} value={i.toString()} data-testid={`select-pair-${i}`}>
-                {p.label}
-              </SelectItem>
-            ))}
+            {PAIR_CATEGORIES.map((cat) => {
+              const catOffset = ALL_PAIRS.indexOf(cat.pairs[0]);
+              return (
+                <div key={cat.label}>
+                  <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.label}</p>
+                  {cat.pairs.map((p, j) => (
+                    <SelectItem key={catOffset + j} value={(catOffset + j).toString()} data-testid={`select-pair-${catOffset + j}`}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </div>
+              );
+            })}
           </SelectContent>
         </Select>
         <Badge variant="secondary" data-testid="badge-selected-pair">
