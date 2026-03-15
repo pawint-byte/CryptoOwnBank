@@ -148,9 +148,9 @@ function buildStellarTradeUrl(pair: StellarPair, wallet: "lobstr" | "stellarterm
   }
   if (wallet === "stellarterm") {
     if (pair.base.type === "native") {
-      return `https://stellarterm.com/exchange/${quoteCode}-${pair.quote.issuer?.slice(0, 12)}/${baseCode}-native`;
+      return `https://stellarterm.com/exchange/${quoteCode}-${pair.quote.issuer}/${baseCode}-native`;
     }
-    return `https://stellarterm.com/exchange/${baseCode}-${pair.base.issuer?.slice(0, 12)}/${quoteCode}-${pair.quote.issuer?.slice(0, 12) || "native"}`;
+    return `https://stellarterm.com/exchange/${baseCode}-${pair.base.issuer}/${quoteCode}-${pair.quote.issuer || "native"}`;
   }
   return `https://www.stellarx.com/swap/${baseCode}/${quoteCode}`;
 }

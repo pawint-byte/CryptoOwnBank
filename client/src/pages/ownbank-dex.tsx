@@ -255,15 +255,26 @@ export default function OwnBankDex() {
       const a = parseFloat(amount);
       const p = parseFloat(price) || 0;
 
+      if (orderType === "market") {
+        const marketPrice = orderSide === "buy" ? asks[0]?.price : bids[0]?.price;
+        if (!marketPrice || parseFloat(marketPrice) <= 0) {
+          toast({ title: "No liquidity", description: "No orders available on the book for this pair. Try a limit order instead.", variant: "destructive" });
+          setPlacingOrder(false);
+          return;
+        }
+      }
+
       let takerGets: any;
       let takerPays: any;
 
       if (orderSide === "buy") {
-        takerGets = buildAmountField(pair.counter, orderType === "limit" ? (a * p).toString() : (a * (parseFloat(asks[0]?.price) || p)).toString());
+        const usePrice = orderType === "limit" ? p : parseFloat(asks[0]?.price) || 0;
+        takerGets = buildAmountField(pair.counter, (a * usePrice).toString());
         takerPays = buildAmountField(pair.base, a.toString());
       } else {
+        const usePrice = orderType === "limit" ? p : parseFloat(bids[0]?.price) || 0;
         takerGets = buildAmountField(pair.base, a.toString());
-        takerPays = buildAmountField(pair.counter, orderType === "limit" ? (a * p).toString() : (a * (parseFloat(bids[0]?.price) || p)).toString());
+        takerPays = buildAmountField(pair.counter, (a * usePrice).toString());
       }
 
       const txJson: Record<string, any> = {
