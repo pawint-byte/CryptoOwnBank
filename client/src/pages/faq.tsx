@@ -262,11 +262,11 @@ const faqGroups = [
     items: [
       {
         q: "What's included in the free plan?",
-        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 blockchain address, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, 1 price alert, and 7 days of transaction history. Upgrade to Premium to unlock full Recommendations Hub with Best in Class rankings, personalized staking guides, DeFi comparisons, portfolio search/filter/sort, unlimited alerts, Statement Insights, and full transaction history. Enough to get started and see the value on the free tier.",
+        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 blockchain address, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, 1 price alert, and 7 days of transaction history. Upgrade to Premium to unlock DEX trading on both XRPL (44 pairs) and Stellar (13 pairs), full Recommendations Hub with Best in Class rankings, personalized staking guides, DeFi comparisons, portfolio search/filter/sort, unlimited alerts, Statement Insights, and full transaction history. Enough to get started and see the value on the free tier.",
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit — unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, auto-withdrawal from Soil vaults, extended Whale Alerts history with customizable thresholds, and Technical Analysis with all indicators (EMA, RSI, MACD, Bollinger Bands), live candlestick pattern detection, and up to 10 years of chart data. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
+        a: "Premium unlocks the full cockpit — XRPL DEX trading (44 pairs with Quick Swap and Advanced order book), Stellar DEX trading (13 pairs), unlimited exchange connections (see Binance + Coinbase + Kraken together), unlimited blockchain addresses across all 24 supported chains, complete transaction history, CSV import from Yahoo Finance and CoinTracker, unlimited price alerts, full Recommendations Hub with personalized yield optimization across your entire portfolio, auto-withdrawal from Soil vaults, extended Whale Alerts history with customizable thresholds, and Technical Analysis with all indicators (EMA, RSI, MACD, Bollinger Bands), live candlestick pattern detection, and up to 10 years of chart data. Choose monthly ($29/mo) for portfolio management, or go annual ($199/yr) to also unlock complete tax reports with PDF and TurboTax export.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -522,7 +522,7 @@ const faqGroups = [
       },
       {
         q: "Do I need Premium to accept business payments?",
-        a: "No. The Send & Receive page, Token Manager (for setting up trustlines), and DEX (for currency conversion) are all available on the free tier. Premium adds unlimited blockchain address tracking, full transaction history, and tax reports — which become valuable as your payment volume grows and you need to track everything for accounting and tax filing.",
+        a: "The Send & Receive page and Token Manager (for setting up trustlines) are available on the free tier. DEX trading (XRPL and Stellar) requires Premium or above. Premium also adds unlimited blockchain address tracking, full transaction history, and tax reports — which become valuable as your payment volume grows and you need to track everything for accounting and tax filing.",
       },
       {
         q: "What if I don't have a bank account? Can I still use CryptoOwnBank?",

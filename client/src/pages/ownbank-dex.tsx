@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -325,7 +328,13 @@ function truncateAddress(addr: string): string {
 
 export default function OwnBankDex() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { isConnected, walletAddress, walletType } = useXrplStore();
+  const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
+    queryKey: ["/api/subscription"],
+    enabled: !!user,
+  });
+  const isPremiumOrAbove = subscriptionData?.tier === "premium" || subscriptionData?.tier === "pro";
 
   const [educationOpen, setEducationOpen] = useState(true);
   const [viewMode, setViewMode] = useState<"swap" | "advanced">("swap");
@@ -547,6 +556,23 @@ export default function OwnBankDex() {
         </Card>
 
         <XrplDisclaimer />
+      </div>
+    );
+  }
+
+  if (!isPremiumOrAbove) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-dex-title">XRPL DEX Trading</h1>
+          <p className="text-muted-foreground mt-1">
+            Trade 44 token pairs on the XRP Ledger's built-in decentralized exchange — no smart contracts, no middleman apps.
+          </p>
+        </div>
+        <UpgradePrompt
+          feature="XRPL DEX trading is a Premium feature. Upgrade to access Quick Swap and Advanced order book trading across 44 pairs — stablecoins, crypto, and fiat — all bridged through XRP on the native DEX."
+          variant="premium"
+        />
       </div>
     );
   }

@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,6 +170,12 @@ function buildStellarTradeUrl(pair: StellarPair, wallet: "lobstr" | "stellarterm
 
 export default function StellarDex() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
+    queryKey: ["/api/subscription"],
+    enabled: !!user,
+  });
+  const isPremiumOrAbove = subscriptionData?.tier === "premium" || subscriptionData?.tier === "pro";
   const [educationOpen, setEducationOpen] = useState(true);
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
@@ -224,6 +233,23 @@ export default function StellarDex() {
     }
     setTradeDialogOpen(true);
   };
+
+  if (!isPremiumOrAbove) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-dex-title">Stellar DEX Trading</h1>
+          <p className="text-muted-foreground mt-1">
+            Trade 13 token pairs on the Stellar network's built-in decentralized exchange — XLM, USDC, EURC, BTC, and more.
+          </p>
+        </div>
+        <UpgradePrompt
+          feature="Stellar DEX trading is a Premium feature. Upgrade to access live order books, Quick Swap, and trading across 13 pairs on the Stellar network's native DEX."
+          variant="premium"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
