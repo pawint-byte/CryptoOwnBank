@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/seo-head";
+import { AFFILIATE_LINKS } from "@/lib/xrpl-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,10 +56,10 @@ const STABLECOINS: StablecoinEntry[] = [
     description:
       "Ripple-issued stablecoin with regulatory approval from the New York Department of Financial Services. Native to XRPL with deep integration into Soil Protocol vaults for yield generation.",
     whereToBuy: [
-      { name: "Binance", url: "https://www.binance.com" },
-      { name: "Kraken", url: "https://www.kraken.com" },
-      { name: "Uphold", url: "https://uphold.com" },
-      { name: "Crypto.com", url: "https://crypto.com" },
+      { name: "Binance", url: AFFILIATE_LINKS.binance },
+      { name: "Kraken", url: AFFILIATE_LINKS.kraken },
+      { name: "Uphold", url: AFFILIATE_LINKS.uphold },
+      { name: "Crypto.com", url: AFFILIATE_LINKS.cryptoCom },
     ],
   },
   {
@@ -98,8 +99,8 @@ const STABLECOINS: StablecoinEntry[] = [
     description:
       "The most widely supported regulated stablecoin. Monthly reserve attestations by Deloitte. Available on virtually every major chain and CEX.",
     whereToBuy: [
-      { name: "Coinbase", url: "https://www.coinbase.com" },
-      { name: "Kraken", url: "https://www.kraken.com" },
+      { name: "Coinbase", url: AFFILIATE_LINKS.coinbase },
+      { name: "Kraken", url: AFFILIATE_LINKS.kraken },
       { name: "Circle Mint", url: "https://www.circle.com/en/usdc" },
     ],
   },
@@ -120,8 +121,8 @@ const STABLECOINS: StablecoinEntry[] = [
     description:
       "The largest stablecoin by market cap with the deepest liquidity across centralized and decentralized exchanges. Dominant on Tron for low-fee transfers.",
     whereToBuy: [
-      { name: "Binance", url: "https://www.binance.com" },
-      { name: "Kraken", url: "https://www.kraken.com" },
+      { name: "Binance", url: AFFILIATE_LINKS.binance },
+      { name: "Kraken", url: AFFILIATE_LINKS.kraken },
       { name: "OKX", url: "https://www.okx.com" },
     ],
   },
@@ -162,8 +163,8 @@ const STABLECOINS: StablecoinEntry[] = [
       "PayPal's regulated stablecoin issued through Paxos Trust. Bridging traditional fintech users into crypto with familiar brand trust.",
     whereToBuy: [
       { name: "PayPal", url: "https://www.paypal.com" },
-      { name: "Coinbase", url: "https://www.coinbase.com" },
-      { name: "Crypto.com", url: "https://crypto.com" },
+      { name: "Coinbase", url: AFFILIATE_LINKS.coinbase },
+      { name: "Crypto.com", url: AFFILIATE_LINKS.cryptoCom },
     ],
   },
   {
@@ -184,8 +185,8 @@ const STABLECOINS: StablecoinEntry[] = [
       "The original decentralized stablecoin, now transitioning to USDS under the Sky rebrand. Backed by a diversified basket including crypto and real-world assets.",
     whereToBuy: [
       { name: "Uniswap", url: "https://app.uniswap.org" },
-      { name: "Coinbase", url: "https://www.coinbase.com" },
-      { name: "Kraken", url: "https://www.kraken.com" },
+      { name: "Coinbase", url: AFFILIATE_LINKS.coinbase },
+      { name: "Kraken", url: AFFILIATE_LINKS.kraken },
     ],
   },
 ];

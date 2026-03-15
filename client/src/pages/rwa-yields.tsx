@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/seo-head";
+import { AFFILIATE_LINKS } from "@/lib/xrpl-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -236,7 +237,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     backingType: "Payroll Direct Deposit Rewards",
     tvl: "N/A",
     riskLevel: "Low",
-    link: "https://uphold.com",
+    link: AFFILIATE_LINKS.uphold,
     description: "Earn 4% back in XRP on qualifying salary-linked ACH direct deposits of $250+. Get paid up to 2 days early. Max reward $500/month. Available in US (excluding NY, USVI, American Samoa).",
     integrated: false,
     minInvestment: "$250 qualifying deposit",
@@ -263,7 +264,7 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     backingType: "Spending Cashback Rewards",
     tvl: "N/A",
     riskLevel: "Low",
-    link: "https://uphold.com",
+    link: AFFILIATE_LINKS.uphold,
     description: "Earn up to 4% back in XRP on everyday purchases with the Uphold Debit Card. Get 4% when funding with crypto or metals, or 3% when using fiat or stablecoins (Elite tier).",
     integrated: false,
     minInvestment: "No minimum",

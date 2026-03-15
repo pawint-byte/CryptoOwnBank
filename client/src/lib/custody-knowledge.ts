@@ -53,14 +53,14 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "Lido", method: "Liquid Staking (stETH)", apyRange: "3.0–3.5%", apyMid: 3.25, link: "https://lido.fi", custodyType: "on_chain", blockchain: "Ethereum" },
       { platform: "Rocket Pool", method: "Decentralized Staking (rETH)", apyRange: "2.8–3.2%", apyMid: 3.0, link: "https://rocketpool.net", custodyType: "on_chain", blockchain: "Ethereum" },
-      { platform: "Coinbase (cbETH)", method: "Wrapped Staking", apyRange: "2.5–3.0%", apyMid: 2.75, link: "https://www.coinbase.com/earn", custodyType: "custodial", blockchain: "Ethereum" },
+      { platform: "Coinbase (cbETH)", method: "Wrapped Staking", apyRange: "2.5–3.0%", apyMid: 2.75, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial", blockchain: "Ethereum" },
       { platform: "EigenLayer", method: "Restaking", apyRange: "Variable + Points", apyMid: 4.0, link: "https://www.eigenlayer.xyz", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "ETH Staking", apyRange: "2.5–3.0%", apyMid: 2.75, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
-      { exchange: "Kraken", program: "ETH Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
-      { exchange: "Binance", program: "ETH 2.0 Staking", apyRange: "2.5–3.5%", apyMid: 3.0, flexible: false, link: "https://www.binance.com/en/eth2", custodyType: "custodial" },
-      { exchange: "Crypto.com", program: "Earn", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "ETH Staking", apyRange: "2.5–3.0%", apyMid: 2.75, flexible: false, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial" },
+      { exchange: "Kraken", program: "ETH Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://proinvite.kraken.com/9f1e/oya30ft6", custodyType: "custodial" },
+      { exchange: "Binance", program: "ETH 2.0 Staking", apyRange: "2.5–3.5%", apyMid: 3.0, flexible: false, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://crypto.com/app/24csm6d4km", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Lido stETH", defiApy: "3.2%", defiApyMid: 3.2, riskLevel: "Low", link: "https://lido.fi", custodyType: "on_chain", blockchain: "Ethereum" },
@@ -82,9 +82,9 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "Native Delegation", method: "Direct Validator Staking", apyRange: "6.0–7.0%", apyMid: 6.5, link: "https://solanabeach.io/validators", custodyType: "on_chain", blockchain: "Solana" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "SOL Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
-      { exchange: "Kraken", program: "SOL Staking", apyRange: "5.0–6.0%", apyMid: 5.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
-      { exchange: "Binance", program: "SOL Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "SOL Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial" },
+      { exchange: "Kraken", program: "SOL Staking", apyRange: "5.0–6.0%", apyMid: 5.5, flexible: false, link: "https://proinvite.kraken.com/9f1e/oya30ft6", custodyType: "custodial" },
+      { exchange: "Binance", program: "SOL Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Jito Staking", defiApy: "7.5%", defiApyMid: 7.5, riskLevel: "Low", link: "https://www.jito.network", custodyType: "on_chain", blockchain: "Solana" },
@@ -114,8 +114,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "Minswap", method: "Yield Farming", apyRange: "4.0–12.0%", apyMid: 8.0, link: "https://minswap.org", custodyType: "on_chain", blockchain: "Cardano" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Kraken", program: "ADA Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
-      { exchange: "Binance", program: "ADA Staking", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
+      { exchange: "Kraken", program: "ADA Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://proinvite.kraken.com/9f1e/oya30ft6", custodyType: "custodial" },
+      { exchange: "Binance", program: "ADA Staking", apyRange: "1.5–3.0%", apyMid: 2.0, flexible: true, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Native ADA Staking", defiApy: "3.0–5.0%", defiApyMid: 4.0, riskLevel: "Low", link: "https://pool.pm", custodyType: "on_chain", blockchain: "Cardano" },
@@ -135,8 +135,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "Acala", method: "Liquid Staking (LDOT)", apyRange: "10–14%", apyMid: 12.0, link: "https://acala.network", custodyType: "on_chain", blockchain: "Polkadot" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Kraken", program: "DOT Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
-      { exchange: "Binance", program: "DOT Staking", apyRange: "10.0–12.0%", apyMid: 11.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
+      { exchange: "Kraken", program: "DOT Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://proinvite.kraken.com/9f1e/oya30ft6", custodyType: "custodial" },
+      { exchange: "Binance", program: "DOT Staking", apyRange: "10.0–12.0%", apyMid: 11.0, flexible: false, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Polkadot Native Staking", defiApy: "12–15%", defiApyMid: 13.5, riskLevel: "Low", link: "https://polkadot.js.org/apps/#/staking", custodyType: "on_chain", blockchain: "Polkadot" },
@@ -156,8 +156,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "GoGoPool", method: "Liquid Staking (ggAVAX)", apyRange: "5.5–7.0%", apyMid: 6.25, link: "https://www.gogopool.com", custodyType: "on_chain", blockchain: "Avalanche" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "AVAX Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
-      { exchange: "Binance", program: "AVAX Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "AVAX Staking", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: false, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial" },
+      { exchange: "Binance", program: "AVAX Staking", apyRange: "5.0–7.0%", apyMid: 6.0, flexible: false, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "AVAX Native Staking", defiApy: "8.0–9.5%", defiApyMid: 8.75, riskLevel: "Low", link: "https://wallet.avax.network", custodyType: "on_chain", blockchain: "Avalanche" },
@@ -173,8 +173,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     exchangeEarnOptions: [
-      { exchange: "Crypto.com", program: "Earn", apyRange: "0.5–1.5%", apyMid: 1.0, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
-      { exchange: "Binance", program: "Simple Earn", apyRange: "0.5–2.0%", apyMid: 1.0, flexible: true, link: "https://www.binance.com/en/earn", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "0.5–1.5%", apyMid: 1.0, flexible: true, link: "https://crypto.com/app/24csm6d4km", custodyType: "custodial" },
+      { exchange: "Binance", program: "Simple Earn", apyRange: "0.5–2.0%", apyMid: 1.0, flexible: true, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     warnings: ["Bitcoin does not support native staking", "Be cautious of wrapped BTC yield products"],
     selfCustodyWallets: ["Ledger Nano X", "Trezor Model T", "Coldcard", "Ellipal Titan", "Arculus"],
@@ -189,7 +189,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "Native Delegation", method: "Validator Delegation", apyRange: "4.5–5.5%", apyMid: 5.0, link: "https://staking.polygon.technology", custodyType: "on_chain", blockchain: "Polygon" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "MATIC Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "MATIC Staking", apyRange: "3.0–4.0%", apyMid: 3.5, flexible: false, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "MetaMask"],
   },
@@ -202,7 +202,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "Ankr", method: "Liquid Staking (ankrBNB)", apyRange: "2.5–3.5%", apyMid: 3.0, link: "https://www.ankr.com/staking/stake/bnb/", custodyType: "on_chain", blockchain: "BNB Chain" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Binance", program: "BNB Vault", apyRange: "2.0–5.0%", apyMid: 3.5, flexible: true, link: "https://www.binance.com/en/bnbvault", custodyType: "custodial" },
+      { exchange: "Binance", program: "BNB Vault", apyRange: "2.0–5.0%", apyMid: 3.5, flexible: true, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Trust Wallet"],
   },
@@ -259,7 +259,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "SaucerSwap", method: "Liquidity Provision", apyRange: "5.0–15.0%", apyMid: 8.0, link: "https://www.saucerswap.finance", custodyType: "on_chain", blockchain: "Hedera" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Binance", program: "HBAR Staking", apyRange: "2.0–3.0%", apyMid: 2.5, flexible: false, link: "https://www.binance.com/en/staking", custodyType: "custodial" },
+      { exchange: "Binance", program: "HBAR Staking", apyRange: "2.0–3.0%", apyMid: 2.5, flexible: false, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Hedera Native Staking", defiApy: "2.5–3.5%", defiApyMid: 3.0, riskLevel: "Low", link: "https://hedera.com/staking", custodyType: "on_chain", blockchain: "Hedera" },
@@ -274,8 +274,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     exchangeEarnOptions: [
-      { exchange: "Coinbase", program: "USDC Rewards", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: true, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
-      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "USDC Rewards", apyRange: "4.0–5.0%", apyMid: 4.5, flexible: true, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/app/24csm6d4km", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave USDC Lending", defiApy: "3.0–6.0%", defiApyMid: 4.5, riskLevel: "Low", link: "https://aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
@@ -289,8 +289,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: false,
     withdrawable: true,
     exchangeEarnOptions: [
-      { exchange: "Binance", program: "Simple Earn", apyRange: "3.0–5.0%", apyMid: 4.0, flexible: true, link: "https://www.binance.com/en/earn", custodyType: "custodial" },
-      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/earn", custodyType: "custodial" },
+      { exchange: "Binance", program: "Simple Earn", apyRange: "3.0–5.0%", apyMid: 4.0, flexible: true, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
+      { exchange: "Crypto.com", program: "Earn", apyRange: "3.0–6.0%", apyMid: 4.5, flexible: true, link: "https://crypto.com/app/24csm6d4km", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "Savings Account (4.5% APY)", tradFiApy: "4.5%", defiProtocol: "Aave USDT Lending", defiApy: "3.0–5.0%", defiApyMid: 4.0, riskLevel: "Low", link: "https://aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
@@ -308,8 +308,8 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { platform: "pSTAKE", method: "Liquid Staking (stkATOM)", apyRange: "12–16%", apyMid: 14.0, link: "https://pstake.finance", custodyType: "on_chain", blockchain: "Cosmos" },
     ],
     exchangeEarnOptions: [
-      { exchange: "Kraken", program: "ATOM Staking", apyRange: "10.0–14.0%", apyMid: 12.0, flexible: false, link: "https://www.kraken.com/features/staking-coins", custodyType: "custodial" },
-      { exchange: "Coinbase", program: "ATOM Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://www.coinbase.com/earn", custodyType: "custodial" },
+      { exchange: "Kraken", program: "ATOM Staking", apyRange: "10.0–14.0%", apyMid: 12.0, flexible: false, link: "https://proinvite.kraken.com/9f1e/oya30ft6", custodyType: "custodial" },
+      { exchange: "Coinbase", program: "ATOM Staking", apyRange: "8.0–12.0%", apyMid: 10.0, flexible: false, link: "https://coinbase.com/join/TT3HJ4K?src=ios-link", custodyType: "custodial" },
     ],
     defiAlternatives: [
       { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "Cosmos Native Staking", defiApy: "15–20%", defiApyMid: 17.5, riskLevel: "Low", link: "https://www.mintscan.io/cosmos/validators", custodyType: "on_chain", blockchain: "Cosmos" },
