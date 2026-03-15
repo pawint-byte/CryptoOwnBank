@@ -804,26 +804,18 @@ export default function Wallets() {
   const handleLinkResolved = async (result: { success: boolean; address?: string; error?: string }, expectedAddress: string) => {
     if (result.success && result.address) {
       const returnedAddr = result.address.toLowerCase();
-      const xrpWallets = userWallets.filter(w => w.chain === "xrp");
-      const matchedWallet = xrpWallets.find(w => w.address.toLowerCase() === returnedAddr);
+      const mainWalletAddr = connectedXrplAddress?.toLowerCase();
 
-      if (matchedWallet) {
-        if (!isXamanLinked(matchedWallet.address)) {
+      if (mainWalletAddr && returnedAddr === mainWalletAddr) {
+        await saveLinkResult(expectedAddress);
+      } else {
+        const xrpWallets = userWallets.filter(w => w.chain === "xrp");
+        const matchedWallet = xrpWallets.find(w => w.address.toLowerCase() === returnedAddr);
+        if (matchedWallet && !isXamanLinked(matchedWallet.address)) {
           await saveLinkResult(matchedWallet.address);
         } else {
-          toast({
-            title: "Already linked",
-            description: `${matchedWallet.label || matchedWallet.address.slice(0, 8) + "..."} is already connected via Xaman.`,
-          });
+          await saveLinkResult(expectedAddress);
         }
-      } else {
-        const unlinkedWallets = xrpWallets.filter(w => !isXamanLinked(w.address));
-        const walletNames = unlinkedWallets.map(w => w.label || w.address.slice(0, 8) + "...").join(", ");
-        toast({
-          title: "Address not recognized",
-          description: `Xaman returned ${result.address.slice(0, 8)}... which doesn't match any of your XRP addresses. In Xaman, switch to one of these accounts: ${walletNames}`,
-          variant: "destructive",
-        });
       }
     } else if (result.error) {
       toast({ title: "Connection failed", description: result.error, variant: "destructive" });
@@ -1467,7 +1459,7 @@ export default function Wallets() {
                 </Badge>
               </div>
               <CardDescription className="text-xs">
-                Link each XRP address to Xaman so the site can build transactions for your cold wallets. Switch to the matching account in Xaman before approving.
+                Link each XRP address to Xaman so the site can build transactions for your cold wallets. Approve with your main Xaman account.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0 space-y-2">
@@ -2350,62 +2342,40 @@ export default function Wallets() {
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-3">
-            {!xamanAccountSwitched ? (
-              <>
-                <div className="w-full rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
-                  <p className="text-sm font-bold text-amber-400 mb-2">Step 1: Switch account in Xaman</p>
-                  <ol className="text-xs text-amber-200/90 space-y-2 list-decimal list-inside">
-                    <li>Open the <strong>Xaman</strong> app on your phone now</li>
-                    <li>Tap your account name at the top of the screen</li>
-                    <li>Select your <strong>{linkingAddress ? (() => {
-                      const wallet = userWallets.find(w => w.address === linkingAddress);
-                      return wallet?.label || linkingAddress.slice(0, 8) + "...";
-                    })() : "cold wallet"}</strong> read-only account</li>
-                  </ol>
-                  <p className="text-xs text-amber-200/70 mt-2 italic">
-                    The active account must show: {linkingAddress ? linkingAddress.slice(0, 8) + "..." + linkingAddress.slice(-4) : ""}
-                  </p>
-                </div>
-                <Button
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                  onClick={() => setXamanAccountSwitched(true)}
-                  data-testid="button-confirm-switched"
-                >
-                  I've switched to the correct account
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="w-full rounded-lg bg-green-500/10 border border-green-500/30 p-3">
-                  <p className="text-sm font-bold text-green-400 mb-1">Step 2: Approve in Xaman</p>
-                  <p className="text-xs text-green-200/80">
-                    Tap the button below — Xaman will open with a sign request. Approve it, then come back here.
-                  </p>
-                </div>
-                {mobileLinkPayload && (
-                  <a
-                    href={mobileLinkPayload.deepLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#00A4E4] text-white px-6 py-3 text-base font-semibold shadow-lg active:bg-[#0090c8] w-full"
-                    data-testid="link-open-xaman"
-                  >
-                    <Smartphone className="h-5 w-5" />
-                    Open Xaman to Approve
-                  </a>
-                )}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Waiting for approval...
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  After approving, come back here. The connection saves automatically.
-                </p>
-                <Button variant="outline" size="sm" onClick={() => setXamanAccountSwitched(false)} data-testid="button-back-step1">
-                  Back to Step 1
-                </Button>
-              </>
+            <div className="w-full rounded-lg bg-muted/50 border p-3">
+              <p className="text-xs text-muted-foreground mb-1">Linking wallet:</p>
+              <p className="text-sm font-semibold">
+                {linkingAddress ? (() => {
+                  const wallet = userWallets.find(w => w.address === linkingAddress);
+                  return wallet?.label || "XRP Wallet";
+                })() : "XRP Wallet"}
+              </p>
+              <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                {linkingAddress ? linkingAddress.slice(0, 12) + "..." + linkingAddress.slice(-6) : ""}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Approve in Xaman with your main account to authorize this wallet connection.
+            </p>
+            {mobileLinkPayload && (
+              <a
+                href={mobileLinkPayload.deepLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#00A4E4] text-white px-6 py-3 text-base font-semibold shadow-lg active:bg-[#0090c8] w-full"
+                data-testid="link-open-xaman"
+              >
+                <Smartphone className="h-5 w-5" />
+                Open Xaman to Approve
+              </a>
             )}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Waiting for approval...
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              After approving, come back here. The connection saves automatically.
+            </p>
             <Button variant="ghost" size="sm" onClick={cancelMobileLink} data-testid="button-cancel-link">
               Cancel
             </Button>
