@@ -68,6 +68,15 @@ interface Xls66Position {
   depositedAt: string;
 }
 
+interface AmendmentVoting {
+  name: string;
+  enabled: boolean;
+  count: number;
+  threshold: number;
+  validatorCount: number;
+  percentage: number;
+}
+
 interface AmendmentStatus {
   xls65Active: boolean;
   xls66Active: boolean;
@@ -75,6 +84,11 @@ interface AmendmentStatus {
   lendingLive: boolean;
   featureEnabled: boolean;
   rippled_minimum: string;
+  voting?: {
+    xls65: AmendmentVoting | null;
+    xls66: AmendmentVoting | null;
+    lastChecked: string | null;
+  };
 }
 
 interface VaultsResponse {
@@ -143,12 +157,46 @@ const COMMON_TRUSTLINES = [
   { currency: "EUR", issuer: "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq", label: "EUR (GateHub)", displayCurrency: "EUR" },
 ];
 
+function VotingProgressBar({ voting, label }: { voting: AmendmentVoting; label: string }) {
+  const pct = voting.percentage;
+  const barColor = voting.enabled ? "bg-emerald-500" : pct >= 60 ? "bg-amber-400" : "bg-amber-500/70";
+  return (
+    <div className="space-y-1" data-testid={`voting-progress-${voting.name}`}>
+      <div className="flex justify-between items-center text-xs">
+        <span className="font-medium">{label}</span>
+        <span className="text-muted-foreground">
+          {voting.enabled ? (
+            <span className="text-emerald-500 font-semibold">Active</span>
+          ) : (
+            <>{voting.count}/{voting.validatorCount} validators ({pct}% of 80% needed)</>
+          )}
+        </span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+        <div className="relative -top-2.5 h-2.5" style={{ marginLeft: "80%" }}>
+          <div className="w-px h-full bg-white/40" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AmendmentBanner({ status }: { status: AmendmentStatus }) {
+  const v = status.voting;
+  const lastChecked = v?.lastChecked ? new Date(v.lastChecked) : null;
+  const timeAgo = lastChecked ? (() => {
+    const mins = Math.round((Date.now() - lastChecked.getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    return `${Math.round(mins / 60)}h ago`;
+  })() : null;
+
   if (status.vaultsLive && status.lendingLive) {
     return (
       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-center gap-3" data-testid="amendment-active-banner">
         <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
-        <div>
+        <div className="flex-1">
           <p className="font-medium text-emerald-700 dark:text-emerald-400">XLS-65 + XLS-66 Active on Mainnet</p>
           <p className="text-sm text-muted-foreground">Single Asset Vaults and the Lending Protocol are both live. All features are fully operational.</p>
         </div>
@@ -161,30 +209,43 @@ function AmendmentBanner({ status }: { status: AmendmentStatus }) {
       <div className="space-y-2">
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-center gap-3" data-testid="amendment-vaults-active">
           <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
-          <div>
+          <div className="flex-1">
             <p className="font-medium text-emerald-700 dark:text-emerald-400">XLS-65 Vaults — Active on Mainnet</p>
             <p className="text-sm text-muted-foreground">Single Asset Vaults are live. You can browse on-ledger vaults and deposit.</p>
+            {v?.xls65 && <div className="mt-2"><VotingProgressBar voting={v.xls65} label="XLS-65 Single Asset Vaults" /></div>}
           </div>
         </div>
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3" data-testid="amendment-lending-pending">
-          <Clock className="h-4 w-4 text-amber-500 shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-amber-700 dark:text-amber-400">XLS-66 Lending Protocol</span> — still in validator voting (~17% of 80% needed). Lending features activate automatically when it passes.
-          </p>
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4" data-testid="amendment-lending-pending">
+          <div className="flex items-center gap-3 mb-3">
+            <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium text-amber-700 dark:text-amber-400">XLS-66 Lending Protocol — Validator Voting</p>
+              <p className="text-xs text-muted-foreground">Lending features activate automatically when this reaches 80% for 2 consecutive weeks.</p>
+            </div>
+          </div>
+          {v?.xls66 && <VotingProgressBar voting={v.xls66} label="XLS-66 Lending Protocol" />}
+          {timeAgo && <p className="text-xs text-muted-foreground mt-2">Last checked from XRPL: {timeAgo}</p>}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex items-center gap-3" data-testid="amendment-pending-banner">
-      <Clock className="h-5 w-5 text-amber-500 shrink-0" />
-      <div>
-        <p className="font-medium text-amber-700 dark:text-amber-400">Amendments Pending — Validator Voting in Progress</p>
-        <p className="text-sm text-muted-foreground">
-          XLS-65 (Vaults) and XLS-66 (Lending) require 80% validator consensus for 2 weeks on rippled {status.rippled_minimum}+. While pending, you can run yield calculations and set up trustlines. Features activate automatically the moment amendments pass.
-        </p>
+    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4" data-testid="amendment-pending-banner">
+      <div className="flex items-center gap-3 mb-3">
+        <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+        <div>
+          <p className="font-medium text-amber-700 dark:text-amber-400">Amendments Pending — Validator Voting in Progress</p>
+          <p className="text-sm text-muted-foreground">
+            Both amendments require 80% validator consensus for 2 consecutive weeks on rippled {status.rippled_minimum}+. Features activate automatically.
+          </p>
+        </div>
       </div>
+      <div className="space-y-3 mt-2">
+        {v?.xls65 && <VotingProgressBar voting={v.xls65} label="XLS-65 Single Asset Vaults" />}
+        {v?.xls66 && <VotingProgressBar voting={v.xls66} label="XLS-66 Lending Protocol" />}
+      </div>
+      {timeAgo && <p className="text-xs text-muted-foreground mt-3">Last checked from XRPL: {timeAgo}</p>}
     </div>
   );
 }

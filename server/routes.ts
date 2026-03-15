@@ -3472,32 +3472,97 @@ export async function registerRoutes(
   let lastAmendmentCheck = 0;
   const AMENDMENT_CHECK_INTERVAL = 10 * 60 * 1000;
 
+  interface AmendmentVoting {
+    name: string;
+    enabled: boolean;
+    supported: boolean;
+    vetoed: boolean;
+    count: number;
+    threshold: number;
+    validatorCount: number;
+    percentage: number;
+  }
+
+  let amendmentVotingCache: { xls65: AmendmentVoting | null; xls66: AmendmentVoting | null; checkedAt: number } = {
+    xls65: null, xls66: null, checkedAt: 0
+  };
+
   async function checkAmendmentStatus(): Promise<{ xls65: boolean; xls66: boolean }> {
+    const voting = await checkAmendmentVoting();
+    return {
+      xls65: voting.xls65?.enabled || false,
+      xls66: voting.xls66?.enabled || false,
+    };
+  }
+
+  async function checkAmendmentVoting(): Promise<typeof amendmentVotingCache> {
     const now = Date.now();
-    if (xls65AmendmentActive !== null && xls66AmendmentActive !== null && now - lastAmendmentCheck < AMENDMENT_CHECK_INTERVAL) {
-      return { xls65: xls65AmendmentActive, xls66: xls66AmendmentActive };
+    if (amendmentVotingCache.checkedAt > 0 && now - amendmentVotingCache.checkedAt < AMENDMENT_CHECK_INTERVAL) {
+      return amendmentVotingCache;
     }
     try {
       const { Client } = await import("xrpl");
       const client = new Client("wss://xrplcluster.com");
       await client.connect();
-      const response = await client.request({ command: "feature" as any } as any);
+      const featureResponse = await client.request({ command: "feature" as any } as any);
+
+      let validatorCount = 35;
+      try {
+        const serverInfo = await client.request({ command: "server_info" } as any);
+        const quorum = (serverInfo?.result as any)?.info?.validation_quorum;
+        if (quorum) {
+          validatorCount = Math.round(quorum / 0.8);
+        }
+      } catch {}
+
       await client.disconnect();
-      const features = (response?.result as any)?.features || {};
+      const features = (featureResponse?.result as any)?.features || {};
+      const threshold = Math.ceil(validatorCount * 0.8);
+
       xls65AmendmentActive = false;
       xls66AmendmentActive = false;
+      let xls65Data: AmendmentVoting | null = null;
+      let xls66Data: AmendmentVoting | null = null;
+
       for (const [_hash, info] of Object.entries(features)) {
         const feat = info as any;
-        if (feat.name === "SingleAssetVault" && feat.enabled === true) xls65AmendmentActive = true;
-        if (feat.name === "LendingProtocol" && feat.enabled === true) xls66AmendmentActive = true;
+        if (feat.name === "SingleAssetVault") {
+          if (feat.enabled === true) xls65AmendmentActive = true;
+          const count = typeof feat.count === "number" ? feat.count : 0;
+          xls65Data = {
+            name: "SingleAssetVault",
+            enabled: feat.enabled === true,
+            supported: feat.supported === true,
+            vetoed: feat.vetoed === true,
+            count,
+            threshold,
+            validatorCount,
+            percentage: validatorCount > 0 ? Math.round((count / validatorCount) * 100) : 0,
+          };
+        }
+        if (feat.name === "LendingProtocol") {
+          if (feat.enabled === true) xls66AmendmentActive = true;
+          const count = typeof feat.count === "number" ? feat.count : 0;
+          xls66Data = {
+            name: "LendingProtocol",
+            enabled: feat.enabled === true,
+            supported: feat.supported === true,
+            vetoed: feat.vetoed === true,
+            count,
+            threshold,
+            validatorCount,
+            percentage: validatorCount > 0 ? Math.round((count / validatorCount) * 100) : 0,
+          };
+        }
       }
       lastAmendmentCheck = now;
+      amendmentVotingCache = { xls65: xls65Data, xls66: xls66Data, checkedAt: now };
     } catch (error) {
       console.error("[XLS-66] Amendment check failed:", (error as any)?.message);
       if (xls65AmendmentActive === null) xls65AmendmentActive = false;
       if (xls66AmendmentActive === null) xls66AmendmentActive = false;
     }
-    return { xls65: xls65AmendmentActive, xls66: xls66AmendmentActive };
+    return amendmentVotingCache;
   }
 
   let discoveredVaultsCache: any[] = [];
@@ -3562,14 +3627,35 @@ export async function registerRoutes(
 
   app.get("/api/xls66/status", isAuthenticated, async (_req: any, res) => {
     try {
-      const amendments = await checkAmendmentStatus();
+      const voting = await checkAmendmentVoting();
+      const xls65Active = voting.xls65?.enabled || false;
+      const xls66Active = voting.xls66?.enabled || false;
       res.json({
-        xls65Active: amendments.xls65,
-        xls66Active: amendments.xls66,
-        vaultsLive: amendments.xls65 || XLS66_LIVE,
-        lendingLive: amendments.xls66 || XLS66_LIVE,
-        featureEnabled: amendments.xls65 || amendments.xls66 || XLS66_LIVE,
+        xls65Active,
+        xls66Active,
+        vaultsLive: xls65Active || XLS66_LIVE,
+        lendingLive: xls66Active || XLS66_LIVE,
+        featureEnabled: xls65Active || xls66Active || XLS66_LIVE,
         rippled_minimum: "3.1.0",
+        voting: {
+          xls65: voting.xls65 ? {
+            name: voting.xls65.name,
+            enabled: voting.xls65.enabled,
+            count: voting.xls65.count,
+            threshold: voting.xls65.threshold,
+            validatorCount: voting.xls65.validatorCount,
+            percentage: voting.xls65.percentage,
+          } : null,
+          xls66: voting.xls66 ? {
+            name: voting.xls66.name,
+            enabled: voting.xls66.enabled,
+            count: voting.xls66.count,
+            threshold: voting.xls66.threshold,
+            validatorCount: voting.xls66.validatorCount,
+            percentage: voting.xls66.percentage,
+          } : null,
+          lastChecked: voting.checkedAt ? new Date(voting.checkedAt).toISOString() : null,
+        },
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to check XLS-66 status" });
