@@ -101,6 +101,7 @@ const allItems: NavItem[] = [
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
 
+  { title: "DEX Trading", url: "/stellar/dex", icon: TrendingUp, color: "#7B61FF", group: "stellar" },
   { title: "Send (Path Pay)", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
 

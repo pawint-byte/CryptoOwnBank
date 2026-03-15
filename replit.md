@@ -14,8 +14,8 @@ Preferred communication style: Simple, everyday language.
 -   **UI/UX**: Responsive design for mobile, light/dark themes, Recharts for data visualization, React Hook Form with Zod validation.
 -   **Key Features**:
     -   **CryptoBroker**: Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings.
-    -   **OwnBank XRPL**: Soil vault tracking, Token Manager (trustlines, popular tokens), DEX Trading (order book, limit/market orders), Send & Receive (payments, contacts, QR, destination tag), Withdraw Interest, History, Referrals. Includes educational "Old Way vs New Way" headers.
-    -   **Stellar Integration**: Send with Path Payments, Remittance Calculator & Corridor Guide, anchor directory.
+    -   **OwnBank XRPL**: Soil vault tracking, Token Manager (trustlines, popular tokens), DEX Trading (Quick Swap + Advanced order book with limit/market orders, 10+ trading pairs across Stablecoins/Crypto/Fiat categories — XRP as bridge currency), Send & Receive (payments, contacts, QR, destination tag), Withdraw Interest, History, Referrals. Includes educational "Old Way vs New Way" headers.
+    -   **Stellar Integration**: Stellar DEX (Quick Swap + Order Book view, 8 trading pairs — XLM/USDC, XLM/EURC, XLM/USDT, USDC/EURC, XLM/BTC, XLM/ETH, XLM/AQUA, XLM/yXLM — with live Horizon orderbook data and deep links to LOBSTR/StellarTerm/StellarX for signing), Send with Path Payments, Remittance Calculator & Corridor Guide, anchor directory.
     -   **Chain Guide**: Educational comparison of XRP vs XLM.
     -   **RWA Yield Explorer**: Interactive recommender quiz, enhanced protocol cards (Soil integrated, Ondo, Centrifuge, XDC, Maple, etc.), guided flows, and RWA token tracking across chains.
     -   **Stablecoin Dashboard**: Directory and user holdings for major stablecoins.

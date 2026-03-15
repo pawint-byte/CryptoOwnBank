@@ -413,7 +413,15 @@ const faqGroups = [
       },
       {
         q: "How does DEX Trading work?",
-        a: "The XRP Ledger has a built-in decentralized exchange (DEX) — no company runs it. When you place an order, it goes directly on the blockchain. If someone has a matching order, the trade happens automatically and settles in 4 seconds. Your funds never leave your wallet until the trade executes. Compare that to a traditional stock exchange: you call a broker, they place the order, it's matched on the NYSE, and settlement takes T+2 (two business days). On the XRPL DEX, you can place limit orders (set your price and wait for a match) or market orders (buy/sell immediately at the best available price). You can view the order book, cancel orders for free (just the tiny network fee), and all signing happens on your cold wallet. Learn more: https://xrpl.org/decentralized-exchange.html",
+        a: "Both the XRP Ledger and Stellar have built-in decentralized exchanges (DEX) — no company runs them. When you place an order, it goes directly on the blockchain. If someone has a matching order, the trade happens automatically and settles in 4–5 seconds. Your funds never leave your wallet until the trade executes. Compare that to a traditional stock exchange: you call a broker, they place the order, it's matched on the NYSE, and settlement takes T+2 (two business days). On CryptoOwnBank, you can trade on both DEXs: the XRPL DEX (via Xaman/Ledger) and the Stellar DEX (via LOBSTR, StellarTerm, or StellarX). Both support limit orders, market orders, and live order books — all signed from your own wallet.",
+      },
+      {
+        q: "What is the Quick Swap feature?",
+        a: "Quick Swap is a simplified trading interface on both the XRPL DEX and Stellar DEX pages. Instead of the full order book view, you just pick a pair, enter an amount, see the estimated rate, and swap. It uses a market order under the hood — your wallet signs the trade and it executes instantly at the best available price. Think of it like using a currency exchange kiosk vs. placing a limit order on a forex platform. For more control (setting your own price, viewing the full order book), switch to 'Advanced' mode.",
+      },
+      {
+        q: "What is XRP's role as a bridge currency?",
+        a: "XRP was designed from day one to be the bridge currency on the XRPL. It connects every asset pair through the DEX's built-in pathfinding. For example, if you want to swap EUR for BTC on the XRPL, the network can automatically route EUR → XRP → BTC through the order book — all in one atomic transaction that settles in 4 seconds. This is why the XRPL DEX page shows so many pairs: XRP/RLUSD, XRP/USD, XRP/EUR, XRP/BTC, XRP/ETH, XRP/GBP, XRP/CNY, and more. XRP is the universal connector. Similarly, XLM serves the same bridge role on the Stellar network.",
       },
       {
         q: "How do I send and receive crypto?",
@@ -425,7 +433,11 @@ const faqGroups = [
       },
       {
         q: "What tokens can I trade on the XRPL DEX?",
-        a: "You can trade any token that has been issued on the XRPL — as long as you have a trustline set for it. Popular pairs include XRP/RLUSD, XRP/USD (Bitstamp), XRP/EUR (Gatehub), SOLO/XRP, and CORE/XRP. The Token Manager makes it easy to add trustlines for these tokens before you start trading. The DEX is fully permissionless — anyone can issue tokens and create markets.",
+        a: "You can trade any token that has been issued on the XRPL — as long as you have a trustline set for it. Popular pairs are organized into categories: Stablecoins (XRP/RLUSD, XRP/USD via Bitstamp, XRP/USD via GateHub, XRP/EUR), Crypto (XRP/BTC, XRP/ETH, SOLO/XRP, CORE/XRP), and Fiat (XRP/GBP, XRP/CNY). The Token Manager makes it easy to add trustlines for these tokens before you start trading. The DEX is fully permissionless — anyone can issue tokens and create markets.",
+      },
+      {
+        q: "What tokens can I trade on the Stellar DEX?",
+        a: "On the Stellar DEX, you can trade: Stablecoins (XLM/USDC, XLM/EURC, XLM/USDT, USDC/EURC) and Crypto (XLM/BTC, XLM/ETH, XLM/AQUA, XLM/yXLM). XLM acts as the bridge currency, just like XRP does on the XRPL. You need a trustline for any token you want to hold — most Stellar wallets (LOBSTR, Freighter) make adding trustlines easy. We show live order book data from the Stellar Horizon API and link you to LOBSTR, StellarTerm, or StellarX to execute trades in your own wallet.",
       },
       {
         q: "Are there fees for using XRPL Tools?",

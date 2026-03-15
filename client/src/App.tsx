@@ -55,6 +55,7 @@ import OwnBankInvoices from "@/pages/ownbank-invoices";
 import PayPage from "@/pages/pay";
 import StellarRemittances from "@/pages/stellar-remittances";
 import StellarSend from "@/pages/stellar-send";
+import StellarDex from "@/pages/stellar-dex";
 import ChainGuide from "@/pages/chain-guide";
 import NativeStaking from "@/pages/native-staking";
 import Stablecoins from "@/pages/stablecoins";
@@ -140,6 +141,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/recurring" component={RecurringPayments} />
         <Route path="/ownbank/my-card" component={MyCard} />
         <Route path="/ownbank/payment-queue" component={PaymentQueue} />
+        <Route path="/stellar/dex" component={StellarDex} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/price-alerts" component={PriceAlerts} />
@@ -195,6 +197,7 @@ function Router() {
         <Route path="/rwa-yields" component={RwaYields} />
         <Route path="/stablecoins" component={Stablecoins} />
         <Route path="/insurance" component={Insurance} />
+        <Route path="/stellar/dex" component={StellarDex} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />

@@ -158,6 +158,7 @@ export default function OwnBankDex() {
   const { isConnected, walletAddress, walletType } = useXrplStore();
 
   const [educationOpen, setEducationOpen] = useState(true);
+  const [viewMode, setViewMode] = useState<"swap" | "advanced">("swap");
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"limit" | "market">("limit");
@@ -439,9 +440,81 @@ export default function OwnBankDex() {
         <Badge variant="secondary" data-testid="badge-selected-pair">
           {pair.base.display} / {pair.counter.display}
         </Badge>
+        <div className="flex gap-1 ml-auto">
+          <Button
+            variant={viewMode === "swap" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("swap")}
+            data-testid="button-swap-mode"
+          >
+            <ArrowRightLeft className="h-3 w-3 mr-1" />
+            Quick Swap
+          </Button>
+          <Button
+            variant={viewMode === "advanced" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("advanced")}
+            data-testid="button-advanced-mode"
+          >
+            <BookOpen className="h-3 w-3 mr-1" />
+            Advanced
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      {viewMode === "swap" && <QuickSwapPanel
+        pair={pair}
+        bids={bids}
+        asks={asks}
+        loadingBook={loadingBook}
+        isConnected={isConnected}
+        walletAddress={walletAddress}
+        walletType={walletType}
+        placingOrder={placingOrder}
+        onPlaceOrder={async (side, amt) => {
+          setPlacingOrder(true);
+          try {
+            const bestPrice = side === "buy" ? asks[0]?.price : bids[0]?.price;
+            if (!bestPrice) {
+              toast({ title: "No liquidity", description: "No orders available for this pair.", variant: "destructive" });
+              return;
+            }
+            const a = parseFloat(amt);
+            const p = parseFloat(bestPrice);
+            let takerGets: any;
+            let takerPays: any;
+            if (side === "buy") {
+              takerGets = buildAmountField(pair.counter, (a * p).toString());
+              takerPays = buildAmountField(pair.base, a.toString());
+            } else {
+              takerGets = buildAmountField(pair.base, a.toString());
+              takerPays = buildAmountField(pair.counter, (a * p).toString());
+            }
+            const txJson: Record<string, any> = {
+              TransactionType: "OfferCreate",
+              Account: walletAddress,
+              TakerGets: takerGets,
+              TakerPays: takerPays,
+              Flags: 0x00020000,
+            };
+            const result = await signTransaction(txJson);
+            if (result.success) {
+              toast({ title: "Swap Completed", description: `${side === "buy" ? "Bought" : "Sold"} ${formatAmount(amt)} ${pair.base.display} successfully.` });
+              setTimeout(() => { fetchOrderBook(); fetchMyOffers(); }, 4000);
+            } else {
+              toast({ title: "Swap Failed", description: result.error || "Transaction was not completed.", variant: "destructive" });
+            }
+          } catch (err: any) {
+            toast({ title: "Swap Error", description: err.message || "Unexpected error.", variant: "destructive" });
+          } finally {
+            setPlacingOrder(false);
+          }
+        }}
+        onRefresh={fetchOrderBook}
+        toast={toast}
+      />}
+
+      {viewMode === "advanced" && <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2" data-testid="card-order-book">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle className="text-base flex items-center gap-2">
@@ -661,7 +734,7 @@ export default function OwnBankDex() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       <Card data-testid="card-my-orders">
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
@@ -883,6 +956,278 @@ function EducationContent() {
         <ExternalLink className="h-3.5 w-3.5" />
         Learn more on XRPL.org
       </a>
+    </>
+  );
+}
+
+interface QuickSwapPanelProps {
+  pair: TradingPair;
+  bids: OrderBookEntry[];
+  asks: OrderBookEntry[];
+  loadingBook: boolean;
+  isConnected: boolean;
+  walletAddress: string | null;
+  walletType: string | null;
+  placingOrder: boolean;
+  onPlaceOrder: (side: "buy" | "sell", amount: string) => Promise<void>;
+  onRefresh: () => void;
+  toast: any;
+}
+
+function QuickSwapPanel({ pair, bids, asks, loadingBook, isConnected, walletAddress, walletType, placingOrder, onPlaceOrder, onRefresh, toast }: QuickSwapPanelProps) {
+  const [swapDirection, setSwapDirection] = useState<"buy" | "sell">("buy");
+  const [swapAmount, setSwapAmount] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const bestBid = bids.length > 0 ? parseFloat(bids[0].price) : 0;
+  const bestAsk = asks.length > 0 ? parseFloat(asks[0].price) : 0;
+  const midPrice = bestBid && bestAsk ? (bestBid + bestAsk) / 2 : bestBid || bestAsk;
+
+  const swapAmountNum = parseFloat(swapAmount) || 0;
+  const estimatedReceive = swapDirection === "buy"
+    ? (bestAsk > 0 ? swapAmountNum / bestAsk : 0)
+    : swapAmountNum * bestBid;
+  const receiveAsset = swapDirection === "buy" ? pair.base.display : pair.counter.display;
+  const payAsset = swapDirection === "buy" ? pair.counter.display : pair.base.display;
+
+  const maxAmount = Math.max(
+    ...bids.map((b) => parseFloat(b.amount) || 0),
+    ...asks.map((a) => parseFloat(a.amount) || 0),
+    1
+  );
+
+  const handleSwapClick = () => {
+    if (!swapAmountNum || swapAmountNum <= 0) {
+      toast({ title: "Enter an amount", variant: "destructive" });
+      return;
+    }
+    if (!isConnected) {
+      toast({ title: "Connect wallet first", description: "Connect from the OwnBank Dashboard.", variant: "destructive" });
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    setConfirmOpen(false);
+    const actualAmount = swapDirection === "buy" ? (swapAmountNum / (bestAsk || 1)).toString() : swapAmount;
+    await onPlaceOrder(swapDirection, actualAmount);
+    setSwapAmount("");
+  };
+
+  return (
+    <>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card data-testid="card-quick-swap">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5 text-[#00A4E4]" />
+              Quick Swap
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <p>Instantly swap at the best available price. Uses a market order under the hood — your Xaman wallet signs the trade.</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-1">
+              <Button
+                variant={swapDirection === "buy" ? "default" : "outline"}
+                className={swapDirection === "buy" ? "flex-1 bg-green-600 border-green-600 text-white" : "flex-1"}
+                onClick={() => setSwapDirection("buy")}
+                data-testid="button-quick-buy"
+              >
+                <TrendingUp className="h-4 w-4 mr-1" />
+                Buy {pair.base.display}
+              </Button>
+              <Button
+                variant={swapDirection === "sell" ? "default" : "outline"}
+                className={swapDirection === "sell" ? "flex-1 bg-red-600 border-red-600 text-white" : "flex-1"}
+                onClick={() => setSwapDirection("sell")}
+                data-testid="button-quick-sell"
+              >
+                <TrendingDown className="h-4 w-4 mr-1" />
+                Sell {pair.base.display}
+              </Button>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                You pay ({payAsset})
+              </label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={swapAmount}
+                onChange={(e) => setSwapAmount(e.target.value)}
+                step="any"
+                data-testid="input-quick-swap-amount"
+              />
+            </div>
+
+            {swapAmountNum > 0 && midPrice > 0 && (
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">You receive (est.)</span>
+                  <span className="font-mono font-medium text-lg" data-testid="text-quick-receive">
+                    ~{formatAmount(estimatedReceive, 4)} {receiveAsset}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Rate</span>
+                  <span className="font-mono">1 {pair.base.display} = {formatAmount(midPrice)} {pair.counter.display}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Network fee</span>
+                  <span>~0.00001 XRP</span>
+                </div>
+              </div>
+            )}
+
+            <Button
+              className={`w-full ${swapDirection === "buy" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}
+              onClick={handleSwapClick}
+              disabled={placingOrder || !isConnected}
+              data-testid="button-quick-swap-execute"
+            >
+              {placingOrder ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Signing...</>
+              ) : (
+                <><Shield className="h-4 w-4 mr-2" />Swap Now</>
+              )}
+            </Button>
+
+            {!isConnected && (
+              <p className="text-xs text-muted-foreground text-center">
+                Connect your wallet from the OwnBank Dashboard to swap.
+              </p>
+            )}
+            {isConnected && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                Market order via Xaman &bull; Settles in ~4 seconds &bull; Non-custodial
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-quick-swap-book">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+            <CardTitle className="text-base">Live Order Book</CardTitle>
+            <Button variant="ghost" size="sm" onClick={onRefresh} disabled={loadingBook} data-testid="button-refresh-quick-book">
+              <RefreshCw className={`h-4 w-4 ${loadingBook ? "animate-spin" : ""}`} />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loadingBook ? (
+              <div className="space-y-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-5 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Asks (Sellers)</p>
+                  <div className="space-y-0.5">
+                    {asks.length === 0 && <p className="text-xs text-muted-foreground py-2 text-center">No asks</p>}
+                    {[...asks.slice(0, 6)].reverse().map((ask, i) => {
+                      const depthPct = ((parseFloat(ask.amount) || 0) / maxAmount) * 100;
+                      return (
+                        <div key={i} className="relative flex items-center justify-between gap-2 px-2 py-0.5 text-xs font-mono rounded-sm" data-testid={`row-quick-ask-${i}`}>
+                          <div className="absolute inset-y-0 right-0 bg-red-500/10 rounded-sm" style={{ width: `${Math.min(depthPct, 100)}%` }} />
+                          <span className="relative text-red-600 dark:text-red-400">{formatAmount(ask.price, 6)}</span>
+                          <span className="relative text-muted-foreground">{formatAmount(ask.amount, 2)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {bids.length > 0 && asks.length > 0 && (
+                  <div className="py-1.5 px-2 rounded-md bg-muted/50 text-center">
+                    <span className="text-xs font-mono font-medium">
+                      {formatAmount(midPrice, 6)} {pair.counter.display}
+                    </span>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Bids (Buyers)</p>
+                  <div className="space-y-0.5">
+                    {bids.length === 0 && <p className="text-xs text-muted-foreground py-2 text-center">No bids</p>}
+                    {bids.slice(0, 6).map((bid, i) => {
+                      const depthPct = ((parseFloat(bid.amount) || 0) / maxAmount) * 100;
+                      return (
+                        <div key={i} className="relative flex items-center justify-between gap-2 px-2 py-0.5 text-xs font-mono rounded-sm" data-testid={`row-quick-bid-${i}`}>
+                          <div className="absolute inset-y-0 left-0 bg-green-500/10 rounded-sm" style={{ width: `${Math.min(depthPct, 100)}%` }} />
+                          <span className="relative text-green-600 dark:text-green-400">{formatAmount(bid.price, 6)}</span>
+                          <span className="relative text-muted-foreground">{formatAmount(bid.amount, 2)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle data-testid="text-confirm-swap-title">
+              Confirm {swapDirection === "buy" ? "Buy" : "Sell"} Swap
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border p-4 space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Direction</span>
+                <Badge className={swapDirection === "buy" ? "bg-green-500/10 text-green-600 border-green-500/30" : "bg-red-500/10 text-red-600 border-red-500/30"}>
+                  {swapDirection === "buy" ? "Buy" : "Sell"} {pair.base.display}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">You pay</span>
+                <span className="font-mono font-medium">{formatAmount(swapAmountNum, 4)} {payAsset}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">You receive (est.)</span>
+                <span className="font-mono font-medium">~{formatAmount(estimatedReceive, 4)} {receiveAsset}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Pair</span>
+                <span className="font-medium">{pair.label}</span>
+              </div>
+            </div>
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
+              <p className="text-xs text-blue-800 dark:text-blue-300">
+                {walletType === "xumm" ? (
+                  <>Your Xaman wallet will prompt you to sign a market <span className="font-semibold">OfferCreate</span> transaction. Executes instantly at the best available price.</>
+                ) : (
+                  <>Confirm the <span className="font-semibold">OfferCreate</span> transaction on your Ledger device.</>
+                )}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} data-testid="button-cancel-swap">Cancel</Button>
+            <Button
+              className={swapDirection === "buy" ? "bg-green-600 text-white" : "bg-red-600 text-white"}
+              onClick={handleConfirm}
+              disabled={placingOrder}
+              data-testid="button-confirm-swap"
+            >
+              {placingOrder ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Signing...</> : <><Shield className="h-4 w-4 mr-2" />Sign & Swap</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
