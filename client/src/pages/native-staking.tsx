@@ -57,7 +57,7 @@ const STAKING_CHAINS: StakingChain[] = [
     riskLevel: "Low",
     wallets: [
       { name: "Xaman (Xumm)", url: "https://xaman.app" },
-      { name: "Ledger", url: "https://www.ledger.com" },
+      { name: "Ledger", url: "https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4" },
     ],
     howItWorks: [
       "XLS-65 creates native Single Asset Vaults directly in the XRPL ledger engine",

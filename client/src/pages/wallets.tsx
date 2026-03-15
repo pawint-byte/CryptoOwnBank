@@ -226,7 +226,7 @@ const HARDWARE_WALLETS: HardwareWallet[] = [
       "Ledger Live app",
       "Staking support",
     ],
-    referralUrl: "https://shop.ledger.com/pages/ledger-nano-x?r=YOUR_REFERRAL",
+    referralUrl: "https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4",
     bestFor: "Best overall for most crypto portfolios",
   },
   {
@@ -246,7 +246,7 @@ const HARDWARE_WALLETS: HardwareWallet[] = [
       "Ledger Live app",
       "Budget-friendly",
     ],
-    referralUrl: "https://shop.ledger.com/pages/ledger-nano-s-plus?r=YOUR_REFERRAL",
+    referralUrl: "https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4",
     bestFor: "Best budget option with full coin support",
   },
   {
@@ -266,7 +266,7 @@ const HARDWARE_WALLETS: HardwareWallet[] = [
       "Premium build quality",
       "NFT display on device",
     ],
-    referralUrl: "https://shop.ledger.com/pages/ledger-stax?r=YOUR_REFERRAL",
+    referralUrl: "https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4",
     bestFor: "Premium experience with touchscreen",
   },
   {
