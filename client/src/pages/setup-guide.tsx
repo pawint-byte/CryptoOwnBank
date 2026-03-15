@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Wallet,
   ArrowLeft,
+  ArrowDown,
   Smartphone,
   Bluetooth,
   Plus,
@@ -105,10 +106,11 @@ const toolkits: Toolkit[] = [
         title: "Buy a Cold Wallet (Recommended)",
         description: "Order a hardware wallet to keep your private keys offline and secure.",
         details: [
-          "Ledger Nano X (~$149) — Bluetooth, pairs with Xaman, most popular for XRPL. Buy ONLY from ledger.com",
-          "ELLIPAL Titan (~$139) — Air-gapped (no Bluetooth/USB), uses QR codes. Buy from ellipal.com",
-          "Arculus Card (~$99) — Credit-card sized, NFC tap to sign. Buy from getarculus.com",
-          "SafePal S1 (~$49) — Budget option, air-gapped with QR codes. Buy from safepal.com",
+          'Ledger Nano X (~$149) — Bluetooth, pairs with Xaman, most popular for XRPL. Buy ONLY from <a href="https://www.ledger.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">ledger.com</a>',
+          'ELLIPAL Titan (~$139) — Air-gapped (no Bluetooth/USB), uses QR codes. Buy from <a href="https://www.ellipal.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">ellipal.com</a>',
+          'Arculus Card (~$99) — Credit-card sized, NFC tap to sign. Buy from <a href="https://www.getarculus.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">getarculus.com</a>',
+          'SafePal S1 (~$49) — Budget option, air-gapped with QR codes. Buy from <a href="https://www.safepal.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">safepal.com</a>',
+          'CypheRock X1 (~$159) — Seedless recovery with key cards, no single point of failure. Buy from <a href="https://www.cypherock.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">cypherock.com</a>',
           "IMPORTANT: Always buy directly from the manufacturer's website — never from third-party Amazon/eBay sellers (risk of tampered devices)",
           "While waiting for your cold wallet to arrive, you can proceed with steps 3-5 using just the Xaman hot wallet. Add the cold wallet connection later",
         ],
@@ -120,7 +122,7 @@ const toolkits: Toolkit[] = [
         title: "Download Xaman (Your Hot Wallet)",
         description: "Install the Xaman wallet app on your phone — this is your gateway to the XRPL.",
         details: [
-          "Download Xaman (formerly Xumm) from the App Store (iPhone) or Google Play (Android)",
+          'Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">Xaman</a> (formerly Xumm) from the App Store (iPhone) or Google Play (Android)',
           "Open the app and create a new account — follow the on-screen prompts",
           "Xaman will generate your XRPL wallet address (starts with 'r...')",
           "CRITICAL: Write down your secret recovery phrase (seed words) on paper. Store it somewhere safe. This is the ONLY way to recover your wallet if you lose your phone",
@@ -309,7 +311,7 @@ const toolkits: Toolkit[] = [
         title: "Set Up an XRPL Wallet (If You Don't Have One)",
         description: "To use XRPL tools (DEX, payments, vaults), you need an XRPL wallet.",
         details: [
-          "Download Xaman (formerly Xumm) from the App Store or Google Play",
+          'Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">Xaman</a> (formerly Xumm) from the App Store or Google Play',
           "Create a new XRPL account or import an existing one",
           "Your wallet needs at least 10 XRP as the network account reserve",
           "If you already have XRP on an exchange, withdraw it to your new Xaman address",
@@ -375,7 +377,7 @@ const toolkits: Toolkit[] = [
         title: "Set Up Your Business XRPL Wallet",
         description: "Create the wallet where customer payments will land.",
         details: [
-          "Download Xaman (formerly Xumm) from the App Store or Google Play",
+          'Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">Xaman</a> (formerly Xumm) from the App Store or Google Play',
           "Create a new XRPL account — this will be your business payment wallet",
           "Write down and securely store your recovery phrase — if you lose this, you lose access to all your business funds",
           "Strongly recommended: pair with a cold wallet (Ledger Nano X, Arculus, ELLIPAL) for extra security. Business funds deserve hardware protection",
@@ -531,7 +533,7 @@ const toolkits: Toolkit[] = [
         title: "Download Xaman — Your Wallet Is Your Bank Account",
         description: "Install the Xaman wallet app. This replaces a bank account, debit card, and savings account — all in one.",
         details: [
-          "Download Xaman (formerly Xumm) from the App Store (iPhone) or Google Play (Android)",
+          'Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">Xaman</a> (formerly Xumm) from the App Store (iPhone) or Google Play (Android)',
           "Open the app and create a new account — takes about 2 minutes",
           "Xaman will generate your XRPL wallet address (starts with 'r...'). This is like a bank account number — you give it to people who want to pay you",
           "IMPORTANT: Write down your recovery phrase (the secret words) on paper. Store it somewhere safe. This is the ONLY way to recover your wallet. If you lose your phone and don't have these words, your money is gone",
@@ -641,12 +643,12 @@ const toolkits: Toolkit[] = [
         title: "Optional: Add a Cold Wallet as Your Balance Grows",
         description: "When you're holding meaningful amounts, add hardware security.",
         details: [
-          "A cold wallet (Ledger, ELLIPAL, Arculus, SafePal) stores your private keys on a physical device, offline",
+          "A cold wallet (Ledger, ELLIPAL, Arculus, SafePal, CypheRock) stores your private keys on a physical device, offline",
           "Even if your phone is stolen or hacked, nobody can move your funds without the cold wallet device",
           "Prices range from $49 (SafePal) to $149 (Ledger Nano X)",
           "Pair it with Xaman so you still use your phone for day-to-day transactions, but the actual signing happens on the cold wallet",
           "This is optional but strongly recommended once you're holding more than a few hundred dollars",
-          "Buy only from the manufacturer's official website — never from third-party sellers",
+          'Buy only from the manufacturer\'s official website: <a href="https://www.ledger.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">ledger.com</a>, <a href="https://www.ellipal.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">ellipal.com</a>, <a href="https://www.getarculus.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">getarculus.com</a>, <a href="https://www.safepal.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">safepal.com</a>, <a href="https://www.cypherock.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">cypherock.com</a> — never from third-party sellers',
         ],
         tip: "Think of the cold wallet upgrade like putting a lock on your door. When you had nothing, it didn't matter. Now that you have savings, yield, and incoming payments — protect them.",
       },
@@ -864,7 +866,7 @@ export default function SetupGuide() {
                   <div className="flex-1">
                     <h2 className="text-xl font-bold mb-1">{toolkit.tagline}</h2>
                     <p className="text-muted-foreground mb-4">{toolkit.description}</p>
-                    <div className="flex flex-wrap gap-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
                       <span className="flex items-center gap-1.5 text-muted-foreground">
                         <Settings className="h-3.5 w-3.5" />
                         {toolkit.timeEstimate}
@@ -874,6 +876,17 @@ export default function SetupGuide() {
                         {toolkit.steps.length} steps
                       </span>
                     </div>
+                    <Button
+                      className="mt-4 bg-[#00A4E4] text-white hover:bg-[#0090c9]"
+                      onClick={() => {
+                        const el = document.getElementById("guide-steps");
+                        if (el) el.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      data-testid={`button-start-guide-${toolkit.id}`}
+                    >
+                      Start This Guide
+                      <ArrowDown className="ml-2 h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -904,7 +917,7 @@ export default function SetupGuide() {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div id="guide-steps" className="space-y-6 scroll-mt-24">
             {toolkit.steps.map((step) => (
               <Card key={step.number} data-testid={`card-step-${toolkit.id}-${step.number}`}>
                 <CardContent className="p-6">
@@ -928,7 +941,7 @@ export default function SetupGuide() {
                         {step.details.map((detail, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm">
                             <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-foreground">{detail}</span>
+                            <span className="text-foreground" dangerouslySetInnerHTML={{ __html: detail }} />
                           </li>
                         ))}
                       </ul>
