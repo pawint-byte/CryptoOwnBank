@@ -1161,10 +1161,24 @@ export async function registerRoutes(
       });
 
       const allLots = await storage.getTaxLotsByWalletBalance(userId, id);
-      const totalCost = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-      const totalQty = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+      const totalCost = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const totalQty = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
       const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
       await storage.updateWalletBalanceCostData(id, avgCost.toFixed(8), totalCost.toFixed(2));
+
+      const userWallets = await storage.getWalletsByUser(userId);
+      const ownerWallet = userWallets.find(w => w.id === balance.walletId);
+      if (ownerWallet && ownerWallet.chain === "manual") {
+        const currentBal = parseFloat(balance.balance);
+        if (totalQty > currentBal) {
+          const prices = await db.select().from(priceCacheTable);
+          const priceEntry = prices.find(p => p.symbol.toUpperCase() === balance.assetSymbol.toUpperCase());
+          const newUsd = priceEntry ? totalQty * parseFloat(priceEntry.price) : 0;
+          await db.update(walletBalances)
+            .set({ balance: totalQty.toFixed(8), usdValue: newUsd.toFixed(2), updatedAt: new Date() })
+            .where(eq(walletBalances.id, id));
+        }
+      }
 
       res.json(lot);
     } catch (error) {
@@ -1204,8 +1218,8 @@ export async function registerRoutes(
       const updated = await storage.updateTaxLot(lotId, updates);
 
       const allLots = await storage.getTaxLotsByWalletBalance(userId, balanceId);
-      const totalCost = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-      const totalQty = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+      const totalCost = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const totalQty = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
       const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
       await storage.updateWalletBalanceCostData(balanceId, avgCost.toFixed(8), totalCost.toFixed(2));
 
@@ -1227,8 +1241,8 @@ export async function registerRoutes(
       await storage.deleteTaxLot(lotId);
 
       const remainingLots = await storage.getTaxLotsByWalletBalance(userId, balanceId);
-      const totalCost = remainingLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-      const totalQty = remainingLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+      const totalCost = remainingLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const totalQty = remainingLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
       const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
       await storage.updateWalletBalanceCostData(balanceId, avgCost.toFixed(8), totalCost.toFixed(2));
 
@@ -1300,13 +1314,11 @@ export async function registerRoutes(
 
       if (lot.walletBalanceId) {
         const wbLots = await storage.getTaxLotsByWalletBalance(userId, lot.walletBalanceId);
-        const activeLots = wbLots.filter(l => parseFloat(l.remainingQuantity) > 0 || l.id === lotId);
+        const activeLots = wbLots.filter(l => parseFloat(l.remainingQuantity) > 0);
         const totalCost = activeLots
-          .filter(l => l.id !== lotId)
-          .reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+          .reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
         const totalQty = activeLots
-          .filter(l => l.id !== lotId)
-          .reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+          .reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
         const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
         await storage.updateWalletBalanceCostData(lot.walletBalanceId, avgCost.toFixed(8), totalCost.toFixed(2));
       }
@@ -1445,8 +1457,8 @@ export async function registerRoutes(
 
       const recalc = async (wbId: string) => {
         const lots = await storage.getTaxLotsByWalletBalance(userId, wbId);
-        const totalCost = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-        const totalQty = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+        const totalCost = lots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = lots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
         const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
         await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
       };
@@ -1762,8 +1774,8 @@ export async function registerRoutes(
 
       for (const wbId of touchedBalanceIds) {
         const lots = await storage.getTaxLotsByWalletBalance(userId, wbId);
-        const totalCost = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-        const totalQty = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+        const totalCost = lots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = lots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
         const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
         await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
       }
@@ -1931,8 +1943,8 @@ export async function registerRoutes(
       }
 
       const updatedLots = await storage.getTaxLotsByWalletBalance(userId, walletBalanceId);
-      const totalCost = updatedLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-      const totalQty = updatedLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+      const totalCost = updatedLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const totalQty = updatedLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
       const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
       await storage.updateWalletBalanceCostData(walletBalanceId, avgCost.toFixed(8), totalCost.toFixed(2));
 
@@ -5067,6 +5079,41 @@ export async function registerRoutes(
         });
       }
 
+      try {
+        const allUserLots = await storage.getTaxLotsByUser(userId);
+        const unassigned = allUserLots.filter(l =>
+          l.assetSymbol.toUpperCase() === sym &&
+          !l.walletBalanceId &&
+          parseFloat(l.remainingQuantity) > 0
+        );
+        if (unassigned.length > 0) {
+          let assigned = 0;
+          for (const lot of unassigned) {
+            await storage.updateTaxLot(lot.id, { walletBalanceId: walletBalance.id });
+            assigned++;
+          }
+          if (assigned > 0) {
+            const wbLots = await storage.getTaxLotsByWalletBalance(userId, walletBalance.id);
+            const tc = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+            const tq = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+            const avg = tq > 0 ? tc / tq : 0;
+            await storage.updateWalletBalanceCostData(walletBalance.id, avg.toFixed(8), tc.toFixed(2));
+            if (tq > parseFloat(walletBalance.balance || "0")) {
+              const freshPrices = await db.select().from(priceCacheTable);
+              const pe = freshPrices.find(p => p.symbol.toUpperCase() === sym);
+              const newUsd = pe ? tq * parseFloat(pe.price) : 0;
+              await db.update(walletBalances)
+                .set({ balance: tq.toFixed(8), usdValue: newUsd.toFixed(2), updatedAt: new Date() })
+                .where(eq(walletBalances.id, walletBalance.id));
+              walletBalance = { ...walletBalance, balance: tq.toFixed(8), usdValue: newUsd.toFixed(2) };
+            }
+            console.log(`[manual-auto-assign] Assigned ${assigned} unassigned ${sym} lots to manual wallet ${label}`);
+          }
+        }
+      } catch (autoErr) {
+        console.error("[manual-auto-assign] Failed:", autoErr);
+      }
+
       await storage.updateWalletSyncTime(wallet.id);
       res.json({ wallet, balance: walletBalance });
     } catch (error: unknown) {
@@ -5349,8 +5396,8 @@ export async function registerRoutes(
               const assetBal = walletBals.find(b => b.assetSymbol === asset);
               if (assetBal) {
                 const allLots = await storage.getTaxLotsByWalletBalance(userId, assetBal.id);
-                const aggregateCost = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
-                const aggregateQty = allLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+                const aggregateCost = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+                const aggregateQty = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
                 const avgCost = aggregateQty > 0 ? aggregateCost / aggregateQty : 0;
                 await storage.updateWalletBalanceCostData(
                   assetBal.id,
