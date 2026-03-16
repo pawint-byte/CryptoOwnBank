@@ -1138,12 +1138,15 @@ export async function registerRoutes(
       if (!balance) {
         return res.status(404).json({ message: "Wallet balance not found" });
       }
-      const { quantity, costPerUnit, acquiredDate, note } = req.body;
+      const { quantity, costPerUnit, acquiredDate, note, acquisitionType } = req.body;
       const qty = parseFloat(quantity);
       const cost = parseFloat(costPerUnit);
       if (isNaN(qty) || qty <= 0) return res.status(400).json({ message: "Quantity must be positive" });
       if (isNaN(cost) || cost < 0) return res.status(400).json({ message: "Cost per unit must be non-negative" });
       if (!acquiredDate) return res.status(400).json({ message: "Acquired date is required" });
+
+      const validTypes = ["purchase", "earned", "airdrop", "transfer"];
+      const acqType = validTypes.includes(acquisitionType) ? acquisitionType : "purchase";
 
       const lot = await storage.createTaxLot({
         userId,
@@ -1153,6 +1156,7 @@ export async function registerRoutes(
         originalQuantity: qty.toString(),
         remainingQuantity: qty.toString(),
         costBasisPerUnit: cost.toString(),
+        acquisitionType: acqType,
         note: note || null,
       });
 
@@ -1232,6 +1236,49 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Delete wallet lot error:", error);
       res.status(500).json({ message: "Failed to delete purchase lot" });
+    }
+  });
+
+  app.post("/api/wallet-balances/:balanceId/lots/:lotId/move", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { balanceId, lotId } = req.params;
+      const { targetWalletBalanceId } = req.body;
+      if (!targetWalletBalanceId) {
+        return res.status(400).json({ message: "targetWalletBalanceId is required" });
+      }
+      if (targetWalletBalanceId === balanceId) {
+        return res.status(400).json({ message: "Source and target wallets are the same" });
+      }
+
+      const sourceLots = await storage.getTaxLotsByWalletBalance(userId, balanceId);
+      const lot = sourceLots.find(l => l.id === lotId);
+      if (!lot) return res.status(404).json({ message: "Purchase lot not found" });
+
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const targetBal = balances.find(b => b.id === targetWalletBalanceId);
+      if (!targetBal) return res.status(404).json({ message: "Target wallet balance not found" });
+
+      if (targetBal.assetSymbol.toUpperCase() !== lot.assetSymbol.toUpperCase()) {
+        return res.status(400).json({ message: `Asset mismatch: lot is ${lot.assetSymbol}, target wallet holds ${targetBal.assetSymbol}` });
+      }
+
+      await storage.updateTaxLot(lotId, { walletBalanceId: targetWalletBalanceId });
+
+      const recalc = async (wbId: string) => {
+        const lots = await storage.getTaxLotsByWalletBalance(userId, wbId);
+        const totalCost = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+        const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+        await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
+      };
+      await recalc(balanceId);
+      await recalc(targetWalletBalanceId);
+
+      res.json({ message: "Lot moved successfully" });
+    } catch (error) {
+      console.error("Move lot error:", error);
+      res.status(500).json({ message: "Failed to move lot" });
     }
   });
 
@@ -1453,6 +1500,110 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Merge positions error:", error);
       res.status(500).json({ message: "Failed to merge positions" });
+    }
+  });
+
+  app.post("/api/positions/distribute-lots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { importPositionId } = req.body;
+      if (!importPositionId) {
+        return res.status(400).json({ message: "importPositionId is required" });
+      }
+
+      const positionsData = await storage.getPositionsByUser(userId);
+      const importPos = positionsData.find(p => p.id === importPositionId && p.userId === userId);
+      if (!importPos) {
+        return res.status(404).json({ message: "Import position not found" });
+      }
+
+      const symbol = importPos.assetSymbol.toUpperCase();
+      const importAccount = importPos.accountId;
+      const allTxns = await storage.getTransactionsByUser(userId);
+      const importTxns = allTxns.filter(t => t.accountId === importAccount && t.assetSymbol.toUpperCase() === symbol);
+      const txnIds = new Set(importTxns.map(t => t.id));
+
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const importLots = allLots.filter(l =>
+        l.assetSymbol.toUpperCase() === symbol &&
+        l.transactionId && txnIds.has(l.transactionId)
+      ).sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+
+      if (importLots.length === 0) {
+        return res.json({ message: "No import lots found to distribute", distributed: [] });
+      }
+
+      const userWallets = await storage.getWalletsByUser(userId);
+      const allBalances = await storage.getWalletBalancesByUser(userId);
+      const walletBalanceEntries = allBalances.filter(b =>
+        b.assetSymbol.toUpperCase() === symbol
+      );
+
+      const targets: Array<{ walletBalanceId: string; walletLabel: string; capacity: number }> = [];
+      for (const wb of walletBalanceEntries) {
+        const wallet = userWallets.find(w => w.id === wb.walletId);
+        if (!wallet) continue;
+        const existingLots = allLots.filter(l => l.walletBalanceId === wb.id);
+        const alreadyAssigned = existingLots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+        const liveBalance = parseFloat(wb.balance);
+        const remaining = Math.max(0, liveBalance - alreadyAssigned);
+        if (remaining > 0.0001) {
+          targets.push({
+            walletBalanceId: wb.id,
+            walletLabel: wallet.label || wallet.chain,
+            capacity: remaining,
+          });
+        }
+      }
+
+      const distributed: Array<{ lotId: string; targetWallet: string; quantity: number }> = [];
+      const touchedBalanceIds = new Set<string>();
+      let lotIdx = 0;
+
+      for (const target of targets) {
+        let filled = 0;
+        while (lotIdx < importLots.length && filled < target.capacity - 0.0001) {
+          const lot = importLots[lotIdx];
+          const lotQty = parseFloat(lot.originalQuantity);
+          const spaceLeft = target.capacity - filled;
+
+          if (lotQty <= spaceLeft + 0.0001) {
+            await storage.updateTaxLot(lot.id, {
+              walletBalanceId: target.walletBalanceId,
+              transactionId: null,
+            });
+            distributed.push({ lotId: lot.id, targetWallet: target.walletLabel, quantity: lotQty });
+            touchedBalanceIds.add(target.walletBalanceId);
+            filled += lotQty;
+            lotIdx++;
+          } else {
+            break;
+          }
+        }
+      }
+
+      for (const wbId of touchedBalanceIds) {
+        const lots = await storage.getTaxLotsByWalletBalance(userId, wbId);
+        const totalCost = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+        const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+        await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
+      }
+
+      const remainingImportLots = importLots.length - lotIdx;
+      if (remainingImportLots === 0) {
+        await storage.deletePosition(importPositionId);
+      }
+
+      res.json({
+        message: `Distributed ${distributed.length} lots across ${touchedBalanceIds.size} wallet(s)`,
+        distributed,
+        remainingLots: remainingImportLots,
+        importRemoved: remainingImportLots === 0,
+      });
+    } catch (error) {
+      console.error("Distribute lots error:", error);
+      res.status(500).json({ message: "Failed to distribute lots" });
     }
   });
 
@@ -4376,6 +4527,84 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/wallets/manual", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { label, assetSymbol, balance } = req.body;
+      if (!label || !assetSymbol || balance === undefined) {
+        return res.status(400).json({ message: "label, assetSymbol, and balance are required" });
+      }
+      const sym = assetSymbol.toUpperCase().trim();
+      const balanceNum = parseFloat(balance);
+      if (isNaN(balanceNum) || balanceNum < 0) {
+        return res.status(400).json({ message: "Balance must be a non-negative number" });
+      }
+
+      const address = `manual-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
+      const wallet = await storage.createWallet({
+        userId,
+        chain: "manual",
+        address,
+        label: label.trim(),
+      });
+
+      const prices = await storage.getCachedPrices();
+      const priceEntry = prices.find(p => p.symbol.toUpperCase() === sym);
+      const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.price) : 0;
+
+      const walletBalance = await storage.createWalletBalance({
+        walletId: wallet.id,
+        userId,
+        assetSymbol: sym,
+        balance: balanceNum.toString(),
+        usdValue: usdValue.toFixed(2),
+      });
+
+      await storage.updateWalletSyncTime(wallet.id);
+      res.json({ wallet, balance: walletBalance });
+    } catch (error) {
+      console.error("Create manual wallet error:", error);
+      res.status(500).json({ message: "Failed to create manual wallet entry" });
+    }
+  });
+
+  app.patch("/api/wallets/:walletId/balances/:balanceId/manual", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(req.params.walletId);
+      if (!wallet || wallet.userId !== userId || wallet.chain !== "manual") {
+        return res.status(404).json({ message: "Manual wallet not found" });
+      }
+      const { balance } = req.body;
+      if (balance === undefined) {
+        return res.status(400).json({ message: "balance is required" });
+      }
+      const balanceNum = parseFloat(balance);
+      if (isNaN(balanceNum) || balanceNum < 0) {
+        return res.status(400).json({ message: "Balance must be a non-negative number" });
+      }
+
+      const allBalances = await storage.getWalletBalances(wallet.id);
+      const wb = allBalances.find(b => b.id === req.params.balanceId);
+      if (!wb) {
+        return res.status(404).json({ message: "Wallet balance not found" });
+      }
+
+      const prices = await storage.getCachedPrices();
+      const priceEntry = prices.find(p => p.symbol.toUpperCase() === wb.assetSymbol.toUpperCase());
+      const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.price) : 0;
+
+      await db.update(walletBalances)
+        .set({ balance: balanceNum.toString(), usdValue: usdValue.toFixed(2), updatedAt: new Date() })
+        .where(eq(walletBalances.id, wb.id));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update manual balance error:", error);
+      res.status(500).json({ message: "Failed to update balance" });
+    }
+  });
+
   const SYNC_COOLDOWN_MS = 2 * 60 * 1000;
 
   app.post("/api/wallets/:id/sync", isAuthenticated, async (req: any, res) => {
@@ -4395,6 +4624,13 @@ export async function registerRoutes(
           console.log(`Sync skipped for ${wallet.chain} wallet ${wallet.id} — synced ${Math.round(elapsed / 1000)}s ago (cooldown ${SYNC_COOLDOWN_MS / 1000}s)`);
           return res.json({ ...wallet, balances: existingBalances, skipped: true, newTransactions: 0 });
         }
+      }
+
+      if (wallet.chain === "manual") {
+        const existingBalances = await storage.getWalletBalances(wallet.id);
+        await storage.updateWalletSyncTime(wallet.id);
+        const updatedWallet = await storage.getWallet(wallet.id);
+        return res.json({ ...updatedWallet, balances: existingBalances, skipped: true, newTransactions: 0, manual: true });
       }
 
       const EXCHANGE_LABELS = new Set(["CRYPTO.COM", "COINBASE", "BINANCE", "KRAKEN", "GEMINI", "KUCOIN", "BITSTAMP", "BITFINEX", "UPHOLD", "GATE.IO", "OKX", "BYBIT", "HUOBI", "BITGET", "MEXC"]);

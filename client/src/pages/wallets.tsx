@@ -88,7 +88,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { Smartphone, Link2, LinkIcon, Loader2 } from "lucide-react";
+import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft } from "lucide-react";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
@@ -129,6 +129,7 @@ const CHAIN_LABELS: Record<string, string> = {
   verge: "XVG",
   xdc: "XDC",
   polygon: "POL",
+  manual: "MAN",
 };
 
 const CHAIN_COLORS: Record<string, string> = {
@@ -156,6 +157,7 @@ const CHAIN_COLORS: Record<string, string> = {
   verge: "#00CBFF",
   xdc: "#1E4B6E",
   polygon: "#8247E5",
+  manual: "#888888",
 };
 
 const CHART_COLORS = [
@@ -401,7 +403,13 @@ interface TaxLotData {
   note?: string | null;
 }
 
-function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; currentPrice: number }) {
+interface MoveTarget {
+  walletBalanceId: string;
+  walletLabel: string;
+  chain: string;
+}
+
+function CostBasisPanel({ balance, currentPrice, moveTargets = [] }: { balance: WalletBalance; currentPrice: number; moveTargets?: MoveTarget[] }) {
   const [expanded, setExpanded] = useState(false);
   const [addingLot, setAddingLot] = useState(false);
   const [editingCost, setEditingCost] = useState(false);
@@ -418,7 +426,7 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
     enabled: expanded,
   });
 
-  const [lotForm, setLotForm] = useState({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
+  const [lotForm, setLotForm] = useState({ quantity: "", costPerUnit: "", acquiredDate: "", note: "", acquisitionType: "purchase" });
 
   const addLotMutation = useMutation({
     mutationFn: async () => {
@@ -428,10 +436,10 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
       queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balance.id, "lots"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       setAddingLot(false);
-      setLotForm({ quantity: "", costPerUnit: "", acquiredDate: "", note: "" });
-      toast({ title: "Purchase lot added" });
+      setLotForm({ quantity: "", costPerUnit: "", acquiredDate: "", note: "", acquisitionType: "purchase" });
+      toast({ title: "Lot added" });
     },
-    onError: () => toast({ title: "Failed to add purchase lot", variant: "destructive" }),
+    onError: () => toast({ title: "Failed to add lot", variant: "destructive" }),
   });
 
   const editCostMutation = useMutation({
@@ -473,6 +481,19 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
       toast({ title: "Purchase lot removed" });
     },
     onError: () => toast({ title: "Failed to delete lot", variant: "destructive" }),
+  });
+
+  const moveLotMutation = useMutation({
+    mutationFn: async ({ lotId, targetWalletBalanceId }: { lotId: string; targetWalletBalanceId: string }) => {
+      return apiRequest("POST", `/api/wallet-balances/${balance.id}/lots/${lotId}/move`, { targetWalletBalanceId });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balance.id, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", variables.targetWalletBalanceId, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Lot moved to another wallet" });
+    },
+    onError: () => toast({ title: "Failed to move lot", variant: "destructive" }),
   });
 
   const avgCost = balance.averageCost ? parseFloat(balance.averageCost) : 0;
@@ -578,13 +599,33 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
               data-testid={`button-add-lot-${balance.id}`}
             >
               <Plus className="h-3 w-3 mr-1" />
-              Add Purchase
+              Add Lot
             </Button>
           </div>
 
           {addingLot && (
             <div className="border rounded-lg p-3 space-y-2 bg-background">
-              <div className="text-xs font-medium">New Purchase Lot</div>
+              <div className="text-xs font-medium">New Lot</div>
+              <div className="flex flex-wrap gap-1 mb-1">
+                {[
+                  { value: "purchase", label: "Purchase" },
+                  { value: "earned", label: "Earned / Reward" },
+                  { value: "airdrop", label: "Airdrop" },
+                  { value: "transfer", label: "Transfer In" },
+                ].map(opt => (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant={lotForm.acquisitionType === opt.value ? "default" : "outline"}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => setLotForm({ ...lotForm, acquisitionType: opt.value, costPerUnit: opt.value === "earned" || opt.value === "airdrop" ? "0" : lotForm.costPerUnit })}
+                    data-testid={`lot-type-${opt.value}-${balance.id}`}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-muted-foreground">Quantity</label>
@@ -599,11 +640,13 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Cost per unit ($)</label>
+                  <label className="text-xs text-muted-foreground">
+                    {lotForm.acquisitionType === "earned" ? "Fair market value per unit ($)" : lotForm.acquisitionType === "airdrop" ? "Value per unit at receipt ($)" : "Cost per unit ($)"}
+                  </label>
                   <Input
                     type="number"
                     step="0.0001"
-                    placeholder="Price paid"
+                    placeholder={lotForm.acquisitionType === "earned" || lotForm.acquisitionType === "airdrop" ? "0 if no value at receipt" : "Price paid"}
                     value={lotForm.costPerUnit}
                     onChange={(e) => setLotForm({ ...lotForm, costPerUnit: e.target.value })}
                     className="h-7 text-xs"
@@ -611,7 +654,9 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Purchase Date</label>
+                  <label className="text-xs text-muted-foreground">
+                    {lotForm.acquisitionType === "earned" ? "Date Received" : lotForm.acquisitionType === "airdrop" ? "Airdrop Date" : lotForm.acquisitionType === "transfer" ? "Transfer Date" : "Purchase Date"}
+                  </label>
                   <Input
                     type="date"
                     value={lotForm.acquiredDate}
@@ -623,7 +668,7 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
                 <div>
                   <label className="text-xs text-muted-foreground">Note (optional)</label>
                   <Input
-                    placeholder="e.g. From Crypto.com"
+                    placeholder={lotForm.acquisitionType === "earned" ? "e.g. Staking reward" : lotForm.acquisitionType === "airdrop" ? "e.g. Flare airdrop" : "e.g. From Crypto.com"}
                     value={lotForm.note}
                     onChange={(e) => setLotForm({ ...lotForm, note: e.target.value })}
                     className="h-7 text-xs"
@@ -650,7 +695,7 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
             <div className="text-xs text-muted-foreground">Loading purchase lots...</div>
           ) : lots.length > 0 ? (
             <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground mb-1">Purchase History ({lots.length} lot{lots.length !== 1 ? "s" : ""})</div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">Acquisition History ({lots.length} lot{lots.length !== 1 ? "s" : ""})</div>
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {lots.map((lot) => (
                   <LotRow
@@ -659,6 +704,9 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
                     balanceId={balance.id}
                     onEdit={(lotId, data) => editLotMutation.mutate({ lotId, data })}
                     onDelete={(lotId) => deleteLotMutation.mutate(lotId)}
+                    moveTargets={moveTargets}
+                    onMove={(lotId, targetId) => moveLotMutation.mutate({ lotId, targetWalletBalanceId: targetId })}
+                    isMoving={moveLotMutation.isPending}
                   />
                 ))}
               </div>
@@ -674,9 +722,18 @@ function CostBasisPanel({ balance, currentPrice }: { balance: WalletBalance; cur
   );
 }
 
-function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balanceId: string; onEdit: (id: string, data: any) => void; onDelete: (id: string) => void }) {
+function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, isMoving }: {
+  lot: TaxLotData;
+  balanceId: string;
+  onEdit: (id: string, data: Record<string, string>) => void;
+  onDelete: (id: string) => void;
+  moveTargets?: MoveTarget[];
+  onMove?: (lotId: string, targetId: string) => void;
+  isMoving?: boolean;
+}) {
   const [editing, setEditing] = useState(false);
   const [costPerUnit, setCostPerUnit] = useState(lot.costBasisPerUnit);
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   const qty = parseFloat(lot.originalQuantity);
   const cost = parseFloat(lot.costBasisPerUnit);
@@ -717,6 +774,16 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
   return (
     <div className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/30 text-xs group" data-testid={`lot-row-${lot.id}`}>
       <div className="flex items-center gap-1 min-w-0">
+        {lot.acquisitionType && lot.acquisitionType !== "purchase" && (
+          <span className={cn(
+            "text-[9px] font-medium px-1 py-0.5 rounded shrink-0 uppercase",
+            lot.acquisitionType === "earned" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+            lot.acquisitionType === "airdrop" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400" :
+            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+          )}>
+            {lot.acquisitionType === "earned" ? "Earned" : lot.acquisitionType === "airdrop" ? "Airdrop" : "Transfer"}
+          </span>
+        )}
         <span className="text-muted-foreground shrink-0">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
         <span className="text-muted-foreground shrink-0">·</span>
         <span className="font-mono shrink-0">{formatBalance(qty, 4)}</span>
@@ -726,7 +793,7 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
         <span className="font-mono font-medium shrink-0">{formatUsd(totalCost)}</span>
         {lot.note && <span className="text-muted-foreground truncate ml-1">({lot.note})</span>}
       </div>
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 relative">
         <Button
           variant="ghost"
           size="sm"
@@ -736,6 +803,19 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
         >
           <Pencil className="h-3 w-3" />
         </Button>
+        {moveTargets.length > 0 && onMove && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 p-0"
+            onClick={() => setShowMoveMenu(!showMoveMenu)}
+            disabled={isMoving}
+            title="Move to another wallet"
+            data-testid={`button-move-lot-${lot.id}`}
+          >
+            <ArrowRightLeft className="h-3 w-3" />
+          </Button>
+        )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-destructive" data-testid={`button-delete-lot-${lot.id}`}>
@@ -755,6 +835,24 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {showMoveMenu && (
+          <div className="absolute right-0 top-6 z-10 bg-popover border rounded-lg shadow-lg p-1 min-w-[160px]">
+            <p className="text-[10px] text-muted-foreground px-2 py-1 font-medium">Move to:</p>
+            {moveTargets.map(t => (
+              <button
+                key={t.walletBalanceId}
+                className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-accent transition-colors truncate"
+                onClick={() => {
+                  onMove!(lot.id, t.walletBalanceId);
+                  setShowMoveMenu(false);
+                }}
+                data-testid={`move-lot-${lot.id}-to-${t.walletBalanceId}`}
+              >
+                {t.walletLabel}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -762,6 +860,8 @@ function LotRow({ lot, balanceId, onEdit, onDelete }: { lot: TaxLotData; balance
 
 export default function Wallets() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
+  const [manualForm, setManualForm] = useState({ label: "", assetSymbol: "", balance: "" });
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean> | null>(null);
   const { toast } = useToast();
@@ -963,6 +1063,24 @@ export default function Wallets() {
     },
     onError: () => {
       toast({ title: "Failed to add wallet", variant: "destructive" });
+    },
+  });
+
+  const createManualMutation = useMutation({
+    mutationFn: async (values: { label: string; assetSymbol: string; balance: string }) => {
+      const res = await apiRequest("POST", "/api/wallets/manual", values);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reconciliation"] });
+      toast({ title: "Manual entry added" });
+      setIsManualDialogOpen(false);
+      setManualForm({ label: "", assetSymbol: "", balance: "" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create manual entry", variant: "destructive" });
     },
   });
 
@@ -1392,6 +1510,84 @@ export default function Wallets() {
               </Form>
             </DialogContent>
           </Dialog>
+          <Dialog open={isManualDialogOpen} onOpenChange={setIsManualDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" data-testid="button-add-manual-wallet">
+                <Plus className="h-4 w-4 mr-2" />
+                Manual Entry
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[420px]">
+              <DialogHeader>
+                <DialogTitle>Track Exchange / Off-Chain Holdings</DialogTitle>
+                <DialogDescription>
+                  For assets held on exchanges or in places where the address isn't publicly trackable. This creates a manual entry so your portfolio stays accurate without double-counting.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Where is it held?</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {["Crypto.com", "Coinbase", "Binance", "Kraken", "Uphold", "Other Exchange"].map(ex => (
+                      <Button
+                        key={ex}
+                        type="button"
+                        variant={manualForm.label === ex ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => setManualForm({ ...manualForm, label: ex })}
+                        data-testid={`manual-label-${ex.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
+                      >
+                        {ex}
+                      </Button>
+                    ))}
+                  </div>
+                  <Input
+                    placeholder="Or type a custom name..."
+                    value={manualForm.label}
+                    onChange={(e) => setManualForm({ ...manualForm, label: e.target.value })}
+                    className="h-8 text-sm mt-1.5"
+                    data-testid="input-manual-label"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Asset</label>
+                  <Input
+                    placeholder="e.g. XRP, BTC, ETH"
+                    value={manualForm.assetSymbol}
+                    onChange={(e) => setManualForm({ ...manualForm, assetSymbol: e.target.value.toUpperCase() })}
+                    className="h-8 text-sm mt-1"
+                    data-testid="input-manual-asset"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Current Balance</label>
+                  <Input
+                    type="number"
+                    step="0.000001"
+                    placeholder="Amount held"
+                    value={manualForm.balance}
+                    onChange={(e) => setManualForm({ ...manualForm, balance: e.target.value })}
+                    className="h-8 text-sm mt-1"
+                    data-testid="input-manual-balance"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This balance is manually maintained — update it when your holdings change.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setIsManualDialogOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={() => createManualMutation.mutate(manualForm)}
+                    disabled={createManualMutation.isPending || !manualForm.label || !manualForm.assetSymbol || !manualForm.balance}
+                    data-testid="button-submit-manual-wallet"
+                  >
+                    {createManualMutation.isPending ? "Adding..." : "Add Entry"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -1635,7 +1831,12 @@ export default function Wallets() {
                                       </div>
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="font-medium text-sm">{CHAIN_LABELS[w.chain] || w.chain}</span>
+                                          <span className="font-medium text-sm">{w.chain === "manual" ? (w.label || "Manual Entry") : (CHAIN_LABELS[w.chain] || w.chain)}</span>
+                                          {w.chain === "manual" && (
+                                            <Badge variant="outline" className="text-[10px] border-gray-400 text-gray-500">
+                                              Manual
+                                            </Badge>
+                                          )}
                                           {xamanLinked && (
                                             <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400" data-testid={`badge-xaman-connected-${w.id}`}>
                                               <Link2 className="h-3 w-3 mr-1" />
@@ -1660,31 +1861,37 @@ export default function Wallets() {
                                             </Button>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          <code className="text-xs text-muted-foreground truncate">
-                                            {truncateAddress(w.address)}
-                                          </code>
-                                          <button
-                                            onClick={() => handleCopy(w.address)}
-                                            className="text-muted-foreground hover:text-foreground shrink-0"
-                                            data-testid={`button-copy-${w.id}`}
-                                          >
-                                            {copiedAddress === w.address ? (
-                                              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                            ) : (
-                                              <Copy className="h-3 w-3" />
-                                            )}
-                                          </button>
-                                          <a
-                                            href={getExplorerUrl(w.chain, w.address)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-muted-foreground hover:text-foreground shrink-0"
-                                            data-testid={`link-explorer-${w.id}`}
-                                          >
-                                            <ExternalLink className="h-3 w-3" />
-                                          </a>
-                                        </div>
+                                        {w.chain !== "manual" ? (
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            <code className="text-xs text-muted-foreground truncate">
+                                              {truncateAddress(w.address)}
+                                            </code>
+                                            <button
+                                              onClick={() => handleCopy(w.address)}
+                                              className="text-muted-foreground hover:text-foreground shrink-0"
+                                              data-testid={`button-copy-${w.id}`}
+                                            >
+                                              {copiedAddress === w.address ? (
+                                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                              ) : (
+                                                <Copy className="h-3 w-3" />
+                                              )}
+                                            </button>
+                                            <a
+                                              href={getExplorerUrl(w.chain, w.address)}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-muted-foreground hover:text-foreground shrink-0"
+                                              data-testid={`link-explorer-${w.id}`}
+                                            >
+                                              <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            Balance manually maintained — not synced from blockchain
+                                          </p>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2 justify-between sm:justify-end">
@@ -1761,7 +1968,15 @@ export default function Wallets() {
                                                 {formatUsd(usdVal)}
                                               </span>
                                             </div>
-                                            <CostBasisPanel balance={b} currentPrice={pricePerUnit} />
+                                            <CostBasisPanel
+                                              balance={b}
+                                              currentPrice={pricePerUnit}
+                                              moveTargets={userWallets.flatMap(ow =>
+                                                ow.balances
+                                                  .filter(ob => ob.id !== b.id && ob.assetSymbol.toUpperCase() === b.assetSymbol.toUpperCase())
+                                                  .map(ob => ({ walletBalanceId: ob.id, walletLabel: ow.label || ow.chain, chain: ow.chain }))
+                                              )}
+                                            />
                                           </div>
                                         );
                                       })}

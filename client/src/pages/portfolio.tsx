@@ -46,6 +46,7 @@ export default function Portfolio() {
   const [viewMode, setViewMode] = useState<ViewMode>("holdings");
   const [showAddressed, setShowAddressed] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
     assetSymbol: "",
@@ -249,6 +250,15 @@ export default function Portfolio() {
   filtered.forEach(p => symbolCounts.set(p.assetSymbol, (symbolCounts.get(p.assetSymbol) || 0) + 1));
   const duplicateSymbols = new Set<string>();
   symbolCounts.forEach((count, symbol) => { if (count > 1) duplicateSymbols.add(symbol); });
+
+  const toggleGroup = (symbol: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(symbol)) next.delete(symbol);
+      else next.add(symbol);
+      return next;
+    });
+  };
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => {
@@ -564,108 +574,134 @@ export default function Portfolio() {
                       const isDupe = duplicateSymbols.has(position.assetSymbol);
                       const isFirstOfGroup = sortBy === "name" && (idx === 0 || filtered[idx - 1].assetSymbol !== position.assetSymbol);
                       const isAddr = position.isAddressed;
+                      const isGroupCollapsed = isDupe && sortBy === "name" && collapsedGroups.has(position.assetSymbol);
+
+                      if (isGroupCollapsed && !isFirstOfGroup) return null;
+                      const hideRow = isGroupCollapsed && isFirstOfGroup;
+
+                      const groupTotal = isDupe && isFirstOfGroup
+                        ? filtered.filter(p => p.assetSymbol === position.assetSymbol).reduce((sum, p) => sum + (p.currentValue || 0), 0)
+                        : 0;
+                      const groupCount = isDupe && isFirstOfGroup
+                        ? symbolCounts.get(position.assetSymbol) || 0
+                        : 0;
 
                       return (
                         <div key={position.id}>
                           {isDupe && isFirstOfGroup && (
-                            <div className="flex items-center gap-2 mt-3 mb-1 px-2">
-                              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{position.assetSymbol}</span>
+                            <div
+                              className="flex items-center gap-2 mt-3 mb-1 px-2 cursor-pointer select-none group"
+                              onClick={() => toggleGroup(position.assetSymbol)}
+                              data-testid={`group-header-${position.assetSymbol}`}
+                            >
+                              {collapsedGroups.has(position.assetSymbol)
+                                ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                              }
+                              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide group-hover:text-foreground transition-colors">{position.assetSymbol}</span>
                               <div className="flex-1 h-px bg-border" />
-                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Multiple sources</span>
+                              {collapsedGroups.has(position.assetSymbol) && (
+                                <span className="text-xs font-mono font-medium text-muted-foreground">{formatCurrency(groupTotal)}</span>
+                              )}
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                {collapsedGroups.has(position.assetSymbol) ? `${groupCount} sources` : "Multiple sources"}
+                              </span>
                             </div>
                           )}
-                          <div
-                            className={cn(
-                              "p-3 sm:p-4 rounded-lg border",
-                              isAddr && "opacity-50 bg-muted/30",
-                              !isAddr && isDupe && position.isImport && "border-l-4 border-l-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10",
-                              !isAddr && isDupe && !position.isImport && "border-l-4 border-l-emerald-400/60 bg-emerald-50/30 dark:bg-emerald-950/10"
-                            )}
-                            data-testid={`position-${position.assetSymbol}-${position.id}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-[10px] sm:text-sm font-bold text-primary">
-                                    {position.assetSymbol.slice(0, 2)}
-                                  </span>
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-sm sm:text-base">{position.assetSymbol}</span>
-                                    {position.source && (
-                                      <Badge variant={position.isImport ? "secondary" : "default"} className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
-                                        {position.source}
-                                      </Badge>
-                                    )}
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground hidden sm:inline-flex">
-                                      {getAssetCategory(position.assetSymbol)}
-                                    </Badge>
-                                    {isAddr && (
-                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                        Addressed
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
-                                    <span className="sm:hidden">{parseFloat(position.quantity).toFixed(2)} units</span>
-                                    <span className="hidden sm:inline">{parseFloat(position.quantity).toFixed(4)} units</span>
-                                    {position.source && <span className="sm:hidden text-[10px] ml-1 text-muted-foreground/70">· {position.source}</span>}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
-                                <div className="text-right">
-                                  <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">
-                                    {formatCurrency(position.currentValue || 0)}
-                                  </div>
-                                  <div
-                                    className={cn(
-                                      "flex items-center justify-end gap-1 text-xs sm:text-sm",
-                                      (position.gainLossPercent || 0) > 0 && "text-chart-2",
-                                      (position.gainLossPercent || 0) < 0 && "text-destructive",
-                                      (position.gainLossPercent || 0) === 0 && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {(position.gainLossPercent || 0) > 0 && <TrendingUp className="h-3 w-3" />}
-                                    {(position.gainLossPercent || 0) < 0 && <TrendingDown className="h-3 w-3" />}
-                                    {(position.gainLossPercent || 0) === 0 && <Minus className="h-3 w-3" />}
-                                    <span>
-                                      {(position.gainLossPercent || 0) > 0 && "+"}
-                                      {(position.gainLossPercent || 0).toFixed(2)}%
+                          {!hideRow && (
+                            <div
+                              className={cn(
+                                "p-3 sm:p-4 rounded-lg border",
+                                isAddr && "opacity-50 bg-muted/30",
+                                !isAddr && isDupe && position.isImport && "border-l-4 border-l-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10",
+                                !isAddr && isDupe && !position.isImport && "border-l-4 border-l-emerald-400/60 bg-emerald-50/30 dark:bg-emerald-950/10"
+                              )}
+                              data-testid={`position-${position.assetSymbol}-${position.id}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                                  <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-[10px] sm:text-sm font-bold text-primary">
+                                      {position.assetSymbol.slice(0, 2)}
                                     </span>
                                   </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-semibold text-sm sm:text-base">{position.assetSymbol}</span>
+                                      {position.source && (
+                                        <Badge variant={position.isImport ? "secondary" : "default"} className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
+                                          {position.source}
+                                        </Badge>
+                                      )}
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground hidden sm:inline-flex">
+                                        {getAssetCategory(position.assetSymbol)}
+                                      </Badge>
+                                      {isAddr && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                          Addressed
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
+                                      <span className="sm:hidden">{parseFloat(position.quantity).toFixed(2)} units</span>
+                                      <span className="hidden sm:inline">{parseFloat(position.quantity).toFixed(4)} units</span>
+                                      {position.source && <span className="sm:hidden text-[10px] ml-1 text-muted-foreground/70">· {position.source}</span>}
+                                    </div>
+                                  </div>
                                 </div>
-                                {!position.isWallet && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className={cn(isAddr ? "text-chart-2 hover:text-chart-2" : "text-muted-foreground hover:text-amber-600")}
-                                    onClick={() => addressMutation.mutate({ id: position.id, addressed: !isAddr })}
-                                    disabled={addressMutation.isPending}
-                                    data-testid={`button-address-${position.id}`}
-                                    title={isAddr ? "Restore position" : "Mark as addressed"}
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {position.isImport && !position.isWallet && !isAddr && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-muted-foreground hover:text-destructive"
-                                    onClick={() => deletePositionMutation.mutate(position.id)}
-                                    disabled={deletePositionMutation.isPending}
-                                    data-testid={`button-delete-position-${position.assetSymbol}`}
-                                    title={`Remove ${position.assetSymbol} from ${position.source}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
+
+                                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
+                                  <div className="text-right">
+                                    <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">
+                                      {formatCurrency(position.currentValue || 0)}
+                                    </div>
+                                    <div
+                                      className={cn(
+                                        "flex items-center justify-end gap-1 text-xs sm:text-sm",
+                                        (position.gainLossPercent || 0) > 0 && "text-chart-2",
+                                        (position.gainLossPercent || 0) < 0 && "text-destructive",
+                                        (position.gainLossPercent || 0) === 0 && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {(position.gainLossPercent || 0) > 0 && <TrendingUp className="h-3 w-3" />}
+                                      {(position.gainLossPercent || 0) < 0 && <TrendingDown className="h-3 w-3" />}
+                                      {(position.gainLossPercent || 0) === 0 && <Minus className="h-3 w-3" />}
+                                      <span>
+                                        {(position.gainLossPercent || 0) > 0 && "+"}
+                                        {(position.gainLossPercent || 0).toFixed(2)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {!position.isWallet && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(isAddr ? "text-chart-2 hover:text-chart-2" : "text-muted-foreground hover:text-amber-600")}
+                                      onClick={() => addressMutation.mutate({ id: position.id, addressed: !isAddr })}
+                                      disabled={addressMutation.isPending}
+                                      data-testid={`button-address-${position.id}`}
+                                      title={isAddr ? "Restore position" : "Mark as addressed"}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {position.isImport && !position.isWallet && !isAddr && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-muted-foreground hover:text-destructive"
+                                      onClick={() => deletePositionMutation.mutate(position.id)}
+                                      disabled={deletePositionMutation.isPending}
+                                      data-testid={`button-delete-position-${position.assetSymbol}`}
+                                      title={`Remove ${position.assetSymbol} from ${position.source}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       );
                     })}

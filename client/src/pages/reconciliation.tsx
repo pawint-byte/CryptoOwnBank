@@ -458,11 +458,38 @@ function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }:
   setSelectedKeep: (id: string | null) => void;
   onResolve: (keepId: string, removeId: string, copyValues: boolean, keepIsWallet?: boolean) => void;
 }) {
+  const { toast } = useToast();
   const livePositions = positions.filter(p => p.isWallet);
   const importPositions = positions.filter(p => p.isImport);
   const exchangePositions = positions.filter(p => !p.isWallet && !p.isImport);
   const hasLiveSource = livePositions.length > 0 || exchangePositions.length > 0;
   const removable = importPositions.filter(p => !p.isWallet);
+
+  const distributeMutation = useMutation({
+    mutationFn: async (importPositionId: string) => {
+      const res = await apiRequest("POST", "/api/positions/distribute-lots", { importPositionId });
+      return res.json();
+    },
+    onSuccess: (data: { message: string; distributed: Array<{ targetWallet: string; quantity: number }>; remainingLots: number; importRemoved: boolean }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reconciliation"] });
+      const walletNames = [...new Set(data.distributed.map(d => d.targetWallet))];
+      if (data.importRemoved) {
+        toast({
+          title: `All ${data.distributed.length} lots distributed`,
+          description: `Moved to ${walletNames.join(", ")}. Import entry removed — no more double counting.`,
+        });
+      } else {
+        toast({
+          title: `${data.distributed.length} lots distributed, ${data.remainingLots} remaining`,
+          description: `Wallets are full. Remaining lots may be on an exchange or wallet you haven't connected yet. Add a Manual Entry on the Wallets page to account for them.`,
+          duration: 8000,
+        });
+      }
+    },
+    onError: () => toast({ title: "Failed to distribute lots", variant: "destructive" }),
+  });
 
   const totalLiveQty = livePositions.reduce((sum, p) => sum + parseFloat(p.quantity || "0"), 0);
   const totalExchangeQty = exchangePositions.reduce((sum, p) => sum + parseFloat(p.quantity || "0"), 0);
@@ -510,49 +537,93 @@ function ResolveSection({ positions, selectedKeep, setSelectedKeep, onResolve }:
                     {qtyMatch ? (
                       <p className="text-emerald-600 dark:text-emerald-400">
                         <Check className="h-3 w-3 inline mr-0.5" />
-                        Quantity matches what's already tracked live. Safe to remove — this is the same holding.
+                        Quantity matches live wallets. You can distribute lots or remove the import.
                       </p>
                     ) : (
-                      <p className="text-muted-foreground">
-                        Quantity may differ from live data due to trades, transfers, or timing. If this holding is already represented elsewhere on your dashboard, it's safe to remove.
-                      </p>
+                      <div className="text-amber-600 dark:text-amber-400">
+                        <p>
+                          <AlertTriangle className="h-3 w-3 inline mr-0.5" />
+                          Import: {formatQty(removeQty)} vs Live: {formatQty(liveTotal)}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-amber-600/80 dark:text-amber-400/80">
+                          {removeQty > liveTotal
+                            ? `${formatQty(removeQty - liveTotal)} units may be on an exchange or wallet you haven't connected. Distribute what fits, then add a Manual Entry for the rest.`
+                            : `Live wallets hold more than the import — safe to distribute.`
+                          }
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 w-full text-destructive hover:text-destructive"
-                      data-testid={`resolve-delete-${removePos.id}`}
-                    >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Already accounted for — Remove
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Remove this import entry?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        "{removePos.source}" ({formatQty(removeQty)} {removePos.assetSymbol}) is already tracked live via {liveSources.join(", ")}. This import entry will be removed, but any purchase history (cost basis, dates) will be transferred to your wallet entry as purchase lots. Your live data is unaffected.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          const keepRef = livePositions[0] || exchangePositions[0];
-                          onResolve(keepRef.id, removePos.id, false, keepRef.isWallet);
-                        }}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                <div className="flex gap-2">
+                  {livePositions.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 flex-1"
+                          disabled={distributeMutation.isPending}
+                          data-testid={`resolve-distribute-${removePos.id}`}
+                        >
+                          <ArrowRightLeft className="h-3 w-3 mr-1" />
+                          {distributeMutation.isPending ? "Distributing..." : "Distribute Lots to Wallets"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Distribute purchase lots to wallets?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Your {removePos.assetSymbol} purchase lots from "{removePos.source}" will be distributed across your live wallets ({liveSources.join(", ")}) — filling each wallet up to its current balance, then moving on to the next. Cost basis and purchase dates are preserved. If all lots are distributed, the import entry is automatically removed.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => distributeMutation.mutate(removePos.id)}
+                          >
+                            Distribute Lots
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 flex-1 text-destructive hover:text-destructive"
+                        data-testid={`resolve-delete-${removePos.id}`}
                       >
-                        Remove Import Entry
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Remove Import
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remove this import entry?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          "{removePos.source}" ({formatQty(removeQty)} {removePos.assetSymbol}) will be removed. If you want to preserve your purchase history (cost basis, dates), use "Distribute Lots to Wallets" first. Otherwise, the import entry and its lots will be deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            const keepRef = livePositions[0] || exchangePositions[0];
+                            onResolve(keepRef.id, removePos.id, false, keepRef.isWallet);
+                          }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Remove Import Entry
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             );
           })}

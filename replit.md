@@ -45,6 +45,9 @@ Preferred communication style: Simple, everyday language.
 -   **Database**: PostgreSQL with Drizzle ORM.
 -   **Key Models**: Users, API Credentials, Accounts, Transactions, Positions, Tax Lots, Assets, Settings, Price Alerts, Wallets, Wallet Balances, User Wallets.
 -   **Cost Basis**: `averageCost` and `totalCostBasis` fields on wallet balances, manually editable and API managed.
+-   **Tax Lots**: Support `acquisitionType` field: `purchase` (default), `earned`, `airdrop`, `transfer`. Lots can be moved between wallet balances and distributed from import positions to live wallets.
+-   **Manual Wallets**: `chain: "manual"` wallets for tracking exchange-held or off-chain assets without a public address. Balance is manually maintained. Skips blockchain sync.
+-   **Lot Distribution**: Import position lots are distributed chronologically across live wallets until each wallet's capacity (live balance minus existing lots) is filled. Remaining lots stay on import with guidance to create manual entries.
 -   **User Wallets**: Multi-purpose, labeled wallet addresses.
 -   **Client-side Storage**: Zustand for wallet state, XRPL data, vault deposits, referral data. LocalStorage for UI preferences and temporary data.
 

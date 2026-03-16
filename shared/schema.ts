@@ -84,6 +84,7 @@ export const taxLots = pgTable("tax_lots", {
   originalQuantity: decimal("original_quantity", { precision: 18, scale: 8 }).notNull(),
   remainingQuantity: decimal("remaining_quantity", { precision: 18, scale: 8 }).notNull(),
   costBasisPerUnit: decimal("cost_basis_per_unit", { precision: 18, scale: 8 }).notNull(),
+  acquisitionType: varchar("acquisition_type", { length: 20 }).default("purchase"),
   note: varchar("note", { length: 200 }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
