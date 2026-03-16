@@ -1335,6 +1335,120 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/lots/write-off-excess", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { reason = "scam", lossDate, note } = req.body;
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const allBalances = await storage.getWalletBalancesByUser(userId);
+
+      const validReasons = ["scam", "hack", "lost_keys", "sent_in_error", "other"];
+      const writeOffReason = validReasons.includes(reason) ? reason : "scam";
+      const reasonLabels: Record<string, string> = {
+        scam: "Lost to scam",
+        hack: "Lost in hack",
+        lost_keys: "Lost keys / inaccessible",
+        sent_in_error: "Sent in error",
+        other: "Write-off",
+      };
+      const disposalDate = lossDate ? new Date(lossDate) : new Date();
+
+      let totalWrittenOff = 0;
+      let totalLossAmount = 0;
+      const details: Array<{ wallet: string; symbol: string; qtyWrittenOff: number; lossAmount: number; lotsAffected: number }> = [];
+      const touchedBalanceIds = new Set<string>();
+
+      for (const wb of allBalances) {
+        const assignedLots = allLots
+          .filter(l => l.walletBalanceId === wb.id && parseFloat(l.remainingQuantity) > 0)
+          .sort((a, b) => parseFloat(b.costBasisPerUnit) - parseFloat(a.costBasisPerUnit));
+
+        const totalAssigned = assignedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+        const liveBalance = parseFloat(wb.balance);
+        const excess = totalAssigned - liveBalance;
+
+        if (excess <= 0.001) continue;
+
+        let remaining = excess;
+        let walletLoss = 0;
+        let lotsAffected = 0;
+
+        for (const lot of assignedLots) {
+          if (remaining <= 0.001) break;
+          const lotQty = parseFloat(lot.remainingQuantity);
+          const writeOffQty = Math.min(remaining, lotQty);
+          const costPerUnit = parseFloat(lot.costBasisPerUnit);
+          const lotCostBasis = writeOffQty * costPerUnit;
+          const acquiredDate = new Date(lot.acquiredDate);
+          const holdingDays = (disposalDate.getTime() - acquiredDate.getTime()) / (1000 * 60 * 60 * 24);
+          const isLongTerm = holdingDays >= 365;
+
+          const disposalNote = `${reasonLabels[writeOffReason]} (bulk excess write-off)${note ? `: ${note}` : ""}`;
+
+          await storage.createGainEvent({
+            userId,
+            sellTransactionId: `writeoff-excess-${lot.id}-${Date.now()}`,
+            taxLotId: lot.id,
+            assetSymbol: lot.assetSymbol,
+            quantity: writeOffQty.toString(),
+            proceeds: "0.00",
+            costBasis: lotCostBasis.toFixed(2),
+            gainLoss: (-lotCostBasis).toFixed(2),
+            isLongTerm,
+            taxMethod: "WRITEOFF",
+            soldDate: disposalDate,
+            acquiredDate,
+            disposalType: writeOffReason,
+            disposalNote,
+          });
+
+          const newRemaining = lotQty - writeOffQty;
+          await storage.updateTaxLot(lot.id, {
+            remainingQuantity: newRemaining.toFixed(8),
+            note: `${lot.note ? lot.note + " | " : ""}WRITTEN OFF: ${disposalNote} (${writeOffQty.toFixed(4)} of ${lotQty.toFixed(4)})`,
+          });
+
+          remaining -= writeOffQty;
+          walletLoss += lotCostBasis;
+          lotsAffected++;
+        }
+
+        totalWrittenOff += (excess - remaining);
+        totalLossAmount += walletLoss;
+        touchedBalanceIds.add(wb.id);
+
+        const userWallets = await storage.getWalletsByUser(userId);
+        const wallet = userWallets.find(w => w.id === wb.walletId);
+        details.push({
+          wallet: wallet?.label || wallet?.chain || "Unknown",
+          symbol: wb.assetSymbol,
+          qtyWrittenOff: excess - remaining,
+          lossAmount: walletLoss,
+          lotsAffected,
+        });
+      }
+
+      for (const wbId of touchedBalanceIds) {
+        const wbLots = await storage.getTaxLotsByWalletBalance(userId, wbId);
+        const totalCost = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+        const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+        await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
+      }
+
+      res.json({
+        message: `Written off ${totalWrittenOff.toFixed(4)} excess across ${touchedBalanceIds.size} wallet(s) — $${totalLossAmount.toFixed(2)} total capital loss recorded`,
+        totalWrittenOff,
+        totalLossAmount,
+        walletsAffected: touchedBalanceIds.size,
+        details,
+      });
+    } catch (error) {
+      console.error("Write-off excess error:", error);
+      res.status(500).json({ message: "Failed to write off excess lots" });
+    }
+  });
+
   app.post("/api/wallet-balances/:balanceId/record-sale", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -7318,139 +7432,8 @@ function startPriceAlertChecker() {
         console.log(`[migration] Renamed ${ledgerXWallets.length} LEDGERX wallets to LEDGER`);
       }
 
-      const fs = await import("fs");
-      const pathMod = await import("path");
-      const csvPath = pathMod.resolve("attached_assets/portfolio_(1)_1772983040841.csv");
-      if (fs.existsSync(csvPath)) {
-        const allLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
-        const expectedCount = 737;
-        if (allLots.length !== expectedCount) {
-          console.log(`[migration] Yahoo CSV cleanup: found ${allLots.length} lots, expected ${expectedCount}. Rebuilding...`);
-          await db.delete(taxLots).where(eq(taxLots.userId, ADMIN_USER_ID));
-          const csvContent = fs.readFileSync(csvPath, "utf-8");
-          const csvLines = csvContent.trim().split("\n");
-          let totalCreated = 0;
-          const costByAsset: Record<string, { totalCost: number; totalQty: number }> = {};
-          for (let i = 1; i < csvLines.length; i++) {
-            const parts = csvLines[i].split(",");
-            const sym = (parts[0] || "").replace(/-USD$/, "").replace(/-USDT$/, "").trim();
-            const td = parts[9] || "";
-            const pp = parseFloat(parts[10] || "0");
-            const qty = parseFloat(parts[11] || "0");
-            const comment = (parts[15] || "").trim();
-            if (!sym || qty <= 0) continue;
-            let acquiredDate: Date;
-            if (td.length === 8) {
-              acquiredDate = new Date(`${td.slice(0,4)}-${td.slice(4,6)}-${td.slice(6,8)}T00:00:00Z`);
-            } else {
-              acquiredDate = new Date();
-            }
-            const isReward = pp === 0;
-            await storage.createTaxLot({
-              userId: ADMIN_USER_ID,
-              assetSymbol: sym,
-              acquiredDate,
-              originalQuantity: qty.toString(),
-              remainingQuantity: qty.toString(),
-              costBasisPerUnit: pp.toFixed(8),
-              acquisitionType: isReward ? "reward" : "purchase",
-              note: isReward
-                ? (comment ? `Yahoo CSV (reward): ${comment}` : "Yahoo CSV (reward)")
-                : (comment ? `Yahoo CSV: ${comment}` : "Yahoo CSV import"),
-            });
-            if (!costByAsset[sym]) costByAsset[sym] = { totalCost: 0, totalQty: 0 };
-            costByAsset[sym].totalCost += qty * pp;
-            costByAsset[sym].totalQty += qty;
-            totalCreated++;
-          }
-          const allWB = await storage.getWalletBalancesByUser(ADMIN_USER_ID);
-          for (const wb of allWB) {
-            const sym = wb.assetSymbol.replace(" (staked)", "");
-            const data = costByAsset[sym];
-            if (data && data.totalQty > 0) {
-              const avgCost = data.totalCost / data.totalQty;
-              await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), data.totalCost.toFixed(2));
-            }
-          }
-          console.log(`[migration] Yahoo CSV: rebuilt ${totalCreated} lots across ${Object.keys(costByAsset).length} assets`);
-        } else {
-          console.log(`[migration] Yahoo CSV: ${allLots.length} lots already correct, skipping`);
-        }
-
-        const freshLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
-        const unassignedCount = freshLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0).length;
-        if (unassignedCount > 0) {
-          console.log(`[migration] Auto-distributing ${unassignedCount} unassigned lots to wallets...`);
-          const allWBForDist = await storage.getWalletBalancesByUser(ADMIN_USER_ID);
-          const adminWalletsForDist = await storage.getWalletsByUser(ADMIN_USER_ID);
-          const unassignedLots = freshLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0);
-          const bySymDist: Record<string, typeof unassignedLots> = {};
-          for (const lot of unassignedLots) {
-            const sym = lot.assetSymbol.toUpperCase();
-            if (!bySymDist[sym]) bySymDist[sym] = [];
-            bySymDist[sym].push(lot);
-          }
-          for (const sym of Object.keys(bySymDist)) {
-            bySymDist[sym].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
-          }
-          let distCount = 0;
-          const touchedWBs = new Set<string>();
-          for (const [sym, lots] of Object.entries(bySymDist)) {
-            const matchBals = allWBForDist
-              .filter(b => b.assetSymbol.toUpperCase() === sym)
-              .sort((a, b) => parseFloat(b.balance) - parseFloat(a.balance));
-            let lotIdx = 0;
-            for (const wb of matchBals) {
-              const existAssigned = freshLots
-                .filter(l => l.walletBalanceId === wb.id)
-                .reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
-              const capacity = Math.max(0, parseFloat(wb.balance) - existAssigned);
-              if (capacity < 0.0001) continue;
-              let filled = 0;
-              while (lotIdx < lots.length && filled < capacity - 0.0001) {
-                const lot = lots[lotIdx];
-                const lotQty = parseFloat(lot.remainingQuantity);
-                const spaceLeft = capacity - filled;
-                if (lotQty <= spaceLeft + 0.0001) {
-                  await storage.updateTaxLot(lot.id, { walletBalanceId: wb.id });
-                  filled += lotQty;
-                  distCount++;
-                  touchedWBs.add(wb.id);
-                  lotIdx++;
-                } else if (spaceLeft >= 0.0001) {
-                  const splitQty = Math.min(spaceLeft, lotQty);
-                  await storage.createTaxLot({
-                    userId: ADMIN_USER_ID,
-                    walletBalanceId: wb.id,
-                    assetSymbol: lot.assetSymbol,
-                    acquiredDate: new Date(lot.acquiredDate),
-                    originalQuantity: splitQty.toFixed(8),
-                    remainingQuantity: splitQty.toFixed(8),
-                    costBasisPerUnit: lot.costBasisPerUnit,
-                    transactionId: lot.transactionId || undefined,
-                  });
-                  await storage.updateTaxLot(lot.id, {
-                    remainingQuantity: (lotQty - splitQty).toFixed(8),
-                    originalQuantity: (parseFloat(lot.originalQuantity) - splitQty).toFixed(8),
-                  });
-                  filled += splitQty;
-                  distCount++;
-                  touchedWBs.add(wb.id);
-                  break;
-                } else break;
-              }
-            }
-          }
-          for (const wbId of touchedWBs) {
-            const wbLots = await storage.getTaxLotsByWalletBalance(ADMIN_USER_ID, wbId);
-            const tc = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
-            const tq = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
-            const avg = tq > 0 ? tc / tq : 0;
-            await storage.updateWalletBalanceCostData(wbId, avg.toFixed(8), tc.toFixed(2));
-          }
-          console.log(`[migration] Auto-distributed ${distCount} lots to ${touchedWBs.size} wallet balances`);
-        }
-      }
+      const existingLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
+      console.log(`[migration] Database has ${existingLots.length} lots — preserved as-is (database is source of truth)`);
     } catch (err) {
       console.error("[migration] Startup migration error:", err);
     }

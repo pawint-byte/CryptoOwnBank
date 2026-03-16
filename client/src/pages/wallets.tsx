@@ -1292,6 +1292,30 @@ export default function Wallets() {
     queryKey: ["/api/subscription/limits"],
   });
 
+  const [showWriteOffExcess, setShowWriteOffExcess] = useState(false);
+  const [writeOffExcessForm, setWriteOffExcessForm] = useState({ reason: "scam", note: "" });
+  const writeOffExcessMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/lots/write-off-excess", writeOffExcessForm);
+      return res.json();
+    },
+    onSuccess: (data: { message: string; totalWrittenOff: number; totalLossAmount: number; walletsAffected: number; details: Array<{ wallet: string; symbol: string; qtyWrittenOff: number; lossAmount: number; lotsAffected: number }> }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lot-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reconciliation"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/gain-events"] });
+      toast({
+        title: `Excess written off`,
+        description: `$${data.totalLossAmount.toFixed(2)} capital loss recorded across ${data.walletsAffected} wallet(s). This will appear on your tax report.`,
+      });
+      setShowWriteOffExcess(false);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Write-off failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   const walletAtLimit = limits?.wallets.limit !== null && limits?.wallets.used !== undefined && limits.wallets.used >= (limits.wallets.limit ?? Infinity);
 
   const form = useForm<WalletFormValues>({
@@ -2715,17 +2739,29 @@ export default function Wallets() {
                                         </div>
                                       </div>
                                       {hasUnaccounted && (
-                                        <p
-                                          className="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 cursor-pointer hover:underline"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)) });
-                                            setIsManualDialogOpen(true);
-                                          }}
-                                          data-testid={`link-add-manual-${h.symbol.toLowerCase()}`}
-                                        >
-                                          You have {formatBalance(diff, 4)} more {h.symbol} in lots than in tracked wallets. <span className="underline font-medium">Add a manual wallet</span> (e.g. Crypto.com, Coinbase) to account for it.
-                                        </p>
+                                        <div className="mt-1.5 space-y-1">
+                                          <p
+                                            className="text-[10px] text-amber-700 dark:text-amber-400 cursor-pointer hover:underline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)) });
+                                              setIsManualDialogOpen(true);
+                                            }}
+                                            data-testid={`link-add-manual-${h.symbol.toLowerCase()}`}
+                                          >
+                                            You have {formatBalance(diff, 4)} more {h.symbol} in lots than in tracked wallets. <span className="underline font-medium">Add a manual wallet</span> (e.g. Crypto.com, Coinbase) to account for it.
+                                          </p>
+                                          <p
+                                            className="text-[10px] text-red-600 dark:text-red-400 cursor-pointer hover:underline"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setShowWriteOffExcess(true);
+                                            }}
+                                            data-testid={`link-writeoff-excess-${h.symbol.toLowerCase()}`}
+                                          >
+                                            Or <span className="underline font-medium">write off all excess lots as lost/scammed</span> to record the capital loss.
+                                          </p>
+                                        </div>
                                       )}
                                       {hasShortfall && (
                                         <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-1.5">
@@ -3327,6 +3363,67 @@ export default function Wallets() {
             <Button variant="ghost" size="sm" onClick={cancelMobileLink} data-testid="button-cancel-link">
               Cancel
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showWriteOffExcess} onOpenChange={setShowWriteOffExcess}>
+        <DialogContent className="max-w-md" data-testid="dialog-writeoff-excess">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Write Off All Excess Lots</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This will find every wallet where your purchase lots exceed the live balance, and write off the difference as a loss. The highest-cost lots are written off first to maximize your capital loss deduction.
+            </p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Reason</label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {[
+                  { value: "scam", label: "Scam" },
+                  { value: "hack", label: "Hack" },
+                  { value: "lost_keys", label: "Lost keys" },
+                  { value: "sent_in_error", label: "Sent in error" },
+                  { value: "other", label: "Other" },
+                ].map(opt => (
+                  <Button
+                    key={opt.value}
+                    size="sm"
+                    variant={writeOffExcessForm.reason === opt.value ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => setWriteOffExcessForm({ ...writeOffExcessForm, reason: opt.value })}
+                    data-testid={`writeoff-excess-reason-${opt.value}`}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Note (optional)</label>
+              <textarea
+                className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                rows={2}
+                placeholder="e.g. Lost in exchange hack, scammed via fake airdrop..."
+                value={writeOffExcessForm.note}
+                onChange={(e) => setWriteOffExcessForm({ ...writeOffExcessForm, note: e.target.value })}
+                data-testid="input-writeoff-excess-note"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setShowWriteOffExcess(false)} data-testid="button-cancel-writeoff-excess">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => writeOffExcessMutation.mutate()}
+                disabled={writeOffExcessMutation.isPending}
+                data-testid="button-confirm-writeoff-excess"
+              >
+                {writeOffExcessMutation.isPending ? "Processing..." : "Write Off Excess as Loss"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
