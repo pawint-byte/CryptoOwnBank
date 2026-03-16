@@ -5367,6 +5367,58 @@ export async function registerRoutes(
         }
       }
 
+      try {
+        const syncedBalances = await storage.getWalletBalances(wallet.id);
+        for (const wb of syncedBalances) {
+          const sym = wb.assetSymbol.toUpperCase();
+          const allUserLots = await storage.getTaxLotsByAsset(userId, sym);
+          const unassigned = allUserLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0);
+          if (unassigned.length === 0) continue;
+          const assigned = allUserLots.filter(l => l.walletBalanceId === wb.id).reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+          let capacity = Math.max(0, parseFloat(wb.balance) - assigned);
+          if (capacity < 0.0001) continue;
+          const sorted = [...unassigned].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+          let filled = 0;
+          for (const lot of sorted) {
+            if (filled >= capacity - 0.0001) break;
+            const lotQty = parseFloat(lot.remainingQuantity);
+            const spaceLeft = capacity - filled;
+            if (lotQty <= spaceLeft + 0.0001) {
+              await storage.updateTaxLot(lot.id, { walletBalanceId: wb.id });
+              filled += lotQty;
+            } else if (spaceLeft >= 0.0001) {
+              const splitQty = Math.min(spaceLeft, lotQty);
+              await storage.createTaxLot({
+                userId,
+                walletBalanceId: wb.id,
+                assetSymbol: lot.assetSymbol,
+                acquiredDate: new Date(lot.acquiredDate),
+                originalQuantity: splitQty.toFixed(8),
+                remainingQuantity: splitQty.toFixed(8),
+                costBasisPerUnit: lot.costBasisPerUnit,
+                transactionId: lot.transactionId || undefined,
+              });
+              await storage.updateTaxLot(lot.id, {
+                remainingQuantity: (lotQty - splitQty).toFixed(8),
+                originalQuantity: (parseFloat(lot.originalQuantity) - splitQty).toFixed(8),
+              });
+              filled += splitQty;
+              break;
+            }
+          }
+          if (filled > 0) {
+            const wbLots = await storage.getTaxLotsByWalletBalance(userId, wb.id);
+            const tc = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+            const tq = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+            const avg = tq > 0 ? tc / tq : 0;
+            await storage.updateWalletBalanceCostData(wb.id, avg.toFixed(8), tc.toFixed(2));
+            console.log(`[sync-auto-assign] Assigned ${filled.toFixed(4)} ${sym} lots to wallet ${wallet.label || wallet.id}`);
+          }
+        }
+      } catch (autoErr) {
+        console.error("[sync-auto-assign] Failed:", autoErr);
+      }
+
       const updatedWallet = await storage.getWallet(wallet.id);
       const updatedBalances = await storage.getWalletBalances(wallet.id);
       res.json({ ...updatedWallet, balances: updatedBalances, newTransactions, correctedChain: correctedChain || undefined });
