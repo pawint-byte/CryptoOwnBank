@@ -996,6 +996,7 @@ export default function Wallets() {
   const [manualForm, setManualForm] = useState({ label: "", assetSymbol: "", balance: "" });
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean> | null>(null);
+  const [expandedAssets, setExpandedAssets] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const xrplStore = useXrplStore();
 
@@ -2234,49 +2235,104 @@ export default function Wallets() {
                           .map((h, i) => {
                             const total = portfolioData?.totalValue || 1;
                             const pct = (h.usdValue / total) * 100;
+                            const isExpanded = expandedAssets[h.symbol];
+                            const walletBreakdown = allHoldings
+                              .filter(ah => ah.symbol.toUpperCase() === h.symbol.toUpperCase() && ah.balance > 0)
+                              .sort((a, b) => b.balance - a.balance);
+                            const totalLotsQty = walletBreakdown.reduce((s, wb) => {
+                              const wBals = userWallets.find(w => w.id === wb.walletId)?.balances || [];
+                              const matchBal = wBals.find(b => b.assetSymbol.toUpperCase() === h.symbol.toUpperCase());
+                              return s + (matchBal ? parseFloat(matchBal.costBasis || "0") : 0);
+                            }, 0);
                             return (
                               <div
                                 key={h.symbol}
-                                className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-lg border"
+                                className="rounded-lg border overflow-hidden"
                                 data-testid={`asset-row-${h.symbol}`}
                               >
-                                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-primary/10 shrink-0">
-                                  <span className="text-xs sm:text-sm font-bold text-primary">
-                                    {h.symbol.slice(0, 3)}
-                                  </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="font-semibold text-sm sm:text-base">{h.symbol}</span>
-                                    <span className="font-mono font-medium text-sm sm:text-base">{formatUsd(h.usdValue)}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2 mt-1">
-                                    <span className="text-xs text-muted-foreground font-mono truncate">
-                                      {formatBalance(h.balance, 4)} {h.symbol}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground shrink-0">
-                                      {pct.toFixed(1)}%
+                                <div
+                                  className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                                  onClick={() => setExpandedAssets(prev => ({ ...prev, [h.symbol]: !prev[h.symbol] }))}
+                                  data-testid={`asset-expand-${h.symbol}`}
+                                >
+                                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-primary/10 shrink-0">
+                                    <span className="text-xs sm:text-sm font-bold text-primary">
+                                      {h.symbol.slice(0, 3)}
                                     </span>
                                   </div>
-                                  <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${Math.min(pct, 100)}%`,
-                                        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
-                                      }}
-                                    />
-                                  </div>
-                                  {h.sources.length > 0 && (
-                                    <div className="hidden sm:flex gap-1 mt-1.5 flex-wrap">
-                                      {h.sources.map((src) => (
-                                        <Badge key={src} variant="outline" className="text-[10px] px-1.5 py-0">
-                                          {src}
-                                        </Badge>
-                                      ))}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm sm:text-base">{h.symbol}</span>
+                                        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
+                                      </div>
+                                      <span className="font-mono font-medium text-sm sm:text-base">{formatUsd(h.usdValue)}</span>
                                     </div>
-                                  )}
+                                    <div className="flex items-center justify-between gap-2 mt-1">
+                                      <span className="text-xs font-mono font-medium">
+                                        {formatBalance(h.balance, 4)} {h.symbol}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground shrink-0">
+                                        {walletBreakdown.length} wallet{walletBreakdown.length !== 1 ? "s" : ""} · {pct.toFixed(1)}%
+                                      </span>
+                                    </div>
+                                    <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full"
+                                        style={{
+                                          width: `${Math.min(pct, 100)}%`,
+                                          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
+                                {isExpanded && (
+                                  <div className="border-t bg-muted/10 px-3 py-2 space-y-1.5">
+                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1">
+                                      <span>Wallet</span>
+                                      <div className="flex gap-6">
+                                        <span>Balance</span>
+                                        <span>Value</span>
+                                      </div>
+                                    </div>
+                                    {walletBreakdown.map(wb => (
+                                      <div
+                                        key={wb.walletId + wb.symbol}
+                                        className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/30 text-sm"
+                                        data-testid={`asset-wallet-${h.symbol}-${wb.walletId}`}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                            {wb.source}
+                                          </Badge>
+                                          <span className="text-xs text-muted-foreground capitalize">{wb.chain}</span>
+                                        </div>
+                                        <div className="flex gap-6 items-center shrink-0">
+                                          <span className="font-mono text-xs font-medium w-24 text-right">
+                                            {formatBalance(wb.balance, 4)}
+                                          </span>
+                                          <span className="font-mono text-xs text-muted-foreground w-20 text-right">
+                                            {formatUsd(wb.usdValue)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <div className="border-t pt-2 mt-2 flex items-center justify-between px-1">
+                                      <span className="text-xs font-medium text-muted-foreground">Total on-chain / exchange</span>
+                                      <span className="font-mono text-xs font-bold">{formatBalance(h.balance, 4)} {h.symbol}</span>
+                                    </div>
+                                    {h.sources.length > 0 && (
+                                      <div className="flex gap-1 pt-1 flex-wrap px-1">
+                                        {h.sources.map((src) => (
+                                          <Badge key={src} variant="outline" className="text-[10px] px-1.5 py-0">
+                                            {src}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
