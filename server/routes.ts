@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, type CustomVault } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation } from "./email";
 import multer from "multer";
@@ -1782,6 +1782,87 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Distribute lots error:", error);
       res.status(500).json({ message: "Failed to distribute lots" });
+    }
+  });
+
+  app.post("/api/lots/auto-distribute", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const allBalances = await storage.getWalletBalancesByUser(userId);
+      const userWallets = await storage.getWalletsByUser(userId);
+
+      const unassigned = allLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0);
+      const bySymbol: Record<string, typeof unassigned> = {};
+      for (const lot of unassigned) {
+        const sym = lot.assetSymbol.toUpperCase();
+        if (!bySymbol[sym]) bySymbol[sym] = [];
+        bySymbol[sym].push(lot);
+      }
+      for (const sym of Object.keys(bySymbol)) {
+        bySymbol[sym].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+      }
+
+      let totalDistributed = 0;
+      const touchedBalanceIds = new Set<string>();
+      const details: Array<{ symbol: string; wallet: string; lotsAssigned: number; qtyAssigned: number }> = [];
+
+      for (const [sym, lots] of Object.entries(bySymbol)) {
+        const matchingBalances = allBalances
+          .filter(b => b.assetSymbol.toUpperCase() === sym)
+          .sort((a, b) => parseFloat(b.balance) - parseFloat(a.balance));
+
+        let lotIdx = 0;
+        for (const wb of matchingBalances) {
+          const wallet = userWallets.find((w: any) => w.id === wb.walletId);
+          const existingAssigned = allLots
+            .filter(l => l.walletBalanceId === wb.id)
+            .reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+          const capacity = Math.max(0, parseFloat(wb.balance) - existingAssigned);
+          if (capacity < 0.0001) continue;
+
+          let filled = 0;
+          let lotsForWallet = 0;
+          while (lotIdx < lots.length && filled < capacity - 0.0001) {
+            const lot = lots[lotIdx];
+            const lotQty = parseFloat(lot.remainingQuantity);
+            if (lotQty <= capacity - filled + 0.0001) {
+              await storage.updateTaxLot(lot.id, { walletBalanceId: wb.id });
+              filled += lotQty;
+              lotsForWallet++;
+              totalDistributed++;
+              touchedBalanceIds.add(wb.id);
+              lotIdx++;
+            } else {
+              break;
+            }
+          }
+          if (lotsForWallet > 0) {
+            details.push({ symbol: sym, wallet: wallet?.label || wallet?.chain || "Unknown", lotsAssigned: lotsForWallet, qtyAssigned: filled });
+          }
+        }
+      }
+
+      for (const wbId of touchedBalanceIds) {
+        const wbLots = await storage.getTaxLotsByWalletBalance(userId, wbId);
+        const totalCost = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+        const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+        await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
+      }
+
+      const remainingUnassigned = allLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0).length;
+
+      res.json({
+        message: `Distributed ${totalDistributed} lots across ${touchedBalanceIds.size} wallet balance(s)`,
+        totalDistributed,
+        walletsUpdated: touchedBalanceIds.size,
+        remainingUnassigned: unassigned.length - totalDistributed,
+        details,
+      });
+    } catch (error) {
+      console.error("Auto-distribute lots error:", error);
+      res.status(500).json({ message: "Failed to auto-distribute lots" });
     }
   });
 
@@ -7027,78 +7108,114 @@ function startPriceAlertChecker() {
 
       const fs = await import("fs");
       const pathMod = await import("path");
-      const jsonPath = pathMod.resolve("server/data/yahoo-csv-lots.json");
       const csvPath = pathMod.resolve("attached_assets/portfolio_(1)_1772983040841.csv");
-      let lotsData: [string, string, number, number, string][] = [];
-      if (fs.existsSync(jsonPath)) {
-        lotsData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-      } else if (fs.existsSync(csvPath)) {
-        const csvContent = fs.readFileSync(csvPath, "utf-8");
-        const csvLines = csvContent.trim().split("\n");
-        for (let i = 1; i < csvLines.length; i++) {
-          const parts = csvLines[i].split(",");
-          const sym = (parts[0] || "").replace("-USD", "");
-          const td = parts[9] || "";
-          const pp = parseFloat(parts[10] || "0");
-          const qty = parseFloat(parts[11] || "0");
-          const comment = (parts[15] || "").trim();
-          if (sym && qty > 0) lotsData.push([sym, td, pp, qty, comment]);
-        }
-      }
-      if (lotsData.length > 0) {
-        interface MigLot { symbol: string; tradeDate: string; purchasePrice: number; quantity: number; comment: string; }
-        const csvLots: MigLot[] = lotsData.map(([symbol, tradeDate, purchasePrice, quantity, comment]) => ({ symbol, tradeDate, purchasePrice, quantity, comment }));
-        const csvBySymbol: Record<string, MigLot[]> = {};
-        for (const lot of csvLots) {
-          if (!csvBySymbol[lot.symbol]) csvBySymbol[lot.symbol] = [];
-          csvBySymbol[lot.symbol].push(lot);
-        }
-
-        const allWB = await storage.getWalletBalancesByUser(ADMIN_USER_ID);
-        let totalCreated = 0;
-        let assetsMatched = 0;
-        for (const wb of allWB) {
-          const sym = wb.assetSymbol.replace(" (staked)", "");
-          const lots = csvBySymbol[sym];
-          if (!lots || lots.length === 0) continue;
-          const existing = await storage.getTaxLotsByWalletBalance(ADMIN_USER_ID, wb.id);
-          if (existing.length > 0) continue;
-
-          let totalCost = 0, totalQty = 0;
-          for (const lot of lots) {
+      if (fs.existsSync(csvPath)) {
+        const allLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
+        const expectedCount = 737;
+        if (allLots.length !== expectedCount) {
+          console.log(`[migration] Yahoo CSV cleanup: found ${allLots.length} lots, expected ${expectedCount}. Rebuilding...`);
+          await db.delete(taxLots).where(eq(taxLots.userId, ADMIN_USER_ID));
+          const csvContent = fs.readFileSync(csvPath, "utf-8");
+          const csvLines = csvContent.trim().split("\n");
+          let totalCreated = 0;
+          const costByAsset: Record<string, { totalCost: number; totalQty: number }> = {};
+          for (let i = 1; i < csvLines.length; i++) {
+            const parts = csvLines[i].split(",");
+            const sym = (parts[0] || "").replace(/-USD$/, "").replace(/-USDT$/, "").trim();
+            const td = parts[9] || "";
+            const pp = parseFloat(parts[10] || "0");
+            const qty = parseFloat(parts[11] || "0");
+            const comment = (parts[15] || "").trim();
+            if (!sym || qty <= 0) continue;
             let acquiredDate: Date;
-            if (lot.tradeDate && lot.tradeDate.length === 8) {
-              const y = lot.tradeDate.slice(0, 4), m = lot.tradeDate.slice(4, 6), d = lot.tradeDate.slice(6, 8);
-              acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
+            if (td.length === 8) {
+              acquiredDate = new Date(`${td.slice(0,4)}-${td.slice(4,6)}-${td.slice(6,8)}T00:00:00Z`);
             } else {
               acquiredDate = new Date();
             }
+            const isReward = pp === 0;
             await storage.createTaxLot({
               userId: ADMIN_USER_ID,
-              walletBalanceId: wb.id,
               assetSymbol: sym,
               acquiredDate,
-              originalQuantity: lot.quantity.toString(),
-              remainingQuantity: lot.quantity.toString(),
-              costBasisPerUnit: lot.purchasePrice.toString(),
-              note: lot.purchasePrice === 0
-                ? (lot.comment ? `Yahoo CSV (reward): ${lot.comment}` : "Yahoo CSV (reward)")
-                : (lot.comment ? `Yahoo CSV: ${lot.comment}` : "Yahoo CSV import"),
+              originalQuantity: qty.toString(),
+              remainingQuantity: qty.toString(),
+              costBasisPerUnit: pp.toFixed(8),
+              acquisitionType: isReward ? "reward" : "purchase",
+              note: isReward
+                ? (comment ? `Yahoo CSV (reward): ${comment}` : "Yahoo CSV (reward)")
+                : (comment ? `Yahoo CSV: ${comment}` : "Yahoo CSV import"),
             });
-            totalCost += lot.quantity * lot.purchasePrice;
-            totalQty += lot.quantity;
+            if (!costByAsset[sym]) costByAsset[sym] = { totalCost: 0, totalQty: 0 };
+            costByAsset[sym].totalCost += qty * pp;
+            costByAsset[sym].totalQty += qty;
             totalCreated++;
           }
-          if (totalQty > 0) {
-            const avgCost = totalCost / totalQty;
-            await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), totalCost.toFixed(2));
+          const allWB = await storage.getWalletBalancesByUser(ADMIN_USER_ID);
+          for (const wb of allWB) {
+            const sym = wb.assetSymbol.replace(" (staked)", "");
+            const data = costByAsset[sym];
+            if (data && data.totalQty > 0) {
+              const avgCost = data.totalCost / data.totalQty;
+              await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), data.totalCost.toFixed(2));
+            }
           }
-          assetsMatched++;
-        }
-        if (totalCreated > 0) {
-          console.log(`[migration] Yahoo CSV: ${assetsMatched} assets matched, ${totalCreated} purchase lots created`);
+          console.log(`[migration] Yahoo CSV: rebuilt ${totalCreated} lots across ${Object.keys(costByAsset).length} assets`);
         } else {
-          console.log("[migration] Yahoo CSV: no new lots to create (already imported or no matches)");
+          console.log(`[migration] Yahoo CSV: ${allLots.length} lots already correct, skipping`);
+        }
+
+        const freshLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
+        const unassignedCount = freshLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0).length;
+        if (unassignedCount > 0) {
+          console.log(`[migration] Auto-distributing ${unassignedCount} unassigned lots to wallets...`);
+          const allWBForDist = await storage.getWalletBalancesByUser(ADMIN_USER_ID);
+          const adminWalletsForDist = await storage.getWalletsByUser(ADMIN_USER_ID);
+          const unassignedLots = freshLots.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0);
+          const bySymDist: Record<string, typeof unassignedLots> = {};
+          for (const lot of unassignedLots) {
+            const sym = lot.assetSymbol.toUpperCase();
+            if (!bySymDist[sym]) bySymDist[sym] = [];
+            bySymDist[sym].push(lot);
+          }
+          for (const sym of Object.keys(bySymDist)) {
+            bySymDist[sym].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+          }
+          let distCount = 0;
+          const touchedWBs = new Set<string>();
+          for (const [sym, lots] of Object.entries(bySymDist)) {
+            const matchBals = allWBForDist
+              .filter(b => b.assetSymbol.toUpperCase() === sym)
+              .sort((a, b) => parseFloat(b.balance) - parseFloat(a.balance));
+            let lotIdx = 0;
+            for (const wb of matchBals) {
+              const existAssigned = freshLots
+                .filter(l => l.walletBalanceId === wb.id)
+                .reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+              const capacity = Math.max(0, parseFloat(wb.balance) - existAssigned);
+              if (capacity < 0.0001) continue;
+              let filled = 0;
+              while (lotIdx < lots.length && filled < capacity - 0.0001) {
+                const lot = lots[lotIdx];
+                const lotQty = parseFloat(lot.remainingQuantity);
+                if (lotQty <= capacity - filled + 0.0001) {
+                  await storage.updateTaxLot(lot.id, { walletBalanceId: wb.id });
+                  filled += lotQty;
+                  distCount++;
+                  touchedWBs.add(wb.id);
+                  lotIdx++;
+                } else break;
+              }
+            }
+          }
+          for (const wbId of touchedWBs) {
+            const wbLots = await storage.getTaxLotsByWalletBalance(ADMIN_USER_ID, wbId);
+            const tc = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+            const tq = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+            const avg = tq > 0 ? tc / tq : 0;
+            await storage.updateWalletBalanceCostData(wbId, avg.toFixed(8), tc.toFixed(2));
+          }
+          console.log(`[migration] Auto-distributed ${distCount} lots to ${touchedWBs.size} wallet balances`);
         }
       }
     } catch (err) {

@@ -88,7 +88,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban } from "lucide-react";
+import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban, Shuffle } from "lucide-react";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
@@ -2356,10 +2356,35 @@ export default function Wallets() {
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Total Holdings by Asset</CardTitle>
-                    <CardDescription>
-                      All your coins aggregated across wallets — see total exposure per asset
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Total Holdings by Asset</CardTitle>
+                        <CardDescription>
+                          All your coins aggregated across wallets — see total exposure per asset
+                        </CardDescription>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const res = await apiRequest("POST", "/api/lots/auto-distribute");
+                            const data = await res.json();
+                            toast({ title: data.message });
+                            queryClient.invalidateQueries({ queryKey: ["/api/lot-summary"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+                          } catch (err: unknown) {
+                            const msg = err instanceof Error ? err.message : "Failed";
+                            toast({ title: "Distribution failed", description: msg, variant: "destructive" });
+                          }
+                        }}
+                        data-testid="button-auto-distribute"
+                      >
+                        <Shuffle className="h-3.5 w-3.5 mr-1.5" />
+                        Auto-Assign Lots
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {byAssetData.length === 0 ? (
