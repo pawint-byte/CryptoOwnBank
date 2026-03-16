@@ -182,6 +182,6 @@ export function buildLobstrUrl(assetCode: string, assetIssuer: string | null): s
   return `https://lobstr.co/trade/${assetCode}:${assetIssuer}`;
 }
 
-export function buildStellarChangeTrustUri(assetCode: string, assetIssuer: string): string {
-  return `web+stellar:tx?xdr=&network=public&callback=&replace=sourceAccount:X;operations.type:changeTrust;operations.line.assetCode:${assetCode};operations.line.issuer:${assetIssuer}`;
+export function buildStellarChangeTrustUrl(assetCode: string, assetIssuer: string): string {
+  return `https://laboratory.stellar.org/#txbuilder?params=changeTrust&asset_code=${assetCode}&asset_issuer=${assetIssuer}`;
 }

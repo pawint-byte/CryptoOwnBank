@@ -108,7 +108,10 @@ function buildChangeTrustLink(code: string, issuer: string, wallet: string): str
   if (wallet === "stellarterm") {
     return `https://stellarterm.com/exchange/${code}-${issuer}/XLM-native`;
   }
-  return `web+stellar:changeTrust?asset_code=${code}&asset_issuer=${issuer}&limit=922337203685.4775807`;
+  if (wallet === "stellarx") {
+    return `https://www.stellarx.com/markets/${code}:${issuer}/native`;
+  }
+  return `https://laboratory.stellar.org/#txbuilder?params=changeTrust&asset_code=${code}&asset_issuer=${issuer}`;
 }
 
 function buildRemoveTrustLink(code: string, issuer: string, wallet: string): string {
@@ -118,7 +121,10 @@ function buildRemoveTrustLink(code: string, issuer: string, wallet: string): str
   if (wallet === "stellarterm") {
     return `https://stellarterm.com/exchange/${code}-${issuer}/XLM-native`;
   }
-  return `web+stellar:changeTrust?asset_code=${code}&asset_issuer=${issuer}&limit=0`;
+  if (wallet === "stellarx") {
+    return `https://www.stellarx.com/markets/${code}:${issuer}/native`;
+  }
+  return `https://laboratory.stellar.org/#txbuilder?params=changeTrust&asset_code=${code}&asset_issuer=${issuer}&limit=0`;
 }
 
 export default function StellarTokens() {

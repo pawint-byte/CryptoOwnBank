@@ -41,6 +41,7 @@ import {
   History,
   ExternalLink,
 } from "lucide-react";
+import { useStellarStore } from "@/lib/stellar-store";
 
 type ScheduledPayment = {
   id: string;
@@ -85,7 +86,7 @@ const CHAIN_OPTIONS = [
   { value: "stellar", label: "Stellar", color: "#7B61FF" },
 ];
 
-const CURRENCY_OPTIONS: Record<string, string[]> = {
+const BASE_CURRENCY_OPTIONS: Record<string, string[]> = {
   xrpl: ["XRP", "RLUSD"],
   stellar: ["XLM", "USDC"],
 };
@@ -103,6 +104,16 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function CreatePaymentDialog({ onCreated, defaultChain }: { onCreated: () => void; defaultChain?: string }) {
+  const { balances: stellarBalances } = useStellarStore();
+  const getCurrencyOptions = (ch: string): string[] => {
+    if (ch === "stellar" && stellarBalances.length > 0) {
+      const fromWallet = stellarBalances.map((b) => b.asset_code);
+      const base = BASE_CURRENCY_OPTIONS.stellar || [];
+      const merged = [...new Set([...fromWallet, ...base])];
+      return merged;
+    }
+    return BASE_CURRENCY_OPTIONS[ch] || [];
+  };
   const [open, setOpen] = useState(false);
   const [chain, setChain] = useState(defaultChain === "stellar" ? "stellar" : "xrpl");
   const [currency, setCurrency] = useState(defaultChain === "stellar" ? "XLM" : "XRP");
@@ -138,7 +149,7 @@ function CreatePaymentDialog({ onCreated, defaultChain }: { onCreated: () => voi
       resetForm();
       onCreated();
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Error", description: err.message || "Failed to create payment", variant: "destructive" });
     },
   });
@@ -164,7 +175,7 @@ function CreatePaymentDialog({ onCreated, defaultChain }: { onCreated: () => voi
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Chain</Label>
-              <Select value={chain} onValueChange={(v) => { setChain(v); setCurrency(CURRENCY_OPTIONS[v][0]); }}>
+              <Select value={chain} onValueChange={(v) => { setChain(v); setCurrency(getCurrencyOptions(v)[0]); }}>
                 <SelectTrigger data-testid="select-chain">
                   <SelectValue />
                 </SelectTrigger>
@@ -187,7 +198,7 @@ function CreatePaymentDialog({ onCreated, defaultChain }: { onCreated: () => voi
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(CURRENCY_OPTIONS[chain] || []).map((c) => (
+                  {getCurrencyOptions(chain).map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>
@@ -296,7 +307,7 @@ export default function RecurringPayments() {
   const [location] = useLocation();
   const isStellarRoute = location.startsWith("/stellar");
 
-  const { data: subLimits } = useQuery<any>({
+  const { data: subLimits } = useQuery<{ tier: string; limits: Record<string, number> }>({
     queryKey: ["/api/subscription/limits"],
   });
 
@@ -309,7 +320,7 @@ export default function RecurringPayments() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       return apiRequest("PATCH", `/api/scheduled-payments/${id}`, data);
     },
     onSuccess: () => {

@@ -166,7 +166,7 @@ export default function PaymentQueuePage() {
     });
 
     setCreateOpen(false);
-    setNewPayment({ to: "", amount: "", currency: "XRP", chain: "xrpl", memo: "", destinationTag: "", recipientName: "" });
+    setNewPayment({ to: "", amount: "", currency: isStellarRoute ? "XLM" : "XRP", chain: isStellarRoute ? "stellar" : "xrpl", memo: "", destinationTag: "", recipientName: "" });
     refreshQueue();
     toast({ title: "Payment queued", description: isOnline ? "Ready to sync now." : "Will sync when you're back online." });
   };
