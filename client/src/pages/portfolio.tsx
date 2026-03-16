@@ -107,19 +107,26 @@ export default function Portfolio() {
 
   const manualEntryMutation = useMutation({
     mutationFn: async (data: typeof manualForm) => {
-      const res = await apiRequest("POST", "/api/positions/manual", data);
+      const res = await apiRequest("POST", "/api/wallets/manual", {
+        label: data.location || "Manual Entry",
+        assetSymbol: data.assetSymbol,
+        balance: data.quantity,
+        costPerUnit: data.costPerUnit || undefined,
+      });
       return res.json();
     },
-    onSuccess: (result) => {
-      toast({ title: result.message || "Position added" });
+    onSuccess: () => {
+      toast({ title: "Entry added to portfolio & wallets" });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lot-summary"] });
       setManualOpen(false);
       setManualForm({ assetSymbol: "", quantity: "", costPerUnit: "", currentPrice: "", location: "" });
     },
     onError: (error: any) => {
-      toast({ title: "Failed to add position", description: error.message, variant: "destructive" });
+      toast({ title: "Failed to add entry", description: error.message, variant: "destructive" });
     },
   });
 
@@ -339,7 +346,7 @@ export default function Portfolio() {
                     <Label htmlFor="assetSymbol">Asset Symbol *</Label>
                     <Input
                       id="assetSymbol"
-                      placeholder="BTC, AAPL, GOLD..."
+                      placeholder="BTC, XRP, ETH..."
                       value={manualForm.assetSymbol}
                       onChange={(e) => setManualForm(f => ({ ...f, assetSymbol: e.target.value }))}
                       required
@@ -361,47 +368,36 @@ export default function Portfolio() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="costPerUnit">Cost Per Unit ($)</Label>
-                    <Input
-                      id="costPerUnit"
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="0.00"
-                      value={manualForm.costPerUnit}
-                      onChange={(e) => setManualForm(f => ({ ...f, costPerUnit: e.target.value }))}
-                      data-testid="input-manual-cost"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPrice">Current Price ($)</Label>
-                    <Input
-                      id="currentPrice"
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="0.00"
-                      value={manualForm.currentPrice}
-                      onChange={(e) => setManualForm(f => ({ ...f, currentPrice: e.target.value }))}
-                      data-testid="input-manual-price"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="costPerUnit">Cost Per Unit ($)</Label>
+                  <Input
+                    id="costPerUnit"
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="0.00"
+                    value={manualForm.costPerUnit}
+                    onChange={(e) => setManualForm(f => ({ ...f, costPerUnit: e.target.value }))}
+                    data-testid="input-manual-cost"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If provided, a tax lot will be created for cost basis tracking.
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location">Where It's Held</Label>
+                  <Label htmlFor="location">Where It's Held *</Label>
                   <Input
                     id="location"
-                    placeholder="Fidelity, Cold Storage, Safe..."
+                    placeholder="Crypto.com, Coinbase, Cold Storage..."
                     value={manualForm.location}
                     onChange={(e) => setManualForm(f => ({ ...f, location: e.target.value }))}
+                    required
                     data-testid="input-manual-location"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    This creates a wallet entry visible in both Portfolio and Wallets & Addresses.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  If the asset has no live price feed, you can set the current price manually and update it later.
-                </p>
                 <Button
                   type="submit"
                   className="w-full"

@@ -4811,7 +4811,7 @@ export async function registerRoutes(
   app.post("/api/wallets/manual", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { label, assetSymbol, balance } = req.body;
+      const { label, assetSymbol, balance, costPerUnit } = req.body;
       if (!label || !assetSymbol || balance === undefined) {
         return res.status(400).json({ message: "label, assetSymbol, and balance are required" });
       }
@@ -4821,25 +4821,72 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Balance must be a non-negative number" });
       }
 
-      const address = `manual-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
-      const wallet = await storage.createWallet({
-        userId,
-        chain: "manual",
-        address,
-        label: label.trim(),
-      });
+      const costNum = costPerUnit ? parseFloat(costPerUnit) : 0;
+
+      const existingWallets = await storage.getWalletsByUser(userId);
+      let wallet = existingWallets.find(w => w.chain === "manual" && w.label?.toLowerCase() === label.trim().toLowerCase());
+      if (!wallet) {
+        const address = `manual-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
+        wallet = await storage.createWallet({
+          userId,
+          chain: "manual",
+          address,
+          label: label.trim(),
+        });
+      }
 
       const prices = await storage.getCachedPrices();
       const priceEntry = prices.find(p => p.symbol.toUpperCase() === sym);
       const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.price) : 0;
 
-      const walletBalance = await storage.createWalletBalance({
-        walletId: wallet.id,
-        userId,
-        assetSymbol: sym,
-        balance: balanceNum.toString(),
-        usdValue: usdValue.toFixed(2),
-      });
+      const existingBalances = await storage.getWalletBalances(wallet.id);
+      const existingBal = existingBalances.find(b => b.assetSymbol.toUpperCase() === sym);
+
+      let walletBalance;
+      if (existingBal) {
+        const newBalance = parseFloat(existingBal.balance) + balanceNum;
+        const newUsd = priceEntry ? newBalance * parseFloat(priceEntry.price) : parseFloat(existingBal.usdValue || "0") + usdValue;
+        const existingCostBasis = parseFloat(existingBal.totalCostBasis || "0");
+        const addedCostBasis = costNum > 0 ? balanceNum * costNum : 0;
+        const newCostBasis = existingCostBasis + addedCostBasis;
+        const newAvgCost = newBalance > 0 ? newCostBasis / newBalance : 0;
+        await db.update(walletBalances)
+          .set({
+            balance: newBalance.toString(),
+            usdValue: newUsd.toFixed(2),
+            totalCostBasis: newCostBasis.toFixed(2),
+            averageCost: newAvgCost.toFixed(8),
+            updatedAt: new Date(),
+          })
+          .where(eq(walletBalances.id, existingBal.id));
+        walletBalance = { ...existingBal, balance: newBalance.toString(), usdValue: newUsd.toFixed(2) };
+      } else {
+        const totalCostBasis = costNum > 0 ? (balanceNum * costNum) : 0;
+        walletBalance = await storage.upsertWalletBalance({
+          walletId: wallet.id,
+          userId,
+          assetSymbol: sym,
+          balance: balanceNum.toString(),
+          usdValue: usdValue.toFixed(2),
+        });
+        if (costNum > 0) {
+          await storage.updateWalletBalanceCostData(walletBalance.id, costNum.toFixed(8), (balanceNum * costNum).toFixed(2));
+        }
+      }
+
+      if (costNum > 0 && balanceNum > 0) {
+        await storage.createTaxLot({
+          userId,
+          walletBalanceId: walletBalance.id,
+          assetSymbol: sym,
+          acquiredDate: new Date(),
+          originalQuantity: balanceNum.toString(),
+          remainingQuantity: balanceNum.toString(),
+          costBasisPerUnit: costNum.toFixed(8),
+          acquisitionType: "purchase",
+          note: `Manual entry — ${label.trim()}`,
+        });
+      }
 
       await storage.updateWalletSyncTime(wallet.id);
       res.json({ wallet, balance: walletBalance });
