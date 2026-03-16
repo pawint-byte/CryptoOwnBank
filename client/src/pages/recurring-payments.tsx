@@ -38,6 +38,7 @@ import {
   Repeat,
   Users,
   History,
+  ExternalLink,
 } from "lucide-react";
 
 type ScheduledPayment = {
@@ -538,6 +539,28 @@ export default function RecurringPayments() {
                           {exec.errorMessage && <span className="text-red-500"> · {exec.errorMessage}</span>}
                         </div>
                       </div>
+                      {exec.status === "pending" && payment?.chain === "stellar" && (
+                        <a
+                          href={(() => {
+                            const ASSET_MAP: Record<string, string> = {
+                              USDC: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+                            };
+                            let uri = `web+stellar:pay?destination=${payment.payeeAddress}&amount=${exec.amount}`;
+                            const issuer = ASSET_MAP[payment.currency];
+                            if (issuer) uri += `&asset_code=${payment.currency}&asset_issuer=${issuer}`;
+                            if (payment.memo) uri += `&memo=${encodeURIComponent(payment.memo)}`;
+                            return uri;
+                          })()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-testid={`button-sign-stellar-${exec.id}`}
+                        >
+                          <Button size="sm" className="bg-[#7B61FF] hover:bg-[#6a4fee] text-white text-xs h-7">
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Sign
+                          </Button>
+                        </a>
+                      )}
                       <StatusBadge status={exec.status} />
                     </CardContent>
                   </Card>

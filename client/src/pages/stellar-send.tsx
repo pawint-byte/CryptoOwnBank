@@ -70,16 +70,34 @@ const DEFAULT_CURRENCIES = [
   { code: "EURC", label: "EURC (Circle)", issuer: "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE" },
 ];
 
-function deriveCurrenciesFromBalances(balances: StellarBalance[]): { code: string; label: string; issuer: string | null }[] {
-  if (!balances.length) return DEFAULT_CURRENCIES;
-  const fromWallet = balances.map((b) => ({
+interface CurrencyOption {
+  value: string;
+  code: string;
+  label: string;
+  issuer: string | null;
+}
+
+function makeCurrencyValue(code: string, issuer: string | null): string {
+  return issuer ? `${code}:${issuer}` : code;
+}
+
+function deriveCurrenciesFromBalances(balances: StellarBalance[]): CurrencyOption[] {
+  if (!balances.length) return DEFAULT_CURRENCIES.map((dc) => ({
+    value: makeCurrencyValue(dc.code, dc.issuer),
+    code: dc.code,
+    label: dc.label,
+    issuer: dc.issuer,
+  }));
+  const fromWallet: CurrencyOption[] = balances.map((b) => ({
+    value: makeCurrencyValue(b.asset_code, b.asset_issuer),
     code: b.asset_code,
     label: b.asset_type === "native" ? "XLM (Stellar Lumens)" : b.asset_code,
     issuer: b.asset_issuer,
   }));
   DEFAULT_CURRENCIES.forEach((dc) => {
-    if (!fromWallet.find((w) => w.code === dc.code)) {
-      fromWallet.push(dc);
+    const val = makeCurrencyValue(dc.code, dc.issuer);
+    if (!fromWallet.find((w) => w.value === val)) {
+      fromWallet.push({ value: val, code: dc.code, label: dc.label, issuer: dc.issuer });
     }
   });
   return fromWallet;
@@ -117,7 +135,9 @@ export default function StellarSend() {
   const [educationOpen, setEducationOpen] = useState(true);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("XLM");
+  const [currencyValue, setCurrencyValue] = useState("XLM");
+  const selectedCurrency = STELLAR_CURRENCIES.find((c) => c.value === currencyValue) || STELLAR_CURRENCIES[0];
+  const currency = selectedCurrency.code;
   const [memo, setMemo] = useState("");
   const [memoType, setMemoType] = useState("text");
   const [showTxDetails, setShowTxDetails] = useState(false);
@@ -159,9 +179,8 @@ export default function StellarSend() {
   }
 
   function buildStellarUri(): string {
-    const selectedCurrency = STELLAR_CURRENCIES.find(c => c.code === currency);
     let uri = `web+stellar:pay?destination=${recipient}&amount=${amount}`;
-    if (selectedCurrency && selectedCurrency.issuer) {
+    if (selectedCurrency.issuer) {
       uri += `&asset_code=${currency}&asset_issuer=${selectedCurrency.issuer}`;
     }
     if (memo.trim()) {
@@ -407,13 +426,13 @@ export default function StellarSend() {
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <Select value={currency} onValueChange={setCurrency}>
+                      <Select value={currencyValue} onValueChange={setCurrencyValue}>
                         <SelectTrigger data-testid="select-stellar-currency">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {STELLAR_CURRENCIES.map((c) => (
-                            <SelectItem key={c.code} value={c.code} data-testid={`select-stellar-currency-${c.code}`}>
+                            <SelectItem key={c.value} value={c.value} data-testid={`select-stellar-currency-${c.code}`}>
                               {c.label}
                             </SelectItem>
                           ))}
