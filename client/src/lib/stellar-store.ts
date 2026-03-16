@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { apiRequest } from "@/lib/queryClient";
 
 export interface StellarBalance {
   asset_code: string;
@@ -14,35 +15,44 @@ interface StellarState {
   xlmBalance: number;
   balances: StellarBalance[];
   loading: boolean;
+  recentRecipients: string[];
 
   connect: (address: string) => void;
   disconnect: () => void;
   setBalances: (xlm: number, balances: StellarBalance[]) => void;
   setLoading: (loading: boolean) => void;
+  addRecentRecipient: (address: string) => void;
+  syncToServer: (address: string | null) => void;
+  loadFromServer: () => void;
 }
 
 export const useStellarStore = create<StellarState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       stellarAddress: null,
       isConnected: false,
       xlmBalance: 0,
       balances: [],
       loading: false,
+      recentRecipients: [],
 
-      connect: (address) =>
+      connect: (address) => {
         set({
           stellarAddress: address,
           isConnected: true,
-        }),
+        });
+        get().syncToServer(address);
+      },
 
-      disconnect: () =>
+      disconnect: () => {
         set({
           stellarAddress: null,
           isConnected: false,
           xlmBalance: 0,
           balances: [],
-        }),
+        });
+        get().syncToServer(null);
+      },
 
       setBalances: (xlm, balances) =>
         set({
@@ -51,6 +61,36 @@ export const useStellarStore = create<StellarState>()(
         }),
 
       setLoading: (loading) => set({ loading }),
+
+      addRecentRecipient: (address) =>
+        set((state) => {
+          const filtered = state.recentRecipients.filter((r) => r !== address);
+          return { recentRecipients: [address, ...filtered].slice(0, 10) };
+        }),
+
+      syncToServer: async (address) => {
+        try {
+          if (address) {
+            await apiRequest("PUT", "/api/stellar/address", { stellarAddress: address });
+          } else {
+            await apiRequest("DELETE", "/api/stellar/address");
+          }
+        } catch {
+        }
+      },
+
+      loadFromServer: async () => {
+        try {
+          const res = await fetch("/api/stellar/address", { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.stellarAddress && !get().isConnected) {
+              set({ stellarAddress: data.stellarAddress, isConnected: true });
+            }
+          }
+        } catch {
+        }
+      },
     }),
     {
       name: "stellar-wallet-storage",

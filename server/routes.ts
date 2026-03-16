@@ -2198,7 +2198,7 @@ export async function registerRoutes(
   app.put("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone } = req.body;
+      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone, stellarAddress } = req.body;
       
       const updateData: any = { userId };
       if (taxMethod !== undefined) updateData.taxMethod = taxMethod;
@@ -2210,6 +2210,7 @@ export async function registerRoutes(
       if (businessEmail !== undefined) updateData.businessEmail = businessEmail;
       if (businessWebsite !== undefined) updateData.businessWebsite = businessWebsite;
       if (businessPhone !== undefined) updateData.businessPhone = businessPhone;
+      if (stellarAddress !== undefined) updateData.stellarAddress = stellarAddress;
       
       const settings = await storage.upsertUserSettings(updateData);
       
@@ -2217,6 +2218,45 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Update settings error:", error);
       res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
+  app.get("/api/stellar/address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      res.json({ stellarAddress: settings?.stellarAddress || null });
+    } catch (error) {
+      console.error("Get stellar address error:", error);
+      res.status(500).json({ message: "Failed to load Stellar address" });
+    }
+  });
+
+  app.put("/api/stellar/address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { stellarAddress } = req.body;
+
+      if (stellarAddress && (!stellarAddress.startsWith("G") || stellarAddress.length !== 56)) {
+        return res.status(400).json({ message: "Invalid Stellar address" });
+      }
+
+      await storage.upsertUserSettings({ userId, stellarAddress: stellarAddress || null });
+      res.json({ stellarAddress: stellarAddress || null });
+    } catch (error) {
+      console.error("Update stellar address error:", error);
+      res.status(500).json({ message: "Failed to update Stellar address" });
+    }
+  });
+
+  app.delete("/api/stellar/address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.upsertUserSettings({ userId, stellarAddress: null });
+      res.json({ stellarAddress: null });
+    } catch (error) {
+      console.error("Delete stellar address error:", error);
+      res.status(500).json({ message: "Failed to remove Stellar address" });
     }
   });
 

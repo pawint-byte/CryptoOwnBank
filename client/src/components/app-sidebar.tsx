@@ -106,6 +106,8 @@ const allItems: NavItem[] = [
   { title: "Token Manager", url: "/stellar/tokens", icon: Coins, color: "#7B61FF", group: "stellar" },
   { title: "Invoices", url: "/stellar/invoices", icon: InvoiceIcon, color: "#7B61FF", group: "stellar" },
   { title: "DEX Trading", url: "/stellar/dex", icon: TrendingUp, color: "#7B61FF", group: "stellar" },
+  { title: "Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, color: "#7B61FF", group: "stellar" },
+  { title: "Recurring Payments", url: "/ownbank/recurring", icon: CalendarClock, color: "#7B61FF", group: "stellar" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
 
   { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },

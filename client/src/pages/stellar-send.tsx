@@ -60,15 +60,30 @@ import {
   Trash2,
   Star,
 } from "lucide-react";
-import { useStellarStore } from "@/lib/stellar-store";
+import { useStellarStore, type StellarBalance } from "@/lib/stellar-store";
 
 const STELLAR_PURPLE = "#7B61FF";
 
-const STELLAR_CURRENCIES = [
+const DEFAULT_CURRENCIES = [
   { code: "XLM", label: "XLM (Stellar Lumens)", issuer: null },
   { code: "USDC", label: "USDC (Circle)", issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN" },
   { code: "EURC", label: "EURC (Circle)", issuer: "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE" },
 ];
+
+function deriveCurrenciesFromBalances(balances: StellarBalance[]): { code: string; label: string; issuer: string | null }[] {
+  if (!balances.length) return DEFAULT_CURRENCIES;
+  const fromWallet = balances.map((b) => ({
+    code: b.asset_code,
+    label: b.asset_type === "native" ? "XLM (Stellar Lumens)" : b.asset_code,
+    issuer: b.asset_issuer,
+  }));
+  DEFAULT_CURRENCIES.forEach((dc) => {
+    if (!fromWallet.find((w) => w.code === dc.code)) {
+      fromWallet.push(dc);
+    }
+  });
+  return fromWallet;
+}
 
 const CONTACTS_KEY = "stellar-contacts";
 
@@ -95,7 +110,8 @@ function truncateAddress(addr: string): string {
 
 export default function StellarSend() {
   const { toast } = useToast();
-  const { stellarAddress, isConnected } = useStellarStore();
+  const { stellarAddress, isConnected, balances, recentRecipients, addRecentRecipient } = useStellarStore();
+  const STELLAR_CURRENCIES = deriveCurrenciesFromBalances(balances);
 
   const [activeTab, setActiveTab] = useState("send");
   const [educationOpen, setEducationOpen] = useState(true);
@@ -138,6 +154,7 @@ export default function StellarSend() {
       toast({ title: "Invalid Amount", description: "Enter a valid amount to send.", variant: "destructive" });
       return;
     }
+    addRecentRecipient(recipient.trim());
     setShowTxDetails(true);
   }
 
@@ -343,6 +360,25 @@ export default function StellarSend() {
                       data-testid="input-stellar-recipient"
                     />
                     <p className="text-xs text-muted-foreground mt-1">Stellar public key (starts with G, 56 characters)</p>
+                    {recentRecipients.length > 0 && !recipient && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-muted-foreground font-medium">Recent Recipients</p>
+                        <div className="flex flex-wrap gap-1">
+                          {recentRecipients.slice(0, 5).map((addr) => (
+                            <Button
+                              key={addr}
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-xs font-mono px-2"
+                              onClick={() => setRecipient(addr)}
+                              data-testid={`button-recent-${addr.slice(0, 8)}`}
+                            >
+                              {truncateAddress(addr)}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -781,6 +817,35 @@ export default function StellarSend() {
                 Open this URI in a Stellar-compatible wallet (LOBSTR, StellarTerm, Freighter, or Solar) to pre-fill and sign the transaction securely.
               </AlertDescription>
             </Alert>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold">Open with a specific wallet:</p>
+            <div className="flex flex-wrap gap-2">
+              <a href={buildStellarUri()} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" data-testid="button-open-uri">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  Stellar URI
+                </Button>
+              </a>
+              <a href={`https://lobstr.co/trade/native/offer?amount=${amount}&destination=${recipient}${memo ? `&memo=${encodeURIComponent(memo)}` : ""}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" data-testid="button-open-lobstr">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  LOBSTR
+                </Button>
+              </a>
+              <a href="https://freighter.app" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" data-testid="button-open-freighter">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  Freighter
+                </Button>
+              </a>
+              <a href={`https://stellarterm.com/#payment?destination=${recipient}&amount=${amount}&asset=${currency === "XLM" ? "native" : currency}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" data-testid="button-open-stellarterm">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  StellarTerm
+                </Button>
+              </a>
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button

@@ -129,6 +129,7 @@ export const userSettings = pgTable("user_settings", {
   businessEmail: varchar("business_email", { length: 255 }),
   businessWebsite: varchar("business_website", { length: 500 }),
   businessPhone: varchar("business_phone", { length: 50 }),
+  stellarAddress: varchar("stellar_address", { length: 56 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

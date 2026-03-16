@@ -76,11 +76,16 @@ export default function StellarWallet() {
     disconnect,
     setBalances,
     setLoading,
+    loadFromServer,
   } = useStellarStore();
 
   const [addressInput, setAddressInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [eduOpen, setEduOpen] = useState(true);
+
+  useEffect(() => {
+    loadFromServer();
+  }, [loadFromServer]);
 
   const loadBalances = useCallback(async () => {
     if (!stellarAddress) return;
