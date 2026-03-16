@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,19 @@ export default function Portfolio() {
     location: "",
   });
 
+  const [locationOpen, setLocationOpen] = useState(false);
+  const locationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (locationRef.current && !locationRef.current.contains(e.target as Node)) {
+        setLocationOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const { data, isLoading } = useQuery<PortfolioData>({
     queryKey: ["/api/portfolio"],
   });
@@ -63,6 +76,24 @@ export default function Portfolio() {
   const { data: dbPositions = [] } = useQuery<PositionWithMarket[]>({
     queryKey: ["/api/positions"],
   });
+
+  const { data: userWallets = [] } = useQuery<Array<{ id: string; label: string | null; chain: string }>>({
+    queryKey: ["/api/wallets"],
+  });
+
+  const existingLocations = useMemo(() => {
+    const labels = new Set<string>();
+    userWallets.forEach(w => {
+      if (w.label) labels.add(w.label);
+    });
+    return Array.from(labels).sort((a, b) => a.localeCompare(b));
+  }, [userWallets]);
+
+  const filteredLocations = useMemo(() => {
+    const search = manualForm.location.toLowerCase().trim();
+    if (!search) return existingLocations;
+    return existingLocations.filter(l => l.toLowerCase().includes(search));
+  }, [existingLocations, manualForm.location]);
 
   const { data: subLimits } = useQuery<{ tier: string; portfolioSearch: boolean }>({
     queryKey: ["/api/subscription/limits"],
@@ -123,6 +154,7 @@ export default function Portfolio() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/lot-summary"] });
       setManualOpen(false);
+      setLocationOpen(false);
       setManualForm({ assetSymbol: "", quantity: "", costPerUnit: "", currentPrice: "", location: "" });
     },
     onError: (error: any) => {
@@ -386,16 +418,41 @@ export default function Portfolio() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Where It's Held *</Label>
-                  <Input
-                    id="location"
-                    placeholder="Crypto.com, Coinbase, Cold Storage..."
-                    value={manualForm.location}
-                    onChange={(e) => setManualForm(f => ({ ...f, location: e.target.value }))}
-                    required
-                    data-testid="input-manual-location"
-                  />
+                  <div className="relative" ref={locationRef}>
+                    <Input
+                      id="location"
+                      placeholder="Crypto.com, Coinbase, Cold Storage..."
+                      value={manualForm.location}
+                      onChange={(e) => {
+                        setManualForm(f => ({ ...f, location: e.target.value }));
+                        setLocationOpen(true);
+                      }}
+                      onFocus={() => setLocationOpen(true)}
+                      autoComplete="off"
+                      required
+                      data-testid="input-manual-location"
+                    />
+                    {locationOpen && filteredLocations.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-40 overflow-y-auto" data-testid="location-suggestions">
+                        {filteredLocations.map(loc => (
+                          <button
+                            key={loc}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+                            onClick={() => {
+                              setManualForm(f => ({ ...f, location: loc }));
+                              setLocationOpen(false);
+                            }}
+                            data-testid={`location-option-${loc}`}
+                          >
+                            {loc}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    This creates a wallet entry visible in both Portfolio and Wallets & Addresses.
+                    Pick an existing wallet or type a new name. Shows in both Portfolio and Wallets & Addresses.
                   </p>
                 </div>
                 <Button
