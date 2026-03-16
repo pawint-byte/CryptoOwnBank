@@ -120,6 +120,29 @@ export default function Portfolio() {
     },
   });
 
+  const cleanupNonCryptoMutation = useMutation({
+    mutationFn: async (dryRun: boolean) => {
+      const res = await apiRequest("POST", "/api/positions/bulk-remove-non-crypto", { dryRun });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      if (result.dryRun) {
+        const symbols = result.symbols.map((s: any) => s.symbol).join(", ");
+        if (confirm(`Remove ${result.count} non-crypto positions?\n\n${symbols}\n\nClick OK to proceed.`)) {
+          cleanupNonCryptoMutation.mutate(false);
+        }
+      } else {
+        toast({ title: `Removed ${result.removed} non-crypto positions` });
+        queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Cleanup failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const addressMutation = useMutation({
     mutationFn: async ({ id, addressed }: { id: string; addressed: boolean }) => {
       const res = await apiRequest("PATCH", `/api/positions/${id}/addressed`, { addressed });
@@ -352,6 +375,19 @@ export default function Portfolio() {
               <span className="hidden sm:inline">{showAddressed ? "Hide" : "Show"} Addressed</span>
               <span className="sm:hidden">{addressedPositions.length}</span>
               <span className="hidden sm:inline"> ({addressedPositions.length})</span>
+            </Button>
+          )}
+          {subLimits?.tier === "pro" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => cleanupNonCryptoMutation.mutate(true)}
+              disabled={cleanupNonCryptoMutation.isPending}
+              data-testid="button-cleanup-non-crypto"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Remove Non-Crypto
             </Button>
           )}
           <Dialog open={manualOpen} onOpenChange={setManualOpen}>

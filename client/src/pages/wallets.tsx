@@ -412,6 +412,190 @@ interface MoveTarget {
   chain: string;
 }
 
+const HOLD_REASONS = [
+  { value: "staking", label: "Staking / Earning Yield" },
+  { value: "trading", label: "Actively Trading" },
+  { value: "liquidity", label: "Liquidity / Quick Access" },
+  { value: "locked", label: "Locked / Vesting" },
+  { value: "intentional", label: "Intentionally Kept Here" },
+];
+
+function HoldReasonTip({ balance, wallet, usdVal }: { balance: WalletBalance; wallet: WalletWithBalances; usdVal: number }) {
+  const { toast } = useToast();
+  const [picking, setPicking] = useState(false);
+  const sym = balance.assetSymbol.toUpperCase();
+  const isManual = wallet.chain === "manual";
+
+  const setHoldReasonMutation = useMutation({
+    mutationFn: async (reason: string | null) => {
+      return apiRequest("PATCH", `/api/wallet-balances/${balance.id}/hold-reason`, { holdReason: reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      setPicking(false);
+    },
+    onError: (err: Error) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
+  });
+
+  if (balance.holdReason) {
+    const reasonLabel = HOLD_REASONS.find(r => r.value === balance.holdReason)?.label || balance.holdReason;
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1.5 text-[11px] text-blue-600 dark:text-blue-400 mt-1.5" data-testid={`hold-reason-${balance.id}`}>
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+        <span className="flex-1">{reasonLabel}</span>
+        <button
+          className="shrink-0 underline font-medium hover:text-blue-800 dark:hover:text-blue-300"
+          onClick={() => setHoldReasonMutation.mutate(null)}
+          data-testid={`button-clear-hold-${balance.id}`}
+        >
+          Clear
+        </button>
+      </div>
+    );
+  }
+
+  if (picking) {
+    return (
+      <div className="mt-1.5 p-2 rounded-md border bg-muted/30 space-y-1.5">
+        <div className="text-[11px] font-medium text-muted-foreground">Why is {sym} kept here?</div>
+        <div className="flex flex-wrap gap-1">
+          {HOLD_REASONS.map(r => (
+            <Button
+              key={r.value}
+              variant="outline"
+              size="sm"
+              className="h-6 text-[10px] px-2"
+              onClick={() => setHoldReasonMutation.mutate(r.value)}
+              disabled={setHoldReasonMutation.isPending}
+              data-testid={`hold-reason-option-${r.value}`}
+            >
+              {r.label}
+            </Button>
+          ))}
+        </div>
+        <Button variant="ghost" size="sm" className="h-5 text-[10px]" onClick={() => setPicking(false)}>Cancel</Button>
+      </div>
+    );
+  }
+
+  const knowledge = CUSTODY_KNOWLEDGE[sym];
+  const bestStaking = knowledge?.stakingOptions?.reduce((best, opt) => opt.apyMid > (best?.apyMid || 0) ? opt : best, null as typeof knowledge.stakingOptions[0] | null);
+  const supportingWallets = COLD_WALLETS.filter(cw =>
+    cw.supportedChains.some(sc => {
+      const su = sc.toUpperCase();
+      return su === sym || (su === "XRPL" && sym === "XRP") || (su === "ETHEREUM" && sym === "ETH") || (su === "BITCOIN" && sym === "BTC") || (su === "SOLANA" && sym === "SOL") || (su === "CARDANO" && sym === "ADA") || (su === "STELLAR" && sym === "XLM");
+    })
+  ).slice(0, 1);
+
+  const flagButton = (
+    <button
+      className="shrink-0 underline font-medium whitespace-nowrap"
+      onClick={(e) => { e.stopPropagation(); setPicking(true); }}
+      data-testid={`button-flag-hold-${balance.id}`}
+    >
+      Flag
+    </button>
+  );
+
+  if (isManual && supportingWallets.length > 0 && usdVal > 50) {
+    return (
+      <div className="flex items-start gap-2 rounded-md border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 px-2.5 py-1.5 text-[11px] text-orange-600 dark:text-orange-400 mt-1.5" data-testid={`tip-cold-${sym}-${wallet.id}`}>
+        <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        <span className="flex-1">Move to {supportingWallets[0].name} for self-custody</span>
+        {supportingWallets[0].buyUrl && (
+          <a href={supportingWallets[0].buyUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 underline font-medium whitespace-nowrap mr-1" onClick={(e) => e.stopPropagation()}>Get it</a>
+        )}
+        {flagButton}
+      </div>
+    );
+  }
+  if (bestStaking && usdVal > 50 && !isManual) {
+    return (
+      <div className="flex items-start gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20 px-2.5 py-1.5 text-[11px] text-green-600 dark:text-green-400 mt-1.5" data-testid={`tip-yield-${sym}-${wallet.id}`}>
+        <TrendingUp className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        <span className="flex-1">Earn {bestStaking.apyRange} via {bestStaking.platform}</span>
+        {bestStaking.link && (
+          <a href={bestStaking.link} target="_blank" rel="noopener noreferrer" className="shrink-0 underline font-medium whitespace-nowrap mr-1" onClick={(e) => e.stopPropagation()}>Learn more</a>
+        )}
+        {flagButton}
+      </div>
+    );
+  }
+  if (usdVal > 50) {
+    return (
+      <div className="flex items-start gap-2 rounded-md border border-muted bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground mt-1.5" data-testid={`tip-general-${sym}-${wallet.id}`}>
+        <Snowflake className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        <span className="flex-1">{isManual ? `Consider moving ${sym} to a hardware wallet for better security.` : `${sym} is safely in your wallet. Check the Earn page for future yield opportunities.`}</span>
+        {flagButton}
+      </div>
+    );
+  }
+  return null;
+}
+
+function ManualBalanceActions({ balanceId, assetSymbol, currentBalance, walletLabel }: { balanceId: string; assetSymbol: string; currentBalance: number; walletLabel: string }) {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [newBalance, setNewBalance] = useState(currentBalance.toString());
+
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PATCH", `/api/wallet-balances/${balanceId}/balance`, { newBalance });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      setEditing(false);
+      toast({ title: `Updated ${assetSymbol} balance` });
+    },
+    onError: (err: Error) => toast({ title: "Failed to update", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", `/api/wallet-balances/${balanceId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      toast({ title: `Removed ${assetSymbol} from ${walletLabel}` });
+    },
+    onError: (err: Error) => toast({ title: "Failed to remove", description: err.message, variant: "destructive" }),
+  });
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          step="any"
+          value={newBalance}
+          onChange={(e) => setNewBalance(e.target.value)}
+          className="h-6 w-24 text-xs"
+          data-testid={`input-edit-balance-${balanceId}`}
+        />
+        <Button variant="default" size="icon" className="h-6 w-6" onClick={() => editMutation.mutate()} disabled={editMutation.isPending} data-testid={`button-save-balance-${balanceId}`}>
+          <Check className="h-3 w-3" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(false)} data-testid={`button-cancel-edit-${balanceId}`}>
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => { setNewBalance(currentBalance.toString()); setEditing(true); }} title="Edit balance" data-testid={`button-edit-balance-${balanceId}`}>
+        <Pencil className="h-3 w-3" />
+      </Button>
+      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => { if (confirm(`Remove ${assetSymbol} from ${walletLabel}?`)) deleteMutation.mutate(); }} title={`Remove ${assetSymbol}`} disabled={deleteMutation.isPending} data-testid={`button-delete-balance-${balanceId}`}>
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
 function CostBasisPanel({ balance, currentPrice, moveTargets = [] }: { balance: WalletBalance; currentPrice: number; moveTargets?: MoveTarget[] }) {
   const [expanded, setExpanded] = useState(false);
   const [addingLot, setAddingLot] = useState(false);
@@ -2324,9 +2508,19 @@ export default function Wallets() {
                                                   </span>
                                                 </div>
                                               </div>
-                                              <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
-                                                {formatUsd(usdVal)}
-                                              </span>
+                                              <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="font-mono font-medium text-xs sm:text-sm">
+                                                  {formatUsd(usdVal)}
+                                                </span>
+                                                {w.chain === "manual" && (
+                                                  <ManualBalanceActions
+                                                    balanceId={b.id}
+                                                    assetSymbol={b.assetSymbol}
+                                                    currentBalance={balVal}
+                                                    walletLabel={w.label || "Manual"}
+                                                  />
+                                                )}
+                                              </div>
                                             </div>
                                             <CostBasisPanel
                                               balance={b}
@@ -2337,49 +2531,7 @@ export default function Wallets() {
                                                   .map(ob => ({ walletBalanceId: ob.id, walletLabel: ow.label || ow.chain, chain: ow.chain }))
                                               )}
                                             />
-                                            {(() => {
-                                              const sym = b.assetSymbol.toUpperCase();
-                                              const knowledge = CUSTODY_KNOWLEDGE[sym];
-                                              const isManual = w.chain === "manual";
-                                              const bestStaking = knowledge?.stakingOptions?.reduce((best, opt) => opt.apyMid > (best?.apyMid || 0) ? opt : best, null as typeof knowledge.stakingOptions[0] | null);
-                                              const supportingWallets = COLD_WALLETS.filter(cw =>
-                                                cw.supportedChains.some(sc => {
-                                                  const su = sc.toUpperCase();
-                                                  return su === sym || (su === "XRPL" && sym === "XRP") || (su === "ETHEREUM" && sym === "ETH") || (su === "BITCOIN" && sym === "BTC") || (su === "SOLANA" && sym === "SOL") || (su === "CARDANO" && sym === "ADA") || (su === "STELLAR" && sym === "XLM");
-                                                })
-                                              ).slice(0, 1);
-                                              if (isManual && supportingWallets.length > 0 && usdVal > 50) {
-                                                return (
-                                                  <div className="flex items-start gap-2 rounded-md border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 px-2.5 py-1.5 text-[11px] text-orange-600 dark:text-orange-400 mt-1.5" data-testid={`tip-cold-${sym}-${w.id}`}>
-                                                    <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                                    <span className="flex-1">Move to {supportingWallets[0].name} for self-custody</span>
-                                                    {supportingWallets[0].buyUrl && (
-                                                      <a href={supportingWallets[0].buyUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 underline font-medium whitespace-nowrap" onClick={(e) => e.stopPropagation()}>Get it</a>
-                                                    )}
-                                                  </div>
-                                                );
-                                              }
-                                              if (bestStaking && usdVal > 50 && !isManual) {
-                                                return (
-                                                  <div className="flex items-start gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20 px-2.5 py-1.5 text-[11px] text-green-600 dark:text-green-400 mt-1.5" data-testid={`tip-yield-${sym}-${w.id}`}>
-                                                    <TrendingUp className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                                    <span className="flex-1">Earn {bestStaking.apyRange} via {bestStaking.platform}</span>
-                                                    {bestStaking.link && (
-                                                      <a href={bestStaking.link} target="_blank" rel="noopener noreferrer" className="shrink-0 underline font-medium whitespace-nowrap" onClick={(e) => e.stopPropagation()}>Learn more</a>
-                                                    )}
-                                                  </div>
-                                                );
-                                              }
-                                              if (usdVal > 50) {
-                                                return (
-                                                  <div className="flex items-start gap-2 rounded-md border border-muted bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground mt-1.5" data-testid={`tip-general-${sym}-${w.id}`}>
-                                                    <Snowflake className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                                    <span className="flex-1">{isManual ? `Consider moving ${sym} to a hardware wallet for better security.` : `${sym} is safely in your wallet. Check the Earn page for future yield opportunities.`}</span>
-                                                  </div>
-                                                );
-                                              }
-                                              return null;
-                                            })()}
+                                            <HoldReasonTip balance={b} wallet={w} usdVal={usdVal} />
                                           </div>
                                         );
                                       })}

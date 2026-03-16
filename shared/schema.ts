@@ -269,6 +269,7 @@ export const walletBalances = pgTable("wallet_balances", {
   usdValue: decimal("usd_value", { precision: 18, scale: 2 }),
   averageCost: decimal("average_cost", { precision: 18, scale: 8 }),
   totalCostBasis: decimal("total_cost_basis", { precision: 18, scale: 2 }),
+  holdReason: varchar("hold_reason", { length: 100 }),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_wallet_balances_wallet").on(table.walletId),

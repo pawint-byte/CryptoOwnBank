@@ -1090,6 +1090,86 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/wallet-balances/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const balance = balances.find(b => b.id === id);
+      if (!balance) {
+        return res.status(404).json({ message: "Wallet balance not found" });
+      }
+      if (balance.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const wallet = (await storage.getWalletsByUser(userId)).find(w => w.id === balance.walletId);
+      if (!wallet || wallet.chain !== "manual") {
+        return res.status(400).json({ message: "Can only delete balances from manual wallets" });
+      }
+      await db.delete(walletBalances).where(eq(walletBalances.id, id));
+      res.json({ message: `Removed ${balance.assetSymbol} from ${wallet.label || "manual wallet"}` });
+    } catch (error) {
+      console.error("Delete wallet balance error:", error);
+      res.status(500).json({ message: "Failed to delete wallet balance" });
+    }
+  });
+
+  app.patch("/api/wallet-balances/:id/balance", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const balance = balances.find(b => b.id === id);
+      if (!balance) {
+        return res.status(404).json({ message: "Wallet balance not found" });
+      }
+      if (balance.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const wallet = (await storage.getWalletsByUser(userId)).find(w => w.id === balance.walletId);
+      if (!wallet || wallet.chain !== "manual") {
+        return res.status(400).json({ message: "Can only edit balances on manual wallets" });
+      }
+      const { newBalance } = req.body;
+      if (newBalance === undefined || isNaN(parseFloat(newBalance))) {
+        return res.status(400).json({ message: "Valid balance required" });
+      }
+      const avgCost = parseFloat(balance.averageCost || "0");
+      const newBal = parseFloat(newBalance);
+      const newCostBasis = (avgCost * newBal).toFixed(2);
+      await db.update(walletBalances)
+        .set({ balance: newBalance, totalCostBasis: newCostBasis, updatedAt: new Date() })
+        .where(eq(walletBalances.id, id));
+      res.json({ message: `Updated ${balance.assetSymbol} balance to ${newBalance}` });
+    } catch (error) {
+      console.error("Edit wallet balance error:", error);
+      res.status(500).json({ message: "Failed to update wallet balance" });
+    }
+  });
+
+  app.patch("/api/wallet-balances/:id/hold-reason", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const balance = balances.find(b => b.id === id);
+      if (!balance) {
+        return res.status(404).json({ message: "Wallet balance not found" });
+      }
+      if (balance.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const { holdReason } = req.body;
+      await db.update(walletBalances)
+        .set({ holdReason: holdReason || null })
+        .where(eq(walletBalances.id, id));
+      res.json({ message: holdReason ? `Flagged ${balance.assetSymbol} as "${holdReason}"` : `Cleared flag on ${balance.assetSymbol}` });
+    } catch (error) {
+      console.error("Set hold reason error:", error);
+      res.status(500).json({ message: "Failed to update hold reason" });
+    }
+  });
+
   app.patch("/api/wallet-balances/:id/cost", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
