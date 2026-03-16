@@ -1458,12 +1458,24 @@ export default function Wallets() {
     return map;
   }, [portfolioData]);
 
+  const fullPortfolioPriceMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (fullPortfolio?.positions) {
+      for (const pos of fullPortfolio.positions) {
+        if (pos.currentPrice && pos.currentPrice > 0) {
+          map[pos.assetSymbol.toUpperCase()] = pos.currentPrice;
+        }
+      }
+    }
+    return map;
+  }, [fullPortfolio]);
+
   const getEnrichedUsdValue = (symbol: string, balance: number, storedUsd: string | null) => {
     const usd = parseFloat(storedUsd || "0");
     if (usd > 0) return usd;
     if (balance <= 0) return 0;
-    const baseSym = symbol.replace(" (staked)", "");
-    const price = portfolioPriceMap[symbol] || portfolioPriceMap[baseSym];
+    const baseSym = symbol.replace(" (staked)", "").toUpperCase();
+    const price = portfolioPriceMap[symbol] || portfolioPriceMap[baseSym] || fullPortfolioPriceMap[symbol.toUpperCase()] || fullPortfolioPriceMap[baseSym];
     return price ? balance * price : 0;
   };
 
@@ -2474,14 +2486,16 @@ export default function Wallets() {
                                         <span className="font-semibold text-sm sm:text-base">{h.symbol}</span>
                                         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
                                       </div>
-                                      <span className="font-mono font-medium text-sm sm:text-base">{formatUsd(h.usdValue)}</span>
+                                      <span className="font-mono font-medium text-sm sm:text-base">
+                                        {h.usdValue > 0 ? formatUsd(h.usdValue) : <span className="text-muted-foreground text-xs italic">Price loading…</span>}
+                                      </span>
                                     </div>
                                     <div className="flex items-center justify-between gap-2 mt-1">
                                       <span className="text-xs font-mono font-medium">
                                         {formatBalance(h.balance, 4)} {h.symbol}
                                       </span>
                                       <span className="text-xs text-muted-foreground shrink-0">
-                                        {walletBreakdown.length} wallet{walletBreakdown.length !== 1 ? "s" : ""} · {pct.toFixed(1)}%
+                                        {walletBreakdown.length} wallet{walletBreakdown.length !== 1 ? "s" : ""}{h.usdValue > 0 ? ` · ${pct.toFixed(1)}%` : ""}
                                       </span>
                                     </div>
                                     <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">

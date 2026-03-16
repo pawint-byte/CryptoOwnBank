@@ -5647,6 +5647,18 @@ export async function registerRoutes(
               holdings[sym].usdValue = holdings[sym].balance * priceCache.prices[sym];
             }
           }
+
+          const stillZero = zeroSymbols.filter(s => !priceCache.prices[s]);
+          if (stillZero.length > 0) {
+            const dbPrices = await loadPricesFromDb(stillZero);
+            for (const sym of stillZero) {
+              if (dbPrices[sym]) {
+                holdings[sym].usdValue = holdings[sym].balance * dbPrices[sym];
+                priceCache.prices[sym] = dbPrices[sym];
+              }
+            }
+          }
+
           for (const sym of Object.keys(holdings)) {
             if (stablecoins.has(sym) && holdings[sym].usdValue === 0) {
               holdings[sym].usdValue = holdings[sym].balance;
