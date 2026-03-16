@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { apiRequest } from "@/lib/queryClient";
 import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -872,13 +873,41 @@ export default function StellarSend() {
               </a>
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 flex-wrap">
             <Button
               variant="outline"
               onClick={() => setShowTxDetails(false)}
               data-testid="button-close-tx-details"
             >
               Close
+            </Button>
+            <Button
+              variant="default"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={async () => {
+                try {
+                  await apiRequest("POST", "/api/send/disposal-notification", {
+                    chain: "Stellar",
+                    assetSymbol: currency,
+                    quantity: amount,
+                    walletAddress: stellarAddress,
+                    recipient: recipient.trim(),
+                    memo: memo.trim() || undefined,
+                  });
+                  toast({ title: "Disposal Recorded", description: `${amount} ${currency} recorded for tax tracking.` });
+                } catch (err) {
+                  console.warn("[stellar-disposal] Failed:", err);
+                  toast({ title: "Could not record disposal", description: "You can record it manually later.", variant: "destructive" });
+                }
+                setShowTxDetails(false);
+                setRecipient("");
+                setAmount("");
+                setMemo("");
+              }}
+              data-testid="button-confirm-sent"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              I Sent It — Record Disposal
             </Button>
             <Button
               className="bg-[#7B61FF] text-white border-[#7B61FF]"

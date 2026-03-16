@@ -4075,6 +4075,11 @@ export async function registerRoutes(
                     remaining -= sellFromLot;
                   }
                   console.log(`[dex-auto] Recorded sale of ${swapQty} ${baseAsset} from swap`);
+                  const updatedLots = await storage.getTaxLotsByWalletBalance(userId, soldBalance.id);
+                  const totalRemaining = updatedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+                  const totalCostBasis = updatedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+                  const avgCost = totalRemaining > 0 ? totalCostBasis / totalRemaining : 0;
+                  await storage.updateWalletBalanceCostData(soldBalance.id, avgCost.toFixed(8), totalCostBasis.toFixed(2));
                 }
               }
             }
@@ -4103,6 +4108,75 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("DEX trade notification error:", error?.message);
       res.json({ sent: false, reason: error.message });
+    }
+  });
+
+  app.post("/api/send/disposal-notification", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { chain, assetSymbol, quantity, walletAddress, recipient, pricePerUnit, memo } = req.body;
+      const qty = parseFloat(quantity);
+      let price = parseFloat(pricePerUnit || "0");
+      if (!assetSymbol || !qty || qty <= 0 || !walletAddress) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      if (!price || price <= 0) {
+        const cached = await db.select().from(priceCacheTable).where(eq(priceCacheTable.symbol, assetSymbol.toUpperCase()));
+        if (cached.length > 0 && cached[0].price) {
+          price = parseFloat(cached[0].price);
+        }
+      }
+      const userWallets = await storage.getWalletsByUser(userId);
+      const matchWallet = userWallets.find(w => w.address?.toLowerCase() === walletAddress.toLowerCase());
+      if (!matchWallet) {
+        return res.json({ recorded: false, reason: "wallet not found" });
+      }
+      const walletBalances = await storage.getWalletBalances(matchWallet.id);
+      const balance = walletBalances.find(wb => wb.assetSymbol.toUpperCase() === assetSymbol.toUpperCase());
+      if (!balance) {
+        return res.json({ recorded: false, reason: "no balance for asset" });
+      }
+      const lots = await storage.getTaxLotsByWalletBalance(userId, balance.id);
+      const activeLots = lots.filter(l => parseFloat(l.remainingQuantity) > 0)
+        .sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+      if (activeLots.length === 0) {
+        return res.json({ recorded: false, reason: "no lots to dispose" });
+      }
+      let remaining = qty;
+      const sellDate = new Date();
+      const oneYear = 365 * 24 * 60 * 60 * 1000;
+      let totalGain = 0;
+      for (const lot of activeLots) {
+        if (remaining <= 0.0001) break;
+        const lotRemaining = parseFloat(lot.remainingQuantity);
+        if (lotRemaining <= 0) continue;
+        const used = Math.min(remaining, lotRemaining);
+        const proceeds = used * price;
+        const costBasis = used * parseFloat(lot.costBasisPerUnit);
+        const gainLoss = proceeds - costBasis;
+        const isLongTerm = (sellDate.getTime() - new Date(lot.acquiredDate).getTime()) >= oneYear;
+        await storage.createGainEvent({
+          userId, sellTransactionId: null, taxLotId: lot.id,
+          assetSymbol: assetSymbol.toUpperCase(), quantity: used.toString(),
+          proceeds: proceeds.toFixed(2), costBasis: costBasis.toFixed(2),
+          gainLoss: gainLoss.toFixed(2), isLongTerm,
+          taxMethod: "FIFO", soldDate: sellDate, acquiredDate: new Date(lot.acquiredDate),
+          disposalType: "send", disposalNote: `Sent ${assetSymbol} on ${chain || "unknown"} to ${recipient || "external"}${memo ? ` — ${memo}` : ""}`,
+        });
+        await storage.updateTaxLot(lot.id, { remainingQuantity: (lotRemaining - used).toFixed(8) });
+        totalGain += gainLoss;
+        remaining -= used;
+      }
+      const updatedLots = await storage.getTaxLotsByWalletBalance(userId, balance.id);
+      const totalRemaining = updatedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+      const totalCostBasis = updatedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const avgCost = totalRemaining > 0 ? totalCostBasis / totalRemaining : 0;
+      await storage.updateWalletBalanceCostData(balance.id, avgCost.toFixed(8), totalCostBasis.toFixed(2));
+      console.log(`[send-disposal] Recorded disposal of ${qty} ${assetSymbol} via send on ${chain}`);
+      res.json({ recorded: true, disposed: qty - remaining, gain: totalGain.toFixed(2) });
+    } catch (error: any) {
+      console.error("[send-disposal] Error:", error?.message);
+      res.status(500).json({ message: error.message });
     }
   });
 
@@ -5626,47 +5700,42 @@ export async function registerRoutes(
       }
 
       const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD", "RLUSD"]);
-      const zeroSymbols = Object.values(holdings)
-        .filter(h => h.usdValue === 0 && h.balance > 0 && !stablecoins.has(h.symbol) && !h.symbol.includes("(staked)"))
-        .map(h => h.symbol);
+      const allNonStableSymbols = Object.keys(holdings).filter(s => !stablecoins.has(s) && !s.includes("(staked)") && holdings[s].balance > 0);
 
-      if (zeroSymbols.length > 0) {
-        try {
-          const now = Date.now();
-          const missingFromCache = zeroSymbols.filter(s => !priceCache.prices[s]);
-          const cacheExpired = (now - priceCache.fetchedAt) > PRICE_CACHE_TTL_MS;
+      try {
+        const now = Date.now();
+        const cacheExpired = (now - priceCache.fetchedAt) > PRICE_CACHE_TTL_MS;
+        const missingFromCache = allNonStableSymbols.filter(s => !priceCache.prices[s]);
 
-          if (cacheExpired || missingFromCache.length > 0) {
-            const allSymbols = Object.keys(holdings).filter(s => !stablecoins.has(s) && !s.includes("(staked)"));
-            const freshPrices = await fetchCurrentPrices(allSymbols);
-            priceCache = { prices: { ...priceCache.prices, ...freshPrices }, fetchedAt: now };
-          }
-
-          for (const sym of zeroSymbols) {
-            if (priceCache.prices[sym]) {
-              holdings[sym].usdValue = holdings[sym].balance * priceCache.prices[sym];
-            }
-          }
-
-          const stillZero = zeroSymbols.filter(s => !priceCache.prices[s]);
-          if (stillZero.length > 0) {
-            const dbPrices = await loadPricesFromDb(stillZero);
-            for (const sym of stillZero) {
-              if (dbPrices[sym]) {
-                holdings[sym].usdValue = holdings[sym].balance * dbPrices[sym];
-                priceCache.prices[sym] = dbPrices[sym];
-              }
-            }
-          }
-
-          for (const sym of Object.keys(holdings)) {
-            if (stablecoins.has(sym) && holdings[sym].usdValue === 0) {
-              holdings[sym].usdValue = holdings[sym].balance;
-            }
-          }
-        } catch (err) {
-          console.error("Portfolio re-pricing error:", err);
+        if (cacheExpired || missingFromCache.length > 0) {
+          const freshPrices = await fetchCurrentPrices(allNonStableSymbols);
+          priceCache = { prices: { ...priceCache.prices, ...freshPrices }, fetchedAt: now };
         }
+
+        for (const sym of allNonStableSymbols) {
+          if (priceCache.prices[sym]) {
+            holdings[sym].usdValue = holdings[sym].balance * priceCache.prices[sym];
+          }
+        }
+
+        const stillZero = allNonStableSymbols.filter(s => holdings[s].usdValue === 0);
+        if (stillZero.length > 0) {
+          const dbPrices = await loadPricesFromDb(stillZero);
+          for (const sym of stillZero) {
+            if (dbPrices[sym]) {
+              holdings[sym].usdValue = holdings[sym].balance * dbPrices[sym];
+              priceCache.prices[sym] = dbPrices[sym];
+            }
+          }
+        }
+
+        for (const sym of Object.keys(holdings)) {
+          if (stablecoins.has(sym) && holdings[sym].usdValue === 0) {
+            holdings[sym].usdValue = holdings[sym].balance;
+          }
+        }
+      } catch (err) {
+        console.error("Portfolio re-pricing error:", err);
       }
 
       const totalValue = Object.values(holdings).reduce((sum, h) => sum + h.usdValue, 0);
@@ -6040,6 +6109,13 @@ export async function registerRoutes(
               });
 
               remaining -= used;
+              if (lot.walletBalanceId) {
+                const wbLots = await storage.getTaxLotsByWalletBalance(userId, lot.walletBalanceId);
+                const totalRem = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+                const totalCb = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+                const avg = totalRem > 0 ? totalCb / totalRem : 0;
+                await storage.updateWalletBalanceCostData(lot.walletBalanceId, avg.toFixed(8), totalCb.toFixed(2));
+              }
             }
           }
 

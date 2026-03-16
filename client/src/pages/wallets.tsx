@@ -1129,6 +1129,9 @@ export default function Wallets() {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean> | null>(null);
   const [expandedAssets, setExpandedAssets] = useState<Record<string, boolean>>({});
+  const [assetSortMode, setAssetSortMode] = useState<"value" | "name">("value");
+  const [walletSortMode, setWalletSortMode] = useState<"value" | "name">("value");
+  const [detailSortMode, setDetailSortMode] = useState<"value" | "name" | "source" | "chain">("value");
   const { toast } = useToast();
   const xrplStore = useXrplStore();
 
@@ -1893,7 +1896,14 @@ export default function Wallets() {
             </CardHeader>
             <CardContent>
               <div className="text-lg sm:text-2xl font-bold font-mono" data-testid="text-total-wallet-value">
-                {portfolioLoading ? <Skeleton className="h-8 w-32" /> : formatUsd(portfolioData?.totalValue || 0)}
+                {portfolioLoading ? <Skeleton className="h-8 w-32" /> : formatUsd(
+                  Math.max(
+                    portfolioData?.totalValue || 0,
+                    userWallets.reduce(
+                      (s, w) => s + w.balances.reduce((bs, b) => bs + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0), 0
+                    )
+                  )
+                )}
               </div>
             </CardContent>
           </Card>
@@ -2046,6 +2056,11 @@ export default function Wallets() {
           <TabsContent value="source" className="space-y-4">
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center gap-1.5" data-testid="wallet-sort-controls">
+                  <span className="text-xs text-muted-foreground mr-1">Sort:</span>
+                  <Button size="sm" variant={walletSortMode === "value" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setWalletSortMode("value")} data-testid="sort-wallet-value">Value</Button>
+                  <Button size="sm" variant={walletSortMode === "name" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setWalletSortMode("name")} data-testid="sort-wallet-name">Name</Button>
+                </div>
                 {(() => {
                   const groups: Record<string, WalletWithBalances[]> = {};
                   for (const w of userWallets) {
@@ -2053,7 +2068,15 @@ export default function Wallets() {
                     if (!groups[key]) groups[key] = [];
                     groups[key].push(w);
                   }
-                  return Object.entries(groups).map(([groupName, groupWallets]) => {
+                  const getGroupTotal = (wallets: WalletWithBalances[]) => wallets.reduce(
+                    (s, w) => s + w.balances.reduce((bs, b) => bs + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0), 0
+                  );
+                  const sortedEntries = Object.entries(groups).sort((a, b) =>
+                    walletSortMode === "name"
+                      ? a[0].localeCompare(b[0])
+                      : getGroupTotal(b[1]) - getGroupTotal(a[1])
+                  );
+                  return sortedEntries.map(([groupName, groupWallets]) => {
                     const groupTotal = groupWallets.reduce(
                       (s, w) => s + w.balances.reduce((bs, b) => bs + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0),
                       0
@@ -2450,8 +2473,13 @@ export default function Wallets() {
                       </p>
                     ) : (
                       <div className="space-y-3">
+                        <div className="flex items-center gap-1.5" data-testid="asset-sort-controls">
+                          <span className="text-xs text-muted-foreground mr-1">Sort:</span>
+                          <Button size="sm" variant={assetSortMode === "value" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setAssetSortMode("value")} data-testid="sort-asset-value">Value</Button>
+                          <Button size="sm" variant={assetSortMode === "name" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setAssetSortMode("name")} data-testid="sort-asset-name">Name</Button>
+                        </div>
                         {[...byAssetData]
-                          .sort((a, b) => b.usdValue - a.usdValue)
+                          .sort((a, b) => assetSortMode === "name" ? a.symbol.localeCompare(b.symbol) : b.usdValue - a.usdValue)
                           .map((h, i) => {
                             const total = portfolioData?.totalValue || 1;
                             const pct = (h.usdValue / total) * 100;
@@ -2917,6 +2945,14 @@ export default function Wallets() {
                     Sync your wallets to see individual holdings
                   </p>
                 ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-1.5" data-testid="detail-sort-controls">
+                      <span className="text-xs text-muted-foreground mr-1">Sort:</span>
+                      <Button size="sm" variant={detailSortMode === "value" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setDetailSortMode("value")} data-testid="sort-detail-value">Value</Button>
+                      <Button size="sm" variant={detailSortMode === "name" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setDetailSortMode("name")} data-testid="sort-detail-name">Name</Button>
+                      <Button size="sm" variant={detailSortMode === "source" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setDetailSortMode("source")} data-testid="sort-detail-source">Source</Button>
+                      <Button size="sm" variant={detailSortMode === "chain" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setDetailSortMode("chain")} data-testid="sort-detail-chain">Chain</Button>
+                    </div>
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -2931,7 +2967,14 @@ export default function Wallets() {
                       </TableHeader>
                       <TableBody>
                         {[...allHoldings]
-                          .sort((a, b) => b.usdValue - a.usdValue)
+                          .sort((a, b) => {
+                            switch (detailSortMode) {
+                              case "name": return a.symbol.localeCompare(b.symbol);
+                              case "source": return a.source.localeCompare(b.source) || b.usdValue - a.usdValue;
+                              case "chain": return a.chain.localeCompare(b.chain) || b.usdValue - a.usdValue;
+                              default: return b.usdValue - a.usdValue;
+                            }
+                          })
                           .map((h, i) => {
                             const total = portfolioData?.totalValue || 1;
                             const pct = (h.usdValue / total) * 100;
@@ -2993,6 +3036,7 @@ export default function Wallets() {
                       </TableBody>
                     </Table>
                   </div>
+                </div>
                 )}
               </CardContent>
             </Card>

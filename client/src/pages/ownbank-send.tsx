@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -254,6 +255,18 @@ export default function OwnBankSend() {
           title: "Payment Sent",
           description: `Sent ${amount} ${currency} to ${truncateAddress(recipient)}.`,
         });
+        try {
+          await apiRequest("POST", "/api/send/disposal-notification", {
+            chain: "XRPL",
+            assetSymbol: currency,
+            quantity: amount,
+            walletAddress,
+            recipient: recipient.trim(),
+            memo: memo.trim() || undefined,
+          });
+        } catch (disposalErr) {
+          console.warn("[send-disposal] Failed to record disposal:", disposalErr);
+        }
         setShowConfirm(false);
         setRecipient("");
         setAmount("");
