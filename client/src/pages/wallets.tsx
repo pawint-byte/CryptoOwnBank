@@ -2594,7 +2594,17 @@ export default function Wallets() {
                                         {isMatched ? (
                                           <Badge className="text-[9px] bg-green-600">Matched</Badge>
                                         ) : hasUnaccounted ? (
-                                          <Badge className="text-[9px] bg-amber-600">Unaccounted Lots</Badge>
+                                          <Badge
+                                            className="text-[9px] bg-amber-600 cursor-pointer hover:bg-amber-500 transition-colors"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)) });
+                                              setIsManualDialogOpen(true);
+                                            }}
+                                            data-testid={`badge-unaccounted-${h.symbol.toLowerCase()}`}
+                                          >
+                                            Unaccounted Lots
+                                          </Badge>
                                         ) : (
                                           <Badge className="text-[9px] bg-blue-600">Needs Lots</Badge>
                                         )}
@@ -2618,8 +2628,16 @@ export default function Wallets() {
                                         </div>
                                       </div>
                                       {hasUnaccounted && (
-                                        <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5">
-                                          You have {formatBalance(diff, 4)} more {h.symbol} in lots than in tracked wallets. Add a manual wallet (e.g. Crypto.com, Coinbase) to account for it.
+                                        <p
+                                          className="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 cursor-pointer hover:underline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)) });
+                                            setIsManualDialogOpen(true);
+                                          }}
+                                          data-testid={`link-add-manual-${h.symbol.toLowerCase()}`}
+                                        >
+                                          You have {formatBalance(diff, 4)} more {h.symbol} in lots than in tracked wallets. <span className="underline font-medium">Add a manual wallet</span> (e.g. Crypto.com, Coinbase) to account for it.
                                         </p>
                                       )}
                                       {hasShortfall && (
