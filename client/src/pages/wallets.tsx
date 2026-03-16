@@ -88,7 +88,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft } from "lucide-react";
+import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban } from "lucide-react";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
@@ -731,13 +731,36 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
   onMove?: (lotId: string, targetId: string) => void;
   isMoving?: boolean;
 }) {
+  const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [costPerUnit, setCostPerUnit] = useState(lot.costBasisPerUnit);
   const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const [showWriteOff, setShowWriteOff] = useState(false);
+  const [writeOffForm, setWriteOffForm] = useState({ reason: "scam", lossDate: "", note: "" });
+
+  const writeOffMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/lots/${lot.id}/write-off`, writeOffForm);
+      return res.json();
+    },
+    onSuccess: (data: { message: string; loss: number; quantity: number; isLongTerm: boolean }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balanceId, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reconciliation"] });
+      toast({
+        title: `${formatBalance(data.quantity, 4)} ${lot.assetSymbol} written off`,
+        description: `$${data.loss.toFixed(2)} ${data.isLongTerm ? "long-term" : "short-term"} capital loss recorded. This will appear on your tax report.`,
+      });
+      setShowWriteOff(false);
+    },
+    onError: () => toast({ title: "Failed to write off lot", variant: "destructive" }),
+  });
 
   const qty = parseFloat(lot.originalQuantity);
   const cost = parseFloat(lot.costBasisPerUnit);
   const totalCost = qty * cost;
+  const isWrittenOff = lot.note?.includes("WRITTEN OFF") || parseFloat(lot.remainingQuantity) <= 0;
 
   if (editing) {
     return (
@@ -767,6 +790,26 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
         <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs" onClick={() => setEditing(false)}>
           <X className="h-3 w-3" />
         </Button>
+      </div>
+    );
+  }
+
+  if (isWrittenOff) {
+    return (
+      <div className="flex items-center justify-between py-1 px-2 rounded bg-red-50/50 dark:bg-red-950/20 text-xs opacity-60" data-testid={`lot-row-${lot.id}`}>
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="text-[9px] font-medium px-1 py-0.5 rounded shrink-0 uppercase bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+            <Ban className="h-2.5 w-2.5 inline mr-0.5" />Loss
+          </span>
+          <span className="text-muted-foreground shrink-0 line-through">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+          <span className="text-muted-foreground shrink-0">·</span>
+          <span className="font-mono shrink-0 line-through">{formatBalance(qty, 4)}</span>
+          <span className="text-muted-foreground shrink-0">@</span>
+          <span className="font-mono shrink-0">{formatUsd(cost)}</span>
+          <span className="text-muted-foreground shrink-0">=</span>
+          <span className="font-mono font-medium shrink-0 text-red-600 dark:text-red-400">-{formatUsd(totalCost)}</span>
+          {lot.note && <span className="text-muted-foreground truncate ml-1 text-[10px]">({lot.note})</span>}
+        </div>
       </div>
     );
   }
@@ -816,6 +859,16 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
             <ArrowRightLeft className="h-3 w-3" />
           </Button>
         )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-5 w-5 p-0 text-amber-600 hover:text-amber-700"
+          onClick={() => setShowWriteOff(true)}
+          title="Write off as loss (scam, hack, etc.)"
+          data-testid={`button-writeoff-lot-${lot.id}`}
+        >
+          <Ban className="h-3 w-3" />
+        </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-destructive" data-testid={`button-delete-lot-${lot.id}`}>
@@ -824,9 +877,9 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remove purchase lot?</AlertDialogTitle>
+              <AlertDialogTitle>Remove lot?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will remove the {formatBalance(qty, 4)} {lot.assetSymbol} lot from {format(new Date(lot.acquiredDate), "MMM d, yyyy")} and update your cost basis.
+                This will remove the {formatBalance(qty, 4)} {lot.assetSymbol} lot from {format(new Date(lot.acquiredDate), "MMM d, yyyy")} and update your cost basis. No loss will be recorded — use "Write Off" instead if this was lost to a scam or hack.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -854,6 +907,84 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
           </div>
         )}
       </div>
+
+      <Dialog open={showWriteOff} onOpenChange={setShowWriteOff}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Write Off as Loss</DialogTitle>
+            <DialogDescription>
+              Record {formatBalance(qty, 4)} {lot.assetSymbol} (cost basis {formatUsd(totalCost)}) as a capital loss. This removes it from your active holdings and creates a loss event on your tax report with $0 proceeds.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Reason</label>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {[
+                  { value: "scam", label: "Scam" },
+                  { value: "hack", label: "Hack" },
+                  { value: "sent_in_error", label: "Sent in Error" },
+                  { value: "lost_keys", label: "Lost Keys" },
+                  { value: "other", label: "Other" },
+                ].map(opt => (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    variant={writeOffForm.reason === opt.value ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 text-xs px-2.5"
+                    onClick={() => setWriteOffForm({ ...writeOffForm, reason: opt.value })}
+                    data-testid={`writeoff-reason-${opt.value}`}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Date of Loss</label>
+              <Input
+                type="date"
+                value={writeOffForm.lossDate}
+                onChange={(e) => setWriteOffForm({ ...writeOffForm, lossDate: e.target.value })}
+                className="h-8 text-sm mt-1"
+                data-testid="input-writeoff-date"
+              />
+              <p className="text-xs text-muted-foreground mt-1">When the loss occurred. Leave blank to use today's date.</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Note (optional)</label>
+              <Input
+                placeholder="e.g. Sent to scam address, reported to authorities"
+                value={writeOffForm.note}
+                onChange={(e) => setWriteOffForm({ ...writeOffForm, note: e.target.value })}
+                className="h-8 text-sm mt-1"
+                data-testid="input-writeoff-note"
+              />
+            </div>
+            <div className="rounded-lg border bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-300">
+              <p className="font-medium mb-1">What this does:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Records a <strong>{formatUsd(totalCost)}</strong> capital loss ($0 proceeds − {formatUsd(totalCost)} cost basis)</li>
+                <li>Removes {formatBalance(qty, 4)} {lot.assetSymbol} from your active holdings</li>
+                <li>Loss appears on your tax report for the selected year</li>
+                <li>Consult a tax professional about deductibility in your jurisdiction</li>
+              </ul>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowWriteOff(false)}>Cancel</Button>
+              <Button
+                onClick={() => writeOffMutation.mutate()}
+                disabled={writeOffMutation.isPending}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+                data-testid="button-confirm-writeoff"
+              >
+                {writeOffMutation.isPending ? "Processing..." : "Write Off as Loss"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

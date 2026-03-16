@@ -94,7 +94,7 @@ export const taxLots = pgTable("tax_lots", {
 export const gainEvents = pgTable("gain_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
-  sellTransactionId: varchar("sell_transaction_id").notNull(),
+  sellTransactionId: varchar("sell_transaction_id"),
   taxLotId: varchar("tax_lot_id").notNull(),
   assetSymbol: varchar("asset_symbol", { length: 50 }).notNull(),
   quantity: decimal("quantity", { precision: 18, scale: 8 }).notNull(),
@@ -105,6 +105,8 @@ export const gainEvents = pgTable("gain_events", {
   taxMethod: varchar("tax_method", { length: 10 }).notNull(),
   soldDate: timestamp("sold_date").notNull(),
   acquiredDate: timestamp("acquired_date").notNull(),
+  disposalType: varchar("disposal_type", { length: 20 }).default("sale"),
+  disposalNote: varchar("disposal_note", { length: 300 }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_gain_events_user").on(table.userId),

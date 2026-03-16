@@ -1239,6 +1239,90 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/lots/:lotId/write-off", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { lotId } = req.params;
+      const { reason, lossDate, note } = req.body;
+
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const lot = allLots.find(l => l.id === lotId);
+      if (!lot) {
+        return res.status(404).json({ message: "Lot not found" });
+      }
+
+      const validReasons = ["scam", "hack", "lost_keys", "sent_in_error", "other"];
+      const writeOffReason = validReasons.includes(reason) ? reason : "other";
+
+      const qty = parseFloat(lot.remainingQuantity);
+      if (qty <= 0) {
+        return res.status(400).json({ message: "This lot has no remaining quantity to write off" });
+      }
+
+      const costPerUnit = parseFloat(lot.costBasisPerUnit);
+      const totalCostBasis = qty * costPerUnit;
+      const acquiredDate = new Date(lot.acquiredDate);
+      const disposalDate = lossDate ? new Date(lossDate) : new Date();
+      const holdingDays = (disposalDate.getTime() - acquiredDate.getTime()) / (1000 * 60 * 60 * 24);
+      const isLongTerm = holdingDays >= 365;
+
+      const reasonLabels: Record<string, string> = {
+        scam: "Lost to scam",
+        hack: "Lost in hack",
+        lost_keys: "Lost keys / inaccessible",
+        sent_in_error: "Sent in error",
+        other: "Write-off",
+      };
+
+      const disposalNote = `${reasonLabels[writeOffReason]}${note ? `: ${note}` : ""}`;
+
+      await storage.createGainEvent({
+        userId,
+        sellTransactionId: `writeoff-${lotId}-${Date.now()}`,
+        taxLotId: lotId,
+        assetSymbol: lot.assetSymbol,
+        quantity: qty.toString(),
+        proceeds: "0.00",
+        costBasis: totalCostBasis.toFixed(2),
+        gainLoss: (-totalCostBasis).toFixed(2),
+        isLongTerm,
+        taxMethod: "WRITEOFF",
+        soldDate: disposalDate,
+        acquiredDate,
+        disposalType: writeOffReason,
+        disposalNote,
+      });
+
+      await storage.updateTaxLot(lotId, {
+        remainingQuantity: "0",
+        note: `${lot.note ? lot.note + " | " : ""}WRITTEN OFF: ${disposalNote}`,
+      });
+
+      if (lot.walletBalanceId) {
+        const wbLots = await storage.getTaxLotsByWalletBalance(userId, lot.walletBalanceId);
+        const activeLots = wbLots.filter(l => parseFloat(l.remainingQuantity) > 0 || l.id === lotId);
+        const totalCost = activeLots
+          .filter(l => l.id !== lotId)
+          .reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+        const totalQty = activeLots
+          .filter(l => l.id !== lotId)
+          .reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
+        const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+        await storage.updateWalletBalanceCostData(lot.walletBalanceId, avgCost.toFixed(8), totalCost.toFixed(2));
+      }
+
+      res.json({
+        message: `Written off ${qty} ${lot.assetSymbol} — $${totalCostBasis.toFixed(2)} capital loss recorded`,
+        loss: totalCostBasis,
+        quantity: qty,
+        isLongTerm,
+      });
+    } catch (error) {
+      console.error("Write-off lot error:", error);
+      res.status(500).json({ message: "Failed to write off lot" });
+    }
+  });
+
   app.post("/api/wallet-balances/:balanceId/lots/:lotId/move", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

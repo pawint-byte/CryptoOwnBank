@@ -442,13 +442,30 @@ export default function TaxReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {taxData?.gainEvents?.map((event) => (
-                    <TableRow key={event.id}>
+                  {taxData?.gainEvents?.map((event) => {
+                    const isWriteOff = event.disposalType && event.disposalType !== "sale";
+                    return (
+                    <TableRow key={event.id} className={isWriteOff ? "bg-amber-50/50 dark:bg-amber-950/10" : ""}>
                       <TableCell className="font-mono text-sm">
                         <span className="hidden sm:inline">{format(new Date(event.soldDate), "MMM d, yyyy")}</span>
                         <span className="sm:hidden">{format(new Date(event.soldDate), "M/d/yy")}</span>
                       </TableCell>
-                      <TableCell className="font-medium">{event.assetSymbol}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1.5">
+                          {event.assetSymbol}
+                          {isWriteOff && (
+                            <Badge variant="outline" className="text-[9px] border-amber-400 text-amber-600 dark:text-amber-400" data-testid={`badge-writeoff-${event.id}`}>
+                              {event.disposalType === "scam" ? "Scam Loss" :
+                               event.disposalType === "hack" ? "Hack Loss" :
+                               event.disposalType === "sent_in_error" ? "Sent in Error" :
+                               event.disposalType === "lost_keys" ? "Lost Keys" : "Write-Off"}
+                            </Badge>
+                          )}
+                        </div>
+                        {isWriteOff && event.disposalNote && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[200px]">{event.disposalNote}</p>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-mono hidden md:table-cell">
                         {parseFloat(event.quantity).toFixed(4)}
                       </TableCell>
@@ -474,12 +491,19 @@ export default function TaxReports() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={event.isLongTerm ? "default" : "secondary"}>
-                          {event.isLongTerm ? "Long" : "Short"}
-                        </Badge>
+                        {isWriteOff ? (
+                          <Badge variant="outline" className="border-amber-400 text-amber-600 dark:text-amber-400">
+                            {event.isLongTerm ? "Long" : "Short"}
+                          </Badge>
+                        ) : (
+                          <Badge variant={event.isLongTerm ? "default" : "secondary"}>
+                            {event.isLongTerm ? "Long" : "Short"}
+                          </Badge>
+                        )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
