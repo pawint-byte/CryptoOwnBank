@@ -1012,11 +1012,23 @@ function EarningStatusSection() {
     );
   }
 
+  const assetBalances: Record<string, number> = {};
+  if (wallets) {
+    for (const w of wallets) {
+      for (const b of (w as Record<string, unknown>).balances as Array<{ assetSymbol: string; usdValue: string }> || []) {
+        const sym = b.assetSymbol.toUpperCase().replace(/\s*\(STAKED\)/i, "");
+        assetBalances[sym] = (assetBalances[sym] || 0) + (parseFloat(b.usdValue) || 0);
+      }
+    }
+  }
+
   const earningOpps = YIELD_OPPORTUNITIES.map((opp) => {
     const chainKey = opp.trackingChain?.toLowerCase();
     const hasWallet = coveredChains.has(chainKey);
     const isIntegratedAndActive = opp.integrated && hasWallet;
-    return { opp, hasWallet, isTracking: isIntegratedAndActive };
+    const assetSym = opp.asset.toUpperCase();
+    const holdingUsd = assetBalances[assetSym] || 0;
+    return { opp, hasWallet, isTracking: isIntegratedAndActive, holdingUsd };
   });
 
   const activeCount = earningOpps.filter((e) => e.isTracking).length;
@@ -1069,12 +1081,13 @@ function EarningStatusSection() {
             {activeCount > 0 && (
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pb-1">More Opportunities</p>
             )}
-            {earningOpps.filter(e => !e.isTracking).map(({ opp, hasWallet }) => (
+            {earningOpps.filter(e => !e.isTracking).map(({ opp, hasWallet, holdingUsd }) => (
               <div
                 key={opp.id}
-                className="flex items-center justify-between rounded-md border px-3 py-2.5 hover:bg-muted/40 transition-colors"
+                className="rounded-md border hover:bg-muted/40 transition-colors"
                 data-testid={`earning-status-${opp.id}`}
               >
+                <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1105,6 +1118,12 @@ function EarningStatusSection() {
                       </Button>
                     </a>
                   )}
+                </div>
+                </div>
+                <div className={`px-3 pb-2 text-[11px] ${holdingUsd > 0 ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`} data-testid={`holding-tip-${opp.id}`}>
+                  {holdingUsd > 0
+                    ? `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${opp.asset} — deposit to start earning ${opp.apyRange}.`
+                    : `You don't hold ${opp.asset} yet. Consider adding it to earn ${opp.apyRange} yield.`}
                 </div>
               </div>
             ))}

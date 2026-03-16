@@ -2283,6 +2283,14 @@ export default function Wallets() {
                                                   </div>
                                                 );
                                               }
+                                              if (usdVal > 50) {
+                                                return (
+                                                  <div className="flex items-start gap-2 rounded-md border border-muted bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground mt-1.5" data-testid={`tip-general-${sym}-${w.id}`}>
+                                                    <Snowflake className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                                    <span className="flex-1">{isManual ? `Consider moving ${sym} to a hardware wallet for better security.` : `${sym} is safely in your wallet. Check the Earn page for future yield opportunities.`}</span>
+                                                  </div>
+                                                );
+                                              }
                                               return null;
                                             })()}
                                           </div>
@@ -2750,7 +2758,7 @@ export default function Wallets() {
                                         });
                                       }
 
-                                      if (allOnCold && !bestYield && !bestYieldDefi && h.usdValue > 10) {
+                                      if (allOnCold && !bestYield && !bestYieldDefi) {
                                         tips.push({
                                           icon: Snowflake,
                                           color: "text-blue-500",
@@ -2758,7 +2766,30 @@ export default function Wallets() {
                                         });
                                       }
 
-                                      if (tips.length === 0) return null;
+                                      if (tips.length === 0) {
+                                        const stableSymbols = ["USDC", "USDT", "RLUSD", "DAI", "PYUSD", "EURCV", "USDS"];
+                                        if (stableSymbols.includes(h.symbol.toUpperCase())) {
+                                          tips.push({
+                                            icon: TrendingUp,
+                                            color: "text-green-600 dark:text-green-400",
+                                            text: `${h.symbol} is a stablecoin — explore lending or liquidity pools to earn yield on it.`,
+                                            action: { label: "Stablecoin Center", href: "/stablecoins" },
+                                          });
+                                        } else if (onExchange) {
+                                          tips.push({
+                                            icon: Shield,
+                                            color: "text-orange-600 dark:text-orange-400",
+                                            text: `${h.symbol} is on an exchange. Consider a hardware wallet like Ledger or Ellipal for long-term holding.`,
+                                          });
+                                        } else {
+                                          tips.push({
+                                            icon: Snowflake,
+                                            color: "text-blue-500",
+                                            text: `${h.symbol} is in your wallet. Visit the Earn page to see if new yield options become available.`,
+                                            action: { label: "Explore Yield", href: "/rwa-yields" },
+                                          });
+                                        }
+                                      }
 
                                       return (
                                         <div className="space-y-1.5" data-testid={`tips-${h.symbol.toLowerCase()}`}>

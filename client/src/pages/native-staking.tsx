@@ -224,7 +224,7 @@ const STAKING_CHAINS: StakingChain[] = [
   },
 ];
 
-function StakingCard({ chain, isPaid, expanded, onToggle }: { chain: StakingChain; isPaid: boolean; expanded: boolean; onToggle: () => void }) {
+function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain: StakingChain; isPaid: boolean; expanded: boolean; onToggle: () => void; userBalance?: { amount: number; usdValue: number } }) {
   return (
     <Card className="hover:shadow-md transition-shadow" data-testid={`staking-card-${chain.ticker}`}>
       <CardContent className="p-0">
@@ -261,6 +261,17 @@ function StakingCard({ chain, isPaid, expanded, onToggle }: { chain: StakingChai
 
         {expanded && (
           <div className="px-4 pb-4 space-y-4 border-t pt-4">
+            {userBalance && userBalance.amount > 0 ? (
+              <div className="flex items-start gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20 px-3 py-2 text-sm text-green-700 dark:text-green-400" data-testid={`holding-banner-${chain.ticker}`}>
+                <Coins className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>You hold <strong>{userBalance.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {chain.ticker}</strong> (${userBalance.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}). Staking at {chain.apr} APR could earn ~${((userBalance.usdValue * (chain.aprLow + chain.aprHigh) / 200)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/year.</span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-md border border-muted bg-muted/30 px-3 py-2 text-sm text-muted-foreground" data-testid={`nudge-banner-${chain.ticker}`}>
+                <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>You don't hold {chain.ticker} yet. Buy some on an exchange and stake it to earn {chain.apr} APR — your crypto works for you while you hold.</span>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-muted/50 rounded-lg p-2.5 text-center">
                 <TrendingUp className="h-4 w-4 mx-auto mb-1 text-emerald-500" />
@@ -380,6 +391,25 @@ function StakingCard({ chain, isPaid, expanded, onToggle }: { chain: StakingChai
   );
 }
 
+interface WalletBalance {
+  assetSymbol: string;
+  balance: string;
+  usdValue: string;
+}
+
+interface WalletData {
+  chain: string;
+  balances: WalletBalance[];
+}
+
+const TICKER_TO_SYMBOL: Record<string, string[]> = {
+  XRP: ["XRP"],
+  ADA: ["ADA"],
+  ATOM: ["ATOM"],
+  DOT: ["DOT"],
+  SOL: ["SOL"],
+};
+
 export default function NativeStakingPage() {
   const { user } = useAuth();
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
@@ -388,6 +418,27 @@ export default function NativeStakingPage() {
     queryKey: ["/api/subscription/limits"],
     enabled: !!user,
   });
+
+  const { data: walletsData } = useQuery<WalletData[]>({
+    queryKey: ["/api/wallets"],
+    enabled: !!user,
+  });
+
+  const userBalancesByTicker: Record<string, { amount: number; usdValue: number }> = {};
+  if (walletsData) {
+    for (const w of walletsData) {
+      for (const b of w.balances || []) {
+        const sym = b.assetSymbol.toUpperCase().replace(/\s*\(STAKED\)/i, "");
+        for (const [ticker, syms] of Object.entries(TICKER_TO_SYMBOL)) {
+          if (syms.includes(sym)) {
+            if (!userBalancesByTicker[ticker]) userBalancesByTicker[ticker] = { amount: 0, usdValue: 0 };
+            userBalancesByTicker[ticker].amount += parseFloat(b.balance) || 0;
+            userBalancesByTicker[ticker].usdValue += parseFloat(b.usdValue) || 0;
+          }
+        }
+      }
+    }
+  }
 
   const isPaid = limitsQuery.data?.tier === "premium" || limitsQuery.data?.tier === "pro" || limitsQuery.data?.isPremium || limitsQuery.data?.isPro;
 
@@ -470,6 +521,7 @@ export default function NativeStakingPage() {
               isPaid={!!isPaid}
               expanded={expandedChain === chain.ticker}
               onToggle={() => setExpandedChain(expandedChain === chain.ticker ? null : chain.ticker)}
+              userBalance={userBalancesByTicker[chain.ticker]}
             />
           ))}
         </div>
@@ -488,6 +540,7 @@ export default function NativeStakingPage() {
               isPaid={!!isPaid}
               expanded={expandedChain === chain.ticker}
               onToggle={() => setExpandedChain(expandedChain === chain.ticker ? null : chain.ticker)}
+              userBalance={userBalancesByTicker[chain.ticker]}
             />
           ))}
         </div>

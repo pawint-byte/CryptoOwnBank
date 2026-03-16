@@ -459,27 +459,62 @@ export default function Stablecoins() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {userHoldings.map((h, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
-                  data-testid={`holding-stablecoin-${h.symbol}-${i}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-sm font-medium">{h.symbol}</span>
-                    <span className="text-xs text-muted-foreground">{h.location}</span>
+              {userHoldings.map((h, i) => {
+                const coinData = STABLECOINS.find(c => c.symbol.toUpperCase() === h.symbol.toUpperCase());
+                const yieldOpp = coinData?.yieldOpportunities?.[0];
+                return (
+                  <div key={i} data-testid={`holding-stablecoin-${h.symbol}-${i}`}>
+                    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm font-medium">{h.symbol}</span>
+                        <span className="text-xs text-muted-foreground">{h.location}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium">
+                          ${h.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <p className="text-xs text-muted-foreground">
+                          {h.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {h.symbol}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 text-[11px] mt-1 bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
+                      <TrendingUp className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <span className="flex-1">
+                        {yieldOpp
+                          ? `Earn ${yieldOpp.apy} APY on your ${h.symbol} via ${yieldOpp.protocol} (${yieldOpp.chain}).`
+                          : `Your ${h.symbol} could be earning yield — check the Where to Earn tab for opportunities.`}
+                      </span>
+                      <Link href={yieldOpp?.protocol === "Soil Protocol" ? "/ownbank/vaults" : "/rwa-yields"}>
+                        <span className="shrink-0 underline font-medium whitespace-nowrap cursor-pointer">{yieldOpp ? "Start earning" : "Explore"}</span>
+                      </Link>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium">
-                      ${h.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <p className="text-xs text-muted-foreground">
-                      {h.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {h.symbol}
-                    </p>
-                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {userHoldings.length === 0 && walletsData && walletsData.length > 0 && (
+        <Card className="border-dashed border-green-500/30 bg-green-500/5" data-testid="card-stablecoin-nudge">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">You don't hold any stablecoins yet</p>
+                <p className="text-xs text-muted-foreground">Stablecoins like RLUSD and USDC earn 4-8% APY through lending protocols — with zero price volatility. Consider allocating part of your portfolio to start earning stable yield.</p>
+                <div className="flex gap-2 mt-2">
+                  <Link href="/ownbank/vaults">
+                    <Button size="sm" variant="outline" className="h-7 text-xs" data-testid="btn-explore-vaults-nudge">
+                      <ArrowRight className="h-3 w-3 mr-1" />
+                      Explore RLUSD Vaults
+                    </Button>
+                  </Link>
                 </div>
-              ))}
+              </div>
             </div>
           </CardContent>
         </Card>
