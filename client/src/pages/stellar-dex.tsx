@@ -226,6 +226,29 @@ export default function StellarDex() {
     1
   );
 
+  const sendStellarTradeNotification = (wallet: string) => {
+    const usePrice = swapDirection === "buy" ? bestAsk : bestBid;
+    try {
+      window.fetch("/api/dex/trade-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          dex: "Stellar",
+          side: swapDirection === "buy" ? "Buy" : "Sell",
+          orderType: "Market",
+          baseAsset: pair.base.display,
+          counterAsset: pair.quote.display,
+          amount: swapAmount,
+          price: usePrice.toFixed(6),
+          total: (swapAmountNum * usePrice).toFixed(6),
+          walletAddress: `${wallet} (external wallet)`,
+          pair: `${pair.base.display}/${pair.quote.display}`,
+        }),
+      }).catch(() => {});
+    } catch {}
+  };
+
   const handleSwapClick = () => {
     if (!swapAmountNum || swapAmountNum <= 0) {
       toast({ title: "Enter an amount", variant: "destructive" });
@@ -616,19 +639,19 @@ export default function StellarDex() {
             </div>
 
             <div className="space-y-2">
-              <a href={buildStellarTradeUrl(pair, "lobstr")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => setTradeDialogOpen(false)}>
+              <a href={buildStellarTradeUrl(pair, "lobstr")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); }}>
                 <Button className="w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white" data-testid="button-trade-lobstr">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Trade on LOBSTR
                 </Button>
               </a>
-              <a href={buildStellarTradeUrl(pair, "stellarterm")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => setTradeDialogOpen(false)}>
+              <a href={buildStellarTradeUrl(pair, "stellarterm")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarTerm"); setTradeDialogOpen(false); }}>
                 <Button variant="outline" className="w-full" data-testid="button-trade-stellarterm">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Trade on StellarTerm
                 </Button>
               </a>
-              <a href={buildStellarTradeUrl(pair, "stellarx")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => setTradeDialogOpen(false)}>
+              <a href={buildStellarTradeUrl(pair, "stellarx")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarX"); setTradeDialogOpen(false); }}>
                 <Button variant="outline" className="w-full" data-testid="button-trade-stellarx">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Trade on StellarX

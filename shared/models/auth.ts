@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   xrplWalletType: varchar("xrpl_wallet_type", { length: 20 }),
   lastLoginAt: timestamp("last_login_at"),
   lastReminderSentAt: timestamp("last_reminder_sent_at"),
+  securityPhrase: varchar("security_phrase"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

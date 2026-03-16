@@ -10,6 +10,34 @@ interface TokenBalance {
   usdValue: number;
 }
 
+const XRPL_HEX_CURRENCIES: Record<string, string> = {
+  "524C555344000000000000000000000000000000": "RLUSD",
+  "4156415800000000000000000000000000000000": "AVAX",
+  "41544F4D00000000000000000000000000000000": "ATOM",
+  "414C474F00000000000000000000000000000000": "ALGO",
+  "4E45415200000000000000000000000000000000": "NEAR",
+  "5045504500000000000000000000000000000000": "PEPE",
+  "424F4E4B00000000000000000000000000000000": "BONK",
+  "4141564500000000000000000000000000000000": "AAVE",
+  "4D41544943000000000000000000000000000000": "MATIC",
+  "5A42434E00000000000000000000000000000000": "ZBCN",
+  "434F524500000000000000000000000000000000": "CORE",
+  "454C5300000000000000000000000000000000000": "ELS",
+  "4353430000000000000000000000000000000000": "CSC",
+};
+
+function decodeXrplCurrency(currency: string): string {
+  if (currency.length <= 3) return currency;
+  if (currency.length === 40) {
+    if (XRPL_HEX_CURRENCIES[currency]) return XRPL_HEX_CURRENCIES[currency];
+    try {
+      const decoded = Buffer.from(currency, "hex").toString("utf8").replace(/\0/g, "").trim();
+      if (decoded && /^[A-Za-z0-9]+$/.test(decoded)) return decoded;
+    } catch {}
+  }
+  return currency;
+}
+
 const COINGECKO_IDS: Record<string, string> = {
   BTC: "bitcoin",
   ETH: "ethereum",
@@ -543,10 +571,10 @@ export async function getXrpBalance(address: string): Promise<ChainBalance[]> {
       for (const line of lines) {
         const bal = parseFloat(line.balance);
         if (bal > 0 && line.currency) {
-          const symbol = line.currency.length === 3 ? line.currency : `${line.currency.slice(0, 4)}...`;
-          const isStable = line.currency === "RLUSD" || line.currency === "USD";
+          const symbol = decodeXrplCurrency(line.currency);
+          const isStable = symbol === "RLUSD" || symbol === "USD";
           balances.push({
-            symbol: line.currency.length > 20 ? symbol : line.currency,
+            symbol,
             balance: bal,
             usdValue: isStable ? bal : 0,
           });

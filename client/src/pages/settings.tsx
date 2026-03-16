@@ -71,6 +71,7 @@ import {
   Mail,
   Phone,
   ImageIcon,
+  Shield,
 } from "lucide-react";
 import type { UserSettings, UserWallet } from "@shared/schema";
 
@@ -88,6 +89,10 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { spendingWallet, setSpendingWallet, subscriptionTier } = useXrplStore();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [securityPhrase, setSecurityPhrase] = useState("");
+  const [securityPhraseInput, setSecurityPhraseInput] = useState("");
+  const [securityPhraseLoading, setSecurityPhraseLoading] = useState(false);
+  const [securityPhraseSet, setSecurityPhraseSet] = useState(false);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<UserWallet | null>(null);
   const [walletForm, setWalletForm] = useState({
@@ -227,6 +232,47 @@ export default function SettingsPage() {
       useXrplStore.getState().setSubscriptionTier("free");
     }
   }, [subscriptionData]);
+
+  useEffect(() => {
+    window.fetch("/api/security-phrase", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        if (data.securityPhrase) {
+          setSecurityPhrase(data.securityPhrase);
+          setSecurityPhraseInput(data.securityPhrase);
+          setSecurityPhraseSet(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveSecurityPhrase = async () => {
+    if (!securityPhraseInput.trim() || securityPhraseInput.trim().length < 3) {
+      toast({ title: "Too short", description: "Your security phrase must be at least 3 characters.", variant: "destructive" });
+      return;
+    }
+    setSecurityPhraseLoading(true);
+    try {
+      const res = await window.fetch("/api/security-phrase", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ securityPhrase: securityPhraseInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSecurityPhrase(data.securityPhrase);
+        setSecurityPhraseSet(true);
+        toast({ title: "Security phrase saved", description: "Your personal phrase will appear in all future emails from us." });
+      } else {
+        toast({ title: "Error", description: data.message || "Failed to save", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save security phrase", variant: "destructive" });
+    } finally {
+      setSecurityPhraseLoading(false);
+    }
+  };
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -529,6 +575,45 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-[#00A4E4]" />
+              Anti-Phishing Security Phrase
+            </CardTitle>
+            <CardDescription>
+              Set a personal phrase that will appear in every email we send you. If an email doesn't contain your phrase, it's not from us.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {securityPhraseSet && (
+              <div className="bg-[#1a1a2e] rounded-md p-3 text-center border border-border">
+                <span className="text-sm text-muted-foreground">Current phrase: </span>
+                <strong className="text-[#00A4E4]" data-testid="text-current-security-phrase">{securityPhrase}</strong>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. BlueTiger42, My secret code, ..."
+                value={securityPhraseInput}
+                onChange={(e) => setSecurityPhraseInput(e.target.value)}
+                maxLength={100}
+                data-testid="input-security-phrase"
+              />
+              <Button
+                onClick={handleSaveSecurityPhrase}
+                disabled={securityPhraseLoading || !securityPhraseInput.trim()}
+                data-testid="button-save-security-phrase"
+              >
+                {securityPhraseLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : securityPhraseSet ? "Update" : "Save"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Choose something memorable that only you would know. 3-100 characters. You can change it anytime.
+            </p>
           </CardContent>
         </Card>
 

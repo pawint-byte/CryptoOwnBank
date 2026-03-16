@@ -470,10 +470,31 @@ export default function OwnBankDex() {
       const result = await signTransaction(txJson);
 
       if (result.success) {
+        const usePrice = orderType === "limit" ? p : parseFloat(orderSide === "buy" ? (asks[0]?.price || "0") : (bids[0]?.price || "0"));
+        const totalVal = (a * usePrice).toFixed(6);
         toast({
           title: "Order Placed",
           description: `${orderSide === "buy" ? "Buy" : "Sell"} order for ${formatAmount(amount)} ${pair.base.display} submitted successfully.`,
         });
+        try {
+          window.fetch("/api/dex/trade-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              dex: "XRPL",
+              side: orderSide === "buy" ? "Buy" : "Sell",
+              orderType: orderType === "limit" ? "Limit" : "Market",
+              baseAsset: pair.base.display,
+              counterAsset: pair.counter.display,
+              amount: formatAmount(amount),
+              price: usePrice.toString(),
+              total: totalVal,
+              walletAddress,
+              pair: `${pair.base.display}/${pair.counter.display}`,
+            }),
+          }).catch(() => {});
+        } catch {}
         setAmount("");
         setPrice("");
         setTimeout(() => {

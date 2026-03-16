@@ -1,6 +1,43 @@
 import { Resend } from "resend";
+import { db } from "./db";
+import { users } from "@shared/models/auth";
+import { eq } from "drizzle-orm";
 
 let connectionSettings: any;
+
+async function getSecurityPhraseForEmail(email: string): Promise<string | null> {
+  try {
+    const [user] = await db.select({ securityPhrase: users.securityPhrase }).from(users).where(eq(users.email, email));
+    return user?.securityPhrase || null;
+  } catch {
+    return null;
+  }
+}
+
+export function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function injectSecurityPhrase(html: string, phrase: string | null): string {
+  if (!phrase) return html;
+  const safePhrase = escapeHtml(phrase);
+  const banner = `<div style="background: #1a1a2e; color: #e0e0e0; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; text-align: center; border: 1px solid #333;">
+    <span style="color: #888;">Your security phrase:</span> <strong style="color: #00A4E4; letter-spacing: 0.5px;">${safePhrase}</strong>
+  </div>`;
+  const insertPoint = html.indexOf('<div style="padding:');
+  if (insertPoint === -1) {
+    const bodyMatch = html.indexOf('border-bottom:');
+    if (bodyMatch !== -1) {
+      const closingDiv = html.indexOf('</div>', bodyMatch);
+      if (closingDiv !== -1) {
+        const afterHeader = closingDiv + 6;
+        return html.slice(0, afterHeader) + banner + html.slice(afterHeader);
+      }
+    }
+    return banner + html;
+  }
+  return html.slice(0, insertPoint) + banner + html.slice(insertPoint);
+}
 
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
@@ -56,9 +93,12 @@ export async function sendEmail(to: string, subject: string, html: string, attac
     FALLBACK_FROM,
   ].filter(Boolean) as string[];
 
+  const securityPhrase = await getSecurityPhraseForEmail(to);
+  const finalHtml = injectSecurityPhrase(html, securityPhrase);
+
   for (const from of fromAddresses) {
     try {
-      const emailData: any = { from, to, subject, html };
+      const emailData: any = { from, to, subject, html: finalHtml };
       if (attachments && attachments.length > 0) {
         emailData.attachments = attachments;
       }
@@ -184,6 +224,76 @@ export async function sendDepositConfirmation(
     </div>
   `;
   await sendEmail(to, `Deposit Confirmed: ${amount} RLUSD → ${vaultName}`, html);
+}
+
+export async function sendDexTradeConfirmation(
+  to: string,
+  details: {
+    dex: "XRPL" | "Stellar";
+    side: "Buy" | "Sell";
+    orderType: "Limit" | "Market";
+    baseAsset: string;
+    counterAsset: string;
+    amount: string;
+    price: string;
+    total: string;
+    walletAddress: string;
+    pair: string;
+    timestamp: string;
+  }
+) {
+  const e = (s: string) => escapeHtml(s);
+  const truncatedWallet = `${e(details.walletAddress.slice(0, 8))}...${e(details.walletAddress.slice(-6))}`;
+  const borderColor = details.dex === "XRPL" ? "#00A4E4" : "#7B61FF";
+  const sideColor = details.side === "Buy" ? "#22c55e" : "#ef4444";
+  const isStellarExternal = details.dex === "Stellar";
+  const actionLabel = isStellarExternal ? "Trade Opened via External Wallet" : "Order Submitted";
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid ${borderColor};">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">DEX Trade Record</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: ${sideColor};">${e(details.side)} ${actionLabel} — ${e(details.dex)} DEX</h2>
+        <p style="color: #555; line-height: 1.6;">
+          ${isStellarExternal
+            ? `You opened a ${e(details.side.toLowerCase())} trade via an external Stellar wallet. This email records the trade intent — please confirm execution in your wallet app.`
+            : `Your ${e(details.orderType.toLowerCase())} ${e(details.side.toLowerCase())} order has been submitted to the ${e(details.dex)} decentralized exchange. Keep this email as a record of the transaction.`
+          }
+        </p>
+        <div style="background: #f8f8f8; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #666;">Trading Pair</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${e(details.pair)}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Side</td><td style="padding: 8px 0; text-align: right; font-weight: 600; color: ${sideColor};">${e(details.side)}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Order Type</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${e(details.orderType)}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Amount</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${e(details.amount)} ${e(details.baseAsset)}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Price</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${e(details.price)} ${e(details.counterAsset)}</td></tr>
+            <tr style="border-top: 1px solid #ddd;"><td style="padding: 8px 0; color: #666; font-weight: 600;">Total</td><td style="padding: 8px 0; text-align: right; font-weight: 600;">${e(details.total)} ${e(details.counterAsset)}</td></tr>
+          </table>
+        </div>
+        <div style="background: #f0f9ff; border-left: 4px solid ${borderColor}; padding: 15px; margin: 20px 0; border-radius: 4px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 4px 0; color: #666; font-size: 13px;">DEX</td><td style="padding: 4px 0; text-align: right; font-size: 13px; font-weight: 500;">${e(details.dex)} Native Decentralized Exchange</td></tr>
+            <tr><td style="padding: 4px 0; color: #666; font-size: 13px;">Wallet</td><td style="padding: 4px 0; text-align: right; font-size: 13px; font-family: monospace;">${truncatedWallet}</td></tr>
+            <tr><td style="padding: 4px 0; color: #666; font-size: 13px;">Full Address</td><td style="padding: 4px 0; text-align: right; font-size: 11px; font-family: monospace; word-break: break-all;">${e(details.walletAddress)}</td></tr>
+            <tr><td style="padding: 4px 0; color: #666; font-size: 13px;">Time</td><td style="padding: 4px 0; text-align: right; font-size: 13px;">${e(details.timestamp)}</td></tr>
+          </table>
+        </div>
+        <p style="color: #888; font-size: 13px; line-height: 1.5;">
+          ${isStellarExternal
+            ? `<strong>Note:</strong> This email records your trade intent from CryptoOwnBank. The actual trade execution depends on your external Stellar wallet (LOBSTR, StellarTerm, etc.). Please verify the trade status in your wallet app.`
+            : `<strong>Important:</strong> This email confirms the order was submitted and signed by your wallet. ${details.orderType === "Limit" ? "Limit orders remain open on the order book until filled or cancelled." : "Market orders execute immediately against available liquidity."} Check the ${e(details.dex)} DEX page on CryptoOwnBank for the current status of your order.`
+          }
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+        <p>You received this email because you initiated a trade on CryptoOwnBank. All transactions are signed by your wallet — we never have access to your private keys.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `${details.dex} DEX: ${details.side} ${details.amount} ${details.baseAsset} @ ${details.price} ${details.counterAsset}`, html);
 }
 
 export async function sendWithdrawalConfirmation(

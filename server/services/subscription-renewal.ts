@@ -3,6 +3,7 @@ import { db } from "../db";
 import { userSettings, wallets, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
+import { sendEmail as sendMainEmail } from "../email";
 
 const MONTHLY_PRICE_XRP = "29";
 const YEARLY_PRICE_XRP = "199";
@@ -131,36 +132,38 @@ async function sendEmailPayLink(
       ? `Your CryptoOwnBank Premium subscription has expired`
       : `Your CryptoOwnBank Premium expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
 
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    await resend.emails.send({
-      from: "CryptoOwnBank <notification@pawint-app.com>",
-      to: user.email,
-      subject,
-      html: `
+    const html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #1a1a1a; margin-bottom: 16px;">Renew Your Premium</h2>
-          <p style="color: #555; line-height: 1.6;">
-            ${daysLeft <= 0
-              ? `Your CryptoOwnBank Premium ${plan} subscription has expired. Renew now to keep your premium features.`
-              : `Your CryptoOwnBank Premium ${plan} subscription expires in <strong>${daysLeft} day${daysLeft === 1 ? "" : "s"}</strong>. Renew now to avoid any interruption.`
-            }
-          </p>
-          <div style="margin: 24px 0;">
-            <a href="${payLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Renew for $${amount} RLUSD
-            </a>
+          <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+            <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
           </div>
-          <p style="color: #888; font-size: 13px;">
-            Or copy this link: <a href="${payLink}" style="color: #2563eb;">${payLink}</a>
-          </p>
-          <p style="color: #888; font-size: 13px; margin-top: 16px;">
-            You can also renew from your Settings page with any supported cryptocurrency.
-          </p>
+          <div style="padding: 30px 0;">
+            <h2 style="color: #1a1a1a; margin-bottom: 16px;">Renew Your Premium</h2>
+            <p style="color: #555; line-height: 1.6;">
+              ${daysLeft <= 0
+                ? `Your CryptoOwnBank Premium ${plan} subscription has expired. Renew now to keep your premium features.`
+                : `Your CryptoOwnBank Premium ${plan} subscription expires in <strong>${daysLeft} day${daysLeft === 1 ? "" : "s"}</strong>. Renew now to avoid any interruption.`
+              }
+            </p>
+            <div style="margin: 24px 0;">
+              <a href="${payLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                Renew for $${amount} RLUSD
+              </a>
+            </div>
+            <p style="color: #888; font-size: 13px;">
+              Or copy this link: <a href="${payLink}" style="color: #2563eb;">${payLink}</a>
+            </p>
+            <p style="color: #888; font-size: 13px; margin-top: 16px;">
+              You can also renew from your Settings page with any supported cryptocurrency.
+            </p>
+          </div>
+          <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+            <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+          </div>
         </div>
-      `,
-    });
+      `;
+
+    await sendMainEmail(user.email, subject, html);
 
     console.log(`[renewal] Sent renewal email to ${user.email} for user ${userId}`);
     return true;

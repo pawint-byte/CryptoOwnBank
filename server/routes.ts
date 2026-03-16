@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
-import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation } from "./email";
 import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -558,6 +558,8 @@ export async function registerRoutes(
       console.log(`[Soil sync] Scanned ${totalTxScanned} total txs, found ${soilTxns.length} Soil txs, ${discoveredAddresses.length} discovered addresses for wallet ${walletAddress}`);
 
       let imported = 0;
+      const newDeposits: typeof soilTxns = [];
+      const newWithdrawals: typeof soilTxns = [];
       for (const stx of soilTxns) {
         if (existingHashes.has(stx.hash)) continue;
 
@@ -580,7 +582,26 @@ export async function registerRoutes(
             : "Soil vault withdrawal (auto-synced from XRPL)",
         });
 
+        if (stx.type === "deposit") newDeposits.push(stx);
+        else if (stx.type === "withdrawal") newWithdrawals.push(stx);
         imported++;
+      }
+
+      if (imported > 0) {
+        const [emailUser] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+        if (emailUser?.email) {
+          for (const dep of newDeposits) {
+            const vName = dep.vaultName || SOIL_VAULT_NAMES[dep.vaultAddress || ""] || "Soil Vault";
+            const apr = SOIL_VAULT_APR[dep.vaultAddress || ""] || 0.05;
+            sendDepositConfirmation(emailUser.email, vName, dep.amount, apr * 100)
+              .catch(err => console.error("[soil-email] Deposit notification failed:", err?.message));
+          }
+          for (const wd of newWithdrawals) {
+            const vName = wd.vaultName || SOIL_VAULT_NAMES[wd.vaultAddress || ""] || "Soil Vault";
+            sendWithdrawalConfirmation(emailUser.email, wd.amount, vName, walletAddress)
+              .catch(err => console.error("[soil-email] Withdrawal notification failed:", err?.message));
+          }
+        }
       }
 
       const deposits = soilTxns.filter(t => t.type === "deposit");
@@ -2199,6 +2220,35 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/security-phrase", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select({ securityPhrase: users.securityPhrase }).from(users).where(eq(users.id, userId));
+      res.json({ securityPhrase: user?.securityPhrase || null });
+    } catch (error) {
+      console.error("Get security phrase error:", error);
+      res.status(500).json({ message: "Failed to load security phrase" });
+    }
+  });
+
+  app.put("/api/security-phrase", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { securityPhrase } = req.body;
+      if (!securityPhrase || typeof securityPhrase !== "string" || securityPhrase.trim().length < 3) {
+        return res.status(400).json({ message: "Security phrase must be at least 3 characters" });
+      }
+      if (securityPhrase.trim().length > 100) {
+        return res.status(400).json({ message: "Security phrase must be 100 characters or less" });
+      }
+      await db.update(users).set({ securityPhrase: securityPhrase.trim() }).where(eq(users.id, userId));
+      res.json({ securityPhrase: securityPhrase.trim() });
+    } catch (error) {
+      console.error("Update security phrase error:", error);
+      res.status(500).json({ message: "Failed to update security phrase" });
+    }
+  });
+
   app.get("/api/tax-report", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -3461,6 +3511,45 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Xumm payload error:", error?.message);
       res.status(500).json({ message: error.message || "Failed to create payload" });
+    }
+  });
+
+  app.post("/api/dex/trade-notification", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select({ email: users.email, firstName: users.firstName }).from(users).where(eq(users.id, userId));
+      if (!user?.email) {
+        return res.json({ sent: false, reason: "no email" });
+      }
+      const { dex, side, orderType, baseAsset, counterAsset, amount, price, total, walletAddress, pair } = req.body;
+      const validDex = ["XRPL", "Stellar"];
+      const validSide = ["Buy", "Sell"];
+      const validOrderType = ["Limit", "Market"];
+      if (!validDex.includes(dex) || !validSide.includes(side)) {
+        return res.status(400).json({ message: "Invalid dex or side" });
+      }
+      if (!amount || !walletAddress || !pair) {
+        return res.status(400).json({ message: "Missing required trade details" });
+      }
+      const sanitize = (s: string, max = 50) => String(s || "").slice(0, max);
+      const timestamp = new Date().toLocaleString("en-US", { timeZone: "UTC", dateStyle: "medium", timeStyle: "long" });
+      sendDexTradeConfirmation(user.email, {
+        dex: dex as "XRPL" | "Stellar",
+        side: side as "Buy" | "Sell",
+        orderType: validOrderType.includes(orderType) ? orderType : "Market",
+        baseAsset: sanitize(baseAsset, 20),
+        counterAsset: sanitize(counterAsset, 20),
+        amount: sanitize(amount, 30),
+        price: sanitize(price || "Market", 30),
+        total: sanitize(total || "0", 30),
+        walletAddress: sanitize(walletAddress, 100),
+        pair: sanitize(pair, 40),
+        timestamp,
+      }).catch(err => console.error("[dex-email] Failed to send trade notification:", err?.message));
+      res.json({ sent: true });
+    } catch (error: any) {
+      console.error("DEX trade notification error:", error?.message);
+      res.json({ sent: false, reason: error.message });
     }
   });
 
