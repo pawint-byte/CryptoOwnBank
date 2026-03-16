@@ -1826,13 +1826,37 @@ export async function registerRoutes(
           while (lotIdx < lots.length && filled < capacity - 0.0001) {
             const lot = lots[lotIdx];
             const lotQty = parseFloat(lot.remainingQuantity);
-            if (lotQty <= capacity - filled + 0.0001) {
+            const spaceLeft = capacity - filled;
+            if (lotQty <= spaceLeft + 0.0001) {
               await storage.updateTaxLot(lot.id, { walletBalanceId: wb.id });
               filled += lotQty;
               lotsForWallet++;
               totalDistributed++;
               touchedBalanceIds.add(wb.id);
               lotIdx++;
+            } else if (spaceLeft >= 0.0001) {
+              const splitQty = Math.min(spaceLeft, lotQty);
+              await storage.createTaxLot({
+                userId,
+                walletBalanceId: wb.id,
+                assetSymbol: lot.assetSymbol,
+                acquiredDate: new Date(lot.acquiredDate),
+                originalQuantity: splitQty.toFixed(8),
+                remainingQuantity: splitQty.toFixed(8),
+                costBasisPerUnit: lot.costBasisPerUnit,
+                transactionId: lot.transactionId || undefined,
+                acquisitionType: (lot as Record<string, unknown>).acquisitionType as string || undefined,
+                note: (lot as Record<string, unknown>).note as string || undefined,
+              });
+              await storage.updateTaxLot(lot.id, {
+                remainingQuantity: (lotQty - splitQty).toFixed(8),
+                originalQuantity: (parseFloat(lot.originalQuantity) - splitQty).toFixed(8),
+              });
+              filled += splitQty;
+              lotsForWallet++;
+              totalDistributed++;
+              touchedBalanceIds.add(wb.id);
+              break;
             } else {
               break;
             }
