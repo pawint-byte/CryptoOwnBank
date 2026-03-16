@@ -4971,9 +4971,10 @@ export async function registerRoutes(
 
       await storage.updateWalletSyncTime(wallet.id);
       res.json({ wallet, balance: walletBalance });
-    } catch (error) {
-      console.error("Create manual wallet error:", error);
-      res.status(500).json({ message: "Failed to create manual wallet entry" });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Create manual wallet error:", errMsg, error);
+      res.status(500).json({ message: `Failed to create manual wallet entry: ${errMsg}` });
     }
   });
 

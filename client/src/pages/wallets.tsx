@@ -1350,8 +1350,8 @@ export default function Wallets() {
       setIsManualDialogOpen(false);
       setManualForm({ label: "", assetSymbol: "", balance: "" });
     },
-    onError: () => {
-      toast({ title: "Failed to create manual entry", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Failed to create manual entry", description: error.message, variant: "destructive" });
     },
   });
 
