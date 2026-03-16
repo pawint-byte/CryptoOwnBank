@@ -9,6 +9,31 @@ export interface StellarBalance {
   asset_type: string;
 }
 
+interface HorizonNativeBalance {
+  asset_type: "native";
+  balance: string;
+}
+
+interface HorizonCreditBalance {
+  asset_type: "credit_alphanum4" | "credit_alphanum12";
+  asset_code: string;
+  asset_issuer: string;
+  balance: string;
+}
+
+interface HorizonAccountResponse {
+  balances: (HorizonNativeBalance | HorizonCreditBalance)[];
+}
+
+interface HorizonPaymentRecord {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface HorizonPaymentsResponse {
+  _embedded?: { records: HorizonPaymentRecord[] };
+}
+
 interface StellarState {
   stellarAddress: string | null;
   isConnected: boolean;
@@ -109,10 +134,10 @@ export async function fetchStellarBalances(address: string): Promise<{
     }
     throw new Error("Failed to fetch Stellar account");
   }
-  const data = await res.json();
-  const allBalances: StellarBalance[] = (data.balances || []).map((b: any) => ({
-    asset_code: b.asset_type === "native" ? "XLM" : b.asset_code,
-    asset_issuer: b.asset_type === "native" ? null : b.asset_issuer,
+  const data: HorizonAccountResponse = await res.json();
+  const allBalances: StellarBalance[] = (data.balances || []).map((b) => ({
+    asset_code: b.asset_type === "native" ? "XLM" : (b as HorizonCreditBalance).asset_code,
+    asset_issuer: b.asset_type === "native" ? null : (b as HorizonCreditBalance).asset_issuer,
     balance: b.balance,
     asset_type: b.asset_type,
   }));
@@ -128,9 +153,9 @@ export async function fetchStellarTransactions(address: string, limit = 20) {
     `https://horizon.stellar.org/accounts/${address}/payments?order=desc&limit=${limit}`
   );
   if (!res.ok) return [];
-  const data = await res.json();
+  const data: HorizonPaymentsResponse = await res.json();
   return (data._embedded?.records || []).filter(
-    (r: any) => r.type === "payment" || r.type === "path_payment_strict_send" || r.type === "path_payment_strict_receive"
+    (r) => r.type === "payment" || r.type === "path_payment_strict_send" || r.type === "path_payment_strict_receive"
   );
 }
 

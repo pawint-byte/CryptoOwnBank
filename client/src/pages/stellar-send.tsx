@@ -845,6 +845,12 @@ export default function StellarSend() {
                   StellarTerm
                 </Button>
               </a>
+              <a href={`https://www.stellarx.com/send?destination=${recipient}&amount=${amount}&asset=${currency === "XLM" ? "native" : currency}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" data-testid="button-open-stellarx">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  StellarX
+                </Button>
+              </a>
             </div>
           </div>
           <DialogFooter className="gap-2">

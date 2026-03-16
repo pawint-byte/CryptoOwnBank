@@ -142,8 +142,10 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
         <Route path="/ownbank/recurring" component={RecurringPayments} />
+        <Route path="/stellar/recurring" component={RecurringPayments} />
         <Route path="/ownbank/my-card" component={MyCard} />
         <Route path="/ownbank/payment-queue" component={PaymentQueue} />
+        <Route path="/stellar/payment-queue" component={PaymentQueue} />
         <Route path="/stellar/wallet" component={StellarWallet} />
         <Route path="/stellar/dex" component={StellarDex} />
         <Route path="/stellar/send" component={StellarSend} />
