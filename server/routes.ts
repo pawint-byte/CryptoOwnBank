@@ -2255,9 +2255,8 @@ export async function registerRoutes(
   app.post("/api/positions/bulk-remove-non-crypto", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
-      const userEmail = req.user.claims.email || "";
-      if (!ADMIN_EMAILS.includes(userEmail)) {
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") {
         return res.status(403).json({ message: "Admin only" });
       }
 
