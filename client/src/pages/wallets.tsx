@@ -2250,6 +2250,41 @@ export default function Wallets() {
                                                   .map(ob => ({ walletBalanceId: ob.id, walletLabel: ow.label || ow.chain, chain: ow.chain }))
                                               )}
                                             />
+                                            {(() => {
+                                              const sym = b.assetSymbol.toUpperCase();
+                                              const knowledge = CUSTODY_KNOWLEDGE[sym];
+                                              const isManual = w.chain === "manual";
+                                              const bestStaking = knowledge?.stakingOptions?.reduce((best, opt) => opt.apyMid > (best?.apyMid || 0) ? opt : best, null as typeof knowledge.stakingOptions[0] | null);
+                                              const supportingWallets = COLD_WALLETS.filter(cw =>
+                                                cw.supportedChains.some(sc => {
+                                                  const su = sc.toUpperCase();
+                                                  return su === sym || (su === "XRPL" && sym === "XRP") || (su === "ETHEREUM" && sym === "ETH") || (su === "BITCOIN" && sym === "BTC") || (su === "SOLANA" && sym === "SOL") || (su === "CARDANO" && sym === "ADA") || (su === "STELLAR" && sym === "XLM");
+                                                })
+                                              ).slice(0, 1);
+                                              if (isManual && supportingWallets.length > 0 && usdVal > 50) {
+                                                return (
+                                                  <div className="flex items-start gap-2 rounded-md border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 px-2.5 py-1.5 text-[11px] text-orange-600 dark:text-orange-400 mt-1.5" data-testid={`tip-cold-${sym}-${w.id}`}>
+                                                    <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                                    <span className="flex-1">Move to {supportingWallets[0].name} for self-custody</span>
+                                                    {supportingWallets[0].buyUrl && (
+                                                      <a href={supportingWallets[0].buyUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 underline font-medium whitespace-nowrap" onClick={(e) => e.stopPropagation()}>Get it</a>
+                                                    )}
+                                                  </div>
+                                                );
+                                              }
+                                              if (bestStaking && usdVal > 50 && !isManual) {
+                                                return (
+                                                  <div className="flex items-start gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20 px-2.5 py-1.5 text-[11px] text-green-600 dark:text-green-400 mt-1.5" data-testid={`tip-yield-${sym}-${w.id}`}>
+                                                    <TrendingUp className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                                    <span className="flex-1">Earn {bestStaking.apyRange} via {bestStaking.platform}</span>
+                                                    {bestStaking.link && (
+                                                      <a href={bestStaking.link} target="_blank" rel="noopener noreferrer" className="shrink-0 underline font-medium whitespace-nowrap" onClick={(e) => e.stopPropagation()}>Learn more</a>
+                                                    )}
+                                                  </div>
+                                                );
+                                              }
+                                              return null;
+                                            })()}
                                           </div>
                                         );
                                       })}
