@@ -101,8 +101,11 @@ const allItems: NavItem[] = [
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
 
+  { title: "Wallet", url: "/stellar/wallet", icon: Wallet, color: "#7B61FF", group: "stellar" },
+  { title: "Send & Receive", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
+  { title: "Token Manager", url: "/stellar/tokens", icon: Coins, color: "#7B61FF", group: "stellar" },
+  { title: "Invoices", url: "/stellar/invoices", icon: InvoiceIcon, color: "#7B61FF", group: "stellar" },
   { title: "DEX Trading", url: "/stellar/dex", icon: TrendingUp, color: "#7B61FF", group: "stellar" },
-  { title: "Send (Path Pay)", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
 
   { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },

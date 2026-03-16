@@ -55,6 +55,9 @@ import OwnBankInvoices from "@/pages/ownbank-invoices";
 import PayPage from "@/pages/pay";
 import StellarRemittances from "@/pages/stellar-remittances";
 import StellarSend from "@/pages/stellar-send";
+import StellarWallet from "@/pages/stellar-wallet";
+import StellarTokens from "@/pages/stellar-tokens";
+import StellarInvoices from "@/pages/stellar-invoices";
 import StellarDex from "@/pages/stellar-dex";
 import ChainGuide from "@/pages/chain-guide";
 import NativeStaking from "@/pages/native-staking";
@@ -141,8 +144,11 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/recurring" component={RecurringPayments} />
         <Route path="/ownbank/my-card" component={MyCard} />
         <Route path="/ownbank/payment-queue" component={PaymentQueue} />
+        <Route path="/stellar/wallet" component={StellarWallet} />
         <Route path="/stellar/dex" component={StellarDex} />
         <Route path="/stellar/send" component={StellarSend} />
+        <Route path="/stellar/tokens" component={StellarTokens} />
+        <Route path="/stellar/invoices" component={StellarInvoices} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/price-alerts" component={PriceAlerts} />
         <Route path="/whale-alerts" component={WhaleAlerts} />
@@ -197,8 +203,11 @@ function Router() {
         <Route path="/rwa-yields" component={RwaYields} />
         <Route path="/stablecoins" component={Stablecoins} />
         <Route path="/insurance" component={Insurance} />
+        <Route path="/stellar/wallet" component={StellarWallet} />
         <Route path="/stellar/dex" component={StellarDex} />
         <Route path="/stellar/send" component={StellarSend} />
+        <Route path="/stellar/tokens" component={StellarTokens} />
+        <Route path="/stellar/invoices" component={StellarInvoices} />
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/native-staking" component={NativeStaking} />

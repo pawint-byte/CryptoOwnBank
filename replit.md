@@ -15,7 +15,7 @@ Preferred communication style: Simple, everyday language.
 -   **Key Features**:
     -   **CryptoBroker**: Dashboard, Transactions, Portfolio, Tax Reports, Integrations, Settings.
     -   **OwnBank XRPL**: Soil vault tracking, Token Manager, DEX Trading (Quick Swap + Advanced order book with 10+ trading pairs), Send & Receive (payments, contacts, QR, destination tag), Withdraw Interest, History, Referrals.
-    -   **Stellar Integration**: Stellar DEX (Quick Swap + Order Book view with 8 trading pairs), Send with Path Payments, Remittance Calculator & Corridor Guide, anchor directory.
+    -   **Stellar Integration**: Stellar Wallet Dashboard (connect address, XLM + token balances, reserve display), Send & Receive (tabbed with contacts, QR codes, payment URIs), Token Manager (trustline viewer, popular token quick-add, removal), Invoices (create payment requests with shareable links/QR), DEX (Quick Swap + Order Book view with 8 trading pairs), Send with Path Payments, Remittance Calculator & Corridor Guide, anchor directory.
     -   **Chain Guide**: Educational comparison of XRP vs XLM.
     -   **RWA Yield Explorer**: Recommender quiz, enhanced protocol cards (Soil, Ondo, Centrifuge, XDC, Maple, etc.), guided flows, and RWA token tracking across chains.
     -   **Stablecoin Dashboard**: Directory and user holdings for major stablecoins.
