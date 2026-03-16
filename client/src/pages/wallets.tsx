@@ -2091,9 +2091,9 @@ export default function Wallets() {
                                                 </div>
                                                 <div className="min-w-0">
                                                   <span className="font-medium text-sm truncate block">{b.assetSymbol}</span>
-                                                  <div className="text-xs text-muted-foreground font-mono truncate">
+                                                  <span className="text-xs font-mono font-medium text-foreground">
                                                     {formatBalance(balVal, 4)}
-                                                  </div>
+                                                  </span>
                                                 </div>
                                               </div>
                                               <span className="font-mono font-medium text-xs sm:text-sm shrink-0">
