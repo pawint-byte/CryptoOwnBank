@@ -60,7 +60,7 @@ const xrplToolsComparison = [
     oldDesc: "Open account, fill out forms, wait days for approval to hold foreign currencies",
     newIcon: Coins,
     newTitle: "Token Manager",
-    newDesc: "Set a trustline, sign with your cold wallet, hold any XRPL token in 4 seconds",
+    newDesc: "Set a trustline, sign with your wallet, hold any XRPL or Stellar token in seconds",
     link: "/ownbank/tokens",
     status: "live",
   },
@@ -1427,11 +1427,13 @@ export default function Landing() {
                   <span className="text-xs text-muted-foreground ml-auto">Payments &amp; Remittances</span>
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/wallet" className="hover:text-[#7B61FF] hover:underline transition-colors">Wallet dashboard — connect your Stellar address, view balances &amp; reserves →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/dex" className="hover:text-[#7B61FF] hover:underline transition-colors">Built-in DEX — trade XLM, USDC, EURC, BTC and more →</a></li>
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Path payments — send USD, they get PHP automatically →</a></li>
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Global anchor network for cash on/off ramps →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/send" className="hover:text-[#7B61FF] hover:underline transition-colors">Send &amp; receive — LOBSTR, Freighter, StellarTerm, StellarX deep links →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/tokens" className="hover:text-[#7B61FF] hover:underline transition-colors">Token manager — add/remove trustlines for any Stellar asset →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/invoices" className="hover:text-[#7B61FF] hover:underline transition-colors">Invoicing — QR codes &amp; payment request links via web+stellar:pay →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/remittances" className="hover:text-[#7B61FF] hover:underline transition-colors">Remittance corridor calculator &amp; guides →</a></li>
-                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stablecoins" className="hover:text-[#7B61FF] hover:underline transition-colors">USDC &amp; EURCV stablecoin support →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stablecoins" className="hover:text-[#7B61FF] hover:underline transition-colors">USDC &amp; EURC stablecoin support →</a></li>
                 </ul>
               </div>
             </div>

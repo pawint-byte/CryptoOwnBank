@@ -456,8 +456,28 @@ const faqGroups = [
         a: "On the Stellar DEX, we list 13 pairs across two categories: Stablecoins (XLM/USDC, XLM/EURC, XLM/USDT, USDC/EURC) and Crypto (XLM/BTC, XLM/ETH, XLM/XRP, XLM/DOGE, XLM/AQUA, XLM/yXLM, XLM/SHX, XLM/RMT, XLM/MOBI). XLM acts as the bridge currency, just like XRP does on the XRPL — and you can even trade XLM/XRP directly, bridging both ecosystems. You need a trustline for any token you want to hold — most Stellar wallets (LOBSTR, Freighter) make adding trustlines easy. We show live order book data from the Stellar Horizon API and link you to LOBSTR, StellarTerm, or StellarX to execute trades in your own wallet.",
       },
       {
-        q: "Are there fees for using XRPL Tools?",
-        a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, or Send & Receive. The only cost is the XRPL network fee, which is approximately 0.00001 XRP per transaction — that's a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. The XRPL is one of the cheapest networks to transact on.",
+        q: "How does the Stellar Wallet Dashboard work?",
+        a: "Connect your Stellar public address (starts with G, 56 characters) to see your full wallet overview — XLM balance, all token holdings with trustlines, base reserve calculation (0.5 XLM per trustline + 1 XLM base), and recent transaction history pulled live from the Stellar Horizon API. Your address is saved to your account so it persists across sessions. We never ask for your secret key — everything is read-only on-chain data. From the wallet dashboard you can jump directly to Send & Receive, Token Manager, or DEX Trading.",
+      },
+      {
+        q: "How do I send and receive payments on Stellar?",
+        a: "Go to Send & Receive under the Stellar section. To send: enter the recipient's Stellar address, pick the asset from your actual wallet holdings (XLM, USDC, EURC, or any token you hold), set the amount and optional memo, then hit Generate Transaction. We create a web+stellar:pay URI and give you one-tap deep links to open it directly in LOBSTR, Freighter, StellarTerm, or StellarX — whichever wallet you use. To receive: switch to the Receive tab to generate a QR code and payment link with your address, amount, and currency pre-filled. Share it with anyone and they can pay you instantly. The Contacts tab lets you save frequent recipients for quick access.",
+      },
+      {
+        q: "How does the Stellar Token Manager work?",
+        a: "The Token Manager shows all your current trustlines (token holdings) on Stellar and lets you add or remove them. Popular tokens like USDC, EURC, yXLM, AQUA, and SHX have one-click add buttons. For any other Stellar asset, use the custom trustline form — enter the asset code and issuer address. When you add or remove a trustline, we generate links for LOBSTR, StellarTerm, StellarX, or the Stellar Laboratory so you can sign the ChangeTrust transaction in your preferred wallet. You can only remove a trustline if your balance is zero.",
+      },
+      {
+        q: "Can I create invoices on Stellar?",
+        a: "Yes — the Stellar Invoices page lets you create payment requests with a recipient address, amount, currency, and optional memo. Each invoice generates a web+stellar:pay URI and a QR code that your client can scan with any Stellar wallet (LOBSTR, Solar, Freighter). Invoice history tracks status, and you can copy the payment link or share it directly. It's the Stellar equivalent of our XRPL invoicing tools — same workflow, different chain.",
+      },
+      {
+        q: "Do recurring payments work on Stellar?",
+        a: "Yes — Stellar is fully supported in Recurring Payments. When you create a recurring payment, select 'Stellar' as the chain and choose XLM, USDC, or any token from your wallet holdings. When a payment comes due, CryptoOwnBank creates an execution record and gives you a Sign button that generates a web+stellar:pay URI. Tap it to open your Stellar wallet with the payment pre-filled — approve it and you're done. The Payment Queue also works with Stellar for offline/batch payment workflows.",
+      },
+      {
+        q: "Are there fees for using XRPL and Stellar Tools?",
+        a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, or Send & Receive on either chain. The only cost is the network fee — approximately 0.00001 XRP per transaction on XRPL, or 0.00001 XLM (100 stroops) on Stellar. Both are a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. These are two of the cheapest networks to transact on.",
       },
       {
         q: "What are Whale Alerts?",
