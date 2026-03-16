@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,10 +102,10 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant={c.variant} className={c.className} data-testid={`badge-status-${status}`}>{status}</Badge>;
 }
 
-function CreatePaymentDialog({ onCreated }: { onCreated: () => void }) {
+function CreatePaymentDialog({ onCreated, defaultChain }: { onCreated: () => void; defaultChain?: string }) {
   const [open, setOpen] = useState(false);
-  const [chain, setChain] = useState("xrpl");
-  const [currency, setCurrency] = useState("XRP");
+  const [chain, setChain] = useState(defaultChain === "stellar" ? "stellar" : "xrpl");
+  const [currency, setCurrency] = useState(defaultChain === "stellar" ? "XLM" : "XRP");
   const [payeeName, setPayeeName] = useState("");
   const [payeeAddress, setPayeeAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -292,6 +293,8 @@ function CreatePaymentDialog({ onCreated }: { onCreated: () => void }) {
 
 export default function RecurringPayments() {
   const { toast } = useToast();
+  const [location] = useLocation();
+  const isStellarRoute = location.startsWith("/stellar");
 
   const { data: subLimits } = useQuery<any>({
     queryKey: ["/api/subscription/limits"],
@@ -350,7 +353,7 @@ export default function RecurringPayments() {
           <h1 className="text-2xl font-bold" data-testid="heading-recurring">Recurring Payments</h1>
           <p className="text-muted-foreground mt-1">Schedule automatic crypto payments on XRPL and Stellar</p>
         </div>
-        <CreatePaymentDialog onCreated={() => {}} />
+        <CreatePaymentDialog onCreated={() => {}} defaultChain={isStellarRoute ? "stellar" : undefined} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -418,7 +421,7 @@ export default function RecurringPayments() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Set up your first recurring payment to automate regular crypto transfers.
                 </p>
-                <CreatePaymentDialog onCreated={() => {}} />
+                <CreatePaymentDialog onCreated={() => {}} defaultChain={isStellarRoute ? "stellar" : undefined} />
               </CardContent>
             </Card>
           ) : (

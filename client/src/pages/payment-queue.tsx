@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,11 +109,14 @@ export default function PaymentQueuePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<QueuedPayment | null>(null);
   const [stellarSyncPayment, setStellarSyncPayment] = useState<QueuedPayment | null>(null);
+  const [stellarTxHash, setStellarTxHash] = useState("");
+  const [loc] = useLocation();
+  const isStellarRoute = loc.startsWith("/stellar");
   const [newPayment, setNewPayment] = useState({
     to: "",
     amount: "",
-    currency: "XRP",
-    chain: "xrpl" as "xrpl" | "stellar",
+    currency: isStellarRoute ? "XLM" : "XRP",
+    chain: (isStellarRoute ? "stellar" : "xrpl") as "xrpl" | "stellar",
     memo: "",
     destinationTag: "",
     recipientName: "",
@@ -699,6 +703,17 @@ export default function PaymentQueuePage() {
 
                 <Separator />
 
+                <div className="space-y-2">
+                  <label className="text-xs font-medium block">Transaction Hash (optional)</label>
+                  <Input
+                    placeholder="Paste Stellar tx hash for verification..."
+                    value={stellarTxHash}
+                    onChange={(e) => setStellarTxHash(e.target.value)}
+                    className="font-mono text-xs"
+                    data-testid="input-stellar-tx-hash"
+                  />
+                </div>
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -706,6 +721,7 @@ export default function PaymentQueuePage() {
                     onClick={() => {
                       updateQueueItem(stellarSyncPayment.id, { status: "failed", errorMessage: "Not completed — try again later" });
                       setStellarSyncPayment(null);
+                      setStellarTxHash("");
                       refreshQueue();
                     }}
                     data-testid="button-stellar-cancel"
@@ -718,10 +734,17 @@ export default function PaymentQueuePage() {
                       updateQueueItem(stellarSyncPayment.id, {
                         status: "sent",
                         syncedAt: new Date().toISOString(),
+                        ...(stellarTxHash.trim() ? { txHash: stellarTxHash.trim() } : {}),
                       });
                       setStellarSyncPayment(null);
+                      setStellarTxHash("");
                       refreshQueue();
-                      toast({ title: "Payment confirmed", description: `${stellarSyncPayment.amount} ${stellarSyncPayment.currency} marked as sent. Check your wallet for the TX hash.` });
+                      toast({
+                        title: "Payment confirmed",
+                        description: stellarTxHash.trim()
+                          ? `TX ${stellarTxHash.slice(0, 10)}... recorded.`
+                          : `${stellarSyncPayment.amount} ${stellarSyncPayment.currency} marked as sent.`,
+                      });
                     }}
                     data-testid="button-stellar-confirm"
                   >
