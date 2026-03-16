@@ -940,9 +940,21 @@ export async function registerRoutes(
         "hsl(var(--chart-5))",
       ];
 
+      const dashPriceCacheRows = await db.select().from(priceCacheTable);
+      const dashPriceLookup: Record<string, number> = {};
+      for (const row of dashPriceCacheRows) {
+        dashPriceLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
+
       for (const pos of positionsData) {
         const asset = await storage.getAsset(pos.assetSymbol);
-        const currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : parseFloat(pos.averageCost);
+        let currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+        if (!currentPrice || currentPrice <= 0) {
+          currentPrice = dashPriceLookup[pos.assetSymbol.toUpperCase()] || 0;
+        }
+        if (!currentPrice || currentPrice <= 0) {
+          currentPrice = parseFloat(pos.averageCost) || 0;
+        }
         const qty = parseFloat(pos.quantity);
         const value = qty * currentPrice;
         totalValue += value;
@@ -2513,12 +2525,24 @@ export async function registerRoutes(
         "hsl(var(--chart-5))",
       ];
 
+      const priceCacheRows = await db.select().from(priceCacheTable);
+      const priceCacheLookup: Record<string, number> = {};
+      for (const row of priceCacheRows) {
+        priceCacheLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
+
       const positionsWithMarket = await Promise.all(
         positionsData.map(async (pos, index) => {
           const asset = await storage.getAsset(pos.assetSymbol);
-          const currentPrice = asset?.currentPrice 
+          let currentPrice = asset?.currentPrice 
             ? parseFloat(asset.currentPrice) 
-            : parseFloat(pos.averageCost);
+            : 0;
+          if (!currentPrice || currentPrice <= 0) {
+            currentPrice = priceCacheLookup[pos.assetSymbol.toUpperCase()] || 0;
+          }
+          if (!currentPrice || currentPrice <= 0) {
+            currentPrice = parseFloat(pos.averageCost) || 0;
+          }
           const qty = parseFloat(pos.quantity);
           const currentValue = qty * currentPrice;
           const costBasis = parseFloat(pos.totalCostBasis);
