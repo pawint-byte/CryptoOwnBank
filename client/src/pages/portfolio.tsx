@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -38,6 +38,86 @@ interface PortfolioData {
 
 type ViewMode = "holdings" | "consolidated" | "category";
 
+function EditPositionDialog({ position, onClose }: { position: PositionWithMarket; onClose: () => void }) {
+  const { toast } = useToast();
+  const [quantity, setQuantity] = useState(parseFloat(position.quantity).toString());
+  const [averageCost, setAverageCost] = useState(position.averageCost ? parseFloat(position.averageCost).toString() : "0");
+  const [totalCostBasis, setTotalCostBasis] = useState(position.totalCostBasis ? parseFloat(position.totalCostBasis).toString() : "0");
+
+  const editMutation = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      return apiRequest("PATCH", `/api/positions/${position.id}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      toast({ title: `Updated ${position.assetSymbol}` });
+      onClose();
+    },
+    onError: (err: Error) => toast({ title: "Update failed", description: err.message, variant: "destructive" }),
+  });
+
+  const handleSave = () => {
+    const updates: Record<string, string> = {};
+    const newQty = parseFloat(quantity);
+    const newAvg = parseFloat(averageCost);
+    const newCost = parseFloat(totalCostBasis);
+    if (!isNaN(newQty) && newQty.toString() !== parseFloat(position.quantity).toString()) updates.quantity = newQty.toString();
+    if (!isNaN(newAvg) && newAvg.toString() !== (position.averageCost ? parseFloat(position.averageCost).toString() : "0")) updates.averageCost = newAvg.toString();
+    if (!isNaN(newCost) && newCost.toString() !== (position.totalCostBasis ? parseFloat(position.totalCostBasis).toString() : "0")) updates.totalCostBasis = newCost.toString();
+    if (Object.keys(updates).length === 0) {
+      onClose();
+      return;
+    }
+    editMutation.mutate(updates);
+  };
+
+  return (
+    <DialogContent className="sm:max-w-md" data-testid="dialog-edit-position">
+      <DialogHeader>
+        <DialogTitle>Edit {position.assetSymbol} Position</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 py-2">
+        <div className="space-y-1.5">
+          <Label>Quantity</Label>
+          <Input
+            type="number"
+            step="any"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            data-testid="input-edit-quantity"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Average Cost (per unit)</Label>
+          <Input
+            type="number"
+            step="any"
+            value={averageCost}
+            onChange={(e) => setAverageCost(e.target.value)}
+            data-testid="input-edit-avg-cost"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Total Cost Basis ($)</Label>
+          <Input
+            type="number"
+            step="any"
+            value={totalCostBasis}
+            onChange={(e) => setTotalCostBasis(e.target.value)}
+            data-testid="input-edit-cost-basis"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} data-testid="button-cancel-edit">Cancel</Button>
+          <Button onClick={handleSave} disabled={editMutation.isPending} data-testid="button-save-position">
+            {editMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
+  );
+}
+
 export default function Portfolio() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,6 +127,7 @@ export default function Portfolio() {
   const [showAddressed, setShowAddressed] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [editingPosition, setEditingPosition] = useState<PositionWithMarket | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
     assetSymbol: "",
@@ -761,6 +842,16 @@ export default function Portfolio() {
                                       </span>
                                     </div>
                                   </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-primary"
+                                    onClick={() => setEditingPosition(position)}
+                                    data-testid={`button-edit-position-${position.id}`}
+                                    title={`Edit ${position.assetSymbol} quantity/cost`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
                                   {!position.isWallet && (
                                     <Button
                                       variant="ghost"
@@ -942,6 +1033,12 @@ export default function Portfolio() {
           />
         </div>
       </div>
+
+      <Dialog open={!!editingPosition} onOpenChange={(open) => { if (!open) setEditingPosition(null); }}>
+        {editingPosition && (
+          <EditPositionDialog position={editingPosition} onClose={() => setEditingPosition(null)} />
+        )}
+      </Dialog>
     </div>
   );
 }
