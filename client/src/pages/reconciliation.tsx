@@ -198,8 +198,8 @@ function PurchaseLots({ walletBalanceId, assetSymbol, liveQuantity }: {
     onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
 
-  const lotsTotal = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity), 0);
-  const lotsCostBasis = lots.reduce((sum, l) => sum + parseFloat(l.originalQuantity) * parseFloat(l.costBasisPerUnit), 0);
+  const lotsTotal = lots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
+  const lotsCostBasis = lots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
   const difference = liveQuantity - lotsTotal;
   const isAccountedFor = Math.abs(difference) < 0.0001;
 
