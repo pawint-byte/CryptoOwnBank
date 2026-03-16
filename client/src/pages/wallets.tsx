@@ -401,6 +401,7 @@ interface TaxLotData {
   remainingQuantity: string;
   costBasisPerUnit: string;
   note?: string | null;
+  acquisitionType?: string | null;
 }
 
 interface MoveTarget {
@@ -754,13 +755,13 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
       });
       setShowWriteOff(false);
     },
-    onError: () => toast({ title: "Failed to write off lot", variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Failed to write off lot", description: err.message, variant: "destructive" }),
   });
 
   const qty = parseFloat(lot.originalQuantity);
   const cost = parseFloat(lot.costBasisPerUnit);
   const totalCost = qty * cost;
-  const isWrittenOff = lot.note?.includes("WRITTEN OFF") || parseFloat(lot.remainingQuantity) <= 0;
+  const isWrittenOff = lot.note?.startsWith("WRITTEN OFF");
 
   if (editing) {
     return (
