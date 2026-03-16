@@ -144,7 +144,7 @@ export default function StellarSend() {
   const [copied, setCopied] = useState<string | null>(null);
 
   const [receiveAmount, setReceiveAmount] = useState("");
-  const [receiveCurrency, setReceiveCurrency] = useState("XLM");
+  const [receiveCurrencyValue, setReceiveCurrencyValue] = useState("XLM");
   const [receiveMemo, setReceiveMemo] = useState("");
 
   const [contacts, setContacts] = useState<StellarContact[]>(loadContacts);
@@ -191,13 +191,13 @@ export default function StellarSend() {
 
   function buildReceiveUri(): string {
     if (!stellarAddress) return "";
-    const selectedCurrency = STELLAR_CURRENCIES.find(c => c.code === receiveCurrency);
+    const receiveSelected = STELLAR_CURRENCIES.find(c => c.value === receiveCurrencyValue) || STELLAR_CURRENCIES[0];
     let uri = `web+stellar:pay?destination=${stellarAddress}`;
     if (receiveAmount) {
       uri += `&amount=${receiveAmount}`;
     }
-    if (selectedCurrency && selectedCurrency.issuer) {
-      uri += `&asset_code=${receiveCurrency}&asset_issuer=${selectedCurrency.issuer}`;
+    if (receiveSelected.issuer) {
+      uri += `&asset_code=${receiveSelected.code}&asset_issuer=${receiveSelected.issuer}`;
     }
     if (receiveMemo.trim()) {
       uri += `&memo=${encodeURIComponent(receiveMemo)}&memo_type=MEMO_TEXT`;
@@ -630,13 +630,13 @@ export default function StellarSend() {
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-1.5 block">Currency</label>
-                      <Select value={receiveCurrency} onValueChange={setReceiveCurrency}>
+                      <Select value={receiveCurrencyValue} onValueChange={setReceiveCurrencyValue}>
                         <SelectTrigger data-testid="select-receive-currency">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {STELLAR_CURRENCIES.map((c) => (
-                            <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
