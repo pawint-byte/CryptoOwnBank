@@ -519,6 +519,23 @@ export default function OwnBankDex() {
   const maxAskAmount = asks.reduce((max, a) => Math.max(max, parseFloat(a.amount) || 0), 0);
   const maxAmount = Math.max(maxBidAmount, maxAskAmount, 1);
 
+  if (!isPremiumOrAbove) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-dex-title">XRPL DEX Trading</h1>
+          <p className="text-muted-foreground mt-1">
+            Trade 44 token pairs on the XRP Ledger's built-in decentralized exchange — no smart contracts, no middleman apps.
+          </p>
+        </div>
+        <UpgradePrompt
+          feature="XRPL DEX trading is a Premium feature. Upgrade to access Quick Swap and Advanced order book trading across 44 pairs — stablecoins, crypto, and fiat — all bridged through XRP on the native DEX."
+          variant="premium"
+        />
+      </div>
+    );
+  }
+
   if (!isConnected) {
     return (
       <div className="space-y-6">
@@ -556,23 +573,6 @@ export default function OwnBankDex() {
         </Card>
 
         <XrplDisclaimer />
-      </div>
-    );
-  }
-
-  if (!isPremiumOrAbove) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-dex-title">XRPL DEX Trading</h1>
-          <p className="text-muted-foreground mt-1">
-            Trade 44 token pairs on the XRP Ledger's built-in decentralized exchange — no smart contracts, no middleman apps.
-          </p>
-        </div>
-        <UpgradePrompt
-          feature="XRPL DEX trading is a Premium feature. Upgrade to access Quick Swap and Advanced order book trading across 44 pairs — stablecoins, crypto, and fiat — all bridged through XRP on the native DEX."
-          variant="premium"
-        />
       </div>
     );
   }
