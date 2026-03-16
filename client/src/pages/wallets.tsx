@@ -88,7 +88,9 @@ import {
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban, Shuffle } from "lucide-react";
+import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban, Shuffle, Shield, Snowflake } from "lucide-react";
+import { CUSTODY_KNOWLEDGE } from "@/lib/custody-knowledge";
+import { COLD_WALLETS } from "@/lib/cold-wallet-data";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
@@ -2646,6 +2648,109 @@ export default function Wallets() {
                                         </p>
                                       )}
                                     </div>
+
+                                    {(() => {
+                                      const knowledge = CUSTODY_KNOWLEDGE[h.symbol.toUpperCase()];
+                                      const onExchange = walletBreakdown.some(wb => wb.chain === "manual");
+                                      const allOnCold = walletBreakdown.every(wb =>
+                                        ["xrp", "ethereum", "bitcoin", "solana", "cardano", "stellar", "polkadot", "cosmos", "avalanche", "tron", "algorand", "hedera", "vechain", "polygon", "litecoin", "dogecoin", "cronos", "ton", "digibyte", "casper", "nervos", "zilliqa", "xdc", "verge"].includes(wb.chain)
+                                      );
+                                      const bestStaking = knowledge?.stakingOptions?.reduce((best, opt) => opt.apyMid > (best?.apyMid || 0) ? opt : best, null as typeof knowledge.stakingOptions[0] | null);
+                                      const bestDefi = knowledge?.defiAlternatives?.reduce((best, alt) => alt.defiApyMid > (best?.defiApyMid || 0) ? alt : best, null as typeof knowledge.defiAlternatives[0] | null);
+                                      const bestYield = bestStaking && bestDefi
+                                        ? (bestStaking.apyMid >= bestDefi.defiApyMid ? bestStaking : null)
+                                        : bestStaking;
+                                      const bestYieldDefi = bestStaking && bestDefi
+                                        ? (bestDefi.defiApyMid > bestStaking.apyMid ? bestDefi : null)
+                                        : bestDefi;
+                                      const supportingWallets = COLD_WALLETS.filter(cw =>
+                                        cw.supportedChains.some(sc =>
+                                          sc.toUpperCase() === h.symbol.toUpperCase() ||
+                                          sc.toUpperCase() === "XRPL" && h.symbol.toUpperCase() === "XRP" ||
+                                          sc.toUpperCase() === "ETHEREUM" && h.symbol.toUpperCase() === "ETH" ||
+                                          sc.toUpperCase() === "BITCOIN" && h.symbol.toUpperCase() === "BTC" ||
+                                          sc.toUpperCase() === "SOLANA" && h.symbol.toUpperCase() === "SOL" ||
+                                          sc.toUpperCase() === "CARDANO" && h.symbol.toUpperCase() === "ADA" ||
+                                          sc.toUpperCase() === "STELLAR" && h.symbol.toUpperCase() === "XLM" ||
+                                          sc.toUpperCase() === "POLKADOT" && h.symbol.toUpperCase() === "DOT" ||
+                                          sc.toUpperCase() === "COSMOS" && h.symbol.toUpperCase() === "ATOM" ||
+                                          sc.toUpperCase() === "TRON" && h.symbol.toUpperCase() === "TRX" ||
+                                          sc.toUpperCase() === "ALGORAND" && h.symbol.toUpperCase() === "ALGO" ||
+                                          sc.toUpperCase() === "HEDERA" && h.symbol.toUpperCase() === "HBAR" ||
+                                          sc.toUpperCase() === "AVALANCHE" && h.symbol.toUpperCase() === "AVAX" ||
+                                          sc.toUpperCase() === "LITECOIN" && h.symbol.toUpperCase() === "LTC"
+                                        )
+                                      ).slice(0, 2);
+                                      const tips: { icon: typeof Shield; color: string; text: string; action?: { label: string; href: string } }[] = [];
+
+                                      if (onExchange && supportingWallets.length > 0) {
+                                        const walletNames = supportingWallets.map(w => w.name).join(" or ");
+                                        tips.push({
+                                          icon: Shield,
+                                          color: "text-orange-600 dark:text-orange-400",
+                                          text: `${h.symbol} is on an exchange — move to ${walletNames} for self-custody.`,
+                                          action: supportingWallets[0]?.buyUrl ? { label: `Get ${supportingWallets[0].name}`, href: supportingWallets[0].buyUrl } : undefined,
+                                        });
+                                      } else if (onExchange) {
+                                        tips.push({
+                                          icon: Shield,
+                                          color: "text-orange-600 dark:text-orange-400",
+                                          text: `${h.symbol} is on an exchange — consider moving to a cold wallet for self-custody.`,
+                                        });
+                                      }
+
+                                      if (bestYield && h.usdValue > 10) {
+                                        tips.push({
+                                          icon: TrendingUp,
+                                          color: "text-green-600 dark:text-green-400",
+                                          text: `Earn ${bestYield.apyRange} APY staking ${h.symbol} via ${bestYield.platform}.`,
+                                          action: bestYield.link ? { label: "Learn more", href: bestYield.link } : undefined,
+                                        });
+                                      } else if (bestYieldDefi && h.usdValue > 10) {
+                                        tips.push({
+                                          icon: TrendingUp,
+                                          color: "text-green-600 dark:text-green-400",
+                                          text: `Earn ${bestYieldDefi.defiApy} via ${bestYieldDefi.defiProtocol} on ${bestYieldDefi.blockchain}.`,
+                                          action: bestYieldDefi.link ? { label: "Learn more", href: bestYieldDefi.link } : undefined,
+                                        });
+                                      }
+
+                                      if (allOnCold && !bestYield && !bestYieldDefi && h.usdValue > 10) {
+                                        tips.push({
+                                          icon: Snowflake,
+                                          color: "text-blue-500",
+                                          text: `${h.symbol} is safely self-custodied. No yield opportunities available yet.`,
+                                        });
+                                      }
+
+                                      if (tips.length === 0) return null;
+
+                                      return (
+                                        <div className="space-y-1.5" data-testid={`tips-${h.symbol.toLowerCase()}`}>
+                                          {tips.map((tip, ti) => {
+                                            const Icon = tip.icon;
+                                            return (
+                                              <div key={ti} className={cn("flex items-start gap-2 rounded-md border px-2.5 py-1.5 text-[11px]", tip.color === "text-orange-600 dark:text-orange-400" ? "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800" : tip.color === "text-green-600 dark:text-green-400" ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800")}>
+                                                <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", tip.color)} />
+                                                <span className="flex-1">{tip.text}</span>
+                                                {tip.action && (
+                                                  <a
+                                                    href={tip.action.href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={cn("shrink-0 underline font-medium whitespace-nowrap", tip.color)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    data-testid={`tip-action-${h.symbol.toLowerCase()}-${ti}`}
+                                                  >
+                                                    {tip.action.label}
+                                                  </a>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                   );
                                 })()}

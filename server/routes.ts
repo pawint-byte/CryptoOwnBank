@@ -4916,7 +4916,7 @@ export async function registerRoutes(
         });
       }
 
-      const prices = await storage.getCachedPrices();
+      const prices = await db.select().from(priceCacheTable);
       const priceEntry = prices.find(p => p.symbol.toUpperCase() === sym);
       const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.price) : 0;
 
