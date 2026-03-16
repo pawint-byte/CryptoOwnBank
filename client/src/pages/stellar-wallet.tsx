@@ -26,6 +26,7 @@ import {
   Coins,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/seo-head";
 import {
   useStellarStore,
@@ -33,6 +34,13 @@ import {
   type StellarBalance,
 } from "@/lib/stellar-store";
 import { Link } from "wouter";
+
+interface TrackerWallet {
+  id: string;
+  chain: string;
+  address: string;
+  label: string | null;
+}
 
 const STELLAR_PURPLE = "#7B61FF";
 
@@ -83,6 +91,11 @@ export default function StellarWallet() {
   const [copied, setCopied] = useState(false);
   const [eduOpen, setEduOpen] = useState(true);
 
+  const { data: trackerWallets = [] } = useQuery<TrackerWallet[]>({
+    queryKey: ["/api/wallets"],
+    select: (data: TrackerWallet[]) => data.filter((w) => w.chain === "stellar"),
+  });
+
   useEffect(() => {
     loadFromServer();
   }, [loadFromServer]);
@@ -110,9 +123,9 @@ export default function StellarWallet() {
     }
   }, [isConnected, stellarAddress, loadBalances]);
 
-  const handleConnect = () => {
-    const addr = addressInput.trim();
-    if (!addr.startsWith("G") || addr.length !== 56) {
+  const handleConnectAddress = (addr: string) => {
+    const trimmed = addr.trim();
+    if (!trimmed.startsWith("G") || trimmed.length !== 56) {
       toast({
         title: "Invalid Address",
         description: "Stellar addresses start with 'G' and are 56 characters long.",
@@ -120,9 +133,13 @@ export default function StellarWallet() {
       });
       return;
     }
-    connect(addr);
+    connect(trimmed);
     setAddressInput("");
-    toast({ title: "Wallet Connected", description: `Connected: ${truncateAddress(addr)}` });
+    toast({ title: "Wallet Connected", description: `Connected: ${truncateAddress(trimmed)}` });
+  };
+
+  const handleConnect = () => {
+    handleConnectAddress(addressInput);
   };
 
   const handleDisconnect = () => {
@@ -189,6 +206,46 @@ export default function StellarWallet() {
               Your Stellar address (public key) starts with 'G' and is 56 characters long.
               You can find it in LOBSTR, Freighter, Solar, or any Stellar wallet app.
             </p>
+            {trackerWallets.length > 0 && (
+              <div className="w-full max-w-lg mt-4">
+                <p className="text-sm font-medium mb-2 text-center">Your XLM addresses from Portfolio Tracker:</p>
+                <div className="space-y-2">
+                  {trackerWallets.map((w) => (
+                    <div
+                      key={w.id}
+                      className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setAddressInput(w.address);
+                        handleConnectAddress(w.address);
+                      }}
+                      data-testid={`button-use-tracker-wallet-${w.id}`}
+                    >
+                      <Wallet className="h-4 w-4 shrink-0" style={{ color: STELLAR_PURPLE }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{w.label || "Stellar Wallet"}</p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">{w.address}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0 h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(w.address);
+                          toast({ title: "Address copied" });
+                        }}
+                        data-testid={`button-copy-tracker-wallet-${w.id}`}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Badge variant="outline" className="shrink-0 text-xs" style={{ borderColor: `${STELLAR_PURPLE}40`, color: STELLAR_PURPLE }}>
+                        Use
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -264,11 +321,20 @@ export default function StellarWallet() {
           <p className="text-muted-foreground">View your Stellar balances and manage assets</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" style={{ borderColor: `${STELLAR_PURPLE}40` }} data-testid="badge-stellar-address">
-            <Star className="h-3 w-3 mr-1" style={{ color: STELLAR_PURPLE }} />
-            {truncateAddress(stellarAddress!)}
-          </Badge>
-          <Button variant="ghost" size="sm" onClick={handleCopyAddress} data-testid="button-copy-stellar-address">
+          <a
+            href={`https://stellar.expert/explorer/public/account/${stellarAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex"
+            data-testid="link-stellar-explorer"
+          >
+            <Badge variant="outline" className="cursor-pointer hover:bg-accent/50 transition-colors" style={{ borderColor: `${STELLAR_PURPLE}40` }} data-testid="badge-stellar-address">
+              <Star className="h-3 w-3 mr-1" style={{ color: STELLAR_PURPLE }} />
+              {truncateAddress(stellarAddress!)}
+              <ExternalLink className="h-3 w-3 ml-1 opacity-60" />
+            </Badge>
+          </a>
+          <Button variant="ghost" size="sm" onClick={handleCopyAddress} title="Copy full address" data-testid="button-copy-stellar-address">
             {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
           </Button>
           <Button variant="ghost" size="sm" onClick={loadBalances} disabled={loading} data-testid="button-refresh-stellar">

@@ -97,6 +97,14 @@ export const useStellarStore = create<StellarState>()(
         try {
           if (address) {
             await apiRequest("PUT", "/api/stellar/address", { stellarAddress: address });
+            try {
+              await apiRequest("POST", "/api/wallets", {
+                chain: "stellar",
+                address,
+                label: "OwnBank Stellar",
+              });
+            } catch {
+            }
           } else {
             await apiRequest("DELETE", "/api/stellar/address");
           }
