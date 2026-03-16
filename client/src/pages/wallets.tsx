@@ -415,6 +415,8 @@ function CostBasisPanel({ balance, currentPrice, moveTargets = [] }: { balance: 
   const [addingLot, setAddingLot] = useState(false);
   const [editingCost, setEditingCost] = useState(false);
   const [editCostValue, setEditCostValue] = useState("");
+  const [recordingSale, setRecordingSale] = useState(false);
+  const [saleForm, setSaleForm] = useState({ quantity: "", pricePerUnit: "", saleDate: "", note: "" });
   const { toast } = useToast();
 
   const { data: lots = [], isLoading: lotsLoading } = useQuery<TaxLotData[]>({
@@ -495,6 +497,33 @@ function CostBasisPanel({ balance, currentPrice, moveTargets = [] }: { balance: 
       toast({ title: "Lot moved to another wallet" });
     },
     onError: () => toast({ title: "Failed to move lot", variant: "destructive" }),
+  });
+
+  const recordSaleMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/wallet-balances/${balance.id}/record-sale`, {
+        quantity: saleForm.quantity,
+        pricePerUnit: saleForm.pricePerUnit,
+        saleDate: saleForm.saleDate || undefined,
+        note: saleForm.note || undefined,
+        source: "sale",
+      });
+      return res.json();
+    },
+    onSuccess: (data: { message: string; proceeds: number; costBasis: number; gainLoss: number }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet-balances", balance.id, "lots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reconciliation"] });
+      const gl = data.gainLoss;
+      toast({
+        title: data.message,
+        description: `Proceeds: ${formatUsd(data.proceeds)} · Cost: ${formatUsd(data.costBasis)} · ${gl >= 0 ? "Gain" : "Loss"}: ${formatUsd(Math.abs(gl))}`,
+      });
+      setRecordingSale(false);
+      setSaleForm({ quantity: "", pricePerUnit: "", saleDate: "", note: "" });
+    },
+    onError: (err: Error) => toast({ title: "Failed to record sale", description: err.message, variant: "destructive" }),
   });
 
   const avgCost = balance.averageCost ? parseFloat(balance.averageCost) : 0;
@@ -602,6 +631,18 @@ function CostBasisPanel({ balance, currentPrice, moveTargets = [] }: { balance: 
               <Plus className="h-3 w-3 mr-1" />
               Add Lot
             </Button>
+            {hasCostData && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                onClick={() => { setRecordingSale(true); setSaleForm({ quantity: "", pricePerUnit: currentPrice > 0 ? currentPrice.toFixed(4) : "", saleDate: "", note: "" }); }}
+                data-testid={`button-record-sale-${balance.id}`}
+              >
+                <TrendingDown className="h-3 w-3 mr-1" />
+                Record Sale
+              </Button>
+            )}
           </div>
 
           {addingLot && (
@@ -687,6 +728,95 @@ function CostBasisPanel({ balance, currentPrice, moveTargets = [] }: { balance: 
                   data-testid={`button-save-lot-${balance.id}`}
                 >
                   {addLotMutation.isPending ? "Saving..." : "Save Lot"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {recordingSale && (
+            <div className="border rounded-lg p-3 space-y-2 bg-background border-amber-500/30">
+              <div className="text-xs font-medium text-amber-600 dark:text-amber-400">Record Sale / Disposal</div>
+              <p className="text-[10px] text-muted-foreground">
+                This will match against your oldest lots (FIFO), create gain/loss events for your tax report, and update your cost basis.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Quantity Sold</label>
+                  <Input
+                    type="number"
+                    step="0.0001"
+                    placeholder={`Max: ${formatBalance(bal, 4)}`}
+                    value={saleForm.quantity}
+                    onChange={(e) => setSaleForm({ ...saleForm, quantity: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-sale-qty-${balance.id}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Price per Unit ($)</label>
+                  <Input
+                    type="number"
+                    step="0.0001"
+                    placeholder="Sale price"
+                    value={saleForm.pricePerUnit}
+                    onChange={(e) => setSaleForm({ ...saleForm, pricePerUnit: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-sale-price-${balance.id}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Sale Date</label>
+                  <Input
+                    type="date"
+                    value={saleForm.saleDate}
+                    onChange={(e) => setSaleForm({ ...saleForm, saleDate: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-sale-date-${balance.id}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Note (optional)</label>
+                  <Input
+                    placeholder="e.g. Sold on Coinbase"
+                    value={saleForm.note}
+                    onChange={(e) => setSaleForm({ ...saleForm, note: e.target.value })}
+                    className="h-7 text-xs"
+                    data-testid={`input-sale-note-${balance.id}`}
+                  />
+                </div>
+              </div>
+              {saleForm.quantity && saleForm.pricePerUnit && avgCost > 0 && (
+                <div className="rounded bg-muted/50 p-2 text-[10px] font-mono space-y-0.5">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Proceeds:</span>
+                    <span>{formatUsd(parseFloat(saleForm.quantity) * parseFloat(saleForm.pricePerUnit))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Est. Cost Basis:</span>
+                    <span>{formatUsd(parseFloat(saleForm.quantity) * avgCost)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span className="text-muted-foreground">Est. Gain/Loss:</span>
+                    <span className={cn(
+                      parseFloat(saleForm.quantity) * (parseFloat(saleForm.pricePerUnit) - avgCost) >= 0
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
+                    )}>
+                      {formatUsd(parseFloat(saleForm.quantity) * (parseFloat(saleForm.pricePerUnit) - avgCost))}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-1 justify-end">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setRecordingSale(false)}>Cancel</Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={() => recordSaleMutation.mutate()}
+                  disabled={recordSaleMutation.isPending || !saleForm.quantity || !saleForm.pricePerUnit}
+                  data-testid={`button-confirm-sale-${balance.id}`}
+                >
+                  {recordSaleMutation.isPending ? "Recording..." : "Confirm Sale"}
                 </Button>
               </div>
             </div>
@@ -1143,6 +1273,14 @@ export default function Wallets() {
 
   const { data: fullPortfolio } = useQuery<PortfolioData>({
     queryKey: ["/api/portfolio"],
+  });
+
+  type LotSummaryData = Record<string, {
+    totalOriginal: number; totalRemaining: number; totalCostBasis: number; lotCount: number;
+    lots: Array<{ id: string; acquiredDate: string; originalQuantity: string; remainingQuantity: string; costBasisPerUnit: string; note: string | null; acquisitionType: string | null; walletBalanceId: string | null }>;
+  }>;
+  const { data: lotSummary } = useQuery<LotSummaryData>({
+    queryKey: ["/api/lot-summary"],
   });
 
   const { data: limits } = useQuery<SubscriptionLimits>({
@@ -2287,52 +2425,187 @@ export default function Wallets() {
                                     </div>
                                   </div>
                                 </div>
-                                {isExpanded && (
-                                  <div className="border-t bg-muted/10 px-3 py-2 space-y-1.5">
-                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1">
-                                      <span>Wallet</span>
-                                      <div className="flex gap-6">
-                                        <span>Balance</span>
-                                        <span>Value</span>
+                                {isExpanded && (() => {
+                                  const ls = lotSummary?.[h.symbol.toUpperCase()];
+                                  const lotTotal = ls?.totalRemaining || 0;
+                                  const lotOriginal = ls?.totalOriginal || 0;
+                                  const lotCost = ls?.totalCostBasis || 0;
+                                  const lotsArr = ls?.lots || [];
+                                  const diff = lotTotal - h.balance;
+                                  const isMatched = Math.abs(diff) < 0.01;
+                                  const hasUnaccounted = diff > 0.01;
+                                  const hasShortfall = diff < -0.01;
+
+                                  const assignedPerWallet: Record<string, { lots: typeof lotsArr; totalQty: number; totalCost: number }> = {};
+                                  const unassignedLots = lotsArr.filter(l => !l.walletBalanceId && parseFloat(l.remainingQuantity) > 0);
+                                  const unassignedQty = unassignedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+                                  const unassignedCost = unassignedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+
+                                  for (const wb of walletBreakdown) {
+                                    const wObj = userWallets.find(w => w.id === wb.walletId);
+                                    const matchBal = wObj?.balances.find(b => b.assetSymbol.toUpperCase() === h.symbol.toUpperCase());
+                                    if (matchBal) {
+                                      const wbLots = lotsArr.filter(l => l.walletBalanceId === matchBal.id && parseFloat(l.remainingQuantity) > 0);
+                                      const tq = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+                                      const tc = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+                                      assignedPerWallet[wb.walletId] = { lots: wbLots, totalQty: tq, totalCost: tc };
+                                    }
+                                  }
+
+                                  return (
+                                  <div className="border-t bg-muted/10 px-3 py-2 space-y-3">
+                                    <div>
+                                      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground font-medium px-1 mb-1">
+                                        <span>Wallet</span>
+                                        <div className="flex gap-4 sm:gap-6">
+                                          <span className="w-20 text-right">Balance</span>
+                                          <span className="w-20 text-right">Lots Assigned</span>
+                                          <span className="w-16 text-right hidden sm:block">Status</span>
+                                        </div>
+                                      </div>
+                                      {walletBreakdown.map(wb => {
+                                        const assigned = assignedPerWallet[wb.walletId];
+                                        const assignedQty = assigned?.totalQty || 0;
+                                        const wDiff = wb.balance - assignedQty;
+                                        const wMatched = Math.abs(wDiff) < 0.01;
+                                        return (
+                                        <div
+                                          key={wb.walletId + wb.symbol}
+                                          className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/30 text-sm"
+                                          data-testid={`asset-wallet-${h.symbol}-${wb.walletId}`}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                              {wb.source}
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground capitalize">{wb.chain}</span>
+                                          </div>
+                                          <div className="flex gap-4 sm:gap-6 items-center shrink-0">
+                                            <span className="font-mono text-xs font-medium w-20 text-right">
+                                              {formatBalance(wb.balance, 4)}
+                                            </span>
+                                            <span className={cn("font-mono text-xs w-20 text-right", wMatched ? "text-green-600" : "text-amber-600")}>
+                                              {formatBalance(assignedQty, 4)}
+                                            </span>
+                                            <span className="w-16 text-right hidden sm:block">
+                                              {wMatched ? (
+                                                <Badge className="text-[8px] px-1 py-0 bg-green-600">OK</Badge>
+                                              ) : assignedQty === 0 ? (
+                                                <Badge variant="outline" className="text-[8px] px-1 py-0 border-amber-400 text-amber-600">No lots</Badge>
+                                              ) : (
+                                                <Badge variant="outline" className="text-[8px] px-1 py-0 border-amber-400 text-amber-600">
+                                                  {wDiff > 0 ? `−${formatBalance(wDiff, 2)}` : `+${formatBalance(Math.abs(wDiff), 2)}`}
+                                                </Badge>
+                                              )}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        );
+                                      })}
+                                      <div className="border-t pt-1.5 mt-1 flex items-center justify-between px-1">
+                                        <span className="text-xs font-medium text-muted-foreground">Total in wallets</span>
+                                        <span className="font-mono text-xs font-bold">{formatBalance(h.balance, 4)} {h.symbol}</span>
                                       </div>
                                     </div>
-                                    {walletBreakdown.map(wb => (
-                                      <div
-                                        key={wb.walletId + wb.symbol}
-                                        className="flex items-center justify-between py-1.5 px-1 rounded hover:bg-muted/30 text-sm"
-                                        data-testid={`asset-wallet-${h.symbol}-${wb.walletId}`}
-                                      >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
-                                            {wb.source}
-                                          </Badge>
-                                          <span className="text-xs text-muted-foreground capitalize">{wb.chain}</span>
+
+                                    {ls && (
+                                      <div className="rounded-lg border bg-background p-2.5 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Purchase Lots Summary</span>
+                                          <span className="text-[10px] text-muted-foreground">{ls.lotCount} lot{ls.lotCount !== 1 ? "s" : ""}</span>
                                         </div>
-                                        <div className="flex gap-6 items-center shrink-0">
-                                          <span className="font-mono text-xs font-medium w-24 text-right">
-                                            {formatBalance(wb.balance, 4)}
-                                          </span>
-                                          <span className="font-mono text-xs text-muted-foreground w-20 text-right">
-                                            {formatUsd(wb.usdValue)}
-                                          </span>
+                                        <div className="grid grid-cols-3 gap-2 text-xs">
+                                          <div>
+                                            <span className="text-muted-foreground text-[10px]">Originally Bought</span>
+                                            <div className="font-mono font-medium">{formatBalance(lotOriginal, 4)}</div>
+                                          </div>
+                                          <div>
+                                            <span className="text-muted-foreground text-[10px]">Remaining</span>
+                                            <div className="font-mono font-medium">{formatBalance(lotTotal, 4)}</div>
+                                          </div>
+                                          <div>
+                                            <span className="text-muted-foreground text-[10px]">Total Cost Basis</span>
+                                            <div className="font-mono font-medium">{formatUsd(lotCost)}</div>
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))}
-                                    <div className="border-t pt-2 mt-2 flex items-center justify-between px-1">
-                                      <span className="text-xs font-medium text-muted-foreground">Total on-chain / exchange</span>
-                                      <span className="font-mono text-xs font-bold">{formatBalance(h.balance, 4)} {h.symbol}</span>
-                                    </div>
-                                    {h.sources.length > 0 && (
-                                      <div className="flex gap-1 pt-1 flex-wrap px-1">
-                                        {h.sources.map((src) => (
-                                          <Badge key={src} variant="outline" className="text-[10px] px-1.5 py-0">
-                                            {src}
-                                          </Badge>
-                                        ))}
+                                        {unassignedLots.length > 0 && (
+                                          <div className="border-t pt-2 mt-1">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                                                Unassigned Lots ({unassignedLots.length})
+                                              </span>
+                                              <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400">
+                                                {formatBalance(unassignedQty, 4)} {h.symbol} · {formatUsd(unassignedCost)}
+                                              </span>
+                                            </div>
+                                            <div className="max-h-32 overflow-y-auto space-y-0.5">
+                                              {unassignedLots.slice(0, 20).map(lot => {
+                                                const lq = parseFloat(lot.remainingQuantity);
+                                                const lc = parseFloat(lot.costBasisPerUnit);
+                                                return (
+                                                  <div key={lot.id} className="flex items-center justify-between text-[10px] font-mono py-0.5 px-1 rounded hover:bg-muted/30">
+                                                    <span className="text-muted-foreground">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+                                                    <span>{formatBalance(lq, 4)} @ {formatUsd(lc)} = {formatUsd(lq * lc)}</span>
+                                                  </div>
+                                                );
+                                              })}
+                                              {unassignedLots.length > 20 && (
+                                                <p className="text-[10px] text-muted-foreground text-center">...and {unassignedLots.length - 20} more</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     )}
+
+                                    <div className={cn(
+                                      "rounded-lg p-2.5 text-xs",
+                                      isMatched ? "bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800" :
+                                      hasUnaccounted ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" :
+                                      "bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800"
+                                    )}>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="font-medium">Reconciliation</span>
+                                        {isMatched ? (
+                                          <Badge className="text-[9px] bg-green-600">Matched</Badge>
+                                        ) : hasUnaccounted ? (
+                                          <Badge className="text-[9px] bg-amber-600">Unaccounted Lots</Badge>
+                                        ) : (
+                                          <Badge className="text-[9px] bg-blue-600">Needs Lots</Badge>
+                                        )}
+                                      </div>
+                                      <div className="space-y-0.5 font-mono text-[11px]">
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Lots (remaining):</span>
+                                          <span>{formatBalance(lotTotal, 4)} {h.symbol}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Wallets (live):</span>
+                                          <span>{formatBalance(h.balance, 4)} {h.symbol}</span>
+                                        </div>
+                                        <div className="flex justify-between font-medium border-t pt-0.5 mt-0.5">
+                                          <span>Difference:</span>
+                                          <span className={cn(
+                                            isMatched ? "text-green-600" : hasUnaccounted ? "text-amber-600" : "text-blue-600"
+                                          )}>
+                                            {diff > 0 ? "+" : ""}{formatBalance(diff, 4)} {h.symbol}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {hasUnaccounted && (
+                                        <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5">
+                                          You have {formatBalance(diff, 4)} more {h.symbol} in lots than in tracked wallets. Add a manual wallet (e.g. Crypto.com, Coinbase) to account for it.
+                                        </p>
+                                      )}
+                                      {hasShortfall && (
+                                        <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-1.5">
+                                          Your wallets hold {formatBalance(Math.abs(diff), 4)} more {h.symbol} than your lots cover. Add purchase lots to track the full cost basis.
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
-                                )}
+                                  );
+                                })()}
                               </div>
                             );
                           })}

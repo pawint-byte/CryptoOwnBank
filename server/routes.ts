@@ -1323,6 +1323,100 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/wallet-balances/:balanceId/record-sale", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { balanceId } = req.params;
+      const { quantity, pricePerUnit, saleDate, method = "FIFO", note, source } = req.body;
+
+      const qty = parseFloat(quantity);
+      const price = parseFloat(pricePerUnit);
+      if (!qty || qty <= 0 || isNaN(price) || price < 0) {
+        return res.status(400).json({ message: "Valid quantity and price per unit are required" });
+      }
+
+      const lots = await storage.getTaxLotsByWalletBalance(userId, balanceId);
+      const activeLots = lots.filter(l => parseFloat(l.remainingQuantity) > 0);
+      const totalAvailable = activeLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+
+      if (totalAvailable < qty * 0.9999) {
+        return res.status(400).json({ message: `Not enough lots to cover sale. Available: ${totalAvailable.toFixed(4)}, Selling: ${qty}` });
+      }
+
+      const sortedLots = method === "LIFO"
+        ? [...activeLots].sort((a, b) => new Date(b.acquiredDate).getTime() - new Date(a.acquiredDate).getTime())
+        : [...activeLots].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+
+      const sellDate = saleDate ? new Date(saleDate) : new Date();
+      const oneYear = 365 * 24 * 60 * 60 * 1000;
+      let remaining = qty;
+      let totalProceeds = 0;
+      let totalCostBasis = 0;
+      const events: Array<{ quantity: number; proceeds: number; costBasis: number; gainLoss: number; isLongTerm: boolean }> = [];
+
+      for (const lot of sortedLots) {
+        if (remaining <= 0.0001) break;
+        const lotRemaining = parseFloat(lot.remainingQuantity);
+        if (lotRemaining <= 0) continue;
+
+        const sellFromLot = Math.min(remaining, lotRemaining);
+        const proceeds = sellFromLot * price;
+        const costBasis = sellFromLot * parseFloat(lot.costBasisPerUnit);
+        const gainLoss = proceeds - costBasis;
+        const acquiredDate = new Date(lot.acquiredDate);
+        const isLongTerm = (sellDate.getTime() - acquiredDate.getTime()) >= oneYear;
+
+        await storage.createGainEvent({
+          userId,
+          sellTransactionId: null,
+          taxLotId: lot.id,
+          assetSymbol: lot.assetSymbol,
+          quantity: sellFromLot.toString(),
+          proceeds: proceeds.toFixed(2),
+          costBasis: costBasis.toFixed(2),
+          gainLoss: gainLoss.toFixed(2),
+          isLongTerm,
+          taxMethod: method,
+          soldDate: sellDate,
+          acquiredDate,
+          disposalType: source === "swap" ? "swap" : source === "send" ? "send" : "sale",
+          disposalNote: note || undefined,
+        });
+
+        await storage.updateTaxLot(lot.id, {
+          remainingQuantity: (lotRemaining - sellFromLot).toFixed(8),
+        });
+
+        totalProceeds += proceeds;
+        totalCostBasis += costBasis;
+        events.push({ quantity: sellFromLot, proceeds, costBasis, gainLoss, isLongTerm });
+        remaining -= sellFromLot;
+      }
+
+      const wbLots = await storage.getTaxLotsByWalletBalance(userId, balanceId);
+      const remainingLots = wbLots.filter(l => parseFloat(l.remainingQuantity) > 0);
+      const newTotalCost = remainingLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const newTotalQty = remainingLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
+      const newAvgCost = newTotalQty > 0 ? newTotalCost / newTotalQty : 0;
+      await storage.updateWalletBalanceCostData(balanceId, newAvgCost.toFixed(8), newTotalCost.toFixed(2));
+
+      const totalGainLoss = totalProceeds - totalCostBasis;
+      const assetSymbol = sortedLots[0]?.assetSymbol || "Unknown";
+
+      res.json({
+        message: `Sold ${qty} ${assetSymbol}`,
+        proceeds: totalProceeds,
+        costBasis: totalCostBasis,
+        gainLoss: totalGainLoss,
+        events,
+        remainingLotQty: newTotalQty,
+      });
+    } catch (error) {
+      console.error("Record sale error:", error);
+      res.status(500).json({ message: "Failed to record sale" });
+    }
+  });
+
   app.post("/api/wallet-balances/:balanceId/lots/:lotId/move", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -2047,6 +2141,45 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Mark addressed error:", error);
       res.status(500).json({ message: "Failed to update position" });
+    }
+  });
+
+  app.get("/api/lot-summary", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const summary: Record<string, {
+        totalOriginal: number; totalRemaining: number; totalCostBasis: number; lotCount: number;
+        lots: Array<{ id: string; acquiredDate: string; originalQuantity: string; remainingQuantity: string; costBasisPerUnit: string; note: string | null; acquisitionType: string | null; walletBalanceId: string | null }>;
+      }> = {};
+      for (const lot of allLots) {
+        const sym = lot.assetSymbol.toUpperCase();
+        if (!summary[sym]) summary[sym] = { totalOriginal: 0, totalRemaining: 0, totalCostBasis: 0, lotCount: 0, lots: [] };
+        const origQty = parseFloat(lot.originalQuantity);
+        const remQty = parseFloat(lot.remainingQuantity);
+        const cost = parseFloat(lot.costBasisPerUnit);
+        summary[sym].totalOriginal += origQty;
+        summary[sym].totalRemaining += remQty;
+        summary[sym].totalCostBasis += origQty * cost;
+        summary[sym].lotCount++;
+        summary[sym].lots.push({
+          id: lot.id,
+          acquiredDate: lot.acquiredDate instanceof Date ? lot.acquiredDate.toISOString() : String(lot.acquiredDate),
+          originalQuantity: lot.originalQuantity,
+          remainingQuantity: lot.remainingQuantity,
+          costBasisPerUnit: lot.costBasisPerUnit,
+          note: lot.note || null,
+          acquisitionType: lot.acquisitionType || null,
+          walletBalanceId: lot.walletBalanceId || null,
+        });
+      }
+      for (const sym of Object.keys(summary)) {
+        summary[sym].lots.sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+      }
+      res.json(summary);
+    } catch (error) {
+      console.error("Lot summary error:", error);
+      res.status(500).json({ message: "Failed to get lot summary" });
     }
   });
 
@@ -3821,6 +3954,70 @@ export async function registerRoutes(
         pair: sanitize(pair, 40),
         timestamp,
       }).catch(err => console.error("[dex-email] Failed to send trade notification:", err?.message));
+
+      try {
+        const swapQty = parseFloat(amount);
+        const swapPrice = parseFloat(price || "0");
+        const swapTotal = parseFloat(total || "0");
+        if (swapQty > 0 && walletAddress) {
+          const userWallets = await storage.getWalletsByUser(userId);
+          const matchWallet = userWallets.find(w => w.address?.toLowerCase() === walletAddress.toLowerCase());
+          if (matchWallet) {
+            const walletBalances = await storage.getWalletBalances(matchWallet.id);
+            if (side === "Sell" && baseAsset) {
+              const soldBalance = walletBalances.find(wb => wb.assetSymbol.toUpperCase() === baseAsset.toUpperCase());
+              if (soldBalance) {
+                const lots = await storage.getTaxLotsByWalletBalance(userId, soldBalance.id);
+                const activeLots = lots.filter(l => parseFloat(l.remainingQuantity) > 0);
+                if (activeLots.length > 0) {
+                  const sortedLots = [...activeLots].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+                  let remaining = swapQty;
+                  const oneYear = 365 * 24 * 60 * 60 * 1000;
+                  const sellDate = new Date();
+                  for (const lot of sortedLots) {
+                    if (remaining <= 0.0001) break;
+                    const lotRemaining = parseFloat(lot.remainingQuantity);
+                    if (lotRemaining <= 0) continue;
+                    const sellFromLot = Math.min(remaining, lotRemaining);
+                    const proceeds = swapPrice > 0 ? sellFromLot * swapPrice : (swapTotal > 0 ? swapTotal * (sellFromLot / swapQty) : 0);
+                    const costBasis = sellFromLot * parseFloat(lot.costBasisPerUnit);
+                    const isLongTerm = (sellDate.getTime() - new Date(lot.acquiredDate).getTime()) >= oneYear;
+                    await storage.createGainEvent({
+                      userId, sellTransactionId: null, taxLotId: lot.id,
+                      assetSymbol: baseAsset.toUpperCase(), quantity: sellFromLot.toString(),
+                      proceeds: proceeds.toFixed(2), costBasis: costBasis.toFixed(2),
+                      gainLoss: (proceeds - costBasis).toFixed(2), isLongTerm,
+                      taxMethod: "FIFO", soldDate: sellDate, acquiredDate: new Date(lot.acquiredDate),
+                      disposalType: "swap", disposalNote: `DEX swap ${baseAsset} → ${counterAsset} on ${dex}`,
+                    });
+                    await storage.updateTaxLot(lot.id, { remainingQuantity: (lotRemaining - sellFromLot).toFixed(8) });
+                    remaining -= sellFromLot;
+                  }
+                  console.log(`[dex-auto] Recorded sale of ${swapQty} ${baseAsset} from swap`);
+                }
+              }
+            }
+            if (side === "Buy" && baseAsset && counterAsset) {
+              const boughtBalance = walletBalances.find(wb => wb.assetSymbol.toUpperCase() === baseAsset.toUpperCase());
+              if (boughtBalance) {
+                const costPerUnit = swapPrice > 0 ? swapPrice : (swapTotal > 0 ? swapTotal / swapQty : 0);
+                if (costPerUnit > 0) {
+                  await storage.createTaxLot({
+                    userId, walletBalanceId: boughtBalance.id, assetSymbol: baseAsset.toUpperCase(),
+                    acquiredDate: new Date(), originalQuantity: swapQty.toString(),
+                    remainingQuantity: swapQty.toString(), costBasisPerUnit: costPerUnit.toFixed(8),
+                    acquisitionType: "purchase", note: `DEX buy via ${dex} swap (${counterAsset} → ${baseAsset})`,
+                  });
+                  console.log(`[dex-auto] Created lot for ${swapQty} ${baseAsset} from swap`);
+                }
+              }
+            }
+          }
+        }
+      } catch (autoErr: any) {
+        console.error("[dex-auto] Failed to auto-record swap lots:", autoErr?.message);
+      }
+
       res.json({ sent: true });
     } catch (error: any) {
       console.error("DEX trade notification error:", error?.message);
