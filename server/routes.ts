@@ -4979,7 +4979,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Both fromLabel and toLabel are required" });
       }
       const userWallets = await storage.getWalletsByUser(userId);
-      const matching = userWallets.filter(w => w.label === fromLabel);
+      const matching = userWallets.filter(w => w.label?.toLowerCase() === fromLabel.toLowerCase());
       if (matching.length === 0) {
         return res.status(404).json({ message: `No wallets found with label "${fromLabel}"` });
       }
