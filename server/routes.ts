@@ -2172,6 +2172,59 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/positions/bulk-remove-non-crypto", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
+      const userEmail = req.user.claims.email || "";
+      if (!ADMIN_EMAILS.includes(userEmail)) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const NON_CRYPTO_SYMBOLS = new Set([
+        "GE", "JMIA", "QS", "ASTS", "KSCP", "CSCO", "ARLO", "PFE", "ABBV",
+        "VTI", "NIO", "IVV", "CNQ", "TXT", "MO", "FDN", "PLTR", "QBTS",
+        "SEV", "AIEQ", "ICLN", "ROBO", "NVDA", "AGNMF", "ACHR", "SNDL",
+        "UL", "UAMY", "AAPL", "VGT", "VWO", "VT", "HD", "NFLX", "SOCL",
+        "PYXS", "BIGZ", "ATYR", "LIDR", "INSP",
+        "ALLY-CD", "ALLY-SAVE", "MORGANSTAN-BOND", "MORGANSTAN-INVEST",
+        "MORGANSTAN-MM", "KINECTAFED-SAVE", "NAVYFEDERA-CHK",
+        "NAVYFEDERA-SAVE", "ROBINHOOD-INVEST",
+        "USD-CREDIT", "CRC", "STGC",
+      ]);
+
+      const allPositions = await storage.getPositionsByUser(userId);
+      const toRemove = allPositions.filter(p => NON_CRYPTO_SYMBOLS.has(p.assetSymbol));
+
+      if (req.body?.dryRun) {
+        return res.json({
+          dryRun: true,
+          count: toRemove.length,
+          symbols: toRemove.map(p => ({
+            symbol: p.assetSymbol,
+            costBasis: p.totalCostBasis,
+            quantity: p.quantity,
+          })),
+        });
+      }
+
+      let removed = 0;
+      for (const pos of toRemove) {
+        await storage.deletePosition(pos.id);
+        removed++;
+      }
+
+      console.log(`[cleanup] Removed ${removed} non-crypto positions for user ${userId}`);
+      res.json({
+        removed,
+        symbols: toRemove.map(p => p.assetSymbol),
+      });
+    } catch (error) {
+      console.error("Bulk remove error:", error);
+      res.status(500).json({ message: "Failed to remove non-crypto positions" });
+    }
+  });
+
   app.delete("/api/positions/by-symbol/:symbol", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
