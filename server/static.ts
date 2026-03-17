@@ -17,6 +17,11 @@ export function serveStatic(app: Express) {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
       }
+      if (filePath.endsWith('sw.js') || filePath.endsWith('registerSW.js') || filePath.includes('workbox-')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Service-Worker-Allowed', '/');
+        res.setHeader('Content-Type', 'application/javascript');
+      }
     }
   }));
 
