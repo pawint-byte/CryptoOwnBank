@@ -1,4 +1,8 @@
 import { storage } from "../storage";
+import { db } from "../db";
+import { users, walletBalances } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { sendLegacyBeneficiaryDelivery } from "../email";
 
 function getNextRunDate(currentDate: Date, frequency: string, preferredDay?: number | null): Date {
   const next = new Date(currentDate);
@@ -156,6 +160,65 @@ async function processLegacyPlans(): Promise<void> {
         if (now >= graceEnd) {
           console.log(`[Legacy] Plan ${plan.id} grace period expired — triggering beneficiary delivery`);
           await storage.updateLegacyPlan(plan.id, { status: "triggered" });
+
+          try {
+            const [owner] = await db.select({
+              firstName: users.firstName,
+              email: users.email,
+            }).from(users).where(eq(users.id, plan.userId));
+            const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "The plan holder";
+
+            const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+
+            const userWallets = await storage.getUserWallets(plan.userId);
+            const walletSummary = userWallets.map(w => ({
+              name: w.label || w.address?.slice(0, 12) + "..." || "Unnamed",
+              chain: w.chain || "Unknown",
+              address: w.address || undefined,
+            }));
+
+            const balances = await storage.getWalletBalancesByUser(plan.userId);
+            const assetMap = new Map<string, { balance: number; value: number }>();
+            for (const b of balances) {
+              const existing = assetMap.get(b.asset) || { balance: 0, value: 0 };
+              existing.balance += parseFloat(b.balance || "0");
+              existing.value += parseFloat(b.usdValue || "0");
+              assetMap.set(b.asset, existing);
+            }
+            const assetSummary = Array.from(assetMap.entries())
+              .filter(([, v]) => v.balance > 0)
+              .sort((a, b) => b[1].value - a[1].value)
+              .slice(0, 20)
+              .map(([asset, v]) => ({
+                asset,
+                balance: v.balance < 0.0001 ? v.balance.toExponential(2) : v.balance.toFixed(4),
+                value: v.value > 0 ? `$${v.value.toFixed(2)}` : undefined,
+              }));
+
+            for (const b of beneficiaries) {
+              try {
+                await sendLegacyBeneficiaryDelivery(
+                  b.email,
+                  b.name,
+                  ownerName,
+                  plan.personalMessage,
+                  b.walletType,
+                  b.deviceInstructions,
+                  b.seedPhraseInstructions,
+                  b.additionalNotes,
+                  b.splitPieces,
+                  walletSummary,
+                  assetSummary,
+                );
+                await storage.updateLegacyBeneficiary(b.id, { deliveredAt: now });
+                console.log(`[Legacy] Delivered to beneficiary ${b.name} (${b.email})`);
+              } catch (emailErr) {
+                console.error(`[Legacy] Failed to deliver to ${b.email}:`, emailErr);
+              }
+            }
+          } catch (deliveryError) {
+            console.error(`[Legacy] Error during beneficiary delivery for plan ${plan.id}:`, deliveryError);
+          }
         }
       }
     }

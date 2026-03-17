@@ -678,3 +678,212 @@ export async function sendFeatureAnnouncementEmail(
   `;
   await sendEmail(to, `New on CryptoOwnBank: ${title}`, html);
 }
+
+export async function sendSecondaryContactVerification(
+  to: string,
+  contactName: string,
+  ownerName: string,
+  verifyUrl: string,
+) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Secondary Contact Verification</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${contactName},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          <strong>${ownerName}</strong> has designated you as a <strong>secondary contact</strong> on their CryptoOwnBank Legacy Plan.
+        </p>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #92400e; margin: 0 0 10px; font-size: 16px;">What does this mean?</h3>
+          <ul style="color: #78350f; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+            <li>If ${ownerName} misses a scheduled check-in, you will be notified</li>
+            <li>Your role is to try to reach them and confirm they are okay</li>
+            <li>You will <strong>NOT</strong> receive any wallet keys, seed phrases, or financial instructions</li>
+            <li>Only designated beneficiaries receive recovery instructions</li>
+          </ul>
+        </div>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          Please click the button below to confirm you received this message and acknowledge your role:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verifyUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            I Acknowledge — Verify My Email
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center;">
+          If you have questions, you can reach ${ownerName} directly.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because ${ownerName} listed your email as a secondary contact on CryptoOwnBank. If you believe this is an error, you can ignore this email.</p>
+        <p>CryptoOwnBank is not a bank. This is a crypto inheritance planning tool.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `${ownerName} designated you as a Legacy Plan contact`, html);
+}
+
+export async function sendLegacyBeneficiaryDelivery(
+  to: string,
+  beneficiaryName: string,
+  ownerName: string,
+  personalMessage: string | null,
+  walletType: string | null,
+  deviceInstructions: string | null,
+  seedPhraseInstructions: string | null,
+  additionalNotes: string | null,
+  splitPieces: string | null,
+  walletSummary: Array<{ name: string; chain: string; address?: string }>,
+  assetSummary: Array<{ asset: string; balance: string; value?: string }>,
+) {
+  const walletLabels: Record<string, string> = {
+    cypherock: "CypheRock X1", ledger: "Ledger", trezor: "Trezor",
+    xaman: "Xaman (XRPL)", tangem: "Tangem", coldcard: "Coldcard", other: "Other",
+  };
+
+  const personalMessageBlock = personalMessage ? `
+    <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #92400e; margin: 0 0 10px; font-size: 16px;">A Personal Message</h3>
+      <p style="color: #78350f; font-size: 15px; line-height: 1.7; white-space: pre-wrap; margin: 0;">${personalMessage}</p>
+    </div>
+  ` : "";
+
+  const instructionsBlock = (deviceInstructions || seedPhraseInstructions || additionalNotes) ? `
+    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #166534; margin: 0 0 15px; font-size: 16px;">
+        Recovery Instructions${walletType ? ` — ${walletLabels[walletType] || walletType}` : ""}
+      </h3>
+      ${deviceInstructions ? `
+        <div style="margin-bottom: 12px;">
+          <p style="color: #166534; font-weight: 600; margin: 0 0 4px; font-size: 13px;">Device Location</p>
+          <p style="color: #15803d; margin: 0; font-size: 14px; line-height: 1.6;">${deviceInstructions}</p>
+        </div>
+      ` : ""}
+      ${seedPhraseInstructions ? `
+        <div style="margin-bottom: 12px;">
+          <p style="color: #166534; font-weight: 600; margin: 0 0 4px; font-size: 13px;">Recovery / Seed Phrase Info</p>
+          <p style="color: #15803d; margin: 0; font-size: 14px; line-height: 1.6;">${seedPhraseInstructions}</p>
+        </div>
+      ` : ""}
+      ${additionalNotes ? `
+        <div>
+          <p style="color: #166534; font-weight: 600; margin: 0 0 4px; font-size: 13px;">Additional Notes</p>
+          <p style="color: #15803d; margin: 0; font-size: 14px; line-height: 1.6;">${additionalNotes}</p>
+        </div>
+      ` : ""}
+    </div>
+  ` : "";
+
+  const splitBlock = splitPieces ? `
+    <div style="background: #faf5ff; border: 1px solid #d8b4fe; border-radius: 8px; padding: 12px; margin: 15px 0;">
+      <p style="color: #7c3aed; font-size: 13px; margin: 0;">
+        <strong>Split Delivery:</strong> You have been assigned: <strong>${splitPieces}</strong>.
+        Other beneficiaries hold different pieces. You will need to collaborate with them to fully recover the wallet.
+      </p>
+    </div>
+  ` : "";
+
+  const walletListHtml = walletSummary.length > 0 ? `
+    <div style="margin: 20px 0;">
+      <h3 style="color: #333; font-size: 16px; margin: 0 0 10px;">Tracked Wallets</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+            <th style="text-align: left; padding: 8px; color: #64748b;">Wallet</th>
+            <th style="text-align: left; padding: 8px; color: #64748b;">Chain</th>
+            <th style="text-align: left; padding: 8px; color: #64748b;">Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${walletSummary.map(w => `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px; color: #334155;">${w.name}</td>
+              <td style="padding: 8px; color: #64748b;">${w.chain}</td>
+              <td style="padding: 8px; color: #64748b; font-family: monospace; font-size: 11px;">${w.address ? (w.address.length > 20 ? w.address.slice(0, 10) + "..." + w.address.slice(-8) : w.address) : "—"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  ` : "";
+
+  const assetListHtml = assetSummary.length > 0 ? `
+    <div style="margin: 20px 0;">
+      <h3 style="color: #333; font-size: 16px; margin: 0 0 10px;">Asset Summary (Last Known)</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+            <th style="text-align: left; padding: 8px; color: #64748b;">Asset</th>
+            <th style="text-align: right; padding: 8px; color: #64748b;">Balance</th>
+            <th style="text-align: right; padding: 8px; color: #64748b;">Est. Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${assetSummary.map(a => `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px; color: #334155; font-weight: 500;">${a.asset}</td>
+              <td style="padding: 8px; color: #64748b; text-align: right;">${a.balance}</td>
+              <td style="padding: 8px; color: #64748b; text-align: right;">${a.value || "—"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <p style="color: #94a3b8; font-size: 11px; margin-top: 6px;">Values are estimates based on last synced prices. Actual values may differ.</p>
+    </div>
+  ` : "";
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 0;">
+      <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: #00A4E4; margin: 0; font-size: 28px;">CryptoOwnBank</h1>
+        <p style="color: #94a3b8; margin: 8px 0 0; font-size: 14px;">Legacy Plan — Beneficiary Delivery</p>
+        <div style="background: #dc2626; color: white; display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-top: 12px; text-transform: uppercase; letter-spacing: 1px;">
+          Important — Action Required
+        </div>
+      </div>
+      <div style="padding: 30px 25px; background: #ffffff;">
+        <h2 style="color: #1e293b; margin: 0 0 15px;">Dear ${beneficiaryName},</h2>
+        <p style="color: #475569; font-size: 15px; line-height: 1.7;">
+          You are receiving this email because <strong>${ownerName}</strong> included you as a beneficiary on their CryptoOwnBank Legacy Plan.
+          The plan's dead-man switch has been activated — ${ownerName} missed their scheduled check-in and the grace period has expired.
+        </p>
+        <p style="color: #475569; font-size: 15px; line-height: 1.7;">
+          Below you will find the information ${ownerName} wanted you to have, including wallet recovery instructions and an overview of their tracked crypto assets.
+        </p>
+
+        ${personalMessageBlock}
+        ${instructionsBlock}
+        ${splitBlock}
+        ${walletListHtml}
+        ${assetListHtml}
+
+        <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #9a3412; margin: 0 0 10px; font-size: 15px;">Important Notes</h3>
+          <ul style="color: #c2410c; font-size: 13px; line-height: 1.8; margin: 0; padding-left: 20px;">
+            <li>Keep this email secure — it contains sensitive recovery information</li>
+            <li>Never share seed phrases, PINs, or device locations publicly</li>
+            <li>If you are unfamiliar with crypto wallets, seek help from a trusted professional</li>
+            <li>Consider consulting a legal advisor regarding estate and tax implications</li>
+          </ul>
+        </div>
+      </div>
+      <div style="background: #f8fafc; padding: 20px 25px; border-top: 1px solid #e2e8f0; border-radius: 0 0 12px 12px;">
+        <p style="color: #64748b; font-size: 12px; margin: 0 0 8px; text-align: center;">
+          This email was generated automatically by CryptoOwnBank's Legacy Plan system.
+        </p>
+        <p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">
+          <a href="https://cryptoownbank.com" style="color: #00A4E4; text-decoration: none; font-weight: 600;">cryptoownbank.com</a>
+          &nbsp;·&nbsp; Be Your Own Bank &nbsp;·&nbsp; Non-Custodial Crypto Management
+        </p>
+        <p style="color: #cbd5e1; font-size: 10px; margin: 8px 0 0; text-align: center;">
+          CryptoOwnBank is not a bank, financial advisor, or custodian. This is an automated message based on instructions left by the plan holder.
+          CryptoOwnBank does not store seed phrases or private keys. All recovery instructions are provided by the plan holder.
+        </p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Legacy Plan Delivery from ${ownerName} — CryptoOwnBank`, html);
+}

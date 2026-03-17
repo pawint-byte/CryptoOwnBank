@@ -870,6 +870,8 @@ export const legacyPlans = pgTable("legacy_plans", {
   triggeredAt: timestamp("triggered_at"),
   secondaryContactName: varchar("secondary_contact_name", { length: 255 }),
   secondaryContactEmail: varchar("secondary_contact_email", { length: 255 }),
+  secondaryContactVerified: boolean("secondary_contact_verified").default(false),
+  secondaryContactVerifyToken: varchar("secondary_contact_verify_token", { length: 100 }),
   personalMessage: text("personal_message"),
   splitDeliveryEnabled: boolean("split_delivery_enabled").default(false),
   splitDeliveryMode: varchar("split_delivery_mode", { length: 20 }).default("all"),

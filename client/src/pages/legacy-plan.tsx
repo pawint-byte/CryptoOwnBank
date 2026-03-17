@@ -33,6 +33,7 @@ import {
   Users,
   CalendarCheck,
   ClipboardCheck,
+  Mail,
 } from "lucide-react";
 
 type LegacyPlanData = {
@@ -47,6 +48,7 @@ type LegacyPlanData = {
     graceStartedAt: string | null;
     secondaryContactName: string | null;
     secondaryContactEmail: string | null;
+    secondaryContactVerified: boolean | null;
     personalMessage: string | null;
     splitDeliveryEnabled: boolean | null;
     splitDeliveryMode: string | null;
@@ -392,6 +394,33 @@ function BeneficiaryCard({ beneficiary, onDelete }: { beneficiary: LegacyPlanDat
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ResendVerificationButton() {
+  const { toast } = useToast();
+  const resend = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/legacy-plan/resend-verification"),
+    onSuccess: () => {
+      toast({ title: "Verification email sent", description: "A new verification email has been sent to your secondary contact." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Failed to send", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full mt-2 text-xs"
+      onClick={() => resend.mutate()}
+      disabled={resend.isPending}
+      data-testid="button-resend-verification"
+    >
+      <Mail className="h-3 w-3 mr-1.5" />
+      {resend.isPending ? "Sending..." : "Resend Verification Email"}
+    </Button>
   );
 }
 
@@ -985,9 +1014,22 @@ export default function LegacyPlanPage() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Grace Period</span><span className="font-medium">{plan.gracePeriodDays} days</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge variant={plan.status === "active" ? "default" : plan.status === "grace" ? "outline" : "destructive"} data-testid="badge-plan-status">{plan.status}</Badge></div>
                 {plan.secondaryContactName && (
-                  <div className="flex justify-between"><span className="text-muted-foreground">Secondary Contact</span><span className="font-medium">{plan.secondaryContactName}</span></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Secondary Contact</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{plan.secondaryContactName}</span>
+                      {plan.secondaryContactVerified ? (
+                        <Badge variant="outline" className="text-[10px] border-green-500/50 text-green-600 dark:text-green-400" data-testid="badge-contact-verified">Verified</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400" data-testid="badge-contact-unverified">Unverified</Badge>
+                      )}
+                    </div>
+                  </div>
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span className="font-medium">{new Date(plan.createdAt).toLocaleDateString()}</span></div>
+                {plan.secondaryContactEmail && !plan.secondaryContactVerified && (
+                  <ResendVerificationButton />
+                )}
               </div>
             )}
           </CardContent>

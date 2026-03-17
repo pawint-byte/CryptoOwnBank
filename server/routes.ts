@@ -1,10 +1,11 @@
+import crypto from "crypto";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, type CustomVault } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, legacyPlans, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
-import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -6151,6 +6152,7 @@ export async function registerRoutes(
       const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold } = req.body;
       const firstReviewDue = new Date();
       firstReviewDue.setFullYear(firstReviewDue.getFullYear() + 1);
+      const verifyToken = secondaryContactEmail ? crypto.randomUUID().replace(/-/g, "") : null;
       const plan = await storage.createLegacyPlan({
         userId,
         status: "active",
@@ -6159,6 +6161,8 @@ export async function registerRoutes(
         nextCheckInDue: new Date(),
         secondaryContactName: secondaryContactName || null,
         secondaryContactEmail: secondaryContactEmail || null,
+        secondaryContactVerified: false,
+        secondaryContactVerifyToken: verifyToken,
         personalMessage: personalMessage || null,
         splitDeliveryEnabled: splitDeliveryEnabled || false,
         splitDeliveryMode: splitDeliveryMode || "all",
@@ -6166,6 +6170,18 @@ export async function registerRoutes(
         nextAnnualReviewDue: firstReviewDue,
         annualReviewCount: 0,
       });
+
+      if (secondaryContactEmail && secondaryContactName && verifyToken) {
+        const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, userId));
+        const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "A CryptoOwnBank member";
+        const verifyUrl = `https://cryptoownbank.com/api/legacy-plan/verify-contact?token=${verifyToken}`;
+        try {
+          await sendSecondaryContactVerification(secondaryContactEmail, secondaryContactName, ownerName, verifyUrl);
+        } catch (err) {
+          console.error("Failed to send secondary contact verification:", err);
+        }
+      }
+
       res.json(plan);
     } catch (error) {
       console.error("Create legacy plan error:", error);
@@ -6185,7 +6201,27 @@ export async function registerRoutes(
       if (checkInFrequency && validFrequencies.includes(checkInFrequency)) updates.checkInFrequency = checkInFrequency;
       if (gracePeriodDays && [7, 14, 30, 60, 90].includes(Number(gracePeriodDays))) updates.gracePeriodDays = Number(gracePeriodDays);
       if (secondaryContactName !== undefined) updates.secondaryContactName = secondaryContactName;
-      if (secondaryContactEmail !== undefined) updates.secondaryContactEmail = secondaryContactEmail;
+      if (secondaryContactEmail !== undefined) {
+        updates.secondaryContactEmail = secondaryContactEmail;
+        if (secondaryContactEmail && secondaryContactEmail !== plan.secondaryContactEmail) {
+          const newToken = crypto.randomUUID().replace(/-/g, "");
+          updates.secondaryContactVerified = false;
+          updates.secondaryContactVerifyToken = newToken;
+          const contactName = secondaryContactName || plan.secondaryContactName || "there";
+          const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, userId));
+          const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "A CryptoOwnBank member";
+          const verifyUrl = `https://cryptoownbank.com/api/legacy-plan/verify-contact?token=${newToken}`;
+          try {
+            await sendSecondaryContactVerification(secondaryContactEmail, contactName, ownerName, verifyUrl);
+          } catch (err) {
+            console.error("Failed to send secondary contact verification:", err);
+          }
+        }
+        if (!secondaryContactEmail) {
+          updates.secondaryContactVerified = false;
+          updates.secondaryContactVerifyToken = null;
+        }
+      }
       if (personalMessage !== undefined) updates.personalMessage = personalMessage;
       if (splitDeliveryEnabled !== undefined) updates.splitDeliveryEnabled = !!splitDeliveryEnabled;
       if (splitDeliveryMode !== undefined && ["all", "threshold"].includes(splitDeliveryMode)) updates.splitDeliveryMode = splitDeliveryMode;
@@ -6249,6 +6285,76 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Annual review error:", error);
       res.status(500).json({ message: "Failed to record annual review" });
+    }
+  });
+
+  app.get("/api/legacy-plan/verify-contact", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) return res.status(400).send("Invalid verification link");
+      const [plan] = await db.select().from(legacyPlans).where(eq(legacyPlans.secondaryContactVerifyToken, token));
+      if (!plan) {
+        return res.send(`
+          <html><head><title>Verification — CryptoOwnBank</title></head>
+          <body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px;">
+            <h1 style="color: #00A4E4;">CryptoOwnBank</h1>
+            <h2>Link Expired or Invalid</h2>
+            <p style="color: #666;">This verification link is no longer valid. It may have already been used or the contact was updated.</p>
+          </body></html>
+        `);
+      }
+      if (plan.secondaryContactVerified) {
+        return res.send(`
+          <html><head><title>Already Verified — CryptoOwnBank</title></head>
+          <body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px;">
+            <h1 style="color: #00A4E4;">CryptoOwnBank</h1>
+            <h2 style="color: #16a34a;">Already Verified</h2>
+            <p style="color: #666;">You've already confirmed your role as a secondary contact. No further action needed.</p>
+          </body></html>
+        `);
+      }
+      await storage.updateLegacyPlan(plan.id, { secondaryContactVerified: true });
+      res.send(`
+        <html><head><title>Verified — CryptoOwnBank</title></head>
+        <body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px;">
+          <h1 style="color: #00A4E4;">CryptoOwnBank</h1>
+          <h2 style="color: #16a34a;">Email Verified Successfully</h2>
+          <p style="color: #666; max-width: 500px; margin: 0 auto; line-height: 1.6;">
+            Thank you, <strong>${plan.secondaryContactName}</strong>. You've confirmed your role as a secondary contact on a CryptoOwnBank Legacy Plan.
+          </p>
+          <p style="color: #888; margin-top: 20px; font-size: 14px;">
+            If a check-in is missed, you'll receive a notification asking you to try to reach the plan holder. You will <strong>not</strong> receive any wallet keys or financial information.
+          </p>
+        </body></html>
+      `);
+    } catch (error) {
+      console.error("Verify contact error:", error);
+      res.status(500).send("Something went wrong");
+    }
+  });
+
+  app.post("/api/legacy-plan/resend-verification", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Access denied" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      if (!plan.secondaryContactEmail || !plan.secondaryContactName) {
+        return res.status(400).json({ message: "No secondary contact configured" });
+      }
+      if (plan.secondaryContactVerified) {
+        return res.status(400).json({ message: "Secondary contact is already verified" });
+      }
+      const newToken = crypto.randomUUID().replace(/-/g, "");
+      await storage.updateLegacyPlan(plan.id, { secondaryContactVerifyToken: newToken });
+      const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, userId));
+      const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "A CryptoOwnBank member";
+      const verifyUrl = `https://cryptoownbank.com/api/legacy-plan/verify-contact?token=${newToken}`;
+      await sendSecondaryContactVerification(plan.secondaryContactEmail, plan.secondaryContactName, ownerName, verifyUrl);
+      res.json({ message: "Verification email resent" });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification" });
     }
   });
 
