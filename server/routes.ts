@@ -6148,7 +6148,9 @@ export async function registerRoutes(
       if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const existing = await storage.getLegacyPlan(userId);
       if (existing) return res.status(400).json({ message: "Legacy plan already exists" });
-      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage } = req.body;
+      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold } = req.body;
+      const firstReviewDue = new Date();
+      firstReviewDue.setFullYear(firstReviewDue.getFullYear() + 1);
       const plan = await storage.createLegacyPlan({
         userId,
         status: "active",
@@ -6158,6 +6160,11 @@ export async function registerRoutes(
         secondaryContactName: secondaryContactName || null,
         secondaryContactEmail: secondaryContactEmail || null,
         personalMessage: personalMessage || null,
+        splitDeliveryEnabled: splitDeliveryEnabled || false,
+        splitDeliveryMode: splitDeliveryMode || "all",
+        splitDeliveryThreshold: splitDeliveryThreshold || 2,
+        nextAnnualReviewDue: firstReviewDue,
+        annualReviewCount: 0,
       });
       res.json(plan);
     } catch (error) {
@@ -6173,13 +6180,19 @@ export async function registerRoutes(
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "No legacy plan found" });
       const updates: Record<string, unknown> = {};
-      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage } = req.body;
+      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold } = req.body;
       const validFrequencies = ["weekly", "biweekly", "monthly", "quarterly"];
       if (checkInFrequency && validFrequencies.includes(checkInFrequency)) updates.checkInFrequency = checkInFrequency;
       if (gracePeriodDays && [7, 14, 30, 60, 90].includes(Number(gracePeriodDays))) updates.gracePeriodDays = Number(gracePeriodDays);
       if (secondaryContactName !== undefined) updates.secondaryContactName = secondaryContactName;
       if (secondaryContactEmail !== undefined) updates.secondaryContactEmail = secondaryContactEmail;
       if (personalMessage !== undefined) updates.personalMessage = personalMessage;
+      if (splitDeliveryEnabled !== undefined) updates.splitDeliveryEnabled = !!splitDeliveryEnabled;
+      if (splitDeliveryMode !== undefined && ["all", "threshold"].includes(splitDeliveryMode)) updates.splitDeliveryMode = splitDeliveryMode;
+      if (splitDeliveryThreshold !== undefined) {
+        const t = Number(splitDeliveryThreshold);
+        if (t >= 2 && t <= 10) updates.splitDeliveryThreshold = t;
+      }
       const result = await storage.updateLegacyPlan(plan.id, updates as any);
       res.json(result);
     } catch (error) {
@@ -6218,13 +6231,34 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/legacy-plan/annual-review", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const now = new Date();
+      const nextReviewDue = new Date(now);
+      nextReviewDue.setFullYear(nextReviewDue.getFullYear() + 1);
+      const updated = await storage.updateLegacyPlan(plan.id, {
+        lastAnnualReview: now,
+        nextAnnualReviewDue: nextReviewDue,
+        annualReviewCount: (plan.annualReviewCount || 0) + 1,
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Annual review error:", error);
+      res.status(500).json({ message: "Failed to record annual review" });
+    }
+  });
+
   app.post("/api/legacy-beneficiaries", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
-      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes } = req.body;
+      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
       const validWalletTypes = ["cypherock", "ledger", "trezor", "xaman", "tangem", "coldcard", "other"];
       const beneficiary = await storage.createLegacyBeneficiary({
@@ -6236,6 +6270,7 @@ export async function registerRoutes(
         deviceInstructions: deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null,
         seedPhraseInstructions: seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null,
         additionalNotes: additionalNotes ? String(additionalNotes).slice(0, 2000) : null,
+        splitPieces: splitPieces ? String(splitPieces).slice(0, 500) : null,
       });
       res.json(beneficiary);
     } catch (error) {
@@ -6252,7 +6287,7 @@ export async function registerRoutes(
       if (!plan) return res.status(403).json({ message: "No legacy plan found" });
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
       if (!beneficiaries.find(b => b.id === req.params.id)) return res.status(403).json({ message: "Not your beneficiary" });
-      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes } = req.body;
+      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces } = req.body;
       const safeUpdates: Record<string, unknown> = {};
       if (name !== undefined) safeUpdates.name = String(name).slice(0, 200);
       if (email !== undefined) safeUpdates.email = String(email).slice(0, 320);
@@ -6261,6 +6296,7 @@ export async function registerRoutes(
       if (deviceInstructions !== undefined) safeUpdates.deviceInstructions = deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null;
       if (seedPhraseInstructions !== undefined) safeUpdates.seedPhraseInstructions = seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null;
       if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 2000) : null;
+      if (splitPieces !== undefined) safeUpdates.splitPieces = splitPieces ? String(splitPieces).slice(0, 500) : null;
       const result = await storage.updateLegacyBeneficiary(req.params.id, safeUpdates as any);
       if (!result) return res.status(404).json({ message: "Beneficiary not found" });
       res.json(result);

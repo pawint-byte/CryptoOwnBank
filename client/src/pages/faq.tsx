@@ -516,6 +516,14 @@ const faqGroups = [
         a: "CypheRock uses Shamir Secret Sharing — it creates 5 cards, and any 2 cards plus the X1 device can fully recover your wallet. When you set up a beneficiary with CypheRock as the wallet type, the Legacy Plan shows special guidance: tell your beneficiary where each card is stored (e.g., 'Card 1 in home safe, Card 3 with estate attorney, Card 5 in bank safe deposit box'). They do NOT need all 5 cards — just any 2 and the device. This is one of the most secure setups for inheritance because no single location compromise can drain the wallet. You never enter the card data into CryptoOwnBank — only the location instructions.",
       },
       {
+        q: "What is Split Delivery for the Legacy Plan?",
+        a: "Split delivery is like multi-sig for email — instead of one beneficiary getting all your wallet recovery instructions, you split the information across multiple people so they must collaborate. For example, Person A gets 'the Ledger is in the home office safe' and Person B gets 'the seed phrase steel plate is in bank safe deposit box #42.' Neither person alone can access the wallet.<br/><br/>You can choose <strong>All Required</strong> (every beneficiary's piece is needed) or <strong>Threshold</strong> (M-of-N, like Shamir — e.g. any 2-of-3 beneficiaries can reconstruct the full instructions). This pairs perfectly with CypheRock's 2-of-5 card system — give different card locations to different beneficiaries. No competitor offers delivery-level splitting like this. Enable it with one toggle on your Legacy Plan dashboard.",
+      },
+      {
+        q: "What is the Annual Review for the Legacy Plan?",
+        a: "Every year, CryptoOwnBank reminds you to review your Legacy Plan. This isn't just a passive email — you must log in and click the attestation button confirming everything is still correct. Life changes: divorce, the passing of a loved one, new family members, moved safes, new wallets. The annual review checklist prompts you to verify beneficiaries, email addresses, device locations, recovery phrase locations, secondary contacts, split delivery assignments, and your personal message. When it's due, a prominent banner appears on your Legacy Plan dashboard. After attesting, your next review is set for one year later. The review counter tracks how many times you've attested, so you always know your plan is current.",
+      },
+      {
         q: "Is the Legacy Plan really 'Member for Life'?",
         a: "Yes. Whether you have the $9.99/mo add-on or the Pro tier (where it's included free), your Legacy Plan stays active as long as you're subscribed. The check-in timer keeps running, your beneficiary instructions stay encrypted and ready, and the dead-man switch is always armed. If your subscription lapses, the plan is paused (not deleted) — your data is preserved so you can resume anytime. We built this for long-term peace of mind, not short-term upsells.",
       },

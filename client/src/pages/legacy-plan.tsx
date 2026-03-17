@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   HeartHandshake,
   Shield,
@@ -28,6 +29,10 @@ import {
   RefreshCw,
   Edit,
   XCircle,
+  Split,
+  Users,
+  CalendarCheck,
+  ClipboardCheck,
 } from "lucide-react";
 
 type LegacyPlanData = {
@@ -43,6 +48,12 @@ type LegacyPlanData = {
     secondaryContactName: string | null;
     secondaryContactEmail: string | null;
     personalMessage: string | null;
+    splitDeliveryEnabled: boolean | null;
+    splitDeliveryMode: string | null;
+    splitDeliveryThreshold: number | null;
+    lastAnnualReview: string | null;
+    nextAnnualReviewDue: string | null;
+    annualReviewCount: number | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -56,6 +67,7 @@ type LegacyPlanData = {
     deviceInstructions: string | null;
     seedPhraseInstructions: string | null;
     additionalNotes: string | null;
+    splitPieces: string | null;
     createdAt: string;
   }>;
   checkIns: Array<{
@@ -370,12 +382,20 @@ function BeneficiaryCard({ beneficiary, onDelete }: { beneficiary: LegacyPlanDat
         {beneficiary.additionalNotes && (
           <div className="text-xs"><span className="font-medium">Notes:</span> {beneficiary.additionalNotes}</div>
         )}
+        {beneficiary.splitPieces && (
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-600 dark:text-purple-400" data-testid={`badge-split-${beneficiary.id}`}>
+              <Split className="h-3 w-3 mr-1" />
+              Receives: {beneficiary.splitPieces}
+            </Badge>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function AddBeneficiaryDialog({ onAdd }: { onAdd: () => void }) {
+function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; splitEnabled?: boolean }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -385,6 +405,7 @@ function AddBeneficiaryDialog({ onAdd }: { onAdd: () => void }) {
   const [deviceInstructions, setDeviceInstructions] = useState("");
   const [seedPhraseInstructions, setSeedPhraseInstructions] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
+  const [splitPieces, setSplitPieces] = useState("");
 
   const createBeneficiary = useMutation({
     mutationFn: () => apiRequest("POST", "/api/legacy-beneficiaries", {
@@ -393,6 +414,7 @@ function AddBeneficiaryDialog({ onAdd }: { onAdd: () => void }) {
       deviceInstructions: deviceInstructions || null,
       seedPhraseInstructions: seedPhraseInstructions || null,
       additionalNotes: additionalNotes || null,
+      splitPieces: splitPieces || null,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
@@ -406,7 +428,7 @@ function AddBeneficiaryDialog({ onAdd }: { onAdd: () => void }) {
 
   const resetForm = () => {
     setName(""); setEmail(""); setRelationship(""); setWalletType("");
-    setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes("");
+    setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
   };
 
   return (
@@ -507,6 +529,29 @@ function AddBeneficiaryDialog({ onAdd }: { onAdd: () => void }) {
             <Label>Additional Notes</Label>
             <Textarea value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} placeholder="PINs, passphrases notes, multi-sig details, attorney contact info..." rows={3} data-testid="input-additional-notes" />
           </div>
+
+          {splitEnabled && (
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1.5">
+                <Split className="h-3.5 w-3.5 text-purple-500" />
+                Split Delivery — What does this person receive?
+              </Label>
+              <Select value={splitPieces} onValueChange={setSplitPieces}>
+                <SelectTrigger data-testid="select-split-pieces"><SelectValue placeholder="Select info pieces..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="device-location">Device location only</SelectItem>
+                  <SelectItem value="seed-location">Seed/recovery location only</SelectItem>
+                  <SelectItem value="pin-passphrase">PIN / passphrase only</SelectItem>
+                  <SelectItem value="card-locations-1-2">CypheRock Cards 1 & 2 locations</SelectItem>
+                  <SelectItem value="card-locations-3-4">CypheRock Cards 3 & 4 locations</SelectItem>
+                  <SelectItem value="card-location-5-device">CypheRock Card 5 + device location</SelectItem>
+                  <SelectItem value="all-instructions">All instructions (no split)</SelectItem>
+                  <SelectItem value="custom">Custom split (describe in notes)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">When split delivery is enabled, each beneficiary only receives their assigned piece. They must collaborate to recover the wallet.</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -516,6 +561,263 @@ function AddBeneficiaryDialog({ onAdd }: { onAdd: () => void }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AnnualReviewSection({ plan }: { plan: LegacyPlanData["plan"] }) {
+  const { toast } = useToast();
+  const now = new Date();
+  const nextReviewDue = plan.nextAnnualReviewDue ? new Date(plan.nextAnnualReviewDue) : null;
+  const isOverdue = nextReviewDue ? now >= nextReviewDue : false;
+  const daysUntilReview = nextReviewDue ? Math.ceil((nextReviewDue.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const isDueSoon = daysUntilReview !== null && daysUntilReview <= 30 && daysUntilReview > 0;
+
+  const submitReview = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/legacy-plan/annual-review"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      toast({ title: "Annual review completed", description: "Your Legacy Plan has been attested. Next review due in 1 year." });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to record annual review", variant: "destructive" }),
+  });
+
+  if (!isOverdue && !isDueSoon) {
+    return (
+      <Card className="border-dashed" data-testid="card-annual-review">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <CalendarCheck className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium">Annual Review</p>
+                <p className="text-xs text-muted-foreground">
+                  {plan.lastAnnualReview
+                    ? `Last reviewed: ${new Date(plan.lastAnnualReview).toLocaleDateString()}`
+                    : "No review yet"}
+                  {nextReviewDue && ` · Next due: ${nextReviewDue.toLocaleDateString()}`}
+                  {plan.annualReviewCount ? ` · ${plan.annualReviewCount} review${(plan.annualReviewCount || 0) > 1 ? "s" : ""} completed` : ""}
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={`${isOverdue ? "border-red-500 bg-red-50 dark:bg-red-950/20" : "border-amber-500 bg-amber-50 dark:bg-amber-950/20"}`} data-testid="card-annual-review-due">
+      <CardHeader className="pb-3">
+        <CardTitle className={`text-lg flex items-center gap-2 ${isOverdue ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
+          <CalendarCheck className="h-5 w-5" />
+          {isOverdue ? "Annual Review Overdue" : "Annual Review Due Soon"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className={`text-sm ${isOverdue ? "text-red-600 dark:text-red-300" : "text-amber-600 dark:text-amber-300"}`}>
+          {isOverdue
+            ? "Your annual Legacy Plan review is overdue. Life changes — divorce, the passing of a loved one, new family members, or changes to your wallet setup. Please review your beneficiaries, instructions, and contacts to make sure everything is still accurate."
+            : `Your annual review is due in ${daysUntilReview} day${daysUntilReview !== 1 ? "s" : ""}. Take a few minutes to verify your beneficiaries, wallet instructions, and contacts are still correct.`}
+        </p>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Before attesting, please verify:</p>
+          <ul className="space-y-1.5">
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              All beneficiaries are still the people you want to receive instructions
+            </li>
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              Beneficiary email addresses are still current
+            </li>
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              Device and recovery phrase locations haven't changed
+            </li>
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              Secondary contact is still appropriate (no divorce, estrangement, etc.)
+            </li>
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              Split delivery assignments (if enabled) are still correct
+            </li>
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              Personal message still reflects your wishes
+            </li>
+          </ul>
+        </div>
+
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            This is not just a check-in — it's a full attestation that your Legacy Plan is still accurate and reflects your current wishes. Life changes (divorce, death of a beneficiary, new wallets, moved safes) can make your plan outdated. Review everything above before clicking.
+          </AlertDescription>
+        </Alert>
+
+        <Button
+          className={`w-full ${isOverdue ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"}`}
+          size="lg"
+          onClick={() => submitReview.mutate()}
+          disabled={submitReview.isPending}
+          data-testid="button-annual-review"
+        >
+          <ClipboardCheck className="h-5 w-5 mr-2" />
+          {submitReview.isPending ? "Recording..." : "I've Reviewed Everything — Attest My Plan Is Current"}
+        </Button>
+
+        {plan.lastAnnualReview && (
+          <p className="text-xs text-muted-foreground text-center">
+            Last review: {new Date(plan.lastAnnualReview).toLocaleDateString()}
+            {plan.annualReviewCount ? ` · ${plan.annualReviewCount} review${(plan.annualReviewCount || 0) > 1 ? "s" : ""} completed` : ""}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const splitPieceLabels: Record<string, string> = {
+  "device-location": "Device location only",
+  "seed-location": "Seed/recovery location only",
+  "pin-passphrase": "PIN / passphrase only",
+  "card-locations-1-2": "CypheRock Cards 1 & 2",
+  "card-locations-3-4": "CypheRock Cards 3 & 4",
+  "card-location-5-device": "CypheRock Card 5 + device",
+  "all-instructions": "All instructions",
+  "custom": "Custom split",
+};
+
+function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["plan"]; beneficiaries: LegacyPlanData["beneficiaries"] }) {
+  const { toast } = useToast();
+  const splitEnabled = plan.splitDeliveryEnabled ?? false;
+  const splitMode = plan.splitDeliveryMode ?? "all";
+  const splitThreshold = plan.splitDeliveryThreshold ?? 2;
+
+  const toggleSplit = useMutation({
+    mutationFn: (enabled: boolean) => apiRequest("PATCH", "/api/legacy-plan", { splitDeliveryEnabled: enabled }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      toast({ title: splitEnabled ? "Split delivery disabled" : "Split delivery enabled" });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to update split delivery", variant: "destructive" }),
+  });
+
+  const updateSplitSettings = useMutation({
+    mutationFn: (data: { splitDeliveryMode?: string; splitDeliveryThreshold?: number }) => apiRequest("PATCH", "/api/legacy-plan", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      toast({ title: "Split settings updated" });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to update split settings", variant: "destructive" }),
+  });
+
+  const assignedBeneficiaries = beneficiaries.filter(b => b.splitPieces);
+  const unassignedBeneficiaries = beneficiaries.filter(b => !b.splitPieces);
+
+  return (
+    <Card data-testid="card-split-delivery">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Split className="h-4 w-4 text-purple-500" />
+              Split Delivery
+            </CardTitle>
+            <CardDescription>Split instructions across beneficiaries so they must collaborate</CardDescription>
+          </div>
+          <Switch
+            checked={splitEnabled}
+            onCheckedChange={(checked) => toggleSplit.mutate(checked)}
+            disabled={toggleSplit.isPending}
+            data-testid="switch-split-delivery"
+          />
+        </div>
+      </CardHeader>
+      {splitEnabled && (
+        <CardContent className="space-y-4">
+          <Alert className="border-purple-500/30 bg-purple-50 dark:bg-purple-950/20">
+            <Split className="h-4 w-4 text-purple-600" />
+            <AlertTitle className="text-sm text-purple-700 dark:text-purple-400">Multi-Sig Email Delivery</AlertTitle>
+            <AlertDescription className="text-xs text-purple-600 dark:text-purple-300">
+              When triggered, each beneficiary only receives their assigned piece of information. They must contact each other and combine their pieces to access the wallet. No single person gets everything.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Delivery Mode</Label>
+              <Select value={splitMode} onValueChange={(v) => updateSplitSettings.mutate({ splitDeliveryMode: v })}>
+                <SelectTrigger data-testid="select-split-mode"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All required — every beneficiary's piece is needed</SelectItem>
+                  <SelectItem value="threshold">Threshold — only M-of-N pieces needed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {splitMode === "threshold" && (
+              <div className="space-y-1">
+                <Label className="text-xs">Threshold — how many beneficiaries must collaborate?</Label>
+                <Select value={String(splitThreshold)} onValueChange={(v) => updateSplitSettings.mutate({ splitDeliveryThreshold: parseInt(v) })}>
+                  <SelectTrigger data-testid="select-split-threshold"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[2, 3, 4, 5].filter(n => n <= beneficiaries.length || n === 2).map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} of {Math.max(beneficiaries.length, n)} beneficiaries</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Like Shamir Secret Sharing — any {splitThreshold} of your {beneficiaries.length} beneficiaries can reconstruct the full instructions by combining their pieces.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              Piece Assignments
+            </p>
+            {beneficiaries.length < 2 ? (
+              <p className="text-xs text-muted-foreground">Add at least 2 beneficiaries to use split delivery.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {beneficiaries.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between text-sm rounded-md border px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{b.name}</span>
+                      <span className="text-xs text-muted-foreground">{b.email}</span>
+                    </div>
+                    <Badge variant={b.splitPieces ? "default" : "outline"} className={b.splitPieces ? "bg-purple-600 text-white" : "border-dashed"}>
+                      {b.splitPieces ? (splitPieceLabels[b.splitPieces] || b.splitPieces) : "Not assigned"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+            {unassignedBeneficiaries.length > 0 && beneficiaries.length >= 2 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {unassignedBeneficiaries.length} beneficiar{unassignedBeneficiaries.length === 1 ? "y has" : "ies have"} no piece assigned. Edit each beneficiary to assign their split piece.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-md bg-muted/30 border border-muted px-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Example with CypheRock:</span>{" "}
+              Person A gets "Card 1 is in the home safe, Card 2 is with the attorney."
+              Person B gets "Card 3 is in the bank safe deposit box, the X1 device is in the desk drawer."
+              Neither person alone can recover the wallet — they must combine their pieces (any 2 cards + the device).
+            </p>
+          </div>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -692,6 +994,10 @@ export default function LegacyPlanPage() {
         </Card>
       </div>
 
+      <AnnualReviewSection plan={plan} />
+
+      <SplitDeliverySection plan={plan} beneficiaries={beneficiaries} />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -699,7 +1005,7 @@ export default function LegacyPlanPage() {
               <CardTitle className="text-lg">Beneficiaries</CardTitle>
               <CardDescription>People who will receive your wallet recovery instructions</CardDescription>
             </div>
-            <AddBeneficiaryDialog onAdd={() => {}} />
+            <AddBeneficiaryDialog onAdd={() => {}} splitEnabled={plan.splitDeliveryEnabled ?? false} />
           </div>
         </CardHeader>
         <CardContent>

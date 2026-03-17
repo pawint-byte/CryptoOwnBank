@@ -871,6 +871,12 @@ export const legacyPlans = pgTable("legacy_plans", {
   secondaryContactName: varchar("secondary_contact_name", { length: 255 }),
   secondaryContactEmail: varchar("secondary_contact_email", { length: 255 }),
   personalMessage: text("personal_message"),
+  splitDeliveryEnabled: boolean("split_delivery_enabled").default(false),
+  splitDeliveryMode: varchar("split_delivery_mode", { length: 20 }).default("all"),
+  splitDeliveryThreshold: integer("split_delivery_threshold").default(2),
+  lastAnnualReview: timestamp("last_annual_review"),
+  nextAnnualReviewDue: timestamp("next_annual_review_due"),
+  annualReviewCount: integer("annual_review_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -888,6 +894,7 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   deviceInstructions: text("device_instructions"),
   seedPhraseInstructions: text("seed_phrase_instructions"),
   additionalNotes: text("additional_notes"),
+  splitPieces: text("split_pieces"),
   deliveredAt: timestamp("delivered_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [

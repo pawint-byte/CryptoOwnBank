@@ -1,6 +1,7 @@
 import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import {
   Shield,
@@ -10,6 +11,8 @@ import {
   AlertTriangle,
   Target,
   Star,
+  HeartHandshake,
+  Split,
 } from "lucide-react";
 
 const options = [
@@ -243,6 +246,48 @@ export default function SigningOptions() {
             action. We never see your keys. We never hold your funds. All signing
             happens on your device.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-amber-500/30 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20" data-testid="card-legacy-promo">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <HeartHandshake className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            Using a Cold Wallet? Protect It with the Legacy Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            A hardware wallet is the safest way to store crypto — but what happens if you're no longer around?
+            Your Ledger, CypheRock, or Coldcard sits in a safe. Your seed phrase backup is locked away.
+            Without clear instructions, your family may never be able to access those funds.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>Tell beneficiaries <em>where</em> the device and seed backup are — never the actual keys</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>CypheRock 2-of-5 Shamir card locations, Ledger 24-word backup location, PIN notes</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+              <Split className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+              <span>Split delivery — split info across beneficiaries so no single person gets everything</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>Dead-man switch with grace period — only triggers when you stop checking in</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button asChild className="bg-amber-500 hover:bg-amber-600">
+              <a href="/legacy-plan" data-testid="link-legacy-from-signing">Set Up Legacy Plan</a>
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              From <strong>$9.99/mo</strong> as an add-on, or <strong>included free with Pro</strong>
+            </p>
+          </div>
         </CardContent>
       </Card>
 
