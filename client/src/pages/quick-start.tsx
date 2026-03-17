@@ -42,6 +42,9 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Info,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 type TemplateType = "portfolio" | "contacts" | "payees" | "treasury";
@@ -559,6 +562,42 @@ export default function QuickStart() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/30">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription>
+              <p className="text-sm font-medium mb-2 text-blue-900 dark:text-blue-200">
+                Use addresses from wallets you own — not from exchanges
+              </p>
+              <p className="text-xs text-blue-800/80 dark:text-blue-300/80 mb-3">
+                Exchange deposit addresses belong to the exchange, not you. Only add addresses from wallets where you control the private keys.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs font-medium flex items-center gap-1.5 text-green-700 dark:text-green-400 mb-1.5">
+                    <CheckCircle className="h-3 w-3" /> Your addresses (use these)
+                  </p>
+                  <ul className="text-xs text-blue-800/80 dark:text-blue-300/80 space-y-0.5 ml-4.5">
+                    <li>Ledger, Trezor, CypheRock (cold wallets)</li>
+                    <li>MetaMask, Trust Wallet, Phantom (hot wallets)</li>
+                    <li>Xaman, Tangem, Ellipal (self-custody)</li>
+                    <li>Any wallet where you have the seed phrase or keys</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-xs font-medium flex items-center gap-1.5 text-red-600 dark:text-red-400 mb-1.5">
+                    <XCircle className="h-3 w-3" /> Exchange addresses (don't use)
+                  </p>
+                  <ul className="text-xs text-blue-800/80 dark:text-blue-300/80 space-y-0.5 ml-4.5">
+                    <li>Binance, Coinbase, Kraken deposit addresses</li>
+                    <li>Uphold, Crypto.com, Gemini, KuCoin</li>
+                    <li>Any address shown under "Deposit" on an exchange</li>
+                    <li>Use our Integrations page to connect exchanges instead</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="qs-chain">Blockchain</Label>
