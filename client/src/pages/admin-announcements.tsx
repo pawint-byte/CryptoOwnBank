@@ -10,8 +10,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Send, Eye, Users, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { Mail, Send, Eye, Users, CheckCircle, XCircle, Clock, AlertTriangle, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import type { FeatureAnnouncement } from "@shared/schema";
+
+type AnnouncementDraft = {
+  title: string;
+  description: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  audienceTier: string;
+};
+
+const SAVED_DRAFTS: AnnouncementDraft[] = [
+  {
+    title: "Introducing the Legacy Plan — Protect Your Crypto for Your Family",
+    description: "Your crypto shouldn't disappear if something happens to you. Our new Legacy Plan is a dead-man switch that automatically delivers your wallet recovery instructions to the people you trust.\n\n• Set your check-in schedule (weekly, biweekly, monthly, or quarterly)\n• Add multiple beneficiaries with wallet-specific recovery instructions\n• Split delivery mode — split instructions across beneficiaries so they must collaborate\n• Annual review reminders to keep your plan current\n• Works with CypheRock, Ledger, Trezor, Xaman, Tangem, and more\n\nCompetitors charge $40–$250/year for crypto inheritance alone. Get it as a $9.99/mo add-on, or free with Pro.",
+    ctaLabel: "Set Up Your Legacy Plan",
+    ctaUrl: "https://cryptoownbank.com/legacy-plan",
+    audienceTier: "all",
+  },
+  {
+    title: "New: Split Delivery & Annual Review for Legacy Plans",
+    description: "Two powerful upgrades to your Legacy Plan:\n\n🔒 Split Delivery — Split your wallet recovery instructions across multiple beneficiaries. No single person gets everything — they must collaborate to recover your wallet. Perfect for high-value cold wallets.\n\n📋 Annual Review — A yearly attestation that your plan is still accurate. Life changes (divorce, new family members, moved safes) can make your plan outdated. We'll remind you when it's time to review.\n\nBoth features are available now in your Legacy Plan dashboard.",
+    ctaLabel: "Review Your Legacy Plan",
+    ctaUrl: "https://cryptoownbank.com/legacy-plan",
+    audienceTier: "all",
+  },
+  {
+    title: "XRPL DEX Trading & DCA Orders Now Live",
+    description: "Trade directly on the XRP Ledger DEX and set up recurring dollar-cost averaging — all non-custodial, all through your Xaman wallet.\n\n• Quick Swap for instant trades across 14+ pairs\n• Advanced order book with limit orders\n• DCA Orders — automated recurring buys (daily, weekly, biweekly, monthly, quarterly)\n• Each DCA execution creates a pending transaction for you to approve in Xaman\n• Full trade history and confirmation emails\n\nYour keys, your trades, your schedule.",
+    ctaLabel: "Start Trading",
+    ctaUrl: "https://cryptoownbank.com/ownbank/dex",
+    audienceTier: "all",
+  },
+  {
+    title: "Stellar Network Integration — Send, Trade, and Manage XLM",
+    description: "CryptoOwnBank now supports the Stellar network alongside XRPL. Connect your Stellar wallet and access:\n\n• Stellar Wallet Dashboard — XLM + token balances, reserve display\n• Send & Receive with contacts, QR codes, and payment URIs\n• Token Manager — add/remove trustlines for popular Stellar tokens\n• DEX Trading — Quick Swap and Order Book for 8+ Stellar pairs\n• DCA Orders — recurring buys on the Stellar DEX\n• Invoices — create payment requests with shareable links\n• Remittance Calculator — compare cross-border corridors\n\nTwo chains, one dashboard. Non-custodial.",
+    ctaLabel: "Connect Your Stellar Wallet",
+    ctaUrl: "https://cryptoownbank.com/stellar/wallet",
+    audienceTier: "all",
+  },
+  {
+    title: "Whale Alerts, Technical Analysis & Price Alerts",
+    description: "Stay ahead of the market with real-time intelligence:\n\n🐋 Whale Alerts — Live monitoring of large XRP (≥1M) and RLUSD (≥500K) transactions on the XRP Ledger. See the big moves as they happen.\n\n📊 Technical Analysis — Interactive price charts with SMA, EMA, RSI, MACD, and Bollinger Bands for 21 assets.\n\n🔔 Price Alerts — Set custom alerts for any tracked asset. Get notified by email when prices cross your targets.\n\nAll available now from your dashboard.",
+    ctaLabel: "Explore Market Tools",
+    ctaUrl: "https://cryptoownbank.com/whale-alerts",
+    audienceTier: "all",
+  },
+];
 
 export default function AdminAnnouncements() {
   const { toast } = useToast();
@@ -21,6 +67,7 @@ export default function AdminAnnouncements() {
   const [ctaUrl, setCtaUrl] = useState("");
   const [audienceTier, setAudienceTier] = useState("all");
   const [confirmSend, setConfirmSend] = useState(false);
+  const [showDrafts, setShowDrafts] = useState(true);
 
   const { data: announcements = [], isLoading } = useQuery<FeatureAnnouncement[]>({
     queryKey: ["/api/admin/announcements"],
@@ -81,9 +128,50 @@ export default function AdminAnnouncements() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-6">
           <Card>
+            <CardHeader className="cursor-pointer" onClick={() => setShowDrafts(!showDrafts)}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Ready-to-Send Drafts
+                  </CardTitle>
+                  <CardDescription>{SAVED_DRAFTS.length} pre-written announcements — click one to load it</CardDescription>
+                </div>
+                {showDrafts ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            </CardHeader>
+            {showDrafts && (
+              <CardContent className="space-y-2">
+                {SAVED_DRAFTS.map((draft, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-3 rounded-md border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setTitle(draft.title);
+                      setDescription(draft.description);
+                      setCtaLabel(draft.ctaLabel);
+                      setCtaUrl(draft.ctaUrl);
+                      setAudienceTier(draft.audienceTier);
+                      setConfirmSend(false);
+                      toast({ title: "Draft loaded", description: "Review the content below, then preview or send." });
+                    }}
+                    data-testid={`draft-${i}`}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{draft.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{draft.description.split("\n")[0]}</p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">{draft.audienceTier}</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">Compose Announcement</CardTitle>
-              <CardDescription>Write your announcement. Users who unsubscribed won't receive it.</CardDescription>
+              <CardDescription>Write your announcement or load a draft above. Users who unsubscribed won't receive it.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
