@@ -44,12 +44,29 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
   const [averageCost, setAverageCost] = useState(position.averageCost ? parseFloat(position.averageCost).toString() : "0");
   const [totalCostBasis, setTotalCostBasis] = useState(position.totalCostBasis ? parseFloat(position.totalCostBasis).toString() : "0");
 
+  const isWalletPosition = !!position.isWallet;
+
   const editMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
+      if (isWalletPosition) {
+        const promises: Promise<unknown>[] = [];
+        if (updates.quantity) {
+          promises.push(apiRequest("PATCH", `/api/wallet-balances/${position.id}/balance`, { newBalance: updates.quantity }));
+        }
+        if (updates.averageCost || updates.totalCostBasis) {
+          promises.push(apiRequest("PATCH", `/api/wallet-balances/${position.id}/cost`, {
+            averageCost: updates.averageCost,
+            totalCostBasis: updates.totalCostBasis,
+          }));
+        }
+        await Promise.all(promises);
+        return;
+      }
       return apiRequest("PATCH", `/api/positions/${position.id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
       toast({ title: `Updated ${position.assetSymbol}` });
       onClose();
     },
