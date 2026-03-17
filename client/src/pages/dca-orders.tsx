@@ -152,6 +152,16 @@ const FREQUENCIES = [
   { value: "quarterly", label: "Quarterly" },
 ];
 
+const DAYS_OF_WEEK = [
+  { value: "0", label: "Sunday" },
+  { value: "1", label: "Monday" },
+  { value: "2", label: "Tuesday" },
+  { value: "3", label: "Wednesday" },
+  { value: "4", label: "Thursday" },
+  { value: "5", label: "Friday" },
+  { value: "6", label: "Saturday" },
+];
+
 function getStatusBadge(status: string) {
   switch (status) {
     case "active":
@@ -194,6 +204,7 @@ export default function DcaOrders() {
   const [selectedPairIdx, setSelectedPairIdx] = useState<string>("");
   const [spendAmount, setSpendAmount] = useState("");
   const [frequency, setFrequency] = useState("weekly");
+  const [preferredDay, setPreferredDay] = useState("");
   const [totalRuns, setTotalRuns] = useState("");
   const [label, setLabel] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -244,6 +255,7 @@ export default function DcaOrders() {
     setSelectedPairIdx("");
     setSpendAmount("");
     setFrequency("weekly");
+    setPreferredDay("");
     setTotalRuns("");
     setLabel("");
   }
@@ -256,12 +268,28 @@ export default function DcaOrders() {
       return;
     }
 
+    const dayNum = preferredDay !== "" ? parseInt(preferredDay) : null;
     const now = new Date();
     const nextRun = new Date(now);
     switch (frequency) {
       case "daily": nextRun.setDate(nextRun.getDate() + 1); break;
-      case "weekly": nextRun.setDate(nextRun.getDate() + 7); break;
-      case "biweekly": nextRun.setDate(nextRun.getDate() + 14); break;
+      case "weekly": {
+        if (dayNum != null) {
+          const diff = (dayNum - now.getDay() + 7) % 7;
+          nextRun.setDate(nextRun.getDate() + (diff === 0 ? 7 : diff));
+        } else {
+          nextRun.setDate(nextRun.getDate() + 7);
+        }
+        break;
+      }
+      case "biweekly": {
+        nextRun.setDate(nextRun.getDate() + 14);
+        if (dayNum != null) {
+          const diff = (dayNum - nextRun.getDay() + 7) % 7;
+          if (diff > 0) nextRun.setDate(nextRun.getDate() + diff);
+        }
+        break;
+      }
       case "monthly": nextRun.setMonth(nextRun.getMonth() + 1); break;
       case "quarterly": nextRun.setMonth(nextRun.getMonth() + 3); break;
     }
@@ -274,6 +302,7 @@ export default function DcaOrders() {
       buyIssuer: pair.buyIssuer,
       spendAmount,
       frequency,
+      preferredDay: dayNum,
       nextRunAt: nextRun.toISOString(),
       totalRuns: totalRuns ? parseInt(totalRuns) : null,
       label: label || pair.label,
@@ -454,7 +483,7 @@ export default function DcaOrders() {
 
             <div className="space-y-2">
               <Label>Frequency</Label>
-              <Select value={frequency} onValueChange={setFrequency}>
+              <Select value={frequency} onValueChange={(v) => { setFrequency(v); if (v !== "weekly" && v !== "biweekly") setPreferredDay(""); }}>
                 <SelectTrigger data-testid="select-dca-frequency">
                   <SelectValue />
                 </SelectTrigger>
@@ -467,6 +496,25 @@ export default function DcaOrders() {
                 </SelectContent>
               </Select>
             </div>
+
+            {(frequency === "weekly" || frequency === "biweekly") && (
+              <div className="space-y-2">
+                <Label>Preferred Day (optional — align buys with payday)</Label>
+                <Select value={preferredDay} onValueChange={setPreferredDay}>
+                  <SelectTrigger data-testid="select-dca-preferred-day">
+                    <SelectValue placeholder="Any day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAYS_OF_WEEK.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Many people set this to Thursday or Friday to align with payday.</p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Total Buys (optional — leave empty for unlimited)</Label>
@@ -541,6 +589,8 @@ function DcaOrderCard({
   });
 
   const freq = FREQUENCIES.find((f) => f.value === order.frequency)?.label || order.frequency;
+  const dayLabel = order.preferredDay != null ? DAYS_OF_WEEK.find((d) => d.value === String(order.preferredDay))?.label : null;
+  const freqDisplay = dayLabel ? `${freq} (${dayLabel}s)` : freq;
 
   return (
     <Card data-testid={`card-dca-order-${order.id}`}>
@@ -555,7 +605,7 @@ function DcaOrderCard({
                 {order.label || `${spendDisplay} → ${buyDisplay}`}
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {order.spendAmount} {spendDisplay} → {buyDisplay} • {freq}
+                {order.spendAmount} {spendDisplay} → {buyDisplay} • {freqDisplay}
               </p>
             </div>
           </div>

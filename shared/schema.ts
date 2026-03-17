@@ -509,6 +509,7 @@ export const dcaOrders = pgTable("dca_orders", {
   buyIssuer: varchar("buy_issuer", { length: 255 }),
   spendAmount: decimal("spend_amount", { precision: 18, scale: 8 }).notNull(),
   frequency: varchar("frequency", { length: 20 }).notNull(),
+  preferredDay: integer("preferred_day"),
   nextRunAt: timestamp("next_run_at").notNull(),
   lastRunAt: timestamp("last_run_at"),
   status: varchar("status", { length: 20 }).notNull().default("active"),

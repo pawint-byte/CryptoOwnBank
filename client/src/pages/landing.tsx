@@ -227,7 +227,7 @@ const features = [
     icon: Repeat,
     title: "DCA Orders",
     description:
-      "Set up recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX. Choose your pair, frequency, and amount — each buy is a quick approval in Xaman or LOBSTR. Non-custodial dollar-cost averaging, no exchange needed.",
+      "Set up recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX. Choose your pair, frequency, amount, and preferred day of the week — align buys with payday (e.g. every Friday). Each buy is a quick approval in Xaman or LOBSTR. Non-custodial dollar-cost averaging, no exchange needed.",
     link: "/ownbank/dca",
     linkLabel: "Set Up DCA",
   },

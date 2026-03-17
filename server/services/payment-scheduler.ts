@@ -1,6 +1,6 @@
 import { storage } from "../storage";
 
-function getNextRunDate(currentDate: Date, frequency: string): Date {
+function getNextRunDate(currentDate: Date, frequency: string, preferredDay?: number | null): Date {
   const next = new Date(currentDate);
   switch (frequency) {
     case "daily":
@@ -8,9 +8,17 @@ function getNextRunDate(currentDate: Date, frequency: string): Date {
       break;
     case "weekly":
       next.setDate(next.getDate() + 7);
+      if (preferredDay != null) {
+        const diff = (preferredDay - next.getDay() + 7) % 7;
+        if (diff > 0) next.setDate(next.getDate() + diff);
+      }
       break;
     case "biweekly":
       next.setDate(next.getDate() + 14);
+      if (preferredDay != null) {
+        const diff = (preferredDay - next.getDay() + 7) % 7;
+        if (diff > 0) next.setDate(next.getDate() + diff);
+      }
       break;
     case "monthly":
       next.setMonth(next.getMonth() + 1);
@@ -45,7 +53,7 @@ export async function processScheduledPayments(): Promise<void> {
 
         await storage.updateScheduledPayment(payment.id, {
           lastRunAt: new Date(),
-          nextRunAt: isComplete ? payment.nextRunAt : getNextRunDate(payment.nextRunAt, payment.frequency),
+          nextRunAt: isComplete ? payment.nextRunAt : getNextRunDate(payment.nextRunAt, payment.frequency, null),
           runsCompleted: newRunsCompleted,
           status: isComplete ? "completed" : "active",
         });
@@ -95,7 +103,7 @@ export async function processDcaOrders(): Promise<void> {
 
         await storage.updateDcaOrder(order.id, {
           lastRunAt: new Date(),
-          nextRunAt: isComplete ? order.nextRunAt : getNextRunDate(order.nextRunAt, order.frequency),
+          nextRunAt: isComplete ? order.nextRunAt : getNextRunDate(order.nextRunAt, order.frequency, order.preferredDay),
           runsCompleted: newRunsCompleted,
           status: isComplete ? "completed" : "active",
         });
