@@ -950,16 +950,20 @@ export async function registerRoutes(
       for (const pos of positionsData) {
         const asset = await storage.getAsset(pos.assetSymbol);
         let currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
-        if (!currentPrice || currentPrice <= 0) {
+        if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
           currentPrice = dashPriceLookup[pos.assetSymbol.toUpperCase()] || 0;
         }
-        if (!currentPrice || currentPrice <= 0) {
+        if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
           currentPrice = parseFloat(pos.averageCost) || 0;
         }
-        const qty = parseFloat(pos.quantity);
-        const value = qty * currentPrice;
+        const qty = parseFloat(pos.quantity) || 0;
+        const costBasis = parseFloat(pos.totalCostBasis) || 0;
+        if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+          currentPrice = qty > 0 ? costBasis / qty : 0;
+        }
+        const value = Number.isFinite(qty * currentPrice) ? qty * currentPrice : 0;
         totalValue += value;
-        totalCostBasis += parseFloat(pos.totalCostBasis);
+        totalCostBasis += costBasis;
         allocationMap.set(pos.assetSymbol, (allocationMap.get(pos.assetSymbol) || 0) + value);
       }
 
@@ -967,7 +971,7 @@ export async function registerRoutes(
       const walletBals = await enrichWalletBalances(rawWalletBals);
       for (const wb of walletBals) {
         const usdVal = parseFloat(wb.usdValue || "0");
-        if (usdVal > 0) {
+        if (Number.isFinite(usdVal) && usdVal > 0) {
           totalValue += usdVal;
           allocationMap.set(wb.assetSymbol, (allocationMap.get(wb.assetSymbol) || 0) + usdVal);
         }
@@ -2670,15 +2674,18 @@ export async function registerRoutes(
           let currentPrice = asset?.currentPrice 
             ? parseFloat(asset.currentPrice) 
             : 0;
-          if (!currentPrice || currentPrice <= 0) {
+          if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
             currentPrice = priceCacheLookup[pos.assetSymbol.toUpperCase()] || 0;
           }
-          if (!currentPrice || currentPrice <= 0) {
+          if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
             currentPrice = parseFloat(pos.averageCost) || 0;
           }
-          const qty = parseFloat(pos.quantity);
-          const currentValue = qty * currentPrice;
-          const costBasis = parseFloat(pos.totalCostBasis);
+          const qty = parseFloat(pos.quantity) || 0;
+          const costBasis = parseFloat(pos.totalCostBasis) || 0;
+          if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+            currentPrice = qty > 0 ? costBasis / qty : 0;
+          }
+          const currentValue = Number.isFinite(qty * currentPrice) ? qty * currentPrice : 0;
           const gainLoss = currentValue - costBasis;
           const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
 
@@ -2701,30 +2708,34 @@ export async function registerRoutes(
 
       const walletPositions = await Promise.all(enrichedWalletBals.map(async (wb) => {
         const wallet = userWalletsForPortfolio.find((w: any) => w.id === wb.walletId);
-        let usdVal = parseFloat(wb.usdValue || "0");
-        const bal = parseFloat(wb.balance);
-        const avgCost = parseFloat(wb.averageCost || "0");
-        const costBasis = parseFloat(wb.totalCostBasis || "0");
+        let usdVal = parseFloat(wb.usdValue || "0") || 0;
+        const bal = parseFloat(wb.balance) || 0;
+        const avgCost = parseFloat(wb.averageCost || "0") || 0;
+        const costBasis = parseFloat(wb.totalCostBasis || "0") || 0;
 
         if (usdVal === 0 && bal > 0) {
           const sym = wb.assetSymbol.toUpperCase();
           const asset = await storage.getAsset(sym);
           let resolvedPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
-          if (!resolvedPrice || resolvedPrice <= 0) {
+          if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
             resolvedPrice = priceCacheLookup[sym] || 0;
           }
-          if (!resolvedPrice || resolvedPrice <= 0) {
+          if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
             resolvedPrice = avgCost;
           }
-          if (resolvedPrice > 0) {
+          if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
+            resolvedPrice = bal > 0 && costBasis > 0 ? costBasis / bal : 0;
+          }
+          if (Number.isFinite(resolvedPrice) && resolvedPrice > 0) {
             usdVal = bal * resolvedPrice;
           }
         }
 
-        const price = bal > 0 ? usdVal / bal : 0;
-        const gainLoss = costBasis > 0 ? usdVal - costBasis : 0;
+        const safeUsdVal = Number.isFinite(usdVal) ? usdVal : 0;
+        const price = bal > 0 ? safeUsdVal / bal : 0;
+        const gainLoss = costBasis > 0 ? safeUsdVal - costBasis : 0;
         const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
-        totalValue += usdVal;
+        totalValue += safeUsdVal;
         if (costBasis > 0) totalCostBasis += costBasis;
         return {
           id: wb.id,
