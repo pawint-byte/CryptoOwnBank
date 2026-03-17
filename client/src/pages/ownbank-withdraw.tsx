@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -17,6 +21,7 @@ import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { calculateAccruedInterest, SOIL_VAULTS } from "@/lib/xrpl-client";
 import { signPayment } from "@/lib/xumm-connector";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Lock,
   TrendingUp,
@@ -27,6 +32,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Settings,
+  Repeat,
+  Zap,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -38,6 +45,182 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { UserWallet } from "@shared/schema";
+
+type AutoBuySettings = {
+  enabled: boolean;
+  percent: number;
+  minAmount: string;
+};
+
+function AutoBuyXrpCard({ totalInterest, subscriptionTier }: { totalInterest: number; subscriptionTier: string }) {
+  const { toast } = useToast();
+  const [localPercent, setLocalPercent] = useState<number | null>(null);
+  const [localMin, setLocalMin] = useState<string | null>(null);
+
+  const { data: settings, isLoading } = useQuery<AutoBuySettings>({
+    queryKey: ["/api/auto-buy-xrp"],
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (updates: Partial<AutoBuySettings>) => {
+      const res = await apiRequest("PATCH", "/api/auto-buy-xrp", updates);
+      return res.json();
+    },
+    onSuccess: (data: AutoBuySettings) => {
+      queryClient.setQueryData(["/api/auto-buy-xrp"], data);
+      toast({ title: data.enabled ? "Auto-Buy XRP Enabled" : "Auto-Buy XRP Disabled" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  if (isLoading || !settings) return null;
+
+  const percent = localPercent ?? settings.percent;
+  const minAmount = localMin ?? settings.minAmount;
+  const previewAmount = totalInterest * (percent / 100);
+  const keepAmount = totalInterest * ((100 - percent) / 100);
+  const isPremium = subscriptionTier === "premium" || subscriptionTier === "pro";
+
+  return (
+    <Card className={`border-[#00A4E4]/20 ${settings.enabled ? "bg-[#00A4E4]/5" : ""}`} data-testid="card-auto-buy-xrp">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-[#00A4E4]/10">
+              <Zap className="h-5 w-5 text-[#00A4E4]" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Earn & Accumulate XRP</CardTitle>
+              <CardDescription>
+                Automatically convert RLUSD interest into XRP on the DEX
+              </CardDescription>
+            </div>
+          </div>
+          {isPremium ? (
+            <Switch
+              checked={settings.enabled}
+              onCheckedChange={(checked) => updateMutation.mutate({ enabled: checked })}
+              disabled={updateMutation.isPending}
+              data-testid="switch-auto-buy-xrp"
+            />
+          ) : (
+            <Link href="/settings">
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 cursor-pointer" data-testid="badge-premium-required">
+                <Crown className="w-3 h-3 mr-1" /> Premium
+              </Badge>
+            </Link>
+          )}
+        </div>
+      </CardHeader>
+
+      {settings.enabled && isPremium && (
+        <CardContent className="pt-0 space-y-4">
+          <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+            <p>When your vault interest is withdrawn, <strong>{percent}%</strong> will automatically create a DEX offer to buy XRP with RLUSD. You approve the trade in Xaman — one tap, same wallet, same chain.</p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Convert to XRP</Label>
+                <span className="text-sm font-mono font-medium" data-testid="text-auto-buy-percent">{percent}%</span>
+              </div>
+              <Slider
+                value={[percent]}
+                onValueChange={([v]) => setLocalPercent(v)}
+                onValueCommit={([v]) => {
+                  setLocalPercent(null);
+                  updateMutation.mutate({ percent: v });
+                }}
+                min={10}
+                max={100}
+                step={5}
+                className="w-full"
+                data-testid="slider-auto-buy-percent"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>10%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">Minimum RLUSD to trigger buy</Label>
+              <Input
+                type="number"
+                value={localMin ?? settings.minAmount}
+                onChange={(e) => setLocalMin(e.target.value)}
+                onBlur={() => {
+                  if (localMin && parseFloat(localMin) > 0) {
+                    updateMutation.mutate({ minAmount: localMin });
+                  }
+                  setLocalMin(null);
+                }}
+                min="1"
+                step="1"
+                className="font-mono"
+                data-testid="input-auto-buy-min"
+              />
+              <p className="text-xs text-muted-foreground">
+                Won&apos;t trigger a buy if accrued interest is below this amount
+              </p>
+            </div>
+          </div>
+
+          {totalInterest > 0 && (
+            <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Preview based on current interest:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Buy XRP with</p>
+                  <p className="text-sm font-bold font-mono text-[#00A4E4]" data-testid="text-preview-buy">
+                    {previewAmount.toFixed(4)} RLUSD
+                  </p>
+                </div>
+                {percent < 100 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Keep as RLUSD</p>
+                    <p className="text-sm font-bold font-mono text-green-500" data-testid="text-preview-keep">
+                      {keepAmount.toFixed(4)} RLUSD
+                    </p>
+                  </div>
+                )}
+              </div>
+              {parseFloat(minAmount) > totalInterest && (
+                <p className="text-xs text-amber-400 mt-2">
+                  Current interest ({totalInterest.toFixed(4)} RLUSD) is below your minimum ({minAmount} RLUSD) — auto-buy won&apos;t trigger yet.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Repeat className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#00A4E4]" />
+            <p>Each auto-buy creates a pending DEX offer (RLUSD → XRP) that you approve in Xaman. Your keys never leave your device — fully non-custodial.</p>
+          </div>
+        </CardContent>
+      )}
+
+      {!settings.enabled && isPremium && (
+        <CardContent className="pt-0">
+          <p className="text-xs text-muted-foreground">
+            Turn this on to automatically convert your vault interest earnings into XRP. Choose how much to convert (10–100%) and set a minimum threshold. Each buy goes through the XRPL DEX and requires your approval in Xaman.
+          </p>
+        </CardContent>
+      )}
+
+      {!isPremium && (
+        <CardContent className="pt-0">
+          <p className="text-xs text-muted-foreground">
+            Upgrade to Premium ($29/mo) to automatically convert your vault interest into XRP. Set your percentage, minimum amount, and let your earnings accumulate XRP hands-free.
+          </p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
 export default function OwnBankWithdraw() {
   const {
@@ -281,6 +464,11 @@ export default function OwnBankWithdraw() {
           </CardContent>
         </Card>
       </div>
+
+      <AutoBuyXrpCard
+        totalInterest={totalInterest}
+        subscriptionTier={subscriptionTier}
+      />
 
       {vaultDeposits.length === 0 ? (
         <Card>

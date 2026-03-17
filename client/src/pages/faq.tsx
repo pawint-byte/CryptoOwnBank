@@ -492,6 +492,10 @@ const faqGroups = [
         a: "100% non-custodial. CryptoOwnBank never holds, touches, or has access to your funds. The DCA scheduler runs server-side and creates a pending DEX offer when your buy is due — but the offer is NOT submitted to the blockchain until you personally approve it in your Xaman or LOBSTR wallet. Your private keys never leave your device. If you don't approve a pending execution, nothing happens — your funds stay right where they are.",
       },
       {
+        q: "What is Earn & Accumulate XRP?",
+        a: "Earn & Accumulate is a Premium feature that connects your RLUSD yield vault to the XRPL DEX. When your vault interest is withdrawn, the system automatically creates a DEX offer to buy XRP with some or all of that interest — you approve it in Xaman with one tap. <br/><br/>You control two things: <strong>how much</strong> to convert (10–100% of your interest, via a slider) and a <strong>minimum threshold</strong> (e.g. only buy when interest reaches 5 RLUSD or more). If you set it to 50%, half your interest buys XRP and the other half stays as RLUSD earning compound interest. If you set it to 100%, every interest withdrawal goes straight into XRP. <br/><br/>It's fully non-custodial — the DEX offer only submits when you approve in Xaman. Everything happens on the same XRPL account: earn RLUSD interest → withdraw → buy XRP on the DEX, all from one wallet with one tap.",
+      },
+      {
         q: "Are there fees for using XRPL and Stellar Tools?",
         a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, DCA Orders, or Send & Receive on either chain. The only cost is the network fee — approximately 0.00001 XRP per transaction on XRPL, or 0.00001 XLM (100 stroops) on Stellar. Both are a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. These are two of the cheapest networks to transact on.",
       },

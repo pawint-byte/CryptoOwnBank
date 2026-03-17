@@ -6081,6 +6081,41 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/auto-buy-xrp", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      res.json({
+        enabled: settings?.autoBuyXrpEnabled ?? false,
+        percent: settings?.autoBuyXrpPercent ?? 100,
+        minAmount: settings?.autoBuyXrpMinAmount ?? "5",
+      });
+    } catch (error) {
+      console.error("Get auto-buy settings error:", error);
+      res.status(500).json({ message: "Failed to load auto-buy settings" });
+    }
+  });
+
+  app.patch("/api/auto-buy-xrp", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { enabled, percent, minAmount } = req.body;
+      const updates: Record<string, unknown> = { userId };
+      if (typeof enabled === "boolean") updates.autoBuyXrpEnabled = enabled;
+      if (typeof percent === "number" && percent >= 1 && percent <= 100) updates.autoBuyXrpPercent = percent;
+      if (minAmount !== undefined) updates.autoBuyXrpMinAmount = String(minAmount);
+      const result = await storage.upsertUserSettings(updates as any);
+      res.json({
+        enabled: result.autoBuyXrpEnabled ?? false,
+        percent: result.autoBuyXrpPercent ?? 100,
+        minAmount: result.autoBuyXrpMinAmount ?? "5",
+      });
+    } catch (error) {
+      console.error("Update auto-buy settings error:", error);
+      res.status(500).json({ message: "Failed to update auto-buy settings" });
+    }
+  });
+
   app.get("/api/dca-orders", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

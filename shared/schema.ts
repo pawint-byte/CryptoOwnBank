@@ -133,6 +133,9 @@ export const userSettings = pgTable("user_settings", {
   businessWebsite: varchar("business_website", { length: 500 }),
   businessPhone: varchar("business_phone", { length: 50 }),
   stellarAddress: varchar("stellar_address", { length: 56 }),
+  autoBuyXrpEnabled: boolean("auto_buy_xrp_enabled").default(false),
+  autoBuyXrpPercent: integer("auto_buy_xrp_percent").default(100),
+  autoBuyXrpMinAmount: decimal("auto_buy_xrp_min_amount", { precision: 18, scale: 6 }).default("5"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
