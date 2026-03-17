@@ -57,33 +57,89 @@ interface DcaPair {
   category: string;
 }
 
+const SOLO_HEX = "534F4C4F00000000000000000000000000000000";
+const SOLO_ISSUER = "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz";
+const CORE_HEX = "434F524500000000000000000000000000000000";
+const CORE_ISSUER = "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D";
+const ELS_HEX = "454C5300000000000000000000000000000000000";
+const ELS_ISSUER = "rHXuEaRYnnJHbDeuBH5w8yPh5uwNVh5zAg";
+const BTC_ISSUER_GH = "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL";
+const ETH_ISSUER_GH = "rcA8X3TVMST1n3CJeAdGk1RdRCHii7N2h";
+const SOL_ISSUER_GH = "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL";
+const LINK_HEX = "4C494E4B00000000000000000000000000000000";
+const ONDO_HEX = "4F4E444F00000000000000000000000000000000";
+const HBAR_HEX = "484241520000000000000000000000000000000000";
+const USD_ISSUER_BS = "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B";
+const EUR_ISSUER_GH = "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq";
+
 const XRPL_DCA_PAIRS: DcaPair[] = [
-  { label: "Buy XRP with RLUSD", spendCurrency: RLUSD_CURRENCY, spendIssuer: RLUSD_ISSUER, spendDisplay: "RLUSD", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Stablecoins" },
-  { label: "Buy XRP with USD (Bitstamp)", spendCurrency: "USD", spendIssuer: "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B", spendDisplay: "USD", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Stablecoins" },
-  { label: "Buy XRP with EUR (GateHub)", spendCurrency: "EUR", spendIssuer: "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq", spendDisplay: "EUR", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Stablecoins" },
-  { label: "Buy RLUSD with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: RLUSD_CURRENCY, buyIssuer: RLUSD_ISSUER, buyDisplay: "RLUSD", category: "Stablecoins" },
-  { label: "Buy SOLO with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "534F4C4F00000000000000000000000000000000", buyIssuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", buyDisplay: "SOLO", category: "Crypto" },
-  { label: "Buy CORE with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "434F524500000000000000000000000000000000", buyIssuer: "rcoreNywaoz2ZCQ8Lg2EbSLnGuRBmun6D", buyDisplay: "CORE", category: "Crypto" },
-  { label: "Buy ELS with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "454C5300000000000000000000000000000000000", buyIssuer: "rHXuEaRYnnJHbDeuBH5w8yPh5uwNVh5zAg", buyDisplay: "ELS", category: "Crypto" },
-  { label: "Buy BTC with XRP (GateHub)", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "BTC", buyIssuer: "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL", buyDisplay: "BTC", category: "Crypto" },
-  { label: "Buy ETH with XRP (GateHub)", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "ETH", buyIssuer: "rcA8X3TVMST1n3CJeAdGk1RdRCHii7N2h", buyDisplay: "ETH", category: "Crypto" },
-  { label: "Buy SOL with XRP (GateHub)", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "SOL", buyIssuer: "rchGBxcD1A1C2tdxF6papQYZ8kjRKMYcL", buyDisplay: "SOL", category: "Crypto" },
-  { label: "Buy LINK with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "4C494E4B00000000000000000000000000000000", buyIssuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", buyDisplay: "LINK", category: "Crypto" },
-  { label: "Buy ONDO with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "4F4E444F00000000000000000000000000000000", buyIssuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", buyDisplay: "ONDO", category: "Crypto" },
-  { label: "Buy HBAR with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "484241520000000000000000000000000000000000", buyIssuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", buyDisplay: "HBAR", category: "Crypto" },
-  { label: "Buy FLR with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "FLR", buyIssuer: "rsoLo2S1kiGeCcn6hCUXVrCpGMWLrRrLZz", buyDisplay: "FLR", category: "Crypto" },
+  { label: "Buy XRP with RLUSD", spendCurrency: RLUSD_CURRENCY, spendIssuer: RLUSD_ISSUER, spendDisplay: "RLUSD", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Accumulate XRP" },
+  { label: "Buy XRP with USD (Bitstamp)", spendCurrency: "USD", spendIssuer: USD_ISSUER_BS, spendDisplay: "USD", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Accumulate XRP" },
+  { label: "Buy XRP with EUR (GateHub)", spendCurrency: "EUR", spendIssuer: EUR_ISSUER_GH, spendDisplay: "EUR", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Accumulate XRP" },
+  { label: "Sell SOLO → XRP", spendCurrency: SOLO_HEX, spendIssuer: SOLO_ISSUER, spendDisplay: "SOLO", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Accumulate XRP" },
+  { label: "Sell CORE → XRP", spendCurrency: CORE_HEX, spendIssuer: CORE_ISSUER, spendDisplay: "CORE", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Accumulate XRP" },
+  { label: "Sell ELS → XRP", spendCurrency: ELS_HEX, spendIssuer: ELS_ISSUER, spendDisplay: "ELS", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Accumulate XRP" },
+
+  { label: "Buy RLUSD with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: RLUSD_CURRENCY, buyIssuer: RLUSD_ISSUER, buyDisplay: "RLUSD", category: "Accumulate RLUSD" },
+  { label: "Sell SOLO → RLUSD", spendCurrency: SOLO_HEX, spendIssuer: SOLO_ISSUER, spendDisplay: "SOLO", buyCurrency: RLUSD_CURRENCY, buyIssuer: RLUSD_ISSUER, buyDisplay: "RLUSD", category: "Accumulate RLUSD" },
+  { label: "Sell CORE → RLUSD", spendCurrency: CORE_HEX, spendIssuer: CORE_ISSUER, spendDisplay: "CORE", buyCurrency: RLUSD_CURRENCY, buyIssuer: RLUSD_ISSUER, buyDisplay: "RLUSD", category: "Accumulate RLUSD" },
+  { label: "Sell ELS → RLUSD", spendCurrency: ELS_HEX, spendIssuer: ELS_ISSUER, spendDisplay: "ELS", buyCurrency: RLUSD_CURRENCY, buyIssuer: RLUSD_ISSUER, buyDisplay: "RLUSD", category: "Accumulate RLUSD" },
+
+  { label: "Buy SOLO with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: SOLO_HEX, buyIssuer: SOLO_ISSUER, buyDisplay: "SOLO", category: "Buy Tokens with XRP" },
+  { label: "Buy CORE with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: CORE_HEX, buyIssuer: CORE_ISSUER, buyDisplay: "CORE", category: "Buy Tokens with XRP" },
+  { label: "Buy ELS with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: ELS_HEX, buyIssuer: ELS_ISSUER, buyDisplay: "ELS", category: "Buy Tokens with XRP" },
+  { label: "Buy BTC with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "BTC", buyIssuer: BTC_ISSUER_GH, buyDisplay: "BTC", category: "Buy Tokens with XRP" },
+  { label: "Buy ETH with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "ETH", buyIssuer: ETH_ISSUER_GH, buyDisplay: "ETH", category: "Buy Tokens with XRP" },
+  { label: "Buy SOL with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "SOL", buyIssuer: SOL_ISSUER_GH, buyDisplay: "SOL", category: "Buy Tokens with XRP" },
+  { label: "Buy LINK with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: LINK_HEX, buyIssuer: SOLO_ISSUER, buyDisplay: "LINK", category: "Buy Tokens with XRP" },
+  { label: "Buy ONDO with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: ONDO_HEX, buyIssuer: SOLO_ISSUER, buyDisplay: "ONDO", category: "Buy Tokens with XRP" },
+  { label: "Buy HBAR with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: HBAR_HEX, buyIssuer: SOLO_ISSUER, buyDisplay: "HBAR", category: "Buy Tokens with XRP" },
+  { label: "Buy FLR with XRP", spendCurrency: "XRP", spendIssuer: null, spendDisplay: "XRP", buyCurrency: "FLR", buyIssuer: SOLO_ISSUER, buyDisplay: "FLR", category: "Buy Tokens with XRP" },
+
+  { label: "Buy SOLO with RLUSD", spendCurrency: RLUSD_CURRENCY, spendIssuer: RLUSD_ISSUER, spendDisplay: "RLUSD", buyCurrency: SOLO_HEX, buyIssuer: SOLO_ISSUER, buyDisplay: "SOLO", category: "Buy Tokens with RLUSD" },
+  { label: "Buy CORE with RLUSD", spendCurrency: RLUSD_CURRENCY, spendIssuer: RLUSD_ISSUER, spendDisplay: "RLUSD", buyCurrency: CORE_HEX, buyIssuer: CORE_ISSUER, buyDisplay: "CORE", category: "Buy Tokens with RLUSD" },
+  { label: "Buy BTC with RLUSD", spendCurrency: RLUSD_CURRENCY, spendIssuer: RLUSD_ISSUER, spendDisplay: "RLUSD", buyCurrency: "BTC", buyIssuer: BTC_ISSUER_GH, buyDisplay: "BTC", category: "Buy Tokens with RLUSD" },
+  { label: "Buy ETH with RLUSD", spendCurrency: RLUSD_CURRENCY, spendIssuer: RLUSD_ISSUER, spendDisplay: "RLUSD", buyCurrency: "ETH", buyIssuer: ETH_ISSUER_GH, buyDisplay: "ETH", category: "Buy Tokens with RLUSD" },
+
+  { label: "Sell BTC → XRP", spendCurrency: "BTC", spendIssuer: BTC_ISSUER_GH, spendDisplay: "BTC", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
+  { label: "Sell ETH → XRP", spendCurrency: "ETH", spendIssuer: ETH_ISSUER_GH, spendDisplay: "ETH", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
+  { label: "Sell SOL → XRP", spendCurrency: "SOL", spendIssuer: SOL_ISSUER_GH, spendDisplay: "SOL", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
+  { label: "Sell LINK → XRP", spendCurrency: LINK_HEX, spendIssuer: SOLO_ISSUER, spendDisplay: "LINK", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
+  { label: "Sell ONDO → XRP", spendCurrency: ONDO_HEX, spendIssuer: SOLO_ISSUER, spendDisplay: "ONDO", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
+  { label: "Sell HBAR → XRP", spendCurrency: HBAR_HEX, spendIssuer: SOLO_ISSUER, spendDisplay: "HBAR", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
+  { label: "Sell FLR → XRP", spendCurrency: "FLR", spendIssuer: SOLO_ISSUER, spendDisplay: "FLR", buyCurrency: "XRP", buyIssuer: null, buyDisplay: "XRP", category: "Sell Tokens → XRP" },
 ];
 
+const USDC_ISSUER_S = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN";
+const EURC_ISSUER_S = "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE";
+const USDT_ISSUER_S = "GCQTGZQQ5G4PTM2GL7CDIFKUBBER43GPYJHEZ5B65LNQP3WGSY6RA24T";
+const ULTRA_ISSUER = "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF";
+const AQUA_ISSUER = "GBNZILSTVQZ4R7IKQDGHYGY2QXL5QOFJYQMXPKWRRM5PAV7Y4M67AQUA";
+const YXLM_ISSUER = "GARDNV3Q7YGT4AKSDF25LT32YSCCW4EV22Y2TV3I2PU2MMXJTEDL5T55";
+const XRP_ISSUER_S = "GBXRPL45NPHCVMFFAYZVUVFFVKSIZ362ZXFP7I2ETNOJEMON2KWSSVAIX";
+
 const STELLAR_DCA_PAIRS: DcaPair[] = [
-  { label: "Buy XLM with USDC", spendCurrency: "USDC", spendIssuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", spendDisplay: "USDC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Stablecoins" },
-  { label: "Buy USDC with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "USDC", buyIssuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", buyDisplay: "USDC", category: "Stablecoins" },
-  { label: "Buy XLM with EURC", spendCurrency: "EURC", spendIssuer: "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE", spendDisplay: "EURC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Stablecoins" },
-  { label: "Buy XLM with USDT", spendCurrency: "USDT", spendIssuer: "GCQTGZQQ5G4PTM2GL7CDIFKUBBER43GPYJHEZ5B65LNQP3WGSY6RA24T", spendDisplay: "USDT", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Stablecoins" },
-  { label: "Buy BTC with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "BTC", buyIssuer: "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF", buyDisplay: "BTC", category: "Crypto" },
-  { label: "Buy ETH with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "ETH", buyIssuer: "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF", buyDisplay: "ETH", category: "Crypto" },
-  { label: "Buy XRP with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "XRP", buyIssuer: "GBXRPL45NPHCVMFFAYZVUVFFVKSIZ362ZXFP7I2ETNOJEMON2KWSSVAIX", buyDisplay: "XRP", category: "Crypto" },
-  { label: "Buy AQUA with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "AQUA", buyIssuer: "GBNZILSTVQZ4R7IKQDGHYGY2QXL5QOFJYQMXPKWRRM5PAV7Y4M67AQUA", buyDisplay: "AQUA", category: "Crypto" },
-  { label: "Buy yXLM with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "yXLM", buyIssuer: "GARDNV3Q7YGT4AKSDF25LT32YSCCW4EV22Y2TV3I2PU2MMXJTEDL5T55", buyDisplay: "yXLM", category: "Crypto" },
+  { label: "Buy XLM with USDC", spendCurrency: "USDC", spendIssuer: USDC_ISSUER_S, spendDisplay: "USDC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
+  { label: "Buy XLM with EURC", spendCurrency: "EURC", spendIssuer: EURC_ISSUER_S, spendDisplay: "EURC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
+  { label: "Buy XLM with USDT", spendCurrency: "USDT", spendIssuer: USDT_ISSUER_S, spendDisplay: "USDT", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
+  { label: "Sell BTC → XLM", spendCurrency: "BTC", spendIssuer: ULTRA_ISSUER, spendDisplay: "BTC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
+  { label: "Sell ETH → XLM", spendCurrency: "ETH", spendIssuer: ULTRA_ISSUER, spendDisplay: "ETH", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
+  { label: "Sell AQUA → XLM", spendCurrency: "AQUA", spendIssuer: AQUA_ISSUER, spendDisplay: "AQUA", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
+
+  { label: "Buy USDC with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "USDC", buyIssuer: USDC_ISSUER_S, buyDisplay: "USDC", category: "Accumulate USDC" },
+  { label: "Sell BTC → USDC", spendCurrency: "BTC", spendIssuer: ULTRA_ISSUER, spendDisplay: "BTC", buyCurrency: "USDC", buyIssuer: USDC_ISSUER_S, buyDisplay: "USDC", category: "Accumulate USDC" },
+  { label: "Sell ETH → USDC", spendCurrency: "ETH", spendIssuer: ULTRA_ISSUER, spendDisplay: "ETH", buyCurrency: "USDC", buyIssuer: USDC_ISSUER_S, buyDisplay: "USDC", category: "Accumulate USDC" },
+  { label: "Sell AQUA → USDC", spendCurrency: "AQUA", spendIssuer: AQUA_ISSUER, spendDisplay: "AQUA", buyCurrency: "USDC", buyIssuer: USDC_ISSUER_S, buyDisplay: "USDC", category: "Accumulate USDC" },
+
+  { label: "Buy BTC with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "BTC", buyIssuer: ULTRA_ISSUER, buyDisplay: "BTC", category: "Buy Tokens with XLM" },
+  { label: "Buy ETH with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "ETH", buyIssuer: ULTRA_ISSUER, buyDisplay: "ETH", category: "Buy Tokens with XLM" },
+  { label: "Buy XRP with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "XRP", buyIssuer: XRP_ISSUER_S, buyDisplay: "XRP", category: "Buy Tokens with XLM" },
+  { label: "Buy AQUA with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "AQUA", buyIssuer: AQUA_ISSUER, buyDisplay: "AQUA", category: "Buy Tokens with XLM" },
+  { label: "Buy yXLM with XLM", spendCurrency: "XLM", spendIssuer: null, spendDisplay: "XLM", buyCurrency: "yXLM", buyIssuer: YXLM_ISSUER, buyDisplay: "yXLM", category: "Buy Tokens with XLM" },
+
+  { label: "Buy BTC with USDC", spendCurrency: "USDC", spendIssuer: USDC_ISSUER_S, spendDisplay: "USDC", buyCurrency: "BTC", buyIssuer: ULTRA_ISSUER, buyDisplay: "BTC", category: "Buy Tokens with USDC" },
+  { label: "Buy ETH with USDC", spendCurrency: "USDC", spendIssuer: USDC_ISSUER_S, spendDisplay: "USDC", buyCurrency: "ETH", buyIssuer: ULTRA_ISSUER, buyDisplay: "ETH", category: "Buy Tokens with USDC" },
+  { label: "Buy XRP with USDC", spendCurrency: "USDC", spendIssuer: USDC_ISSUER_S, spendDisplay: "USDC", buyCurrency: "XRP", buyIssuer: XRP_ISSUER_S, buyDisplay: "XRP", category: "Buy Tokens with USDC" },
 ];
 
 const FREQUENCIES = [
@@ -321,9 +377,8 @@ export default function DcaOrders() {
                   <SelectValue placeholder="Select a pair..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {["Stablecoins", "Crypto"].map((cat) => {
+                  {[...new Set(pairs.map((p) => p.category))].map((cat) => {
                     const catPairs = pairs.filter((p) => p.category === cat);
-                    if (catPairs.length === 0) return null;
                     return (
                       <div key={cat}>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{cat}</div>
