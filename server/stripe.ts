@@ -102,6 +102,14 @@ export const ADDONS = {
     interval: "month" as const,
     description: "Send/receive XRP & XLM, recurring payments — $7.99/mo",
   },
+  "legacy-plan": {
+    name: "Legacy Plan (Dead-Man Switch)",
+    type: "legacy_plan",
+    key: "legacy-plan",
+    amount: 999,
+    interval: "month" as const,
+    description: "Crypto inheritance dead-man switch — $9.99/mo (included free with Pro)",
+  },
 };
 
 export type AddonKey = keyof typeof ADDONS;

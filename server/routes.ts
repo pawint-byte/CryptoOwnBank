@@ -3727,8 +3727,10 @@ export async function registerRoutes(
       }
 
       const { tier } = await getEffectiveTier(userId);
-      if (tier === "premium" || tier === "pro") {
-        return res.status(400).json({ message: "This feature is already included in your plan." });
+      if (addonKey === "legacy-plan") {
+        if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
+      } else {
+        if (tier === "premium" || tier === "pro") return res.status(400).json({ message: "This feature is already included in your plan." });
       }
 
       const existing = await storage.getUserAddonByKey(userId, addonKey);
@@ -3767,8 +3769,10 @@ export async function registerRoutes(
       }
 
       const { tier } = await getEffectiveTier(userId);
-      if (tier === "premium" || tier === "pro") {
-        return res.status(400).json({ message: "This feature is already included in your plan." });
+      if (addonKey === "legacy-plan") {
+        if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
+      } else {
+        if (tier === "premium" || tier === "pro") return res.status(400).json({ message: "This feature is already included in your plan." });
       }
 
       const existing = await storage.getUserAddonByKey(userId, addonKey);
@@ -6116,11 +6120,17 @@ export async function registerRoutes(
     }
   });
 
+  async function hasLegacyAccess(userId: string): Promise<boolean> {
+    const { tier } = await getEffectiveTier(userId);
+    if (tier === "pro") return true;
+    const addon = await storage.getUserAddonByKey(userId, "legacy-plan");
+    return !!addon && addon.status === "active";
+  }
+
   app.get("/api/legacy-plan", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier ($99/mo)" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.json(null);
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
@@ -6135,8 +6145,7 @@ export async function registerRoutes(
   app.post("/api/legacy-plan", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier ($99/mo)" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const existing = await storage.getLegacyPlan(userId);
       if (existing) return res.status(400).json({ message: "Legacy plan already exists" });
       const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage } = req.body;
@@ -6160,8 +6169,7 @@ export async function registerRoutes(
   app.patch("/api/legacy-plan", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "No legacy plan found" });
       const updates: Record<string, unknown> = {};
@@ -6183,8 +6191,7 @@ export async function registerRoutes(
   app.post("/api/legacy-plan/check-in", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "No legacy plan found" });
       if (plan.status === "triggered") return res.status(400).json({ message: "Plan already triggered — cannot check in" });
@@ -6214,8 +6221,7 @@ export async function registerRoutes(
   app.post("/api/legacy-beneficiaries", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
       const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes } = req.body;
@@ -6241,8 +6247,7 @@ export async function registerRoutes(
   app.patch("/api/legacy-beneficiaries/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(403).json({ message: "No legacy plan found" });
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
@@ -6268,8 +6273,7 @@ export async function registerRoutes(
   app.delete("/api/legacy-beneficiaries/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = await getEffectiveTier(userId);
-      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(403).json({ message: "No legacy plan found" });
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);

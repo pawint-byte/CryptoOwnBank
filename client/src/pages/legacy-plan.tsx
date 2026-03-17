@@ -66,6 +66,16 @@ type LegacyPlanData = {
 };
 
 function ProGate() {
+  const { toast } = useToast();
+  const buyAddon = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/addons/stripe-checkout", { addonKey: "legacy-plan" }),
+    onSuccess: async (res) => {
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    },
+    onError: () => toast({ title: "Error", description: "Failed to start checkout", variant: "destructive" }),
+  });
+
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-6" data-testid="legacy-pro-gate">
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
@@ -77,26 +87,57 @@ function ProGate() {
           Member for Life — your crypto doesn't die with you.
         </p>
       </div>
-      <Card className="max-w-lg w-full">
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <Lock className="h-5 w-5 text-amber-500" />
-            <span className="font-medium">Pro Tier Feature</span>
-            <Badge variant="outline" className="ml-auto border-amber-500 text-amber-600">$99/mo</Badge>
+
+      <ul className="space-y-2 text-sm text-muted-foreground max-w-lg text-left">
+        <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Dead-man switch with configurable check-in schedule</li>
+        <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Encrypted beneficiary instructions — no seed phrases stored</li>
+        <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Grace period with secondary contact verification</li>
+        <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Wallet-specific recovery guidance (CypheRock, Ledger, Xaman, etc.)</li>
+        <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Member for Life — plan stays active as long as your subscription</li>
+      </ul>
+
+      <div className="grid gap-4 md:grid-cols-2 max-w-2xl w-full">
+        <Card className="border-2 border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Add-On</CardTitle>
+            <CardDescription>Add to any tier</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold">$9.99</span>
+              <span className="text-muted-foreground">/month</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Legacy Plan only — add it to Free or Premium</p>
+            <Button className="w-full" onClick={() => buyAddon.mutate()} disabled={buyAddon.isPending} data-testid="button-buy-addon">
+              {buyAddon.isPending ? "Loading..." : "Add Legacy Plan"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-amber-500 relative">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+            <Badge className="bg-amber-500 text-white">Best Value</Badge>
           </div>
-          <Separator />
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Dead-man switch with configurable check-in schedule</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Encrypted beneficiary instructions — no seed phrases stored</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Grace period with secondary contact verification</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Wallet-specific recovery guidance (CypheRock, Ledger, Xaman, etc.)</li>
-            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Member for Life — plan stays active as long as your subscription</li>
-          </ul>
-          <Button className="w-full" asChild>
-            <a href="/settings" data-testid="link-upgrade-pro">Upgrade to Pro</a>
-          </Button>
-        </CardContent>
-      </Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Upgrade to Pro</CardTitle>
+            <CardDescription>Legacy Plan + everything else</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold">$99</span>
+              <span className="text-muted-foreground">/month</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Legacy Plan included free, plus DeFi Borrowing, XLS-66 Lending, batch payments, team seats & more</p>
+            <Button className="w-full bg-amber-500 hover:bg-amber-600" asChild>
+              <a href="/settings" data-testid="link-upgrade-pro">Go Pro</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="text-xs text-muted-foreground max-w-md">
+        Competitors charge $40–$250/yr for crypto inheritance alone. Our add-on is $9.99/mo, or get it free with Pro which includes 15+ additional features.
+      </p>
     </div>
   );
 }

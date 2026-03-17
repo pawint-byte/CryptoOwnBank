@@ -505,7 +505,7 @@ const faqGroups = [
       },
       {
         q: "What is the Legacy Plan (dead-man switch)?",
-        a: "The Legacy Plan is a Pro-tier feature ($99/mo) that protects your crypto after you pass away — or if you become incapacitated. It's a dead-man switch: you check in on a schedule you choose (weekly, biweekly, monthly, or quarterly). If you miss a check-in, a grace period begins. During the grace period, your secondary contact (spouse, attorney, etc.) is notified to verify your status. If the grace period expires with no response, your beneficiaries receive the wallet recovery instructions you set up — where your hardware wallet is stored, where the seed phrase backup is located, how to access a CypheRock 2-of-5 Shamir setup, etc.<br/><br/><strong>What we NEVER store:</strong> seed phrases, private keys, passwords, or PINs. We only store YOUR instructions about <em>where</em> those things are — 'steel plate in the fireproof safe' or 'Card 1 with attorney, Card 3 in bank safe deposit box.' Everything is encrypted at rest and delivered only when the switch triggers. Member for Life — your crypto doesn't die with you.",
+        a: "The Legacy Plan protects your crypto after you pass away — or if you become incapacitated. It's available as a standalone add-on for <strong>$9.99/mo</strong> on any tier, or <strong>included free with Pro</strong> ($99/mo). It's a dead-man switch: you check in on a schedule you choose (weekly, biweekly, monthly, or quarterly). If you miss a check-in, a grace period begins. During the grace period, your secondary contact (spouse, attorney, etc.) is notified to verify your status. If the grace period expires with no response, your beneficiaries receive the wallet recovery instructions you set up — where your hardware wallet is stored, where the seed phrase backup is located, how to access a CypheRock 2-of-5 Shamir setup, etc.<br/><br/><strong>What we NEVER store:</strong> seed phrases, private keys, passwords, or PINs. We only store YOUR instructions about <em>where</em> those things are — 'steel plate in the fireproof safe' or 'Card 1 with attorney, Card 3 in bank safe deposit box.' Everything is encrypted at rest and delivered only when the switch triggers. Member for Life — your crypto doesn't die with you.",
       },
       {
         q: "How does the Legacy Plan check-in work?",
@@ -517,7 +517,7 @@ const faqGroups = [
       },
       {
         q: "Is the Legacy Plan really 'Member for Life'?",
-        a: "Yes. As long as your Pro subscription is active, your Legacy Plan stays active and monitoring. The check-in timer keeps running, your beneficiary instructions stay encrypted and ready, and the dead-man switch is always armed. If your subscription lapses, the plan is paused (not deleted) — your data is preserved so you can resume anytime. We built this for long-term peace of mind, not short-term upsells.",
+        a: "Yes. Whether you have the $9.99/mo add-on or the Pro tier (where it's included free), your Legacy Plan stays active as long as you're subscribed. The check-in timer keeps running, your beneficiary instructions stay encrypted and ready, and the dead-man switch is always armed. If your subscription lapses, the plan is paused (not deleted) — your data is preserved so you can resume anytime. We built this for long-term peace of mind, not short-term upsells.",
       },
       {
         q: "Are there fees for using XRPL and Stellar Tools?",
