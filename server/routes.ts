@@ -2698,13 +2698,29 @@ export async function registerRoutes(
       const enrichedWalletBals = await enrichWalletBalances(rawWalletBalsForPortfolio);
       const userWalletsForPortfolio = await storage.getWalletsByUser(userId);
 
-      const walletPositions = enrichedWalletBals.map((wb) => {
+      const walletPositions = await Promise.all(enrichedWalletBals.map(async (wb) => {
         const wallet = userWalletsForPortfolio.find((w: any) => w.id === wb.walletId);
-        const usdVal = parseFloat(wb.usdValue || "0");
+        let usdVal = parseFloat(wb.usdValue || "0");
         const bal = parseFloat(wb.balance);
-        const price = bal > 0 ? usdVal / bal : 0;
         const avgCost = parseFloat(wb.averageCost || "0");
         const costBasis = parseFloat(wb.totalCostBasis || "0");
+
+        if (usdVal === 0 && bal > 0) {
+          const sym = wb.assetSymbol.toUpperCase();
+          const asset = await storage.getAsset(sym);
+          let resolvedPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+          if (!resolvedPrice || resolvedPrice <= 0) {
+            resolvedPrice = priceCacheLookup[sym] || 0;
+          }
+          if (!resolvedPrice || resolvedPrice <= 0) {
+            resolvedPrice = avgCost;
+          }
+          if (resolvedPrice > 0) {
+            usdVal = bal * resolvedPrice;
+          }
+        }
+
+        const price = bal > 0 ? usdVal / bal : 0;
         const gainLoss = costBasis > 0 ? usdVal - costBasis : 0;
         const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
         totalValue += usdVal;
@@ -2727,7 +2743,7 @@ export async function registerRoutes(
           isAddressed: false,
           isWallet: true,
         };
-      });
+      }));
 
       const accounts = await storage.getAccountsByUser(userId);
       const accountMap = new Map(accounts.map(a => [a.id, a]));
