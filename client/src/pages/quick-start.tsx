@@ -2,6 +2,9 @@ import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -19,7 +22,9 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import {
   Download,
   Upload,
@@ -32,6 +37,11 @@ import {
   CalendarClock,
   Building2,
   X,
+  Plus,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 
 type TemplateType = "portfolio" | "contacts" | "payees" | "treasury";
@@ -253,6 +263,33 @@ function validateRow(type: TemplateType, data: Record<string, string>): string[]
   return errors;
 }
 
+const CHAINS = [
+  { value: "bitcoin", label: "Bitcoin", symbol: "BTC", color: "#F7931A" },
+  { value: "ethereum", label: "Ethereum", symbol: "ETH", color: "#627EEA" },
+  { value: "xrp", label: "XRP Ledger", symbol: "XRP", color: "#00A4E4" },
+  { value: "solana", label: "Solana", symbol: "SOL", color: "#9945FF" },
+  { value: "stellar", label: "Stellar", symbol: "XLM", color: "#7B61FF" },
+  { value: "cardano", label: "Cardano", symbol: "ADA", color: "#0033AD" },
+  { value: "dogecoin", label: "Dogecoin", symbol: "DOGE", color: "#C2A633" },
+  { value: "litecoin", label: "Litecoin", symbol: "LTC", color: "#345D9D" },
+  { value: "avalanche", label: "Avalanche C-Chain", symbol: "AVAX", color: "#E84142" },
+  { value: "polygon", label: "Polygon", symbol: "POL", color: "#8247E5" },
+  { value: "tron", label: "Tron", symbol: "TRX", color: "#FF0013" },
+  { value: "ton", label: "TON", symbol: "TON", color: "#0098EA" },
+  { value: "cosmos", label: "Cosmos Hub", symbol: "ATOM", color: "#2E3148" },
+  { value: "algorand", label: "Algorand", symbol: "ALGO", color: "#000000" },
+  { value: "hedera", label: "Hedera", symbol: "HBAR", color: "#222222" },
+  { value: "polkadot", label: "Polkadot", symbol: "DOT", color: "#E6007A" },
+  { value: "vechain", label: "VeChain", symbol: "VET", color: "#15BDFF" },
+  { value: "cronos", label: "Cronos", symbol: "CRO", color: "#002D74" },
+  { value: "digibyte", label: "DigiByte", symbol: "DGB", color: "#006AD2" },
+  { value: "casper", label: "Casper", symbol: "CSPR", color: "#FF473E" },
+  { value: "nervos", label: "Nervos", symbol: "CKB", color: "#3CC68A" },
+  { value: "zilliqa", label: "Zilliqa", symbol: "ZIL", color: "#49C1BF" },
+  { value: "verge", label: "Verge", symbol: "XVG", color: "#77C0D8" },
+  { value: "xdc", label: "XDC Network", symbol: "XDC", color: "#1E6EBF" },
+];
+
 export default function QuickStart() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType | "">("");
   const [preview, setPreview] = useState<PreviewState | null>(null);
@@ -263,6 +300,43 @@ export default function QuickStart() {
     errors: string[];
   } | null>(null);
   const { toast } = useToast();
+
+  const [addChain, setAddChain] = useState("");
+  const [addAddress, setAddAddress] = useState("");
+  const [addLabel, setAddLabel] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+
+  const { data: existingWallets = [] } = useQuery<Array<{ id: number; chain: string; address: string; label: string }>>({
+    queryKey: ["/api/wallets"],
+  });
+
+  const handleAddWallet = useCallback(async () => {
+    if (!addChain || !addAddress.trim()) {
+      toast({ title: "Select a blockchain and paste your address", variant: "destructive" });
+      return;
+    }
+    setAddLoading(true);
+    try {
+      await apiRequest("POST", "/api/wallets", {
+        chain: addChain,
+        address: addAddress.trim(),
+        label: addLabel.trim() || `${CHAINS.find(c => c.value === addChain)?.symbol || addChain} Wallet`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: "Wallet added!", description: "We're syncing your balance now." });
+      setAddChain("");
+      setAddAddress("");
+      setAddLabel("");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to add wallet";
+      toast({ title: message, variant: "destructive" });
+    } finally {
+      setAddLoading(false);
+    }
+  }, [addChain, addAddress, addLabel, toast]);
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -458,64 +532,222 @@ export default function QuickStart() {
   const totalErrors = preview?.rows.reduce((sum, r) => sum + (r.errors.length > 0 ? 1 : 0), 0) || 0;
   const totalValid = (preview?.rows.length || 0) - totalErrors;
 
+  const hasWallets = existingWallets.length > 0;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-page-title">Quick Start</h1>
         <p className="text-muted-foreground">
-          Download a template, fill it out offline, then upload to populate your account in one shot
+          {hasWallets
+            ? `You're tracking ${existingWallets.length} address${existingWallets.length !== 1 ? "es" : ""}. Add more below or explore your portfolio.`
+            : "Add your first blockchain address to start tracking your portfolio. No private keys needed."}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {TEMPLATES.map((template) => {
-          const Icon = template.icon;
-          return (
-            <Card key={template.id} data-testid={`card-template-${template.id}`}>
-              <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{template.title}</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">{template.description}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  {template.headers.map(h => (
-                    <Badge key={h} variant="secondary" className="text-[10px]">{h}</Badge>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => downloadCsv(template)}
-                  data-testid={`button-download-${template.id}`}
-                >
-                  <Download className="h-4 w-4 mr-1.5" />
-                  Download CSV
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <Card data-testid="card-upload-section">
+      <Card data-testid="card-add-wallet">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload Filled Template
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+              <Plus className="h-4 w-4 text-primary" />
+            </div>
+            {hasWallets ? "Add Another Address" : "Add Your First Blockchain Address"}
           </CardTitle>
           <CardDescription>
-            Select the template type, then upload your filled CSV file
+            Pick a blockchain, paste your public address, and we'll pull your balance automatically.
+            We never need your private keys.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="qs-chain">Blockchain</Label>
+              <Select value={addChain} onValueChange={setAddChain}>
+                <SelectTrigger id="qs-chain" data-testid="select-qs-chain">
+                  <SelectValue placeholder="Select blockchain" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHAINS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <span className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold" style={{ color: c.color }}>{c.symbol}</span>
+                        {c.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qs-label">Label (optional)</Label>
+              <Input
+                id="qs-label"
+                placeholder="e.g. My Ledger, Cold Storage"
+                value={addLabel}
+                onChange={(e) => setAddLabel(e.target.value)}
+                data-testid="input-qs-label"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="qs-address">Public Address</Label>
+            <div className="flex gap-2">
+              <Input
+                id="qs-address"
+                className="font-mono text-sm"
+                placeholder="Paste your public wallet address here"
+                value={addAddress}
+                onChange={(e) => setAddAddress(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddWallet(); }}
+                data-testid="input-qs-address"
+              />
+              <Button
+                onClick={handleAddWallet}
+                disabled={addLoading || !addChain || !addAddress.trim()}
+                data-testid="button-qs-add"
+              >
+                {addLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1.5" />}
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Find this in your wallet app (Ledger Live, MetaMask, Trust Wallet, Xaman, etc.) under "Receive"
+            </p>
+          </div>
+
+          {hasWallets && (
+            <div className="pt-2">
+              <Separator className="mb-4" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Your Tracked Addresses</p>
+                  <p className="text-xs text-muted-foreground">{existingWallets.length} address{existingWallets.length !== 1 ? "es" : ""} tracked</p>
+                </div>
+                <Link href="/wallets">
+                  <Button variant="outline" size="sm" data-testid="button-go-wallets">
+                    Manage All <ArrowRight className="h-3 w-3 ml-1.5" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {existingWallets.slice(0, 6).map((w) => {
+                  const chainInfo = CHAINS.find(c => c.value === w.chain);
+                  return (
+                    <div
+                      key={w.id}
+                      className="flex items-center gap-2 rounded-md border px-3 py-2"
+                      data-testid={`wallet-card-${w.id}`}
+                    >
+                      <span className="font-mono text-xs font-bold shrink-0" style={{ color: chainInfo?.color }}>
+                        {chainInfo?.symbol || w.chain.toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{w.label || "Wallet"}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono truncate">{w.address}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {existingWallets.length > 6 && (
+                  <div className="flex items-center justify-center rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                    +{existingWallets.length - 6} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!hasWallets && (
+            <Alert>
+              <Wallet className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                Not sure where to find your address? Open your wallet app, tap <strong>Receive</strong>, and copy the address shown.
+                It usually starts with <code className="text-xs bg-muted px-1 py-0.5 rounded">r...</code> for XRP,{" "}
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">0x...</code> for Ethereum,{" "}
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">bc1...</code> for Bitcoin, etc.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {hasWallets && !showBulkImport && (
+        <div className="flex items-center gap-4">
+          <Link href="/portfolio">
+            <Button data-testid="button-view-portfolio">
+              View Portfolio <ArrowRight className="h-4 w-4 ml-1.5" />
+            </Button>
+          </Link>
+          <Link href="/">
+            <Button variant="outline" data-testid="button-view-dashboard">
+              Dashboard <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      <Card>
+        <CardHeader
+          className="cursor-pointer"
+          onClick={() => setShowBulkImport(!showBulkImport)}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Bulk Import via CSV
+              </CardTitle>
+              <CardDescription>Have lots of wallets? Download a template, fill it out, and upload them all at once.</CardDescription>
+            </div>
+            {showBulkImport ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </div>
+        </CardHeader>
+        {showBulkImport && (
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {TEMPLATES.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <Card key={template.id} className="border-dashed" data-testid={`card-template-${template.id}`}>
+                    <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
+                          <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">{template.title}</CardTitle>
+                          <CardDescription className="text-xs mt-0.5">{template.description}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        {template.headers.map(h => (
+                          <Badge key={h} variant="secondary" className="text-[10px]">{h}</Badge>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadCsv(template)}
+                        data-testid={`button-download-${template.id}`}
+                      >
+                        <Download className="h-4 w-4 mr-1.5" />
+                        Download CSV
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <Separator />
+
+            <div>
+              <p className="text-sm font-medium mb-1">Upload Filled Template</p>
+              <p className="text-xs text-muted-foreground mb-3">Select the template type, then upload your filled CSV file</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
             <Select
               value={selectedTemplate}
               onValueChange={(v) => {
@@ -667,7 +899,8 @@ export default function QuickStart() {
               </div>
             </div>
           )}
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
     </div>
   );
