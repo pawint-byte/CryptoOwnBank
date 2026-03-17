@@ -76,18 +76,23 @@ type NavItem = {
 };
 
 const allItems: NavItem[] = [
-  { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "tracker" },
-  { title: "Overview", url: "/", icon: LayoutDashboard, group: "tracker" },
-  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "tracker" },
-  { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "tracker" },
-  { title: "Wallets & Addresses", url: "/wallets", icon: Wallet, group: "tracker" },
-  { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "tracker" },
-  { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "tracker" },
-  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "tracker" },
-  { title: "Integrations", url: "/integrations", icon: Link2, group: "tracker" },
-  { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "tracker" },
-  { title: "Whale Alerts", url: "/whale-alerts", icon: Fish, group: "tracker" },
-  { title: "Technical Analysis", url: "/technical-analysis", icon: BarChart3, group: "tracker" },
+  { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "start" },
+  { title: "Overview", url: "/", icon: LayoutDashboard, group: "start" },
+  { title: "Wallets & Addresses", url: "/wallets", icon: Wallet, group: "start" },
+  { title: "Integrations", url: "/integrations", icon: Link2, group: "start" },
+
+  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "portfolio" },
+  { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "portfolio" },
+  { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "portfolio" },
+  { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "portfolio" },
+  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "portfolio" },
+
+  { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "market" },
+  { title: "Whale Alerts", url: "/whale-alerts", icon: Fish, group: "market" },
+  { title: "Technical Analysis", url: "/technical-analysis", icon: BarChart3, group: "market" },
+  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "market" },
+  { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "market" },
+  { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "market" },
 
   { title: "Wallet & Yield", url: "/ownbank", icon: Landmark, color: "#00A4E4", group: "ownbank" },
   { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
@@ -115,17 +120,15 @@ const allItems: NavItem[] = [
   { title: "Recurring Payments", url: "/stellar/recurring", icon: CalendarClock, color: "#7B61FF", group: "stellar" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
 
-  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "research" },
-  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },
-  { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "research" },
-  { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "research" },
-  { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "research" },
-  { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "research" },
-  { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "research" },
-  { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "research" },
-  { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "research" },
-  { title: "FAQ", url: "/faq", icon: HelpCircle, group: "research" },
-  { title: "Contact & Feedback", url: "/contact", icon: MessageSquare, group: "research" },
+  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "planning" },
+  { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "planning" },
+  { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "planning" },
+  { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "planning" },
+
+  { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "learn" },
+  { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "learn" },
+  { title: "FAQ", url: "/faq", icon: HelpCircle, group: "learn" },
+  { title: "Contact & Feedback", url: "/contact", icon: MessageSquare, group: "learn" },
 ];
 
 const DEFAULT_FAVORITES = ["/", "/portfolio", "/rwa-yields", "/stablecoins", "/chain-guide"];
@@ -247,10 +250,13 @@ export function AppSidebar() {
 
   const { favorites, toggle, isFav } = useFavorites();
   const { open, toggleGroup } = useGroupState({
-    tracker: true,
+    start: true,
+    portfolio: false,
+    market: false,
     ownbank: false,
     stellar: false,
-    research: false,
+    planning: false,
+    learn: false,
   });
 
   const getInitials = () => {
@@ -264,10 +270,13 @@ export function AppSidebar() {
   };
 
   const favoriteItems = allItems.filter((i) => favorites.includes(i.url));
-  const trackerItems = allItems.filter((i) => i.group === "tracker");
+  const startItems = allItems.filter((i) => i.group === "start");
+  const portfolioItems = allItems.filter((i) => i.group === "portfolio");
+  const marketItems = allItems.filter((i) => i.group === "market");
   const ownbankItems = allItems.filter((i) => i.group === "ownbank");
   const stellarItems = allItems.filter((i) => i.group === "stellar");
-  const researchItems = allItems.filter((i) => i.group === "research");
+  const planningItems = allItems.filter((i) => i.group === "planning");
+  const learnItems = allItems.filter((i) => i.group === "learn");
 
   const renderItem = (item: NavItem, testPrefix: string, showFavStar = true) => (
     <NavItemRow
@@ -345,7 +354,11 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {renderCollapsibleGroup("tracker", "Tracker", trackerItems)}
+        {renderCollapsibleGroup("start", "Getting Started", startItems)}
+
+        {renderCollapsibleGroup("portfolio", "Portfolio", portfolioItems)}
+
+        {renderCollapsibleGroup("market", "Market & Yields", marketItems)}
 
         {renderCollapsibleGroup(
           "ownbank",
@@ -356,7 +369,9 @@ export function AppSidebar() {
 
         {renderCollapsibleGroup("stellar", "OwnBank Stellar", stellarItems, "#7B61FF")}
 
-        {renderCollapsibleGroup("research", "Research & Tools", researchItems)}
+        {renderCollapsibleGroup("planning", "Planning & Tools", planningItems)}
+
+        {renderCollapsibleGroup("learn", "Learn", learnItems)}
 
         {adminStatus?.isAdmin && (
           <SidebarGroup>
