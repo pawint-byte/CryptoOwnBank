@@ -67,6 +67,7 @@ import QuickStart from "@/pages/quick-start";
 import Insurance from "@/pages/insurance";
 import DeFiBorrowing from "@/pages/defi-borrowing";
 import RecurringPayments from "@/pages/recurring-payments";
+import DcaOrders from "@/pages/dca-orders";
 import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
 import PaymentQueue from "@/pages/payment-queue";
@@ -141,7 +142,9 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/send" component={OwnBankSend} />
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
+        <Route path="/ownbank/dca" component={DcaOrders} />
         <Route path="/ownbank/recurring" component={RecurringPayments} />
+        <Route path="/stellar/dca" component={DcaOrders} />
         <Route path="/stellar/recurring" component={RecurringPayments} />
         <Route path="/ownbank/my-card" component={MyCard} />
         <Route path="/ownbank/payment-queue" component={PaymentQueue} />
@@ -207,6 +210,7 @@ function Router() {
         <Route path="/insurance" component={Insurance} />
         <Route path="/stellar/wallet" component={StellarWallet} />
         <Route path="/stellar/dex" component={StellarDex} />
+        <Route path="/stellar/dca" component={DcaOrders} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/tokens" component={StellarTokens} />
         <Route path="/stellar/invoices" component={StellarInvoices} />

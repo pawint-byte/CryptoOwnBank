@@ -6081,6 +6081,98 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/dca-orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const orders = await storage.getDcaOrdersByUser(userId);
+      res.json(orders);
+    } catch (error) {
+      console.error("Get DCA orders error:", error);
+      res.status(500).json({ message: "Failed to load DCA orders" });
+    }
+  });
+
+  app.post("/api/dca-orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { chain, spendCurrency, spendIssuer, buyCurrency, buyIssuer, spendAmount, frequency, nextRunAt, totalRuns, label } = req.body;
+
+      if (!chain || !spendCurrency || !buyCurrency || !spendAmount || !frequency || !nextRunAt) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const order = await storage.createDcaOrder({
+        userId,
+        chain,
+        spendCurrency,
+        spendIssuer: spendIssuer || null,
+        buyCurrency,
+        buyIssuer: buyIssuer || null,
+        spendAmount: String(spendAmount),
+        frequency,
+        nextRunAt: new Date(nextRunAt),
+        status: "active",
+        totalRuns: totalRuns || null,
+        label: label || null,
+      });
+
+      res.json(order);
+    } catch (error) {
+      console.error("Create DCA order error:", error);
+      res.status(500).json({ message: "Failed to create DCA order" });
+    }
+  });
+
+  app.patch("/api/dca-orders/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const order = await storage.getDcaOrder(req.params.id);
+      if (!order || order.userId !== userId) {
+        return res.status(404).json({ message: "DCA order not found" });
+      }
+      const updated = await storage.updateDcaOrder(order.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update DCA order error:", error);
+      res.status(500).json({ message: "Failed to update DCA order" });
+    }
+  });
+
+  app.delete("/api/dca-orders/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const order = await storage.getDcaOrder(req.params.id);
+      if (!order || order.userId !== userId) {
+        return res.status(404).json({ message: "DCA order not found" });
+      }
+      await storage.deleteDcaOrder(order.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete DCA order error:", error);
+      res.status(500).json({ message: "Failed to delete DCA order" });
+    }
+  });
+
+  app.get("/api/dca-executions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const orderId = req.query.orderId as string | undefined;
+      if (orderId) {
+        const order = await storage.getDcaOrder(orderId);
+        if (!order || order.userId !== userId) {
+          return res.status(404).json({ message: "DCA order not found" });
+        }
+        const executions = await storage.getDcaExecutionsByOrder(orderId);
+        return res.json(executions);
+      }
+      const executions = await storage.getDcaExecutionsByUser(userId);
+      res.json(executions);
+    } catch (error) {
+      console.error("Get DCA executions error:", error);
+      res.status(500).json({ message: "Failed to load DCA history" });
+    }
+  });
+
   app.post("/api/portfolio-snapshots", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

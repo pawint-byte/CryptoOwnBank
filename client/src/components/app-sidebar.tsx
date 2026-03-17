@@ -47,6 +47,7 @@ import {
   Fish,
   Bug,
   Pickaxe,
+  Repeat,
 } from "lucide-react";
 import {
   Sidebar,
@@ -90,6 +91,7 @@ const allItems: NavItem[] = [
   { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
   { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, color: "#00A4E4", group: "ownbank" },
   { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, color: "#00A4E4", group: "ownbank" },
+  { title: "DCA Orders", url: "/ownbank/dca", icon: Repeat, color: "#00A4E4", group: "ownbank" },
   { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
   { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, color: "#00A4E4", group: "ownbank" },
   { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, color: "#00A4E4", group: "ownbank" },
@@ -106,6 +108,7 @@ const allItems: NavItem[] = [
   { title: "Token Manager", url: "/stellar/tokens", icon: Coins, color: "#7B61FF", group: "stellar" },
   { title: "Invoices", url: "/stellar/invoices", icon: InvoiceIcon, color: "#7B61FF", group: "stellar" },
   { title: "DEX Trading", url: "/stellar/dex", icon: TrendingUp, color: "#7B61FF", group: "stellar" },
+  { title: "DCA Orders", url: "/stellar/dca", icon: Repeat, color: "#7B61FF", group: "stellar" },
   { title: "Payment Queue", url: "/stellar/payment-queue", icon: CloudUpload, color: "#7B61FF", group: "stellar" },
   { title: "Recurring Payments", url: "/stellar/recurring", icon: CalendarClock, color: "#7B61FF", group: "stellar" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },

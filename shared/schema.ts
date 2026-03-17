@@ -499,6 +499,60 @@ export const insertPaymentExecutionSchema = createInsertSchema(paymentExecutions
   executedAt: true,
 });
 
+export const dcaOrders = pgTable("dca_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  chain: varchar("chain", { length: 20 }).notNull(),
+  spendCurrency: varchar("spend_currency", { length: 100 }).notNull(),
+  spendIssuer: varchar("spend_issuer", { length: 255 }),
+  buyCurrency: varchar("buy_currency", { length: 100 }).notNull(),
+  buyIssuer: varchar("buy_issuer", { length: 255 }),
+  spendAmount: decimal("spend_amount", { precision: 18, scale: 8 }).notNull(),
+  frequency: varchar("frequency", { length: 20 }).notNull(),
+  nextRunAt: timestamp("next_run_at").notNull(),
+  lastRunAt: timestamp("last_run_at"),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  totalRuns: integer("total_runs"),
+  runsCompleted: integer("runs_completed").default(0),
+  label: varchar("label", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_dca_orders_user").on(table.userId),
+  index("idx_dca_orders_status").on(table.status),
+  index("idx_dca_orders_next_run").on(table.nextRunAt),
+]);
+
+export const dcaExecutions = pgTable("dca_executions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dcaOrderId: varchar("dca_order_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  spendAmount: decimal("spend_amount", { precision: 18, scale: 8 }).notNull(),
+  receivedAmount: decimal("received_amount", { precision: 18, scale: 8 }),
+  xamanPayloadId: varchar("xaman_payload_id", { length: 255 }),
+  txHash: varchar("tx_hash", { length: 255 }),
+  errorMessage: text("error_message"),
+  executedAt: timestamp("executed_at").defaultNow(),
+}, (table) => [
+  index("idx_dca_executions_order").on(table.dcaOrderId),
+  index("idx_dca_executions_user").on(table.userId),
+]);
+
+export const insertDcaOrderSchema = createInsertSchema(dcaOrders).omit({
+  id: true,
+  lastRunAt: true,
+  runsCompleted: true,
+  createdAt: true,
+});
+export const insertDcaExecutionSchema = createInsertSchema(dcaExecutions).omit({
+  id: true,
+  executedAt: true,
+});
+export type DcaOrder = typeof dcaOrders.$inferSelect;
+export type InsertDcaOrder = z.infer<typeof insertDcaOrderSchema>;
+export type DcaExecution = typeof dcaExecutions.$inferSelect;
+export type InsertDcaExecution = z.infer<typeof insertDcaExecutionSchema>;
+
 export const portfolioSnapshots = pgTable("portfolio_snapshots", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),

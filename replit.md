@@ -20,6 +20,7 @@ Preferred communication style: Simple, everyday language.
     -   **RWA Yield Explorer**: Recommender quiz, enhanced protocol cards (Soil, Ondo, Centrifuge, XDC, Maple, etc.), guided flows, and RWA token tracking across chains.
     -   **Stablecoin Dashboard**: Directory and user holdings for major stablecoins.
     -   **Recommendations Hub**: Asset optimization, scam token detection, on-chain vs. custodial distinction, wallet-specific staking guides, and detailed earn options.
+    -   **DCA (Dollar-Cost Averaging)**: Non-custodial recurring DEX buys on XRPL (14 pairs via Xaman approval) and Stellar (9 pairs). Scheduler creates pending executions; user approves each via mobile wallet. Supports daily/weekly/biweekly/monthly/quarterly frequencies with optional total-run limits. Read-only/cold wallets cannot sign — info card explains the hot wallet approach.
     -   **Payment Features**: Recurring payments, invoice generation, personal payment QR page, offline payment queuing, and shareable portfolio snapshot QRs.
     -   **Branding**: Customizable business profiles for invoices and payment links.
     -   **Technical Analysis**: Interactive price charts with indicators (SMA, EMA, RSI, MACD, Bollinger Bands) for 21 assets.

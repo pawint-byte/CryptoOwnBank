@@ -60,11 +60,17 @@ import {
   scheduledPayments,
   paymentExecutions,
   portfolioSnapshots,
+  dcaOrders,
+  dcaExecutions,
   type ScheduledPayment,
   type InsertScheduledPayment,
   type PaymentExecution,
   type InsertPaymentExecution,
   type PortfolioSnapshot,
+  type DcaOrder,
+  type InsertDcaOrder,
+  type DcaExecution,
+  type InsertDcaExecution,
   whaleAlerts,
   whaleAlertSettings,
   type WhaleAlert,
@@ -238,6 +244,17 @@ export interface IStorage {
   getPaymentExecutionsByScheduled(scheduledPaymentId: string): Promise<PaymentExecution[]>;
   getPaymentExecutionsByUser(userId: string): Promise<PaymentExecution[]>;
   updatePaymentExecution(id: string, data: Partial<PaymentExecution>): Promise<PaymentExecution | undefined>;
+
+  createDcaOrder(order: InsertDcaOrder): Promise<DcaOrder>;
+  getDcaOrdersByUser(userId: string): Promise<DcaOrder[]>;
+  getDcaOrder(id: string): Promise<DcaOrder | undefined>;
+  updateDcaOrder(id: string, data: Partial<DcaOrder>): Promise<DcaOrder | undefined>;
+  deleteDcaOrder(id: string): Promise<void>;
+  getDueDcaOrders(): Promise<DcaOrder[]>;
+  createDcaExecution(execution: InsertDcaExecution): Promise<DcaExecution>;
+  getDcaExecutionsByOrder(orderId: string): Promise<DcaExecution[]>;
+  getDcaExecutionsByUser(userId: string): Promise<DcaExecution[]>;
+  updateDcaExecution(id: string, data: Partial<DcaExecution>): Promise<DcaExecution | undefined>;
 
   createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot>;
   getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined>;
@@ -966,6 +983,69 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.update(paymentExecutions)
       .set(data)
       .where(eq(paymentExecutions.id, id))
+      .returning();
+    return result;
+  }
+
+  async createDcaOrder(order: InsertDcaOrder): Promise<DcaOrder> {
+    const [result] = await db.insert(dcaOrders).values(order).returning();
+    return result;
+  }
+
+  async getDcaOrdersByUser(userId: string): Promise<DcaOrder[]> {
+    return db.select().from(dcaOrders)
+      .where(eq(dcaOrders.userId, userId))
+      .orderBy(desc(dcaOrders.createdAt));
+  }
+
+  async getDcaOrder(id: string): Promise<DcaOrder | undefined> {
+    const [result] = await db.select().from(dcaOrders).where(eq(dcaOrders.id, id));
+    return result;
+  }
+
+  async updateDcaOrder(id: string, data: Partial<DcaOrder>): Promise<DcaOrder | undefined> {
+    const [result] = await db.update(dcaOrders)
+      .set(data)
+      .where(eq(dcaOrders.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteDcaOrder(id: string): Promise<void> {
+    await db.delete(dcaOrders).where(eq(dcaOrders.id, id));
+  }
+
+  async getDueDcaOrders(): Promise<DcaOrder[]> {
+    return db.select().from(dcaOrders)
+      .where(
+        and(
+          eq(dcaOrders.status, "active"),
+          lte(dcaOrders.nextRunAt, new Date())
+        )
+      );
+  }
+
+  async createDcaExecution(execution: InsertDcaExecution): Promise<DcaExecution> {
+    const [result] = await db.insert(dcaExecutions).values(execution).returning();
+    return result;
+  }
+
+  async getDcaExecutionsByOrder(orderId: string): Promise<DcaExecution[]> {
+    return db.select().from(dcaExecutions)
+      .where(eq(dcaExecutions.dcaOrderId, orderId))
+      .orderBy(desc(dcaExecutions.executedAt));
+  }
+
+  async getDcaExecutionsByUser(userId: string): Promise<DcaExecution[]> {
+    return db.select().from(dcaExecutions)
+      .where(eq(dcaExecutions.userId, userId))
+      .orderBy(desc(dcaExecutions.executedAt));
+  }
+
+  async updateDcaExecution(id: string, data: Partial<DcaExecution>): Promise<DcaExecution | undefined> {
+    const [result] = await db.update(dcaExecutions)
+      .set(data)
+      .where(eq(dcaExecutions.id, id))
       .returning();
     return result;
   }
