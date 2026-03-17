@@ -615,6 +615,127 @@ export default function QuickStart() {
             </p>
           </div>
 
+          <Separator />
+
+          <div className="rounded-md border border-dashed p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" />
+                  Have multiple wallets? Import them all at once
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Download our CSV template, fill in your blockchain addresses, and upload to add them all in one shot.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const headers = ["chain", "address", "label"];
+                  const examples = [
+                    ["bitcoin", "bc1qexampleaddress123456789", "My BTC Ledger"],
+                    ["ethereum", "0x1234567890abcdef1234567890abcdef12345678", "ETH MetaMask"],
+                    ["xrp", "rExAmPlEaDdReSs123456789", "Main XRP Wallet"],
+                    ["solana", "5exampleSolanaAddress1234567890abcdefgh", "SOL Phantom"],
+                    ["stellar", "GEXAMPLESTELLARADDRESS1234567890ABCDEFGHIJKLMNOP", "XLM Wallet"],
+                  ];
+                  const lines = [headers.join(","), ...examples.map(r => r.join(","))];
+                  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "cryptoownbank-wallets-template.csv";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }}
+                data-testid="button-download-wallet-template"
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Download Template
+              </Button>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                      const text = ev.target?.result as string;
+                      const lines = text.split(/\r?\n/).filter(l => l.trim());
+                      if (lines.length < 2) {
+                        toast({ title: "CSV file is empty or has only headers", variant: "destructive" });
+                        return;
+                      }
+                      const headerLine = lines[0].toLowerCase().split(",").map(h => h.trim());
+                      const chainIdx = headerLine.indexOf("chain");
+                      const addrIdx = headerLine.indexOf("address");
+                      const labelIdx = headerLine.indexOf("label");
+                      if (chainIdx < 0 || addrIdx < 0) {
+                        toast({ title: "CSV must have 'chain' and 'address' columns", variant: "destructive" });
+                        return;
+                      }
+                      const exampleMarkers = ["rExAmPlEaDdReSs", "0x1234567890abcdef", "bc1qexample", "5exampleSolana", "GEXAMPLESTELLAR"];
+                      let added = 0;
+                      let skipped = 0;
+                      const errors: string[] = [];
+                      for (let i = 1; i < lines.length; i++) {
+                        const cells = lines[i].split(",").map(c => c.trim());
+                        const chain = cells[chainIdx]?.toLowerCase();
+                        const address = cells[addrIdx];
+                        const label = labelIdx >= 0 ? cells[labelIdx] : "";
+                        if (!chain || !address) continue;
+                        if (exampleMarkers.some(m => address.includes(m))) continue;
+                        try {
+                          await apiRequest("POST", "/api/wallets", {
+                            chain,
+                            address,
+                            label: label || `${chain.toUpperCase()} Wallet`,
+                          });
+                          added++;
+                        } catch (err: unknown) {
+                          skipped++;
+                          const msg = err instanceof Error ? err.message : "Failed";
+                          errors.push(`Row ${i + 1}: ${msg}`);
+                        }
+                      }
+                      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+                      if (added > 0) {
+                        toast({ title: `${added} wallet${added !== 1 ? "s" : ""} imported!`, description: skipped > 0 ? `${skipped} skipped` : undefined });
+                      } else {
+                        toast({ title: "No wallets imported", description: errors[0] || "Check your CSV format", variant: "destructive" });
+                      }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = "";
+                  }}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  data-testid="input-wallet-csv-upload"
+                />
+                <Button variant="outline" size="sm" data-testid="button-upload-wallet-csv">
+                  <Upload className="h-4 w-4 mr-1.5" />
+                  Upload Filled CSV
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {["chain", "address", "label"].map(h => (
+                <Badge key={h} variant="secondary" className="text-[10px]">{h}</Badge>
+              ))}
+              <span className="text-[10px] text-muted-foreground self-center ml-1">
+                Supports: bitcoin, ethereum, xrp, solana, stellar, cardano, + 18 more
+              </span>
+            </div>
+          </div>
+
           {hasWallets && (
             <div className="pt-2">
               <Separator className="mb-4" />
