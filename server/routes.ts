@@ -2,9 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, type CustomVault } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
-import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail } from "./email";
 import multer from "multer";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -7622,6 +7622,193 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Bulk email error:", error);
       res.status(500).json({ message: "Failed to send bulk emails", error: error.message });
+    }
+  });
+
+  app.get("/api/admin/announcements", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const announcements = await db.select().from(featureAnnouncements).orderBy(featureAnnouncements.sentAt);
+      res.json(announcements.reverse());
+    } catch (error: any) {
+      console.error("Get announcements error:", error);
+      res.status(500).json({ message: "Failed to load announcements" });
+    }
+  });
+
+  app.post("/api/admin/announcements/send", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const { title, description, ctaLabel, ctaUrl, audienceTier } = req.body;
+      if (!title || !description) return res.status(400).json({ message: "Title and description are required" });
+
+      const allUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        unsubscribedFromAnnouncements: users.unsubscribedFromAnnouncements,
+      }).from(users);
+
+      let validUsers = allUsers.filter(u =>
+        u.email &&
+        !u.email.endsWith("@example.com") &&
+        !u.email.endsWith("@test.com") &&
+        !u.unsubscribedFromAnnouncements
+      );
+
+      if (audienceTier && audienceTier !== "all") {
+        const settingsRows = await db.select({
+          userId: userSettingsTable.userId,
+          tier: userSettingsTable.tier,
+        }).from(userSettingsTable);
+        const tierMap = new Map(settingsRows.map(s => [s.userId, s.tier]));
+        validUsers = validUsers.filter(u => {
+          const userTier = tierMap.get(u.id) || "free";
+          if (audienceTier === "premium") return userTier === "premium" || userTier === "pro";
+          if (audienceTier === "pro") return userTier === "pro";
+          return true;
+        });
+      }
+
+      let sent = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (const u of validUsers) {
+        try {
+          const unsubUrl = `https://cryptoownbank.com/unsubscribe?uid=${u.id}`;
+          await sendFeatureAnnouncementEmail(
+            u.email!,
+            u.firstName || "there",
+            title,
+            description,
+            ctaLabel || null,
+            ctaUrl || null,
+            unsubUrl,
+          );
+          sent++;
+          await new Promise(r => setTimeout(r, 300));
+        } catch (err: any) {
+          failed++;
+          errors.push(`${u.email}: ${err.message}`);
+        }
+      }
+
+      const [announcement] = await db.insert(featureAnnouncements).values({
+        title,
+        description,
+        ctaLabel: ctaLabel || null,
+        ctaUrl: ctaUrl || null,
+        audienceTier: audienceTier || "all",
+        sentBy: user?.email || userId,
+        totalRecipients: validUsers.length,
+        totalSent: sent,
+        totalFailed: failed,
+      }).returning();
+
+      res.json({ announcement, sent, failed, total: validUsers.length, errors: errors.slice(0, 10) });
+    } catch (error: any) {
+      console.error("Send announcement error:", error);
+      res.status(500).json({ message: "Failed to send announcement", error: error.message });
+    }
+  });
+
+  app.post("/api/admin/announcements/preview", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const { title, description, ctaLabel, ctaUrl } = req.body;
+      if (!title || !description) return res.status(400).json({ message: "Title and description are required" });
+
+      await sendFeatureAnnouncementEmail(
+        user.email!,
+        user.firstName || "there",
+        title,
+        description,
+        ctaLabel || null,
+        ctaUrl || null,
+        "https://cryptoownbank.com/unsubscribe?uid=preview",
+      );
+
+      res.json({ message: "Preview sent to your email" });
+    } catch (error: any) {
+      console.error("Preview announcement error:", error);
+      res.status(500).json({ message: "Failed to send preview" });
+    }
+  });
+
+  app.get("/api/unsubscribe", async (req, res) => {
+    try {
+      const uid = req.query.uid as string;
+      if (!uid) return res.status(400).send("Invalid unsubscribe link");
+      await db.update(users).set({ unsubscribedFromAnnouncements: true }).where(eq(users.id, uid));
+      res.send(`
+        <html>
+          <head><title>Unsubscribed — CryptoOwnBank</title></head>
+          <body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px;">
+            <h1 style="color: #00A4E4;">CryptoOwnBank</h1>
+            <h2>You've been unsubscribed</h2>
+            <p style="color: #666;">You will no longer receive product announcement emails.</p>
+            <p style="color: #666;">You'll still receive important transactional emails (deposits, withdrawals, security alerts).</p>
+            <a href="https://cryptoownbank.com" style="color: #00A4E4;">Return to CryptoOwnBank</a>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("Unsubscribe error:", error);
+      res.status(500).send("Something went wrong");
+    }
+  });
+
+  app.get("/api/admin/announcements/audience-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const tier = (req.query.tier as string) || "all";
+      const allUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        unsubscribedFromAnnouncements: users.unsubscribedFromAnnouncements,
+      }).from(users);
+      let validUsers = allUsers.filter(u =>
+        u.email &&
+        !u.email.endsWith("@example.com") &&
+        !u.email.endsWith("@test.com") &&
+        !u.unsubscribedFromAnnouncements
+      );
+      if (tier !== "all") {
+        const settingsRows = await db.select({
+          userId: userSettingsTable.userId,
+          tier: userSettingsTable.tier,
+        }).from(userSettingsTable);
+        const tierMap = new Map(settingsRows.map(s => [s.userId, s.tier]));
+        validUsers = validUsers.filter(u => {
+          const userTier = tierMap.get(u.id) || "free";
+          if (tier === "premium") return userTier === "premium" || userTier === "pro";
+          if (tier === "pro") return userTier === "pro";
+          return true;
+        });
+      }
+      res.json({ count: validUsers.length });
+    } catch (error) {
+      console.error("Audience count error:", error);
+      res.status(500).json({ message: "Failed to count audience" });
     }
   });
 

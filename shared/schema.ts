@@ -929,3 +929,19 @@ export type LegacyBeneficiary = typeof legacyBeneficiaries.$inferSelect;
 export type InsertLegacyBeneficiary = z.infer<typeof insertLegacyBeneficiarySchema>;
 export type LegacyCheckIn = typeof legacyCheckIns.$inferSelect;
 export type InsertXamanConnection = z.infer<typeof insertXamanConnectionSchema>;
+
+export const featureAnnouncements = pgTable("feature_announcements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  ctaLabel: varchar("cta_label", { length: 100 }),
+  ctaUrl: varchar("cta_url", { length: 500 }),
+  audienceTier: varchar("audience_tier", { length: 20 }).default("all"),
+  sentBy: varchar("sent_by").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+  totalRecipients: integer("total_recipients").default(0),
+  totalSent: integer("total_sent").default(0),
+  totalFailed: integer("total_failed").default(0),
+});
+
+export type FeatureAnnouncement = typeof featureAnnouncements.$inferSelect;

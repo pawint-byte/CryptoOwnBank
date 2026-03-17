@@ -39,7 +39,7 @@ Preferred communication style: Simple, everyday language.
     -   Token Scanning: Comprehensive token scanning (ERC-20, SPL, XRP trust lines, etc.) with CoinGecko price lookup.
     -   Blockchain Transaction Import: Full history import (Etherscan, blockchain.info, XRPL `account_tx`), tax lot creation, cost basis calculation, and inter-wallet transfer detection.
     -   XRPL Scanner: Monitors user transactions with Soil vaults, auto-discovering RLUSD transfers.
-    -   Email Notifications: Transactional emails for deposits, withdrawals, DEX trades, renewals, alerts, etc. Anti-phishing security phrase system injected into all outgoing emails via centralized `sendEmail` in `server/email.ts`.
+    -   Email Notifications: Transactional emails for deposits, withdrawals, DEX trades, renewals, alerts, etc. Anti-phishing security phrase system injected into all outgoing emails via centralized `sendEmail` in `server/email.ts`. Feature announcement email system with admin composer, live preview, tier-based audience filtering, send history, and unsubscribe support.
     -   Monetization: Freemium model (Free, Premium, Pro tiers) and A La Carte Add-Ons with crypto and Stripe payments.
     -   Error Monitoring & Alerting: Server-side error capturing, client-side error reporting, and admin alerting via email.
 

@@ -49,6 +49,7 @@ import {
   Pickaxe,
   Repeat,
   HeartHandshake,
+  Mail,
 } from "lucide-react";
 import {
   Sidebar,
@@ -103,7 +104,6 @@ const allItems: NavItem[] = [
   { title: "History", url: "/ownbank/history", icon: History, color: "#00A4E4", group: "ownbank" },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
-  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "ownbank" },
 
   { title: "Wallet", url: "/stellar/wallet", icon: Wallet, color: "#7B61FF", group: "stellar" },
   { title: "Send & Receive", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
@@ -115,6 +115,7 @@ const allItems: NavItem[] = [
   { title: "Recurring Payments", url: "/stellar/recurring", icon: CalendarClock, color: "#7B61FF", group: "stellar" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
 
+  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "research" },
   { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "research" },
   { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "research" },
   { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "research" },
@@ -412,6 +413,18 @@ export function AppSidebar() {
                     <Link href="/admin/vault-blocklist">
                       <Shield className="h-4 w-4 text-amber-500" />
                       <span>Vault Blocklist</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === "/admin/announcements"}
+                    data-testid="nav-admin-announcements"
+                  >
+                    <Link href="/admin/announcements">
+                      <Mail className="h-4 w-4 text-amber-500" />
+                      <span>Announcements</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

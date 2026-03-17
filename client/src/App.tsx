@@ -45,6 +45,7 @@ import Contact from "@/pages/contact";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
 import AdminVaultBlocklist from "@/pages/admin-vault-blocklist";
+import AdminAnnouncements from "@/pages/admin-announcements";
 import YieldCalculator from "@/pages/yield-calculator";
 import PriceAlerts from "@/pages/price-alerts";
 import WalletsPage from "@/pages/wallets";
@@ -177,6 +178,7 @@ function AuthenticatedRoutes() {
         <Route path="/admin/metrics" component={AdminMetrics} />
         <Route path="/admin/errors" component={AdminErrorMonitor} />
         <Route path="/admin/vault-blocklist" component={AdminVaultBlocklist} />
+        <Route path="/admin/announcements" component={AdminAnnouncements} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>

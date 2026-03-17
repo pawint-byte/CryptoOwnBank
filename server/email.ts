@@ -631,3 +631,50 @@ export async function sendYieldNotificationEmail(to: string, name: string, yield
   `;
   await sendEmail(to, `Yield Received: ${yieldAmount} RLUSD from ${vaultName}`, html);
 }
+
+export async function sendFeatureAnnouncementEmail(
+  to: string,
+  name: string,
+  title: string,
+  description: string,
+  ctaLabel?: string | null,
+  ctaUrl?: string | null,
+  unsubscribeUrl?: string,
+) {
+  const ctaBlock = ctaLabel && ctaUrl ? `
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${ctaUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+        ${ctaLabel}
+      </a>
+    </div>
+  ` : "";
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hey ${name},</h2>
+        <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 12px; padding: 24px; margin: 20px 0;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="background: #00A4E4; color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">New Feature</span>
+          </div>
+          <h3 style="color: #0c4a6e; margin: 0 0 12px; font-size: 20px;">${title}</h3>
+          <div style="color: #334155; line-height: 1.7; font-size: 15px;">${description}</div>
+        </div>
+        ${ctaBlock}
+        <p style="color: #555; font-size: 14px; text-align: center; line-height: 1.6;">
+          Questions? Check out our <a href="https://cryptoownbank.com/faq" style="color: #00A4E4; text-decoration: none; font-weight: 600;">FAQ</a> for details.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because you have a CryptoOwnBank account.
+        ${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe from product announcements</a>` : ""}</p>
+        <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `New on CryptoOwnBank: ${title}`, html);
+}

@@ -1016,10 +1016,22 @@ export default function LegacyPlanPage() {
               <p className="text-sm">Add at least one beneficiary to complete your legacy plan</p>
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {beneficiaries.map((b) => (
-                <BeneficiaryCard key={b.id} beneficiary={b} onDelete={() => deleteBeneficiary.mutate(b.id)} />
-              ))}
+            <div className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                {beneficiaries.map((b) => (
+                  <BeneficiaryCard key={b.id} beneficiary={b} onDelete={() => deleteBeneficiary.mutate(b.id)} />
+                ))}
+              </div>
+              {beneficiaries.length >= 1 && beneficiaries.length < 5 && (
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    {beneficiaries.length === 1
+                      ? "You can add multiple beneficiaries — a spouse, child, attorney, etc. Each gets their own instructions."
+                      : `${beneficiaries.length} beneficiaries configured. You can add more anytime.`}
+                  </p>
+                  <AddBeneficiaryDialog onAdd={() => {}} splitEnabled={plan.splitDeliveryEnabled ?? false} />
+                </div>
+              )}
             </div>
           )}
         </CardContent>
