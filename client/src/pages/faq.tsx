@@ -476,8 +476,24 @@ const faqGroups = [
         a: "Yes — Stellar is fully supported in Recurring Payments. When you create a recurring payment, select 'Stellar' as the chain and choose XLM, USDC, or any token from your wallet holdings. When a payment comes due, CryptoOwnBank creates an execution record and gives you a Sign button that generates a web+stellar:pay URI. Tap it to open your Stellar wallet with the payment pre-filled — approve it and you're done. The Payment Queue also works with Stellar for offline/batch payment workflows.",
       },
       {
+        q: "What is DCA (Dollar-Cost Averaging) and how does it work?",
+        a: "DCA is an investment strategy where you buy a fixed dollar amount of an asset on a regular schedule — instead of trying to time the market. CryptoOwnBank automates this for both XRPL (31 trading pairs) and Stellar (18 trading pairs) using the native DEX on each chain. You choose what to spend, what to buy, how much per buy, and the frequency (daily, weekly, biweekly, monthly, or quarterly). When a buy is due, the system creates a pending DEX offer and sends it to your mobile wallet — Xaman (XUMM) for XRPL, or LOBSTR for Stellar. You approve with a quick tap and you're done. Your funds never leave your wallet until you approve. You can also set a total number of buys (e.g. 52 for a year of weekly buys) or leave it running indefinitely.",
+      },
+      {
+        q: "Can I use DCA with my cold wallet?",
+        a: "No — and that's intentional. Air-gapped cold wallets and read-only wallets cannot sign recurring transactions because the whole point of cold storage is that it never signs automated orders. The recommended setup is: keep your long-term holdings on your cold wallet (Ledger, ELLIPAL, Arculus, etc.) and fund a separate Xaman or LOBSTR hot wallet with a smaller 'DCA budget.' DCA runs from the hot wallet — each buy is just a push notification and a swipe to approve on your phone. Think of it like a checking account (Xaman/LOBSTR) for regular buying, and a vault (cold wallet) for long-term storage.",
+      },
+      {
+        q: "What trading pairs are available for DCA?",
+        a: "On XRPL, you can DCA across 31 pairs organized by goal: <br/><br/><strong>Accumulate XRP</strong> — buy XRP with RLUSD, USD (Bitstamp), EUR (GateHub), or sell SOLO/CORE/ELS into XRP.<br/><strong>Accumulate RLUSD</strong> — buy RLUSD with XRP, or sell tokens into RLUSD.<br/><strong>Buy Tokens with XRP</strong> — SOLO, CORE, ELS, BTC, ETH, SOL, LINK, ONDO, HBAR, FLR.<br/><strong>Buy Tokens with RLUSD</strong> — SOLO, CORE, BTC, ETH.<br/><strong>Sell Tokens → XRP</strong> — BTC, ETH, SOL, LINK, ONDO, HBAR, FLR.<br/><br/>On Stellar, you can DCA across 18 pairs: Accumulate XLM, Accumulate USDC, Buy Tokens with XLM (BTC, ETH, XRP, AQUA, yXLM), and Buy Tokens with USDC (BTC, ETH, XRP). Every pair lets you choose exactly what you spend and what you receive.",
+      },
+      {
+        q: "Is DCA non-custodial? Who holds my funds?",
+        a: "100% non-custodial. CryptoOwnBank never holds, touches, or has access to your funds. The DCA scheduler runs server-side and creates a pending DEX offer when your buy is due — but the offer is NOT submitted to the blockchain until you personally approve it in your Xaman or LOBSTR wallet. Your private keys never leave your device. If you don't approve a pending execution, nothing happens — your funds stay right where they are.",
+      },
+      {
         q: "Are there fees for using XRPL and Stellar Tools?",
-        a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, or Send & Receive on either chain. The only cost is the network fee — approximately 0.00001 XRP per transaction on XRPL, or 0.00001 XLM (100 stroops) on Stellar. Both are a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. These are two of the cheapest networks to transact on.",
+        a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, DCA Orders, or Send & Receive on either chain. The only cost is the network fee — approximately 0.00001 XRP per transaction on XRPL, or 0.00001 XLM (100 stroops) on Stellar. Both are a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. These are two of the cheapest networks to transact on.",
       },
       {
         q: "What are Whale Alerts?",

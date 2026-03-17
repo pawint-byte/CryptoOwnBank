@@ -296,7 +296,7 @@ export default function DcaOrders() {
             </div>
             <div>
               <h1 className="text-2xl font-bold" data-testid="text-dca-title">{chainName} DCA Orders</h1>
-              <p className="text-sm text-muted-foreground">Dollar-cost average into any {chainName} DEX pair — non-custodial, approve each buy from Xaman</p>
+              <p className="text-sm text-muted-foreground">Dollar-cost average into any {chainName} DEX pair — non-custodial, approve each buy from {isXrpl ? "Xaman" : "LOBSTR"}</p>
             </div>
           </div>
           <Button onClick={() => setShowCreate(true)} data-testid="button-create-dca" style={{ backgroundColor: chainColor }}>
@@ -309,15 +309,15 @@ export default function DcaOrders() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
               <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-blue-400 mb-1">Non-Custodial DCA — {isXrpl ? "Xaman" : "Stellar Wallet"} Required</p>
-                <p>Your funds stay in your wallet at all times. When a DCA order is due, it creates a <strong>pending execution</strong> that you approve via {isXrpl ? "Xaman (XUMM)" : "your Stellar wallet"}. No private keys ever leave your device.</p>
+                <p className="font-medium text-blue-400 mb-1">Non-Custodial DCA — {isXrpl ? "Xaman (XUMM)" : "LOBSTR"} Required</p>
+                <p>Your funds stay in your wallet at all times. When a DCA order is due, it creates a <strong>pending execution</strong> that you approve via {isXrpl ? "Xaman (XUMM)" : "LOBSTR"}. No private keys ever leave your device.</p>
               </div>
             </div>
             <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
               <Shield className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium text-yellow-400 mb-1">Cold Wallet / Read-Only Wallets</p>
-                <p>Air-gapped and read-only wallets <strong>cannot sign DCA transactions</strong> — that&apos;s by design. Keep your long-term holdings safe on cold storage, and fund a {isXrpl ? "Xaman" : "signing"} hot wallet with a smaller DCA budget. Each buy is a quick approve-on-phone, no cold wallet needed.</p>
+                <p>Air-gapped and read-only wallets <strong>cannot sign DCA transactions</strong> — that&apos;s by design. Keep your long-term holdings safe on cold storage, and fund a {isXrpl ? "Xaman" : "LOBSTR"} hot wallet with a smaller DCA budget. Each buy is a quick approve-on-phone, no cold wallet needed.</p>
               </div>
             </div>
           </CardContent>
@@ -333,7 +333,7 @@ export default function DcaOrders() {
               <Repeat className="w-12 h-12 text-muted-foreground/30 mb-4" />
               <h3 className="text-lg font-semibold mb-2" data-testid="text-no-orders">No DCA Orders Yet</h3>
               <p className="text-sm text-muted-foreground mb-4 max-w-md">
-                Set up recurring buys to dollar-cost average into your favorite {chainName} tokens. Each execution only needs a quick approval on your phone.
+                Set up recurring buys to dollar-cost average into your favorite {chainName} tokens. Each execution only needs a quick approval in {isXrpl ? "Xaman" : "LOBSTR"} on your phone.
               </p>
               <Button onClick={() => setShowCreate(true)} variant="outline" data-testid="button-create-dca-empty">
                 <Plus className="w-4 h-4 mr-2" /> Create Your First DCA

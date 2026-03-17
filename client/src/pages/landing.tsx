@@ -51,6 +51,7 @@ import {
   MapPin,
   Waves,
   CandlestickChart,
+  Repeat,
 } from "lucide-react";
 
 const xrplToolsComparison = [
@@ -92,6 +93,16 @@ const xrplToolsComparison = [
     newTitle: "Payment Corridor",
     newDesc: "Direct wallet-to-wallet payment, ~0.00001 XRP fee, 4-second settlement, no middleman",
     link: "/ownbank/send",
+    status: "live",
+  },
+  {
+    oldIcon: Clock,
+    oldTitle: "Recurring Buy (Robinhood)",
+    oldDesc: "Set a schedule, the app buys for you — but they hold your coins, you can't withdraw to your own wallet",
+    newIcon: Repeat,
+    newTitle: "DCA Orders",
+    newDesc: "Automated recurring buys on XRPL & Stellar DEX — your wallet, your keys, approve each buy from your phone",
+    link: "/ownbank/dca",
     status: "live",
   },
   {
@@ -211,6 +222,14 @@ const features = [
       "Our Recommendations Hub analyzes every asset you hold and shows you the top staking, DeFi, and yield opportunities — ranked by APY. Every option is tagged as on-chain (you keep your keys) or custodial (company holds assets), with step-by-step staking guides for your exact hardware wallet.",
     link: "/rwa-yields",
     linkLabel: "Yield Finder",
+  },
+  {
+    icon: Repeat,
+    title: "DCA Orders",
+    description:
+      "Set up recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX. Choose your pair, frequency, and amount — each buy is a quick approval in Xaman or LOBSTR. Non-custodial dollar-cost averaging, no exchange needed.",
+    link: "/ownbank/dca",
+    linkLabel: "Set Up DCA",
   },
   {
     icon: Shield,
@@ -412,6 +431,7 @@ const freeTierFeatures = [
 const premiumFeatures = [
   "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
+  "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Unlimited exchange connections",
   "Unlimited blockchain addresses across 24 chains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, TON, XLM, MATIC, and more)",
   "Full ERC-20, SPL, TRC-20, VIP-180 & CRC-20 token auto-detection",
