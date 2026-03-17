@@ -591,10 +591,13 @@ export default function QuickStart() {
                     <li>Binance, Coinbase, Kraken deposit addresses</li>
                     <li>Uphold, Crypto.com, Gemini, KuCoin</li>
                     <li>Any address shown under "Deposit" on an exchange</li>
-                    <li>Use our Integrations page to connect exchanges instead</li>
+                    <li>Use our <Link href="/integrations" className="underline font-medium">Integrations</Link> page to connect exchanges instead</li>
                   </ul>
                 </div>
               </div>
+              <p className="text-xs text-blue-800/90 dark:text-blue-300/90 mt-3 pt-2 border-t border-blue-200 dark:border-blue-800">
+                Don't have a self-custody wallet yet? No problem — you can still use everything here. When you're ready, we'll help you set up your own wallet and move your assets off the exchange at your own pace. Check out our <Link href="/migration-guide" className="underline font-medium">Migration Guide</Link> to get started whenever you'd like.
+              </p>
             </AlertDescription>
           </Alert>
 
