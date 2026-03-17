@@ -425,6 +425,8 @@ const freeTierFeatures = [
   "Basic Recommendations Hub (see yield opportunities for your assets)",
   "Yield calculator for projected earnings",
   "1 price alert with email notifications",
+  "Whale Alerts — last 24 hours of large XRP & RLUSD movements",
+  "Technical Analysis — SMA indicators with 30-day charts",
   "7-day transaction history",
 ];
 
