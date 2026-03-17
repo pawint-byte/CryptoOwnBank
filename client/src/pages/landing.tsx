@@ -457,6 +457,7 @@ const annualBonusFeatures = [
 
 const proFeatures = [
   "Everything in Premium",
+  "Legacy Plan — dead-man switch (Member for Life)",
   "DeFi Borrowing Hub (Aave, Compound, Maple, MakerDAO)",
   "Real Estate Tokenization (RealT, Lofty, Propy)",
   "Batch & payroll recurring payments",

@@ -133,6 +133,37 @@ export async function processDcaOrders(): Promise<void> {
   }
 }
 
+async function processLegacyPlans(): Promise<void> {
+  try {
+    const now = new Date();
+
+    const activePlans = await storage.getActiveLegacyPlans();
+    for (const plan of activePlans) {
+      if (plan.nextCheckInDue && new Date(plan.nextCheckInDue) <= now) {
+        console.log(`[Legacy] Plan ${plan.id} missed check-in — entering grace period (${plan.gracePeriodDays} days)`);
+        await storage.updateLegacyPlan(plan.id, {
+          status: "grace",
+          graceStartedAt: now,
+        });
+      }
+    }
+
+    const gracePlans = await storage.getGracePeriodLegacyPlans();
+    for (const plan of gracePlans) {
+      if (plan.graceStartedAt) {
+        const graceEnd = new Date(plan.graceStartedAt);
+        graceEnd.setDate(graceEnd.getDate() + (plan.gracePeriodDays || 14));
+        if (now >= graceEnd) {
+          console.log(`[Legacy] Plan ${plan.id} grace period expired — triggering beneficiary delivery`);
+          await storage.updateLegacyPlan(plan.id, { status: "triggered" });
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[Legacy] Error processing legacy plans:", error);
+  }
+}
+
 let schedulerInterval: NodeJS.Timeout | null = null;
 
 export function startPaymentScheduler(): void {
@@ -140,8 +171,9 @@ export function startPaymentScheduler(): void {
   schedulerInterval = setInterval(async () => {
     await processScheduledPayments();
     await processDcaOrders();
+    await processLegacyPlans();
   }, 60000);
-  console.log("[PaymentScheduler] Started — checking every 60 seconds (payments + DCA)");
+  console.log("[PaymentScheduler] Started — checking every 60 seconds (payments + DCA + legacy)");
 }
 
 export function stopPaymentScheduler(): void {

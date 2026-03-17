@@ -100,6 +100,14 @@ import {
   type Xls66LoanOffer,
   type InsertXls66LoanOffer,
   type Xls66VaultBlock,
+  legacyPlans,
+  legacyBeneficiaries,
+  legacyCheckIns,
+  type LegacyPlan,
+  type InsertLegacyPlan,
+  type LegacyBeneficiary,
+  type InsertLegacyBeneficiary,
+  type LegacyCheckIn,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
@@ -315,6 +323,18 @@ export interface IStorage {
   addToXls66VaultBlocklist(vaultId: string, reason: string, blockedBy: string): Promise<Xls66VaultBlock>;
   removeFromXls66VaultBlocklist(vaultId: string): Promise<void>;
   isXls66VaultBlocked(vaultId: string): Promise<boolean>;
+
+  getLegacyPlan(userId: string): Promise<LegacyPlan | undefined>;
+  createLegacyPlan(plan: InsertLegacyPlan): Promise<LegacyPlan>;
+  updateLegacyPlan(id: string, data: Partial<LegacyPlan>): Promise<LegacyPlan | undefined>;
+  getLegacyBeneficiaries(legacyPlanId: string): Promise<LegacyBeneficiary[]>;
+  createLegacyBeneficiary(beneficiary: InsertLegacyBeneficiary): Promise<LegacyBeneficiary>;
+  updateLegacyBeneficiary(id: string, data: Partial<LegacyBeneficiary>): Promise<LegacyBeneficiary | undefined>;
+  deleteLegacyBeneficiary(id: string): Promise<void>;
+  createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn>;
+  getLegacyCheckIns(legacyPlanId: string, limit?: number): Promise<LegacyCheckIn[]>;
+  getActiveLegacyPlans(): Promise<LegacyPlan[]>;
+  getGracePeriodLegacyPlans(): Promise<LegacyPlan[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1375,6 +1395,73 @@ export class DatabaseStorage implements IStorage {
   async isXls66VaultBlocked(vaultId: string): Promise<boolean> {
     const [result] = await db.select().from(xls66VaultBlocklist).where(eq(xls66VaultBlocklist.vaultId, vaultId));
     return !!result;
+  }
+
+  async getLegacyPlan(userId: string): Promise<LegacyPlan | undefined> {
+    const [result] = await db.select().from(legacyPlans).where(eq(legacyPlans.userId, userId));
+    return result;
+  }
+
+  async createLegacyPlan(plan: InsertLegacyPlan): Promise<LegacyPlan> {
+    const now = new Date();
+    const [result] = await db.insert(legacyPlans).values({
+      ...plan,
+      lastCheckIn: now,
+      nextCheckInDue: this.calcNextCheckIn(now, plan.checkInFrequency),
+    }).returning();
+    return result;
+  }
+
+  async updateLegacyPlan(id: string, data: Partial<LegacyPlan>): Promise<LegacyPlan | undefined> {
+    const [result] = await db.update(legacyPlans).set({ ...data, updatedAt: new Date() }).where(eq(legacyPlans.id, id)).returning();
+    return result;
+  }
+
+  async getLegacyBeneficiaries(legacyPlanId: string): Promise<LegacyBeneficiary[]> {
+    return db.select().from(legacyBeneficiaries).where(eq(legacyBeneficiaries.legacyPlanId, legacyPlanId));
+  }
+
+  async createLegacyBeneficiary(beneficiary: InsertLegacyBeneficiary): Promise<LegacyBeneficiary> {
+    const [result] = await db.insert(legacyBeneficiaries).values(beneficiary).returning();
+    return result;
+  }
+
+  async updateLegacyBeneficiary(id: string, data: Partial<LegacyBeneficiary>): Promise<LegacyBeneficiary | undefined> {
+    const [result] = await db.update(legacyBeneficiaries).set(data).where(eq(legacyBeneficiaries.id, id)).returning();
+    return result;
+  }
+
+  async deleteLegacyBeneficiary(id: string): Promise<void> {
+    await db.delete(legacyBeneficiaries).where(eq(legacyBeneficiaries.id, id));
+  }
+
+  async createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn> {
+    const [result] = await db.insert(legacyCheckIns).values({ legacyPlanId }).returning();
+    return result;
+  }
+
+  async getLegacyCheckIns(legacyPlanId: string, limit = 20): Promise<LegacyCheckIn[]> {
+    return db.select().from(legacyCheckIns).where(eq(legacyCheckIns.legacyPlanId, legacyPlanId)).orderBy(desc(legacyCheckIns.checkedInAt)).limit(limit);
+  }
+
+  async getActiveLegacyPlans(): Promise<LegacyPlan[]> {
+    return db.select().from(legacyPlans).where(eq(legacyPlans.status, "active"));
+  }
+
+  async getGracePeriodLegacyPlans(): Promise<LegacyPlan[]> {
+    return db.select().from(legacyPlans).where(eq(legacyPlans.status, "grace"));
+  }
+
+  private calcNextCheckIn(from: Date, frequency: string): Date {
+    const next = new Date(from);
+    switch (frequency) {
+      case "weekly": next.setDate(next.getDate() + 7); break;
+      case "biweekly": next.setDate(next.getDate() + 14); break;
+      case "monthly": next.setMonth(next.getMonth() + 1); break;
+      case "quarterly": next.setMonth(next.getMonth() + 3); break;
+      default: next.setMonth(next.getMonth() + 1);
+    }
+    return next;
   }
 }
 

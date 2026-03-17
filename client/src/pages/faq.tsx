@@ -504,6 +504,22 @@ const faqGroups = [
         a: "Earn & Accumulate is a Premium feature that connects your RLUSD yield vault to the XRPL DEX. When your vault interest is withdrawn, the system automatically creates a DEX offer to buy XRP with some or all of that interest — you approve it in Xaman with one tap. <br/><br/>You control two things: <strong>how much</strong> to convert (10–100% of your interest, via a slider) and a <strong>minimum threshold</strong> (e.g. only buy when interest reaches 5 RLUSD or more). If you set it to 50%, half your interest buys XRP and the other half stays as RLUSD earning compound interest. If you set it to 100%, every interest withdrawal goes straight into XRP. <br/><br/>It's fully non-custodial — the DEX offer only submits when you approve in Xaman. Everything happens on the same XRPL account: earn RLUSD interest → withdraw → buy XRP on the DEX, all from one wallet with one tap.",
       },
       {
+        q: "What is the Legacy Plan (dead-man switch)?",
+        a: "The Legacy Plan is a Pro-tier feature ($99/mo) that protects your crypto after you pass away — or if you become incapacitated. It's a dead-man switch: you check in on a schedule you choose (weekly, biweekly, monthly, or quarterly). If you miss a check-in, a grace period begins. During the grace period, your secondary contact (spouse, attorney, etc.) is notified to verify your status. If the grace period expires with no response, your beneficiaries receive the wallet recovery instructions you set up — where your hardware wallet is stored, where the seed phrase backup is located, how to access a CypheRock 2-of-5 Shamir setup, etc.<br/><br/><strong>What we NEVER store:</strong> seed phrases, private keys, passwords, or PINs. We only store YOUR instructions about <em>where</em> those things are — 'steel plate in the fireproof safe' or 'Card 1 with attorney, Card 3 in bank safe deposit box.' Everything is encrypted at rest and delivered only when the switch triggers. Member for Life — your crypto doesn't die with you.",
+      },
+      {
+        q: "How does the Legacy Plan check-in work?",
+        a: "You press the 'I'm Still Here' button on your Legacy Plan dashboard. That's it — one click resets your timer. You choose how often: weekly, biweekly, monthly (recommended), or quarterly. If you miss a check-in, the system enters a grace period (default 14 days, configurable up to 90 days). During grace, your secondary contact is notified so they can try to reach you. If you still don't check in by the end of the grace period, the system triggers and your beneficiaries receive their instructions. You can check in anytime — even during the grace period — to reset everything back to normal.",
+      },
+      {
+        q: "What happens if I use a CypheRock X1 wallet with the Legacy Plan?",
+        a: "CypheRock uses Shamir Secret Sharing — it creates 5 cards, and any 2 cards plus the X1 device can fully recover your wallet. When you set up a beneficiary with CypheRock as the wallet type, the Legacy Plan shows special guidance: tell your beneficiary where each card is stored (e.g., 'Card 1 in home safe, Card 3 with estate attorney, Card 5 in bank safe deposit box'). They do NOT need all 5 cards — just any 2 and the device. This is one of the most secure setups for inheritance because no single location compromise can drain the wallet. You never enter the card data into CryptoOwnBank — only the location instructions.",
+      },
+      {
+        q: "Is the Legacy Plan really 'Member for Life'?",
+        a: "Yes. As long as your Pro subscription is active, your Legacy Plan stays active and monitoring. The check-in timer keeps running, your beneficiary instructions stay encrypted and ready, and the dead-man switch is always armed. If your subscription lapses, the plan is paused (not deleted) — your data is preserved so you can resume anytime. We built this for long-term peace of mind, not short-term upsells.",
+      },
+      {
         q: "Are there fees for using XRPL and Stellar Tools?",
         a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, DCA Orders, or Send & Receive on either chain. The only cost is the network fee — approximately 0.00001 XRP per transaction on XRPL, or 0.00001 XLM (100 stroops) on Stellar. Both are a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. These are two of the cheapest networks to transact on.",
       },

@@ -857,4 +857,68 @@ export const xamanConnections = pgTable("xaman_connections", {
 
 export type XamanConnection = typeof xamanConnections.$inferSelect;
 export const insertXamanConnectionSchema = createInsertSchema(xamanConnections).omit({ id: true, connectedAt: true });
+
+export const legacyPlans = pgTable("legacy_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  checkInFrequency: varchar("check_in_frequency", { length: 20 }).notNull().default("monthly"),
+  gracePeriodDays: integer("grace_period_days").notNull().default(14),
+  lastCheckIn: timestamp("last_check_in"),
+  nextCheckInDue: timestamp("next_check_in_due"),
+  graceStartedAt: timestamp("grace_started_at"),
+  triggeredAt: timestamp("triggered_at"),
+  secondaryContactName: varchar("secondary_contact_name", { length: 255 }),
+  secondaryContactEmail: varchar("secondary_contact_email", { length: 255 }),
+  personalMessage: text("personal_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_legacy_plans_user").on(table.userId),
+  index("idx_legacy_plans_status").on(table.status),
+]);
+
+export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  legacyPlanId: varchar("legacy_plan_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  relationship: varchar("relationship", { length: 100 }),
+  walletType: varchar("wallet_type", { length: 50 }),
+  deviceInstructions: text("device_instructions"),
+  seedPhraseInstructions: text("seed_phrase_instructions"),
+  additionalNotes: text("additional_notes"),
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_legacy_beneficiaries_plan").on(table.legacyPlanId),
+]);
+
+export const legacyCheckIns = pgTable("legacy_check_ins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  legacyPlanId: varchar("legacy_plan_id").notNull(),
+  checkedInAt: timestamp("checked_in_at").defaultNow(),
+}, (table) => [
+  index("idx_legacy_checkins_plan").on(table.legacyPlanId),
+]);
+
+export const insertLegacyPlanSchema = createInsertSchema(legacyPlans).omit({
+  id: true,
+  lastCheckIn: true,
+  graceStartedAt: true,
+  triggeredAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertLegacyBeneficiarySchema = createInsertSchema(legacyBeneficiaries).omit({
+  id: true,
+  deliveredAt: true,
+  createdAt: true,
+});
+
+export type LegacyPlan = typeof legacyPlans.$inferSelect;
+export type InsertLegacyPlan = z.infer<typeof insertLegacyPlanSchema>;
+export type LegacyBeneficiary = typeof legacyBeneficiaries.$inferSelect;
+export type InsertLegacyBeneficiary = z.infer<typeof insertLegacyBeneficiarySchema>;
+export type LegacyCheckIn = typeof legacyCheckIns.$inferSelect;
 export type InsertXamanConnection = z.infer<typeof insertXamanConnectionSchema>;

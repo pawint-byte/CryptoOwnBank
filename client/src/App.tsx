@@ -75,6 +75,7 @@ import WhaleAlerts from "@/pages/whale-alerts";
 import TechnicalAnalysis from "@/pages/technical-analysis";
 import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import XLS66Lending from "@/pages/xls66-lending";
+import LegacyPlan from "@/pages/legacy-plan";
 import { OfflineBanner } from "@/components/offline-banner";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -168,6 +169,7 @@ function AuthenticatedRoutes() {
         <Route path="/insurance" component={Insurance} />
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
+        <Route path="/legacy-plan" component={LegacyPlan} />
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />

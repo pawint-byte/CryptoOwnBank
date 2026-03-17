@@ -6116,6 +6116,172 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/legacy-plan", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier ($99/mo)" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.json(null);
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const checkIns = await storage.getLegacyCheckIns(plan.id, 10);
+      res.json({ plan, beneficiaries, checkIns });
+    } catch (error) {
+      console.error("Get legacy plan error:", error);
+      res.status(500).json({ message: "Failed to load legacy plan" });
+    }
+  });
+
+  app.post("/api/legacy-plan", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier ($99/mo)" });
+      const existing = await storage.getLegacyPlan(userId);
+      if (existing) return res.status(400).json({ message: "Legacy plan already exists" });
+      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage } = req.body;
+      const plan = await storage.createLegacyPlan({
+        userId,
+        status: "active",
+        checkInFrequency: checkInFrequency || "monthly",
+        gracePeriodDays: gracePeriodDays || 14,
+        nextCheckInDue: new Date(),
+        secondaryContactName: secondaryContactName || null,
+        secondaryContactEmail: secondaryContactEmail || null,
+        personalMessage: personalMessage || null,
+      });
+      res.json(plan);
+    } catch (error) {
+      console.error("Create legacy plan error:", error);
+      res.status(500).json({ message: "Failed to create legacy plan" });
+    }
+  });
+
+  app.patch("/api/legacy-plan", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const updates: Record<string, unknown> = {};
+      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage } = req.body;
+      const validFrequencies = ["weekly", "biweekly", "monthly", "quarterly"];
+      if (checkInFrequency && validFrequencies.includes(checkInFrequency)) updates.checkInFrequency = checkInFrequency;
+      if (gracePeriodDays && [7, 14, 30, 60, 90].includes(Number(gracePeriodDays))) updates.gracePeriodDays = Number(gracePeriodDays);
+      if (secondaryContactName !== undefined) updates.secondaryContactName = secondaryContactName;
+      if (secondaryContactEmail !== undefined) updates.secondaryContactEmail = secondaryContactEmail;
+      if (personalMessage !== undefined) updates.personalMessage = personalMessage;
+      const result = await storage.updateLegacyPlan(plan.id, updates as any);
+      res.json(result);
+    } catch (error) {
+      console.error("Update legacy plan error:", error);
+      res.status(500).json({ message: "Failed to update legacy plan" });
+    }
+  });
+
+  app.post("/api/legacy-plan/check-in", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      if (plan.status === "triggered") return res.status(400).json({ message: "Plan already triggered — cannot check in" });
+      const now = new Date();
+      const nextDue = new Date(now);
+      switch (plan.checkInFrequency) {
+        case "weekly": nextDue.setDate(nextDue.getDate() + 7); break;
+        case "biweekly": nextDue.setDate(nextDue.getDate() + 14); break;
+        case "monthly": nextDue.setMonth(nextDue.getMonth() + 1); break;
+        case "quarterly": nextDue.setMonth(nextDue.getMonth() + 3); break;
+        default: nextDue.setMonth(nextDue.getMonth() + 1);
+      }
+      await storage.createLegacyCheckIn(plan.id);
+      const updated = await storage.updateLegacyPlan(plan.id, {
+        lastCheckIn: now,
+        nextCheckInDue: nextDue,
+        status: "active",
+        graceStartedAt: null,
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Check-in error:", error);
+      res.status(500).json({ message: "Failed to check in" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
+      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes } = req.body;
+      if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
+      const validWalletTypes = ["cypherock", "ledger", "trezor", "xaman", "tangem", "coldcard", "other"];
+      const beneficiary = await storage.createLegacyBeneficiary({
+        legacyPlanId: plan.id,
+        name: String(name).slice(0, 200),
+        email: String(email).slice(0, 320),
+        relationship: relationship || null,
+        walletType: walletType && validWalletTypes.includes(walletType) ? walletType : null,
+        deviceInstructions: deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null,
+        seedPhraseInstructions: seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null,
+        additionalNotes: additionalNotes ? String(additionalNotes).slice(0, 2000) : null,
+      });
+      res.json(beneficiary);
+    } catch (error) {
+      console.error("Create beneficiary error:", error);
+      res.status(500).json({ message: "Failed to add beneficiary" });
+    }
+  });
+
+  app.patch("/api/legacy-beneficiaries/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(403).json({ message: "No legacy plan found" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      if (!beneficiaries.find(b => b.id === req.params.id)) return res.status(403).json({ message: "Not your beneficiary" });
+      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes } = req.body;
+      const safeUpdates: Record<string, unknown> = {};
+      if (name !== undefined) safeUpdates.name = String(name).slice(0, 200);
+      if (email !== undefined) safeUpdates.email = String(email).slice(0, 320);
+      if (relationship !== undefined) safeUpdates.relationship = relationship;
+      if (walletType !== undefined) safeUpdates.walletType = walletType;
+      if (deviceInstructions !== undefined) safeUpdates.deviceInstructions = deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null;
+      if (seedPhraseInstructions !== undefined) safeUpdates.seedPhraseInstructions = seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null;
+      if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 2000) : null;
+      const result = await storage.updateLegacyBeneficiary(req.params.id, safeUpdates as any);
+      if (!result) return res.status(404).json({ message: "Beneficiary not found" });
+      res.json(result);
+    } catch (error) {
+      console.error("Update beneficiary error:", error);
+      res.status(500).json({ message: "Failed to update beneficiary" });
+    }
+  });
+
+  app.delete("/api/legacy-beneficiaries/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "pro") return res.status(403).json({ message: "Legacy Plan requires Pro tier" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(403).json({ message: "No legacy plan found" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      if (!beneficiaries.find(b => b.id === req.params.id)) return res.status(403).json({ message: "Not your beneficiary" });
+      await storage.deleteLegacyBeneficiary(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete beneficiary error:", error);
+      res.status(500).json({ message: "Failed to delete beneficiary" });
+    }
+  });
+
   app.get("/api/dca-orders", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

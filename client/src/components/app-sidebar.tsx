@@ -48,6 +48,7 @@ import {
   Bug,
   Pickaxe,
   Repeat,
+  HeartHandshake,
 } from "lucide-react";
 import {
   Sidebar,
@@ -102,6 +103,7 @@ const allItems: NavItem[] = [
   { title: "History", url: "/ownbank/history", icon: History, color: "#00A4E4", group: "ownbank" },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
+  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "ownbank" },
 
   { title: "Wallet", url: "/stellar/wallet", icon: Wallet, color: "#7B61FF", group: "stellar" },
   { title: "Send & Receive", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
