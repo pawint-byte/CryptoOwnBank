@@ -1862,7 +1862,7 @@ export default function Wallets() {
                 Add Address
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Track a Blockchain Address</DialogTitle>
                 <DialogDescription>
@@ -2041,7 +2041,7 @@ export default function Wallets() {
                 Manual Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[420px]">
+            <DialogContent className="sm:max-w-[420px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Track Exchange / Off-Chain Holdings</DialogTitle>
                 <DialogDescription>
