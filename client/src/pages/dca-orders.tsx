@@ -303,18 +303,32 @@ export default function DcaOrders() {
       const spendCur = { currency: order.spendCurrency, issuer: order.spendIssuer || undefined };
       const buyCur = { currency: order.buyCurrency, issuer: order.buyIssuer || undefined };
 
+      toast({ title: "Fetching market price...", description: "Connecting to XRPL order book" });
+
       let marketPrice = 0;
       try {
         const book = await getOrderBook(buyCur, spendCur, 5);
         if (book.asks && book.asks.length > 0) {
           marketPrice = parseFloat(book.asks[0].price);
         }
-      } catch {
-        // ignore
+      } catch (bookErr) {
+        console.error("[DCA] Order book fetch failed:", bookErr);
       }
 
       if (marketPrice <= 0) {
-        toast({ title: "No market price available", description: "Could not fetch current price from the order book. Try the DEX page instead.", variant: "destructive" });
+        try {
+          const book = await getOrderBook(spendCur, buyCur, 5);
+          if (book.bids && book.bids.length > 0) {
+            const bidPrice = parseFloat(book.bids[0].price);
+            if (bidPrice > 0) marketPrice = 1 / bidPrice;
+          }
+        } catch {
+          // ignore reverse lookup failure
+        }
+      }
+
+      if (marketPrice <= 0) {
+        toast({ title: "No market price available", description: "Could not fetch current price from the XRPL order book. Try the DEX page instead.", variant: "destructive" });
         setExecutingOrderId(null);
         return;
       }
@@ -323,6 +337,8 @@ export default function DcaOrders() {
 
       const takerGets = buildAmount(order.spendCurrency, order.spendIssuer, spendAmount.toString());
       const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, buyAmount);
+
+      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} → ${buyAmount} ${getTokenDisplay(order.buyCurrency)}` });
 
       const txJson: Record<string, unknown> = {
         TransactionType: "OfferCreate",
@@ -732,7 +748,13 @@ function DcaOrderCard({
           <div>
             <p className="text-xs text-muted-foreground">Next Run</p>
             <p className="font-medium" data-testid={`text-order-next-${order.id}`}>
-              {order.status === "active" ? new Date(order.nextRunAt).toLocaleDateString() : "—"}
+              {order.status === "active" ? (
+                new Date(order.nextRunAt) <= new Date() ? (
+                  <span className="text-yellow-400">Due now</span>
+                ) : (
+                  new Date(order.nextRunAt).toLocaleDateString()
+                )
+              ) : "—"}
             </p>
           </div>
           <div>

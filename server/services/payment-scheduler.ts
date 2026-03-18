@@ -91,51 +91,11 @@ export async function processDcaOrders(): Promise<void> {
   try {
     const dueOrders = await storage.getDueDcaOrders();
 
-    for (const order of dueOrders) {
-      try {
-        const execution = await storage.createDcaExecution({
-          dcaOrderId: order.id,
-          userId: order.userId,
-          status: "pending",
-          spendAmount: order.spendAmount,
-          receivedAmount: null,
-          xamanPayloadId: null,
-          txHash: null,
-          errorMessage: null,
-        });
-
-        const newRunsCompleted = (order.runsCompleted || 0) + 1;
-        const isComplete = order.totalRuns && newRunsCompleted >= order.totalRuns;
-
-        await storage.updateDcaOrder(order.id, {
-          lastRunAt: new Date(),
-          nextRunAt: isComplete ? order.nextRunAt : getNextRunDate(order.nextRunAt, order.frequency, order.preferredDay),
-          runsCompleted: newRunsCompleted,
-          status: isComplete ? "completed" : "active",
-        });
-
-        const buyDisplay = order.buyCurrency.length > 3 ? order.buyCurrency.slice(0, 6) : order.buyCurrency;
-        console.log(`[DCA] Created pending execution ${execution.id} for order ${order.id} — Buy ${buyDisplay} with ${order.spendAmount} ${order.spendCurrency}`);
-      } catch (err) {
-        console.error(`[DCA] Failed to process order ${order.id}:`, err);
-        await storage.createDcaExecution({
-          dcaOrderId: order.id,
-          userId: order.userId,
-          status: "failed",
-          spendAmount: order.spendAmount,
-          receivedAmount: null,
-          xamanPayloadId: null,
-          txHash: null,
-          errorMessage: err instanceof Error ? err.message : "Unknown error",
-        });
-      }
-    }
-
     if (dueOrders.length > 0) {
-      console.log(`[DCA] Processed ${dueOrders.length} due DCA orders`);
+      console.log(`[DCA] ${dueOrders.length} DCA order(s) are due — waiting for user to Execute Now (non-custodial, requires Xaman signing)`);
     }
   } catch (error) {
-    console.error("[DCA] Error processing DCA orders:", error);
+    console.error("[DCA] Error checking DCA orders:", error);
   }
 }
 

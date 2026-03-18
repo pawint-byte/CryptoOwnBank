@@ -6573,14 +6573,18 @@ export async function registerRoutes(
 
       const { txHash } = req.body || {};
 
+      if (!txHash) {
+        return res.status(400).json({ message: "txHash is required — trade must be signed in Xaman first" });
+      }
+
       const execution = await storage.createDcaExecution({
         dcaOrderId: order.id,
         userId: order.userId,
-        status: txHash ? "completed" : "pending",
+        status: "completed",
         spendAmount: order.spendAmount,
         receivedAmount: null,
         xamanPayloadId: null,
-        txHash: txHash || null,
+        txHash: txHash,
         errorMessage: null,
       });
 
