@@ -121,7 +121,7 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
     },
     onSuccess: (data: AutoWithdrawSettings) => {
       queryClient.setQueryData(["/api/auto-withdraw"], data);
-      toast({ title: data.enabled ? "Auto-Withdraw Enabled" : "Auto-Withdraw Disabled" });
+      toast({ title: data.enabled ? "Withdrawal Reminder Enabled" : "Withdrawal Reminder Disabled" });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -149,7 +149,7 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
             <div>
               <CardTitle className="text-base">Earn & Accumulate XRP</CardTitle>
               <CardDescription>
-                Fully automatic: withdraw from Soil + DCA to XRP — set it and forget it
+                Get notified when it's time to withdraw, then DCA to XRP — set it and forget it
               </CardDescription>
             </div>
           </div>
@@ -172,9 +172,9 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
             </div>
             <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
               <li>Your RLUSD earns yield in the Soil vault automatically</li>
-              <li>When you're ready, withdraw your full position via Soil (principal + interest)</li>
-              <li>RLUSD returns to your wallet — your DCA order converts it to XRP on schedule</li>
-              <li>Or redeposit to Soil to keep earning — you control the flow</li>
+              <li>When your accrued interest hits your threshold, we send a Xaman notification</li>
+              <li>You go to Soil and withdraw your <strong>full position</strong> (principal + interest) — Soil does not support partial withdrawals</li>
+              <li>RLUSD returns to your wallet — your DCA order converts it to XRP on schedule, or you redeposit to keep earning</li>
             </ol>
             {isFullyAutomatic && (
               <div className="flex items-center gap-2 mt-2 p-2 rounded bg-green-500/10 border border-green-500/20">
@@ -190,7 +190,7 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ArrowDownToLine className="h-4 w-4 text-green-500" />
-                <Label className="text-sm font-medium">Auto-Withdraw Interest</Label>
+                <Label className="text-sm font-medium">Withdrawal Reminder</Label>
               </div>
               <Switch
                 checked={withdrawSettings.enabled}
@@ -203,7 +203,7 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
             {withdrawSettings.enabled && (
               <div className="space-y-3 pl-6 border-l-2 border-green-500/20">
                 <div className="space-y-2">
-                  <Label className="text-xs">Withdraw when interest reaches</Label>
+                  <Label className="text-xs">Notify me when interest reaches</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">$</span>
                     <Input
@@ -253,11 +253,11 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
                   <div className="p-2 rounded bg-muted/30 text-xs">
                     {totalInterest >= parseFloat(threshold) ? (
                       <span className="text-green-500 font-medium">
-                        Current interest ({totalInterest.toFixed(4)} RLUSD) meets your threshold — next check will trigger a withdrawal push to Xaman.
+                        Current interest ({totalInterest.toFixed(4)} RLUSD) meets your threshold — next check will send a Xaman notification reminding you to withdraw on Soil.
                       </span>
                     ) : (
                       <span className="text-muted-foreground">
-                        Current interest: {totalInterest.toFixed(4)} RLUSD — needs {(parseFloat(threshold) - totalInterest).toFixed(4)} more to trigger.
+                        Current interest: {totalInterest.toFixed(4)} RLUSD — needs {(parseFloat(threshold) - totalInterest).toFixed(4)} more to trigger a reminder.
                       </span>
                     )}
                   </div>
@@ -517,7 +517,7 @@ export default function OwnBankWithdraw() {
     if (!vault || vault.interest <= 0) {
       toast({
         title: "No Interest Accrued",
-        description: "You haven't earned any interest yet.",
+        description: "Your vault hasn't earned any interest yet. Wait for interest to accrue before withdrawing.",
         variant: "destructive",
       });
       return;
@@ -734,7 +734,7 @@ export default function OwnBankWithdraw() {
                       <div className="flex items-center gap-2">
                         <Lock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">
-                          Principal (Locked)
+                          Principal Deposited
                         </span>
                       </div>
                       <p className="text-lg font-bold font-mono">
@@ -770,7 +770,7 @@ export default function OwnBankWithdraw() {
                       data-testid={`button-withdraw-${vault.vaultAddress}`}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Withdraw via Soil
+                      Withdraw Full Position via Soil
                     </Button>
                   </div>
 
@@ -783,21 +783,33 @@ export default function OwnBankWithdraw() {
             <CardContent className="pt-5 pb-4">
               <div className="flex gap-3">
                 <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">What happens to withdrawn RLUSD?</p>
-                  <p className="text-xs text-muted-foreground">
-                    Soil withdrawals return your <strong>full position</strong> (principal + interest) to your connected wallet. Partial interest-only withdrawals are not currently supported by Soil.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Once RLUSD is back in your wallet, you decide what to do with it:
-                  </p>
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">How Soil Withdrawals Work</p>
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Manual Withdrawal (via Soil)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Click "Withdraw Full Position via Soil" above to open Soil's app. There you withdraw your <strong>entire position — principal + interest together</strong>. Soil does not support partial or interest-only withdrawals. All RLUSD returns to your connected wallet.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Withdrawal Reminder (auto-notification)</p>
+                    <p className="text-xs text-muted-foreground">
+                      The "Withdrawal Reminder" toggle above monitors your accrued interest. When it reaches your threshold, we send a <strong>Xaman push notification</strong> reminding you it's time to withdraw. It does not withdraw for you — you still go to Soil and initiate the full withdrawal yourself.
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <p className="text-xs font-medium text-foreground">After RLUSD returns to your wallet</p>
                   <ul className="text-xs text-muted-foreground space-y-1 ml-3 list-disc">
                     <li><strong>DCA to XRP</strong> — If you have an active DCA order, your RLUSD will automatically convert to XRP on your next scheduled run. <Link href="/ownbank/dca" className="text-[#00A4E4] underline">Set up DCA →</Link></li>
-                    <li><strong>Redeposit to Soil</strong> — Manually deposit back into a vault to continue earning yield</li>
+                    <li><strong>Redeposit to Soil</strong> — Deposit back into a vault to continue earning yield</li>
                     <li><strong>Hold as RLUSD</strong> — Keep it as a stablecoin in your wallet</li>
                   </ul>
                   <p className="text-xs text-muted-foreground italic">
-                    Tip: Compound interest is your biggest advantage — every day your interest earns more interest. Consider leaving your position in the vault as long as possible. At 8% APR, $10,000 grows to $22,255 in 10 years. When you do withdraw, set up DCA first so your RLUSD converts to XRP automatically.
+                    Tip: Compound interest is your biggest advantage — every day your interest earns more interest. Consider leaving your position in the vault as long as possible. At 8% APR, $10,000 grows to $22,255 in 10 years.
                   </p>
                 </div>
               </div>
@@ -827,33 +839,33 @@ export default function OwnBankWithdraw() {
                 </div>
                 <Separator />
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Interest to Withdraw
-                  </span>
-                  <span className="text-sm font-bold text-green-500 font-mono">
-                    {formatCurrency(selectedInterest)} RLUSD
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Principal (Remains Locked)
-                  </span>
+                  <span className="text-sm text-muted-foreground">Principal Deposited</span>
                   <span className="text-sm font-mono">
                     {formatCurrency(selectedVault.principal)} RLUSD
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Accrued Interest</span>
+                  <span className="text-sm font-bold text-green-500 font-mono">
+                    +{formatCurrency(selectedInterest)} RLUSD
+                  </span>
+                </div>
                 <Separator />
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Full Position (You Withdraw)</span>
+                  <span className="text-sm font-bold font-mono text-[#00A4E4]">
+                    {formatCurrency(selectedVault.principal + selectedInterest)} RLUSD
+                  </span>
+                </div>
               </div>
 
               <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                 <p className="text-xs text-muted-foreground text-center">
-                  <strong>Note:</strong> Soil currently only supports full withdrawal (principal + interest together).
-                  Clicking below opens Soil where you can withdraw your entire{" "}
-                  {formatCurrency(selectedVault.principal + selectedInterest)} RLUSD position from {selectedVault.vaultName}.
+                  Soil only supports <strong>full position withdrawals</strong> — principal and interest come out together. Partial or interest-only withdrawals are not available.
                 </p>
                 <p className="text-xs text-muted-foreground text-center mt-2">
-                  Once RLUSD is back in your wallet, your DCA order (if active) will automatically convert it to XRP on the next scheduled run.
-                  Or you can redeposit to a vault to keep earning.
+                  Clicking below opens Soil where you withdraw your entire{" "}
+                  {formatCurrency(selectedVault.principal + selectedInterest)} RLUSD from {selectedVault.vaultName}. Once back in your wallet, you can DCA to XRP, redeposit to a vault, or hold as RLUSD.
                 </p>
               </div>
             </div>

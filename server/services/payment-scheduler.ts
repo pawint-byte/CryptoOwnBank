@@ -427,7 +427,7 @@ async function processAutoWithdrawals(): Promise<void> {
                   Memos: [{
                     Memo: {
                       MemoType: Buffer.from("auto-withdraw", "utf8").toString("hex").toUpperCase(),
-                      MemoData: Buffer.from(`Withdraw ${vault.interest.toFixed(6)} RLUSD interest from ${vault.name}`, "utf8").toString("hex").toUpperCase(),
+                      MemoData: Buffer.from(`Withdrawal reminder: ${vault.interest.toFixed(6)} RLUSD interest accrued in ${vault.name} — go to Soil to withdraw full position`, "utf8").toString("hex").toUpperCase(),
                     },
                   }],
                 },
@@ -440,7 +440,7 @@ async function processAutoWithdrawals(): Promise<void> {
                   },
                 },
                 custom_meta: {
-                  instruction: `CryptoOwnBank Auto-Withdraw: Approve to withdraw ${vault.interest.toFixed(4)} RLUSD interest from your ${vault.name} vault. Tap Sign to confirm.`,
+                  instruction: `CryptoOwnBank Reminder: Your ${vault.name} vault has ${vault.interest.toFixed(4)} RLUSD in accrued interest. Go to Soil to withdraw your full position (principal + interest). Tap to acknowledge.`,
                 },
               } as never);
 
