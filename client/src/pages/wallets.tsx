@@ -1453,9 +1453,72 @@ export default function Wallets() {
     setCollapsedGroups((prev) => ({ ...(prev || {}), [groupKey]: !(prev?.[groupKey] ?? true) }));
   };
 
+  const [restoringWallets, setRestoringWallets] = useState(false);
+
   const { data: userWallets = [], isLoading } = useQuery<WalletWithBalances[]>({
     queryKey: ["/api/wallets"],
   });
+
+  useEffect(() => {
+    if (isLoading || restoringWallets) return;
+
+    if (userWallets.length > 0) {
+      const backup = userWallets.map(w => ({ address: w.address, chain: w.chain, label: w.label }));
+      localStorage.setItem("cob_wallets_backup", JSON.stringify(backup));
+    } else {
+      const backupStr = localStorage.getItem("cob_wallets_backup");
+      if (backupStr) {
+        try {
+          const backup = JSON.parse(backupStr) as Array<{ address: string; chain: string; label: string }>;
+          if (backup.length > 0) {
+            setRestoringWallets(true);
+            (async () => {
+              let restored = 0;
+              for (const w of backup) {
+                try {
+                  await apiRequest("POST", "/api/wallets", { address: w.address, chain: w.chain, label: w.label });
+                  restored++;
+                } catch {}
+              }
+              if (restored > 0) {
+                queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+                toast({ title: `Restored ${restored} wallet${restored > 1 ? "s" : ""} from local backup` });
+              }
+              setRestoringWallets(false);
+            })();
+          }
+        } catch {
+          localStorage.removeItem("cob_wallets_backup");
+        }
+      }
+    }
+  }, [isLoading, userWallets.length, restoringWallets]);
+
+  useEffect(() => {
+    if (xamanConnections.length > 0) {
+      const backup = xamanConnections.map(c => ({ xrpAddress: c.xrpAddress, accountLabel: c.accountLabel }));
+      localStorage.setItem("cob_xaman_backup", JSON.stringify(backup));
+    } else if (!isLoading) {
+      const backupStr = localStorage.getItem("cob_xaman_backup");
+      if (backupStr) {
+        try {
+          const backup = JSON.parse(backupStr) as Array<{ xrpAddress: string; accountLabel: string | null }>;
+          if (backup.length > 0) {
+            (async () => {
+              for (const c of backup) {
+                try {
+                  await apiRequest("POST", "/api/xaman-connections", { xrpAddress: c.xrpAddress, accountLabel: c.accountLabel });
+                } catch {}
+              }
+              refetchXamanConnections();
+            })();
+          }
+        } catch {
+          localStorage.removeItem("cob_xaman_backup");
+        }
+      }
+    }
+  }, [xamanConnections.length, isLoading]);
 
   const { data: portfolioData, isLoading: portfolioLoading } = useQuery<WalletPortfolio>({
     queryKey: ["/api/wallets/portfolio"],
