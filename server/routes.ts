@@ -5900,6 +5900,32 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/xaman-connections/:id/label", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connId = parseInt(req.params.id);
+      const { label } = req.body;
+      if (!label || typeof label !== "string" || label.trim().length === 0) {
+        return res.status(400).json({ message: "Label is required" });
+      }
+      const { xamanConnections } = await import("@shared/schema");
+      const [conn] = await db.select().from(xamanConnections).where(and(eq(xamanConnections.id, connId), eq(xamanConnections.userId, userId)));
+      if (!conn) {
+        return res.status(404).json({ message: "Connection not found" });
+      }
+      await db.update(xamanConnections).set({ accountLabel: label.trim() }).where(eq(xamanConnections.id, connId));
+      const userWallets = await storage.getWalletsByUser(userId);
+      const matchingWallet = userWallets.find(w => w.address.toLowerCase() === conn.xrpAddress.toLowerCase());
+      if (matchingWallet) {
+        await storage.updateWalletLabel(matchingWallet.id, label.trim());
+      }
+      res.json({ message: "Connection label updated" });
+    } catch (error) {
+      console.error("Rename xaman connection error:", error);
+      res.status(500).json({ message: "Failed to rename connection" });
+    }
+  });
+
   app.post("/api/wallets/bulk-rename", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -8553,12 +8579,12 @@ function startPriceAlertChecker() {
     try {
       const OWNER_ID = "1a4d009b-ca9c-46fe-a12b-193f4ec23f6e";
       const ownerXrpWallets = [
-        { address: "rpwKnLcsi441mHxvUZtBeMHumLSSEzzqEY", label: "DeathKeepers (Xaman)" },
-        { address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc", label: "LEDGER" },
-        { address: "rKmgnmE8FNKx1uw7uPiB3aD2fup8Mw4k2z", label: "ELLIPAL" },
-        { address: "rLHvxS7notX9d2HjwLoPh8ATGkCQRZi4QE", label: "CypheRock" },
-        { address: "r4NX5ZUTUNHLxUkjp5mUge87EMuhojmfoU", label: "Arculus" },
-        { address: "rPu4ceyz5fm6L5V87Xaq3RJ91cShd64irS", label: "SafePal" },
+        { address: "rpwKnLcsi441mHxvUZtBeMHumLSSEzzqEY", label: "XRP_DeathKeepers (Xaman)" },
+        { address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc", label: "XRP_LEDGER" },
+        { address: "rKmgnmE8FNKx1uw7uPiB3aD2fup8Mw4k2z", label: "XRP_ELLIPAL" },
+        { address: "rLHvxS7notX9d2HjwLoPh8ATGkCQRZi4QE", label: "XRP_CypheRock" },
+        { address: "r4NX5ZUTUNHLxUkjp5mUge87EMuhojmfoU", label: "XRP_Arculus" },
+        { address: "rPu4ceyz5fm6L5V87Xaq3RJ91cShd64irS", label: "XRP_SafePal" },
       ];
       const existing = await storage.getWalletsByUser(OWNER_ID);
       const existingAddrs = new Set(existing.map(w => w.address.toLowerCase()));
@@ -8606,20 +8632,53 @@ function startPriceAlertChecker() {
 
   setTimeout(async () => {
     try {
-      const { wallets } = await import("@shared/schema");
-      const renamed = await db.update(wallets)
-        .set({ label: "LOBSTR_OwnBank Stellar" })
-        .where(
-          and(
-            eq(wallets.chain, "stellar"),
-            eq(wallets.label, "OwnBank Stellar")
-          )
-        );
-      if (renamed.rowCount && renamed.rowCount > 0) {
-        console.log(`[seed] Renamed ${renamed.rowCount} 'OwnBank Stellar' wallets to 'LOBSTR_OwnBank Stellar'`);
+      const { wallets, xamanConnections: xcTable } = await import("@shared/schema");
+      let totalRenamed = 0;
+
+      const xrpRenames: Record<string, string> = {
+        "DeathKeepers (Xaman)": "XRP_DeathKeepers (Xaman)",
+        "Xaman Wallet": "XRP_DeathKeepers (Xaman)",
+        "LEDGER": "XRP_LEDGER",
+        "ELLIPAL": "XRP_ELLIPAL",
+        "CypheRock": "XRP_CypheRock",
+        "Arculus": "XRP_Arculus",
+        "SafePal": "XRP_SafePal",
+        "LEDGERX": "XRP_LEDGER",
+      };
+
+      for (const [oldLabel, newLabel] of Object.entries(xrpRenames)) {
+        const r1 = await db.update(wallets)
+          .set({ label: newLabel })
+          .where(and(eq(wallets.chain, "xrp"), eq(wallets.label, oldLabel)));
+        if (r1.rowCount && r1.rowCount > 0) totalRenamed += r1.rowCount;
+
+        const r2 = await db.update(xcTable)
+          .set({ accountLabel: newLabel })
+          .where(eq(xcTable.accountLabel, oldLabel));
+        if (r2.rowCount && r2.rowCount > 0) totalRenamed += r2.rowCount;
+      }
+
+      const stellarRenames: Record<string, string> = {
+        "OwnBank Stellar": "XLM_LOBSTR_OwnBank",
+        "LOBSTR_OwnBank Stellar": "XLM_LOBSTR_OwnBank",
+        "LEDGER": "XLM_LEDGER",
+        "Arculus": "XLM_Arculus",
+        "ELLIPAL": "XLM_ELLIPAL",
+        "SafePal": "XLM_SafePal",
+      };
+
+      for (const [oldLabel, newLabel] of Object.entries(stellarRenames)) {
+        const r = await db.update(wallets)
+          .set({ label: newLabel })
+          .where(and(eq(wallets.chain, "stellar"), eq(wallets.label, oldLabel)));
+        if (r.rowCount && r.rowCount > 0) totalRenamed += r.rowCount;
+      }
+
+      if (totalRenamed > 0) {
+        console.log(`[seed] Chain-prefix rename: updated ${totalRenamed} wallet/connection labels`);
       }
     } catch (err) {
-      console.error("[seed] Stellar wallet rename error:", err);
+      console.error("[seed] Chain-prefix rename error:", err);
     }
   }, 8000);
 }

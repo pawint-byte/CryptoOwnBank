@@ -42,6 +42,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/seo-head";
 import { useStellarStore } from "@/lib/stellar-store";
+import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
 
 const STELLAR_PURPLE = "#7B61FF";
 
@@ -235,6 +236,8 @@ export default function StellarInvoices() {
           Create Invoice
         </Button>
       </div>
+
+      <StellarWalletPicker label="Active Wallet" />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>

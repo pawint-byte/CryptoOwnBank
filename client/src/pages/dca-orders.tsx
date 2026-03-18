@@ -45,6 +45,7 @@ import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { WalletPicker } from "@/components/wallet-picker";
 import { signTransaction, hasPendingXummPayment, completePendingXummPayment } from "@/lib/xumm-connector";
 import { getOrderBook } from "@/lib/xrpl-client";
 import type { DcaOrder, DcaExecution } from "@shared/schema";
@@ -212,6 +213,8 @@ export default function DcaOrders() {
   const [totalRuns, setTotalRuns] = useState("");
   const [label, setLabel] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const signingAddress = useXrplStore((s) => s.walletAddress);
+  const [activeWallet, setActiveWallet] = useState(signingAddress || "");
 
   const { data: orders = [], isLoading } = useQuery<DcaOrder[]>({
     queryKey: ["/api/dca-orders"],
@@ -306,7 +309,7 @@ export default function DcaOrders() {
   }, []);
 
   async function executeNow(order: DcaOrder) {
-    const { walletAddress } = useXrplStore.getState();
+    const walletAddress = activeWallet || useXrplStore.getState().walletAddress;
     if (!walletAddress) {
       toast({ title: "No wallet connected", description: "Connect your XRPL wallet first.", variant: "destructive" });
       return;
@@ -521,6 +524,14 @@ export default function DcaOrders() {
             <Plus className="w-4 h-4 mr-2" /> New DCA
           </Button>
         </div>
+
+        {isXrpl && (
+          <WalletPicker
+            value={activeWallet}
+            onChange={setActiveWallet}
+            label="Signing Wallet"
+          />
+        )}
 
         <Card className="border-blue-500/20 bg-blue-500/5">
           <CardContent className="p-4 space-y-3">

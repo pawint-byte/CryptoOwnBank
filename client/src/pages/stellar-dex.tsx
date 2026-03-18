@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
+import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
 
 interface StellarAsset {
   code: string;
@@ -303,6 +304,8 @@ export default function StellarDex() {
           </Button>
         </div>
       </div>
+
+      <StellarWalletPicker label="Active Wallet" />
 
       <Collapsible open={educationOpen} onOpenChange={setEducationOpen}>
         <Card>

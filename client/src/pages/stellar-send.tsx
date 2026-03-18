@@ -62,6 +62,7 @@ import {
   Star,
 } from "lucide-react";
 import { useStellarStore, type StellarBalance } from "@/lib/stellar-store";
+import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
 
 const STELLAR_PURPLE = "#7B61FF";
 
@@ -270,6 +271,8 @@ export default function StellarSend() {
           Stellar Network
         </Badge>
       </div>
+
+      <StellarWalletPicker label="Active Wallet" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>

@@ -47,6 +47,7 @@ import {
   fetchStellarBalances,
   type StellarBalance,
 } from "@/lib/stellar-store";
+import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
 
 const STELLAR_PURPLE = "#7B61FF";
 
@@ -271,6 +272,8 @@ export default function StellarTokens() {
           </Tooltip>
         </div>
       </div>
+
+      <StellarWalletPicker label="Active Wallet" />
 
       <Collapsible open={eduOpen} onOpenChange={setEduOpen}>
         <Card>
