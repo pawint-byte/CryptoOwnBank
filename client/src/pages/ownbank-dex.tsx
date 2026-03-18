@@ -343,7 +343,8 @@ export default function OwnBankDex() {
   const [viewMode, setViewMode] = useState<"swap" | "advanced">("advanced");
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
-  const orderType = "limit" as const;
+  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
+  const [fillType, setFillType] = useState<"full" | "partial">("full");
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
@@ -457,10 +458,12 @@ export default function OwnBankDex() {
       toast({ title: "Invalid amount", description: "Enter a valid amount.", variant: "destructive" });
       return;
     }
-    const p = parseFloat(price);
-    if (!p || p <= 0) {
-      toast({ title: "Invalid price", description: "Enter your limit price.", variant: "destructive" });
-      return;
+    if (orderType === "limit") {
+      const p = parseFloat(price);
+      if (!p || p <= 0) {
+        toast({ title: "Invalid price", description: "Enter your limit price.", variant: "destructive" });
+        return;
+      }
     }
     setConfirmDialogOpen(true);
   };
@@ -481,23 +484,41 @@ export default function OwnBankDex() {
     setPlacingOrder(true);
     try {
       const a = parseFloat(amount);
-      const p = parseFloat(price) || 0;
+      let usePrice: number;
 
-      if (p <= 0) {
-        toast({ title: "Invalid price", description: "Enter a valid limit price.", variant: "destructive" });
-        setPlacingOrder(false);
-        return;
+      if (orderType === "limit") {
+        usePrice = parseFloat(price) || 0;
+        if (usePrice <= 0) {
+          toast({ title: "Invalid price", description: "Enter a valid limit price.", variant: "destructive" });
+          setPlacingOrder(false);
+          return;
+        }
+      } else {
+        const marketPrice = orderSide === "buy" ? asks[0]?.price : bids[0]?.price;
+        if (!marketPrice || parseFloat(marketPrice) <= 0) {
+          toast({ title: "No liquidity", description: "No orders on the book right now. Try a limit order instead.", variant: "destructive" });
+          setPlacingOrder(false);
+          return;
+        }
+        usePrice = parseFloat(marketPrice);
       }
 
       let takerGets: any;
       let takerPays: any;
 
       if (orderSide === "buy") {
-        takerGets = buildAmountField(pair.counter, (a * p).toString());
+        takerGets = buildAmountField(pair.counter, (a * usePrice).toString());
         takerPays = buildAmountField(pair.base, a.toString());
       } else {
         takerGets = buildAmountField(pair.base, a.toString());
-        takerPays = buildAmountField(pair.counter, (a * p).toString());
+        takerPays = buildAmountField(pair.counter, (a * usePrice).toString());
+      }
+
+      let flags = 0;
+      if (fillType === "full") {
+        flags = 0x00040000;
+      } else if (orderType === "market") {
+        flags = 0x00080000;
       }
 
       const txJson: Record<string, any> = {
@@ -506,8 +527,11 @@ export default function OwnBankDex() {
         TakerGets: takerGets,
         TakerPays: takerPays,
       };
+      if (flags > 0) {
+        txJson.Flags = flags;
+      }
 
-      const totalVal = a * p;
+      const totalVal = a * usePrice;
       sessionStorage.setItem("dex_pending_trade", JSON.stringify({
         side: orderSide,
         spentAmount: orderSide === "buy" ? totalVal.toString() : a.toString(),
@@ -941,14 +965,57 @@ export default function OwnBankDex() {
 
             <div className="flex gap-1">
               <Button
-                variant="default"
+                variant={orderType === "limit" ? "default" : "outline"}
                 size="sm"
                 className="flex-1"
+                onClick={() => setOrderType("limit")}
                 data-testid="button-limit"
               >
-                Limit Order (GTC)
+                Limit
+              </Button>
+              <Button
+                variant={orderType === "market" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setOrderType("market")}
+                data-testid="button-market"
+              >
+                Market
               </Button>
             </div>
+
+            <div className="flex gap-1">
+              <Button
+                variant={fillType === "full" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setFillType("full")}
+                data-testid="button-fill-full"
+              >
+                Fill or Kill
+              </Button>
+              <Button
+                variant={fillType === "partial" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setFillType("partial")}
+                data-testid="button-fill-partial"
+              >
+                Allow Partial
+              </Button>
+            </div>
+
+            {fillType === "partial" && (
+              <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400" data-testid="text-partial-warning">
+                <strong>Partial fills enabled:</strong> Your order may be filled in parts. You'll receive whatever amount matches on the order book. Unfilled portions will {orderType === "limit" ? "remain open until cancelled." : "be cancelled immediately."}
+              </div>
+            )}
+
+            {fillType === "full" && (
+              <div className="rounded-md bg-green-500/10 border border-green-500/30 p-2 text-xs text-green-600 dark:text-green-400" data-testid="text-full-info">
+                <strong>Fill or Kill:</strong> Your entire order must be filled at once, or it won't execute at all. No partial fills.
+              </div>
+            )}
 
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
@@ -964,21 +1031,35 @@ export default function OwnBankDex() {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Price ({pair.counter.display} per {pair.base.display})
-              </label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                step="0.000001"
-                data-testid="input-order-price"
-              />
-            </div>
+            {orderType === "limit" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                  Price ({pair.counter.display} per {pair.base.display})
+                </label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  step="0.000001"
+                  data-testid="input-order-price"
+                />
+              </div>
+            )}
 
-            {amount && price && (
+            {orderType === "market" && amount && (
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-muted-foreground">Est. Price</span>
+                <span className="font-mono text-muted-foreground" data-testid="text-market-price">
+                  {orderSide === "buy"
+                    ? (asks[0]?.price ? `~${formatAmount(asks[0].price, 6)} ${pair.counter.display}` : "No asks")
+                    : (bids[0]?.price ? `~${formatAmount(bids[0].price, 6)} ${pair.counter.display}` : "No bids")
+                  }
+                </span>
+              </div>
+            )}
+
+            {orderType === "limit" && amount && price && (
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="text-muted-foreground">Total</span>
                 <span className="font-mono font-medium" data-testid="text-order-total">
@@ -1228,17 +1309,42 @@ export default function OwnBankDex() {
                 </>
               )}
               <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Fill</span>
+                <Badge className={fillType === "full" ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30" : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30"}>
+                  {fillType === "full" ? "Fill or Kill" : "Allow Partial"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-muted-foreground">Pair</span>
                 <span className="font-medium">{pair.label}</span>
               </div>
             </div>
 
+            {fillType === "full" ? (
+              <div className="rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
+                <p className="text-xs text-green-800 dark:text-green-300 font-semibold">Fill or Kill</p>
+                <p className="text-xs text-green-700/80 dark:text-green-400/80 mt-1">
+                  Your full {formatAmount(amount)} {pair.base.display} must be filled at once. If there isn't enough liquidity to fill the entire order, nothing will execute.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 p-3">
+                <p className="text-xs text-yellow-800 dark:text-yellow-300 font-semibold">Partial Fills Allowed</p>
+                <p className="text-xs text-yellow-700/80 dark:text-yellow-400/80 mt-1">
+                  {orderType === "limit"
+                    ? "Your order will be placed on the order book. It may fill partially or fully. Any unfilled amount stays open until you cancel it (Good Till Cancelled)."
+                    : "Your order will fill whatever is available at the current market price. Any unfilled amount will be cancelled immediately."
+                  }
+                </p>
+              </div>
+            )}
+
             <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
               <p className="text-xs text-blue-800 dark:text-blue-300">
                 {walletType === "xumm" ? (
-                  <>Your Xaman wallet will prompt you to sign an <span className="font-semibold">OfferCreate</span> transaction. If matched, the trade executes instantly on the XRPL.</>
+                  <>Your Xaman wallet will prompt you to sign this trade.</>
                 ) : (
-                  <>Confirm the <span className="font-semibold">OfferCreate</span> transaction on your Ledger device.</>
+                  <>Confirm the transaction on your Ledger device.</>
                 )}
               </p>
               <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-1">
