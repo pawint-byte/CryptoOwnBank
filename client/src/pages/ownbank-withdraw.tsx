@@ -19,8 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { calculateAccruedInterest, SOIL_VAULTS } from "@/lib/xrpl-client";
-import { signPayment } from "@/lib/xumm-connector";
+import { calculateAccruedInterest, SOIL_VAULTS, SOIL_REFERRAL_URL } from "@/lib/xrpl-client";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Lock,
@@ -35,6 +34,7 @@ import {
   Repeat,
   Zap,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -513,10 +513,11 @@ export default function OwnBankWithdraw() {
   const totalInterest = mergedVaults.reduce((sum, v) => sum + v.interest, 0);
 
   const handleWithdrawClick = (vaultAddress: string) => {
-    if (!withdrawTarget) {
+    const vault = mergedVaults.find((v) => v.vaultAddress === vaultAddress);
+    if (!vault || vault.interest <= 0) {
       toast({
-        title: "No Wallet Set",
-        description: "Please add a wallet in Settings before withdrawing.",
+        title: "No Interest Accrued",
+        description: "You haven't earned any interest yet.",
         variant: "destructive",
       });
       return;
@@ -525,72 +526,14 @@ export default function OwnBankWithdraw() {
     setShowPreview(true);
   };
 
-  const handleConfirmWithdraw = async () => {
-    if (!selectedVaultAddress || !withdrawTarget) return;
-
-    const vault = mergedVaults.find((v) => v.vaultAddress === selectedVaultAddress);
-    if (!vault) return;
-
-    const interest = vault.interest;
-
-    if (interest <= 0) {
-      toast({
-        title: "No Interest Accrued",
-        description: "You haven't earned any interest yet.",
-        variant: "destructive",
-      });
-      setShowPreview(false);
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      if (walletType === "xumm") {
-        const result = await signPayment(selectedVaultAddress, {
-          currency: "RLUSD",
-          value: interest.toFixed(6),
-          issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
-        }, {
-          memos: [
-            { MemoType: "withdraw-interest", MemoData: `Withdraw ${interest.toFixed(6)} RLUSD interest to ${withdrawTarget}` },
-          ],
-        });
-
-        if (result.success) {
-          toast({
-            title: "Interest Withdrawn Successfully",
-            description: `${formatCurrency(interest)} RLUSD interest claimed from ${vault.vaultName}.`,
-          });
-        } else {
-          toast({
-            title: "Withdrawal Failed",
-            description: result.error || "Transaction was rejected",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Ledger Signing",
-          description: "Please confirm the transaction on your Ledger device.",
-        });
-        await new Promise((r) => setTimeout(r, 2000));
-        toast({
-          title: "Interest Withdrawn Successfully",
-          description: `${formatCurrency(interest)} RLUSD sent to your spending wallet.`,
-        });
-      }
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "An unexpected error occurred";
-      toast({
-        title: "Withdrawal Error",
-        description: msg,
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-      setShowPreview(false);
-      setSelectedVaultAddress(null);
-    }
+  const handleConfirmWithdraw = () => {
+    window.open(SOIL_REFERRAL_URL, "_blank", "noopener,noreferrer");
+    toast({
+      title: "Opening Soil Protocol",
+      description: "Complete your interest withdrawal on Soil's app. Connect your wallet there and request a withdrawal from your vault.",
+    });
+    setShowPreview(false);
+    setSelectedVaultAddress(null);
   };
 
   if (!isConnected) {
@@ -875,22 +818,15 @@ export default function OwnBankWithdraw() {
                   </span>
                 </div>
                 <Separator />
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Sending To
-                  </span>
-                  <span className="text-sm font-mono truncate max-w-[200px]">
-                    {withdrawTarget}
-                  </span>
-                </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
                 <p className="text-xs text-muted-foreground text-center">
-                  Sending {formatCurrency(selectedInterest)} RLUSD interest to your
-                  spending wallet. Your principal of{" "}
-                  {formatCurrency(selectedVault.principal)} RLUSD remains locked
-                  and protected in the vault.
+                  You'll be redirected to Soil Protocol to complete the withdrawal
+                  of {formatCurrency(selectedInterest)} RLUSD interest. Connect your
+                  wallet on Soil's app and request the withdrawal from your{" "}
+                  {selectedVault.vaultName} vault. Your principal of{" "}
+                  {formatCurrency(selectedVault.principal)} RLUSD stays locked and protected.
                 </p>
               </div>
             </div>
@@ -900,7 +836,6 @@ export default function OwnBankWithdraw() {
             <Button
               variant="outline"
               onClick={() => setShowPreview(false)}
-              disabled={isProcessing}
               data-testid="button-cancel-withdraw"
             >
               Cancel
@@ -908,10 +843,10 @@ export default function OwnBankWithdraw() {
             <Button
               className="bg-[#00A4E4] hover:bg-[#0090cc] text-white"
               onClick={handleConfirmWithdraw}
-              disabled={isProcessing}
               data-testid="button-confirm-withdraw"
             >
-              {isProcessing ? "Signing..." : "Sign & Withdraw"}
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open Soil to Withdraw
             </Button>
           </DialogFooter>
         </DialogContent>
