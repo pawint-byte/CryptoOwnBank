@@ -94,6 +94,7 @@ export default function StellarWallet() {
   const [eduOpen, setEduOpen] = useState(true);
   const [showAddAnother, setShowAddAnother] = useState(false);
   const [newAddressInput, setNewAddressInput] = useState("");
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
   const { data: trackerWallets = [] } = useQuery<TrackerWallet[]>({
     queryKey: ["/api/wallets"],
@@ -631,21 +632,88 @@ export default function StellarWallet() {
         </CardContent>
       </Card>
 
-      <Card className="border-muted">
-        <CardContent className="py-4">
-          <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Non-Custodial</p>
-              <p>
-                CryptoOwnBank reads your public address to display balances.
-                We never hold your private keys. All transactions are signed in your own Stellar wallet
-                (LOBSTR, Freighter, Solar, etc.).
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Collapsible open={howItWorksOpen} onOpenChange={setHowItWorksOpen}>
+        <Card style={{ borderColor: `${STELLAR_PURPLE}25` }}>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-accent/30 transition-colors">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4" style={{ color: STELLAR_PURPLE }} />
+                  How CryptoOwnBank Works with Your Wallets
+                </span>
+                {howItWorksOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-5 pt-0">
+              <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: `${STELLAR_PURPLE}30`, backgroundColor: `${STELLAR_PURPLE}08` }}>
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Star className="h-4 w-4" style={{ color: STELLAR_PURPLE }} />
+                  The Big Picture
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  CryptoOwnBank is your <span className="font-medium text-foreground">dashboard and command center</span>.
+                  LOBSTR (Stellar) and Xaman (XRPL) are your <span className="font-medium text-foreground">signing wallets</span>.
+                  We build the transaction — your wallet app approves and signs it. Your keys never leave your wallet.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">How Signing Works</p>
+                <div className="grid gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: STELLAR_PURPLE }}>1</Badge>
+                    <p>You set up a trade, send, or trustline on CryptoOwnBank</p>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: STELLAR_PURPLE }}>2</Badge>
+                    <p>CryptoOwnBank opens <span className="font-medium text-foreground">LOBSTR</span> (or Xaman for XRPL) with the transaction details</p>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: STELLAR_PURPLE }}>3</Badge>
+                    <p>You review and <span className="font-medium text-foreground">approve in your wallet app</span> — this is the "sign off"</p>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: STELLAR_PURPLE }}>4</Badge>
+                    <p>The transaction goes through on the blockchain, and CryptoOwnBank shows your updated balance</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">LOBSTR (Phone App) — Your Signing Wallet for Stellar</p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+                  <li>LOBSTR signs trades, sends, and trustline changes that you set up here</li>
+                  <li>Works automatically — CryptoOwnBank opens LOBSTR when you need to approve something</li>
+                  <li>You can manage multiple LOBSTR addresses on this page (see Switch Wallet above)</li>
+                </ul>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">Cold Wallets (Ledger, Arculus, Ellipal, SafePal)</p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+                  <li><span className="font-medium text-foreground">Tracking only:</span> Add the public address to see balances and portfolio value</li>
+                  <li><span className="font-medium text-foreground">To sign transactions:</span> Use StellarTerm or Stellar Laboratory as the signing option (instead of LOBSTR)</li>
+                  <li><span className="font-medium text-foreground">Shortcut:</span> If you import your cold wallet's recovery phrase into LOBSTR, then LOBSTR can sign on its behalf from your phone — but this means your keys are now on a hot device (less secure, more convenient)</li>
+                </ul>
+              </div>
+
+              <div className="rounded-md bg-muted/30 border border-muted p-4 space-y-2">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-emerald-500" />
+                  Security Note
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  CryptoOwnBank <span className="font-medium text-foreground">never sees or stores your private keys</span>.
+                  We only read your public address from the blockchain.
+                  Every transaction must be approved and signed in your own wallet app (LOBSTR, Xaman, Ledger, etc.).
+                </p>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </div>
   );
 }
