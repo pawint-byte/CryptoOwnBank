@@ -306,6 +306,7 @@ export default function OwnBankHistory() {
             Refresh
           </Button>
         </div>
+      </div>
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0 pb-4">

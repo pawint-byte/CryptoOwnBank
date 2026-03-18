@@ -1087,6 +1087,46 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b">
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-sm font-medium" data-testid="badge-break-loop">
+              <Repeat className="h-3.5 w-3.5" />
+              Break the Loop
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight" data-testid="heading-break-loop">
+              Stop Being an NPC in Someone Else's Financial System
+            </h2>
+            <div className="space-y-4 text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto">
+              <p>
+                NPC — <span className="text-foreground font-medium">Non-Playable Character</span> — the background
+                figure in a video game who walks the same path, repeats the same lines, and never
+                questions the code running underneath.
+              </p>
+              <p>
+                Sound familiar? Earn, deposit at 0.01%, pay fees, repeat. The traditional financial
+                system wasn't built for you — it was built <span className="italic">around</span> you.
+                You're the NPC generating value for someone else's game.
+              </p>
+              <p className="text-foreground font-medium text-lg">
+                CryptoOwnBank is your way out.
+              </p>
+              <p>
+                Connect your own wallet. Earn 5–8% real yield. Trade on a decentralized exchange.
+                Send payments globally in seconds. No middleman. No permission needed.
+                No one else holding your keys.
+              </p>
+            </div>
+            <div className="pt-2">
+              <a href="/login">
+                <Button size="lg" className="bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-break-loop-cta">
+                  Break Free — Connect Your Wallet
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
