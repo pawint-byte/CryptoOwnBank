@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,29 +24,17 @@ import {
   Unlock,
   Calendar,
   AlertTriangle,
-  ChevronRight,
   FileText,
   ShieldCheck,
-  Plus,
-  Check,
-  Minus,
   Sparkles,
-  ExternalLink,
   Globe,
-  Shield,
-  HardDrive,
   ThumbsUp,
   ThumbsDown,
-  ArrowRight,
+  RefreshCw,
+  Building2,
+  Wallet,
+  Clock,
 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,75 +86,33 @@ function formatDate(date: string | null): string {
   return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-const TYPE_SHORT: Record<string, string> = {
-  cd: "CD", savings: "SAVE", money_market: "MM", checking: "CHK",
-  bond: "BOND", brokerage: "INVEST", other: "ACCT",
-};
-
-function getProductSymbol(product: any): string {
-  const institution = product.institutionName || "Manual";
-  const tag = TYPE_SHORT[product.productType] || "ACCT";
-  const prefix = institution.replace(/[^A-Za-z0-9]/g, "").substring(0, 10).toUpperCase();
-
-  if (product.rawDescription && product.rawDescription.length < 60) {
-    const descTag = product.rawDescription.replace(/[^A-Za-z0-9]/g, "").substring(0, 12).toUpperCase();
-    if (descTag && descTag.length > 0) {
-      return `${prefix}-${descTag}`;
-    }
-  }
-
-  return `${prefix}-${tag}`;
+function timeAgo(date: string | null): string {
+  if (!date) return "Never";
+  const diff = Date.now() - new Date(date).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  if (days < 365) return `${Math.floor(days / 30)} months ago`;
+  return `${Math.floor(days / 365)} years ago`;
 }
 
 export default function StatementInsights() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedUploadId, setSelectedUploadId] = useState<string | null>(null);
+  const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [selfDestructTimers, setSelfDestructTimers] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    const hasTimers = Object.values(selfDestructTimers).some(t => t > 0);
-    if (!hasTimers) return;
-
-    const interval = setInterval(() => {
-      setSelfDestructTimers(prev => {
-        const next: Record<string, number> = {};
-        let anyExpired = false;
-        for (const [id, remaining] of Object.entries(prev)) {
-          const newVal = Math.max(0, remaining - 1);
-          if (newVal > 0) {
-            next[id] = newVal;
-          } else {
-            anyExpired = true;
-          }
-        }
-        if (anyExpired) {
-          queryClient.invalidateQueries({ queryKey: ["/api/statements"] });
-        }
-        return next;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [Object.keys(selfDestructTimers).length]);
 
   const { data: limits } = useQuery<any>({ queryKey: ["/api/subscription/limits"] });
 
-  const { data: uploads, isLoading: uploadsLoading } = useQuery<any[]>({
-    queryKey: ["/api/statements"],
+  const { data: sources, isLoading: sourcesLoading } = useQuery<any[]>({
+    queryKey: ["/api/statement-sources"],
   });
 
-  const { data: uploadDetail, isLoading: detailLoading } = useQuery<any>({
-    queryKey: ["/api/statements", selectedUploadId],
-    enabled: !!selectedUploadId,
+  const { data: sourceDetail, isLoading: detailLoading } = useQuery<any>({
+    queryKey: ["/api/statement-sources", selectedSourceId],
+    enabled: !!selectedSourceId,
   });
-
-  const { data: positions } = useQuery<any[]>({ queryKey: ["/api/positions"] });
-
-  const existingSymbols = new Set(
-    (positions || []).map((p: any) => String(p.assetSymbol || "").toUpperCase())
-  );
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -184,13 +130,16 @@ export default function StatementInsights() {
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/statements"] });
-      setSelectedUploadId(data.upload.id);
-      const selfDestructMinutes = data.selfDestructMinutes || 15;
-      setSelfDestructTimers(prev => ({ ...prev, [data.upload.id]: selfDestructMinutes * 60 }));
+      queryClient.invalidateQueries({ queryKey: ["/api/statement-sources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      if (data.source?.id) {
+        setSelectedSourceId(data.source.id);
+        queryClient.invalidateQueries({ queryKey: ["/api/statement-sources", data.source.id] });
+      }
+      const verb = data.isUpdate ? "updated" : "added";
       toast({
-        title: "Statement analyzed",
-        description: `Found ${data.products.length} financial product(s). Data self-destructs in ${selfDestructMinutes} minutes.`,
+        title: `Source ${verb}`,
+        description: `${data.source?.institutionName || "Institution"}: ${data.products.length} product(s) detected. ${data.isUpdate ? "Previous holdings were replaced with the latest data." : "Holdings saved to your portfolio."}`,
       });
     },
     onError: (error: Error) => {
@@ -198,87 +147,16 @@ export default function StatementInsights() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiRequest("DELETE", `/api/statements/${id}`);
+  const deleteSourceMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/statement-sources/${id}`);
       return res.json();
     },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/statements"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/statement-sources"] });
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
-      if (selectedUploadId) setSelectedUploadId(null);
-      const removed = data?.removedPositions || 0;
-      toast({
-        title: "Statement deleted",
-        description: removed > 0
-          ? `Removed ${removed} portfolio ${removed === 1 ? "entry" : "entries"} that were added from this statement.`
-          : "No portfolio entries were linked to this statement.",
-      });
-    },
-  });
-
-  const [importedProducts, setImportedProducts] = useState<Set<string>>(new Set());
-
-  const isProductImported = useCallback((product: any): boolean => {
-    if (importedProducts.has(product.id)) return true;
-    const symbol = getProductSymbol(product);
-    return existingSymbols.has(symbol);
-  }, [importedProducts, existingSymbols]);
-
-  const importToPortfolioMutation = useMutation({
-    mutationFn: async (product: any) => {
-      const balance = product.balance ? parseFloat(product.balance) : 0;
-      if (balance <= 0) throw new Error("No balance detected for this product");
-      const symbol = getProductSymbol(product);
-
-      if (existingSymbols.has(symbol)) {
-        throw new Error(`${symbol} is already in your portfolio`);
-      }
-
-      const institution = product.institutionName || "Manual";
-      await apiRequest("POST", "/api/positions/manual", {
-        assetSymbol: symbol,
-        quantity: balance.toString(),
-        costPerUnit: "1",
-        currentPrice: "1",
-        location: institution,
-      });
-
-      return product.id;
-    },
-    onSuccess: (productId: string) => {
-      setImportedProducts((prev) => new Set(prev).add(productId));
-      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
-      toast({ title: "Added to Portfolio", description: "This asset now appears in your total net worth" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Import failed", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const removeFromPortfolioMutation = useMutation({
-    mutationFn: async (product: any) => {
-      const symbol = getProductSymbol(product);
-      await apiRequest("DELETE", `/api/positions/by-symbol/${encodeURIComponent(symbol)}`);
-      return product.id;
-    },
-    onSuccess: (productId: string) => {
-      setImportedProducts((prev) => {
-        const next = new Set(prev);
-        next.delete(productId);
-        return next;
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
-      toast({ title: "Removed from Portfolio", description: "This entry has been removed from your portfolio" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Remove failed", description: error.message, variant: "destructive" });
+      if (selectedSourceId) setSelectedSourceId(null);
+      toast({ title: "Source removed", description: "The institution and all its holdings have been removed from your portfolio." });
     },
   });
 
@@ -310,91 +188,90 @@ export default function StatementInsights() {
     setIsDragging(false);
   }, []);
 
-  if (selectedUploadId && uploadDetail) {
-    const remainingSeconds = selfDestructTimers[selectedUploadId] || 0;
-    const minutes = Math.floor(remainingSeconds / 60);
-    const seconds = remainingSeconds % 60;
-    const isExpiring = remainingSeconds > 0 && remainingSeconds <= 120;
+  if (selectedSourceId && sourceDetail) {
+    const source = sourceDetail.source;
+    const holdings = sourceDetail.holdings || [];
+    const comparisons = sourceDetail.comparisons || [];
 
     return (
-      <div className="space-y-4 sm:space-y-6" data-testid="page-statement-detail">
+      <div className="space-y-4 sm:space-y-6" data-testid="page-source-detail">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedUploadId(null)} data-testid="button-back-statements">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedSourceId(null)} data-testid="button-back-sources">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          <div>
-            <h1 className="text-lg sm:text-2xl font-bold" data-testid="text-statement-filename">
-              {uploadDetail.upload.filename}
-            </h1>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              <h1 className="text-lg sm:text-2xl font-bold" data-testid="text-source-name">
+                {source.institutionName}
+              </h1>
+            </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Uploaded {formatDate(uploadDetail.upload.uploadedAt)} &middot; {uploadDetail.products.length} product(s) detected
+              {source.accountLabel && <span>{source.accountLabel} · </span>}
+              Last updated {timeAgo(source.lastUploadDate)} · {holdings.length} holding(s) · {formatCurrency(source.totalValue)} total
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadMutation.isPending}
+            data-testid="button-re-upload"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${uploadMutation.isPending ? "animate-spin" : ""}`} />
+            Update
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileSelect(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        <div className="flex items-start gap-2 p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
+          <ShieldCheck className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Source-controlled data</p>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              This data reflects your most recent statement upload for {source.institutionName}. Uploading a new statement will replace these holdings — never duplicate them.
             </p>
           </div>
         </div>
 
-        {remainingSeconds > 0 && (
-          <div className={`flex items-center gap-3 p-3 rounded-lg border ${
-            isExpiring
-              ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30"
-              : "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30"
-          }`} data-testid="self-destruct-banner">
-            <Shield className={`h-5 w-5 shrink-0 ${isExpiring ? "text-red-500 animate-pulse" : "text-amber-500"}`} />
-            <div className="flex-1">
-              <p className={`text-sm font-medium ${isExpiring ? "text-red-800 dark:text-red-200" : "text-amber-800 dark:text-amber-200"}`}>
-                {isExpiring ? "Self-destructing soon" : "This analysis will self-destruct"}
-              </p>
-              <p className={`text-xs ${isExpiring ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}`}>
-                Your statement data is never stored permanently. Make your decisions now — this analysis disappears in{" "}
-                <span className="font-mono font-bold">{minutes}:{seconds.toString().padStart(2, "0")}</span>.
-              </p>
-            </div>
-          </div>
-        )}
-
         <DisclaimerBanner variant="persistent" />
 
-        {uploadDetail.products.length === 0 ? (
+        {holdings.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
               <FileSearch className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <p className="font-medium text-muted-foreground">No financial products detected</p>
+              <p className="font-medium text-muted-foreground">No holdings detected</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                This can happen with image-based PDFs or unusual statement formats. Try a different bank or brokerage statement — text-based PDFs from major institutions work best.
+                Upload a newer statement to extract financial data.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-semibold">Detected Products</h2>
-              {uploadDetail.products.some((p: any) => p.balance && !isProductImported(p)) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => {
-                    for (const product of uploadDetail.products) {
-                      if (product.balance && !isProductImported(product)) {
-                        importToPortfolioMutation.mutate(product);
-                      }
-                    }
-                  }}
-                  disabled={importToPortfolioMutation.isPending}
-                  data-testid="button-import-all"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add All to Portfolio
-                </Button>
-              )}
+              <h2 className="text-base sm:text-lg font-semibold">Current Holdings</h2>
+              <Badge variant="secondary" className="text-xs">
+                {formatCurrency(source.totalValue)} total
+              </Badge>
             </div>
             <div className="grid gap-3 sm:gap-4">
-              {uploadDetail.products.map((product: any, index: number) => {
-                const Icon = PRODUCT_TYPE_ICONS[product.productType] || DollarSign;
-                const comparisons = uploadDetail.comparisons?.[index] || [];
+              {holdings.map((holding: any, index: number) => {
+                const Icon = PRODUCT_TYPE_ICONS[holding.productType] || DollarSign;
+                const comparisonData = comparisons?.[index] || [];
 
                 return (
-                  <Card key={product.id} data-testid={`card-product-${product.id}`}>
+                  <Card key={holding.id} data-testid={`card-holding-${holding.id}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2.5">
@@ -403,21 +280,17 @@ export default function StatementInsights() {
                           </div>
                           <div>
                             <CardTitle className="text-sm sm:text-base">
-                              {PRODUCT_TYPE_LABELS[product.productType] || product.productType}
+                              {PRODUCT_TYPE_LABELS[holding.productType] || holding.productType}
                             </CardTitle>
-                            {product.rawDescription && product.rawDescription.length < 60 && product.rawDescription !== (PRODUCT_TYPE_LABELS[product.productType] || "").substring(0, 50) ? (
+                            {holding.label && holding.label.length < 60 && (
                               <CardDescription className="text-xs">
-                                {product.institutionName ? `${product.institutionName} · ${product.rawDescription}` : product.rawDescription}
+                                {holding.label}
                               </CardDescription>
-                            ) : product.institutionName ? (
-                              <CardDescription className="text-xs">
-                                {product.institutionName}
-                              </CardDescription>
-                            ) : null}
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          {product.isLocked ? (
+                          {holding.isLocked ? (
                             <Badge variant="secondary" className="text-[10px]">
                               <Lock className="h-3 w-3 mr-0.5" /> Locked
                             </Badge>
@@ -426,35 +299,6 @@ export default function StatementInsights() {
                               <Unlock className="h-3 w-3 mr-0.5" /> Flexible
                             </Badge>
                           )}
-                          {product.balance && (
-                            isProductImported(product) ? (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="h-7 text-[10px] sm:text-xs bg-emerald-600 hover:bg-red-600"
-                                onClick={() => removeFromPortfolioMutation.mutate(product)}
-                                disabled={removeFromPortfolioMutation.isPending}
-                                data-testid={`button-remove-${product.id}`}
-                              >
-                                <Check className="h-3 w-3 mr-0.5" />
-                                <span className="hidden sm:inline">In Portfolio</span>
-                                <span className="sm:hidden">Added</span>
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-[10px] sm:text-xs"
-                                onClick={() => importToPortfolioMutation.mutate(product)}
-                                disabled={importToPortfolioMutation.isPending}
-                                data-testid={`button-import-${product.id}`}
-                              >
-                                <Plus className="h-3 w-3 mr-0.5" />
-                                <span className="hidden sm:inline">Add to Portfolio</span>
-                                <span className="sm:hidden">Add</span>
-                              </Button>
-                            )
-                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -462,44 +306,44 @@ export default function StatementInsights() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div>
                           <p className="text-[10px] sm:text-xs text-muted-foreground">Balance</p>
-                          <p className="text-sm sm:text-base font-semibold" data-testid={`text-balance-${product.id}`}>
-                            {formatCurrency(product.balance)}
+                          <p className="text-sm sm:text-base font-semibold" data-testid={`text-balance-${holding.id}`}>
+                            {formatCurrency(holding.balance)}
                           </p>
                         </div>
                         <div>
                           <p className="text-[10px] sm:text-xs text-muted-foreground">Rate / APY</p>
-                          <p className="text-sm sm:text-base font-semibold" data-testid={`text-rate-${product.id}`}>
-                            {formatRate(product.apy || product.interestRate)}
+                          <p className="text-sm sm:text-base font-semibold" data-testid={`text-rate-${holding.id}`}>
+                            {formatRate(holding.apy || holding.interestRate)}
                           </p>
                         </div>
-                        {product.term && (
+                        {holding.term && (
                           <div>
                             <p className="text-[10px] sm:text-xs text-muted-foreground">Term</p>
-                            <p className="text-sm sm:text-base font-semibold">{product.term}</p>
+                            <p className="text-sm sm:text-base font-semibold">{holding.term}</p>
                           </div>
                         )}
-                        {product.maturityDate && (
+                        {holding.maturityDate && (
                           <div>
                             <p className="text-[10px] sm:text-xs text-muted-foreground">Maturity</p>
                             <p className="text-sm sm:text-base font-semibold flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" />
-                              {formatDate(product.maturityDate)}
+                              {formatDate(holding.maturityDate)}
                             </p>
                           </div>
                         )}
                       </div>
 
-                      {uploadDetail.comparisonsLocked ? (
+                      {sourceDetail.comparisonsLocked ? (
                         <UpgradePrompt
                           feature="Unlock rate comparisons and yield optimization insights with Premium"
                           compact
                         />
-                      ) : comparisons.length > 0 ? (
+                      ) : comparisonData.length > 0 ? (
                         <div className="space-y-3 pt-2 border-t">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                             How Your Rate Compares — DYOR
                           </p>
-                          {comparisons.map((comp: any, ci: number) => (
+                          {comparisonData.map((comp: any, ci: number) => (
                             <div
                               key={ci}
                               className={`rounded-lg border p-3 sm:p-4 ${
@@ -507,13 +351,13 @@ export default function StatementInsights() {
                                   ? "border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10"
                                   : "bg-muted/30"
                               }`}
-                              data-testid={`card-comparison-${product.id}-${ci}`}
+                              data-testid={`card-comparison-${holding.id}-${ci}`}
                             >
                               <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="flex-1">
                                   <p className="text-sm font-medium">{comp.alternative.name}</p>
                                   <p className="text-xs text-muted-foreground mt-0.5">
-                                    {comp.alternative.rate}% {comp.alternative.rateType} &middot; {comp.alternative.lockup}
+                                    {comp.alternative.rate}% {comp.alternative.rateType} · {comp.alternative.lockup}
                                   </p>
                                 </div>
                                 {comp.rateDifference !== null && (
@@ -553,12 +397,14 @@ export default function StatementInsights() {
               })}
             </div>
 
-            <CryptoOpportunities products={uploadDetail.products} />
+            <CryptoOpportunities holdings={holdings} institutionName={source.institutionName} />
           </div>
         )}
       </div>
     );
   }
+
+  const totalStatementValue = (sources || []).reduce((sum: number, s: any) => sum + parseFloat(s.totalValue || "0"), 0);
 
   return (
     <div className="space-y-4 sm:space-y-6" data-testid="page-statement-insights">
@@ -570,11 +416,34 @@ export default function StatementInsights() {
           Statement Insights
         </h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-          Your money works somewhere. See exactly what it earns — and what it could earn. Upload a bank or brokerage statement to bring your full financial picture into one view.
+          Upload bank or brokerage statements to build your full financial picture. Each institution is tracked as a source — uploading a new statement replaces the old data, never duplicates it.
         </p>
       </div>
 
       <DisclaimerBanner variant="persistent" />
+
+      {totalStatementValue > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Wallet className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Bank & Brokerage Total</p>
+                  <p className="text-lg sm:text-xl font-bold" data-testid="text-statement-total">
+                    {formatCurrency(totalStatementValue)}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {(sources || []).length} source{(sources || []).length !== 1 ? "s" : ""}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="pt-6">
@@ -620,10 +489,10 @@ export default function StatementInsights() {
                     Drop a PDF statement here or click to browse
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Bank statements, brokerage statements, CD summaries &middot; PDF only &middot; 10MB max
+                    Bank statements, brokerage statements, CD summaries · PDF only · 10MB max
                   </p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-2 max-w-sm mx-auto">
-                    We extract account types, balances, rates, and maturity dates — then show you how your money compares across traditional and decentralized options. You decide what to do with it. All data self-destructs after 15 minutes.
+                  <p className="text-[10px] text-muted-foreground/60 mt-2 max-w-md mx-auto">
+                    We detect the institution automatically. If a source already exists for that institution, the old holdings are replaced with the new statement data — your portfolio stays accurate without manual cleanup.
                   </p>
                 </div>
               </div>
@@ -632,122 +501,118 @@ export default function StatementInsights() {
           <div className="flex items-start gap-2 mt-3">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
             <p className="text-[10px] sm:text-xs text-muted-foreground">
-              Your PDF is processed in memory and never saved. Extracted data self-destructs after 15 minutes — Mission Impossible style. We never store your banking documents.
+              Your PDF is processed in memory and never saved. Only the extracted balances and rates are stored as holdings in your portfolio. The original document is never retained.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {uploadsLoading ? (
+      {sourcesLoading ? (
         <div className="space-y-3">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
-      ) : uploads && uploads.length > 0 ? (
+      ) : sources && sources.length > 0 ? (
         <div>
-          <h2 className="text-base sm:text-lg font-semibold mb-3" data-testid="text-upload-history">
-            Upload History
+          <h2 className="text-base sm:text-lg font-semibold mb-3" data-testid="text-tracked-sources">
+            Tracked Sources
           </h2>
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>File</TableHead>
-                    <TableHead className="hidden sm:table-cell">Date</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {uploads.map((upload: any) => (
-                    <TableRow key={upload.id} data-testid={`row-upload-${upload.id}`}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="text-sm truncate max-w-[120px] sm:max-w-[200px]">
-                            {upload.filename}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground sm:hidden">
-                          {formatDate(upload.uploadedAt)}
+          <div className="grid gap-3 sm:gap-4">
+            {sources.map((source: any) => (
+              <Card
+                key={source.id}
+                className="cursor-pointer hover:border-primary/30 transition-colors"
+                onClick={() => setSelectedSourceId(source.id)}
+                data-testid={`card-source-${source.id}`}
+              >
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm sm:text-base truncate">{source.institutionName}</p>
+                        {source.accountLabel && (
+                          <Badge variant="outline" className="text-[10px] shrink-0">{source.accountLabel}</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {timeAgo(source.lastUploadDate)}
                         </span>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                        {formatDate(upload.uploadedAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {upload.productCount || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge
-                          variant={upload.status === "complete" ? "default" : upload.status === "failed" ? "destructive" : "secondary"}
-                          className="text-[10px]"
-                        >
-                          {upload.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {upload.status === "complete" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedUploadId(upload.id)}
-                              data-testid={`button-view-${upload.id}`}
-                            >
-                              <Eye className="h-3.5 w-3.5 sm:mr-1" />
-                              <span className="hidden sm:inline">View</span>
-                            </Button>
-                          )}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive"
-                                data-testid={`button-delete-${upload.id}`}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Statement</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete this statement analysis, all detected products, and any portfolio entries that were added from it. This cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(upload.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                        <span>·</span>
+                        <span>{source.holdingCount || 0} holding{(source.holdingCount || 0) !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm sm:text-base font-bold" data-testid={`text-source-value-${source.id}`}>
+                        {formatCurrency(source.totalValue)}
+                      </p>
+                      {source.holdings && source.holdings.length > 0 && (
+                        <div className="flex items-center gap-1 justify-end mt-0.5">
+                          {Array.from(new Set(source.holdings.map((h: any) => h.productType))).slice(0, 3).map((type: any) => {
+                            const Icon = PRODUCT_TYPE_ICONS[type] || DollarSign;
+                            return <Icon key={type} className="h-3 w-3 text-muted-foreground" />;
+                          })}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); setSelectedSourceId(source.id); }}
+                        data-testid={`button-view-source-${source.id}`}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`button-delete-source-${source.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Source</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently remove {source.institutionName} and all its holdings from your portfolio. This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteSourceMutation.mutate(source.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       ) : (
         <Card>
           <CardContent className="py-8 text-center">
-            <FileSearch className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+            <Building2 className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm font-medium">Your complete financial picture starts here</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-              Upload a bank or brokerage statement to see what your money earns, how it compares, and add it all to your unified portfolio — crypto and traditional, in one place.
+              Upload a bank or brokerage statement to see what your money earns and bring it into your unified portfolio — crypto, real estate, and traditional accounts all in one place.
             </p>
           </CardContent>
         </Card>
@@ -755,7 +620,7 @@ export default function StatementInsights() {
 
       {limits && limits.statementUploads !== null && (
         <div className="text-xs text-muted-foreground text-center max-w-md mx-auto">
-          Statement Insights is a Premium feature. Upgrade to unlock unlimited statement analysis, rate comparisons, and yield optimization insights.
+          Statement Insights is a Premium feature. Upgrade to unlock unlimited statement sources, rate comparisons, and yield optimization insights.
         </div>
       )}
     </div>
@@ -776,17 +641,17 @@ interface CryptoOpp {
   category: "yield" | "stablecoin" | "rwa";
 }
 
-function generateCryptoOpportunities(products: any[]): CryptoOpp[] {
+function generateCryptoOpportunities(holdings: any[]): CryptoOpp[] {
   const opps: CryptoOpp[] = [];
-  const totalBalance = products.reduce((sum: number, p: any) => sum + (parseFloat(p.balance) || 0), 0);
+  const totalBalance = holdings.reduce((sum: number, h: any) => sum + (parseFloat(h.balance) || 0), 0);
 
-  const hasSavings = products.some((p: any) => ["savings", "money_market", "checking"].includes(p.productType));
-  const hasCd = products.some((p: any) => p.productType === "cd");
-  const hasBrokerage = products.some((p: any) => p.productType === "brokerage");
+  const hasSavings = holdings.some((h: any) => ["savings", "money_market", "checking"].includes(h.productType));
+  const hasCd = holdings.some((h: any) => h.productType === "cd");
+  const hasBrokerage = holdings.some((h: any) => h.productType === "brokerage");
 
-  const savingsProducts = products.filter((p: any) => ["savings", "money_market"].includes(p.productType));
-  const avgSavingsRate = savingsProducts.length > 0
-    ? savingsProducts.reduce((sum: number, p: any) => sum + (parseFloat(p.apy || p.interestRate || "0")), 0) / savingsProducts.length
+  const savingsHoldings = holdings.filter((h: any) => ["savings", "money_market"].includes(h.productType));
+  const avgSavingsRate = savingsHoldings.length > 0
+    ? savingsHoldings.reduce((sum: number, h: any) => sum + (parseFloat(h.apy || h.interestRate || "0")), 0) / savingsHoldings.length
     : 0;
 
   if (hasSavings || hasCd) {
@@ -870,9 +735,9 @@ function generateCryptoOpportunities(products: any[]): CryptoOpp[] {
   return opps;
 }
 
-function CryptoOpportunities({ products }: { products: any[] }) {
+function CryptoOpportunities({ holdings, institutionName }: { holdings: any[]; institutionName: string }) {
   const [decisions, setDecisions] = useState<Record<string, "accepted" | "declined">>({});
-  const opps = generateCryptoOpportunities(products);
+  const opps = generateCryptoOpportunities(holdings);
 
   if (opps.length === 0) return null;
 
@@ -891,7 +756,7 @@ function CryptoOpportunities({ products }: { products: any[] }) {
         <h2 className="text-base sm:text-lg font-semibold">Crypto Yield Alternatives</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Based on what we found in your statement, here are crypto alternatives that could earn more on the same capital — all non-custodial, meaning you keep your keys. Review each one and decide if it's worth exploring.
+        Based on your {institutionName} holdings, here are crypto alternatives that could earn more on the same capital — all non-custodial, meaning you keep your keys. Review each one and decide if it's worth exploring.
       </p>
 
       {undecided.length > 0 && (
@@ -969,21 +834,17 @@ function CryptoOpportunities({ products }: { products: any[] }) {
             You're Interested ({accepted.length})
           </h3>
           {accepted.map(opp => (
-            <div key={opp.id} className="flex items-center justify-between p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/10" data-testid={`accepted-opp-${opp.id}`}>
-              <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+            <Card key={opp.id} className="border-emerald-200 dark:border-emerald-800">
+              <CardContent className="p-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{opp.title}</p>
                   <p className="text-xs text-muted-foreground">{opp.cryptoRate} on {opp.chain}</p>
                 </div>
-              </div>
-              <a href={opp.link} data-testid={`link-explore-${opp.id}`}>
-                <Button size="sm" variant="default" className="bg-emerald-600 hover:bg-emerald-700">
-                  <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                  Explore
+                <Button size="sm" variant="outline" className="text-xs" asChild>
+                  <a href={opp.link}>Explore</a>
                 </Button>
-              </a>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -992,63 +853,25 @@ function CryptoOpportunities({ products }: { products: any[] }) {
         <div className="space-y-2">
           <h3 className="text-sm font-medium flex items-center gap-1.5 text-muted-foreground">
             <ThumbsDown className="h-3.5 w-3.5" />
-            Passed ({declined.length})
+            Not Now ({declined.length})
           </h3>
           {declined.map(opp => (
-            <div key={opp.id} className="flex items-center justify-between p-2 rounded-lg border bg-muted/30" data-testid={`declined-opp-${opp.id}`}>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">{opp.title}</span>
-                <Badge variant="outline" className="text-[10px]">{opp.cryptoRate}</Badge>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-xs h-7"
-                onClick={() => setDecisions(prev => {
-                  const next = { ...prev };
-                  delete next[opp.id];
-                  return next;
-                })}
-                data-testid={`button-reconsider-${opp.id}`}
-              >
-                Reconsider
-              </Button>
-            </div>
+            <Card key={opp.id} className="opacity-60">
+              <CardContent className="p-3 flex items-center justify-between">
+                <p className="text-sm">{opp.title}</p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs"
+                  onClick={() => handleDecision(opp.id, "accepted")}
+                >
+                  Reconsider
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
-
-      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <HardDrive className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Need a Cold Wallet?</p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                To use any of these crypto alternatives, you'll need a wallet to hold your keys. Check the Cold Wallets tab in your Recommendations Hub to find the right one for your needs.
-              </p>
-              <div className="flex gap-2 mt-2 flex-wrap">
-                <a href="/ownbank" data-testid="link-cold-wallets-from-statements">
-                  <Button size="sm" variant="outline" className="text-xs h-7">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Cold Wallet Guide
-                  </Button>
-                </a>
-                <a href="/setup-guide" data-testid="link-setup-from-statements">
-                  <Button size="sm" variant="outline" className="text-xs h-7">
-                    <ArrowRight className="h-3 w-3 mr-1" />
-                    Setup Guide
-                  </Button>
-                </a>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <p className="text-[10px] text-muted-foreground text-center max-w-md mx-auto">
-        These suggestions are informational only. Crypto investments carry risk and are not FDIC insured. Upload new statements anytime to get updated recommendations as rates change.
-      </p>
     </div>
   );
 }

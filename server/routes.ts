@@ -2818,13 +2818,28 @@ export async function registerRoutes(
         propertyTotalCostBasis += pp;
       }
 
-      const grandTotalValue = totalValue + propertyTotalValue;
-      const grandTotalCostBasis = totalCostBasis + propertyTotalCostBasis;
+      const statementHoldingsForPortfolio = await storage.getStatementHoldingsByUser(userId);
+      let statementTotalValue = 0;
+      const statementSourceValues = new Map<string, number>();
+      for (const h of statementHoldingsForPortfolio) {
+        const bal = parseFloat(h.balance || "0");
+        if (bal > 0) {
+          statementTotalValue += bal;
+          const sourceId = h.sourceId.toString();
+          statementSourceValues.set(sourceId, (statementSourceValues.get(sourceId) || 0) + bal);
+        }
+      }
+
+      const grandTotalValue = totalValue + propertyTotalValue + statementTotalValue;
+      const grandTotalCostBasis = totalCostBasis + propertyTotalCostBasis + statementTotalValue;
       const totalGainLoss = grandTotalValue - grandTotalCostBasis;
       const totalGainLossPercent = grandTotalCostBasis > 0 ? (totalGainLoss / grandTotalCostBasis) * 100 : 0;
 
       if (propertyTotalValue > 0) {
         allocationMap.set("Real Estate", (allocationMap.get("Real Estate") || 0) + propertyTotalValue);
+      }
+      if (statementTotalValue > 0) {
+        allocationMap.set("Bank & Brokerage", (allocationMap.get("Bank & Brokerage") || 0) + statementTotalValue);
       }
       const allocation = Array.from(allocationMap.entries()).map(([name, value], idx) => ({
         name,
@@ -2842,6 +2857,8 @@ export async function registerRoutes(
         cryptoValue: totalValue,
         propertyValue: propertyTotalValue,
         propertyCount: userProperties.length,
+        statementValue: statementTotalValue,
+        statementSourceCount: statementSourceValues.size,
       });
     } catch (error) {
       console.error("Portfolio error:", error);
@@ -7532,15 +7549,6 @@ export async function registerRoutes(
       const { tier } = await getEffectiveTier(userId);
       const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-      if (limits.statementUploads !== null) {
-        const currentCount = await storage.countStatementUploadsByUser(userId);
-        if (currentCount >= limits.statementUploads) {
-          return res.status(403).json({
-            message: "Statement Insights is a Premium feature. Upgrade to Premium for unlimited uploads and comparison insights.",
-          });
-        }
-      }
-
       if (!req.file) {
         return res.status(400).json({ message: "Please upload a PDF file" });
       }
@@ -7581,6 +7589,61 @@ export async function registerRoutes(
 
         const savedProducts = await storage.getProductsByUpload(upload.id);
 
+        const rawInstitution = products[0]?.institutionName || "Unknown Institution";
+        const institutionName = rawInstitution.trim();
+        const accountLabel = req.body?.accountLabel?.trim() || null;
+
+        const accountTypes = new Set(products.map(p => p.productType));
+        const accountType = accountTypes.size === 1
+          ? products[0].productType
+          : accountTypes.has("brokerage") ? "brokerage" : "banking";
+
+        let source = await storage.findStatementSource(userId, institutionName, accountLabel);
+        let isUpdate = false;
+        if (source) {
+          isUpdate = true;
+        } else {
+          if (limits.statementUploads !== null) {
+            const existingSources = await storage.getStatementSourcesByUser(userId);
+            if (existingSources.length >= limits.statementUploads) {
+              return res.status(403).json({
+                message: "Statement Insights is a Premium feature. Upgrade to Premium for unlimited source institutions and comparison insights.",
+              });
+            }
+          }
+          source = await storage.createStatementSource({
+            userId,
+            institutionName,
+            accountLabel,
+            accountType,
+          });
+        }
+
+        const totalValue = products.reduce((sum, p) => sum + (p.balance || 0), 0);
+
+        const holdingsData = products.map(p => ({
+          productType: p.productType,
+          label: p.rawDescription || null,
+          balance: p.balance?.toString() ?? null,
+          interestRate: p.interestRate?.toString() ?? null,
+          apy: p.apy?.toString() ?? null,
+          maturityDate: p.maturityDate ? new Date(p.maturityDate) : null,
+          term: p.term,
+          isLocked: p.isLocked,
+          rawDescription: p.rawDescription,
+        }));
+
+        const savedHoldings = await storage.replaceStatementHoldings(
+          source.id, upload.id, userId, holdingsData
+        );
+
+        await storage.updateStatementSource(source.id, {
+          lastUploadId: upload.id,
+          lastUploadDate: new Date(),
+          totalValue: totalValue.toString(),
+          holdingCount: savedHoldings.length,
+        });
+
         let comparisons: any[] = [];
         if (limits.statementComparisons) {
           comparisons = savedProducts.map((p) =>
@@ -7600,19 +7663,13 @@ export async function registerRoutes(
         res.json({
           upload: { ...upload, status: "complete", productCount: products.length },
           products: savedProducts,
+          source,
+          holdings: savedHoldings,
+          isUpdate,
           comparisons: limits.statementComparisons ? comparisons : null,
           comparisonsLocked: !limits.statementComparisons,
-          selfDestructMinutes: 15,
         });
 
-        setTimeout(async () => {
-          try {
-            await storage.deleteStatementUpload(upload.id);
-            console.log(`[statement] Self-destructed upload ${upload.id} (${req.file.originalname})`);
-          } catch (err) {
-            console.error(`[statement] Self-destruct failed for ${upload.id}:`, err);
-          }
-        }, 15 * 60 * 1000);
       } catch (parseError: any) {
         await storage.updateStatementUpload(upload.id, { status: "failed" });
         console.error("Statement parse error:", parseError?.message || parseError);
@@ -7685,49 +7742,105 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const upload = await storage.getStatementUpload(req.params.id);
-
       if (!upload || upload.userId !== userId) {
         return res.status(404).json({ message: "Statement not found" });
       }
-
-      const TYPE_SHORT: Record<string, string> = {
-        cd: "CD", savings: "SAVE", money_market: "MM", checking: "CHK",
-        bond: "BOND", brokerage: "INVEST", other: "ACCT",
-      };
-
-      const products = await storage.getProductsByUpload(upload.id);
-      const accounts = await storage.getAccountsByUser(userId);
-      let removedCount = 0;
-
-      for (const product of products) {
-        const institution = product.institutionName || "Manual";
-        const tag = TYPE_SHORT[product.productType] || "ACCT";
-        const prefix = institution.replace(/[^A-Za-z0-9]/g, "").substring(0, 10).toUpperCase();
-
-        let symbol = `${prefix}-${tag}`;
-        if (product.rawDescription && product.rawDescription.length < 60) {
-          const descTag = product.rawDescription.replace(/[^A-Za-z0-9]/g, "").substring(0, 12).toUpperCase();
-          if (descTag && descTag.length > 0) {
-            symbol = `${prefix}-${descTag}`;
-          }
-        }
-
-        const accountName = institution;
-        const account = accounts.find(a => a.provider === "manual" && a.accountName === accountName);
-        if (account) {
-          const position = await storage.getPositionByUserAndAsset(userId, account.id, symbol);
-          if (position) {
-            await storage.deletePosition(position.id);
-            removedCount++;
-          }
-        }
-      }
-
       await storage.deleteStatementUpload(upload.id);
-      res.json({ message: "Statement deleted", removedPositions: removedCount });
+      res.json({ message: "Statement deleted" });
     } catch (error) {
       console.error("Delete statement error:", error);
       res.status(500).json({ message: "Failed to delete statement" });
+    }
+  });
+
+  app.get("/api/statement-sources", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sources = await storage.getStatementSourcesByUser(userId);
+      const sourcesWithHoldings = await Promise.all(
+        sources.map(async (source) => {
+          const holdings = await storage.getStatementHoldingsBySource(source.id);
+          return { ...source, holdings };
+        })
+      );
+      res.json(sourcesWithHoldings);
+    } catch (error) {
+      console.error("Get statement sources error:", error);
+      res.status(500).json({ message: "Failed to load statement sources" });
+    }
+  });
+
+  app.get("/api/statement-sources/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const source = await storage.getStatementSource(parseInt(req.params.id));
+      if (!source || source.userId !== userId) {
+        return res.status(404).json({ message: "Source not found" });
+      }
+      const holdings = await storage.getStatementHoldingsBySource(source.id);
+
+      const { tier } = await getEffectiveTier(userId);
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+      let comparisons: any[] = [];
+      if (limits.statementComparisons) {
+        const { generateComparisons } = await import("./services/comparison-engine");
+        comparisons = holdings.map((h) =>
+          generateComparisons({
+            productType: h.productType,
+            institutionName: source.institutionName,
+            balance: h.balance ? parseFloat(h.balance) : null,
+            interestRate: h.interestRate ? parseFloat(h.interestRate) : null,
+            apy: h.apy ? parseFloat(h.apy) : null,
+            maturityDate: h.maturityDate?.toISOString() ?? null,
+            term: h.term,
+            isLocked: h.isLocked ?? false,
+          })
+        );
+      }
+
+      res.json({
+        source,
+        holdings,
+        comparisons: limits.statementComparisons ? comparisons : null,
+        comparisonsLocked: !limits.statementComparisons,
+      });
+    } catch (error) {
+      console.error("Get statement source detail error:", error);
+      res.status(500).json({ message: "Failed to load source details" });
+    }
+  });
+
+  app.patch("/api/statement-sources/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const source = await storage.getStatementSource(parseInt(req.params.id));
+      if (!source || source.userId !== userId) {
+        return res.status(404).json({ message: "Source not found" });
+      }
+      const { accountLabel, accountType } = req.body;
+      const updated = await storage.updateStatementSource(source.id, {
+        ...(accountLabel !== undefined && { accountLabel }),
+        ...(accountType !== undefined && { accountType }),
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Update statement source error:", error);
+      res.status(500).json({ message: "Failed to update source" });
+    }
+  });
+
+  app.delete("/api/statement-sources/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const source = await storage.getStatementSource(parseInt(req.params.id));
+      if (!source || source.userId !== userId) {
+        return res.status(404).json({ message: "Source not found" });
+      }
+      await storage.deleteStatementSource(source.id);
+      res.json({ message: "Source and all associated holdings deleted" });
+    } catch (error) {
+      console.error("Delete statement source error:", error);
+      res.status(500).json({ message: "Failed to delete source" });
     }
   });
 

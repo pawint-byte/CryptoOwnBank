@@ -376,6 +376,54 @@ export type InsertStatementUpload = z.infer<typeof insertStatementUploadSchema>;
 export type StatementProduct = typeof statementProducts.$inferSelect;
 export type InsertStatementProduct = z.infer<typeof insertStatementProductSchema>;
 
+export const statementSources = pgTable("statement_sources", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  institutionName: varchar("institution_name", { length: 100 }).notNull(),
+  accountLabel: varchar("account_label", { length: 100 }),
+  accountType: varchar("account_type", { length: 30 }),
+  lastUploadId: varchar("last_upload_id"),
+  lastUploadDate: timestamp("last_upload_date"),
+  totalValue: decimal("total_value", { precision: 18, scale: 2 }),
+  holdingCount: integer("holding_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_statement_sources_user").on(table.userId),
+]);
+
+export const statementHoldings = pgTable("statement_holdings", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("source_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  uploadId: varchar("upload_id").notNull(),
+  productType: varchar("product_type", { length: 30 }).notNull(),
+  label: varchar("label", { length: 200 }),
+  balance: decimal("balance", { precision: 18, scale: 2 }),
+  interestRate: decimal("interest_rate", { precision: 6, scale: 3 }),
+  apy: decimal("apy", { precision: 6, scale: 3 }),
+  maturityDate: timestamp("maturity_date"),
+  term: varchar("term", { length: 50 }),
+  isLocked: boolean("is_locked").default(false),
+  rawDescription: text("raw_description"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_statement_holdings_source").on(table.sourceId),
+  index("idx_statement_holdings_user").on(table.userId),
+]);
+
+export const insertStatementSourceSchema = createInsertSchema(statementSources).omit({
+  id: true,
+  lastUploadId: true,
+  lastUploadDate: true,
+  totalValue: true,
+  holdingCount: true,
+  createdAt: true,
+});
+
+export type StatementSource = typeof statementSources.$inferSelect;
+export type InsertStatementSource = z.infer<typeof insertStatementSourceSchema>;
+export type StatementHolding = typeof statementHoldings.$inferSelect;
+
 export const marketCache = pgTable("market_cache", {
   id: serial("id").primaryKey(),
   category: text("category").notNull(),

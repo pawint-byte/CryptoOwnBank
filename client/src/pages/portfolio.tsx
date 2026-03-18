@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch } from "lucide-react";
+import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -37,6 +38,8 @@ interface PortfolioData {
   cryptoValue?: number;
   propertyValue?: number;
   propertyCount?: number;
+  statementValue?: number;
+  statementSourceCount?: number;
 }
 
 interface PropertyEntry {
@@ -1341,6 +1344,36 @@ export default function Portfolio() {
           )}
         </CardContent>
       </Card>
+
+      {(data?.statementValue ?? 0) > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                Bank & Brokerage
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                From uploaded statements · {data?.statementSourceCount || 0} source{(data?.statementSourceCount || 0) !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <Link href="/statement-insights">
+              <Button size="sm" variant="outline" data-testid="button-manage-statements">
+                <FileSearch className="h-3.5 w-3.5 mr-1.5" />
+                Manage
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between pt-2 border-t text-sm">
+              <span className="text-muted-foreground">Total Bank & Brokerage Value</span>
+              <span className="font-mono font-bold" data-testid="text-total-statement-value">
+                {formatCurrency(data?.statementValue || 0)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={!!editingPosition} onOpenChange={(open) => { if (!open) setEditingPosition(null); }}>
         {editingPosition && (

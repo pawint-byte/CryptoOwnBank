@@ -13,6 +13,8 @@ import {
   walletBalances,
   statementUploads,
   statementProducts,
+  statementSources,
+  statementHoldings,
   marketCache,
   emailConfig,
   alertLog,
@@ -42,6 +44,9 @@ import {
   type InsertStatementUpload,
   type StatementProduct,
   type InsertStatementProduct,
+  type StatementSource,
+  type InsertStatementSource,
+  type StatementHolding,
   type MarketCache,
   type EmailConfig,
   type AlertLog,
@@ -209,6 +214,18 @@ export interface IStorage {
   createStatementProduct(product: InsertStatementProduct): Promise<StatementProduct>;
   getProductsByUpload(uploadId: string): Promise<StatementProduct[]>;
   getProductsByUser(userId: string): Promise<StatementProduct[]>;
+
+  getStatementSourcesByUser(userId: string): Promise<StatementSource[]>;
+  getStatementSource(id: number): Promise<StatementSource | undefined>;
+  findStatementSource(userId: string, institutionName: string, accountLabel?: string | null): Promise<StatementSource | undefined>;
+  createStatementSource(source: InsertStatementSource): Promise<StatementSource>;
+  updateStatementSource(id: number, data: Partial<StatementSource>): Promise<StatementSource | undefined>;
+  deleteStatementSource(id: number): Promise<void>;
+
+  getStatementHoldingsBySource(sourceId: number): Promise<StatementHolding[]>;
+  getStatementHoldingsByUser(userId: string): Promise<StatementHolding[]>;
+  replaceStatementHoldings(sourceId: number, uploadId: string, userId: string, holdings: Array<Omit<StatementHolding, "id" | "sourceId" | "uploadId" | "userId" | "createdAt">>): Promise<StatementHolding[]>;
+  deleteStatementHoldingsBySource(sourceId: number): Promise<void>;
 
   getMarketCache(category: string, symbol: string): Promise<MarketCache | undefined>;
   getAllMarketCacheByCategory(category: string): Promise<MarketCache[]>;
@@ -765,6 +782,90 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByUser(userId: string): Promise<StatementProduct[]> {
     return db.select().from(statementProducts).where(eq(statementProducts.userId, userId));
+  }
+
+  async getStatementSourcesByUser(userId: string): Promise<StatementSource[]> {
+    return db.select().from(statementSources)
+      .where(eq(statementSources.userId, userId))
+      .orderBy(desc(statementSources.lastUploadDate));
+  }
+
+  async getStatementSource(id: number): Promise<StatementSource | undefined> {
+    const [result] = await db.select().from(statementSources).where(eq(statementSources.id, id));
+    return result;
+  }
+
+  async findStatementSource(userId: string, institutionName: string, accountLabel?: string | null): Promise<StatementSource | undefined> {
+    const normalizedName = institutionName.trim().toLowerCase();
+    const allSources = await db.select().from(statementSources)
+      .where(eq(statementSources.userId, userId));
+
+    if (accountLabel) {
+      const labelMatch = allSources.find(s =>
+        s.institutionName.trim().toLowerCase() === normalizedName &&
+        s.accountLabel?.trim().toLowerCase() === accountLabel.trim().toLowerCase()
+      );
+      if (labelMatch) return labelMatch;
+    }
+
+    return allSources.find(s =>
+      s.institutionName.trim().toLowerCase() === normalizedName && !s.accountLabel
+    );
+  }
+
+  async createStatementSource(source: InsertStatementSource): Promise<StatementSource> {
+    const [result] = await db.insert(statementSources).values(source).returning();
+    return result;
+  }
+
+  async updateStatementSource(id: number, data: Partial<StatementSource>): Promise<StatementSource | undefined> {
+    const [result] = await db.update(statementSources).set(data).where(eq(statementSources.id, id)).returning();
+    return result;
+  }
+
+  async deleteStatementSource(id: number): Promise<void> {
+    await db.delete(statementHoldings).where(eq(statementHoldings.sourceId, id));
+    await db.delete(statementSources).where(eq(statementSources.id, id));
+  }
+
+  async getStatementHoldingsBySource(sourceId: number): Promise<StatementHolding[]> {
+    return db.select().from(statementHoldings).where(eq(statementHoldings.sourceId, sourceId));
+  }
+
+  async getStatementHoldingsByUser(userId: string): Promise<StatementHolding[]> {
+    return db.select().from(statementHoldings).where(eq(statementHoldings.userId, userId));
+  }
+
+  async replaceStatementHoldings(
+    sourceId: number,
+    uploadId: string,
+    userId: string,
+    holdings: Array<Omit<StatementHolding, "id" | "sourceId" | "uploadId" | "userId" | "createdAt">>
+  ): Promise<StatementHolding[]> {
+    await db.delete(statementHoldings).where(eq(statementHoldings.sourceId, sourceId));
+
+    if (holdings.length === 0) return [];
+
+    const rows = holdings.map(h => ({
+      sourceId,
+      uploadId,
+      userId,
+      productType: h.productType,
+      label: h.label,
+      balance: h.balance,
+      interestRate: h.interestRate,
+      apy: h.apy,
+      maturityDate: h.maturityDate,
+      term: h.term,
+      isLocked: h.isLocked,
+      rawDescription: h.rawDescription,
+    }));
+
+    return db.insert(statementHoldings).values(rows).returning();
+  }
+
+  async deleteStatementHoldingsBySource(sourceId: number): Promise<void> {
+    await db.delete(statementHoldings).where(eq(statementHoldings.sourceId, sourceId));
   }
 
   async getMarketCache(category: string, symbol: string): Promise<MarketCache | undefined> {
