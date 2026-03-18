@@ -11,18 +11,15 @@ interface UpgradePromptProps {
 }
 
 const PREMIUM_BENEFITS = [
-  "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
-  "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
-  "Unlimited blockchain addresses across 24 chains",
-  "Full Recommendations Hub — Best in Class, staking guides, DeFi comparisons",
-  "Wallet-specific staking guides for your exact hardware wallet",
-  "Portfolio search, filter & sort",
-  "Full transaction history (all time)",
-  "CSV import (Yahoo Finance, CoinTracker)",
-  "Unlimited price alerts",
-  "Auto-withdrawal from Soil vaults",
-  "Statement Insights with rate comparisons",
-  "Recurring payments (personal)",
+  "Own your crypto — manage every wallet from one interface",
+  "Keep all your yield — no platform fees on your earnings",
+  "Recommendations Hub surfaces opportunities you'd otherwise miss",
+  "Statement Insights compares your bank rates vs. on-chain yields",
+  "XRPL & Stellar DEX trading — your keys, your trades",
+  "Unlimited wallets across 24 chains",
+  "Portfolio search, filter & sort with full history",
+  "CSV import & unlimited price alerts",
+  "Recurring payments",
 ];
 
 const ANNUAL_BENEFITS = [
@@ -35,13 +32,14 @@ const ANNUAL_BENEFITS = [
 ];
 
 const PRO_BENEFITS = [
-  "Everything in Premium",
-  "DeFi Borrowing Hub — Aave, Compound, Maple, MakerDAO",
-  "Real Estate Tokenization directory — RealT, Lofty, Propy",
+  "Everything in Premium — full ownership, full control",
+  "Treasury dashboard — see your business crypto at a glance",
   "Batch & payroll recurring payments",
-  "Treasury dashboard for business wallets",
+  "DeFi Borrowing Hub — Aave, Compound, Maple, MakerDAO",
+  "Real Estate Tokenization — RealT, Lofty, Propy",
   "Up to 5 team member seats",
-  "XLS-66 Lending (coming Q2 2026)",
+  "XLS-66 on-ledger lending protocol",
+  "Legacy Plan included — crypto inheritance protection",
 ];
 
 const ADDON_BENEFITS = [

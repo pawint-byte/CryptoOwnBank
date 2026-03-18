@@ -135,28 +135,28 @@ const heroStats = [
 
 const whyPoints = [
   {
-    icon: TrendingUp,
-    text: "Earn real, fixed 5–8% APR on RLUSD through Soil's RWA-backed vaults (Treasuries + private credit)",
-  },
-  {
-    icon: Lock,
-    text: "Keep your principal 100% locked and protected — withdraw only the interest to spend or reinvest",
-  },
-  {
     icon: Shield,
-    text: "Full cold-wallet security — your keys never leave your Ledger or Xaman device",
+    text: "Own your crypto — no exchange can freeze, lose, or mismanage your funds. Your keys, your coins, always",
+  },
+  {
+    icon: TrendingUp,
+    text: "Earn 5–8% fixed APR on RLUSD and keep every cent — no platform fees, no middleman taking a cut of your yield",
   },
   {
     icon: PieChart,
-    text: "Track your entire crypto portfolio in one beautiful dashboard — Bitcoin, ETH, XRP, altcoins, and more",
+    text: "One interface for everything — cold wallets, hot wallets, yield vaults, DEX trading, 24 blockchains, all in one dashboard",
   },
   {
-    icon: FileText,
-    text: "Generate IRS-ready tax reports automatically with FIFO/LIFO calculations",
+    icon: Lock,
+    text: "Security the way you want it — cold wallet, hot wallet, hardware signing, or phone signing. You choose your level",
   },
   {
     icon: Zap,
-    text: "Ready for XLS-66 native on-ledger lending the moment it activates",
+    text: "We bring opportunities to you — the Recommendations Hub surfaces yields, staking, and DeFi you'd otherwise miss",
+  },
+  {
+    icon: FileText,
+    text: "IRS-ready tax reports, portfolio analytics, and Statement Insights that compare your bank rates vs. on-chain yields",
   },
 ];
 
@@ -166,7 +166,7 @@ const howItWorks = [
     icon: Wallet,
     title: "Connect Your Wallet",
     description:
-      "Scan with Xaman or plug in your Ledger. No hot wallets. No seed phrases. Ever. Link your exchange accounts for full portfolio tracking.",
+      "Scan with Xaman on your phone or plug in your Ledger hardware wallet. Choose your security level — we support both. Link your exchange accounts for full portfolio tracking.",
     detail:
       "Your wallet stays in your hands. We read your public address to show balances and prepare unsigned transactions for you to approve.",
   },
@@ -184,9 +184,9 @@ const howItWorks = [
     icon: BadgeDollarSign,
     title: "Live Off the Interest",
     description:
-      "Withdraw only the earnings whenever you want — to your spending wallet, family members, or back into more yield. Premium members get auto-withdraw every week.",
+      "Withdraw your earnings whenever you want — to your spending wallet, family members, or back into more yield. Your principal stays safe. Your keys stay yours.",
     detail:
-      "Your base never moves. Your money never sleeps.",
+      "No exchange sits between you and your money. No platform can freeze your withdrawal. You earned it, you control it.",
   },
 ];
 
@@ -303,49 +303,49 @@ const features = [
 
 const memberStories = [
   {
-    title: "Save Without Temptation",
-    icon: Lock,
+    title: "Exchanges Can Fail. Your Wallet Can't.",
+    icon: Shield,
     accent: "from-blue-500/10 to-cyan-500/10",
     story:
-      "Most people struggle to save because their money is always one tap away from being spent. With OwnBank, your principal is locked — you can't touch it even if you wanted to. Only the interest flows out. It's like a savings account that actually forces you to save.",
-    benefit: "Your principal grows untouched while interest flows to your spending wallet.",
+      "FTX. Celsius. Voyager. Mt. Gox. People trusted platforms with billions, and those platforms failed — funds frozen, withdrawals halted, customers left as unsecured creditors. That risk disappears when you hold your own keys. CryptoOwnBank exists so your crypto is never in anyone else's hands. No exchange can freeze your account, no company can go bankrupt with your money, because your money isn't with them. It's in your wallet.",
+    benefit: "Your keys, your coins. No counterparty risk. No exchange can touch your funds.",
   },
   {
-    title: "Earn Real Yield, Not Promises",
+    title: "Earn Real Yield — Keep Every Cent",
     icon: Landmark,
     accent: "from-emerald-500/10 to-green-500/10",
     story:
-      "Unlike DeFi protocols offering unsustainable 100%+ APY, Soil Protocol lends RLUSD to real institutional borrowers — the same way traditional banks make money, but the yield goes to you instead of shareholders. 5–8% APR is real, sustainable, and backed by actual assets.",
-    benefit: "Institutional-grade yields backed by US Treasuries and private credit.",
+      "Banks earn billions lending your deposits and pay you 0.01–4.5%. Exchanges take a cut of your staking rewards. CryptoOwnBank flips that model: Soil Protocol lends your RLUSD to institutional borrowers at 5–8% APR, and the yield goes directly to your wallet — not to shareholders, not to a platform fee, not to a middleman. You keep all your earnings because no one else handles your money.",
+    benefit: "5–8% fixed APR on RLUSD. No platform fees. Every cent of yield is yours.",
   },
   {
-    title: "Be Your Own Bank",
-    icon: Wallet,
+    title: "Security the Way You Want It",
+    icon: Lock,
     accent: "from-purple-500/10 to-violet-500/10",
     story:
-      "Traditional banks hold your money and decide what to do with it. With OwnBank, YOU hold your keys, YOU choose where your money earns yield, and YOU decide when to withdraw interest. No bank can freeze your account, change your terms, or deny you access.",
-    benefit: "Full control over your funds with cold wallet security — Xaman or Ledger.",
+      "CryptoOwnBank gives you the control and ownership you need while enforcing security the way you want. Cold wallet for maximum protection? Ledger hardware signing for every transaction. Hot wallet for convenience? Xaman on your phone. On-ramp or off-ramp? Your choice. YOU hold your keys, YOU choose where your money earns yield, YOU decide when to withdraw. No bank can freeze your account, change your terms, or deny you access.",
+    benefit: "Cold wallet, hot wallet, hardware signing, phone signing — your security, your rules.",
   },
   {
-    title: "Track Everything, Not Just One Chain",
+    title: "We Bring Opportunities to You",
     icon: BarChart3,
     accent: "from-amber-500/10 to-orange-500/10",
     story:
-      "CryptoOwnBank isn't just about XRPL — it's your complete crypto command center. Connect your Coinbase, Kraken, Crypto.com, or Binance accounts. Add cold wallets across 24 blockchains — Bitcoin, Ethereum (auto-detects all ERC-20 tokens), Solana (with SPL tokens), XRP (with trust lines), Avalanche, Cardano, Algorand, Cosmos (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, and more. Our Recommendations Hub analyzes every asset and shows you the best on-chain staking, DeFi, and yield opportunities — clearly labeled as on-chain (you keep your keys) or custodial (company holds assets). Search, filter, and sort your holdings. Import CSV files from Ledger Live or Yahoo Finance.",
-    benefit: "One dashboard for your entire crypto portfolio across 24 chains, with personalized yield recommendations and Soil vaults for RLUSD.",
+      "Most people leave money on the table because they don't know what's available. CryptoOwnBank's Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities — clearly labeled as on-chain (you keep your keys) or custodial (company holds assets). Statement Insights compares your bank rates against what you could earn on-chain. You don't have to go looking for opportunities. The platform brings them to you. You own your crypto, manage it from one interface, and keep all your earnings.",
+    benefit: "One dashboard, 24 blockchains, personalized yield recommendations — the information finds you.",
   },
 ];
 
 const whyNow = [
-  { icon: Zap, text: "Regulatory clarity is moving — institutional DeFi is coming to XRPL and beyond" },
-  { icon: Globe, text: "RLUSD is growing as the compliant stablecoin of choice" },
-  { icon: TrendingUp, text: "Banks are still fighting yield — you don't have to wait" },
-  { icon: Shield, text: "You keep full control while traditional finance catches up" },
+  { icon: Shield, text: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto" },
+  { icon: Zap, text: "Regulatory clarity is advancing — institutional DeFi is coming to XRPL and beyond" },
+  { icon: Globe, text: "RLUSD is growing as the regulated stablecoin of choice, backed by real assets" },
+  { icon: TrendingUp, text: "Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent — why wait?" },
 ];
 
 const testimonials = [
   {
-    quote: "I had crypto spread across Coinbase, Kraken, a Ledger, and two blockchain wallets. CryptoOwnBank finally let me see everything in one place — and I discovered I was sitting on way more than I thought.",
+    quote: "I had crypto on Coinbase, Kraken, a Ledger, and two blockchain wallets. After FTX, I moved everything to self-custody. CryptoOwnBank lets me see all of it in one place — and if I ever leave, my crypto is still in my own wallets. I'm not locked into anything.",
     author: "Marcus T.",
     role: "Long-term HODLer",
     persona: "Multi-Exchange Investor",
@@ -357,25 +357,25 @@ const testimonials = [
     persona: "Tax-Conscious Trader",
   },
   {
-    quote: "I only trust cold storage — no exchange holds my keys. CryptoOwnBank tracks my Ledger addresses and XRPL vaults without me ever sharing a private key. Non-custodial is the only way.",
+    quote: "I only trust cold storage — no exchange holds my keys. CryptoOwnBank tracks my Ledger addresses and XRPL vaults without ever touching a private key. Even if CryptoOwnBank disappeared tomorrow, my crypto wouldn't move. It's in my wallet, not theirs.",
     author: "DeFi_Dave",
     role: "Hardware Wallet User",
     persona: "Security-First Holder",
   },
   {
-    quote: "5-8% APR on RLUSD with my keys in my own wallet? That's better than any savings account, and I don't have to trust a bank with my money. The Soil vault integration is why I'm here.",
+    quote: "5–8% APR on RLUSD with my keys in my own wallet. No exchange holding my funds, no platform taking a cut of my yield. I chose cold wallet signing because I wanted maximum security — that was my decision, nobody else's.",
     author: "Jennifer L.",
     role: "Yield Earner",
     persona: "Stablecoin Yield Seeker",
   },
   {
-    quote: "I trade on Binance and Kraken daily. Having real-time portfolio value, cost basis, and P&L across both exchanges in one dashboard saves me from constant tab-switching. Game changer.",
+    quote: "I use Xaman on my phone because I like the convenience. My friend uses a Ledger because he wants hardware-level security. We're both on CryptoOwnBank — same dashboard, different security choices. That's how it should work.",
     author: "CryptoNomad",
     role: "Active Trader",
-    persona: "Multi-Exchange Day Trader",
+    persona: "Multi-Device User",
   },
   {
-    quote: "My wife and I both invest in crypto separately. We each have our own CryptoOwnBank account — she tracks her Coinbase portfolio and I manage my Ledger cold storage. Simple and private.",
+    quote: "My wife and I both invest in crypto separately. We each have our own CryptoOwnBank account — she uses her phone wallet, I use Ledger cold storage. Same platform, different security levels, our choice entirely.",
     author: "Robert & Amy W.",
     role: "Free Tier Users",
     persona: "Casual Crypto Couple",
@@ -387,31 +387,31 @@ const testimonials = [
     persona: "Portfolio Migrator",
   },
   {
-    quote: "I set price alerts for BTC, ETH, and XRP and just wait. No need to watch charts all day. When something hits my target, I get notified. Clean, simple, no noise.",
+    quote: "I set price alerts for BTC, ETH, and XRP and just wait. No need to watch charts all day. When something hits my target, I get notified. Clean, simple, no noise. And my crypto is in my own wallet the entire time — no exchange risk while I sleep.",
     author: "PatientCapital",
     role: "Free Tier User",
     persona: "Set-and-Forget Investor",
   },
   {
-    quote: "I run a small web design studio. Stripe was taking 2.9% of every invoice — on a $5,000 project that's $145 gone. Now clients pay me in RLUSD, it settles in 4 seconds, and I keep every dollar. No chargebacks, no frozen accounts.",
+    quote: "I run a small web design studio. Stripe was taking 2.9% of every invoice — on a $5,000 project that's $145 gone. Now clients pay me in RLUSD, it settles in 4 seconds, and I keep every dollar. No chargebacks, no frozen accounts, no third party who can decide I can't access my own money.",
     author: "Nina R.",
     role: "Business Owner",
     persona: "Small Business Operator",
   },
   {
-    quote: "I freelance for clients in Europe and the US. Cross-currency payments used to mean waiting days and losing money on conversion fees. Now I send an XRPL address, they pay in whatever currency they have, and I get RLUSD instantly. Game changer for international work.",
+    quote: "I freelance for clients in Europe and the US. Cross-currency payments used to mean waiting days and losing money on conversion fees. Now payments go wallet-to-wallet — no intermediary holding my funds in transit, no company that could become insolvent while processing my payment.",
     author: "Carlos M.",
     role: "Premium Member",
     persona: "International Freelancer",
   },
   {
-    quote: "PayPal froze my account with $4,200 in it. No warning, no explanation, no access for 180 days. I moved to the XRPL — now nobody can freeze my funds. I accept payments in RLUSD, it settles in 4 seconds, and I control my own money. That's what debanked taught me.",
+    quote: "PayPal froze my account with $4,200 in it. No warning, no explanation, no access for 180 days. I moved to the XRPL — now nobody can freeze my funds. I accept payments in RLUSD, it settles in 4 seconds, and no uninterested third party is in my decision-making process.",
     author: "Jordan P.",
     role: "Debanked Business Owner",
     persona: "Debanked Entrepreneur",
   },
   {
-    quote: "There's no bank branch within 200km of where I live. I sell produce at the market and buyers pay me in RLUSD — they scan my QR code and I have digital dollars in 4 seconds. I save what I don't spend in a Soil vault earning 8%. No bank has ever offered me an account, but I have a better financial system than most people with one.",
+    quote: "There's no bank branch within 200km of where I live. I sell produce at the market and buyers pay me in RLUSD — they scan my QR code and I have digital dollars in 4 seconds. I save what I don't spend in a Soil vault earning 8%. I chose my own security setup, no bank approval needed.",
     author: "Amina K.",
     role: "Free Tier User",
     persona: "Unbanked Farmer & Vendor",
@@ -443,7 +443,7 @@ const premiumFeatures = [
   "Full transaction history (all time)",
   "CSV import (Ledger Live, Yahoo Finance, CoinTracker)",
   "Unlimited price alerts",
-  "Auto-withdrawal from Soil vaults",
+  "Soil vault withdrawals — your keys, your timing",
   "Portfolio search, filter & sort",
   "Statement Insights with rate comparisons",
   "Whale Alerts — extended history + custom thresholds",
@@ -471,33 +471,33 @@ const proFeatures = [
 const onChainReasons = [
   {
     icon: Lock,
-    title: "Maximum Security & True Ownership",
+    title: "True Ownership — No Counterparty Risk",
     points: [
-      "When you connect your cold wallet (Ledger or Xaman), your private keys never leave your device.",
-      "We never see them, store them, or have any ability to move your funds.",
-      "Direct bank integrations require someone to handle your fiat and personal banking details — introducing KYC requirements, potential data breaches, and counterparty risk.",
+      "Exchanges can fail, freeze, or go bankrupt — FTX, Celsius, Voyager, Mt. Gox proved this. Your funds are never in anyone else's hands.",
+      "Your private keys never leave your device. We never see them, store them, or have any ability to move your funds.",
+      "Even if CryptoOwnBank disappeared tomorrow, your crypto stays in your wallet. You're never locked in.",
     ],
-    highlight: "Your assets stay in your control, not ours or anyone else's. That's what \u201Cbe your own bank\u201D really means.",
+    highlight: "You're paying for security on your terms. No uninterested third party in your decision-making process.",
   },
   {
-    icon: Ban,
-    title: "No Regulatory Overload = Faster, Simpler Experience",
+    icon: Shield,
+    title: "Security the Way You Want It",
     points: [
-      "No ID, proof of address, or banking info required to use the site.",
-      "Instant onboarding in seconds — not days or weeks.",
-      "No hidden compliance fees or account freezes.",
+      "Cold wallet for maximum protection? Hot wallet for convenience? Hardware signing or phone signing? Your choice.",
+      "Instant onboarding — no ID, no banking info, no KYC. Connect and go.",
+      "You can leave CryptoOwnBank anytime and still have full control and access to your crypto. We don't hold your assets.",
     ],
-    highlight: "We keep things non-custodial and permissionless — exactly how the blockchain was designed to work.",
+    highlight: "CryptoOwnBank gives you the control and ownership you need while enforcing security the way you want.",
   },
   {
     icon: DollarSign,
-    title: "Lower Costs & Better Yields for You",
+    title: "Keep All Your Earnings — No Hidden Fees",
     points: [
-      "Every layer of fiat handling adds fees (bank wires, ACH, compliance overhead, partner cuts).",
-      "By keeping everything on-chain (RLUSD \u2192 Soil vaults \u2192 interest withdrawals), we avoid those costs entirely.",
-      "You keep more of your 5–8% fixed yield with no hidden \u201Cprocessing\u201D or \u201Cwithdrawal\u201D fees from us.",
+      "Every layer of fiat handling adds fees (bank wires, ACH, compliance overhead, partner cuts). We avoid those costs entirely.",
+      "You keep 100% of your 5–8% fixed yield — no processing fees, no withdrawal fees, no platform cut.",
+      "The Recommendations Hub brings opportunities to you, so you never leave money on the table.",
     ],
-    highlight: "The system stays lean so we can focus on features like auto-withdrawals and XLS-66 lending — not compliance paperwork.",
+    highlight: "Own your crypto, manage it from one interface, keep all your earnings. The platform works for you.",
   },
 ];
 
@@ -524,8 +524,8 @@ const onChainSteps = [
   {
     step: 4,
     icon: ArrowDownUp,
-    title: "Withdraw Only the Interest",
-    description: "When earnings accrue, click \u201CWithdraw Interest Only.\u201D Your principal never moves. Repeat forever.",
+    title: "Withdraw When You're Ready",
+    description: "When you want your earnings, withdraw your full position through Soil. Your RLUSD returns to your wallet — you decide what to do next.",
   },
 ];
 
@@ -535,11 +535,11 @@ const faqGroups = [
     items: [
       {
         q: "Why was CryptoOwnBank created? (And why should I use it?)",
-        a: "CryptoOwnBank was created for one reason: to help people truly become their own bank — without giving up control of their assets. Most tools today force you to choose between: custodial platforms (Uphold, Binance, Coinbase) that hold your keys and pay low yields (3–6%), traditional banks that pay almost nothing (0.01–4.5%) and control your money, or raw blockchain explorers and DeFi apps that feel complicated and overwhelming. We built CryptoOwnBank to fix all three problems at once: (1) Full ownership — your cold wallet (Ledger, ELLIPAL, Arculus, etc.) stays in control; we never see or store your private keys. (2) Real, higher yields — earn 5–8% fixed APR on RLUSD through Soil Protocol's real-world-asset vaults (Treasuries, private credit) with automatic compounding if you don't withdraw interest. (3) Simplicity & power — one clean dashboard to connect your wallet, track your XRPL portfolio, deposit to vaults, withdraw only the interest you want, and see everything in real time. No copy-pasting addresses, no switching apps. (4) Future-proof — built for XRPL today (RLUSD + Soil), ready for tomorrow (XLS-66 XRP lending, more protocols, multi-chain support) — all while keeping you non-custodial. The world is shifting to on-chain finance. Banks fight to keep yields low and control high. Exchanges hold your keys and limit what you can do. CryptoOwnBank flips the script: you earn more, own everything, and stay in full control. Bottom line: if you want higher yields than Uphold/Binance, true self-custody instead of trusting a third party, and a dashboard that grows with the XRPL ecosystem — CryptoOwnBank was built exactly for you. Connect your cold wallet (free, no KYC) and start today.",
+        a: "CryptoOwnBank was created because exchanges can fail, freeze, or go bankrupt — and your funds are trapped when they do. FTX. Celsius. Voyager. Mt. Gox. We built CryptoOwnBank so your crypto is never in anyone else's hands. (1) Full ownership — your wallet stays in your control. We never see or store your private keys. Even if you leave CryptoOwnBank, your crypto stays in your wallet. (2) Real yields you keep — earn 5–8% fixed APR on RLUSD through Soil Protocol, no platform fees, no middleman taking a cut. (3) Security on your terms — cold wallet, hot wallet, hardware or phone signing. You choose. No uninterested third party in your decision-making process. (4) We bring opportunities to you — the Recommendations Hub surfaces yields and opportunities you'd otherwise miss. Bottom line: own your crypto, manage it from one interface, keep all your earnings. Connect your wallet (free, no KYC) and start today.",
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a combined crypto portfolio tracker, non-custodial XRPL yield vault, and payment toolkit — designed so anyone with an internet connection can participate in global commerce. Track your entire crypto portfolio across 24 blockchains and multiple exchanges from one dashboard, earn fixed yield on RLUSD through Soil Protocol vaults, trade on the XRPL's built-in DEX, send and receive payments in seconds, and accept crypto payments for your business — all while keeping full control via your cold wallet. Whether you're unbanked (no access to traditional finance), debanked (shut out by banks or payment processors), or simply tired of paying 2.9% to a middleman — CryptoOwnBank gives you the tools to be your own bank.",
+        a: "CryptoOwnBank is a non-custodial crypto platform: own your crypto, manage it from one interface, keep all your earnings. Track your portfolio across 24 blockchains, earn 5–8% yield on RLUSD through Soil Protocol, trade on native DEXs, and send payments globally — your keys stay in your hands. Choose your security: cold wallet, hot wallet, hardware or phone signing. If you ever leave, your crypto is still in your wallet. Whether you're unbanked, debanked, or simply want real ownership — CryptoOwnBank gives you the tools to be your own bank.",
       },
       {
         q: "Why does CryptoOwnBank focus on XRPL and Stellar instead of Ethereum or Solana?",
@@ -547,11 +547,11 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
-        a: "Banks offer 0.01–4.5% yield but you're an unsecured creditor — they own the money. Centralized exchanges (Uphold ~3.75%, others up to 6%) hold your keys custodially. CryptoOwnBank + Soil gives you 5–8% fixed APR with automatic compounding, and you own 100% — keys stay on your cold wallet, every action requires your signature. Other advantages: no KYC on our end, no bank linking, low XRPL fees (~0.0001 XRP vs $15–30 wire fees), interest-only withdrawals so principal keeps earning, and future XLS-66 XRP lending from the same dashboard. Banks and exchanges are convenient but take custody and pay less. CryptoOwnBank flips the script: full control, higher yields, complete transparency.",
+        a: "Banks offer 0.01–4.5% yield but you're an unsecured creditor — if the bank fails, you're in line hoping to recover your money. Exchanges hold your keys custodially — when they fail (FTX, Celsius, Voyager), customers lose everything. CryptoOwnBank + Soil gives you 5–8% fixed APR, and you own 100% — keys stay in your wallet, yield goes directly to you with no platform fee. Your crypto is never in anyone else's hands. You choose your security level. And if you leave, your crypto stays in your wallet. Full control, higher yields, complete transparency.",
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (basic tracking + manual withdrawals). Premium subscription ($29/mo or $199/yr) for auto-withdrawals, tax exports, family views, etc. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral — we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
+        a: "Three tiers: Free (basic tracking + Soil vault access), Premium ($29/mo or $199/yr — unlimited wallets, DEX trading, full Recommendations Hub), and Pro ($99/mo or $799/yr — treasury tools, team seats, Legacy Plan). Nine optional add-ons. Affiliate referrals (disclosed transparently). We never take fees from your yields or principal — you keep 100% of what you earn. And because we never hold your assets, if you cancel or leave, your crypto is still in your wallet.",
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
@@ -633,15 +633,15 @@ const faqGroups = [
       },
       {
         q: "Does interest in Soil vaults compound automatically?",
-        a: "Yes. If you do not withdraw the earned interest, it is automatically added to your position in the vault and starts earning additional yield right away. Example: Deposit $10,000 RLUSD at 6% APR. After one month \u2248 $50 interest is earned. If left in the vault, your new balance becomes ~$10,050. Next month's interest is calculated on the larger amount — this is automatic compounding. There is no \u201Creinvest\u201D button because it happens by default. You can withdraw only the interest anytime (manually or auto-scheduled with Premium). The principal plus any unwithdrawn interest stays in the vault and continues growing. This gives you higher effective returns than most banks or custodial platforms while keeping full control of your keys.",
+        a: "Yes. If you do not withdraw, earned interest is automatically added to your position in the vault and starts earning additional yield right away. Example: Deposit $10,000 RLUSD at 6% APR. After one month, ~$50 interest is earned. If left in the vault, your new balance becomes ~$10,050 and next month's interest is calculated on the larger amount — automatic compounding, no action needed. When you're ready, withdraw your full position through Soil (principal + interest together). This gives you higher effective returns than banks or custodial platforms — and you keep full control of your keys the entire time.",
       },
       {
         q: "How does Soil compare to Uphold's 3.75% yield?",
         a: "Soil offers 5–8% fixed APR (real RWA-backed yield from Treasuries and private credit) with automatic compounding — usually higher than Uphold's ~3.75%. Plus you get full self-custody (your keys stay on your cold wallet) instead of Uphold holding everything custodially. The trade-off: Uphold is simpler to start with, but you give up ownership and earn less.",
       },
       {
-        q: "How do I withdraw my earned interest?",
-        a: "Go to the Withdraw Interest page, select a vault, and click \u201CWithdraw Interest.\u201D The app builds a transaction sending ONLY your accrued interest to your designated spending wallet. You sign the transaction on your Xumm or Ledger. Free users withdraw manually; Premium users can set up automatic weekly withdrawals.",
+        q: "How do I withdraw from a Soil vault?",
+        a: "Soil currently supports full position withdrawal — you withdraw your entire balance (principal + earned interest) together. Go to the Vault Positions page, select a vault, and click 'Withdraw via Soil.' This opens Soil Protocol's app where you connect your wallet and complete the withdrawal. Your RLUSD returns to the same wallet you deposited from. From there, you can redeposit to keep earning, convert to XRP via DCA, or hold as RLUSD. Your keys, your timing, your decision.",
       },
       {
         q: "Why can't I withdraw my full principal anytime?",
@@ -691,7 +691,7 @@ const faqGroups = [
     items: [
       {
         q: "What's the difference between Free, Premium, and Pro?",
-        a: "Free: 1 blockchain address, 1 price alert, CSV import, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history. Premium ($29/mo or $199/yr): unlimited addresses across 24 chains, full Recommendations Hub, staking guides, unlimited CSV imports, auto-withdraw, Statement Insights, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus DeFi Borrowing Hub, Real Estate Tokenization directory, batch/payroll payments, treasury dashboard, up to 5 team seats, and XLS-66 Lending. Pro is designed for businesses and high-value clients.",
+        a: "Free: 1 blockchain address, 1 price alert, CSV import, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history — enough to see the value. Premium ($29/mo or $199/yr): unlimited wallets across 24 chains, full Recommendations Hub that surfaces opportunities you'd miss, Statement Insights, DEX trading, staking guides, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus treasury dashboard, DeFi Borrowing Hub, Real Estate Tokenization, batch/payroll payments, up to 5 team seats, Legacy Plan, and XLS-66 Lending. All tiers: your crypto stays in your wallet, you choose your security level, and you keep all your earnings.",
       },
       {
         q: "How do I pay for Premium?",
@@ -970,18 +970,18 @@ export default function Landing() {
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-sm font-medium" data-testid="badge-non-custodial">
                     <Shield className="h-3.5 w-3.5" />
-                    Non-Custodial &middot; Cold Wallet Only &middot; You Control Your Keys
+                    Non-Custodial &middot; Your Keys &middot; Your Security Level
                   </div>
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
                     Be Your Own
                     <span className="block text-[#00A4E4]">Bank</span>
                   </h1>
                   <p className="text-lg text-muted-foreground max-w-lg">
-                    Track your entire crypto portfolio. Earn real 5–8% fixed yield on RLUSD.
-                    Withdraw only the interest — your principal stays locked and protected forever.
+                    Own your crypto. Manage it from one interface. Keep all your earnings.
+                    No exchange can freeze, lose, or mismanage your funds — because your crypto is never in anyone else's hands.
                   </p>
                   <p className="text-sm text-muted-foreground/80 max-w-lg">
-                    Deposit RLUSD into Soil vaults &rarr; earn fixed yield &rarr; withdraw only the earnings. Simple. Secure. Yours.
+                    Earn 5–8% fixed yield on RLUSD. Trade on native DEXs. Choose your security — cold wallet, hot wallet, hardware or phone signing. Even if you leave us, your crypto stays in your wallet.
                   </p>
                 </div>
 
@@ -1112,8 +1112,10 @@ export default function Landing() {
               </p>
               <p>
                 Connect your own wallet. Earn 5–8% real yield. Trade on a decentralized exchange.
-                Send payments globally in seconds. No middleman. No permission needed.
-                No one else holding your keys.
+                Send payments globally in seconds. Choose your security level — cold wallet, hot wallet,
+                hardware or phone signing. No middleman. No permission needed. No uninterested
+                third party in your decision-making process. And if you ever leave? Your crypto is still
+                in your wallet. You're never locked in.
               </p>
             </div>
             <div className="pt-2">
@@ -1790,7 +1792,7 @@ export default function Landing() {
                 </h2>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
                   We built CryptoOwnBank to give you the best of both worlds:
-                  you remain the sole owner of your assets (cold wallet only),
+                  you remain the sole owner of your assets (your wallet, your security level),
                   and we act as your smart assistant that handles the boring parts.
                 </p>
                 <p className="text-foreground font-medium mb-6">
@@ -1800,7 +1802,7 @@ export default function Landing() {
                   {[
                     { icon: TrendingUp, text: "Shows you the best yield opportunities in real time" },
                     { icon: Zap, text: "Pre-builds every transaction so you just click \u201CSign\u201D" },
-                    { icon: RefreshCw, text: "Automates interest withdrawals on your schedule" },
+                    { icon: RefreshCw, text: "Surfaces yield opportunities and savings comparisons you'd miss on your own" },
                     { icon: ArrowRight, text: "Guides you from exchange \u2192 wallet \u2192 vault in one smooth flow" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-3" data-testid={`text-broker-point-${i}`}>
@@ -1814,7 +1816,7 @@ export default function Landing() {
                 <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 mb-6">
                   <p className="text-sm text-foreground">
                     <span className="font-semibold">You never lose control.</span>{" "}
-                    Every single action still requires your cold wallet signature.
+                    Every action requires your wallet signature — cold or hot, your choice.
                     We just remove the friction so "being your own bank" actually feels good instead of painful.
                   </p>
                 </div>
@@ -1854,7 +1856,7 @@ export default function Landing() {
                     </p>
                     <div className="space-y-2">
                       {[
-                        "Auto-scheduled interest withdrawals",
+                        "Recommendations Hub with personalized yield alerts",
                         "One-click exchange \u2192 vault flows",
                         "Tax-ready CSV reports",
                         "Priority alerts for new vaults",
