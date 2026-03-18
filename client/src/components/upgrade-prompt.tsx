@@ -12,14 +12,13 @@ interface UpgradePromptProps {
 
 const PREMIUM_BENEFITS = [
   "Own your crypto — manage every wallet from one interface",
+  "All the work is done for you — opportunities, analysis, and insights come to you",
   "Keep all your yield — no platform fees on your earnings",
-  "Recommendations Hub surfaces opportunities you'd otherwise miss",
+  "Recommendations Hub surfaces yields and DeFi you'd otherwise miss",
   "Statement Insights compares your bank rates vs. on-chain yields",
   "XRPL & Stellar DEX trading — your keys, your trades",
-  "Unlimited wallets across 24 chains",
-  "Portfolio search, filter & sort with full history",
-  "CSV import & unlimited price alerts",
-  "Recurring payments",
+  "Unlimited wallets across 24 chains with full history",
+  "CSV import, unlimited price alerts & recurring payments",
 ];
 
 const ANNUAL_BENEFITS = [

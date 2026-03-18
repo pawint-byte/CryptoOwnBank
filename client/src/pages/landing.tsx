@@ -152,11 +152,15 @@ const whyPoints = [
   },
   {
     icon: Zap,
-    text: "We bring opportunities to you — the Recommendations Hub surfaces yields, staking, and DeFi you'd otherwise miss",
+    text: "All the work is done for you — the Recommendations Hub surfaces yields, staking, and DeFi you'd otherwise miss. The information comes to you",
   },
   {
     icon: FileText,
-    text: "IRS-ready tax reports, portfolio analytics, and Statement Insights that compare your bank rates vs. on-chain yields",
+    text: "Tax reports, portfolio analytics, Statement Insights — everything in one place. This is where it all starts",
+  },
+  {
+    icon: Users,
+    text: "And it doesn't end — the Legacy Plan (dead man's switch) ensures your crypto passes to your family if something happens to you",
   },
 ];
 
@@ -327,12 +331,20 @@ const memberStories = [
     benefit: "Cold wallet, hot wallet, hardware signing, phone signing — your security, your rules.",
   },
   {
-    title: "We Bring Opportunities to You",
+    title: "All the Work Is Done for You",
     icon: BarChart3,
     accent: "from-amber-500/10 to-orange-500/10",
     story:
-      "Most people leave money on the table because they don't know what's available. CryptoOwnBank's Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities — clearly labeled as on-chain (you keep your keys) or custodial (company holds assets). Statement Insights compares your bank rates against what you could earn on-chain. You don't have to go looking for opportunities. The platform brings them to you. You own your crypto, manage it from one interface, and keep all your earnings.",
-    benefit: "One dashboard, 24 blockchains, personalized yield recommendations — the information finds you.",
+      "Most people leave money on the table because they don't know what's available. CryptoOwnBank does the work for you: the Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities. Statement Insights compares your bank rates against what you could earn on-chain. You don't go looking for information — the information comes to you. This is where everything starts: one interface, all your crypto, all your opportunities, all your tools.",
+    benefit: "One dashboard, 24 blockchains, all the research done for you — the information finds you.",
+  },
+  {
+    title: "It Doesn't End — Even If You Can't Continue",
+    icon: Users,
+    accent: "from-rose-500/10 to-pink-500/10",
+    story:
+      "Self-custody solves the exchange risk. But there's one risk it can't solve alone: if something happens to you, your family doesn't know how to access your wallets. The same security that protects you from exchanges also means nobody can call a support line to recover your funds. The Legacy Plan is a dead man's switch — it checks in with you periodically. If you stop responding, your designated beneficiaries receive encrypted instructions for accessing your wallets. Your crypto stays in your wallets, earning yield, until the moment it transfers to the people you chose. Not to an exchange. Not to a bankruptcy court. To your family. CryptoOwnBank is where everything starts — and it doesn't end.",
+    benefit: "Crypto inheritance solved. Your family receives your wallets, not a bankruptcy notice. (Included free with Pro.)",
   },
 ];
 
@@ -491,13 +503,13 @@ const onChainReasons = [
   },
   {
     icon: DollarSign,
-    title: "Keep All Your Earnings — No Hidden Fees",
+    title: "All the Work Is Done for You — And It Doesn't End",
     points: [
-      "Every layer of fiat handling adds fees (bank wires, ACH, compliance overhead, partner cuts). We avoid those costs entirely.",
-      "You keep 100% of your 5–8% fixed yield — no processing fees, no withdrawal fees, no platform cut.",
-      "The Recommendations Hub brings opportunities to you, so you never leave money on the table.",
+      "You keep 100% of your yield — no processing fees, no withdrawal fees, no platform cut. All your earnings stay with you.",
+      "All the research is done for you — the Recommendations Hub, Statement Insights, and yield analysis bring the information to you. You don't go looking.",
+      "And it doesn't end: the Legacy Plan (dead man's switch) makes sure your crypto passes to your family. Not to an exchange. Not to a bankruptcy court. To the people you chose.",
     ],
-    highlight: "Own your crypto, manage it from one interface, keep all your earnings. The platform works for you.",
+    highlight: "This is where everything starts. All the work is done for you, all the information comes to you, and the Legacy Plan ensures it never ends.",
   },
 ];
 
@@ -567,7 +579,7 @@ const faqGroups = [
       },
       {
         q: "Why should I join now?",
-        a: "Regulatory clarity is advancing, RLUSD is growing as the compliant stablecoin of choice, and institutional DeFi is expanding. Banks are still offering minimal yields. CryptoOwnBank lets you start earning real, fixed yield today while keeping full control of your assets — no waiting for traditional finance to catch up.",
+        a: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto. CryptoOwnBank is where everything starts — all the work is done for you, all the information is brought to you, and the Legacy Plan makes sure it doesn't end. Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent. You choose your security level, no third party needed. Start today.",
       },
     ],
   },
@@ -978,10 +990,11 @@ export default function Landing() {
                   </h1>
                   <p className="text-lg text-muted-foreground max-w-lg">
                     Own your crypto. Manage it from one interface. Keep all your earnings.
-                    No exchange can freeze, lose, or mismanage your funds — because your crypto is never in anyone else's hands.
+                    All the work is done for you. All the information is brought to you.
+                    And it doesn't end — because your Legacy Plan makes sure your crypto passes to your family.
                   </p>
                   <p className="text-sm text-muted-foreground/80 max-w-lg">
-                    Earn 5–8% fixed yield on RLUSD. Trade on native DEXs. Choose your security — cold wallet, hot wallet, hardware or phone signing. Even if you leave us, your crypto stays in your wallet.
+                    Earn 5–8% fixed yield on RLUSD. Trade on native DEXs. Choose your security — cold wallet, hot wallet, hardware or phone signing. This is where everything starts. Even if you leave us, your crypto stays in your wallet.
                   </p>
                 </div>
 
@@ -1112,10 +1125,16 @@ export default function Landing() {
               </p>
               <p>
                 Connect your own wallet. Earn 5–8% real yield. Trade on a decentralized exchange.
-                Send payments globally in seconds. Choose your security level — cold wallet, hot wallet,
-                hardware or phone signing. No middleman. No permission needed. No uninterested
-                third party in your decision-making process. And if you ever leave? Your crypto is still
-                in your wallet. You're never locked in.
+                Send payments globally in seconds. All the work is done for you — the Recommendations Hub
+                surfaces opportunities, Statement Insights shows you what you're missing, and every tool you
+                need is in one place. This is where everything starts.
+              </p>
+              <p>
+                Choose your security level — cold wallet, hot wallet, hardware or phone signing.
+                No middleman. No permission needed. No uninterested third party in your decision-making
+                process. And it doesn't end — the Legacy Plan makes sure your crypto passes to your
+                family if something happens to you. Even if you leave? Your crypto is still in your wallet.
+                You're never locked in.
               </p>
             </div>
             <div className="pt-2">
