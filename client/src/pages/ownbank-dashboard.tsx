@@ -10,6 +10,11 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
@@ -52,6 +57,10 @@ import {
   Coins,
   Clock,
   CalendarDays,
+  ChevronDown,
+  ChevronUp,
+  Globe,
+  Zap,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 import { SocialShare } from "@/components/social-share";
@@ -88,6 +97,7 @@ export default function OwnBankDashboard() {
   const [connectingXumm, setConnectingXumm] = useState(false);
   const [connectingLedger, setConnectingLedger] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [syncingSoil, setSyncingSoil] = useState(false);
   const [soilSummary, setSoilSummary] = useState<{
     deposits: number;
@@ -1356,6 +1366,115 @@ export default function OwnBankDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <Collapsible open={howItWorksOpen} onOpenChange={setHowItWorksOpen}>
+        <Card style={{ borderColor: "#00A4E425" }}>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-accent/30 transition-colors">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-[#00A4E4]" />
+                  How CryptoOwnBank Works with Your Wallets
+                </span>
+                {howItWorksOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-5 pt-0">
+              <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "#00A4E430", backgroundColor: "#00A4E408" }}>
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <SiRipple className="h-4 w-4 text-[#00A4E4]" />
+                  The Big Picture
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  CryptoOwnBank is your <span className="font-medium text-foreground">dashboard and command center</span>.
+                  Xaman (XRPL) and LOBSTR (Stellar) are your <span className="font-medium text-foreground">signing wallets</span>.
+                  We build the transaction — your wallet app approves and signs it. Your keys never leave your wallet.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">How Signing Works</p>
+                <div className="grid gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: "#00A4E4" }}>1</Badge>
+                    <p>You set up a yield deposit, trade, or payment on CryptoOwnBank</p>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: "#00A4E4" }}>2</Badge>
+                    <p>CryptoOwnBank opens <span className="font-medium text-foreground">Xaman</span> with the transaction details</p>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: "#00A4E4" }}>3</Badge>
+                    <p>You review and <span className="font-medium text-foreground">approve in Xaman</span> — this is the "sign off"</p>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <Badge className="shrink-0 text-xs text-white mt-0.5" style={{ backgroundColor: "#00A4E4" }}>4</Badge>
+                    <p>The transaction goes through on the XRP Ledger, and CryptoOwnBank shows your updated balance</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">Xaman (Phone App) — Your Signing Wallet for XRPL</p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+                  <li>Xaman signs yield deposits, DEX trades, and payments that you set up here</li>
+                  <li>Works automatically — CryptoOwnBank opens Xaman when you need to approve something</li>
+                  <li>You can import multiple XRP addresses into Xaman and switch between them</li>
+                </ul>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">Cold Wallets (Ledger Nano X, etc.)</p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
+                  <li><span className="font-medium text-foreground">Connect directly:</span> Use the "Connect Ledger" button above to sign with your hardware wallet</li>
+                  <li><span className="font-medium text-foreground">Tracking only:</span> Add the public address in Wallets & Addresses to see balances in your portfolio</li>
+                </ul>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "#10b98130", backgroundColor: "#10b98108" }}>
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-emerald-500" />
+                  Best Practice — The Debit Card Approach
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Think of it like your bank accounts:
+                </p>
+                <div className="grid gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-2 items-start">
+                    <Shield className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                    <p><span className="font-medium text-foreground">Cold wallet = Savings account</span> — holds the majority of your funds, maximum security</p>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Zap className="h-4 w-4 shrink-0 mt-0.5 text-[#00A4E4]" />
+                    <p><span className="font-medium text-foreground">Xaman / LOBSTR = Debit card</span> — load what you need to spend, use conveniently from your phone</p>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Globe className="h-4 w-4 shrink-0 mt-0.5 text-[#00A4E4]" />
+                    <p><span className="font-medium text-foreground">CryptoOwnBank = Banking app</span> — see all accounts in one place, make transactions with your "debit card"</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Send what you want to actively use from your cold wallet to Xaman/LOBSTR. If your phone is compromised, you only risk what's on it — your cold wallet savings stay safe. You can always load more when needed.
+                </p>
+              </div>
+
+              <div className="rounded-md bg-muted/30 border border-muted p-4 space-y-2">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-emerald-500" />
+                  Security Note
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  CryptoOwnBank <span className="font-medium text-foreground">never sees or stores your private keys</span>.
+                  We only read your public address from the blockchain.
+                  Every transaction must be approved and signed in your own wallet app (Xaman, Ledger, LOBSTR, etc.).
+                </p>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       <XrplDisclaimer />
     </div>

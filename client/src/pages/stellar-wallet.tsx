@@ -699,6 +699,33 @@ export default function StellarWallet() {
                 </ul>
               </div>
 
+              <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "#10b98130", backgroundColor: "#10b98108" }}>
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-emerald-500" />
+                  Best Practice — The Debit Card Approach
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Think of it like your bank accounts:
+                </p>
+                <div className="grid gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-2 items-start">
+                    <Shield className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                    <p><span className="font-medium text-foreground">Cold wallet = Savings account</span> — holds the majority of your funds, maximum security</p>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Zap className="h-4 w-4 shrink-0 mt-0.5" style={{ color: STELLAR_PURPLE }} />
+                    <p><span className="font-medium text-foreground">LOBSTR / Xaman = Debit card</span> — load what you need to spend, use conveniently from your phone</p>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Globe className="h-4 w-4 shrink-0 mt-0.5" style={{ color: STELLAR_PURPLE }} />
+                    <p><span className="font-medium text-foreground">CryptoOwnBank = Banking app</span> — see all accounts in one place, make transactions with your "debit card"</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Send what you want to actively use from your cold wallet to LOBSTR/Xaman. If your phone is compromised, you only risk what's on it — your cold wallet savings stay safe. You can always load more when needed.
+                </p>
+              </div>
+
               <div className="rounded-md bg-muted/30 border border-muted p-4 space-y-2">
                 <p className="text-sm font-semibold flex items-center gap-2">
                   <Shield className="h-4 w-4 text-emerald-500" />
