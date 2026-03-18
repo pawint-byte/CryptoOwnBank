@@ -105,7 +105,7 @@ const allItems: NavItem[] = [
   { title: "My Payment Card", url: "/ownbank/my-card", icon: QrCode, color: "#00A4E4", group: "ownbank" },
   { title: "Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, color: "#00A4E4", group: "ownbank" },
   { title: "Recurring Payments", url: "/ownbank/recurring", icon: CalendarClock, color: "#00A4E4", group: "ownbank" },
-  { title: "Withdraw Interest", url: "/ownbank/withdraw", icon: ArrowDownToLine, color: "#00A4E4", group: "ownbank" },
+  { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, color: "#00A4E4", group: "ownbank" },
   { title: "History", url: "/ownbank/history", icon: History, color: "#00A4E4", group: "ownbank" },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },

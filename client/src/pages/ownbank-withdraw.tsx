@@ -149,7 +149,7 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
             <div>
               <CardTitle className="text-base">Earn & Accumulate XRP</CardTitle>
               <CardDescription>
-                Fully automatic: withdraw interest + convert to XRP — no interaction needed
+                Fully automatic: withdraw from Soil + DCA to XRP — set it and forget it
               </CardDescription>
             </div>
           </div>
@@ -171,10 +171,10 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
               <p className="text-sm font-medium">How it works</p>
             </div>
             <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Your RLUSD earns interest in the vault automatically</li>
-              <li>When interest hits your threshold, the system sends a withdrawal request to your Xaman wallet</li>
-              <li>You tap &quot;Approve&quot; in Xaman (push notification) — one tap</li>
-              <li>If Auto-Buy XRP is on, a DEX offer is also pushed to convert RLUSD → XRP</li>
+              <li>Your RLUSD earns yield in the Soil vault automatically</li>
+              <li>When you're ready, withdraw your full position via Soil (principal + interest)</li>
+              <li>RLUSD returns to your wallet — your DCA order converts it to XRP on schedule</li>
+              <li>Or redeposit to Soil to keep earning — you control the flow</li>
             </ol>
             {isFullyAutomatic && (
               <div className="flex items-center gap-2 mt-2 p-2 rounded bg-green-500/10 border border-green-500/20">
@@ -413,7 +413,7 @@ function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInte
       {!isPremium && (
         <CardContent className="pt-0">
           <p className="text-xs text-muted-foreground">
-            Upgrade to Premium ($29/mo) to enable fully automatic interest withdrawal and XRP accumulation. Set your threshold, and the system handles everything — just approve in Xaman when notified.
+            Upgrade to Premium ($29/mo) to enable DCA — automatically convert RLUSD to XRP on a schedule. Withdraw from Soil when you're ready, and your DCA handles the rest.
           </p>
         </CardContent>
       )}
@@ -530,7 +530,7 @@ export default function OwnBankWithdraw() {
     window.open(SOIL_REFERRAL_URL, "_blank", "noopener,noreferrer");
     toast({
       title: "Opening Soil Protocol",
-      description: "Complete your interest withdrawal on Soil's app. Connect your wallet there and request a withdrawal from your vault.",
+      description: "Complete your withdrawal on Soil's app. Connect your wallet and withdraw your full position. RLUSD returns to your wallet.",
     });
     setShowPreview(false);
     setSelectedVaultAddress(null);
@@ -554,7 +554,7 @@ export default function OwnBankWithdraw() {
               <Link href="/ownbank" className="text-[#00A4E4] underline">
                 OwnBank Dashboard
               </Link>{" "}
-              to view and withdraw interest.
+              to view your vault positions.
             </p>
           </CardContent>
         </Card>
@@ -571,9 +571,9 @@ export default function OwnBankWithdraw() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Withdraw Interest</h1>
+          <h1 className="text-2xl font-bold">Vault Positions & Withdrawal</h1>
           <p className="text-muted-foreground">
-            Withdraw only earned interest — your principal stays protected forever
+            Track your vault earnings and withdraw via Soil Protocol
           </p>
         </div>
         {!withdrawTarget && (

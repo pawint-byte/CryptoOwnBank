@@ -116,20 +116,20 @@ const faqGroups = [
         a: "Soil offers 5–8% fixed APR (real RWA-backed yield from Treasuries and private credit) with automatic compounding — usually higher than Uphold's ~3.75%. Plus you get full self-custody (your keys stay on your cold wallet) instead of Uphold holding everything custodially. The trade-off: Uphold is simpler to start with, but you give up ownership and earn less.",
       },
       {
-        q: "How do I withdraw my earned interest?",
-        a: 'Go to the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a>. You have two options: (1) Manual withdrawal — select a vault, click "Withdraw Interest," sign in Xaman, and your accrued interest is sent to your spending wallet. (2) Automatic withdrawal (Premium/Pro) — enable "Auto-Withdraw Interest" in the Earn & Accumulate card. Set your threshold (e.g., $5 RLUSD) and frequency (daily, weekly, biweekly, monthly). The system checks your vaults on schedule and, when interest hits your threshold, pushes a notification to your Xaman app. Just tap Approve — one tap, done. Your principal always stays locked in the vault.',
+        q: "How do I withdraw from a Soil vault?",
+        a: 'Soil currently only supports full withdrawal — you withdraw your entire position (principal + interest) together. Go to the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Vault Positions page</a>, select a vault, and click "Withdraw via Soil." This opens Soil Protocol\'s app (xrpl.soil.co) where you connect your wallet and complete the withdrawal. Your RLUSD (principal + earned interest) is returned to the same XRPL wallet you originally deposited from. Once RLUSD is back in your wallet, you can: (1) let your DCA order convert it to XRP automatically, (2) redeposit to a vault to keep earning, or (3) hold it as RLUSD. Tip: set up a DCA order before withdrawing so your RLUSD doesn\'t sit idle.',
       },
       {
         q: "What is Earn & Accumulate XRP?",
-        a: 'Earn & Accumulate is the fully automatic interest-to-XRP pipeline on the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a>. It combines two features: (1) Auto-Withdraw — the system monitors your vault interest and triggers a withdrawal when it reaches your chosen threshold. (2) Auto-Buy XRP — when interest is withdrawn, a percentage you choose (10–100%) is automatically converted to XRP via a DEX offer on the XRPL. Both steps are pushed to your Xaman wallet as notifications — you just tap Approve. Set it once, and your vaults passively accumulate XRP for you with no further interaction. Requires Premium ($29/mo) or Pro ($99/mo).',
+        a: 'Earn & Accumulate is the strategy for turning Soil vault yield into XRP. The flow: (1) Your RLUSD earns yield in a Soil vault. (2) When you\'re ready, withdraw your full position via Soil — RLUSD returns to your wallet. (3) Your DCA order (if active) automatically converts the RLUSD to XRP on the next scheduled run via the XRPL DEX. You control the DCA settings: how much to convert, how often, and minimum amounts. Set up DCA before withdrawing so the RLUSD starts working immediately. Available to Premium ($29/mo) and Pro ($99/mo) members.',
       },
       {
-        q: "How does Auto-Withdraw work behind the scenes?",
-        a: 'When you enable Auto-Withdraw, the CryptoOwnBank server checks your vault interest on your chosen schedule (daily, weekly, every 2 weeks, or monthly). It adds up the accrued interest from ALL your Soil vaults (Treasury + Credit+). If the combined total meets or exceeds your threshold (e.g., $5 RLUSD), the system creates a withdrawal notification for each vault that has interest, and pushes them to your Xaman mobile app. You tap Approve on each vault withdrawal. Then, if Auto-Buy XRP is enabled, the system sends ONE combined DEX order for the total interest from all vaults — so instead of multiple small swaps, you get a single, larger order that fills more efficiently on the order book. Everything is fully non-custodial — your keys never leave your device. The system only creates transaction proposals; you always have the final say.',
+        q: "Can I withdraw just the interest from a Soil vault?",
+        a: "Not currently — Soil Protocol only supports full withdrawal (principal + interest together). When you withdraw, your entire position is returned to your wallet. You can then redeposit the principal amount back into the vault if you want to keep earning. We display your accrued interest on the Vault Positions page so you can track exactly how much you've earned before deciding to withdraw.",
       },
       {
-        q: "Can I use Auto-Withdraw without Auto-Buy XRP?",
-        a: "Yes — they are independent toggles. You can enable just Auto-Withdraw to automatically collect your interest as RLUSD, or enable just Auto-Buy XRP to convert interest to XRP only when you manually withdraw. Or enable both for the full hands-free pipeline. Each toggle has its own settings (threshold, frequency, percentage, minimum amount).",
+        q: "What happens to my RLUSD after I withdraw from Soil?",
+        a: "Your RLUSD returns to the same XRPL wallet you originally deposited from. From there, you choose: (1) DCA to XRP — if you have an active DCA order, it will automatically convert your RLUSD to XRP on the next scheduled run. One combined DEX order for the full amount gives you a better fill on the order book. (2) Redeposit to Soil — go back to the Vaults page and deposit again to keep earning 5–8% APR. (3) Hold as RLUSD — keep it as a stablecoin in your wallet. The key is setting up your DCA order before withdrawing, so RLUSD doesn't sit idle in your wallet.",
       },
       {
         q: "Why can't I withdraw my full principal anytime?",
@@ -282,7 +282,7 @@ const faqGroups = [
       },
       {
         q: "Can I use Soil vaults without Premium?",
-        a: 'Yes. Connecting your XRPL wallet, depositing into <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vaults</a>, and manually <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">withdrawing interest</a> are all free. Premium adds auto-withdrawal for convenience.',
+        a: 'Yes. Connecting your XRPL wallet, depositing into <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vaults</a>, and <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">withdrawing via Soil</a> are all free. Premium adds DCA for automatic RLUSD-to-XRP conversion.',
       },
       {
         q: "Why should I upgrade to Premium?",
@@ -513,7 +513,7 @@ const faqGroups = [
       },
       {
         q: "What is Earn & Accumulate XRP?",
-        a: "Earn & Accumulate is a Premium feature that connects your RLUSD yield vault to the XRPL DEX. When your vault interest is withdrawn, the system automatically creates a DEX offer to buy XRP with some or all of that interest — you approve it in Xaman with one tap. <br/><br/>You control two things: <strong>how much</strong> to convert (10–100% of your interest, via a slider) and a <strong>minimum threshold</strong> (e.g. only buy when interest reaches 5 RLUSD or more). If you set it to 50%, half your interest buys XRP and the other half stays as RLUSD earning compound interest. If you set it to 100%, every interest withdrawal goes straight into XRP. <br/><br/>It's fully non-custodial — the DEX offer only submits when you approve in Xaman. Everything happens on the same XRPL account: earn RLUSD interest → withdraw → buy XRP on the DEX, all from one wallet with one tap.",
+        a: "Earn & Accumulate is a Premium feature that connects your Soil vault yield to the XRPL DEX through DCA. The flow: earn yield in Soil → withdraw your full position when ready → RLUSD returns to your wallet → your DCA order automatically converts it to XRP on the next scheduled run. <br/><br/>You control the DCA settings: <strong>how much</strong> to convert (10–100% of your RLUSD, via a slider) and a <strong>minimum threshold</strong> (e.g. only buy when you have 5 RLUSD or more). Soil currently only supports full withdrawal (principal + interest together), so after converting to XRP, you can redeposit your principal back to keep earning. <br/><br/>It's fully non-custodial — the DEX offer only submits when you approve in Xaman. Everything happens on the same XRPL account: earn in Soil → withdraw → DCA to XRP, all from one wallet.",
       },
       {
         q: "What is the Legacy Plan (dead-man switch)?",
@@ -626,7 +626,7 @@ const faqGroups = [
       },
       {
         q: "Can I earn, save, and spend entirely in crypto without ever touching a bank?",
-        a: "Yes — this is what we call the circular crypto economy, and it's already possible today. Earn: sell your goods or services and get paid in RLUSD or XRP directly to your wallet. Save: deposit RLUSD into a Soil vault and earn 5–8% APR — more than most bank savings accounts anywhere in the world. Your principal is locked and protected; only interest can be withdrawn. Spend: pay suppliers, vendors, or anyone else with an XRPL wallet. Send money to family. Buy from others who accept crypto. The XRPL handles it all in 4 seconds for fractions of a penny. No bank touches your money at any point in this loop. The more people in your community using XRPL wallets, the less anyone needs traditional banking. A village where 20 people have wallets is a village with its own financial system. Our Getting Started Toolkit for unbanked users at /setup-guide walks through every step of this.",
+        a: "Yes — this is what we call the circular crypto economy, and it's already possible today. Earn: sell your goods or services and get paid in RLUSD or XRP directly to your wallet. Save: deposit RLUSD into a Soil vault and earn 5–8% APR — more than most bank savings accounts anywhere in the world. Your position compounds automatically until you withdraw. Spend: pay suppliers, vendors, or anyone else with an XRPL wallet. Send money to family. Buy from others who accept crypto. The XRPL handles it all in 4 seconds for fractions of a penny. No bank touches your money at any point in this loop. The more people in your community using XRPL wallets, the less anyone needs traditional banking. A village where 20 people have wallets is a village with its own financial system. Our Getting Started Toolkit for unbanked users at /setup-guide walks through every step of this.",
       },
       {
         q: "Is crypto worth the same everywhere, or does my country's currency affect it?",
