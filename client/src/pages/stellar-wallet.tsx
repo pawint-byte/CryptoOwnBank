@@ -24,6 +24,8 @@ import {
   HelpCircle,
   Star,
   Coins,
+  Plus,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -90,6 +92,8 @@ export default function StellarWallet() {
   const [addressInput, setAddressInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [eduOpen, setEduOpen] = useState(true);
+  const [showAddAnother, setShowAddAnother] = useState(false);
+  const [newAddressInput, setNewAddressInput] = useState("");
 
   const { data: trackerWallets = [] } = useQuery<TrackerWallet[]>({
     queryKey: ["/api/wallets"],
@@ -146,6 +150,32 @@ export default function StellarWallet() {
     disconnect();
     toast({ title: "Wallet Disconnected" });
   };
+
+  const handleSwitchWallet = (addr: string) => {
+    if (addr === stellarAddress) return;
+    connect(addr);
+    toast({ title: "Wallet Switched", description: `Now viewing: ${truncateAddress(addr)}` });
+  };
+
+  const handleAddAnother = () => {
+    const trimmed = newAddressInput.trim();
+    if (!trimmed.startsWith("G") || trimmed.length !== 56) {
+      toast({
+        title: "Invalid Address",
+        description: "Stellar addresses start with 'G' and are 56 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+    connect(trimmed);
+    setNewAddressInput("");
+    setShowAddAnother(false);
+    toast({ title: "Wallet Connected", description: `Connected: ${truncateAddress(trimmed)}` });
+  };
+
+  const otherTrackerWallets = trackerWallets.filter(
+    (w) => w.address.toLowerCase() !== stellarAddress?.toLowerCase()
+  );
 
   const handleCopyAddress = () => {
     if (!stellarAddress) return;
@@ -374,6 +404,79 @@ export default function StellarWallet() {
           </Button>
         </div>
       </div>
+
+      {(otherTrackerWallets.length > 0 || showAddAnother) && (
+        <Card className="border-dashed" style={{ borderColor: `${STELLAR_PURPLE}30` }}>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4" style={{ color: STELLAR_PURPLE }} />
+                Switch Wallet
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddAnother(!showAddAnother)}
+                data-testid="button-toggle-add-stellar"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Another
+              </Button>
+            </div>
+            {otherTrackerWallets.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {otherTrackerWallets.map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => handleSwitchWallet(w.address)}
+                    data-testid={`button-switch-stellar-${w.id}`}
+                  >
+                    <Star className="h-4 w-4 shrink-0" style={{ color: STELLAR_PURPLE }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{w.label || "Stellar Wallet"}</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">{w.address}</p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0 text-xs" style={{ borderColor: `${STELLAR_PURPLE}40`, color: STELLAR_PURPLE }}>
+                      Switch
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+            {showAddAnother && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="G... (Stellar address)"
+                  value={newAddressInput}
+                  onChange={(e) => setNewAddressInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddAnother()}
+                  data-testid="input-add-another-stellar"
+                />
+                <Button onClick={handleAddAnother} size="sm" style={{ backgroundColor: STELLAR_PURPLE }} data-testid="button-add-another-stellar">
+                  Connect
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {otherTrackerWallets.length === 0 && !showAddAnother && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs"
+            onClick={() => setShowAddAnother(true)}
+            style={{ color: STELLAR_PURPLE }}
+            data-testid="button-add-another-wallet"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Add Another Wallet
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
