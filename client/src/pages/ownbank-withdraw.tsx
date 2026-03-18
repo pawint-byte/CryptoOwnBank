@@ -499,7 +499,7 @@ export default function OwnBankWithdraw() {
   const xrplWallets = savedWallets.filter((w) => w.chain === "xrpl");
   const yieldWallets = xrplWallets.filter((w) => w.purpose === "yield" || w.purpose === "spending");
   const primaryXrplWallet = xrplWallets.find((w) => w.isPrimary) || xrplWallets[0];
-  const defaultWithdrawAddress = yieldWallets.length > 0 ? yieldWallets[0].address : (primaryXrplWallet?.address || spendingWallet);
+  const defaultWithdrawAddress = yieldWallets.length > 0 ? yieldWallets[0].address : (primaryXrplWallet?.address || spendingWallet || walletAddress);
   const withdrawTarget = selectedWithdrawWallet || defaultWithdrawAddress;
 
   const formatCurrency = (value: number) =>
