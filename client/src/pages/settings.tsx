@@ -72,6 +72,9 @@ import {
   Phone,
   ImageIcon,
   Shield,
+  ArrowRight,
+  X,
+  Zap,
 } from "lucide-react";
 import type { UserSettings, UserWallet } from "@shared/schema";
 
@@ -105,6 +108,9 @@ export default function SettingsPage() {
   });
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "card">("crypto");
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly" | "pro-monthly" | "pro-yearly">("monthly");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [selectedTier, setSelectedTier] = useState<"premium" | "pro">("premium");
+  const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
   const [selectedChain, setSelectedChain] = useState<string>("");
   const [pendingPayment, setPendingPayment] = useState<any>(null);
   const [cryptoLoading, setCryptoLoading] = useState(false);
@@ -390,7 +396,7 @@ export default function SettingsPage() {
     setCryptoLoading(true);
     try {
       const res = await apiRequest("POST", "/api/crypto-payment/create", {
-        plan: selectedPlan,
+        plan: computedPlanKey,
         chain: selectedChain,
       });
       const data = await res.json();
@@ -448,6 +454,75 @@ export default function SettingsPage() {
     } catch {
       toast({ title: "Failed to cancel add-on", variant: "destructive" });
     }
+  };
+
+  const toggleAddonSelection = (key: string) => {
+    setSelectedAddons(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const tierPrices = {
+    premium: { monthly: 29, yearly: 199 },
+    pro: { monthly: 99, yearly: 799 },
+  };
+
+  const addonMonthlyPrice = 4.99;
+
+  const computedPlanKey = selectedTier === "pro"
+    ? (billingCycle === "yearly" ? "pro-yearly" : "pro-monthly")
+    : (billingCycle === "yearly" ? "yearly" : "monthly");
+
+  const baseMonthlyCost = billingCycle === "yearly"
+    ? tierPrices[selectedTier].yearly / 12
+    : tierPrices[selectedTier].monthly;
+
+  const addonsMonthlyCost = selectedAddons.size * addonMonthlyPrice;
+  const totalMonthlyCost = baseMonthlyCost + addonsMonthlyCost;
+
+  const totalAnnualCost = billingCycle === "yearly"
+    ? tierPrices[selectedTier].yearly + (selectedAddons.size * addonMonthlyPrice * 12)
+    : (tierPrices[selectedTier].monthly * 12) + (selectedAddons.size * addonMonthlyPrice * 12);
+
+  const annualSavings = billingCycle === "yearly"
+    ? (tierPrices[selectedTier].monthly * 12) - tierPrices[selectedTier].yearly
+    : 0;
+
+  const nextTierUp = selectedTier === "premium" ? "pro" : null;
+  const nextTierMonthlyCost = nextTierUp ? (billingCycle === "yearly" ? tierPrices.pro.yearly / 12 : tierPrices.pro.monthly) : null;
+  const upgradeValueShown = nextTierUp && addonsMonthlyCost > 0 && totalMonthlyCost > (nextTierMonthlyCost! * 0.7);
+
+  const TIER_FEATURES = {
+    free: [
+      { label: "1 wallet", included: true },
+      { label: "1 price alert", included: true },
+      { label: "7-day transaction history", included: true },
+      { label: "Basic recommendations", included: true },
+      { label: "XRPL wallet & DEX", included: true },
+    ],
+    premium: [
+      { label: "Unlimited wallets & alerts", included: true },
+      { label: "Full transaction history", included: true },
+      { label: "CSV import & export", included: true },
+      { label: "Portfolio search & filter", included: true },
+      { label: "Full Recommendations Hub", included: true },
+      { label: "Auto-withdraw interest", included: true },
+      { label: "Recurring payments", included: true },
+      { label: "Statement uploads & comparison", included: true },
+      { label: "Tax reports (annual plan)", included: true },
+    ],
+    pro: [
+      { label: "Everything in Premium", included: true },
+      { label: "Batch recurring payments", included: true, exclusive: true },
+      { label: "DeFi borrowing tools", included: true, exclusive: true },
+      { label: "Real estate tokenization", included: true, exclusive: true },
+      { label: "Treasury dashboard", included: true, exclusive: true },
+      { label: "Up to 5 team members", included: true, exclusive: true },
+      { label: "XLS-66 lending protocol", included: true, exclusive: true },
+      { label: "Priority support", included: true },
+    ],
   };
 
   const handleXamanPay = async () => {
@@ -896,22 +971,24 @@ export default function SettingsPage() {
               Your current plan and upgrade options
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Badge
-                variant={subscriptionTier === "premium" || subscriptionTier === "pro" || subscriptionTier === "premium_annual" ? "default" : "secondary"}
-                className={subscriptionTier === "pro" ? "bg-purple-600" : subscriptionTier === "premium" || subscriptionTier === "premium_annual" ? "bg-amber-500" : ""}
-                data-testid="badge-subscription-tier"
-              >
-                {subscriptionTier === "pro" ? "Pro" : subscriptionTier === "premium" || subscriptionTier === "premium_annual" ? "Premium" : "Free"}
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {subscriptionTier === "pro"
-                  ? "Full access to all features + business tools"
-                  : subscriptionTier === "premium" || subscriptionTier === "premium_annual"
-                  ? "Full access to all features"
-                  : "Basic features included"}
-              </span>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant={subscriptionTier === "premium" || subscriptionTier === "pro" || subscriptionTier === "premium_annual" ? "default" : "secondary"}
+                  className={subscriptionTier === "pro" ? "bg-purple-600" : subscriptionTier === "premium" || subscriptionTier === "premium_annual" ? "bg-amber-500" : ""}
+                  data-testid="badge-subscription-tier"
+                >
+                  {subscriptionTier === "pro" ? "Pro" : subscriptionTier === "premium" || subscriptionTier === "premium_annual" ? "Premium" : "Free"}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {subscriptionTier === "pro"
+                    ? "Full access to all features + business tools"
+                    : subscriptionTier === "premium" || subscriptionTier === "premium_annual"
+                    ? "Full access to all features"
+                    : "Basic features included"}
+                </span>
+              </div>
             </div>
 
             {subscriptionTier === "free" && (
@@ -1223,60 +1300,225 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <p className="text-sm font-medium">Choose Your Plan</p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <Button
-                        variant={selectedPlan === "monthly" ? "default" : "outline"}
-                        className={`flex flex-col h-auto py-3 gap-1 ${selectedPlan === "monthly" ? "border-amber-500 bg-amber-500/10 text-foreground ring-2 ring-amber-500" : "border-amber-500/30 hover:border-amber-500"}`}
-                        onClick={() => setSelectedPlan("monthly")}
-                        data-testid="button-plan-monthly"
-                      >
-                        <span className="text-[10px] text-muted-foreground uppercase">Premium</span>
-                        <span className="text-lg font-bold">$29</span>
-                        <span className="text-xs text-muted-foreground">/month</span>
-                      </Button>
-                      <Button
-                        variant={selectedPlan === "yearly" ? "default" : "outline"}
-                        className={`flex flex-col h-auto py-3 gap-1 relative ${selectedPlan === "yearly" ? "border-amber-500 bg-amber-500/10 text-foreground ring-2 ring-amber-500" : "border-amber-500/30 hover:border-amber-500"}`}
-                        onClick={() => setSelectedPlan("yearly")}
-                        data-testid="button-plan-yearly"
-                      >
-                        <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
-                          Save $149
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground uppercase">Premium</span>
-                        <span className="text-lg font-bold">$199</span>
-                        <span className="text-xs text-muted-foreground">/year</span>
-                      </Button>
-                      <Button
-                        variant={selectedPlan === "pro-monthly" ? "default" : "outline"}
-                        className={`flex flex-col h-auto py-3 gap-1 relative ${selectedPlan === "pro-monthly" ? "border-purple-500 bg-purple-500/10 text-foreground ring-2 ring-purple-500" : "border-purple-500/30 hover:border-purple-500"}`}
-                        onClick={() => setSelectedPlan("pro-monthly")}
-                        data-testid="button-plan-pro"
-                      >
-                        <Badge className="absolute -top-2 right-2 bg-purple-600 text-[10px] px-1.5">
-                          Business
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground uppercase">Pro</span>
-                        <span className="text-lg font-bold">$99</span>
-                        <span className="text-xs text-muted-foreground">/month</span>
-                      </Button>
-                      <Button
-                        variant={selectedPlan === "pro-yearly" ? "default" : "outline"}
-                        className={`flex flex-col h-auto py-3 gap-1 relative ${selectedPlan === "pro-yearly" ? "border-purple-500 bg-purple-500/10 text-foreground ring-2 ring-purple-500" : "border-purple-500/30 hover:border-purple-500"}`}
-                        onClick={() => setSelectedPlan("pro-yearly")}
-                        data-testid="button-plan-pro-yearly"
-                      >
-                        <Badge className="absolute -top-2 right-2 bg-green-500 text-[10px] px-1.5">
-                          Save $389
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground uppercase">Pro</span>
-                        <span className="text-lg font-bold">$799</span>
-                        <span className="text-xs text-muted-foreground">/year</span>
-                      </Button>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Build Your Plan</p>
+                      <div className="flex items-center rounded-full border p-0.5 bg-muted/50" data-testid="toggle-billing-cycle">
+                        <button
+                          className={`text-xs px-3 py-1 rounded-full transition-colors ${billingCycle === "monthly" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setBillingCycle("monthly")}
+                          data-testid="button-cycle-monthly"
+                        >
+                          Monthly
+                        </button>
+                        <button
+                          className={`text-xs px-3 py-1 rounded-full transition-colors ${billingCycle === "yearly" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setBillingCycle("yearly")}
+                          data-testid="button-cycle-yearly"
+                        >
+                          Yearly
+                          {billingCycle !== "yearly" && <span className="ml-1 text-green-600 font-medium">Save</span>}
+                        </button>
+                      </div>
                     </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-lg border p-4 bg-muted/20" data-testid="tier-card-free">
+                        <div className="mb-3">
+                          <Badge variant="secondary" className="mb-2">Free</Badge>
+                          <div className="text-2xl font-bold">$0</div>
+                          <p className="text-xs text-muted-foreground">Current plan</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          {TIER_FEATURES.free.map((f) => (
+                            <div key={f.label} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                              <Check className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                              <span>{f.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div
+                        className={`rounded-lg border-2 p-4 cursor-pointer transition-all ${selectedTier === "premium" ? "border-amber-500 bg-amber-500/5 shadow-sm" : "border-muted hover:border-amber-500/50"}`}
+                        onClick={() => { setSelectedTier("premium"); setSelectedPlan(billingCycle === "yearly" ? "yearly" : "monthly"); }}
+                        data-testid="tier-card-premium"
+                      >
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className="bg-amber-500">Premium</Badge>
+                            {billingCycle === "yearly" && <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">Save $149</Badge>}
+                          </div>
+                          <div className="text-2xl font-bold">
+                            ${billingCycle === "yearly" ? "199" : "29"}
+                            <span className="text-sm font-normal text-muted-foreground">/{billingCycle === "yearly" ? "yr" : "mo"}</span>
+                          </div>
+                          {billingCycle === "yearly" && <p className="text-xs text-muted-foreground">${(199/12).toFixed(2)}/mo effective</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                          {TIER_FEATURES.premium.map((f) => (
+                            <div key={f.label} className="flex items-start gap-1.5 text-xs">
+                              <Check className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                              <span>{f.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div
+                        className={`rounded-lg border-2 p-4 cursor-pointer transition-all ${selectedTier === "pro" ? "border-purple-500 bg-purple-500/5 shadow-sm" : "border-muted hover:border-purple-500/50"}`}
+                        onClick={() => { setSelectedTier("pro"); setSelectedPlan(billingCycle === "yearly" ? "pro-yearly" : "pro-monthly"); }}
+                        data-testid="tier-card-pro"
+                      >
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className="bg-purple-600">Pro</Badge>
+                            {billingCycle === "yearly" && <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">Save $389</Badge>}
+                          </div>
+                          <div className="text-2xl font-bold">
+                            ${billingCycle === "yearly" ? "799" : "99"}
+                            <span className="text-sm font-normal text-muted-foreground">/{billingCycle === "yearly" ? "yr" : "mo"}</span>
+                          </div>
+                          {billingCycle === "yearly" && <p className="text-xs text-muted-foreground">${(799/12).toFixed(2)}/mo effective</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                          {TIER_FEATURES.pro.map((f: any) => (
+                            <div key={f.label} className="flex items-start gap-1.5 text-xs">
+                              <Check className="h-3 w-3 text-green-500 mt-0.5 shrink-0" />
+                              <span>{f.label}</span>
+                              {f.exclusive && <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-purple-300 text-purple-600 dark:border-purple-700 dark:text-purple-400 ml-auto shrink-0">Pro only</Badge>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Plus className="h-4 w-4 text-blue-500" />
+                        <p className="text-sm font-medium">Optional Add-Ons</p>
+                        <span className="text-xs text-muted-foreground">$4.99/mo each</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mb-3 ml-6">Track additional blockchains — available on any paid plan</p>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {Object.entries(addonCatalog).map(([key, addon]: [string, any]) => {
+                          const isActive = activeAddons.some((a: any) => a.addonKey === key);
+                          const isIncludedInTier = selectedTier === "pro" || (selectedTier === "premium" && (addon.type === "multi_chain" || addon.type === "technical_analysis" || addon.type === "payments"));
+                          const isSelected = selectedAddons.has(key);
+                          return (
+                            <div
+                              key={key}
+                              className={`rounded-lg border p-3 cursor-pointer transition-all ${
+                                isActive ? "border-green-500/50 bg-green-500/5" :
+                                isIncludedInTier ? "border-muted bg-muted/30 opacity-60" :
+                                isSelected ? "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500" :
+                                "border-muted hover:border-blue-500/50"
+                              }`}
+                              onClick={() => {
+                                if (!isActive && !isIncludedInTier) toggleAddonSelection(key);
+                              }}
+                              data-testid={`addon-toggle-${key}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-medium">{addon.name}</span>
+                                {isActive ? (
+                                  <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Active</Badge>
+                                ) : isIncludedInTier ? (
+                                  <Badge variant="secondary" className="text-[10px]">Included</Badge>
+                                ) : isSelected ? (
+                                  <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <Check className="h-2.5 w-2.5 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-1">{addon.description?.replace(/\s*—\s*\$[\d.]+\/mo/, "")}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {(selectedAddons.size > 0 || billingCycle === "yearly") && (
+                      <>
+                        <Separator />
+                        <div className="rounded-lg border bg-muted/30 p-4 space-y-3" data-testid="cost-summary">
+                          <p className="text-sm font-medium flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-amber-500" />
+                            Your Plan Summary
+                          </p>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">{selectedTier === "pro" ? "Pro" : "Premium"} ({billingCycle})</span>
+                              <span className="font-medium">
+                                ${billingCycle === "yearly" ? tierPrices[selectedTier].yearly : tierPrices[selectedTier].monthly}/{billingCycle === "yearly" ? "yr" : "mo"}
+                              </span>
+                            </div>
+                            {selectedAddons.size > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">{selectedAddons.size} add-on{selectedAddons.size > 1 ? "s" : ""}</span>
+                                <span className="font-medium">+${(addonsMonthlyCost).toFixed(2)}/mo</span>
+                              </div>
+                            )}
+                            <Separator />
+                            <div className="flex justify-between text-base font-bold">
+                              <span>Total</span>
+                              <div className="text-right">
+                                <div>${totalMonthlyCost.toFixed(2)}/mo</div>
+                                {(selectedAddons.size > 0 || billingCycle === "yearly") && (
+                                  <div className="text-xs font-normal text-muted-foreground">${totalAnnualCost.toFixed(2)}/yr</div>
+                                )}
+                              </div>
+                            </div>
+                            {annualSavings > 0 && (
+                              <div className="flex items-center gap-1.5 text-green-600 text-xs font-medium">
+                                <Sparkles className="h-3 w-3" />
+                                You save ${annualSavings} per year with annual billing
+                              </div>
+                            )}
+                            {billingCycle === "monthly" && (
+                              <button
+                                className="text-xs text-amber-600 hover:underline flex items-center gap-1"
+                                onClick={() => setBillingCycle("yearly")}
+                                data-testid="link-switch-yearly"
+                              >
+                                <ArrowRight className="h-3 w-3" />
+                                Switch to yearly and save ${(tierPrices[selectedTier].monthly * 12) - tierPrices[selectedTier].yearly}
+                              </button>
+                            )}
+                          </div>
+
+                          {upgradeValueShown && nextTierMonthlyCost && (
+                            <div className="rounded-lg border border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/20 p-3 mt-2" data-testid="upgrade-nudge">
+                              <p className="text-xs font-medium text-purple-800 dark:text-purple-200 mb-1">
+                                Consider upgrading to Pro
+                              </p>
+                              <p className="text-[11px] text-purple-700 dark:text-purple-300 leading-relaxed">
+                                You&apos;re spending ${totalMonthlyCost.toFixed(2)}/mo. Pro at ${nextTierMonthlyCost.toFixed(2)}/mo includes all add-ons plus team members, treasury dashboard, and DeFi tools.
+                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 text-xs border-purple-300 text-purple-700 hover:bg-purple-100 dark:border-purple-700 dark:text-purple-300"
+                                onClick={() => {
+                                  setSelectedTier("pro");
+                                  setSelectedAddons(new Set());
+                                  setSelectedPlan(billingCycle === "yearly" ? "pro-yearly" : "pro-monthly");
+                                }}
+                                data-testid="button-upgrade-to-pro"
+                              >
+                                Switch to Pro <ArrowRight className="h-3 w-3 ml-1" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    <Separator />
 
                     <div className="space-y-2">
                       <div
@@ -1357,7 +1599,7 @@ export default function SettingsPage() {
                               ) : (
                                 <Coins className="h-4 w-4 mr-2" />
                               )}
-                              Pay ${selectedPlan === "yearly" ? "199" : selectedPlan === "pro-monthly" ? "99" : selectedPlan === "pro-yearly" ? "799" : "29"} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"}
+                              Pay ${billingCycle === "yearly" ? tierPrices[selectedTier].yearly : tierPrices[selectedTier].monthly} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"}
                             </Button>
                           </>
                         )}
@@ -1368,7 +1610,7 @@ export default function SettingsPage() {
                       <Button
                         className="w-full"
                         variant="outline"
-                        onClick={() => handleUpgrade(selectedPlan)}
+                        onClick={() => handleUpgrade(computedPlanKey as any)}
                         disabled={checkoutLoading !== null}
                         data-testid="button-pay-card"
                       >
@@ -1381,28 +1623,6 @@ export default function SettingsPage() {
                       </Button>
                     )}
 
-                    <div className="space-y-2 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-3 w-3 text-green-500" />
-                        Full Recommendations Hub with staking guides
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-3 w-3 text-green-500" />
-                        Unlimited exchanges, wallets & alerts
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-3 w-3 text-green-500" />
-                        Portfolio search, filter & sort
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-3 w-3 text-green-500" />
-                        Auto-withdraw interest weekly
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-3 w-3 text-green-500" />
-                        Tax reports (annual plan only)
-                      </div>
-                    </div>
                   </div>
                 )}
               </>
@@ -1417,7 +1637,7 @@ export default function SettingsPage() {
               Add-Ons
             </CardTitle>
             <CardDescription>
-              Unlock individual features without upgrading your plan
+              Extend your plan with individual chain tracking — $4.99/mo each
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
