@@ -7621,17 +7621,28 @@ export async function registerRoutes(
 
         const totalValue = products.reduce((sum, p) => sum + (p.balance || 0), 0);
 
-        const holdingsData = products.map(p => ({
-          productType: p.productType,
-          label: p.rawDescription || null,
-          balance: p.balance?.toString() ?? null,
-          interestRate: p.interestRate?.toString() ?? null,
-          apy: p.apy?.toString() ?? null,
-          maturityDate: p.maturityDate ? new Date(p.maturityDate) : null,
-          term: p.term,
-          isLocked: p.isLocked,
-          rawDescription: p.rawDescription,
-        }));
+        const PRODUCT_TYPE_LABELS: Record<string, string> = {
+          cd: "CD", savings: "Savings", money_market: "Money Market",
+          checking: "Checking", bond: "Bond", brokerage: "Brokerage", other: "Account",
+        };
+
+        const holdingsData = products.map(p => {
+          let label = PRODUCT_TYPE_LABELS[p.productType] || "Account";
+          if (p.rawDescription && p.rawDescription.length < 50 && p.rawDescription.length > 0) {
+            const clean = p.rawDescription.replace(/\d{4,}/g, "****").trim();
+            if (clean.length > 0 && clean.length <= 80) label = clean;
+          }
+          return {
+            productType: p.productType,
+            label,
+            balance: p.balance?.toString() ?? null,
+            interestRate: p.interestRate?.toString() ?? null,
+            apy: p.apy?.toString() ?? null,
+            maturityDate: p.maturityDate ? new Date(p.maturityDate) : null,
+            term: p.term,
+            isLocked: p.isLocked,
+          };
+        });
 
         const savedHoldings = await storage.replaceStatementHoldings(
           source.id, upload.id, userId, holdingsData
@@ -7646,25 +7657,26 @@ export async function registerRoutes(
 
         let comparisons: any[] = [];
         if (limits.statementComparisons) {
-          comparisons = savedProducts.map((p) =>
+          comparisons = savedHoldings.map((h) =>
             generateComparisons({
-              productType: p.productType,
-              institutionName: p.institutionName,
-              balance: p.balance ? parseFloat(p.balance) : null,
-              interestRate: p.interestRate ? parseFloat(p.interestRate) : null,
-              apy: p.apy ? parseFloat(p.apy) : null,
-              maturityDate: p.maturityDate?.toISOString() ?? null,
-              term: p.term,
-              isLocked: p.isLocked ?? false,
+              productType: h.productType,
+              institutionName: source.institutionName,
+              balance: h.balance ? parseFloat(h.balance) : null,
+              interestRate: h.interestRate ? parseFloat(h.interestRate) : null,
+              apy: h.apy ? parseFloat(h.apy) : null,
+              maturityDate: h.maturityDate?.toISOString() ?? null,
+              term: h.term,
+              isLocked: h.isLocked ?? false,
             })
           );
         }
 
+        await storage.deleteStatementUpload(upload.id);
+
         res.json({
-          upload: { ...upload, status: "complete", productCount: products.length },
-          products: savedProducts,
           source,
           holdings: savedHoldings,
+          holdingCount: savedHoldings.length,
           isUpdate,
           comparisons: limits.statementComparisons ? comparisons : null,
           comparisonsLocked: !limits.statementComparisons,
@@ -7682,74 +7694,6 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Statement upload error:", error);
       res.status(500).json({ message: "Failed to process statement" });
-    }
-  });
-
-  app.get("/api/statements", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const uploads = await storage.getStatementUploadsByUser(userId);
-      res.json(uploads);
-    } catch (error) {
-      console.error("Get statements error:", error);
-      res.status(500).json({ message: "Failed to load statements" });
-    }
-  });
-
-  app.get("/api/statements/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const upload = await storage.getStatementUpload(req.params.id);
-
-      if (!upload || upload.userId !== userId) {
-        return res.status(404).json({ message: "Statement not found" });
-      }
-
-      const products = await storage.getProductsByUpload(upload.id);
-      const { tier } = await getEffectiveTier(userId);
-      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
-
-      let comparisons: any[] = [];
-      if (limits.statementComparisons) {
-        const { generateComparisons } = await import("./services/comparison-engine");
-        comparisons = products.map((p) =>
-          generateComparisons({
-            productType: p.productType,
-            institutionName: p.institutionName,
-            balance: p.balance ? parseFloat(p.balance) : null,
-            interestRate: p.interestRate ? parseFloat(p.interestRate) : null,
-            apy: p.apy ? parseFloat(p.apy) : null,
-            maturityDate: p.maturityDate?.toISOString() ?? null,
-            term: p.term,
-            isLocked: p.isLocked ?? false,
-          })
-        );
-      }
-
-      res.json({
-        upload,
-        products,
-        comparisons: limits.statementComparisons ? comparisons : null,
-        comparisonsLocked: !limits.statementComparisons,
-      });
-    } catch (error) {
-      console.error("Get statement detail error:", error);
-      res.status(500).json({ message: "Failed to load statement details" });
-    }
-  });
-
-  app.delete("/api/statements/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const upload = await storage.getStatementUpload(req.params.id);
-      if (!upload || upload.userId !== userId) {
-        return res.status(404).json({ message: "Statement not found" });
-      }
-      await storage.deleteStatementUpload(upload.id);
-      res.json({ message: "Statement deleted" });
-    } catch (error) {
-      console.error("Delete statement error:", error);
-      res.status(500).json({ message: "Failed to delete statement" });
     }
   });
 

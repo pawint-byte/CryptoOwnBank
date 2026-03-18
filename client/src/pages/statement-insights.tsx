@@ -139,7 +139,7 @@ export default function StatementInsights() {
       const verb = data.isUpdate ? "updated" : "added";
       toast({
         title: `Source ${verb}`,
-        description: `${data.source?.institutionName || "Institution"}: ${data.products.length} product(s) detected. ${data.isUpdate ? "Previous holdings were replaced with the latest data." : "Holdings saved to your portfolio."}`,
+        description: `${data.source?.institutionName || "Institution"}: ${data.holdingCount || 0} holding(s) detected. ${data.isUpdate ? "Previous holdings were replaced with the latest data." : "Holdings saved to your portfolio."}`,
       });
     },
     onError: (error: Error) => {

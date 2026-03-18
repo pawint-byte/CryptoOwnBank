@@ -858,7 +858,6 @@ export class DatabaseStorage implements IStorage {
       maturityDate: h.maturityDate,
       term: h.term,
       isLocked: h.isLocked,
-      rawDescription: h.rawDescription,
     }));
 
     return db.insert(statementHoldings).values(rows).returning();
