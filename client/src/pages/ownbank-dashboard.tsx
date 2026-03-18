@@ -682,32 +682,20 @@ export default function OwnBankDashboard() {
         <Alert className="border-emerald-500/40 bg-emerald-500/5">
           <Sparkles className="h-4 w-4 text-emerald-500" />
           <AlertTitle data-testid="text-balance-detected">
-            New RLUSD detected in your wallet
+            +{formatCurrency(balanceIncrease || 0)} RLUSD received
           </AlertTitle>
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2">
             <span className="text-sm">
-              +{formatCurrency(balanceIncrease || 0)} RLUSD received. Ready to deposit to Soil?
+              Your wallet RLUSD balance has been updated.
             </span>
-            <div className="flex items-center gap-2">
-              <Link href="/ownbank/vaults">
-                <Button
-                  size="sm"
-                  className="bg-[#00A4E4] text-white border-[#00A4E4]"
-                  data-testid="button-deposit-now"
-                >
-                  Deposit to Soil
-                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={dismissPrompt}
-                data-testid="button-dismiss-prompt"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={dismissPrompt}
+              data-testid="button-dismiss-prompt"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -773,21 +761,14 @@ export default function OwnBankDashboard() {
                 </div>
                 {(() => {
                   const yieldAmt = parseFloat(soilSummary.totalYieldReceived || "0");
-                  const MIN_RLUSD_RESERVE = 0.01;
-                  const MIN_DEPOSIT = 10;
-                  const maxDeposit = Math.max(0, Math.floor((rlusdBalance - MIN_RLUSD_RESERVE) * 100) / 100);
-                  const canDeposit = maxDeposit >= MIN_DEPOSIT;
                   const hasYield = yieldAmt > 0;
-                  if (!hasYield && rlusdBalance <= 0) return null;
                   return (
                     <div className="col-span-2 rounded-lg border bg-card p-2 sm:p-3 bg-gradient-to-br from-amber-500/5 to-transparent">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-1.5 mb-1">
                             <Coins className="h-3.5 w-3.5 text-amber-500" />
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              {hasYield ? "Yield Received in Wallet" : "RLUSD Available"}
-                            </p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">Yield Received in Wallet</p>
                           </div>
                           {hasYield ? (
                             <>
@@ -803,40 +784,26 @@ export default function OwnBankDashboard() {
                               No yield payments received yet — interest accrues inside the vault
                             </p>
                           )}
-                          {rlusdBalance > 0 && (
-                            <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">
-                              Wallet RLUSD: <span className="font-mono font-medium">${rlusdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </p>
-                          )}
                         </div>
-                        <div className="flex flex-col gap-1.5">
-                          {canDeposit ? (
-                            <Link href={`/ownbank/vaults?redeposit=${maxDeposit}`}>
+                        {hasYield && (() => {
+                          const MIN_RLUSD_RESERVE = 0.01;
+                          const MIN_DEPOSIT = 10;
+                          const maxRedeposit = Math.max(0, Math.floor((rlusdBalance - MIN_RLUSD_RESERVE) * 100) / 100);
+                          if (maxRedeposit < MIN_DEPOSIT) return null;
+                          return (
+                            <Link href={`/ownbank/vaults?redeposit=${maxRedeposit}`}>
                               <Button
                                 size="sm"
                                 variant="default"
-                                className={`h-7 text-[10px] sm:text-xs gap-1 text-white ${hasYield ? "bg-emerald-600 hover:bg-emerald-700" : "bg-[#00A4E4] hover:bg-[#0090cc]"}`}
+                                className="h-7 text-[10px] sm:text-xs gap-1 text-white bg-emerald-600 hover:bg-emerald-700"
                                 data-testid="button-redeposit-yield"
                               >
-                                {hasYield ? (
-                                  <>
-                                    <RotateCcw className="h-3 w-3" />
-                                    Re-deposit ${maxDeposit.toFixed(2)}
-                                  </>
-                                ) : (
-                                  <>
-                                    <TrendingUp className="h-3 w-3" />
-                                    Deposit to Soil
-                                  </>
-                                )}
+                                <RotateCcw className="h-3 w-3" />
+                                Re-deposit ${maxRedeposit.toFixed(2)}
                               </Button>
                             </Link>
-                          ) : rlusdBalance > 0 ? (
-                            <div className="text-[10px] text-muted-foreground text-right italic max-w-[100px]">
-                              Min {MIN_DEPOSIT} RLUSD to deposit
-                            </div>
-                          ) : null}
-                        </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );

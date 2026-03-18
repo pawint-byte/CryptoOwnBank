@@ -355,11 +355,11 @@ export default function OwnBankVaults() {
         <Alert className="border-emerald-500/40 bg-emerald-500/5">
           <Sparkles className="h-4 w-4 text-emerald-500" />
           <AlertTitle data-testid="text-vault-balance-detected">
-            New RLUSD detected! Ready to deposit?
+            +{formatCurrency(balanceIncrease || 0)} RLUSD received
           </AlertTitle>
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2">
             <span className="text-sm">
-              +{formatCurrency(balanceIncrease || 0)} RLUSD received. Choose a vault below to start earning yield.
+              Your wallet balance has been updated. You can deposit to a vault below or use your RLUSD for sending, trading, or transfers.
             </span>
             <Button
               variant="ghost"
