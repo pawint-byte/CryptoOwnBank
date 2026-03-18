@@ -775,56 +775,67 @@ export default function OwnBankDashboard() {
                   const yieldAmt = parseFloat(soilSummary.totalYieldReceived || "0");
                   const MIN_RLUSD_RESERVE = 0.01;
                   const MIN_DEPOSIT = 10;
-                  const maxRedeposit = Math.max(0, Math.floor((rlusdBalance - MIN_RLUSD_RESERVE) * 100) / 100);
-                  const canRedeposit = maxRedeposit >= MIN_DEPOSIT;
-                  if (yieldAmt <= 0 && rlusdBalance <= 0) return null;
+                  const maxDeposit = Math.max(0, Math.floor((rlusdBalance - MIN_RLUSD_RESERVE) * 100) / 100);
+                  const canDeposit = maxDeposit >= MIN_DEPOSIT;
+                  const hasYield = yieldAmt > 0;
+                  if (!hasYield && rlusdBalance <= 0) return null;
                   return (
                     <div className="col-span-2 rounded-lg border bg-card p-2 sm:p-3 bg-gradient-to-br from-amber-500/5 to-transparent">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-1.5 mb-1">
                             <Coins className="h-3.5 w-3.5 text-amber-500" />
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">Yield Received in Wallet</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              {hasYield ? "Yield Received in Wallet" : "RLUSD Available"}
+                            </p>
                           </div>
-                          {yieldAmt > 0 && (
-                            <p className="text-sm sm:text-lg font-bold font-mono text-amber-600 dark:text-amber-400" data-testid="text-soil-yield-received">
-                              ${yieldAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                          {hasYield ? (
+                            <>
+                              <p className="text-sm sm:text-lg font-bold font-mono text-amber-600 dark:text-amber-400" data-testid="text-soil-yield-received">
+                                ${yieldAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                              </p>
+                              <p className="text-[10px] sm:text-[11px] text-muted-foreground">
+                                {soilSummary.yieldPayments || 0} payment{(soilSummary.yieldPayments || 0) !== 1 ? "s" : ""} from Soil vaults
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-[10px] sm:text-[11px] text-muted-foreground">
+                              No yield payments received yet — interest accrues inside the vault
                             </p>
                           )}
-                          <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-                            {yieldAmt > 0
-                              ? `${soilSummary.yieldPayments || 0} payment${(soilSummary.yieldPayments || 0) !== 1 ? "s" : ""} from Soil vaults`
-                              : "No yield payments received yet"}
-                          </p>
                           {rlusdBalance > 0 && (
                             <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">
                               Wallet RLUSD: <span className="font-mono font-medium">${rlusdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              {canRedeposit && (
-                                <span className="ml-1">
-                                  · Max deposit: <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">${maxRedeposit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                </span>
-                              )}
                             </p>
                           )}
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          {canRedeposit ? (
-                            <Link href={`/ownbank-xrpl/vaults?redeposit=${maxRedeposit}`}>
+                          {canDeposit ? (
+                            <Link href={`/ownbank/vaults?redeposit=${maxDeposit}`}>
                               <Button
                                 size="sm"
                                 variant="default"
-                                className="h-7 text-[10px] sm:text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                className={`h-7 text-[10px] sm:text-xs gap-1 text-white ${hasYield ? "bg-emerald-600 hover:bg-emerald-700" : "bg-[#00A4E4] hover:bg-[#0090cc]"}`}
                                 data-testid="button-redeposit-yield"
                               >
-                                <RotateCcw className="h-3 w-3" />
-                                Re-deposit ${maxRedeposit.toFixed(2)}
+                                {hasYield ? (
+                                  <>
+                                    <RotateCcw className="h-3 w-3" />
+                                    Re-deposit ${maxDeposit.toFixed(2)}
+                                  </>
+                                ) : (
+                                  <>
+                                    <TrendingUp className="h-3 w-3" />
+                                    Deposit to Soil
+                                  </>
+                                )}
                               </Button>
                             </Link>
-                          ) : (
-                            <div className="text-[10px] text-muted-foreground text-right italic max-w-[100px] text-right">
-                              {rlusdBalance < MIN_DEPOSIT ? `Min ${MIN_DEPOSIT} RLUSD to re-deposit` : "Waiting for yield"}
+                          ) : rlusdBalance > 0 ? (
+                            <div className="text-[10px] text-muted-foreground text-right italic max-w-[100px]">
+                              Min {MIN_DEPOSIT} RLUSD to deposit
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -940,7 +951,7 @@ export default function OwnBankDashboard() {
                               </p>
                             </div>
                             {rlusdBalance >= 0.01 && (
-                              <Link href={`/ownbank-xrpl/vaults?redeposit=${Math.max(0, Math.floor((rlusdBalance - 0.01) * 100) / 100)}&vault=${v.address}`}>
+                              <Link href={`/ownbank/vaults?redeposit=${Math.max(0, Math.floor((rlusdBalance - 0.01) * 100) / 100)}&vault=${v.address}`}>
                                 <Button
                                   size="sm"
                                   variant="ghost"
