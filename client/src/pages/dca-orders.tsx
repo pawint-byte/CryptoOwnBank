@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { signTransaction, hasPendingXummPayment, completePendingXummPayment } from "@/lib/xumm-connector";
+import { getOrderBook } from "@/lib/xrpl-client";
 import type { DcaOrder, DcaExecution } from "@shared/schema";
 
 const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
@@ -299,8 +300,29 @@ export default function DcaOrders() {
         return { currency, issuer: issuer!, value };
       };
 
+      const spendCur = { currency: order.spendCurrency, issuer: order.spendIssuer || undefined };
+      const buyCur = { currency: order.buyCurrency, issuer: order.buyIssuer || undefined };
+
+      let marketPrice = 0;
+      try {
+        const book = await getOrderBook(buyCur, spendCur, 5);
+        if (book.asks && book.asks.length > 0) {
+          marketPrice = parseFloat(book.asks[0].price);
+        }
+      } catch {
+        // ignore
+      }
+
+      if (marketPrice <= 0) {
+        toast({ title: "No market price available", description: "Could not fetch current price from the order book. Try the DEX page instead.", variant: "destructive" });
+        setExecutingOrderId(null);
+        return;
+      }
+
+      const buyAmount = (spendAmount / marketPrice).toFixed(6);
+
       const takerGets = buildAmount(order.spendCurrency, order.spendIssuer, spendAmount.toString());
-      const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, spendAmount.toString());
+      const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, buyAmount);
 
       const txJson: Record<string, unknown> = {
         TransactionType: "OfferCreate",
