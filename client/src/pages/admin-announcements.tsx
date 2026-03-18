@@ -57,6 +57,20 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     ctaUrl: "https://cryptoownbank.com/whale-alerts",
     audienceTier: "all",
   },
+  {
+    title: "XLS-66 Native Lending Is Coming to XRPL — Get Ready Now",
+    description: "Two new amendments — XLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) — are being voted on by XRPL validators right now. When they reach 80% consensus for 2 consecutive weeks, non-custodial lending vaults go live directly on the XRP Ledger.\n\nWhat this means for you:\n\n🏦 Deposit XRP or RLUSD into on-ledger vaults and earn yield — your tokens never leave your wallet\n🔐 Non-custodial — no exchange, no middleman, no counterparty risk\n📊 CryptoOwnBank tracks validator voting in real-time so you know exactly when it activates\n\nWe've built an \"Are You Ready for XLS-66?\" checklist to help you prepare:\n\n✅ Connect your XRP wallet\n✅ Link Xaman for transaction signing\n✅ Set up RLUSD trustlines (for RLUSD vaults)\n✅ Use the yield calculator to model different scenarios\n\nDo the homework now so you're ready the moment vaults go live. Pro members get first access to all XLS-66 features.\n\nThis is where everything starts — own your crypto, earn yield, and never hand your keys to anyone.",
+    ctaLabel: "Check Your XLS-66 Readiness",
+    ctaUrl: "https://cryptoownbank.com/xls66-lending",
+    audienceTier: "all",
+  },
+  {
+    title: "XLS-66 Validator Update — Here's Where We Stand",
+    description: "Quick update on the XLS-66 amendment vote:\n\nXLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) are both in the validator voting phase. You can track live progress directly on the XLS-66 page — we pull data straight from the XRPL every 10 minutes.\n\nWhat to do while we wait:\n\n📋 Complete your readiness checklist — make sure your wallet, Xaman, and trustlines are set up\n🧮 Try the yield calculator — model potential earnings at different APR rates\n📖 Read \"What is XLS-66 & How Does It Work?\" on the lending page\n\nWhen validators hit 80% for 2 consecutive weeks on rippled 3.1.0+, the feature activates automatically — and CryptoOwnBank will be ready from day one.\n\nNo action required on your end other than being prepared. We'll notify you the moment it goes live.",
+    ctaLabel: "Track Validator Progress",
+    ctaUrl: "https://cryptoownbank.com/xls66-lending",
+    audienceTier: "all",
+  },
 ];
 
 export default function AdminAnnouncements() {
