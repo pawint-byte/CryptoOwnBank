@@ -54,8 +54,9 @@ import {
 import { Link } from "wouter";
 import type { UserWallet } from "@shared/schema";
 
-const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_CURRENCY = RLUSD.currency;
+const RLUSD_ISSUER = RLUSD.issuer;
 
 const PURPOSE_ICONS: Record<string, typeof Wallet> = {
   yield: TrendingUp,

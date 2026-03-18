@@ -38,6 +38,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { WalletPicker } from "@/components/wallet-picker";
 import {
   getBalances,
   getAccountTrustlines,
@@ -104,8 +105,9 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_CURRENCY = RLUSD.currency;
+const RLUSD_ISSUER = RLUSD.issuer;
 
 export default function OwnBankSend() {
   const { toast } = useToast();
@@ -116,8 +118,8 @@ export default function OwnBankSend() {
     xrpBalance,
     rlusdBalance,
     updateBalances,
+    connect,
   } = useXrplStore();
-
   const [educationOpen, setEducationOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("send");
 
@@ -373,6 +375,11 @@ export default function OwnBankSend() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <WalletPicker
+            value={walletAddress!}
+            onChange={(addr) => connect(addr, walletType || "xumm")}
+            label="Active Wallet"
+          />
           <Badge variant="outline" data-testid="badge-send-wallet">
             <Wallet className="h-3 w-3 mr-1" />
             {truncateAddress(walletAddress!)}

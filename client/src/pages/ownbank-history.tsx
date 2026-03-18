@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { WalletPicker } from "@/components/wallet-picker";
 import {
   getAccountTransactions,
   getXrpPrice,
@@ -192,7 +193,7 @@ function getTypeVariant(type: string): "default" | "secondary" | "outline" {
 }
 
 export default function OwnBankHistory() {
-  const { walletAddress, isConnected } = useXrplStore();
+  const { walletAddress, isConnected, connect } = useXrplStore();
   const [transactions, setTransactions] = useState<XrplTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -288,17 +289,23 @@ export default function OwnBankHistory() {
             </span>
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchTransactions}
-          disabled={isLoading}
-          data-testid="button-refresh-history"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <WalletPicker
+            value={walletAddress!}
+            onChange={(addr) => connect(addr, "xumm")}
+            label="Active Wallet"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchTransactions}
+            disabled={isLoading}
+            data-testid="button-refresh-history"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0 pb-4">

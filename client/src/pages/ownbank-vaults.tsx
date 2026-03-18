@@ -33,6 +33,7 @@ import {
   Target,
 } from "lucide-react";
 import { useXrplStore, type VaultDeposit } from "@/lib/xrpl-store";
+import { WalletPicker } from "@/components/wallet-picker";
 import {
   SOIL_VAULTS,
   SOIL_REFERRAL_URL,
@@ -45,8 +46,9 @@ import { signPayment, hasPendingXummPayment, completePendingXummPayment, clearPe
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
 
-const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_CURRENCY = RLUSD.currency;
+const RLUSD_ISSUER = RLUSD.issuer;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -72,6 +74,7 @@ export default function OwnBankVaults() {
   const {
     isConnected,
     walletType,
+    connect,
     vaultDeposits,
     addVaultDeposit,
     referredBy,
@@ -334,7 +337,12 @@ export default function OwnBankVaults() {
             Earn yield on your RLUSD through Soil Protocol vaults
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <WalletPicker
+            value={walletAddress!}
+            onChange={(addr) => connect(addr, walletType || "xumm")}
+            label="Active Wallet"
+          />
           <span className="text-sm text-muted-foreground">RLUSD Balance:</span>
           <Badge variant="secondary" data-testid="badge-rlusd-balance">
             {formatCurrency(rlusdBalance)}

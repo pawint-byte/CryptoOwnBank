@@ -29,7 +29,8 @@ interface StellarWalletPickerProps {
   className?: string;
 }
 
-const STELLAR_PURPLE = "#7B61FF";
+import { CHAIN_COLORS } from "@/lib/constants";
+const STELLAR_PURPLE = CHAIN_COLORS.stellar;
 const CHAIN_PREFIX = "XLM";
 
 function ensureChainPrefix(name: string): string {

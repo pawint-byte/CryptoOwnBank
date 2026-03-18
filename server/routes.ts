@@ -45,8 +45,8 @@ const SOIL_VAULT_ADDRESSES = [
   // YIELD vault address — add here when Soil activates the pool
 ];
 const SOIL_VAULT_ADDRESS = SOIL_VAULT_ADDRESSES[0];
-const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
-const ADMIN_EMAILS = ["pawint@me.com", "andrew.wint@gmail.com"];
+import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
+const RLUSD_CURRENCY_HEX = RLUSD.currency;
 
 async function getEffectiveTier(userId: string): Promise<{ tier: string; billingCycle: string }> {
   const settings = await storage.getUserSettings(userId);
@@ -381,7 +381,7 @@ export async function registerRoutes(
           .map(t => t.externalId)
       );
 
-      const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+      const RLUSD_ISSUER = RLUSD.issuer;
 
       const settings = await storage.getUserSettings(userId);
       const userCustomVaults = (settings?.customVaults as CustomVault[] | null) || [];

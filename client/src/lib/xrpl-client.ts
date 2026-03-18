@@ -4,8 +4,9 @@ let xrplClient: Client | null = null;
 let connectionPromise: Promise<void> | null = null;
 
 const XRPL_SERVER = "wss://xrplcluster.com";
-const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_CURRENCY = RLUSD.currency;
+const RLUSD_ISSUER = RLUSD.issuer;
 
 async function getClient(): Promise<Client> {
   if (xrplClient && xrplClient.isConnected()) {

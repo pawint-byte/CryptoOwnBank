@@ -46,6 +46,7 @@ import {
   Building2,
 } from "lucide-react";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { WalletPicker } from "@/components/wallet-picker";
 import { useToast } from "@/hooks/use-toast";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 
@@ -158,7 +159,7 @@ function formatDate(dateStr: string): string {
 
 export default function OwnBankInvoices() {
   const { toast } = useToast();
-  const { walletAddress, isConnected } = useXrplStore();
+  const { walletAddress, isConnected, connect, walletType } = useXrplStore();
 
   const { data: savedWallets = [] } = useQuery<UserWallet[]>({
     queryKey: ["/api/user-wallets"],
@@ -297,14 +298,21 @@ export default function OwnBankInvoices() {
           <h1 className="text-2xl font-bold" data-testid="text-invoices-title">Invoices</h1>
           <p className="text-muted-foreground">Create and manage payment invoices on XRPL</p>
         </div>
-        <Button
-          onClick={() => { resetForm(); setCreateModalOpen(true); }}
-          className="bg-[#00A4E4] text-white border-[#00A4E4]"
-          data-testid="button-create-invoice"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Invoice
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <WalletPicker
+            value={walletAddress!}
+            onChange={(addr) => connect(addr, walletType || "xumm")}
+            label="Active Wallet"
+          />
+          <Button
+            onClick={() => { resetForm(); setCreateModalOpen(true); }}
+            className="bg-[#00A4E4] text-white border-[#00A4E4]"
+            data-testid="button-create-invoice"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Invoice
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

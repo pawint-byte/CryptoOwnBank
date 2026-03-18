@@ -45,7 +45,8 @@ import { SeoHead } from "@/components/seo-head";
 import { useStellarStore } from "@/lib/stellar-store";
 import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
 
-const STELLAR_PURPLE = "#7B61FF";
+import { CHAIN_COLORS } from "@/lib/constants";
+const STELLAR_PURPLE = CHAIN_COLORS.stellar;
 
 interface StellarInvoice {
   id: string;

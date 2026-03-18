@@ -47,7 +47,8 @@ interface TrackerWallet {
   label: string | null;
 }
 
-const STELLAR_PURPLE = "#7B61FF";
+import { CHAIN_COLORS } from "@/lib/constants";
+const STELLAR_PURPLE = CHAIN_COLORS.stellar;
 
 function truncateAddress(addr: string): string {
   if (addr.length <= 14) return addr;

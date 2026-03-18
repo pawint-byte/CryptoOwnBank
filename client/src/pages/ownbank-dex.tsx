@@ -64,8 +64,9 @@ import { WalletPicker } from "@/components/wallet-picker";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
 
-const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_CURRENCY = RLUSD.currency;
+const RLUSD_ISSUER = RLUSD.issuer;
 
 interface TradingPair {
   label: string;

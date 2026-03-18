@@ -47,6 +47,7 @@ import {
   Check,
 } from "lucide-react";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { WalletPicker } from "@/components/wallet-picker";
 import {
   getAccountTrustlines,
   type XrplTrustline,
@@ -137,7 +138,7 @@ function isPopularTokenAlreadySet(
 
 export default function OwnBankTokens() {
   const { toast } = useToast();
-  const { isConnected, walletAddress, walletType } = useXrplStore();
+  const { isConnected, walletAddress, walletType, connect } = useXrplStore();
 
   const [trustlines, setTrustlines] = useState<XrplTrustline[]>([]);
   const [loading, setLoading] = useState(false);
@@ -342,6 +343,11 @@ export default function OwnBankTokens() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <WalletPicker
+            value={walletAddress!}
+            onChange={(addr) => connect(addr, walletType || "xumm")}
+            label="Active Wallet"
+          />
           <Button
             variant="ghost"
             size="sm"

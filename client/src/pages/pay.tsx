@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { RLUSD } from "@/lib/constants";
 import { SeoHead } from "@/components/seo-head";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,7 +44,7 @@ export default function PayPage() {
   const isXrpl = currency.toUpperCase() === "XRP" || currency.toUpperCase() === "RLUSD";
   const isRlusd = currency.toUpperCase() === "RLUSD";
 
-  const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+  const RLUSD_ISSUER = RLUSD.issuer;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);

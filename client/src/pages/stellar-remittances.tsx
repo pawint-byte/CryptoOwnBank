@@ -40,7 +40,8 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const STELLAR_PURPLE = "#7B61FF";
+import { CHAIN_COLORS } from "@/lib/constants";
+const STELLAR_PURPLE = CHAIN_COLORS.stellar;
 
 interface Corridor {
   from: string;

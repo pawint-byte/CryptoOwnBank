@@ -63,7 +63,8 @@ import {
   type CachedBalance,
 } from "@/lib/offline-queue";
 
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_ISSUER = RLUSD.issuer;
 
 const STELLAR_ASSETS: Record<string, { issuer: string } | null> = {
   XLM: null,

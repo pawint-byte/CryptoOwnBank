@@ -50,8 +50,9 @@ import { signTransaction, hasPendingXummPayment, completePendingXummPayment } fr
 import { getOrderBook } from "@/lib/xrpl-client";
 import type { DcaOrder, DcaExecution } from "@shared/schema";
 
-const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
-const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
+import { RLUSD } from "@/lib/constants";
+const RLUSD_CURRENCY = RLUSD.currency;
+const RLUSD_ISSUER = RLUSD.issuer;
 
 interface DcaPair {
   label: string;
