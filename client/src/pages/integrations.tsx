@@ -379,14 +379,14 @@ export default function Integrations() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Integrations</h1>
+          <h1 className="text-2xl font-bold">Import Data</h1>
           <p className="text-muted-foreground">
-            Connect your exchanges and brokerages
+            Import your transaction history and manage data sources
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-integration" disabled={exchangeAtLimit}>
+            <Button data-testid="button-add-integration" disabled={exchangeAtLimit} className="hidden">
               <Plus className="h-4 w-4 mr-2" />
               Add Integration
             </Button>
@@ -559,70 +559,7 @@ export default function Integrations() {
         </Dialog>
       </div>
 
-      {exchangeAtLimit && (
-        <UpgradePrompt
-          compact
-          feature="Free users can connect 1 exchange. Upgrade to Premium for unlimited exchange connections."
-        />
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-lg bg-muted" />
-                    <div className="space-y-2">
-                      <div className="h-4 w-24 bg-muted rounded" />
-                      <div className="h-3 w-16 bg-muted rounded" />
-                    </div>
-                  </div>
-                  <div className="h-8 w-full bg-muted rounded" />
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : credentials.length === 0 ? (
-          <Card className="md:col-span-2 lg:col-span-3">
-            <CardContent className="p-12">
-              <div className="flex flex-col items-center justify-center text-center">
-                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Link2 className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-medium">No integrations yet</h3>
-                <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                  Connect your crypto exchanges and brokerage accounts to start
-                  tracking your portfolio automatically.
-                </p>
-                <Button
-                  className="mt-6"
-                  onClick={() => setIsDialogOpen(true)}
-                  data-testid="button-add-first-integration"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Integration
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          credentials.map((credential) => (
-            <IntegrationCard
-              key={credential.id}
-              name={getExchangeName(credential.provider)}
-              provider={credential.provider}
-              logo={getExchangeIcon(credential.provider)}
-              isConnected={credential.isConnected || false}
-              lastSync={credential.lastSyncAt}
-              onSync={() => syncMutation.mutate(credential.id)}
-              onDisconnect={() => disconnectMutation.mutate(credential.id)}
-              isSyncing={syncMutation.isPending}
-            />
-          ))
-        )}
-      </div>
+      {/* Exchange API connections hidden — code preserved for future use */}
 
       <Card data-testid="card-csv-import">
         <CardHeader>
@@ -813,43 +750,7 @@ export default function Integrations() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>About API Security</CardTitle>
-          <CardDescription>
-            How we keep your data safe
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4 text-sm text-muted-foreground">
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
-              <span className="text-chart-2 font-bold text-xs sm:text-sm">1</span>
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Encrypted Storage</p>
-              <p>All API keys are encrypted using AES-256 before storage.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
-              <span className="text-chart-2 font-bold text-xs sm:text-sm">2</span>
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Read-Only Access</p>
-              <p>We only request read permissions. We cannot trade on your behalf.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
-              <span className="text-chart-2 font-bold text-xs sm:text-sm">3</span>
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Instant Revocation</p>
-              <p>Disconnect anytime to instantly revoke our access to your accounts.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* API Security card hidden with exchange integrations */}
     </div>
   );
 }

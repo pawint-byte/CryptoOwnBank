@@ -13,7 +13,6 @@ interface UpgradePromptProps {
 const PREMIUM_BENEFITS = [
   "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
-  "Unlimited exchange connections",
   "Unlimited blockchain addresses across 24 chains",
   "Full Recommendations Hub — Best in Class, staking guides, DeFi comparisons",
   "Wallet-specific staking guides for your exact hardware wallet",

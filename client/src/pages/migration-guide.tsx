@@ -67,21 +67,21 @@ const migrationSteps: MigrationStep[] = [
     id: "exchanges",
     number: 2,
     icon: Link2,
-    title: "Connect Your Exchanges",
-    subtitle: "Make your exchange balances update automatically",
-    time: "10 min per exchange",
+    title: "Import Your Exchange Data",
+    subtitle: "Bring your exchange transaction history into one dashboard",
+    time: "5 min per exchange",
     description:
-      "Connect your exchange accounts (Coinbase, Kraken, Binance, etc.) via read-only API keys. Your balances and transaction history will sync automatically — no more manual tracking.",
-    why: "Once connected, your exchange balances update in real time. You'll never need to manually enter a trade again. This replaces the tedious part of Yahoo Finance.",
+      "Export your transaction history from your exchange accounts (Coinbase, Kraken, Binance, etc.) as CSV files and upload them here. Your positions and tax lots are created automatically — no more manual tracking.",
+    why: "Once imported, your exchange transactions are consolidated with your wallet data. You'll see your complete portfolio in one place. This replaces the tedious part of Yahoo Finance.",
     details: [
-      "Go to Integrations and find your exchange",
-      "Follow the step-by-step guide to create a read-only API key on the exchange",
-      "Read-only means the key can see balances but can never move your funds",
-      "Paste the API key and secret into the integration form",
-      "Your exchange balances and transaction history will appear within seconds",
+      "Go to Import Data in the sidebar",
+      "Log in to your exchange and export your transaction history as a CSV file",
+      "Most exchanges have this in Settings, Reports, or Statements",
+      "Upload the CSV file — we support Ledger Live, Yahoo Finance, CoinTracker, and generic CSV formats",
+      "Your transactions, positions, and tax lots will appear automatically",
     ],
-    action: { label: "Go to Integrations", href: "/integrations" },
-    tip: "Always use read-only API keys. This site never needs permission to trade or withdraw — it only reads your data. If an exchange doesn't offer API access (like Robinhood or Webull), you can still track those via CSV import.",
+    action: { label: "Go to Import Data", href: "/integrations" },
+    tip: "Most exchanges let you export transaction history from their Settings or Reports page. If your exchange's format isn't recognized, try the generic CSV option (Symbol, Quantity, Price, Date).",
   },
   {
     id: "wallets",
@@ -138,7 +138,7 @@ const migrationSteps: MigrationStep[] = [
       "Check the Overview dashboard — total portfolio value should be in the right ballpark",
       "Open the Portfolio page for a detailed breakdown by asset",
       "Compare against your Yahoo Finance total to make sure nothing was missed",
-      "If an asset is missing, either connect that exchange or add the wallet address",
+      "If an asset is missing, either import that exchange's CSV or add the wallet address",
       "If totals seem doubled, check Reconciliation for unresolved duplicates",
     ],
     action: { label: "Go to Dashboard", href: "/" },
@@ -350,7 +350,7 @@ export default function MigrationGuide() {
     <div className="max-w-3xl mx-auto space-y-6" data-testid="page-migration-guide">
       <SeoHead
         title="Migration Guide — CryptoOwnBank | Import Your Portfolio"
-        description="Migrate from spreadsheets and Yahoo Finance to live portfolio tracking. Import CSV files, connect exchanges, add blockchain wallets — step by step."
+        description="Migrate from spreadsheets and Yahoo Finance to live portfolio tracking. Import CSV files, add blockchain wallets — step by step."
         path="/migration-guide"
       />
       <div className="space-y-2">
@@ -463,9 +463,9 @@ export default function MigrationGuide() {
               <p className="text-sm font-medium">After migration</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Once your portfolio is consolidated, you'll have a single dashboard that tracks 
-                everything automatically. Exchange balances update via API, blockchain wallets 
-                update from the chain, and prices refresh throughout the day. No more switching 
-                between Yahoo Finance tabs and exchange apps to figure out where you stand.
+                everything automatically. Blockchain wallets update from the chain, imported 
+                exchange data is always available, and prices refresh throughout the day. No more 
+                switching between Yahoo Finance tabs and exchange apps to figure out where you stand.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <Badge variant="secondary" className="text-[10px] gap-1">

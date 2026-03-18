@@ -47,7 +47,7 @@ function PortfolioChartGuide({ data }: { data: Array<{ date: string; value: numb
             <div>
               <p className="font-medium mb-1">What you're looking at</p>
               <ul className="space-y-1 text-muted-foreground">
-                <li><span className="font-medium text-foreground">The line</span> = your total portfolio value over time across all connected wallets and exchanges</li>
+                <li><span className="font-medium text-foreground">The line</span> = your total portfolio value over time across all wallets and imported accounts</li>
                 <li><span className="font-medium text-foreground">Shaded area</span> = visual fill to make trends easier to see at a glance</li>
                 <li><span className="font-medium text-foreground">Hover</span> over any point to see the exact date and dollar value</li>
               </ul>

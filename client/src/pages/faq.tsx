@@ -39,7 +39,7 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Free tier forever (1 exchange connection, 1 blockchain address, Soil vault access, and manual withdrawals). Premium Monthly ($29/mo) for unlimited exchanges, unlimited blockchain addresses, and full portfolio management. Premium Annual ($199/yr) adds complete tax reports with PDF and TurboTax export. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral — we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
+        a: "Free tier forever (1 blockchain address, Soil vault access, and manual withdrawals). Premium Monthly ($29/mo) for unlimited blockchain addresses and full portfolio management. Premium Annual ($199/yr) adds complete tax reports with PDF and TurboTax export. Affiliate referrals (e.g., when you buy RLUSD via our exchange links or join Soil via our referral — we may earn rewards; disclosed transparently). We never take fees from your yields or principal.",
       },
       {
         q: "Why should I join now?",
@@ -52,7 +52,7 @@ const faqGroups = [
     items: [
       {
         q: "Why do I need a cold wallet to use CryptoOwnBank?",
-        a: "For XRPL yield vaults (Soil deposits/withdrawals), you need a cold wallet to sign transactions — we are 100% non-custodial. Your private keys never leave your device. For portfolio tracking, you don't need a cold wallet at all — just add your public blockchain addresses or connect exchange API keys and we pull balances automatically.",
+        a: "For XRPL yield vaults (Soil deposits/withdrawals), you need a cold wallet to sign transactions — we are 100% non-custodial. Your private keys never leave your device. For portfolio tracking, you don't need a cold wallet at all — just add your public blockchain addresses or import CSV transaction history and we track everything automatically.",
       },
       {
         q: "Is this a wallet? Do you hold my funds?",
@@ -92,7 +92,7 @@ const faqGroups = [
       },
       {
         q: "Is my data secure?",
-        a: "Your exchange API keys are encrypted at rest using AES-256. Your XRPL wallet connection is read-only — we only see your public address. All transaction signing happens on your device. We use secure authentication and accept crypto payments (verified on-chain) or Stripe for card payments. We never store private keys or seed phrases.",
+        a: "Your XRPL wallet connection is read-only — we only see your public address. All transaction signing happens on your device. We use secure authentication and accept crypto payments (verified on-chain) or Stripe for card payments. Imported CSV data is processed securely and only transaction records are stored. We never store private keys or seed phrases.",
       },
     ],
   },
@@ -179,47 +179,19 @@ const faqGroups = [
     ],
   },
   {
-    heading: "Exchange API Keys",
+    heading: "Importing Exchange Data",
     items: [
       {
-        q: "How do I get an API key from my exchange?",
-        a: "Each exchange has its own process, but the general steps are: 1) Log in to your exchange account. 2) Go to Account Settings or Security. 3) Find the 'API' or 'API Management' section. 4) Create a new API key and label it 'CryptoOwnBank'. 5) IMPORTANT: Only enable READ-ONLY permissions (never enable trading or withdrawal). 6) Copy the API Key and Secret. 7) Paste them into the Integrations page on CryptoOwnBank. When you select an exchange on our Integrations page, we show you step-by-step instructions specific to that exchange.",
+        q: "How do I import my exchange transaction history?",
+        a: "Most exchanges let you export your transaction history as a CSV file. Go to your exchange's account settings, look for 'Transaction History', 'Reports', or 'Statements', and download a CSV export. Then go to the Import Data page on CryptoOwnBank and upload the file. We support Ledger Live, Yahoo Finance, CoinTracker, and generic CSV formats. Your transactions and tax lots are created automatically.",
       },
       {
-        q: "How do I get a Binance.US API key? (US residents)",
-        a: "Log in to Binance.US > click your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA verification > IMPORTANT: only enable 'Can Read' (disable trading/withdrawals) > copy your API Key and Secret Key. Direct link: binance.us/settings/api-management. Note: US residents must use Binance.US — the global Binance platform (binance.com) is not available to US users.",
+        q: "Which CSV formats does CryptoOwnBank support?",
+        a: "We support four formats: 1) Ledger Live — operation history CSV (go to Settings > Accounts > Operation history). 2) Yahoo Finance — portfolio export CSV. 3) CoinTracker — transaction history CSV. 4) Generic CSV — any file with Symbol, Quantity, Price, and Date columns. Most exchange exports (Coinbase, Binance, Kraken, etc.) can be imported using one of these formats.",
       },
       {
-        q: "How do I get a Binance (Global) API key?",
-        a: "Log in to Binance > hover over your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA verification > IMPORTANT: only enable 'Enable Reading' (disable trading/withdrawals) > copy your API Key and Secret Key. Direct link: binance.com/en/my/settings/api-management. Note: This is the global Binance platform — US residents should use Binance.US instead.",
-      },
-      {
-        q: "How do I get a Coinbase API key?",
-        a: "Log in to Coinbase > Settings > API > New API Key > select all 'View' permissions only (wallet:accounts:read, wallet:transactions:read, etc.) > complete 2FA > copy your API Key and API Secret. Direct link: coinbase.com/settings/api",
-      },
-      {
-        q: "How do I get a Kraken API key?",
-        a: "Log in to Kraken > Security > API > Add Key > name it 'CryptoOwnBank' > under Permissions check ONLY 'Query Funds' and 'Query Open Orders & Trades' > Generate Key > copy your API Key and Private Key. Direct link: kraken.com/u/security/api",
-      },
-      {
-        q: "How do I get a Crypto.com API key?",
-        a: "Important: You need the Crypto.com Exchange — the regular Crypto.com mobile app does not have an API. If you only use the app, go to crypto.com/exchange and sign up (you can link your existing app account), then transfer your assets there. Once on the Exchange: 1) Click your profile icon (top right), scroll down to 'Account Management', and click 'API Management'. 2) Click 'Create a New API Key' and enter a label (e.g. 'CryptoOwnBank'). 3) If prompted, set up 2FA — scan the QR code with Google Authenticator, click 'Send SMS OTP', enter both codes, then click 'Set Up Now'. 4) After creation, the API Secret Key is shown ONCE — copy it immediately. 5) To find the API Key, click 'Edit' on your newly created key. 6) Remove any IP whitelist restrictions, or add your server's IP. 7) Leave Withdrawal and Trading set to 'Off' (read-only). Paste both keys into CryptoOwnBank's Integrations page.",
-      },
-      {
-        q: "How do I get API keys for KuCoin, Bybit, OKX, or other exchanges?",
-        a: "The process is similar for all exchanges: go to your account's API settings, create a new key with READ-ONLY permissions, and copy the credentials. For KuCoin, Bybit, and OKX you may also need to set an API passphrase — save this separately as you'll need it. When you select any exchange on our Integrations page, we show you the exact steps and a direct link to that exchange's API settings page.",
-      },
-      {
-        q: "How do I get a Nexo API key?",
-        a: "Log in to Nexo at nexo.com, go to Settings (gear icon) > API, and click 'Create API Key'. Label it 'CryptoOwnBank', set permissions to 'Read Only' (do NOT enable withdrawals or trading), complete 2FA, and copy your API Key and Secret Key immediately — the Secret is only shown once. Paste both into CryptoOwnBank's Integrations page.",
-      },
-      {
-        q: "Can I connect Webull, eToro, Robinhood, or Fidelity?",
-        a: "These platforms do not currently offer public APIs for third-party portfolio tracking. You can manually add your holdings on CryptoOwnBank, or export your transaction history as a CSV file from their apps/websites. For Webull: Account > Statements & History > Download. For eToro: Settings > Account Statement > Download. For Robinhood: Account > Statements & History. For Fidelity: Accounts > Activity & Orders > Download. We're monitoring all four platforms for future API availability.",
-      },
-      {
-        q: "Is it safe to give CryptoOwnBank my API key?",
-        a: "Yes — we take several precautions: 1) All API keys are encrypted using AES-256 before storage. 2) We only request read-only access — we cannot trade, transfer, or withdraw anything from your exchange account. 3) You can disconnect (revoke access) anytime from our Integrations page. 4) For extra safety, most exchanges let you restrict API keys by IP address. Always create keys with the minimum permissions needed (read-only).",
+        q: "Can I import data from Webull, eToro, Robinhood, or Fidelity?",
+        a: "Yes — export your transaction history as a CSV file from their apps or websites. For Webull: Account > Statements & History > Download. For eToro: Settings > Account Statement > Download. For Robinhood: Account > Statements & History. For Fidelity: Accounts > Activity & Orders. Then upload the CSV on our Import Data page.",
       },
     ],
   },

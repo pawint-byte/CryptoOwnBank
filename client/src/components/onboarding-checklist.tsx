@@ -306,11 +306,11 @@ function buildSteps(
     steps.push({
       id: "add_exchange",
       phase: "connect",
-      title: "Connect Your Exchange",
-      subtitle: "Track exchange balances automatically",
+      title: "Import Exchange Data",
+      subtitle: "Import your exchange transaction history",
       description:
-        "Connect Coinbase, Binance, Kraken, or other exchanges with a read-only API key. We'll pull your balances and transaction history so you can see everything in one dashboard.",
-      cta: "Connect Exchange",
+        "Export your transaction history from Coinbase, Binance, Kraken, or other exchanges as a CSV file. Then upload it on the Import Data page to see everything in one dashboard.",
+      cta: "Import Data",
       href: "/integrations",
       icon: Building2,
       iconColor: "text-amber-500",

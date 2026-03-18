@@ -79,7 +79,7 @@ const allItems: NavItem[] = [
   { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "start" },
   { title: "Overview", url: "/", icon: LayoutDashboard, group: "start" },
   { title: "Wallets & Addresses", url: "/wallets", icon: Wallet, group: "start" },
-  { title: "Integrations", url: "/integrations", icon: Link2, group: "start" },
+  { title: "Import Data", url: "/integrations", icon: Link2, group: "start" },
 
   { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "portfolio" },
   { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "portfolio" },

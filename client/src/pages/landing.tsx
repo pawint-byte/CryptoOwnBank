@@ -195,7 +195,7 @@ const features = [
     icon: PieChart,
     title: "One Cockpit for Everything",
     description:
-      "Connect all your exchanges, cold wallets, and yield vaults across 24 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, DigiByte, Casper, Cronos, and more. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
+      "Import exchange data, connect cold wallets, and track yield vaults across 24 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, DigiByte, Casper, Cronos, and more. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
     link: "/portfolio",
     linkLabel: "Open Portfolio",
   },
@@ -419,7 +419,7 @@ const testimonials = [
 ];
 
 const freeTierFeatures = [
-  "Connect 1 exchange (Coinbase, Kraken, Crypto.com, etc.)",
+  "Import exchange data via CSV (Coinbase, Kraken, Crypto.com, etc.)",
   "Track 1 blockchain address across 24 blockchains",
   "Soil vault access (deposit + manual withdraw)",
   "Basic Recommendations Hub (see yield opportunities for your assets)",
@@ -435,7 +435,7 @@ const premiumFeatures = [
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Earn & Accumulate XRP — auto-convert vault interest into XRP on the DEX (configurable %, min threshold)",
-  "Unlimited exchange connections",
+  "Unlimited CSV imports",
   "Unlimited blockchain addresses across 24 chains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, TON, XLM, MATIC, and more)",
   "Full ERC-20, SPL, TRC-20, VIP-180 & CRC-20 token auto-detection",
   "Full Recommendations Hub — Best in Class rankings, staking guides, DeFi comparisons, 'You Hold This' badges",
@@ -555,7 +555,7 @@ const faqGroups = [
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
-        a: "CryptoOwnBank supports 24 blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. On the exchange side, connect Coinbase, Kraken, Crypto.com, Binance, and more via API keys. Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities — clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5–8% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
+        a: "CryptoOwnBank supports 24 blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. Import transaction history from any exchange via CSV (Coinbase, Kraken, Crypto.com, Binance, etc.). Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities — clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5–8% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
       },
       {
         q: "Can my business accept crypto payments through CryptoOwnBank?",
@@ -584,7 +584,7 @@ const faqGroups = [
       },
       {
         q: "What wallets and hardware devices are supported?",
-        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking: paste any wallet address from Ledger, CypheRock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet — we support 24 blockchains. We provide wallet-specific staking guides for each hardware wallet, so you get step-by-step instructions tailored to your exact device. Ethereum addresses automatically detect all ERC-20 tokens. Hedera pulls your full HBAR balance including staked amounts. VeChain auto-detects VET + VTHO. Cosmos includes staking delegations. For exchanges: connect via API keys (Coinbase, Kraken, Crypto.com, Binance, and more). You can also import transactions from Ledger Live or Yahoo Finance CSV files.",
+        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking: paste any wallet address from Ledger, CypheRock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet — we support 24 blockchains. We provide wallet-specific staking guides for each hardware wallet, so you get step-by-step instructions tailored to your exact device. Ethereum addresses automatically detect all ERC-20 tokens. Hedera pulls your full HBAR balance including staked amounts. VeChain auto-detects VET + VTHO. Cosmos includes staking delegations. You can also import transaction history from any exchange via CSV files (Ledger Live, Yahoo Finance, CoinTracker, or generic CSV format).",
       },
       {
         q: "Do Ledger Nano X and Xaman show the same address for RLUSD?",
@@ -616,7 +616,7 @@ const faqGroups = [
       },
       {
         q: "Is my data secure?",
-        a: "Your exchange API keys are encrypted at rest using AES-256. Your XRPL wallet connection is read-only — we only see your public address. All transaction signing happens on your device. We use secure authentication and Stripe for payment processing. We never store private keys or seed phrases.",
+        a: "Your XRPL wallet connection is read-only — we only see your public address. All transaction signing happens on your device. We use secure authentication and Stripe for payment processing. Imported data is processed securely and only transaction records are stored. We never store private keys or seed phrases.",
       },
     ],
   },
@@ -682,7 +682,7 @@ const faqGroups = [
       },
       {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
-        a: "Absolutely — CryptoOwnBank is a full multi-chain portfolio tracker across 24 blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Connect exchange accounts to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
+        a: "Absolutely — CryptoOwnBank is a full multi-chain portfolio tracker across 24 blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Import exchange data via CSV to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
       },
     ],
   },
@@ -691,7 +691,7 @@ const faqGroups = [
     items: [
       {
         q: "What's the difference between Free, Premium, and Pro?",
-        a: "Free: 1 exchange, 1 blockchain address, 1 price alert, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history. Premium ($29/mo or $199/yr): unlimited exchanges and addresses across 24 chains, full Recommendations Hub, staking guides, CSV import, auto-withdraw, Statement Insights, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus DeFi Borrowing Hub, Real Estate Tokenization directory, batch/payroll payments, treasury dashboard, up to 5 team seats, and XLS-66 Lending. Pro is designed for businesses and high-value clients.",
+        a: "Free: 1 blockchain address, 1 price alert, CSV import, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history. Premium ($29/mo or $199/yr): unlimited addresses across 24 chains, full Recommendations Hub, staking guides, unlimited CSV imports, auto-withdraw, Statement Insights, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus DeFi Borrowing Hub, Real Estate Tokenization directory, batch/payroll payments, treasury dashboard, up to 5 team seats, and XLS-66 Lending. Pro is designed for businesses and high-value clients.",
       },
       {
         q: "How do I pay for Premium?",
@@ -2091,7 +2091,7 @@ export default function Landing() {
                     { icon: Shield, title: "Non-Custodial", desc: "Private keys never leave your device. We only see your public address." },
                     { icon: Lock, title: "Client-Side Signing", desc: "All transactions are built in your browser and signed on your Xumm or Ledger." },
                     { icon: Eye, title: "Read-Only Connection", desc: "Our app only reads your balance and transaction history — it cannot initiate transfers." },
-                    { icon: Zap, title: "AES-256 Encryption", desc: "Exchange API keys for portfolio tracking are encrypted at rest with bank-grade encryption." },
+                    { icon: Zap, title: "AES-256 Encryption", desc: "All sensitive data is encrypted at rest with bank-grade encryption." },
                     { icon: Globe, title: "XRPL Mainnet", desc: "All vault operations happen on the XRP Ledger mainnet — a public, decentralized blockchain." },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-4">
