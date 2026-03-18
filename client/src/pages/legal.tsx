@@ -68,7 +68,7 @@ export default function Legal() {
 
             <p className="text-foreground leading-relaxed">
               <strong>All interactions</strong> (wallet connections, deposits, withdrawals, etc.) are signed directly
-              from <strong>your own cold wallet</strong> (Ledger, Xumm, etc.). We never receive or store your private
+              from <strong>your own cold wallet</strong> (Ledger, Xaman, etc.). We never receive or store your private
               keys, seed phrases, or any sensitive information.
             </p>
 

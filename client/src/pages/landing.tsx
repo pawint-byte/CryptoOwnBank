@@ -144,7 +144,7 @@ const whyPoints = [
   },
   {
     icon: Shield,
-    text: "Full cold-wallet security — your keys never leave your Ledger or Xumm device",
+    text: "Full cold-wallet security — your keys never leave your Ledger or Xaman device",
   },
   {
     icon: PieChart,
@@ -166,7 +166,7 @@ const howItWorks = [
     icon: Wallet,
     title: "Connect Your Wallet",
     description:
-      "Scan with Xumm or plug in your Ledger. No hot wallets. No seed phrases. Ever. Link your exchange accounts for full portfolio tracking.",
+      "Scan with Xaman or plug in your Ledger. No hot wallets. No seed phrases. Ever. Link your exchange accounts for full portfolio tracking.",
     detail:
       "Your wallet stays in your hands. We read your public address to show balances and prepare unsigned transactions for you to approve.",
   },
@@ -235,7 +235,7 @@ const features = [
     icon: Shield,
     title: "100% Non-Custodial",
     description:
-      "We never touch your keys. All transactions are signed on your device — Xumm or Ledger. You always control your funds.",
+      "We never touch your keys. All transactions are signed on your device — Xaman or Ledger. You always control your funds.",
   },
   {
     icon: Lock,
@@ -324,7 +324,7 @@ const memberStories = [
     accent: "from-purple-500/10 to-violet-500/10",
     story:
       "Traditional banks hold your money and decide what to do with it. With OwnBank, YOU hold your keys, YOU choose where your money earns yield, and YOU decide when to withdraw interest. No bank can freeze your account, change your terms, or deny you access.",
-    benefit: "Full control over your funds with cold wallet security — Xumm or Ledger.",
+    benefit: "Full control over your funds with cold wallet security — Xaman or Ledger.",
   },
   {
     title: "Track Everything, Not Just One Chain",
@@ -473,7 +473,7 @@ const onChainReasons = [
     icon: Lock,
     title: "Maximum Security & True Ownership",
     points: [
-      "When you connect your cold wallet (Ledger or Xumm), your private keys never leave your device.",
+      "When you connect your cold wallet (Ledger or Xaman), your private keys never leave your device.",
       "We never see them, store them, or have any ability to move your funds.",
       "Direct bank integrations require someone to handle your fiat and personal banking details — introducing KYC requirements, potential data breaches, and counterparty risk.",
     ],

@@ -630,7 +630,7 @@ export default function OwnBankVaults() {
               <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 space-y-2">
                 <p className="text-xs text-blue-800 dark:text-blue-300">
                   {walletType === "xumm" ? (
-                    <>Your Xumm wallet will prompt you to sign a <span className="font-semibold">{depositAmount} RLUSD</span> payment directly to the <span className="font-semibold">{selectedVault?.name}</span> vault. The transaction is recorded and tracked automatically.</>
+                    <>Your Xaman wallet will prompt you to sign a <span className="font-semibold">{depositAmount} RLUSD</span> payment directly to the <span className="font-semibold">{selectedVault?.name}</span> vault. The transaction is recorded and tracked automatically.</>
                   ) : (
                     <>Confirm the <span className="font-semibold">{depositAmount} RLUSD</span> deposit on your device.</>
                   )}
