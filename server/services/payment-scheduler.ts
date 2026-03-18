@@ -6,7 +6,7 @@ import { sendLegacyBeneficiaryDelivery } from "../email";
 import { Client } from "xrpl";
 import { XummSdk } from "xumm-sdk";
 
-function getNextRunDate(currentDate: Date, frequency: string, preferredDay?: number | null): Date {
+export function getNextRunDate(currentDate: Date, frequency: string, preferredDay?: number | null): Date {
   const next = new Date(currentDate);
   switch (frequency) {
     case "daily":

@@ -39,6 +39,7 @@ import {
   Shield,
   Smartphone,
   Link2,
+  Zap,
 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
@@ -251,6 +252,21 @@ export default function DcaOrders() {
     },
   });
 
+  const executeNowMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/dca-orders/${id}/execute`);
+      return res.json();
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", id] });
+      toast({ title: "DCA order executed", description: "Check your Xaman wallet to approve the trade." });
+    },
+    onError: () => {
+      toast({ title: "Execution failed", description: "Could not execute DCA order. Try again.", variant: "destructive" });
+    },
+  });
+
   function resetForm() {
     setSelectedPairIdx("");
     setSpendAmount("");
@@ -415,6 +431,8 @@ export default function DcaOrders() {
                   toggleMutation.mutate({ id: order.id, status: newStatus });
                 }}
                 onDelete={() => deleteMutation.mutate(order.id)}
+                onExecuteNow={() => executeNowMutation.mutate(order.id)}
+                isExecuting={executeNowMutation.isPending && executeNowMutation.variables === order.id}
                 chainColor={chainColor}
                 isXrpl={isXrpl}
               />
@@ -564,6 +582,8 @@ function DcaOrderCard({
   onToggleExpand,
   onToggleStatus,
   onDelete,
+  onExecuteNow,
+  isExecuting,
   chainColor,
   isXrpl,
 }: {
@@ -572,6 +592,8 @@ function DcaOrderCard({
   onToggleExpand: () => void;
   onToggleStatus: () => void;
   onDelete: () => void;
+  onExecuteNow: () => void;
+  isExecuting: boolean;
   chainColor: string;
   isXrpl: boolean;
 }) {
@@ -640,7 +662,23 @@ function DcaOrderCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {order.status !== "completed" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-[#00A4E4]/40 text-[#00A4E4] hover:bg-[#00A4E4]/10"
+              onClick={onExecuteNow}
+              disabled={isExecuting}
+              data-testid={`button-execute-now-${order.id}`}
+            >
+              {isExecuting ? (
+                <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Executing...</>
+              ) : (
+                <><Zap className="w-3.5 h-3.5 mr-1" /> Execute Now</>
+              )}
+            </Button>
+          )}
           {order.status !== "completed" && (
             <Button
               size="sm"

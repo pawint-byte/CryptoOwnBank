@@ -6560,6 +6560,50 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/dca-orders/:id/execute", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const order = await storage.getDcaOrder(req.params.id);
+      if (!order || order.userId !== userId) {
+        return res.status(404).json({ message: "DCA order not found" });
+      }
+      if (order.status === "completed") {
+        return res.status(400).json({ message: "This DCA order is already completed" });
+      }
+
+      const execution = await storage.createDcaExecution({
+        dcaOrderId: order.id,
+        userId: order.userId,
+        status: "pending",
+        spendAmount: order.spendAmount,
+        receivedAmount: null,
+        xamanPayloadId: null,
+        txHash: null,
+        errorMessage: null,
+      });
+
+      const newRunsCompleted = (order.runsCompleted || 0) + 1;
+      const isComplete = order.totalRuns && newRunsCompleted >= order.totalRuns;
+
+      const { getNextRunDate } = await import("./services/payment-scheduler");
+
+      await storage.updateDcaOrder(order.id, {
+        lastRunAt: new Date(),
+        nextRunAt: isComplete ? order.nextRunAt : getNextRunDate(order.nextRunAt, order.frequency, order.preferredDay),
+        runsCompleted: newRunsCompleted,
+        status: isComplete ? "completed" : order.status,
+      });
+
+      const buyDisplay = order.buyCurrency.length > 3 ? order.buyCurrency.slice(0, 6) : order.buyCurrency;
+      console.log(`[DCA] Manual execute — execution ${execution.id} for order ${order.id} — Buy ${buyDisplay} with ${order.spendAmount} ${order.spendCurrency}`);
+
+      res.json({ success: true, executionId: execution.id });
+    } catch (error) {
+      console.error("Execute DCA order error:", error);
+      res.status(500).json({ message: "Failed to execute DCA order" });
+    }
+  });
+
   app.delete("/api/dca-orders/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
