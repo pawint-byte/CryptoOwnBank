@@ -8588,4 +8588,19 @@ function startPriceAlertChecker() {
       console.error("[seed] Owner wallet seed error:", err);
     }
   }, 6000);
+
+  setTimeout(async () => {
+    try {
+      const TEST_DCA_ID = "1ccf25ca-1a15-42a7-a712-e2afab208140";
+      const { dcaOrders, dcaExecutions } = await import("@shared/schema");
+      const [testOrder] = await db.select().from(dcaOrders).where(eq(dcaOrders.id, TEST_DCA_ID));
+      if (testOrder) {
+        await db.delete(dcaExecutions).where(eq(dcaExecutions.dcaOrderId, TEST_DCA_ID));
+        await db.delete(dcaOrders).where(eq(dcaOrders.id, TEST_DCA_ID));
+        console.log(`[cleanup] Removed test DCA order ${TEST_DCA_ID} and its executions`);
+      }
+    } catch (err) {
+      console.error("[cleanup] DCA cleanup error:", err);
+    }
+  }, 7000);
 }
