@@ -117,7 +117,19 @@ const faqGroups = [
       },
       {
         q: "How do I withdraw my earned interest?",
-        a: 'Go to the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a>, select a vault, and click "Withdraw Interest." The app builds a transaction sending ONLY your accrued interest to your designated spending wallet. You sign the transaction on your Xumm or Ledger. Free users withdraw manually; Premium users can set up automatic weekly withdrawals.',
+        a: 'Go to the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a>. You have two options: (1) Manual withdrawal — select a vault, click "Withdraw Interest," sign in Xaman, and your accrued interest is sent to your spending wallet. (2) Automatic withdrawal (Premium/Pro) — enable "Auto-Withdraw Interest" in the Earn & Accumulate card. Set your threshold (e.g., $5 RLUSD) and frequency (daily, weekly, biweekly, monthly). The system checks your vaults on schedule and, when interest hits your threshold, pushes a notification to your Xaman app. Just tap Approve — one tap, done. Your principal always stays locked in the vault.',
+      },
+      {
+        q: "What is Earn & Accumulate XRP?",
+        a: 'Earn & Accumulate is the fully automatic interest-to-XRP pipeline on the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a>. It combines two features: (1) Auto-Withdraw — the system monitors your vault interest and triggers a withdrawal when it reaches your chosen threshold. (2) Auto-Buy XRP — when interest is withdrawn, a percentage you choose (10–100%) is automatically converted to XRP via a DEX offer on the XRPL. Both steps are pushed to your Xaman wallet as notifications — you just tap Approve. Set it once, and your vaults passively accumulate XRP for you with no further interaction. Requires Premium ($29/mo) or Pro ($99/mo).',
+      },
+      {
+        q: "How does Auto-Withdraw work behind the scenes?",
+        a: 'When you enable Auto-Withdraw, the CryptoOwnBank server checks your vault interest on your chosen schedule (daily, weekly, every 2 weeks, or monthly). If the accrued interest meets or exceeds your threshold (e.g., $5 RLUSD), the system creates a withdrawal transaction and pushes it as a notification to your Xaman mobile app. You receive a push notification saying something like "CryptoOwnBank Auto-Withdraw: Approve to withdraw $5.23 RLUSD interest from your Credit+ vault." Tap Sign to approve. If you also have Auto-Buy XRP enabled, a second notification follows to approve a DEX offer converting your chosen percentage of the interest into XRP. Everything is fully non-custodial — your keys never leave your device. The system only creates transaction proposals; you always have the final say.',
+      },
+      {
+        q: "Can I use Auto-Withdraw without Auto-Buy XRP?",
+        a: "Yes — they are independent toggles. You can enable just Auto-Withdraw to automatically collect your interest as RLUSD, or enable just Auto-Buy XRP to convert interest to XRP only when you manually withdraw. Or enable both for the full hands-free pipeline. Each toggle has its own settings (threshold, frequency, percentage, minimum amount).",
       },
       {
         q: "Why can't I withdraw my full principal anytime?",
