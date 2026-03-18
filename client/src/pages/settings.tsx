@@ -469,8 +469,6 @@ export default function SettingsPage() {
     pro: { monthly: 99, yearly: 799 },
   };
 
-  const addonMonthlyPrice = 4.99;
-
   const computedPlanKey = selectedTier === "pro"
     ? (billingCycle === "yearly" ? "pro-yearly" : "pro-monthly")
     : (billingCycle === "yearly" ? "yearly" : "monthly");
@@ -479,12 +477,15 @@ export default function SettingsPage() {
     ? tierPrices[selectedTier].yearly / 12
     : tierPrices[selectedTier].monthly;
 
-  const addonsMonthlyCost = selectedAddons.size * addonMonthlyPrice;
+  const addonsMonthlyCost = Array.from(selectedAddons).reduce((sum, key) => {
+    const addon = (addonCatalog as Record<string, any>)[key];
+    return sum + (addon ? addon.amount / 100 : 0);
+  }, 0);
   const totalMonthlyCost = baseMonthlyCost + addonsMonthlyCost;
 
   const totalAnnualCost = billingCycle === "yearly"
-    ? tierPrices[selectedTier].yearly + (selectedAddons.size * addonMonthlyPrice * 12)
-    : (tierPrices[selectedTier].monthly * 12) + (selectedAddons.size * addonMonthlyPrice * 12);
+    ? tierPrices[selectedTier].yearly + (addonsMonthlyCost * 12)
+    : (tierPrices[selectedTier].monthly * 12) + (addonsMonthlyCost * 12);
 
   const annualSavings = billingCycle === "yearly"
     ? (tierPrices[selectedTier].monthly * 12) - tierPrices[selectedTier].yearly
@@ -508,7 +509,6 @@ export default function SettingsPage() {
       { label: "CSV import & export", included: true },
       { label: "Portfolio search & filter", included: true },
       { label: "Full Recommendations Hub", included: true },
-      { label: "Auto-withdraw interest", included: true },
       { label: "Recurring payments", included: true },
       { label: "Statement uploads & comparison", included: true },
       { label: "Tax reports (annual plan)", included: true },
@@ -1399,9 +1399,8 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <Plus className="h-4 w-4 text-blue-500" />
                         <p className="text-sm font-medium">Optional Add-Ons</p>
-                        <span className="text-xs text-muted-foreground">$4.99/mo each</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mb-3 ml-6">Track additional blockchains — available on any paid plan</p>
+                      <p className="text-[11px] text-muted-foreground mb-3 ml-6">Add extra chains, tools, or features to any paid plan</p>
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {Object.entries(addonCatalog).map(([key, addon]: [string, any]) => {
                           const isActive = activeAddons.some((a: any) => a.addonKey === key);
@@ -1435,7 +1434,10 @@ export default function SettingsPage() {
                                   <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
                                 )}
                               </div>
-                              <p className="text-[11px] text-muted-foreground mt-1">{addon.description?.replace(/\s*—\s*\$[\d.]+\/mo/, "")}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <p className="text-[11px] text-muted-foreground flex-1">{addon.description?.replace(/\s*—\s*\$[\d.]+\/mo/, "")}</p>
+                                <span className="text-[10px] font-medium text-muted-foreground ml-2 shrink-0">${(addon.amount / 100).toFixed(2)}/mo</span>
+                              </div>
                             </div>
                           );
                         })}
@@ -1637,7 +1639,7 @@ export default function SettingsPage() {
               Add-Ons
             </CardTitle>
             <CardDescription>
-              Extend your plan with individual chain tracking — $4.99/mo each
+              Add extra chains, tools, or features to your plan
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
