@@ -445,23 +445,17 @@ async function processAutoWithdrawals(): Promise<void> {
 
         console.log(`[AutoWithdraw] User ${setting.userId.slice(0, 8)}: interest $${totalInterest.toFixed(4)} >= threshold $${threshold} — triggering withdrawal`);
 
+        const autoBuyEnabled = setting.autoBuyEnabled ?? false;
+        const autoBuyPercent = setting.autoBuyPercent ?? 100;
+        const autoBuyMinAmount = parseFloat(setting.autoBuyMinAmount || "5");
+
+        let combinedWithdrawnInterest = 0;
+        const vaultSummaries: string[] = [];
+
         for (const vault of vaults) {
           if (vault.interest < 0.01) continue;
 
-          const autoBuyEnabled = setting.autoBuyEnabled ?? false;
-          const autoBuyPercent = setting.autoBuyPercent ?? 100;
-          const autoBuyMinAmount = parseFloat(setting.autoBuyMinAmount || "5");
-
-          let xrpConvertAmount = 0;
-          let keepRlusdAmount = vault.interest;
-
-          if (autoBuyEnabled && vault.interest >= autoBuyMinAmount) {
-            xrpConvertAmount = vault.interest * (autoBuyPercent / 100);
-            keepRlusdAmount = vault.interest - xrpConvertAmount;
-          }
-
           let withdrawPayloadId: string | null = null;
-          let offerPayloadId: string | null = null;
 
           if (xummSdk) {
             try {
@@ -492,34 +486,9 @@ async function processAutoWithdrawals(): Promise<void> {
 
               if (withdrawPayload) {
                 withdrawPayloadId = withdrawPayload.uuid;
+                combinedWithdrawnInterest += vault.interest;
+                vaultSummaries.push(`${vault.name}: $${vault.interest.toFixed(4)}`);
                 console.log(`[AutoWithdraw] Withdrawal payload ${withdrawPayload.uuid} pushed to Xaman for ${vault.name}`);
-              }
-
-              if (xrpConvertAmount > 0.01 && withdrawPayload) {
-                const offerPayload = await xummSdk.payload.create({
-                  txjson: {
-                    TransactionType: "OfferCreate",
-                    TakerPays: (xrpConvertAmount * 1000000).toFixed(0),
-                    TakerGets: {
-                      currency: RLUSD_CURRENCY_HEX,
-                      value: xrpConvertAmount.toFixed(6),
-                      issuer: RLUSD_ISSUER,
-                    },
-                    Flags: 524288,
-                  },
-                  options: {
-                    submit: true,
-                    expire: 1440,
-                  },
-                  custom_meta: {
-                    instruction: `CryptoOwnBank Auto-Buy XRP: Convert ${xrpConvertAmount.toFixed(4)} RLUSD → XRP from your ${vault.name} vault interest. Tap Sign to confirm.`,
-                  },
-                } as never);
-
-                if (offerPayload) {
-                  offerPayloadId = offerPayload.uuid;
-                  console.log(`[AutoWithdraw] DEX offer payload ${offerPayload.uuid} pushed to Xaman for XRP buy`);
-                }
               }
             } catch (xummErr) {
               console.error(`[AutoWithdraw] Xaman payload error for user ${setting.userId.slice(0, 8)}:`, xummErr instanceof Error ? xummErr.message : xummErr);
@@ -531,19 +500,67 @@ async function processAutoWithdrawals(): Promise<void> {
             vaultAddress: vault.address,
             vaultName: vault.name,
             interestAmount: vault.interest.toFixed(6),
-            xrpConvertAmount: xrpConvertAmount > 0 ? xrpConvertAmount.toFixed(6) : null,
-            keepRlusdAmount: keepRlusdAmount > 0 ? keepRlusdAmount.toFixed(6) : null,
+            xrpConvertAmount: null,
+            keepRlusdAmount: vault.interest > 0 ? vault.interest.toFixed(6) : null,
             withdrawPayloadId,
-            offerPayloadId,
+            offerPayloadId: null,
             status: withdrawPayloadId ? "pushed" : "failed",
             errorMessage: withdrawPayloadId ? null : "Xaman SDK not available",
           });
         }
 
+        if (autoBuyEnabled && combinedWithdrawnInterest >= autoBuyMinAmount && xummSdk) {
+          const xrpConvertAmount = combinedWithdrawnInterest * (autoBuyPercent / 100);
+          const keepRlusdAmount = combinedWithdrawnInterest - xrpConvertAmount;
+
+          if (xrpConvertAmount > 0.01) {
+            try {
+              const offerPayload = await xummSdk.payload.create({
+                txjson: {
+                  TransactionType: "OfferCreate",
+                  TakerPays: (xrpConvertAmount * 1000000).toFixed(0),
+                  TakerGets: {
+                    currency: RLUSD_CURRENCY_HEX,
+                    value: xrpConvertAmount.toFixed(6),
+                    issuer: RLUSD_ISSUER,
+                  },
+                  Flags: 524288,
+                },
+                options: {
+                  submit: true,
+                  expire: 1440,
+                },
+                custom_meta: {
+                  instruction: `CryptoOwnBank Auto-Buy XRP: Convert ${xrpConvertAmount.toFixed(4)} RLUSD → XRP (combined from ${vaultSummaries.join(", ")}). Total: $${combinedWithdrawnInterest.toFixed(4)}. Tap Sign to confirm.`,
+                },
+              } as never);
+
+              if (offerPayload) {
+                console.log(`[AutoWithdraw] Combined DEX offer ${offerPayload.uuid} pushed — $${xrpConvertAmount.toFixed(4)} RLUSD → XRP from ${vaultSummaries.length} vault(s)`);
+
+                await db.insert(autoWithdrawLogs).values({
+                  userId: setting.userId,
+                  vaultAddress: "combined",
+                  vaultName: `Combined DEX Order (${vaultSummaries.join(" + ")})`,
+                  interestAmount: combinedWithdrawnInterest.toFixed(6),
+                  xrpConvertAmount: xrpConvertAmount.toFixed(6),
+                  keepRlusdAmount: keepRlusdAmount > 0 ? keepRlusdAmount.toFixed(6) : null,
+                  withdrawPayloadId: null,
+                  offerPayloadId: offerPayload.uuid,
+                  status: "pushed",
+                  errorMessage: null,
+                });
+              }
+            } catch (xummErr) {
+              console.error(`[AutoWithdraw] Combined DEX offer error for user ${setting.userId.slice(0, 8)}:`, xummErr instanceof Error ? xummErr.message : xummErr);
+            }
+          }
+        }
+
         await db.update(userSettings).set({ autoWithdrawLastRunAt: new Date() })
           .where(eq(userSettings.userId, setting.userId));
 
-        console.log(`[AutoWithdraw] Processed user ${setting.userId.slice(0, 8)} — ${vaults.length} vault(s)`);
+        console.log(`[AutoWithdraw] Processed user ${setting.userId.slice(0, 8)} — ${vaults.length} vault(s), combined interest $${combinedWithdrawnInterest.toFixed(4)}`);
       } catch (userErr) {
         console.error(`[AutoWithdraw] Error processing user ${setting.userId.slice(0, 8)}:`, userErr instanceof Error ? userErr.message : userErr);
       }
