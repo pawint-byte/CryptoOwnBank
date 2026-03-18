@@ -778,9 +778,9 @@ function AmendmentTracker() {
     staleTime: 5 * 60 * 1000,
   });
 
-  if (!data || (!data.xls65 && !data.xls66)) return null;
+  const hasFreshData = data && (data.xls65 || data.xls66);
 
-  const timeAgo = data.lastChecked ? (() => {
+  const timeAgo = data?.lastChecked ? (() => {
     const mins = Math.round((Date.now() - new Date(data.lastChecked!).getTime()) / 60000);
     if (mins < 1) return "just now";
     if (mins < 60) return `${mins}m ago`;
@@ -830,12 +830,46 @@ function AmendmentTracker() {
         </div>
         <Card className="border-2">
           <CardContent className="p-6 space-y-6">
-            {data.xls65 && renderBar(data.xls65, "XLS-65 Single Asset Vaults")}
-            {data.xls66 && renderBar(data.xls66, "XLS-66 Lending Protocol")}
+            {hasFreshData ? (
+              <>
+                {data.xls65 && renderBar(data.xls65, "XLS-65 Single Asset Vaults")}
+                {data.xls66 && renderBar(data.xls66, "XLS-66 Lending Protocol")}
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold">XLS-65 Single Asset Vaults</span>
+                    <span className="text-sm text-muted-foreground">Checking validators…</span>
+                  </div>
+                  <div className="relative w-full bg-muted rounded-full h-3 overflow-hidden">
+                    <div className="h-full rounded-full bg-[#00A4E4]/40 animate-pulse" style={{ width: "30%" }} />
+                    <div className="absolute top-0 h-full" style={{ left: "80%" }}>
+                      <div className="w-0.5 h-full bg-white/50" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Needs 80% of validators for 2 consecutive weeks to activate</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold">XLS-66 Lending Protocol</span>
+                    <span className="text-sm text-muted-foreground">Checking validators…</span>
+                  </div>
+                  <div className="relative w-full bg-muted rounded-full h-3 overflow-hidden">
+                    <div className="h-full rounded-full bg-[#00A4E4]/40 animate-pulse" style={{ width: "30%" }} />
+                    <div className="absolute top-0 h-full" style={{ left: "80%" }}>
+                      <div className="w-0.5 h-full bg-white/50" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Needs 80% of validators for 2 consecutive weeks to activate</p>
+                </div>
+                <p className="text-xs text-center text-muted-foreground italic">Connecting to XRPL network for live validator data — refresh shortly for real-time percentages</p>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <RefreshCw className="h-3 w-3" />
-                <span>Live data from XRPL validators{timeAgo ? ` · Updated ${timeAgo}` : ""}</span>
+                <span>{hasFreshData ? `Live data from XRPL validators${timeAgo ? ` · Updated ${timeAgo}` : ""}` : "Connecting to XRPL validators…"}</span>
               </div>
               <a href="/login">
                 <Button size="sm" className="bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-amendment-signup">
