@@ -55,7 +55,7 @@ import {
   type OrderBookEntry,
   type XrplOffer,
 } from "@/lib/xrpl-client";
-import { signTransaction } from "@/lib/xumm-connector";
+import { signTransaction, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
 
@@ -393,6 +393,21 @@ export default function OwnBankDex() {
       fetchMyOffers();
     }
   }, [isConnected, fetchMyOffers]);
+
+  useEffect(() => {
+    if (hasPendingXummPayment()) {
+      setPlacingOrder(true);
+      completePendingXummPayment().then((result) => {
+        setPlacingOrder(false);
+        if (result.success) {
+          toast({ title: "Order placed", description: "Your trade was submitted to the XRPL." });
+          setTimeout(() => { fetchOrderBook(); fetchMyOffers(); }, 4000);
+        } else if (result.error !== "No pending payment") {
+          toast({ title: "Trade not completed", description: result.error || "Transaction was cancelled or timed out.", variant: "destructive" });
+        }
+      });
+    }
+  }, []);
 
   const computeTotal = () => {
     const a = parseFloat(amount) || 0;

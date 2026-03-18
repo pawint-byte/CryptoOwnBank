@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -45,7 +45,7 @@ import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { signTransaction } from "@/lib/xumm-connector";
+import { signTransaction, hasPendingXummPayment, completePendingXummPayment } from "@/lib/xumm-connector";
 import type { DcaOrder, DcaExecution } from "@shared/schema";
 
 const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
@@ -256,6 +256,31 @@ export default function DcaOrders() {
 
   const [executingOrderId, setExecutingOrderId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (hasPendingXummPayment()) {
+      const pendingDcaOrderId = sessionStorage.getItem("dca_execute_order_id");
+      setExecutingOrderId(pendingDcaOrderId);
+      completePendingXummPayment().then(async (result) => {
+        if (result.success && pendingDcaOrderId) {
+          try {
+            await apiRequest("POST", `/api/dca-orders/${pendingDcaOrderId}/execute`, {
+              txHash: result.txHash || null,
+            });
+            queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", pendingDcaOrderId] });
+            toast({ title: "DCA executed successfully", description: "Your trade was confirmed on the XRPL." });
+          } catch {
+            toast({ title: "Trade confirmed but record failed", description: "The trade went through on XRPL. Refresh to update.", variant: "destructive" });
+          }
+        } else if (!result.success && result.error !== "No pending payment") {
+          toast({ title: "Trade not completed", description: result.error || "Transaction was cancelled or timed out.", variant: "destructive" });
+        }
+        sessionStorage.removeItem("dca_execute_order_id");
+        setExecutingOrderId(null);
+      });
+    }
+  }, []);
+
   async function executeNow(order: DcaOrder) {
     const { walletAddress } = useXrplStore.getState();
     if (!walletAddress) {
@@ -264,6 +289,7 @@ export default function DcaOrders() {
     }
 
     setExecutingOrderId(order.id);
+    sessionStorage.setItem("dca_execute_order_id", order.id);
     try {
       const spendAmount = parseFloat(order.spendAmount);
 
@@ -301,6 +327,7 @@ export default function DcaOrders() {
       console.error("[DCA] Execute now error:", err);
       toast({ title: "Execution failed", description: "Something went wrong. Try again.", variant: "destructive" });
     } finally {
+      sessionStorage.removeItem("dca_execute_order_id");
       setExecutingOrderId(null);
     }
   }
