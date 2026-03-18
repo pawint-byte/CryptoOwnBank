@@ -257,11 +257,11 @@ export default function DcaOrders() {
   const [executingOrderId, setExecutingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (hasPendingXummPayment()) {
-      const pendingDcaOrderId = sessionStorage.getItem("dca_execute_order_id");
+    const pendingDcaOrderId = sessionStorage.getItem("dca_execute_order_id");
+    if (pendingDcaOrderId && hasPendingXummPayment()) {
       setExecutingOrderId(pendingDcaOrderId);
       completePendingXummPayment().then(async (result) => {
-        if (result.success && pendingDcaOrderId) {
+        if (result.success) {
           try {
             await apiRequest("POST", `/api/dca-orders/${pendingDcaOrderId}/execute`, {
               txHash: result.txHash || null,
@@ -272,7 +272,7 @@ export default function DcaOrders() {
           } catch {
             toast({ title: "Trade confirmed but record failed", description: "The trade went through on XRPL. Refresh to update.", variant: "destructive" });
           }
-        } else if (!result.success && result.error !== "No pending payment") {
+        } else if (result.error !== "No pending payment") {
           toast({ title: "Trade not completed", description: result.error || "Transaction was cancelled or timed out.", variant: "destructive" });
         }
         sessionStorage.removeItem("dca_execute_order_id");
@@ -289,7 +289,6 @@ export default function DcaOrders() {
     }
 
     setExecutingOrderId(order.id);
-    sessionStorage.setItem("dca_execute_order_id", order.id);
     try {
       const spendAmount = parseFloat(order.spendAmount);
 
@@ -311,6 +310,7 @@ export default function DcaOrders() {
         Flags: 0x00060000,
       };
 
+      sessionStorage.setItem("dca_execute_order_id", order.id);
       const result = await signTransaction(txJson);
 
       if (result.success) {
