@@ -947,6 +947,8 @@ function ReadinessChecklist() {
   const hasXamanLinkedWallet = xrpWallets.some((w: any) => xamanLinkedAddresses.has(w.address?.toLowerCase()));
   const hasMultipleChains = new Set(wallets.map((w: any) => w.chain)).size > 1;
 
+  const soilReady = hasXrpWallet && hasXamanConnected && hasXamanLinkedWallet;
+
   const amendmentPct = status?.voting?.xls66?.percentage ?? null;
   const amendmentActive = status?.voting?.xls66?.enabled || status?.lendingLive || false;
 
@@ -961,7 +963,7 @@ function ReadinessChecklist() {
       done: hasXrpWallet,
       tip: hasXrpWallet
         ? `${xrpWallets.length} XRP wallet${xrpWallets.length > 1 ? "s" : ""} added`
-        : "Go to Portfolio → Wallets and add your XRP address",
+        : "Go to Portfolio → Wallets and add your XRP address. This is the address that will interact with XLS-66 vaults.",
       href: "/wallets",
     },
     {
@@ -969,7 +971,7 @@ function ReadinessChecklist() {
       done: hasXamanConnected,
       tip: hasXamanConnected
         ? `${xamanConnections.length} Xaman connection${xamanConnections.length > 1 ? "s" : ""} active`
-        : "Xaman lets you sign XLS-66 vault transactions from your phone or via Ledger Bluetooth",
+        : "Xaman is how you sign transactions — from your phone or via Ledger Bluetooth. It doesn't hold your crypto; the XRPL does.",
       href: "/wallets",
     },
     {
@@ -977,27 +979,30 @@ function ReadinessChecklist() {
       done: hasXamanLinkedWallet,
       tip: hasXamanLinkedWallet
         ? "Your XRP wallet is linked to Xaman — ready to sign vault deposits"
-        : "On the Wallets page, click 'Link to Xaman' on your XRP wallet so you can sign transactions",
+        : "On the Wallets page, click 'Link to Xaman' next to your XRP wallet. This lets CryptoOwnBank send signing requests to your device.",
       href: "/wallets",
     },
     {
-      label: "Set up RLUSD trustline",
-      done: false,
-      tip: "Use the Trustlines tab below to set up your RLUSD trustline — required before depositing into RLUSD vaults",
-      action: "trustlines",
+      label: "Have XRP in your wallet for transaction fees",
+      done: hasXrpWallet,
+      tip: hasXrpWallet
+        ? "Every XRPL transaction costs a fraction of a penny in XRP. You also need a 10 XRP reserve (XRPL requirement for all active wallets)."
+        : "You'll need a small amount of XRP to pay transaction fees (fractions of a penny) and the 10 XRP wallet reserve required by the XRPL.",
     },
     {
-      label: "Try the yield calculator",
-      done: false,
-      tip: "See how much you could earn with different amounts and durations",
-      action: "calculator",
+      label: "RLUSD trustline (for RLUSD vaults only)",
+      done: soilReady,
+      tip: soilReady
+        ? "Already using Soil vaults? Your RLUSD trustline is already set up — you're good to go. If depositing into XRP-only vaults, no trustline needed."
+        : "Required only if you want to deposit into RLUSD vaults. XRP vaults don't need a trustline. Use the Trustlines tab below to set it up.",
+      action: "trustlines",
     },
     {
       label: "Track your portfolio across multiple chains",
       done: hasMultipleChains,
       tip: hasMultipleChains
-        ? `Tracking wallets across ${new Set(wallets.map((w: any) => w.chain)).size} chains`
-        : "Add wallets from other chains (ETH, SOL, ADA, etc.) to see your full portfolio in one place",
+        ? `Tracking wallets across ${new Set(wallets.map((w: any) => w.chain)).size} chains — your full portfolio in one place`
+        : "Optional but recommended: add wallets from other chains (ETH, SOL, ADA, etc.) to see your full portfolio in one dashboard",
       href: "/wallets",
     },
   ];
@@ -1044,12 +1049,31 @@ function ReadinessChecklist() {
             </div>
           </div>
 
+          {soilReady && !amendmentActive && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-start gap-3" data-testid="soil-ready-banner">
+              <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  Soil vault member? You're at the finish line.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  You already have your XRP wallet, Xaman connected, and RLUSD trustline from using Soil vaults. 
+                  XLS-66 uses the exact same setup — same wallet, same Xaman signing, same keys. When validators 
+                  hit 80%{amendmentPct !== null ? ` (currently at ${amendmentPct}%)` : ""}, you can start lending on day one 
+                  with zero additional setup.
+                </p>
+              </div>
+            </div>
+          )}
+
           <p className="text-sm text-muted-foreground">
             {amendmentActive
               ? "XLS-66 is live! Complete these steps to start depositing into on-ledger vaults."
-              : amendmentPct !== null
-                ? `Validators are at ${amendmentPct}% (need 80% for 2 weeks). Get everything ready so you can deposit the moment it activates.`
-                : "Do your homework now so you're ready the moment XLS-66 activates. When validators hit 80%, you'll be first in line."}
+              : soilReady
+                ? "Review the checklist below to confirm everything is in place. Most of it should already be green."
+                : amendmentPct !== null
+                  ? `Validators are at ${amendmentPct}% (need 80% for 2 weeks). Do your homework now so you're ready to deposit the moment it activates.`
+                  : "Do your homework now so you're ready the moment XLS-66 activates. When validators hit 80%, you'll be first in line."}
           </p>
 
           <div className="space-y-2">
@@ -1090,7 +1114,9 @@ function ReadinessChecklist() {
           {allDone && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-center">
               <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                You're 100% ready! When XLS-66 activates, you can deposit into vaults immediately.
+                {soilReady 
+                  ? "You're 100% ready. Same wallet, same Xaman, same signing — when XLS-66 activates, you can start lending immediately."
+                  : "You're 100% ready! When XLS-66 activates, you can deposit into vaults immediately."}
               </p>
             </div>
           )}
