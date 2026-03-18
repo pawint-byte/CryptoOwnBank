@@ -546,16 +546,20 @@ export default function OwnBankWithdraw() {
     setIsProcessing(true);
     try {
       if (walletType === "xumm") {
-        const result = await signPayment(withdrawTarget, {
+        const result = await signPayment(selectedVaultAddress, {
           currency: "RLUSD",
           value: interest.toFixed(6),
           issuer: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+        }, {
+          memos: [
+            { MemoType: "withdraw-interest", MemoData: `Withdraw ${interest.toFixed(6)} RLUSD interest to ${withdrawTarget}` },
+          ],
         });
 
         if (result.success) {
           toast({
             title: "Interest Withdrawn Successfully",
-            description: `${formatCurrency(interest)} RLUSD sent to your spending wallet.`,
+            description: `${formatCurrency(interest)} RLUSD interest claimed from ${vault.vaultName}.`,
           });
         } else {
           toast({
