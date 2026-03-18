@@ -103,7 +103,7 @@ function isTokenActive(token: PopularToken, balances: StellarBalance[]): boolean
 
 function buildChangeTrustLink(code: string, issuer: string, wallet: string): string {
   if (wallet === "lobstr") {
-    return `https://lobstr.co/asset/${code}-${issuer}`;
+    return `https://lobstr.co/trade/${code}:${issuer}`;
   }
   if (wallet === "stellarterm") {
     return `https://stellarterm.com/exchange/${code}-${issuer}/XLM-native`;
@@ -116,7 +116,7 @@ function buildChangeTrustLink(code: string, issuer: string, wallet: string): str
 
 function buildRemoveTrustLink(code: string, issuer: string, wallet: string): string {
   if (wallet === "lobstr") {
-    return `https://lobstr.co/asset/${code}-${issuer}`;
+    return `https://lobstr.co/trade/${code}:${issuer}`;
   }
   if (wallet === "stellarterm") {
     return `https://stellarterm.com/exchange/${code}-${issuer}/XLM-native`;
@@ -185,7 +185,12 @@ export default function StellarTokens() {
   };
 
   const handleCustomAdd = () => {
-    if (!codeInput.trim() || !issuerInput.trim()) {
+    const code = codeInput.trim().toUpperCase();
+    if (code === "XLM") {
+      toast({ title: "XLM is Native", description: "XLM is Stellar's native currency — it doesn't need a trustline. It's always available in your wallet.", variant: "destructive" });
+      return;
+    }
+    if (!code || !issuerInput.trim()) {
       toast({ title: "Missing Fields", description: "Enter both asset code and issuer address.", variant: "destructive" });
       return;
     }
@@ -193,7 +198,7 @@ export default function StellarTokens() {
       toast({ title: "Invalid Issuer", description: "Issuer must be a valid Stellar address (starts with G, 56 characters).", variant: "destructive" });
       return;
     }
-    handleAddTrustline(codeInput.trim().toUpperCase(), issuerInput.trim());
+    handleAddTrustline(code, issuerInput.trim());
     setAddModalOpen(false);
     setCodeInput("");
     setIssuerInput("");
