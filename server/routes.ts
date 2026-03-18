@@ -4796,8 +4796,8 @@ export async function registerRoutes(
     percentage: number;
   }
 
-  let amendmentVotingCache: { xls65: AmendmentVoting | null; xls66: AmendmentVoting | null; checkedAt: number } = {
-    xls65: null, xls66: null, checkedAt: 0
+  let amendmentVotingCache: { xls65: AmendmentVoting | null; xls66: AmendmentVoting | null; checkedAt: number; lastSuccessAt: number; stale: boolean } = {
+    xls65: null, xls66: null, checkedAt: 0, lastSuccessAt: 0, stale: false
   };
 
   async function checkAmendmentStatus(): Promise<{ xls65: boolean; xls66: boolean }> {
@@ -4815,20 +4815,30 @@ export async function registerRoutes(
     }
     try {
       const { Client } = await import("xrpl");
-      const client = new Client("wss://xrplcluster.com");
-      await client.connect();
-      const featureResponse = await client.request({ command: "feature" as any } as any);
-
+      const nodes = ["wss://s2.ripple.com", "wss://xrplcluster.com", "wss://s1.ripple.com"];
+      let featureResponse: any = null;
       let validatorCount = 35;
-      try {
-        const serverInfo = await client.request({ command: "server_info" } as any);
-        const quorum = (serverInfo?.result as any)?.info?.validation_quorum;
-        if (quorum) {
-          validatorCount = Math.round(quorum / 0.8);
-        }
-      } catch {}
 
-      await client.disconnect();
+      for (const node of nodes) {
+        let c: InstanceType<typeof Client> | null = null;
+        try {
+          c = new Client(node, { connectionTimeout: 8000, timeout: 15000 });
+          await c.connect();
+          featureResponse = await c.request({ command: "feature" as any } as any);
+          try {
+            const serverInfo = await c.request({ command: "server_info" } as any);
+            const quorum = (serverInfo?.result as any)?.info?.validation_quorum;
+            if (quorum) validatorCount = Math.round(quorum / 0.8);
+          } catch {}
+          await c.disconnect();
+          console.log(`[XLS-66] Got amendment data from ${node}`);
+          break;
+        } catch (e) {
+          console.log(`[XLS-66] Node ${node} failed: ${(e as any)?.message?.slice(0, 80)}`);
+          try { await c?.disconnect(); } catch {}
+        }
+      }
+      if (!featureResponse) throw new Error("All XRPL nodes failed to return amendment data");
       const features = (featureResponse?.result as any)?.features || {};
       const threshold = Math.ceil(validatorCount * 0.8);
 
@@ -4869,11 +4879,13 @@ export async function registerRoutes(
         }
       }
       lastAmendmentCheck = now;
-      amendmentVotingCache = { xls65: xls65Data, xls66: xls66Data, checkedAt: now };
+      amendmentVotingCache = { xls65: xls65Data, xls66: xls66Data, checkedAt: now, lastSuccessAt: now, stale: false };
     } catch (error) {
       console.error("[XLS-66] Amendment check failed:", (error as any)?.message);
       if (xls65AmendmentActive === null) xls65AmendmentActive = false;
       if (xls66AmendmentActive === null) xls66AmendmentActive = false;
+      amendmentVotingCache.checkedAt = now;
+      amendmentVotingCache.stale = true;
     }
     return amendmentVotingCache;
   }
@@ -4959,6 +4971,8 @@ export async function registerRoutes(
           percentage: voting.xls66.percentage,
         } : null,
         lastChecked: voting.checkedAt ? new Date(voting.checkedAt).toISOString() : null,
+        lastSuccessAt: voting.lastSuccessAt ? new Date(voting.lastSuccessAt).toISOString() : null,
+        stale: voting.stale,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to check amendment progress" });
@@ -4995,6 +5009,8 @@ export async function registerRoutes(
             percentage: voting.xls66.percentage,
           } : null,
           lastChecked: voting.checkedAt ? new Date(voting.checkedAt).toISOString() : null,
+          lastSuccessAt: voting.lastSuccessAt ? new Date(voting.lastSuccessAt).toISOString() : null,
+          stale: voting.stale,
         },
       });
     } catch (error) {

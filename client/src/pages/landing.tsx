@@ -772,6 +772,8 @@ function AmendmentTracker() {
     xls65: { name: string; enabled: boolean; count: number; threshold: number; validatorCount: number; percentage: number } | null;
     xls66: { name: string; enabled: boolean; count: number; threshold: number; validatorCount: number; percentage: number } | null;
     lastChecked: string | null;
+    lastSuccessAt: string | null;
+    stale: boolean;
   }>({
     queryKey: ["/api/xls66/amendment-progress"],
     refetchInterval: 10 * 60 * 1000,
@@ -780,11 +782,12 @@ function AmendmentTracker() {
 
   const hasFreshData = data && (data.xls65 || data.xls66);
 
-  const timeAgo = data?.lastChecked ? (() => {
-    const mins = Math.round((Date.now() - new Date(data.lastChecked!).getTime()) / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    return `${Math.round(mins / 60)}h ago`;
+  const lastSuccessLabel = data?.lastSuccessAt ? (() => {
+    const d = new Date(data.lastSuccessAt!);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleString(undefined, {
+      month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
+    });
   })() : null;
 
   const renderBar = (item: NonNullable<typeof data.xls65>, label: string) => {
@@ -867,9 +870,17 @@ function AmendmentTracker() {
               </div>
             )}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <RefreshCw className="h-3 w-3" />
-                <span>{hasFreshData ? `Live data from XRPL validators${timeAgo ? ` · Updated ${timeAgo}` : ""}` : "Connecting to XRPL validators…"}</span>
+                {hasFreshData ? (
+                  <span>
+                    Live data from XRPL validators
+                    {lastSuccessLabel && ` · Updated ${lastSuccessLabel}`}
+                    {data?.stale && " (cached)"}
+                  </span>
+                ) : (
+                  <span>Connecting to XRPL validators…</span>
+                )}
               </div>
               <a href="/login">
                 <Button size="sm" className="bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-amendment-signup">

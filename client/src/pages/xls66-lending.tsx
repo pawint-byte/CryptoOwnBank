@@ -89,6 +89,8 @@ interface AmendmentStatus {
     xls65: AmendmentVoting | null;
     xls66: AmendmentVoting | null;
     lastChecked: string | null;
+    lastSuccessAt: string | null;
+    stale: boolean;
   };
 }
 
@@ -183,15 +185,20 @@ function VotingProgressBar({ voting, label }: { voting: AmendmentVoting; label: 
   );
 }
 
+function formatTimestamp(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, {
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
+  });
+}
+
 function AmendmentBanner({ status }: { status: AmendmentStatus }) {
   const v = status.voting;
-  const lastChecked = v?.lastChecked ? new Date(v.lastChecked) : null;
-  const timeAgo = lastChecked ? (() => {
-    const mins = Math.round((Date.now() - lastChecked.getTime()) / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    return `${Math.round(mins / 60)}h ago`;
-  })() : null;
+  const isStale = v?.stale === true;
+  const lastSuccessLabel = formatTimestamp(v?.lastSuccessAt);
+  const lastCheckedLabel = formatTimestamp(v?.lastChecked);
 
   if (status.vaultsLive && status.lendingLive) {
     return (
@@ -225,7 +232,17 @@ function AmendmentBanner({ status }: { status: AmendmentStatus }) {
             </div>
           </div>
           {v?.xls66 && <VotingProgressBar voting={v.xls66} label="XLS-66 Lending Protocol" />}
-          {timeAgo && <p className="text-xs text-muted-foreground mt-2">Last checked from XRPL: {timeAgo}</p>}
+          {!v?.xls66 && (
+            <p className="text-sm text-muted-foreground animate-pulse">Checking validators…</p>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            {isStale && lastSuccessLabel && (
+              <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Using cached data</Badge>
+            )}
+            {lastSuccessLabel && (
+              <p className="text-xs text-muted-foreground">Last updated from XRPL: {lastSuccessLabel}</p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -245,8 +262,21 @@ function AmendmentBanner({ status }: { status: AmendmentStatus }) {
       <div className="space-y-3 mt-2">
         {v?.xls65 && <VotingProgressBar voting={v.xls65} label="XLS-65 Single Asset Vaults" />}
         {v?.xls66 && <VotingProgressBar voting={v.xls66} label="XLS-66 Lending Protocol" />}
+        {!v?.xls65 && !v?.xls66 && (
+          <p className="text-sm text-muted-foreground animate-pulse">Checking validators…</p>
+        )}
       </div>
-      {timeAgo && <p className="text-xs text-muted-foreground mt-3">Last checked from XRPL: {timeAgo}</p>}
+      <div className="flex items-center gap-2 mt-3">
+        {isStale && lastSuccessLabel && (
+          <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Using cached data</Badge>
+        )}
+        {lastSuccessLabel && (
+          <p className="text-xs text-muted-foreground">Last updated from XRPL: {lastSuccessLabel}</p>
+        )}
+        {!lastSuccessLabel && lastCheckedLabel && (
+          <p className="text-xs text-muted-foreground">Last attempted: {lastCheckedLabel}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -488,6 +518,7 @@ function YieldCalculator() {
               <span>1%</span>
               <span>20%</span>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Rates are set by each vault operator — adjust the slider to model different scenarios</p>
           </div>
 
           <div className="space-y-2">
