@@ -38,7 +38,10 @@ export async function completePendingXummPayment(): Promise<XummSignResult> {
       if (status.resolved) {
         sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
         if (status.signed) {
-          return { success: true, txHash: uuid };
+          if (status.dispatchedResult && status.dispatchedResult !== "tesSUCCESS") {
+            return { success: false, error: `Transaction rejected: ${status.dispatchedResult}` };
+          }
+          return { success: true, txHash: status.txid || uuid };
         }
         return { success: false, error: "Payment was declined" };
       }
@@ -62,7 +65,7 @@ export async function createXummSignIn(): Promise<XummSignInPayload> {
   return res.json();
 }
 
-export async function checkXummStatus(uuid: string): Promise<{ resolved: boolean; signed: boolean; account: string | null }> {
+export async function checkXummStatus(uuid: string): Promise<{ resolved: boolean; signed: boolean; account: string | null; txid: string | null; dispatchedResult: string | null }> {
   const res = await fetch(`/api/xumm/status/${uuid}`);
   return res.json();
 }
@@ -414,7 +417,11 @@ export async function signTransaction(txJson: Record<string, any>): Promise<Xumm
             clearInterval(pollInterval);
             if (popup && !popup.closed) popup.close();
             if (status.signed) {
-              resolve({ success: true, txHash: payload.uuid });
+              if (status.dispatchedResult && status.dispatchedResult !== "tesSUCCESS") {
+                resolve({ success: false, error: `Transaction rejected: ${status.dispatchedResult}` });
+              } else {
+                resolve({ success: true, txHash: status.txid || payload.uuid });
+              }
             } else {
               resolve({ success: false, error: "Transaction was declined" });
             }
@@ -496,7 +503,11 @@ export async function signPayment(
             clearInterval(pollInterval);
             if (popup && !popup.closed) popup.close();
             if (status.signed) {
-              resolve({ success: true, txHash: payload.uuid });
+              if (status.dispatchedResult && status.dispatchedResult !== "tesSUCCESS") {
+                resolve({ success: false, error: `Transaction rejected: ${status.dispatchedResult}` });
+              } else {
+                resolve({ success: true, txHash: status.txid || payload.uuid });
+              }
             } else {
               resolve({ success: false, error: "Transaction was declined" });
             }

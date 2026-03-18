@@ -4377,7 +4377,10 @@ export async function registerRoutes(
       const resolved = payload.meta.resolved;
       const signed = payload.meta.signed;
       const account = payload.response?.account || null;
-      res.json({ resolved, signed, account });
+      const txid = payload.response?.txid || null;
+      const dispatchedResult = payload.response?.dispatched_result || null;
+      const dispatchedTo = payload.response?.dispatched_to || null;
+      res.json({ resolved, signed, account, txid, dispatchedResult, dispatchedTo });
     } catch (error: any) {
       console.error("Xumm status error:", error);
       res.status(500).json({ message: error.message || "Failed to check status" });
