@@ -8548,4 +8548,44 @@ function startPriceAlertChecker() {
       console.error("[migration] Startup migration error:", err);
     }
   }, 5000);
+
+  setTimeout(async () => {
+    try {
+      const OWNER_ID = "1a4d009b-ca9c-46fe-a12b-193f4ec23f6e";
+      const ownerXrpWallets = [
+        { address: "rpwKnLcsi441mHxvUZtBeMHumLSSEzzqEY", label: "DeathKeepers (Xaman)" },
+        { address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc", label: "LEDGER" },
+        { address: "rKmgnmE8FNKx1uw7uPiB3aD2fup8Mw4k2z", label: "ELLIPAL" },
+        { address: "rLHvxS7notX9d2HjwLoPh8ATGkCQRZi4QE", label: "CypheRock" },
+        { address: "r4NX5ZUTUNHLxUkjp5mUge87EMuhojmfoU", label: "Arculus" },
+        { address: "rPu4ceyz5fm6L5V87Xaq3RJ91cShd64irS", label: "SafePal" },
+      ];
+      const existing = await storage.getWalletsByUser(OWNER_ID);
+      const existingAddrs = new Set(existing.map(w => w.address.toLowerCase()));
+      let created = 0;
+      for (const w of ownerXrpWallets) {
+        if (!existingAddrs.has(w.address.toLowerCase())) {
+          await storage.createWallet({ userId: OWNER_ID, chain: "xrp", address: w.address, label: w.label });
+          created++;
+        }
+      }
+
+      const { xamanConnections: xcTable } = await import("@shared/schema");
+      const existingConns = await db.select().from(xcTable).where(eq(xcTable.userId, OWNER_ID));
+      const existingConnAddrs = new Set(existingConns.map(c => c.xrpAddress.toLowerCase()));
+      let connCreated = 0;
+      for (const w of ownerXrpWallets) {
+        if (!existingConnAddrs.has(w.address.toLowerCase())) {
+          await db.insert(xcTable).values({ userId: OWNER_ID, xrpAddress: w.address, accountLabel: w.label });
+          connCreated++;
+        }
+      }
+
+      if (created > 0 || connCreated > 0) {
+        console.log(`[seed] Owner wallets: ${created} wallets created, ${connCreated} xaman connections created`);
+      }
+    } catch (err) {
+      console.error("[seed] Owner wallet seed error:", err);
+    }
+  }, 6000);
 }
