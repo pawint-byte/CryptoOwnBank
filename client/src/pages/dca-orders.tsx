@@ -44,6 +44,8 @@ import {
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useXrplStore } from "@/lib/xrpl-store";
+import { signTransaction } from "@/lib/xumm-connector";
 import type { DcaOrder, DcaExecution } from "@shared/schema";
 
 const RLUSD_CURRENCY = "524C555344000000000000000000000000000000";
@@ -252,20 +254,56 @@ export default function DcaOrders() {
     },
   });
 
-  const executeNowMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiRequest("POST", `/api/dca-orders/${id}/execute`);
-      return res.json();
-    },
-    onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", id] });
-      toast({ title: "DCA order executed", description: "Check your Xaman wallet to approve the trade." });
-    },
-    onError: () => {
-      toast({ title: "Execution failed", description: "Could not execute DCA order. Try again.", variant: "destructive" });
-    },
-  });
+  const [executingOrderId, setExecutingOrderId] = useState<string | null>(null);
+
+  async function executeNow(order: DcaOrder) {
+    const { walletAddress } = useXrplStore.getState();
+    if (!walletAddress) {
+      toast({ title: "No wallet connected", description: "Connect your XRPL wallet first.", variant: "destructive" });
+      return;
+    }
+
+    setExecutingOrderId(order.id);
+    try {
+      const spendAmount = parseFloat(order.spendAmount);
+
+      const buildAmount = (currency: string, issuer: string | null, value: string) => {
+        if (currency === "XRP") {
+          return (parseFloat(value) * 1_000_000).toFixed(0);
+        }
+        return { currency, issuer: issuer!, value };
+      };
+
+      const takerGets = buildAmount(order.spendCurrency, order.spendIssuer, spendAmount.toString());
+      const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, spendAmount.toString());
+
+      const txJson: Record<string, unknown> = {
+        TransactionType: "OfferCreate",
+        Account: walletAddress,
+        TakerGets: takerGets,
+        TakerPays: takerPays,
+        Flags: 0x00060000,
+      };
+
+      const result = await signTransaction(txJson);
+
+      if (result.success) {
+        await apiRequest("POST", `/api/dca-orders/${order.id}/execute`, {
+          txHash: result.txHash || null,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", order.id] });
+        toast({ title: "DCA executed successfully", description: `Swapped ${spendAmount} ${getTokenDisplay(order.spendCurrency)} on the DEX.` });
+      } else {
+        toast({ title: "Trade cancelled", description: "The transaction was rejected or expired.", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("[DCA] Execute now error:", err);
+      toast({ title: "Execution failed", description: "Something went wrong. Try again.", variant: "destructive" });
+    } finally {
+      setExecutingOrderId(null);
+    }
+  }
 
   function resetForm() {
     setSelectedPairIdx("");
@@ -431,8 +469,8 @@ export default function DcaOrders() {
                   toggleMutation.mutate({ id: order.id, status: newStatus });
                 }}
                 onDelete={() => deleteMutation.mutate(order.id)}
-                onExecuteNow={() => executeNowMutation.mutate(order.id)}
-                isExecuting={executeNowMutation.isPending && executeNowMutation.variables === order.id}
+                onExecuteNow={() => executeNow(order)}
+                isExecuting={executingOrderId === order.id}
                 chainColor={chainColor}
                 isXrpl={isXrpl}
               />

@@ -6571,14 +6571,16 @@ export async function registerRoutes(
         return res.status(400).json({ message: "This DCA order is already completed" });
       }
 
+      const { txHash } = req.body || {};
+
       const execution = await storage.createDcaExecution({
         dcaOrderId: order.id,
         userId: order.userId,
-        status: "pending",
+        status: txHash ? "completed" : "pending",
         spendAmount: order.spendAmount,
         receivedAmount: null,
         xamanPayloadId: null,
-        txHash: null,
+        txHash: txHash || null,
         errorMessage: null,
       });
 
