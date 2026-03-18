@@ -108,6 +108,7 @@ const allItems: NavItem[] = [
   { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, color: "#00A4E4", group: "ownbank" },
   { title: "History", url: "/ownbank/history", icon: History, color: "#00A4E4", group: "ownbank" },
   { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
+  { title: "XLS-66 Lending", url: "/xls66-lending", icon: Gem, color: "#00A4E4", group: "ownbank" },
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
 
   { title: "Wallet", url: "/stellar/wallet", icon: Wallet, color: "#7B61FF", group: "stellar" },
