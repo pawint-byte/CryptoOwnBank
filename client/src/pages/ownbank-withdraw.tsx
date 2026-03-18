@@ -797,7 +797,7 @@ export default function OwnBankWithdraw() {
                     <li><strong>Hold as RLUSD</strong> — Keep it as a stablecoin in your wallet</li>
                   </ul>
                   <p className="text-xs text-muted-foreground italic">
-                    Tip: Set up DCA before withdrawing so your RLUSD doesn't sit idle.
+                    Tip: Compound interest is your biggest advantage — every day your interest earns more interest. Consider leaving your position in the vault as long as possible. At 8% APR, $10,000 grows to $22,255 in 10 years. When you do withdraw, set up DCA first so your RLUSD converts to XRP automatically.
                   </p>
                 </div>
               </div>
