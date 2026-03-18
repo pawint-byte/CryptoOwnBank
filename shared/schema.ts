@@ -136,9 +136,32 @@ export const userSettings = pgTable("user_settings", {
   autoBuyXrpEnabled: boolean("auto_buy_xrp_enabled").default(false),
   autoBuyXrpPercent: integer("auto_buy_xrp_percent").default(100),
   autoBuyXrpMinAmount: decimal("auto_buy_xrp_min_amount", { precision: 18, scale: 6 }).default("5"),
+  autoWithdrawEnabled: boolean("auto_withdraw_enabled").default(false),
+  autoWithdrawThreshold: decimal("auto_withdraw_threshold", { precision: 18, scale: 6 }).default("5"),
+  autoWithdrawFrequency: varchar("auto_withdraw_frequency", { length: 20 }).default("daily"),
+  autoWithdrawLastRunAt: timestamp("auto_withdraw_last_run_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const autoWithdrawLogs = pgTable("auto_withdraw_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  vaultAddress: varchar("vault_address", { length: 255 }).notNull(),
+  vaultName: varchar("vault_name", { length: 255 }),
+  interestAmount: decimal("interest_amount", { precision: 18, scale: 6 }).notNull(),
+  xrpConvertAmount: decimal("xrp_convert_amount", { precision: 18, scale: 6 }),
+  keepRlusdAmount: decimal("keep_rlusd_amount", { precision: 18, scale: 6 }),
+  withdrawPayloadId: varchar("withdraw_payload_id", { length: 255 }),
+  offerPayloadId: varchar("offer_payload_id", { length: 255 }),
+  withdrawTxHash: varchar("withdraw_tx_hash", { length: 255 }),
+  offerTxHash: varchar("offer_tx_hash", { length: 255 }),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_auto_withdraw_logs_user").on(table.userId),
+]);
 
 export const renewalNotifications = pgTable("renewal_notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

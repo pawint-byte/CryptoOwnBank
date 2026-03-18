@@ -63,16 +63,44 @@ type AutoBuySettings = {
   minAmount: string;
 };
 
-function AutoBuyXrpCard({ totalInterest, subscriptionTier }: { totalInterest: number; subscriptionTier: string }) {
+type AutoWithdrawSettings = {
+  enabled: boolean;
+  threshold: string;
+  frequency: string;
+  lastRunAt: string | null;
+};
+
+type AutoWithdrawLog = {
+  id: string;
+  vaultName: string | null;
+  interestAmount: string;
+  xrpConvertAmount: string | null;
+  keepRlusdAmount: string | null;
+  status: string;
+  createdAt: string;
+};
+
+function AutoEarnAccumulateCard({ totalInterest, subscriptionTier }: { totalInterest: number; subscriptionTier: string }) {
   const { toast } = useToast();
   const [localPercent, setLocalPercent] = useState<number | null>(null);
   const [localMin, setLocalMin] = useState<string | null>(null);
+  const [localThreshold, setLocalThreshold] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
-  const { data: settings, isLoading } = useQuery<AutoBuySettings>({
+  const { data: buySettings, isLoading: buyLoading } = useQuery<AutoBuySettings>({
     queryKey: ["/api/auto-buy-xrp"],
   });
 
-  const updateMutation = useMutation({
+  const { data: withdrawSettings, isLoading: withdrawLoading } = useQuery<AutoWithdrawSettings>({
+    queryKey: ["/api/auto-withdraw"],
+  });
+
+  const { data: historyData } = useQuery<{ logs: AutoWithdrawLog[] }>({
+    queryKey: ["/api/auto-withdraw/history"],
+    enabled: showHistory,
+  });
+
+  const updateBuyMutation = useMutation({
     mutationFn: async (updates: Partial<AutoBuySettings>) => {
       const res = await apiRequest("PATCH", "/api/auto-buy-xrp", updates);
       return res.json();
@@ -86,16 +114,32 @@ function AutoBuyXrpCard({ totalInterest, subscriptionTier }: { totalInterest: nu
     },
   });
 
-  if (isLoading || !settings) return null;
+  const updateWithdrawMutation = useMutation({
+    mutationFn: async (updates: Partial<AutoWithdrawSettings>) => {
+      const res = await apiRequest("PATCH", "/api/auto-withdraw", updates);
+      return res.json();
+    },
+    onSuccess: (data: AutoWithdrawSettings) => {
+      queryClient.setQueryData(["/api/auto-withdraw"], data);
+      toast({ title: data.enabled ? "Auto-Withdraw Enabled" : "Auto-Withdraw Disabled" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
 
-  const percent = localPercent ?? settings.percent;
-  const minAmount = localMin ?? settings.minAmount;
+  if (buyLoading || withdrawLoading || !buySettings || !withdrawSettings) return null;
+
+  const percent = localPercent ?? buySettings.percent;
+  const minAmount = localMin ?? buySettings.minAmount;
+  const threshold = localThreshold ?? withdrawSettings.threshold;
   const previewAmount = totalInterest * (percent / 100);
   const keepAmount = totalInterest * ((100 - percent) / 100);
   const isPremium = subscriptionTier === "premium" || subscriptionTier === "pro";
+  const isFullyAutomatic = withdrawSettings.enabled && buySettings.enabled;
 
   return (
-    <Card className={`border-[#00A4E4]/20 ${settings.enabled ? "bg-[#00A4E4]/5" : ""}`} data-testid="card-auto-buy-xrp">
+    <Card className={`border-[#00A4E4]/20 ${isFullyAutomatic ? "bg-[#00A4E4]/5" : ""}`} data-testid="card-auto-earn-accumulate">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -105,18 +149,11 @@ function AutoBuyXrpCard({ totalInterest, subscriptionTier }: { totalInterest: nu
             <div>
               <CardTitle className="text-base">Earn & Accumulate XRP</CardTitle>
               <CardDescription>
-                Automatically convert RLUSD interest into XRP on the DEX
+                Fully automatic: withdraw interest + convert to XRP — no interaction needed
               </CardDescription>
             </div>
           </div>
-          {isPremium ? (
-            <Switch
-              checked={settings.enabled}
-              onCheckedChange={(checked) => updateMutation.mutate({ enabled: checked })}
-              disabled={updateMutation.isPending}
-              data-testid="switch-auto-buy-xrp"
-            />
-          ) : (
+          {!isPremium && (
             <Link href="/settings">
               <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 cursor-pointer" data-testid="badge-premium-required">
                 <Crown className="w-3 h-3 mr-1" /> Premium
@@ -126,106 +163,257 @@ function AutoBuyXrpCard({ totalInterest, subscriptionTier }: { totalInterest: nu
         </div>
       </CardHeader>
 
-      {settings.enabled && isPremium && (
-        <CardContent className="pt-0 space-y-4">
-          <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-            <p>When your vault interest is withdrawn, <strong>{percent}%</strong> will automatically create a DEX offer to buy XRP with RLUSD. You approve the trade in Xaman — one tap, same wallet, same chain.</p>
+      {isPremium && (
+        <CardContent className="pt-0 space-y-5">
+          <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-[#00A4E4]" />
+              <p className="text-sm font-medium">How it works</p>
+            </div>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Your RLUSD earns interest in the vault automatically</li>
+              <li>When interest hits your threshold, the system sends a withdrawal request to your Xaman wallet</li>
+              <li>You tap &quot;Approve&quot; in Xaman (push notification) — one tap</li>
+              <li>If Auto-Buy XRP is on, a DEX offer is also pushed to convert RLUSD → XRP</li>
+            </ol>
+            {isFullyAutomatic && (
+              <div className="flex items-center gap-2 mt-2 p-2 rounded bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                <p className="text-xs text-green-500 font-medium">Fully automatic — you just approve in Xaman when notified</p>
+              </div>
+            )}
           </div>
+
+          <Separator />
 
           <div className="space-y-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Convert to XRP</Label>
-                <span className="text-sm font-mono font-medium" data-testid="text-auto-buy-percent">{percent}%</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowDownToLine className="h-4 w-4 text-green-500" />
+                <Label className="text-sm font-medium">Auto-Withdraw Interest</Label>
               </div>
-              <Slider
-                value={[percent]}
-                onValueChange={([v]) => setLocalPercent(v)}
-                onValueCommit={([v]) => {
-                  setLocalPercent(null);
-                  updateMutation.mutate({ percent: v });
-                }}
-                min={10}
-                max={100}
-                step={5}
-                className="w-full"
-                data-testid="slider-auto-buy-percent"
+              <Switch
+                checked={withdrawSettings.enabled}
+                onCheckedChange={(checked) => updateWithdrawMutation.mutate({ enabled: checked })}
+                disabled={updateWithdrawMutation.isPending}
+                data-testid="switch-auto-withdraw"
               />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>10%</span>
-                <span>100%</span>
-              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm">Minimum RLUSD to trigger buy</Label>
-              <Input
-                type="number"
-                value={localMin ?? settings.minAmount}
-                onChange={(e) => setLocalMin(e.target.value)}
-                onBlur={() => {
-                  if (localMin && parseFloat(localMin) > 0) {
-                    updateMutation.mutate({ minAmount: localMin });
-                  }
-                  setLocalMin(null);
-                }}
-                min="1"
-                step="1"
-                className="font-mono"
-                data-testid="input-auto-buy-min"
-              />
-              <p className="text-xs text-muted-foreground">
-                Won&apos;t trigger a buy if accrued interest is below this amount
-              </p>
-            </div>
-          </div>
-
-          {totalInterest > 0 && (
-            <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Preview based on current interest:</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Buy XRP with</p>
-                  <p className="text-sm font-bold font-mono text-[#00A4E4]" data-testid="text-preview-buy">
-                    {previewAmount.toFixed(4)} RLUSD
-                  </p>
+            {withdrawSettings.enabled && (
+              <div className="space-y-3 pl-6 border-l-2 border-green-500/20">
+                <div className="space-y-2">
+                  <Label className="text-xs">Withdraw when interest reaches</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      value={localThreshold ?? withdrawSettings.threshold}
+                      onChange={(e) => setLocalThreshold(e.target.value)}
+                      onBlur={() => {
+                        if (localThreshold && parseFloat(localThreshold) > 0) {
+                          updateWithdrawMutation.mutate({ threshold: localThreshold });
+                        }
+                        setLocalThreshold(null);
+                      }}
+                      min="1"
+                      step="1"
+                      className="font-mono h-8 w-32"
+                      data-testid="input-auto-withdraw-threshold"
+                    />
+                    <span className="text-xs text-muted-foreground">RLUSD</span>
+                  </div>
                 </div>
-                {percent < 100 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Keep as RLUSD</p>
-                    <p className="text-sm font-bold font-mono text-green-500" data-testid="text-preview-keep">
-                      {keepAmount.toFixed(4)} RLUSD
-                    </p>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Check frequency</Label>
+                  <Select
+                    value={withdrawSettings.frequency}
+                    onValueChange={(v) => updateWithdrawMutation.mutate({ frequency: v })}
+                  >
+                    <SelectTrigger className="h-8 w-40" data-testid="select-auto-withdraw-frequency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {withdrawSettings.lastRunAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Last checked: {new Date(withdrawSettings.lastRunAt).toLocaleDateString()} at {new Date(withdrawSettings.lastRunAt).toLocaleTimeString()}
+                  </p>
+                )}
+
+                {totalInterest > 0 && (
+                  <div className="p-2 rounded bg-muted/30 text-xs">
+                    {totalInterest >= parseFloat(threshold) ? (
+                      <span className="text-green-500 font-medium">
+                        Current interest ({totalInterest.toFixed(4)} RLUSD) meets your threshold — next check will trigger a withdrawal push to Xaman.
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Current interest: {totalInterest.toFixed(4)} RLUSD — needs {(parseFloat(threshold) - totalInterest).toFixed(4)} more to trigger.
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
-              {parseFloat(minAmount) > totalInterest && (
-                <p className="text-xs text-amber-400 mt-2">
-                  Current interest ({totalInterest.toFixed(4)} RLUSD) is below your minimum ({minAmount} RLUSD) — auto-buy won&apos;t trigger yet.
-                </p>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-[#00A4E4]" />
+                <Label className="text-sm font-medium">Auto-Buy XRP</Label>
+              </div>
+              <Switch
+                checked={buySettings.enabled}
+                onCheckedChange={(checked) => updateBuyMutation.mutate({ enabled: checked })}
+                disabled={updateBuyMutation.isPending}
+                data-testid="switch-auto-buy-xrp"
+              />
+            </div>
+
+            {buySettings.enabled && (
+              <div className="space-y-3 pl-6 border-l-2 border-[#00A4E4]/20">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Convert to XRP</Label>
+                    <span className="text-xs font-mono font-medium" data-testid="text-auto-buy-percent">{percent}%</span>
+                  </div>
+                  <Slider
+                    value={[percent]}
+                    onValueChange={([v]) => setLocalPercent(v)}
+                    onValueCommit={([v]) => {
+                      setLocalPercent(null);
+                      updateBuyMutation.mutate({ percent: v });
+                    }}
+                    min={10}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                    data-testid="slider-auto-buy-percent"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>10%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Minimum RLUSD to trigger buy</Label>
+                  <Input
+                    type="number"
+                    value={localMin ?? buySettings.minAmount}
+                    onChange={(e) => setLocalMin(e.target.value)}
+                    onBlur={() => {
+                      if (localMin && parseFloat(localMin) > 0) {
+                        updateBuyMutation.mutate({ minAmount: localMin });
+                      }
+                      setLocalMin(null);
+                    }}
+                    min="1"
+                    step="1"
+                    className="font-mono h-8"
+                    data-testid="input-auto-buy-min"
+                  />
+                </div>
+              </div>
+            )}
+
+            {buySettings.enabled && totalInterest > 0 && (
+              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                <p className="text-xs text-muted-foreground mb-2 font-medium">Preview based on current interest:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Buy XRP with</p>
+                    <p className="text-sm font-bold font-mono text-[#00A4E4]" data-testid="text-preview-buy">
+                      {previewAmount.toFixed(4)} RLUSD
+                    </p>
+                  </div>
+                  {percent < 100 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Keep as RLUSD</p>
+                      <p className="text-sm font-bold font-mono text-green-500" data-testid="text-preview-keep">
+                        {keepAmount.toFixed(4)} RLUSD
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {parseFloat(minAmount) > totalInterest && (
+                  <p className="text-xs text-amber-400 mt-2">
+                    Current interest ({totalInterest.toFixed(4)} RLUSD) is below your buy minimum ({minAmount} RLUSD) — auto-buy won&apos;t trigger yet.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-xs"
+              data-testid="button-toggle-history"
+            >
+              <Clock className="h-3.5 w-3.5 mr-1.5" />
+              {showHistory ? "Hide History" : "View History"}
+            </Button>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              <span>Non-custodial — you always approve in Xaman</span>
+            </div>
+          </div>
+
+          {showHistory && (
+            <div className="space-y-2">
+              {historyData?.logs && historyData.logs.length > 0 ? (
+                historyData.logs.slice(0, 10).map((log) => (
+                  <div key={log.id} className="flex items-center justify-between p-2 rounded bg-muted/30 text-xs">
+                    <div>
+                      <span className="font-medium">{log.vaultName || "Vault"}</span>
+                      <span className="text-muted-foreground ml-2">
+                        {parseFloat(log.interestAmount).toFixed(4)} RLUSD
+                        {log.xrpConvertAmount && parseFloat(log.xrpConvertAmount) > 0 && (
+                          <span className="text-[#00A4E4]"> → {parseFloat(log.xrpConvertAmount).toFixed(4)} to XRP</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={
+                        log.status === "pushed" ? "border-blue-500/30 text-blue-500" :
+                        log.status === "completed" ? "border-green-500/30 text-green-500" :
+                        "border-red-500/30 text-red-500"
+                      }>
+                        {log.status}
+                      </Badge>
+                      <span className="text-muted-foreground">{new Date(log.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-3">No auto-withdraw history yet</p>
               )}
             </div>
           )}
-
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Repeat className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#00A4E4]" />
-            <p>Each auto-buy creates a pending DEX offer (RLUSD → XRP) that you approve in Xaman. Your keys never leave your device — fully non-custodial.</p>
-          </div>
-        </CardContent>
-      )}
-
-      {!settings.enabled && isPremium && (
-        <CardContent className="pt-0">
-          <p className="text-xs text-muted-foreground">
-            Turn this on to automatically convert your vault interest earnings into XRP. Choose how much to convert (10–100%) and set a minimum threshold. Each buy goes through the XRPL DEX and requires your approval in Xaman.
-          </p>
         </CardContent>
       )}
 
       {!isPremium && (
         <CardContent className="pt-0">
           <p className="text-xs text-muted-foreground">
-            Upgrade to Premium ($29/mo) to automatically convert your vault interest into XRP. Set your percentage, minimum amount, and let your earnings accumulate XRP hands-free.
+            Upgrade to Premium ($29/mo) to enable fully automatic interest withdrawal and XRP accumulation. Set your threshold, and the system handles everything — just approve in Xaman when notified.
           </p>
         </CardContent>
       )}
@@ -520,7 +708,7 @@ export default function OwnBankWithdraw() {
         </Card>
       </div>
 
-      <AutoBuyXrpCard
+      <AutoEarnAccumulateCard
         totalInterest={totalInterest}
         subscriptionTier={effectiveTier}
       />
@@ -639,37 +827,6 @@ export default function OwnBankWithdraw() {
                     </Button>
                   </div>
 
-                  {effectiveTier === "free" && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                      <Crown className="h-5 w-5 text-amber-500 shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Auto-Withdraw Available with Premium</p>
-                        <p className="text-xs text-muted-foreground">
-                          Automatically withdraw interest weekly — upgrade to Premium ($29/mo)
-                        </p>
-                      </div>
-                      <Link href="/settings">
-                        <Button size="sm" variant="outline" data-testid="button-upgrade-premium">
-                          Upgrade
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
-
-                  {effectiveTier === "premium" && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-[#00A4E4]/5 border border-[#00A4E4]/20">
-                      <Clock className="h-5 w-5 text-[#00A4E4] shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Auto-Withdraw</p>
-                        <p className="text-xs text-muted-foreground">
-                          Weekly automatic interest withdrawal — Coming soon
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="border-[#00A4E4]/30 text-[#00A4E4]">
-                        Soon
-                      </Badge>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );

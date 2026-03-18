@@ -3,12 +3,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, legacyPlans, type CustomVault } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import multer from "multer";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
 
@@ -6139,6 +6139,61 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Update auto-buy settings error:", error);
       res.status(500).json({ message: "Failed to update auto-buy settings" });
+    }
+  });
+
+  app.get("/api/auto-withdraw", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      res.json({
+        enabled: settings?.autoWithdrawEnabled ?? false,
+        threshold: settings?.autoWithdrawThreshold ?? "5",
+        frequency: settings?.autoWithdrawFrequency ?? "daily",
+        lastRunAt: settings?.autoWithdrawLastRunAt ?? null,
+      });
+    } catch (error) {
+      console.error("Get auto-withdraw settings error:", error);
+      res.status(500).json({ message: "Failed to load auto-withdraw settings" });
+    }
+  });
+
+  app.patch("/api/auto-withdraw", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier !== "premium" && tier !== "pro") {
+        return res.status(403).json({ message: "Premium or Pro subscription required" });
+      }
+      const { enabled, threshold, frequency } = req.body;
+      const updates: Record<string, unknown> = { userId };
+      if (typeof enabled === "boolean") updates.autoWithdrawEnabled = enabled;
+      if (threshold !== undefined && parseFloat(threshold) > 0) updates.autoWithdrawThreshold = String(threshold);
+      if (frequency && ["daily", "weekly", "biweekly", "monthly"].includes(frequency)) updates.autoWithdrawFrequency = frequency;
+      const result = await storage.upsertUserSettings(updates as any);
+      res.json({
+        enabled: result.autoWithdrawEnabled ?? false,
+        threshold: result.autoWithdrawThreshold ?? "5",
+        frequency: result.autoWithdrawFrequency ?? "daily",
+        lastRunAt: result.autoWithdrawLastRunAt ?? null,
+      });
+    } catch (error) {
+      console.error("Update auto-withdraw settings error:", error);
+      res.status(500).json({ message: "Failed to update auto-withdraw settings" });
+    }
+  });
+
+  app.get("/api/auto-withdraw/history", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const logs = await db.select().from(autoWithdrawLogs)
+        .where(eq(autoWithdrawLogs.userId, userId))
+        .orderBy(desc(autoWithdrawLogs.createdAt))
+        .limit(50);
+      res.json({ logs });
+    } catch (error) {
+      console.error("Get auto-withdraw history error:", error);
+      res.status(500).json({ message: "Failed to load history" });
     }
   });
 
