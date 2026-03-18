@@ -420,7 +420,16 @@ export default function OwnBankDex() {
   useEffect(() => {
     if (hasPendingXummPayment()) {
       setPlacingOrder(true);
+
+      const timeout = setTimeout(() => {
+        clearPendingXummPayment();
+        sessionStorage.removeItem("dex_pending_trade");
+        setPlacingOrder(false);
+        toast({ title: "Signing timed out", description: "Please try placing your order again.", variant: "destructive" });
+      }, 30000);
+
       completePendingXummPayment().then((result) => {
+        clearTimeout(timeout);
         setPlacingOrder(false);
         if (result.success) {
           toast({ title: "Order placed", description: "Your trade was submitted to the XRPL." });
@@ -438,10 +447,18 @@ export default function OwnBankDex() {
           } catch {}
           sessionStorage.removeItem("dex_pending_trade");
           setTimeout(() => { fetchOrderBook(); fetchMyOffers(); }, 4000);
-        } else if (result.error !== "No pending payment") {
-          toast({ title: "Trade not completed", description: result.error || "Transaction was cancelled or timed out.", variant: "destructive" });
+        } else {
+          clearPendingXummPayment();
           sessionStorage.removeItem("dex_pending_trade");
+          if (result.error && result.error !== "No pending payment") {
+            toast({ title: "Trade not completed", description: result.error, variant: "destructive" });
+          }
         }
+      }).catch(() => {
+        clearTimeout(timeout);
+        clearPendingXummPayment();
+        sessionStorage.removeItem("dex_pending_trade");
+        setPlacingOrder(false);
       });
     }
   }, []);
