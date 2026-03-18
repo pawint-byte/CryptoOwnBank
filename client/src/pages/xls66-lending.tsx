@@ -925,7 +925,7 @@ function DepositModal({ vault, open, onClose }: { vault: OnLedgerVault | null; o
   );
 }
 
-function ReadinessChecklist() {
+function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
   const walletsQuery = useQuery<any[]>({
     queryKey: ["/api/wallets"],
   });
@@ -957,6 +957,14 @@ function ReadinessChecklist() {
       label: "Create your CryptoOwnBank account",
       done: true,
       tip: "You're here — done!",
+    },
+    {
+      label: "Subscribe to Pro tier",
+      done: hasPro,
+      tip: hasPro
+        ? "You're on Pro — XLS-66 lending is included in your subscription"
+        : "XLS-66 lending requires a Pro subscription ($99/mo or $799/yr). Pro also includes the Legacy Plan, DeFi Borrowing Hub, treasury dashboard, and more.",
+      href: hasPro ? undefined : "/settings",
     },
     {
       label: "Add an XRP Ledger wallet address",
@@ -1264,6 +1272,8 @@ export default function XLS66LendingPage() {
           description="XLS-66 lending gives you access to native XRPL yield vaults, on-ledger lending pools, and auto-compounding — all non-custodial. Upgrade to Pro to unlock this feature."
         />
 
+        <ReadinessChecklist hasPro={false} />
+
         <XLS66Guide />
       </div>
     );
@@ -1295,7 +1305,7 @@ export default function XLS66LendingPage() {
 
       {status && <AmendmentBanner status={status} />}
 
-      {!status?.lendingLive && <ReadinessChecklist />}
+      {!status?.lendingLive && <ReadinessChecklist hasPro={true} />}
 
       {positions.length > 0 && (
         <Card data-testid="positions-summary">
