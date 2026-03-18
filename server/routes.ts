@@ -165,6 +165,24 @@ export async function registerRoutes(
         xrpAddress,
         accountLabel: accountLabel || null,
       }).returning();
+
+      try {
+        const existingWallets = await storage.getWalletsByUser(userId);
+        const walletAlreadyTracked = existingWallets.find(
+          (w) => w.chain === "xrp" && w.address.toLowerCase() === xrpAddress.toLowerCase()
+        );
+        if (!walletAlreadyTracked) {
+          await storage.createWallet({
+            userId,
+            chain: "xrp",
+            address: xrpAddress,
+            label: accountLabel || "Xaman Wallet",
+          });
+        }
+      } catch (walletErr) {
+        console.error("[xaman-connections] Auto-register wallet error (non-fatal):", walletErr);
+      }
+
       res.json({ success: true, connection });
     } catch (error: any) {
       console.error("[xaman-connections] POST error:", error);
