@@ -6589,7 +6589,7 @@ export async function registerRoutes(
       const buySymbol = receivedCurrency === "524C555344000000000000000000000000000000" ? "RLUSD" : receivedCurrency;
       const sellSymbol = spentCurrency === "524C555344000000000000000000000000000000" ? "RLUSD" : spentCurrency;
 
-      await storage.createTransaction({
+      const tx = await storage.createTransaction({
         userId,
         accountId: dexAccount.id,
         assetSymbol: buySymbol,
@@ -6628,14 +6628,13 @@ export async function registerRoutes(
 
       await storage.createTaxLot({
         userId,
-        accountId: dexAccount.id,
+        transactionId: tx.id,
         assetSymbol: buySymbol,
-        quantity: receivedNum.toFixed(8),
-        costBasisPerUnit: pricePerUnit.toFixed(8),
-        totalCostBasis: spentNum.toFixed(2),
         acquiredDate: new Date(),
-        source: "dex_trade",
-        externalId: txHash || null,
+        originalQuantity: receivedNum.toFixed(8),
+        remainingQuantity: receivedNum.toFixed(8),
+        costBasisPerUnit: pricePerUnit.toFixed(8),
+        acquisitionType: "trade",
       });
 
       console.log(`[DEX] Recorded trade for ${userId}: ${receivedNum} ${buySymbol} for ${spentNum} ${sellSymbol}`);
