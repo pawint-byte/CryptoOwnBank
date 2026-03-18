@@ -340,7 +340,7 @@ export default function OwnBankDex() {
   const isPremiumOrAbove = subscriptionData?.tier === "premium" || subscriptionData?.tier === "pro";
 
   const [educationOpen, setEducationOpen] = useState(true);
-  const [viewMode, setViewMode] = useState<"swap" | "advanced">("swap");
+  const [viewMode, setViewMode] = useState<"swap" | "advanced">("advanced");
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"limit" | "market">("limit");
