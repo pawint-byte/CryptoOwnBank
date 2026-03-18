@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Shield,
   Lock,
+  Rocket,
   RefreshCcw,
   ExternalLink,
   Info,
@@ -924,6 +925,194 @@ function DepositModal({ vault, open, onClose }: { vault: OnLedgerVault | null; o
   );
 }
 
+function ReadinessChecklist() {
+  const walletsQuery = useQuery<any[]>({
+    queryKey: ["/api/wallets"],
+  });
+  const xamanQuery = useQuery<any[]>({
+    queryKey: ["/api/xaman-connections"],
+  });
+  const statusQuery = useQuery<AmendmentStatus>({
+    queryKey: ["/api/xls66/status"],
+  });
+
+  const wallets = walletsQuery.data || [];
+  const xamanConnections = xamanQuery.data || [];
+  const status = statusQuery.data;
+
+  const xrpWallets = wallets.filter((w: any) => w.chain === "xrp");
+  const hasXrpWallet = xrpWallets.length > 0;
+  const hasXamanConnected = xamanConnections.length > 0;
+  const xamanLinkedAddresses = new Set(xamanConnections.map((c: any) => c.xrpAddress?.toLowerCase()));
+  const hasXamanLinkedWallet = xrpWallets.some((w: any) => xamanLinkedAddresses.has(w.address?.toLowerCase()));
+  const hasMultipleChains = new Set(wallets.map((w: any) => w.chain)).size > 1;
+
+  const amendmentPct = status?.voting?.xls66?.percentage ?? null;
+  const amendmentActive = status?.voting?.xls66?.enabled || status?.lendingLive || false;
+
+  const steps = [
+    {
+      label: "Create your CryptoOwnBank account",
+      done: true,
+      tip: "You're here — done!",
+    },
+    {
+      label: "Add an XRP Ledger wallet address",
+      done: hasXrpWallet,
+      tip: hasXrpWallet
+        ? `${xrpWallets.length} XRP wallet${xrpWallets.length > 1 ? "s" : ""} added`
+        : "Go to Portfolio → Wallets and add your XRP address",
+      href: "/wallets",
+    },
+    {
+      label: "Connect Xaman (signing app)",
+      done: hasXamanConnected,
+      tip: hasXamanConnected
+        ? `${xamanConnections.length} Xaman connection${xamanConnections.length > 1 ? "s" : ""} active`
+        : "Xaman lets you sign XLS-66 vault transactions from your phone or via Ledger Bluetooth",
+      href: "/wallets",
+    },
+    {
+      label: "Link Xaman to your XRP wallet for signing",
+      done: hasXamanLinkedWallet,
+      tip: hasXamanLinkedWallet
+        ? "Your XRP wallet is linked to Xaman — ready to sign vault deposits"
+        : "On the Wallets page, click 'Link to Xaman' on your XRP wallet so you can sign transactions",
+      href: "/wallets",
+    },
+    {
+      label: "Set up RLUSD trustline",
+      done: false,
+      tip: "Use the Trustlines tab below to set up your RLUSD trustline — required before depositing into RLUSD vaults",
+      action: "trustlines",
+    },
+    {
+      label: "Try the yield calculator",
+      done: false,
+      tip: "See how much you could earn with different amounts and durations",
+      action: "calculator",
+    },
+    {
+      label: "Track your portfolio across multiple chains",
+      done: hasMultipleChains,
+      tip: hasMultipleChains
+        ? `Tracking wallets across ${new Set(wallets.map((w: any) => w.chain)).size} chains`
+        : "Add wallets from other chains (ETH, SOL, ADA, etc.) to see your full portfolio in one place",
+      href: "/wallets",
+    },
+  ];
+
+  const completedCount = steps.filter((s) => s.done).length;
+  const totalSteps = steps.length;
+  const pct = Math.round((completedCount / totalSteps) * 100);
+  const allDone = completedCount === totalSteps;
+
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <Card className="border-2 border-[#00A4E4]/30" data-testid="readiness-checklist">
+      <CardHeader className="pb-3">
+        <button
+          className="w-full flex items-center justify-between text-left"
+          onClick={() => setExpanded(!expanded)}
+          data-testid="toggle-readiness-checklist"
+        >
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Rocket className="h-5 w-5 text-[#00A4E4]" />
+            Are You Ready for XLS-66?
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            <Badge className={allDone ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30" : "bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30"}>
+              {completedCount}/{totalSteps} complete
+            </Badge>
+            {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </div>
+        </button>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Readiness</span>
+              <span>{pct}%</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${allDone ? "bg-emerald-500" : "bg-[#00A4E4]"}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            {amendmentActive
+              ? "XLS-66 is live! Complete these steps to start depositing into on-ledger vaults."
+              : amendmentPct !== null
+                ? `Validators are at ${amendmentPct}% (need 80% for 2 weeks). Get everything ready so you can deposit the moment it activates.`
+                : "Do your homework now so you're ready the moment XLS-66 activates. When validators hit 80%, you'll be first in line."}
+          </p>
+
+          <div className="space-y-2">
+            {steps.map((step, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                  step.done
+                    ? "bg-emerald-500/5 border-emerald-500/20"
+                    : "bg-muted/30 border-border hover:border-[#00A4E4]/30"
+                }`}
+                data-testid={`readiness-step-${i}`}
+              >
+                <div className="mt-0.5">
+                  {step.done ? (
+                    <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${step.done ? "line-through text-muted-foreground" : ""}`}>
+                    {step.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{step.tip}</p>
+                </div>
+                {!step.done && step.href && (
+                  <a href={step.href}>
+                    <Button size="sm" variant="outline" className="shrink-0 text-xs h-7" data-testid={`readiness-action-${i}`}>
+                      Go <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {allDone && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-center">
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                You're 100% ready! When XLS-66 activates, you can deposit into vaults immediately.
+              </p>
+            </div>
+          )}
+
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-medium flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5 text-[#00A4E4]" />
+              How signing works with XLS-66
+            </p>
+            <p className="text-xs text-muted-foreground">
+              CryptoOwnBank builds the transaction (deposit, withdraw, trustline). You sign it in Xaman — 
+              either on your phone (hot wallet) or via your Ledger hardware device connected through Bluetooth (cold wallet). 
+              Your private keys never leave your device. Every transaction requires your explicit approval. 
+              Same signing flow you already use for Soil vaults and DEX trades.
+            </p>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 function XLS66Guide() {
   const [show, setShow] = useState(false);
   return (
@@ -1079,6 +1268,8 @@ export default function XLS66LendingPage() {
       </div>
 
       {status && <AmendmentBanner status={status} />}
+
+      {!status?.lendingLive && <ReadinessChecklist />}
 
       {positions.length > 0 && (
         <Card data-testid="positions-summary">
