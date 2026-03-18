@@ -85,7 +85,7 @@ export default function OwnBankTransfer() {
   const { toast } = useToast();
   const { isConnected, walletAddress, walletType } = useXrplStore();
 
-  const [educationOpen, setEducationOpen] = useState(true);
+  const [educationOpen, setEducationOpen] = useState(false);
   const [fromWalletId, setFromWalletId] = useState("");
   const [toWalletId, setToWalletId] = useState("");
   const [amount, setAmount] = useState("");

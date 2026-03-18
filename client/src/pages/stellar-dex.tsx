@@ -177,7 +177,7 @@ export default function StellarDex() {
     enabled: !!user,
   });
   const isPremiumOrAbove = subscriptionData?.tier === "premium" || subscriptionData?.tier === "pro";
-  const [educationOpen, setEducationOpen] = useState(true);
+  const [educationOpen, setEducationOpen] = useState(false);
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
   const [asks, setAsks] = useState<OrderBookEntry[]>([]);

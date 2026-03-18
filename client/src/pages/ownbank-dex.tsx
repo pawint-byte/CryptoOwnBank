@@ -355,7 +355,7 @@ export default function OwnBankDex() {
   });
   const isPremiumOrAbove = subscriptionData?.tier === "premium" || subscriptionData?.tier === "pro";
 
-  const [educationOpen, setEducationOpen] = useState(true);
+  const [educationOpen, setEducationOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"swap" | "advanced">("advanced");
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");

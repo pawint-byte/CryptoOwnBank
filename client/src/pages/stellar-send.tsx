@@ -136,7 +136,7 @@ export default function StellarSend() {
   const STELLAR_CURRENCIES = deriveCurrenciesFromBalances(balances);
 
   const [activeTab, setActiveTab] = useState("send");
-  const [educationOpen, setEducationOpen] = useState(true);
+  const [educationOpen, setEducationOpen] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [currencyValue, setCurrencyValue] = useState("XLM");

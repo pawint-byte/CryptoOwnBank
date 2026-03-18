@@ -120,7 +120,7 @@ export default function OwnBankSend() {
     updateBalances,
     connect,
   } = useXrplStore();
-  const [educationOpen, setEducationOpen] = useState(true);
+  const [educationOpen, setEducationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("send");
 
   const [recipient, setRecipient] = useState("");
