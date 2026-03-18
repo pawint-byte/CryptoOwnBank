@@ -114,7 +114,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            Your portfolio overview at a glance
+            Your crypto holdings at a glance
           </p>
         </div>
         <div className="flex gap-2">
@@ -206,7 +206,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <MetricCard
-          title="Total Portfolio Value"
+          title="Total Crypto Holdings"
           value={data ? formatCurrency(data.totalValue) : "$0.00"}
           change={data?.dayChangePercent}
           changeLabel="24h"

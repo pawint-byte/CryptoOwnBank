@@ -974,6 +974,7 @@ export async function registerRoutes(
       }
 
       for (const pos of positionsData) {
+        if (pos.isAddressed) continue;
         const asset = await storage.getAsset(pos.assetSymbol);
         let currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
         if (!Number.isFinite(currentPrice) || currentPrice <= 0) {

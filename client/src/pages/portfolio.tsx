@@ -457,7 +457,7 @@ export default function Portfolio() {
         <div>
           <h1 className="text-2xl font-bold" data-testid="heading-portfolio">Portfolio</h1>
           <p className="text-muted-foreground text-sm">
-            Your holdings and performance breakdown
+            Your complete portfolio — crypto, real estate, and everything you own
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -607,7 +607,7 @@ export default function Portfolio() {
         <Card>
           <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
             <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-              Total Value
+              Total Portfolio Value
             </CardTitle>
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
