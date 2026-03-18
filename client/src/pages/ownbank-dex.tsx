@@ -50,10 +50,12 @@ import { useXrplStore } from "@/lib/xrpl-store";
 import {
   getOrderBook,
   getAccountOffers,
+  getAccountTransactions,
   getAccountTrustlines,
   getBalances,
   type OrderBookEntry,
   type XrplOffer,
+  type XrplTransaction,
 } from "@/lib/xrpl-client";
 import { signTransaction, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
@@ -351,6 +353,9 @@ export default function OwnBankDex() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [cancelingSeq, setCancelingSeq] = useState<number | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [tradeHistory, setTradeHistory] = useState<XrplTransaction[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const pair = COMMON_PAIRS[selectedPairIndex];
 
@@ -387,6 +392,22 @@ export default function OwnBankDex() {
   useEffect(() => {
     fetchOrderBook();
   }, [fetchOrderBook]);
+
+  const fetchTradeHistory = useCallback(async () => {
+    if (!walletAddress) return;
+    setLoadingHistory(true);
+    try {
+      const txs = await getAccountTransactions(walletAddress, 100);
+      const trades = txs.filter(tx =>
+        tx.type === "OfferCreate" && tx.status === "tesSUCCESS"
+      );
+      setTradeHistory(trades);
+    } catch {
+      setTradeHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [walletAddress]);
 
   useEffect(() => {
     if (isConnected) {
@@ -1056,6 +1077,105 @@ export default function OwnBankDex() {
             </div>
           )}
         </CardContent>
+      </Card>
+
+      <Card data-testid="card-trade-history">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="text-base flex items-center gap-2">
+            Trade History
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                <p>Your recent OfferCreate transactions on the XRPL DEX — both filled and placed orders.</p>
+              </TooltipContent>
+            </Tooltip>
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchTradeHistory}
+              disabled={loadingHistory}
+              data-testid="button-refresh-history"
+            >
+              <RefreshCw className={`h-4 w-4 ${loadingHistory ? "animate-spin" : ""}`} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowHistory(!showHistory);
+                if (!showHistory && tradeHistory.length === 0) fetchTradeHistory();
+              }}
+              data-testid="button-toggle-history"
+            >
+              {showHistory ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+              {showHistory ? "Hide" : "Show"}
+            </Button>
+          </div>
+        </CardHeader>
+        {showHistory && (
+          <CardContent>
+            {loadingHistory ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : tradeHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6" data-testid="text-no-history">
+                No trade history found. Place a trade to see it here.
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {tradeHistory.map((tx) => {
+                  const displayCurrency = (c: string) =>
+                    c === RLUSD_CURRENCY ? "RLUSD" : c;
+                  return (
+                    <div
+                      key={tx.hash}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border p-3"
+                      data-testid={`row-history-${tx.hash.slice(0, 8)}`}
+                    >
+                      <div className="flex items-center gap-3 flex-wrap min-w-0">
+                        <Badge variant="outline" className="shrink-0 text-green-400 border-green-500/30">
+                          Trade
+                        </Badge>
+                        <span className="text-sm font-mono">
+                          <span className="font-medium">{formatAmount(tx.amount, 4)} {displayCurrency(tx.currency)}</span>
+                        </span>
+                        {tx.amount2 && tx.currency2 && (
+                          <>
+                            <ArrowRightLeft className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span className="text-sm font-mono">
+                              <span className="font-medium">{formatAmount(tx.amount2, 4)} {displayCurrency(tx.currency2)}</span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {tx.date ? new Date(tx.date).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                        </span>
+                        <a
+                          href={`https://xrpscan.com/tx/${tx.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#00A4E4] hover:text-[#00A4E4]/80"
+                          data-testid={`link-tx-${tx.hash.slice(0, 8)}`}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       <XrplDisclaimer />
