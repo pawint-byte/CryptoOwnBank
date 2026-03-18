@@ -611,7 +611,7 @@ export default function OwnBankWithdraw() {
                 <Lock className="h-5 w-5 text-[#00A4E4]" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Principal Locked</p>
+                <p className="text-sm text-muted-foreground">Total Principal Deposited</p>
                 <p className="text-xl font-bold font-mono" data-testid="text-total-principal">
                   {formatCurrency(
                     mergedVaults.reduce((sum, v) => sum + v.principal, 0)

@@ -216,7 +216,7 @@ export default function YieldCalculator() {
                 <div className="flex items-start gap-2">
                   <Shield className="h-4 w-4 text-[#00A4E4] shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground">
-                    Your principal stays locked and protected. Only earned interest can be withdrawn. Soil vaults automatically compound if you don't withdraw.
+                    Soil vaults compound daily — earned interest is added to your position automatically. When you withdraw, you get your full position (principal + interest together). Redeposit to keep earning.
                   </p>
                 </div>
               </div>

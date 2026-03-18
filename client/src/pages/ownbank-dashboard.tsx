@@ -496,7 +496,7 @@ export default function OwnBankDashboard() {
             <div className="text-center space-y-2">
               <h2 className="text-xl font-semibold" data-testid="text-connect-heading">Connect Your Wallet</h2>
               <p className="text-muted-foreground max-w-md">
-                Connect your XRPL cold wallet to view balances, manage vault deposits, and withdraw earned interest.
+                Connect your XRPL cold wallet to view balances, manage vault deposits, and track your yield.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -1219,7 +1219,7 @@ export default function OwnBankDashboard() {
             </Link>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Interest accrues daily on Soil vaults. Use Withdraw to move earned interest to your wallet or bank when ready. Your principal stays locked and protected.
+            Interest accrues daily on Soil vaults. When you're ready, withdraw your full position (principal + interest) through Soil — then redeposit your principal to keep earning.
           </p>
         </CardContent>
       </Card>

@@ -233,7 +233,7 @@ const faqGroups = [
     items: [
       {
         q: "How do I start earning yield on RLUSD?",
-        a: '1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vault</a> (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately — your principal stays locked. 5) Withdraw only the accrued interest via the <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Withdraw Interest page</a> whenever you want (manual or auto for Premium users). No KYC on our end, no bank linking required.',
+        a: '1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vault</a> (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately — interest compounds daily. 5) When you\'re ready, withdraw your full position (principal + interest together) via <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Vault Positions</a> — then redeposit your principal to keep earning. No KYC on our end, no bank linking required.',
       },
       {
         q: "Can I transfer RLUSD from Uphold to my cold wallet?",
