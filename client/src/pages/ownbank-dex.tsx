@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -59,6 +59,7 @@ import {
   type XrplTransaction,
 } from "@/lib/xrpl-client";
 import { signTransaction, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
+import { WalletPicker } from "@/components/wallet-picker";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
 
@@ -333,6 +334,19 @@ export default function OwnBankDex() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { isConnected, walletAddress, walletType } = useXrplStore();
+
+  const { data: xamanConnections = [] } = useQuery<Array<{ id: number; xrpAddress: string; accountLabel: string | null }>>({
+    queryKey: ["/api/xaman-connections"],
+    enabled: !!user,
+  });
+  const [signingAddress, setSigningAddress] = useState<string>("");
+  const activeWallet = signingAddress || walletAddress;
+
+  useEffect(() => {
+    if (walletAddress && !signingAddress) {
+      setSigningAddress(walletAddress);
+    }
+  }, [walletAddress]);
   const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
     queryKey: ["/api/subscription"],
     enabled: !!user,
@@ -379,27 +393,27 @@ export default function OwnBankDex() {
   }, [pair, toast]);
 
   const fetchMyOffers = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!activeWallet) return;
     setLoadingOffers(true);
     try {
-      const offers = await getAccountOffers(walletAddress);
+      const offers = await getAccountOffers(activeWallet);
       setMyOffers(offers);
     } catch {
       setMyOffers([]);
     } finally {
       setLoadingOffers(false);
     }
-  }, [walletAddress]);
+  }, [activeWallet]);
 
   useEffect(() => {
     fetchOrderBook();
   }, [fetchOrderBook]);
 
   const fetchTradeHistory = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!activeWallet) return;
     setLoadingHistory(true);
     try {
-      const txs = await getAccountTransactions(walletAddress, 100);
+      const txs = await getAccountTransactions(activeWallet, 100);
       const trades = txs.filter(tx =>
         tx.type === "OfferCreate" && tx.status === "Success"
       );
@@ -409,7 +423,7 @@ export default function OwnBankDex() {
     } finally {
       setLoadingHistory(false);
     }
-  }, [walletAddress]);
+  }, [activeWallet]);
 
   useEffect(() => {
     if (isConnected) {
@@ -543,7 +557,7 @@ export default function OwnBankDex() {
 
       const txJson: Record<string, any> = {
         TransactionType: "OfferCreate",
-        Account: walletAddress,
+        Account: activeWallet,
         TakerGets: takerGets,
         TakerPays: takerPays,
       };
@@ -597,7 +611,7 @@ export default function OwnBankDex() {
               amount: formatAmount(amount),
               price: usePrice.toString(),
               total: totalVal.toFixed(6),
-              walletAddress,
+              walletAddress: activeWallet,
               pair: `${pair.base.display}/${pair.counter.display}`,
             }),
           }).catch(() => {});
@@ -624,7 +638,7 @@ export default function OwnBankDex() {
     try {
       const txJson = {
         TransactionType: "OfferCancel",
-        Account: walletAddress,
+        Account: activeWallet,
         OfferSequence: seq,
       };
       const result = await signTransaction(txJson);
@@ -714,10 +728,22 @@ export default function OwnBankDex() {
           <p className="text-muted-foreground">Trade tokens on the XRPL decentralized exchange</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" data-testid="badge-dex-wallet">
-            <Wallet className="h-3 w-3 mr-1" />
-            {truncateAddress(walletAddress!)}
-          </Badge>
+          {xamanConnections.length > 1 ? (
+            <WalletPicker
+              value={signingAddress}
+              onChange={(addr) => {
+                setSigningAddress(addr);
+                setMyOffers([]);
+                setTradeHistory([]);
+              }}
+              label="Signing Wallet"
+            />
+          ) : (
+            <Badge variant="outline" data-testid="badge-dex-wallet">
+              <Wallet className="h-3 w-3 mr-1" />
+              {truncateAddress(walletAddress!)}
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -804,7 +830,7 @@ export default function OwnBankDex() {
         asks={asks}
         loadingBook={loadingBook}
         isConnected={isConnected}
-        walletAddress={walletAddress}
+        walletAddress={activeWallet}
         walletType={walletType}
         placingOrder={placingOrder}
         onPlaceOrder={async (side, amt) => {
@@ -828,7 +854,7 @@ export default function OwnBankDex() {
             }
             const txJson: Record<string, any> = {
               TransactionType: "OfferCreate",
-              Account: walletAddress,
+              Account: activeWallet,
               TakerGets: takerGets,
               TakerPays: takerPays,
               Flags: 0x00040000,
