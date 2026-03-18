@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import multer from "multer";
@@ -2807,26 +2807,155 @@ export async function registerRoutes(
         allocationMap.set(pos.assetSymbol, (allocationMap.get(pos.assetSymbol) || 0) + val);
       });
 
+      const userProperties = await db.select().from(properties).where(eq(properties.userId, userId));
+      let propertyTotalValue = 0;
+      let propertyTotalCostBasis = 0;
+      for (const prop of userProperties) {
+        const cv = parseFloat(prop.currentValue || "0");
+        const pp = parseFloat(prop.purchasePrice);
+        if (cv > 0) propertyTotalValue += cv;
+        else propertyTotalValue += pp;
+        propertyTotalCostBasis += pp;
+      }
+
+      const grandTotalValue = totalValue + propertyTotalValue;
+      const grandTotalCostBasis = totalCostBasis + propertyTotalCostBasis;
+      const totalGainLoss = grandTotalValue - grandTotalCostBasis;
+      const totalGainLossPercent = grandTotalCostBasis > 0 ? (totalGainLoss / grandTotalCostBasis) * 100 : 0;
+
+      if (propertyTotalValue > 0) {
+        allocationMap.set("Real Estate", (allocationMap.get("Real Estate") || 0) + propertyTotalValue);
+      }
       const allocation = Array.from(allocationMap.entries()).map(([name, value], idx) => ({
         name,
         value,
         color: colors[idx % colors.length],
       }));
 
-      const totalGainLoss = totalValue - totalCostBasis;
-      const totalGainLossPercent = totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
-
       res.json({
         positions: allPositions,
-        totalValue,
-        totalCostBasis,
+        totalValue: grandTotalValue,
+        totalCostBasis: grandTotalCostBasis,
         totalGainLoss,
         totalGainLossPercent,
         allocation,
+        cryptoValue: totalValue,
+        propertyValue: propertyTotalValue,
+        propertyCount: userProperties.length,
       });
     } catch (error) {
       console.error("Portfolio error:", error);
       res.status(500).json({ message: "Failed to load portfolio" });
+    }
+  });
+
+  app.get("/api/properties", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userProps = await db.select().from(properties).where(eq(properties.userId, userId));
+      res.json(userProps);
+    } catch (error) {
+      console.error("Properties fetch error:", error);
+      res.status(500).json({ message: "Failed to load properties" });
+    }
+  });
+
+  app.post("/api/properties", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const parsed = insertPropertySchema.parse({ ...req.body, userId });
+
+      const { resolveMetroSeries, getMetroLabel } = await import("./services/housing-index");
+      const seriesId = resolveMetroSeries(
+        parsed.city,
+        parsed.stateProvince || null,
+        parsed.zipCode || null,
+        parsed.country || "US"
+      );
+      const metroArea = seriesId ? getMetroLabel(seriesId) : null;
+
+      const purchasePrice = parseFloat(parsed.purchasePrice);
+      const purchaseDate = new Date(parsed.purchaseDate);
+      const now = new Date();
+      const yearsHeld = (now.getTime() - purchaseDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+
+      const COUNTRY_RATES: Record<string, number> = {
+        US: 0.047, GB: 0.043, CA: 0.052, AU: 0.065, DE: 0.038, FR: 0.032,
+        NL: 0.045, IE: 0.048, ES: 0.028, IT: 0.015, JP: 0.010, SG: 0.055,
+        HK: 0.058, NZ: 0.062, SE: 0.050, NO: 0.048, CH: 0.035, AE: 0.040,
+        IN: 0.055, BR: 0.042, MX: 0.038, ZA: 0.045, KR: 0.048,
+      };
+      const annualRate = COUNTRY_RATES[parsed.country || "US"] || 0.03;
+      const currentValue = purchasePrice * Math.pow(1 + annualRate, yearsHeld);
+      const appreciationPct = ((currentValue - purchasePrice) / purchasePrice) * 100;
+
+      const [created] = await db.insert(properties).values({
+        ...parsed,
+        indexSeriesId: seriesId || null,
+        metroArea,
+        currentValue: currentValue.toFixed(2),
+        appreciationPct: appreciationPct.toFixed(4),
+        lastUpdated: new Date(),
+      }).returning();
+
+      const { refreshHousingIndices } = await import("./services/housing-index");
+      refreshHousingIndices().catch(() => {});
+
+      res.json(created);
+    } catch (error) {
+      console.error("Property create error:", error);
+      res.status(500).json({ message: "Failed to create property" });
+    }
+  });
+
+  app.patch("/api/properties/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const propId = parseInt(req.params.id);
+      const existing = await db.select().from(properties).where(and(eq(properties.id, propId), eq(properties.userId, userId)));
+      if (existing.length === 0) return res.status(404).json({ message: "Property not found" });
+
+      const { address, city, stateProvince, country, zipCode, purchasePrice, purchaseDate, notes } = req.body;
+      const updates: any = {};
+      if (address !== undefined) updates.address = address;
+      if (city !== undefined) updates.city = city;
+      if (stateProvince !== undefined) updates.stateProvince = stateProvince;
+      if (country !== undefined) updates.country = country;
+      if (zipCode !== undefined) updates.zipCode = zipCode;
+      if (purchasePrice !== undefined) updates.purchasePrice = purchasePrice;
+      if (purchaseDate !== undefined) updates.purchaseDate = purchaseDate;
+      if (notes !== undefined) updates.notes = notes;
+
+      if (city || stateProvince || zipCode || country) {
+        const { resolveMetroSeries, getMetroLabel } = await import("./services/housing-index");
+        const c = city || existing[0].city;
+        const s = stateProvince || existing[0].stateProvince;
+        const z = zipCode || existing[0].zipCode;
+        const co = country || existing[0].country;
+        const seriesId = resolveMetroSeries(c, s, z, co);
+        updates.indexSeriesId = seriesId || null;
+        updates.metroArea = seriesId ? getMetroLabel(seriesId) : null;
+      }
+
+      const [updated] = await db.update(properties).set(updates).where(eq(properties.id, propId)).returning();
+      res.json(updated);
+    } catch (error) {
+      console.error("Property update error:", error);
+      res.status(500).json({ message: "Failed to update property" });
+    }
+  });
+
+  app.delete("/api/properties/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const propId = parseInt(req.params.id);
+      const existing = await db.select().from(properties).where(and(eq(properties.id, propId), eq(properties.userId, userId)));
+      if (existing.length === 0) return res.status(404).json({ message: "Property not found" });
+      await db.delete(properties).where(eq(properties.id, propId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Property delete error:", error);
+      res.status(500).json({ message: "Failed to delete property" });
     }
   });
 
@@ -8548,6 +8677,10 @@ function startPriceAlertChecker() {
 
   import("./services/payment-scheduler").then(({ startPaymentScheduler }) => {
     startPaymentScheduler();
+  });
+
+  import("./services/housing-index").then(({ startHousingIndexScheduler }) => {
+    startHousingIndexScheduler();
   });
 
   setTimeout(async () => {

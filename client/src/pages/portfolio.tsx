@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -34,6 +34,26 @@ interface PortfolioData {
   totalGainLoss: number;
   totalGainLossPercent: number;
   allocation: Array<{ name: string; value: number; color: string }>;
+  cryptoValue?: number;
+  propertyValue?: number;
+  propertyCount?: number;
+}
+
+interface PropertyEntry {
+  id: number;
+  address: string;
+  city: string;
+  stateProvince: string | null;
+  country: string;
+  zipCode: string | null;
+  purchasePrice: string;
+  purchaseDate: string;
+  currentValue: string | null;
+  appreciationPct: string | null;
+  metroArea: string | null;
+  indexSeriesId: string | null;
+  notes: string | null;
+  lastUpdated: string | null;
 }
 
 type ViewMode = "holdings" | "consolidated" | "category";
@@ -173,6 +193,44 @@ export default function Portfolio() {
 
   const { data: dbPositions = [] } = useQuery<PositionWithMarket[]>({
     queryKey: ["/api/positions"],
+  });
+
+  const { data: propertiesData = [] } = useQuery<PropertyEntry[]>({
+    queryKey: ["/api/properties"],
+  });
+
+  const [propertyOpen, setPropertyOpen] = useState(false);
+  const [propertyForm, setPropertyForm] = useState({
+    address: "",
+    city: "",
+    stateProvince: "",
+    country: "US",
+    zipCode: "",
+    purchasePrice: "",
+    purchaseDate: "",
+    notes: "",
+  });
+
+  const addPropertyMutation = useMutation({
+    mutationFn: (form: typeof propertyForm) =>
+      apiRequest("POST", "/api/properties", form),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      setPropertyOpen(false);
+      setPropertyForm({ address: "", city: "", stateProvince: "", country: "US", zipCode: "", purchasePrice: "", purchaseDate: "", notes: "" });
+      toast({ title: "Property added", description: "Your property has been added and will auto-update based on regional housing data." });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to add property", variant: "destructive" }),
+  });
+
+  const deletePropertyMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/properties/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      toast({ title: "Property removed" });
+    },
   });
 
   const { data: userWallets = [] } = useQuery<Array<{ id: string; label: string | null; chain: string }>>({
@@ -1050,6 +1108,239 @@ export default function Portfolio() {
           />
         </div>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5 text-emerald-600" />
+              Real Estate
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Values auto-update using regional housing indices
+            </p>
+          </div>
+          <Dialog open={propertyOpen} onOpenChange={setPropertyOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-testid="button-add-property">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add Property
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Property</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  addPropertyMutation.mutate(propertyForm);
+                }}
+                className="space-y-4"
+                data-testid="form-add-property"
+              >
+                <div>
+                  <Label>Street Address</Label>
+                  <Input
+                    placeholder="211 Summerwinds Drive"
+                    value={propertyForm.address}
+                    onChange={(e) => setPropertyForm({ ...propertyForm, address: e.target.value })}
+                    required
+                    data-testid="input-property-address"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>City</Label>
+                    <Input
+                      placeholder="Cary"
+                      value={propertyForm.city}
+                      onChange={(e) => setPropertyForm({ ...propertyForm, city: e.target.value })}
+                      required
+                      data-testid="input-property-city"
+                    />
+                  </div>
+                  <div>
+                    <Label>State / Province</Label>
+                    <Input
+                      placeholder="NC"
+                      value={propertyForm.stateProvince}
+                      onChange={(e) => setPropertyForm({ ...propertyForm, stateProvince: e.target.value })}
+                      data-testid="input-property-state"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Country</Label>
+                    <Select
+                      value={propertyForm.country}
+                      onValueChange={(v) => setPropertyForm({ ...propertyForm, country: v })}
+                    >
+                      <SelectTrigger data-testid="select-property-country">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="US">US</SelectItem>
+                        <SelectItem value="GB">UK</SelectItem>
+                        <SelectItem value="CA">Canada</SelectItem>
+                        <SelectItem value="AU">Australia</SelectItem>
+                        <SelectItem value="DE">Germany</SelectItem>
+                        <SelectItem value="FR">France</SelectItem>
+                        <SelectItem value="NL">Netherlands</SelectItem>
+                        <SelectItem value="IE">Ireland</SelectItem>
+                        <SelectItem value="ES">Spain</SelectItem>
+                        <SelectItem value="IT">Italy</SelectItem>
+                        <SelectItem value="JP">Japan</SelectItem>
+                        <SelectItem value="SG">Singapore</SelectItem>
+                        <SelectItem value="HK">Hong Kong</SelectItem>
+                        <SelectItem value="NZ">New Zealand</SelectItem>
+                        <SelectItem value="SE">Sweden</SelectItem>
+                        <SelectItem value="NO">Norway</SelectItem>
+                        <SelectItem value="CH">Switzerland</SelectItem>
+                        <SelectItem value="AE">UAE</SelectItem>
+                        <SelectItem value="IN">India</SelectItem>
+                        <SelectItem value="BR">Brazil</SelectItem>
+                        <SelectItem value="MX">Mexico</SelectItem>
+                        <SelectItem value="ZA">South Africa</SelectItem>
+                        <SelectItem value="KR">South Korea</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Zip / Postal Code</Label>
+                    <Input
+                      placeholder="27518"
+                      value={propertyForm.zipCode}
+                      onChange={(e) => setPropertyForm({ ...propertyForm, zipCode: e.target.value })}
+                      data-testid="input-property-zip"
+                    />
+                  </div>
+                  <div>
+                    <Label>Purchase Date</Label>
+                    <Input
+                      type="date"
+                      value={propertyForm.purchaseDate}
+                      onChange={(e) => setPropertyForm({ ...propertyForm, purchaseDate: e.target.value })}
+                      required
+                      data-testid="input-property-date"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Purchase Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="450000"
+                    value={propertyForm.purchasePrice}
+                    onChange={(e) => setPropertyForm({ ...propertyForm, purchasePrice: e.target.value })}
+                    required
+                    data-testid="input-property-price"
+                  />
+                </div>
+                <div>
+                  <Label>Notes (optional)</Label>
+                  <Input
+                    placeholder="Primary residence, 4BR/3BA"
+                    value={propertyForm.notes}
+                    onChange={(e) => setPropertyForm({ ...propertyForm, notes: e.target.value })}
+                    data-testid="input-property-notes"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={addPropertyMutation.isPending} data-testid="button-submit-property">
+                  {addPropertyMutation.isPending ? "Adding..." : "Add Property"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {propertiesData.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground" data-testid="empty-properties">
+              <Home className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No properties added yet</p>
+              <p className="text-xs mt-1">Add your home, investment properties, or vacation homes to track their value</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {propertiesData.map((prop) => {
+                const purchasePrice = parseFloat(prop.purchasePrice);
+                const currentValue = parseFloat(prop.currentValue || prop.purchasePrice);
+                const appreciation = parseFloat(prop.appreciationPct || "0");
+                const gainLoss = currentValue - purchasePrice;
+
+                return (
+                  <div
+                    key={prop.id}
+                    className="flex items-start justify-between p-4 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+                    data-testid={`property-${prop.id}`}
+                  >
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Home className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                        <span className="font-medium text-sm truncate">{prop.address}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {prop.city}{prop.stateProvince ? `, ${prop.stateProvince}` : ""} {prop.zipCode || ""}
+                        </span>
+                        {prop.metroArea && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {prop.metroArea} Index
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Purchased {new Date(prop.purchaseDate).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          Paid {formatCurrency(purchasePrice)}
+                        </span>
+                      </div>
+                      {prop.notes && (
+                        <p className="text-xs text-muted-foreground italic mt-1">{prop.notes}</p>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-4 space-y-1">
+                      <div className="font-mono font-bold text-sm" data-testid={`property-value-${prop.id}`}>
+                        {formatCurrency(currentValue)}
+                      </div>
+                      <div className={cn("text-xs font-medium", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
+                        {gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} ({appreciation > 0 ? "+" : ""}{appreciation.toFixed(1)}%)
+                      </div>
+                      {prop.lastUpdated && (
+                        <p className="text-[10px] text-muted-foreground">
+                          Updated {new Date(prop.lastUpdated).toLocaleDateString()}
+                        </p>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => deletePropertyMutation.mutate(prop.id)}
+                        data-testid={`button-delete-property-${prop.id}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-between pt-2 border-t text-sm">
+                <span className="text-muted-foreground">Total Real Estate Value</span>
+                <span className="font-mono font-bold" data-testid="text-total-property-value">
+                  {formatCurrency(propertiesData.reduce((sum, p) => sum + parseFloat(p.currentValue || p.purchasePrice), 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={!!editingPosition} onOpenChange={(open) => { if (!open) setEditingPosition(null); }}>
         {editingPosition && (

@@ -970,3 +970,49 @@ export const featureAnnouncements = pgTable("feature_announcements", {
 });
 
 export type FeatureAnnouncement = typeof featureAnnouncements.$inferSelect;
+
+export const properties = pgTable("properties", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  address: varchar("address", { length: 500 }).notNull(),
+  city: varchar("city", { length: 200 }).notNull(),
+  stateProvince: varchar("state_province", { length: 100 }),
+  country: varchar("country", { length: 2 }).notNull().default("US"),
+  zipCode: varchar("zip_code", { length: 20 }),
+  purchasePrice: decimal("purchase_price", { precision: 14, scale: 2 }).notNull(),
+  purchaseDate: varchar("purchase_date", { length: 10 }).notNull(),
+  currentValue: decimal("current_value", { precision: 14, scale: 2 }),
+  appreciationPct: decimal("appreciation_pct", { precision: 8, scale: 4 }),
+  indexSeriesId: varchar("index_series_id", { length: 50 }),
+  metroArea: varchar("metro_area", { length: 100 }),
+  notes: text("notes"),
+  lastUpdated: timestamp("last_updated"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_properties_user").on(table.userId),
+]);
+
+export const insertPropertySchema = createInsertSchema(properties).omit({
+  id: true,
+  currentValue: true,
+  appreciationPct: true,
+  lastUpdated: true,
+  createdAt: true,
+});
+
+export type Property = typeof properties.$inferSelect;
+export type InsertProperty = z.infer<typeof insertPropertySchema>;
+
+export const housingIndices = pgTable("housing_indices", {
+  id: serial("id").primaryKey(),
+  seriesId: varchar("series_id", { length: 50 }).notNull(),
+  country: varchar("country", { length: 2 }).notNull(),
+  region: varchar("region", { length: 100 }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  value: decimal("value", { precision: 12, scale: 4 }).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_housing_series_date").on(table.seriesId, table.date),
+]);
+
+export type HousingIndex = typeof housingIndices.$inferSelect;
