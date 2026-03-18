@@ -4153,8 +4153,7 @@ export async function registerRoutes(
   app.get("/api/subscription", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const settings = await storage.getUserSettings(userId);
-      const tier = settings?.subscriptionTier || "free";
+      const { tier } = await getEffectiveTier(userId);
       res.json({ tier, status: "active" });
     } catch (error) {
       console.error("Subscription check error:", error);
