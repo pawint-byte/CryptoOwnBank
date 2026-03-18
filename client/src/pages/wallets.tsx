@@ -2123,6 +2123,23 @@ export default function Wallets() {
         />
       )}
 
+      {userWallets.some(w => w.chain === "xrp") && (
+        <div className="rounded-lg border p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3" style={{ borderColor: "#00A4E440", backgroundColor: "#00A4E408" }} data-testid="banner-xrpl-ownbank">
+          <div className="flex items-center gap-2 min-w-0">
+            <Wallet className="h-5 w-5 shrink-0" style={{ color: "#00A4E4" }} />
+            <div>
+              <p className="text-sm font-medium">You have XRP addresses tracked here</p>
+              <p className="text-xs text-muted-foreground">Use OwnBank XRPL for yield vaults, DEX trading, DCA orders, and non-custodial payments.</p>
+            </div>
+          </div>
+          <Link href="/ownbank" className="shrink-0">
+            <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: "#00A4E460", color: "#00A4E4" }} data-testid="button-go-xrpl-ownbank">
+              Open OwnBank XRPL
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {userWallets.some(w => w.chain === "stellar") && (
         <div className="rounded-lg border p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3" style={{ borderColor: "#7B61FF40", backgroundColor: "#7B61FF08" }} data-testid="banner-stellar-ownbank">
           <div className="flex items-center gap-2 min-w-0">

@@ -23,7 +23,8 @@ import {
 import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn } from "@/lib/xumm-connector";
 import { connectLedger } from "@/lib/ledger-connector";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
   Wallet,
@@ -75,6 +76,11 @@ export default function OwnBankDashboard() {
     updateBalances,
     generateReferralCode,
   } = useXrplStore();
+
+  const { data: trackerXrpWallets = [] } = useQuery<Array<{ id: string; chain: string; address: string; label: string | null }>>({
+    queryKey: ["/api/wallets"],
+    select: (data: Array<{ id: string; chain: string; address: string; label: string | null }>) => data.filter((w) => w.chain === "xrp"),
+  });
 
   const [xrpPrice, setXrpPrice] = useState<number>(0);
   const [loadingBalances, setLoadingBalances] = useState(false);
@@ -203,6 +209,20 @@ export default function OwnBankDashboard() {
     } catch (err) {
       console.error("Failed to save wallet to server:", err);
     }
+    try {
+      const alreadyTracked = trackerXrpWallets.some(
+        (w) => w.address.toLowerCase() === address.toLowerCase()
+      );
+      if (!alreadyTracked) {
+        await apiRequest("POST", "/api/wallets", {
+          chain: "xrp",
+          address,
+          label: type === "xumm" ? "Xaman Wallet" : "Ledger Wallet",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      }
+    } catch {
+    }
   };
 
   const handleConnectXumm = async () => {
@@ -212,9 +232,9 @@ export default function OwnBankDashboard() {
       if (result.success && result.address) {
         connect(result.address, "xumm");
         saveWalletToServer(result.address, "xumm");
-        toast({ title: "Wallet Connected", description: `Connected via Xumm: ${truncateAddress(result.address)}` });
+        toast({ title: "Wallet Connected", description: `Connected via Xaman: ${truncateAddress(result.address)}` });
       } else {
-        toast({ title: "Connection Failed", description: result.error || "Could not connect Xumm wallet.", variant: "destructive" });
+        toast({ title: "Connection Failed", description: result.error || "Could not connect Xaman wallet.", variant: "destructive" });
       }
     } catch (err: any) {
       toast({ title: "Connection Error", description: err.message || "Unexpected error.", variant: "destructive" });
@@ -489,7 +509,7 @@ export default function OwnBankDashboard() {
                 ) : (
                   <SiRipple className="h-4 w-4 mr-2" />
                 )}
-                {connectingXumm ? "Connecting..." : "Connect Xumm"}
+                {connectingXumm ? "Connecting..." : "Connect Xaman"}
               </Button>
               <Button
                 variant="outline"
@@ -505,6 +525,34 @@ export default function OwnBankDashboard() {
                 Connect Ledger
               </Button>
             </div>
+            {trackerXrpWallets.length > 0 && (
+              <div className="w-full max-w-lg mt-4">
+                <p className="text-sm font-medium mb-2 text-center">Your XRP addresses from Wallets & Addresses:</p>
+                <div className="space-y-2">
+                  {trackerXrpWallets.map((w) => (
+                    <div
+                      key={w.id}
+                      className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        connect(w.address, "xumm");
+                        saveWalletToServer(w.address, "xumm");
+                        toast({ title: "Wallet Connected", description: `Connected: ${truncateAddress(w.address)}` });
+                      }}
+                      data-testid={`button-use-tracker-xrp-${w.id}`}
+                    >
+                      <Wallet className="h-4 w-4 shrink-0 text-[#00A4E4]" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{w.label || "XRP Wallet"}</p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">{w.address}</p>
+                      </div>
+                      <Badge variant="outline" className="shrink-0 text-xs border-[#00A4E4]/40 text-[#00A4E4]">
+                        Use
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -516,7 +564,7 @@ export default function OwnBankDashboard() {
             </h3>
             <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
               <li data-testid="text-guide-step-1">Open <span className="font-medium text-foreground">Xaman</span> on your iPhone (or have <span className="font-medium text-foreground">Ledger Nano X</span> ready).</li>
-              <li data-testid="text-guide-step-2">On this page, click <span className="font-medium text-foreground">Connect Xumm</span> or <span className="font-medium text-foreground">Connect Ledger</span> above.</li>
+              <li data-testid="text-guide-step-2">On this page, click <span className="font-medium text-foreground">Connect Xaman</span> or <span className="font-medium text-foreground">Connect Ledger</span> above.</li>
               <li data-testid="text-guide-step-3">Approve the connection in Xaman (or on Ledger device).</li>
               <li data-testid="text-guide-step-4">Your XRPL address appears — you're now connected.</li>
             </ol>
@@ -548,7 +596,7 @@ export default function OwnBankDashboard() {
             {truncateAddress(walletAddress!)}
           </Badge>
           <Badge variant="secondary" data-testid="badge-wallet-type">
-            {walletType === "xumm" ? "Xumm" : "Ledger"}
+            {walletType === "xumm" ? "Xaman" : "Ledger"}
           </Badge>
           <Button
             variant="ghost"
