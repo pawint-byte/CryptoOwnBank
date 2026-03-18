@@ -331,35 +331,47 @@ export default function DcaOrders() {
           new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
         ]);
 
-      let marketPrice = 0;
+      let pricePerBuy = 0;
       try {
         const book = await withTimeout(getOrderBook(buyCur, spendCur, 5), 15000);
         if (book.asks && book.asks.length > 0) {
-          marketPrice = parseFloat(book.asks[0].price);
+          pricePerBuy = parseFloat(book.asks[0].price);
         }
       } catch (bookErr) {
         console.error("[DCA] Order book fetch failed:", bookErr);
       }
 
-      if (marketPrice <= 0) {
+      if (pricePerBuy <= 0) {
         try {
           const book = await withTimeout(getOrderBook(spendCur, buyCur, 5), 10000);
           if (book.bids && book.bids.length > 0) {
             const bidPrice = parseFloat(book.bids[0].price);
-            if (bidPrice > 0) marketPrice = 1 / bidPrice;
+            if (bidPrice > 0) pricePerBuy = 1 / bidPrice;
           }
         } catch {
           // ignore reverse lookup failure
         }
       }
 
-      if (marketPrice <= 0) {
+      if (pricePerBuy <= 0) {
         toast({ title: "No market price available", description: "Could not fetch current price from the XRPL order book. Try the DEX page instead.", variant: "destructive" });
         setExecutingOrderId(null);
         return;
       }
 
-      const buyAmount = (spendAmount / marketPrice).toFixed(6);
+      let buyAmount = (spendAmount / pricePerBuy).toFixed(6);
+
+      const sanityMax = spendAmount * 10;
+      if (parseFloat(buyAmount) > sanityMax) {
+        console.warn(`[DCA] Buy amount ${buyAmount} exceeds sanity limit (${sanityMax}), price may be inverted. Using inverse.`);
+        buyAmount = (spendAmount * pricePerBuy).toFixed(6);
+      }
+
+      if (parseFloat(buyAmount) <= 0 || parseFloat(buyAmount) > spendAmount * 100) {
+        toast({ title: "Price error", description: "Market price seems unreliable. Try again or use the DEX page.", variant: "destructive" });
+        setExecutingOrderId(null);
+        return;
+      }
 
       const takerGets = buildAmount(order.spendCurrency, order.spendIssuer, spendAmount.toString());
       const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, buyAmount);
