@@ -4,6 +4,12 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -534,56 +540,6 @@ export default function DcaOrders() {
           />
         )}
 
-        <Card className="border-blue-500/20 bg-blue-500/5">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-blue-400 mb-1">Non-Custodial DCA — {isXrpl ? "Xaman (XUMM)" : "LOBSTR"} Required</p>
-                <p>Your funds stay in your wallet at all times. When a DCA order is due, it creates a <strong>pending execution</strong> that you approve via {isXrpl ? "Xaman (XUMM)" : "LOBSTR"}. No private keys ever leave your device.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
-              <Smartphone className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-green-400 mb-1">Setup: {isXrpl ? "Xaman" : "LOBSTR"} with Full Control</p>
-                {isXrpl ? (
-                  <ol className="list-decimal list-inside space-y-1 mt-1">
-                    <li>Install <strong>Xaman (XUMM)</strong> on your phone and set it up with <strong>full control</strong> over your {isXrpl ? "XRPL" : "Stellar"} account.</li>
-                    <li>If you use a <strong>Ledger Nano X</strong>, pair it with Xaman via Bluetooth — Xaman sends signing requests to Ledger, so your keys stay on the hardware device while Xaman handles the DCA approval flow.</li>
-                    <li>Set trust lines for any tokens you want to buy (e.g. RLUSD, SOLO, BTC). Go to <strong>Token Manager</strong> to add them.</li>
-                    <li>Fund your Xaman account with your DCA budget — this is the &quot;checking account&quot; for recurring buys.</li>
-                  </ol>
-                ) : (
-                  <ol className="list-decimal list-inside space-y-1 mt-1">
-                    <li>Install <strong>LOBSTR</strong> on your phone and set it up with <strong>full control</strong> over your Stellar account.</li>
-                    <li>If you use a <strong>Ledger</strong>, connect it to LOBSTR so it handles signing — your keys stay on the hardware device.</li>
-                    <li>Set trust lines for any tokens you want to buy (e.g. USDC, BTC, ETH). Go to <strong>Token Manager</strong> to add them.</li>
-                    <li>Fund your LOBSTR account with your DCA budget — this is the &quot;checking account&quot; for recurring buys.</li>
-                  </ol>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
-              <Link2 className="w-5 h-5 text-purple-400 mt-0.5 shrink-0" />
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-purple-400 mb-1">Best Wallet for DCA: Ledger + {isXrpl ? "Xaman" : "LOBSTR"}</p>
-                <p>A <strong>Ledger Nano X</strong> (or Nano S Plus) paired with {isXrpl ? "Xaman" : "LOBSTR"} is the ideal DCA setup. Ledger connects via Bluetooth{isXrpl ? " or USB" : ""} — so you approve DCA buys on your phone and Ledger signs the transaction without being air-gapped. Your keys stay on the hardware, but you don&apos;t need to plug in a USB cable or scan QR codes each time. Just tap approve in {isXrpl ? "Xaman" : "LOBSTR"} and Ledger handles the rest.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
-              <Shield className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-              <div className="text-sm text-muted-foreground">
-                <p className="font-medium text-yellow-400 mb-1">Air-Gapped Cold Wallets (ELLIPAL, CypheRock, SafePal)</p>
-                <p>Air-gapped wallets <strong>can</strong> sign DCA transactions — there&apos;s no technical limitation. However, every approval requires scanning QR codes back and forth between your phone and the device, which gets tedious when you&apos;re doing daily or weekly buys. It absolutely works, but most users prefer a <strong>Ledger + {isXrpl ? "Xaman" : "LOBSTR"}</strong> setup where you just tap approve on your phone and Ledger signs over Bluetooth — same hardware security, much smoother for recurring buys.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -622,6 +578,69 @@ export default function DcaOrders() {
             ))}
           </div>
         )}
+
+        <Collapsible>
+          <Card className="border-blue-500/20 bg-blue-500/5">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer flex flex-row items-center justify-between gap-2 space-y-0 p-4">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-blue-400" />
+                  How Non-Custodial DCA Works
+                </CardTitle>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="p-4 pt-0 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-blue-400 mb-1">Non-Custodial DCA — {isXrpl ? "Xaman (XUMM)" : "LOBSTR"} Required</p>
+                    <p>Your funds stay in your wallet at all times. When a DCA order is due, it creates a <strong>pending execution</strong> that you approve via {isXrpl ? "Xaman (XUMM)" : "LOBSTR"}. No private keys ever leave your device.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
+                  <Smartphone className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-green-400 mb-1">Setup: {isXrpl ? "Xaman" : "LOBSTR"} with Full Control</p>
+                    {isXrpl ? (
+                      <ol className="list-decimal list-inside space-y-1 mt-1">
+                        <li>Install <strong>Xaman (XUMM)</strong> on your phone and set it up with <strong>full control</strong> over your {isXrpl ? "XRPL" : "Stellar"} account.</li>
+                        <li>If you use a <strong>Ledger Nano X</strong>, pair it with Xaman via Bluetooth — Xaman sends signing requests to Ledger, so your keys stay on the hardware device while Xaman handles the DCA approval flow.</li>
+                        <li>Set trust lines for any tokens you want to buy (e.g. RLUSD, SOLO, BTC). Go to <strong>Token Manager</strong> to add them.</li>
+                        <li>Fund your Xaman account with your DCA budget — this is the &quot;checking account&quot; for recurring buys.</li>
+                      </ol>
+                    ) : (
+                      <ol className="list-decimal list-inside space-y-1 mt-1">
+                        <li>Install <strong>LOBSTR</strong> on your phone and set it up with <strong>full control</strong> over your Stellar account.</li>
+                        <li>If you use a <strong>Ledger</strong>, connect it to LOBSTR so it handles signing — your keys stay on the hardware device.</li>
+                        <li>Set trust lines for any tokens you want to buy (e.g. USDC, BTC, ETH). Go to <strong>Token Manager</strong> to add them.</li>
+                        <li>Fund your LOBSTR account with your DCA budget — this is the &quot;checking account&quot; for recurring buys.</li>
+                      </ol>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
+                  <Link2 className="w-5 h-5 text-purple-400 mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-purple-400 mb-1">Best Wallet for DCA: Ledger + {isXrpl ? "Xaman" : "LOBSTR"}</p>
+                    <p>A <strong>Ledger Nano X</strong> (or Nano S Plus) paired with {isXrpl ? "Xaman" : "LOBSTR"} is the ideal DCA setup. Ledger connects via Bluetooth{isXrpl ? " or USB" : ""} — so you approve DCA buys on your phone and Ledger signs the transaction without being air-gapped. Your keys stay on the hardware, but you don&apos;t need to plug in a USB cable or scan QR codes each time. Just tap approve in {isXrpl ? "Xaman" : "LOBSTR"} and Ledger handles the rest.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 border-t border-blue-500/10 pt-3">
+                  <Shield className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-yellow-400 mb-1">Air-Gapped Cold Wallets (ELLIPAL, CypheRock, SafePal)</p>
+                    <p>Air-gapped wallets <strong>can</strong> sign DCA transactions — there&apos;s no technical limitation. However, every approval requires scanning QR codes back and forth between your phone and the device, which gets tedious when you&apos;re doing daily or weekly buys. It absolutely works, but most users prefer a <strong>Ledger + {isXrpl ? "Xaman" : "LOBSTR"}</strong> setup where you just tap approve on your phone and Ledger signs over Bluetooth — same hardware security, much smoother for recurring buys.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
