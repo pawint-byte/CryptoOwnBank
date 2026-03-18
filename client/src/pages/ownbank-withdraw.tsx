@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
   Settings,
   Repeat,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -45,6 +46,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { UserWallet } from "@shared/schema";
+
+type ServerVault = {
+  address: string;
+  name: string;
+  totalDeposited: string;
+  principal: string;
+  apr: string;
+  interest: string;
+  yieldReceived: string;
+};
 
 type AutoBuySettings = {
   enabled: boolean;
@@ -228,19 +239,74 @@ export default function OwnBankWithdraw() {
     walletAddress,
     walletType,
     spendingWallet,
-    vaultDeposits,
-    subscriptionTier,
+    vaultDeposits: localVaultDeposits,
   } = useXrplStore();
   const { toast } = useToast();
-  const [withdrawingVault, setWithdrawingVault] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
+  const [selectedVaultAddress, setSelectedVaultAddress] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedWithdrawWallet, setSelectedWithdrawWallet] = useState<string>("");
+  const [serverVaults, setServerVaults] = useState<ServerVault[]>([]);
+  const [syncingVaults, setSyncingVaults] = useState(false);
+  const [vaultsSynced, setVaultsSynced] = useState(false);
+
+  const { data: tierData } = useQuery<{ tier: string; billingCycle: string }>({
+    queryKey: ["/api/effective-tier"],
+  });
+  const effectiveTier = tierData?.tier || "free";
 
   const { data: savedWallets = [] } = useQuery<UserWallet[]>({
     queryKey: ["/api/user-wallets"],
   });
+
+  const syncVaultsFromServer = useCallback(async () => {
+    if (!walletAddress) return;
+    setSyncingVaults(true);
+    try {
+      const response = await apiRequest("POST", "/api/soil/sync", {
+        walletAddress,
+        walletType: walletType || "xumm",
+      });
+      const data = await response.json();
+      if (data.success && data.summary?.vaults) {
+        setServerVaults(data.summary.vaults);
+      }
+    } catch (err: unknown) {
+      console.error("[Withdraw] Vault sync error:", err);
+    } finally {
+      setSyncingVaults(false);
+      setVaultsSynced(true);
+    }
+  }, [walletAddress, walletType]);
+
+  useEffect(() => {
+    if (isConnected && walletAddress && !vaultsSynced) {
+      syncVaultsFromServer();
+    }
+  }, [isConnected, walletAddress, vaultsSynced, syncVaultsFromServer]);
+
+  const mergedVaults = (() => {
+    if (serverVaults.length > 0) {
+      return serverVaults.map((sv) => ({
+        vaultAddress: sv.address,
+        vaultName: sv.name,
+        principal: parseFloat(sv.principal) || 0,
+        apr: parseFloat(sv.apr) || 0,
+        interest: parseFloat(sv.interest) || 0,
+        totalDeposited: parseFloat(sv.totalDeposited) || 0,
+        yieldReceived: parseFloat(sv.yieldReceived) || 0,
+      }));
+    }
+    return localVaultDeposits.map((dep) => ({
+      vaultAddress: dep.vaultId,
+      vaultName: dep.vaultName,
+      principal: dep.principal,
+      apr: dep.apr,
+      interest: calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate),
+      totalDeposited: dep.principal,
+      yieldReceived: 0,
+    }));
+  })();
 
   const xrplWallets = savedWallets.filter((w) => w.chain === "xrpl");
   const yieldWallets = xrplWallets.filter((w) => w.purpose === "yield" || w.purpose === "spending");
@@ -256,11 +322,9 @@ export default function OwnBankWithdraw() {
       maximumFractionDigits: 4,
     }).format(value);
 
-  const totalInterest = vaultDeposits.reduce((sum, dep) => {
-    return sum + calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
-  }, 0);
+  const totalInterest = mergedVaults.reduce((sum, v) => sum + v.interest, 0);
 
-  const handleWithdrawClick = (vaultId: string) => {
+  const handleWithdrawClick = (vaultAddress: string) => {
     if (!withdrawTarget) {
       toast({
         title: "No Wallet Set",
@@ -269,21 +333,17 @@ export default function OwnBankWithdraw() {
       });
       return;
     }
-    setSelectedVaultId(vaultId);
+    setSelectedVaultAddress(vaultAddress);
     setShowPreview(true);
   };
 
   const handleConfirmWithdraw = async () => {
-    if (!selectedVaultId || !withdrawTarget) return;
+    if (!selectedVaultAddress || !withdrawTarget) return;
 
-    const deposit = vaultDeposits.find((d) => d.vaultId === selectedVaultId);
-    if (!deposit) return;
+    const vault = mergedVaults.find((v) => v.vaultAddress === selectedVaultAddress);
+    if (!vault) return;
 
-    const interest = calculateAccruedInterest(
-      deposit.principal,
-      deposit.apr,
-      deposit.depositDate
-    );
+    const interest = vault.interest;
 
     if (interest <= 0) {
       toast({
@@ -327,16 +387,17 @@ export default function OwnBankWithdraw() {
           description: `${formatCurrency(interest)} RLUSD sent to your spending wallet.`,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Withdrawal Error",
-        description: error.message || "An unexpected error occurred",
+        description: msg,
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
       setShowPreview(false);
-      setSelectedVaultId(null);
+      setSelectedVaultAddress(null);
     }
   };
 
@@ -366,16 +427,10 @@ export default function OwnBankWithdraw() {
     );
   }
 
-  const selectedDeposit = selectedVaultId
-    ? vaultDeposits.find((d) => d.vaultId === selectedVaultId)
+  const selectedVault = selectedVaultAddress
+    ? mergedVaults.find((v) => v.vaultAddress === selectedVaultAddress)
     : null;
-  const selectedInterest = selectedDeposit
-    ? calculateAccruedInterest(
-        selectedDeposit.principal,
-        selectedDeposit.apr,
-        selectedDeposit.depositDate
-      )
-    : 0;
+  const selectedInterest = selectedVault?.interest || 0;
 
   return (
     <div className="space-y-6">
@@ -424,7 +479,7 @@ export default function OwnBankWithdraw() {
                 <p className="text-sm text-muted-foreground">Total Principal Locked</p>
                 <p className="text-xl font-bold font-mono" data-testid="text-total-principal">
                   {formatCurrency(
-                    vaultDeposits.reduce((sum, d) => sum + d.principal, 0)
+                    mergedVaults.reduce((sum, v) => sum + v.principal, 0)
                   )}
                 </p>
               </div>
@@ -467,45 +522,67 @@ export default function OwnBankWithdraw() {
 
       <AutoBuyXrpCard
         totalInterest={totalInterest}
-        subscriptionTier={subscriptionTier}
+        subscriptionTier={effectiveTier}
       />
 
-      {vaultDeposits.length === 0 ? (
+      {syncingVaults && mergedVaults.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+            <RefreshCw className="h-8 w-8 text-muted-foreground animate-spin" />
+            <p className="text-muted-foreground text-center">
+              Loading vault deposits from XRPL...
+            </p>
+          </CardContent>
+        </Card>
+      ) : mergedVaults.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <AlertCircle className="h-12 w-12 text-muted-foreground" />
             <p className="text-muted-foreground text-center">
-              No vault deposits yet.{" "}
+              No vault deposits found.{" "}
               <Link href="/ownbank/vaults" className="text-[#00A4E4] underline">
                 Deposit RLUSD into a vault
               </Link>{" "}
               to start earning interest.
             </p>
+            {vaultsSynced && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setVaultsSynced(false); }}
+                data-testid="button-resync-vaults"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Re-sync from XRPL
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {vaultDeposits.map((deposit) => {
-            const vault = SOIL_VAULTS.find((v) => v.id === deposit.vaultId);
-            const interest = calculateAccruedInterest(
-              deposit.principal,
-              deposit.apr,
-              deposit.depositDate
-            );
-            const daysSinceDeposit = Math.floor(
-              (Date.now() - new Date(deposit.depositDate).getTime()) /
-                (1000 * 60 * 60 * 24)
-            );
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setVaultsSynced(false); }}
+              disabled={syncingVaults}
+              data-testid="button-refresh-vaults"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncingVaults ? "animate-spin" : ""}`} />
+              {syncingVaults ? "Syncing..." : "Refresh"}
+            </Button>
+          </div>
+          {mergedVaults.map((vault) => {
+            const soilVault = SOIL_VAULTS.find((v) => v.id === vault.vaultAddress);
 
             return (
-              <Card key={deposit.vaultId} data-testid={`card-vault-deposit-${deposit.vaultId}`}>
+              <Card key={vault.vaultAddress} data-testid={`card-vault-deposit-${vault.vaultAddress}`}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">{deposit.vaultName}</CardTitle>
+                      <CardTitle className="text-lg">{vault.vaultName}</CardTitle>
                       <CardDescription>
-                        {vault?.backing || "RWA-Backed"} · {deposit.apr}% APR ·{" "}
-                        {daysSinceDeposit} days
+                        {soilVault?.backing || "RWA-Backed"} · {vault.apr}% APR
                       </CardDescription>
                     </div>
                     <Badge
@@ -526,7 +603,7 @@ export default function OwnBankWithdraw() {
                         </span>
                       </div>
                       <p className="text-lg font-bold font-mono">
-                        {formatCurrency(deposit.principal)} RLUSD
+                        {formatCurrency(vault.principal)} RLUSD
                       </p>
                     </div>
                     <div className="space-y-1">
@@ -537,26 +614,32 @@ export default function OwnBankWithdraw() {
                         </span>
                       </div>
                       <p className="text-lg font-bold font-mono text-green-500">
-                        {formatCurrency(interest)} RLUSD
+                        {formatCurrency(vault.interest)} RLUSD
                       </p>
                     </div>
                   </div>
+
+                  {vault.yieldReceived > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      Yield already received: {formatCurrency(vault.yieldReceived)} RLUSD
+                    </div>
+                  )}
 
                   <Separator />
 
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       className="flex-1 bg-[#00A4E4] hover:bg-[#0090cc] text-white"
-                      onClick={() => handleWithdrawClick(deposit.vaultId)}
-                      disabled={interest <= 0 || isProcessing}
-                      data-testid={`button-withdraw-${deposit.vaultId}`}
+                      onClick={() => handleWithdrawClick(vault.vaultAddress)}
+                      disabled={vault.interest <= 0 || isProcessing}
+                      data-testid={`button-withdraw-${vault.vaultAddress}`}
                     >
                       <ArrowDownToLine className="h-4 w-4 mr-2" />
-                      Withdraw {formatCurrency(interest)} Interest
+                      Withdraw {formatCurrency(vault.interest)} Interest
                     </Button>
                   </div>
 
-                  {subscriptionTier === "free" && (
+                  {effectiveTier === "free" && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                       <Crown className="h-5 w-5 text-amber-500 shrink-0" />
                       <div className="flex-1">
@@ -573,7 +656,7 @@ export default function OwnBankWithdraw() {
                     </div>
                   )}
 
-                  {subscriptionTier === "premium" && (
+                  {effectiveTier === "premium" && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-[#00A4E4]/5 border border-[#00A4E4]/20">
                       <Clock className="h-5 w-5 text-[#00A4E4] shrink-0" />
                       <div className="flex-1">
@@ -606,12 +689,12 @@ export default function OwnBankWithdraw() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedDeposit && (
+          {selectedVault && (
             <div className="space-y-4">
               <div className="p-4 rounded-lg bg-muted/50 space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Vault</span>
-                  <span className="text-sm font-medium">{selectedDeposit.vaultName}</span>
+                  <span className="text-sm font-medium">{selectedVault.vaultName}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between">
@@ -627,7 +710,7 @@ export default function OwnBankWithdraw() {
                     Principal (Remains Locked)
                   </span>
                   <span className="text-sm font-mono">
-                    {formatCurrency(selectedDeposit.principal)} RLUSD
+                    {formatCurrency(selectedVault.principal)} RLUSD
                   </span>
                 </div>
                 <Separator />
@@ -645,7 +728,7 @@ export default function OwnBankWithdraw() {
                 <p className="text-xs text-muted-foreground text-center">
                   Sending {formatCurrency(selectedInterest)} RLUSD interest to your
                   spending wallet. Your principal of{" "}
-                  {formatCurrency(selectedDeposit.principal)} RLUSD remains locked
+                  {formatCurrency(selectedVault.principal)} RLUSD remains locked
                   and protected in the vault.
                 </p>
               </div>

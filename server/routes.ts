@@ -6097,6 +6097,16 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/effective-tier", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier, billingCycle } = await getEffectiveTier(userId);
+      res.json({ tier, billingCycle });
+    } catch (error: any) {
+      res.status(500).json({ message: "Failed to get tier" });
+    }
+  });
+
   app.get("/api/auto-buy-xrp", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
