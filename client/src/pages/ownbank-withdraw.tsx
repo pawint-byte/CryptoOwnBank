@@ -540,9 +540,9 @@ export default function OwnBankWithdraw() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Withdraw Interest</h1>
+          <h1 className="text-2xl font-bold">Vault Positions & Withdrawal</h1>
           <p className="text-muted-foreground">
-            Withdraw only earned interest — your principal stays protected
+            Track your vault earnings and withdraw via Soil Protocol
           </p>
         </div>
         <XrplDisclaimer />
@@ -769,8 +769,8 @@ export default function OwnBankWithdraw() {
                       disabled={vault.interest <= 0 || isProcessing}
                       data-testid={`button-withdraw-${vault.vaultAddress}`}
                     >
-                      <ArrowDownToLine className="h-4 w-4 mr-2" />
-                      Withdraw {formatCurrency(vault.interest)} Interest
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Withdraw via Soil
                     </Button>
                   </div>
 
@@ -811,10 +811,10 @@ export default function OwnBankWithdraw() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-[#00A4E4]" />
-              Confirm Interest Withdrawal
+              Withdraw from Soil Vault
             </DialogTitle>
             <DialogDescription>
-              Review the withdrawal details before signing
+              Review your position before opening Soil
             </DialogDescription>
           </DialogHeader>
 
@@ -845,13 +845,15 @@ export default function OwnBankWithdraw() {
                 <Separator />
               </div>
 
-              <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+              <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                 <p className="text-xs text-muted-foreground text-center">
-                  You'll be redirected to Soil Protocol to complete the withdrawal
-                  of {formatCurrency(selectedInterest)} RLUSD interest. Connect your
-                  wallet on Soil's app and request the withdrawal from your{" "}
-                  {selectedVault.vaultName} vault. Your principal of{" "}
-                  {formatCurrency(selectedVault.principal)} RLUSD stays locked and protected.
+                  <strong>Note:</strong> Soil currently only supports full withdrawal (principal + interest together).
+                  Clicking below opens Soil where you can withdraw your entire{" "}
+                  {formatCurrency(selectedVault.principal + selectedInterest)} RLUSD position from {selectedVault.vaultName}.
+                </p>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Once RLUSD is back in your wallet, your DCA order (if active) will automatically convert it to XRP on the next scheduled run.
+                  Or you can redeposit to a vault to keep earning.
                 </p>
               </div>
             </div>
