@@ -343,7 +343,7 @@ export default function OwnBankDex() {
   const [viewMode, setViewMode] = useState<"swap" | "advanced">("advanced");
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
-  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
+  const orderType = "limit" as const;
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
@@ -457,12 +457,10 @@ export default function OwnBankDex() {
       toast({ title: "Invalid amount", description: "Enter a valid amount.", variant: "destructive" });
       return;
     }
-    if (orderType === "limit") {
-      const p = parseFloat(price);
-      if (!p || p <= 0) {
-        toast({ title: "Invalid price", description: "Enter a valid price.", variant: "destructive" });
-        return;
-      }
+    const p = parseFloat(price);
+    if (!p || p <= 0) {
+      toast({ title: "Invalid price", description: "Enter your limit price.", variant: "destructive" });
+      return;
     }
     setConfirmDialogOpen(true);
   };
@@ -485,26 +483,21 @@ export default function OwnBankDex() {
       const a = parseFloat(amount);
       const p = parseFloat(price) || 0;
 
-      if (orderType === "market") {
-        const marketPrice = orderSide === "buy" ? asks[0]?.price : bids[0]?.price;
-        if (!marketPrice || parseFloat(marketPrice) <= 0) {
-          toast({ title: "No liquidity", description: "No orders available on the book for this pair. Try a limit order instead.", variant: "destructive" });
-          setPlacingOrder(false);
-          return;
-        }
+      if (p <= 0) {
+        toast({ title: "Invalid price", description: "Enter a valid limit price.", variant: "destructive" });
+        setPlacingOrder(false);
+        return;
       }
 
       let takerGets: any;
       let takerPays: any;
 
       if (orderSide === "buy") {
-        const usePrice = orderType === "limit" ? p : parseFloat(asks[0]?.price) || 0;
-        takerGets = buildAmountField(pair.counter, (a * usePrice).toString());
+        takerGets = buildAmountField(pair.counter, (a * p).toString());
         takerPays = buildAmountField(pair.base, a.toString());
       } else {
-        const usePrice = orderType === "limit" ? p : parseFloat(bids[0]?.price) || 0;
         takerGets = buildAmountField(pair.base, a.toString());
-        takerPays = buildAmountField(pair.counter, (a * usePrice).toString());
+        takerPays = buildAmountField(pair.counter, (a * p).toString());
       }
 
       const txJson: Record<string, any> = {
@@ -514,12 +507,7 @@ export default function OwnBankDex() {
         TakerPays: takerPays,
       };
 
-      if (orderType === "market") {
-        txJson.Flags = 0x00020000;
-      }
-
-      const usePrice = orderType === "limit" ? p : parseFloat(orderSide === "buy" ? (asks[0]?.price || "0") : (bids[0]?.price || "0"));
-      const totalVal = a * usePrice;
+      const totalVal = a * p;
       sessionStorage.setItem("dex_pending_trade", JSON.stringify({
         side: orderSide,
         spentAmount: orderSide === "buy" ? totalVal.toString() : a.toString(),
@@ -795,7 +783,7 @@ export default function OwnBankDex() {
               Account: walletAddress,
               TakerGets: takerGets,
               TakerPays: takerPays,
-              Flags: 0x00020000,
+              Flags: 0x00040000,
             };
             const result = await signTransaction(txJson);
             if (result.success) {
@@ -953,22 +941,12 @@ export default function OwnBankDex() {
 
             <div className="flex gap-1">
               <Button
-                variant={orderType === "limit" ? "default" : "outline"}
+                variant="default"
                 size="sm"
                 className="flex-1"
-                onClick={() => setOrderType("limit")}
                 data-testid="button-limit"
               >
-                Limit
-              </Button>
-              <Button
-                variant={orderType === "market" ? "default" : "outline"}
-                size="sm"
-                className="flex-1"
-                onClick={() => setOrderType("market")}
-                data-testid="button-market"
-              >
-                Market
+                Limit Order (GTC)
               </Button>
             </div>
 
@@ -986,23 +964,21 @@ export default function OwnBankDex() {
               />
             </div>
 
-            {orderType === "limit" && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Price ({pair.counter.display} per {pair.base.display})
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  step="0.000001"
-                  data-testid="input-order-price"
-                />
-              </div>
-            )}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Price ({pair.counter.display} per {pair.base.display})
+              </label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                step="0.000001"
+                data-testid="input-order-price"
+              />
+            </div>
 
-            {orderType === "limit" && amount && price && (
+            {amount && price && (
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="text-muted-foreground">Total</span>
                 <span className="font-mono font-medium" data-testid="text-order-total">
