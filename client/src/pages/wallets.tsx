@@ -2209,7 +2209,7 @@ export default function Wallets() {
             <Star className="h-5 w-5 shrink-0" style={{ color: "#7B61FF" }} />
             <div>
               <p className="text-sm font-medium">You have a Stellar address tracked here</p>
-              <p className="text-xs text-muted-foreground">Use OwnBank Stellar to send payments, trade on the DEX, manage tokens, and more.</p>
+              <p className="text-xs text-muted-foreground">Use LOBSTR_OwnBank Stellar to send payments, trade on the DEX, manage tokens, and more.</p>
             </div>
           </div>
           <Link href="/stellar/wallet" className="shrink-0">

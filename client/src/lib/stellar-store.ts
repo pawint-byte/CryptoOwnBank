@@ -101,7 +101,7 @@ export const useStellarStore = create<StellarState>()(
               await apiRequest("POST", "/api/wallets", {
                 chain: "stellar",
                 address,
-                label: "OwnBank Stellar",
+                label: "LOBSTR_OwnBank Stellar",
               });
             } catch {
             }

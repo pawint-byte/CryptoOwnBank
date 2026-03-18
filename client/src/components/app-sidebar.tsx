@@ -367,7 +367,7 @@ export function AppSidebar() {
           "#00A4E4",
         )}
 
-        {renderCollapsibleGroup("stellar", "OwnBank Stellar", stellarItems, "#7B61FF")}
+        {renderCollapsibleGroup("stellar", "LOBSTR_OwnBank Stellar", stellarItems, "#7B61FF")}
 
         {renderCollapsibleGroup("planning", "Planning & Tools", planningItems)}
 

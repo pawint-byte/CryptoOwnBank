@@ -8,7 +8,7 @@ import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type 
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import multer from "multer";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
 
@@ -8603,4 +8603,23 @@ function startPriceAlertChecker() {
       console.error("[cleanup] DCA cleanup error:", err);
     }
   }, 7000);
+
+  setTimeout(async () => {
+    try {
+      const { wallets } = await import("@shared/schema");
+      const renamed = await db.update(wallets)
+        .set({ label: "LOBSTR_OwnBank Stellar" })
+        .where(
+          and(
+            eq(wallets.chain, "stellar"),
+            eq(wallets.label, "OwnBank Stellar")
+          )
+        );
+      if (renamed.rowCount && renamed.rowCount > 0) {
+        console.log(`[seed] Renamed ${renamed.rowCount} 'OwnBank Stellar' wallets to 'LOBSTR_OwnBank Stellar'`);
+      }
+    } catch (err) {
+      console.error("[seed] Stellar wallet rename error:", err);
+    }
+  }, 8000);
 }
