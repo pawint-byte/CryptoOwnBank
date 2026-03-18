@@ -344,7 +344,7 @@ export default function OwnBankDex() {
   const [selectedPairIndex, setSelectedPairIndex] = useState(0);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"limit" | "market">("limit");
-  const [fillType, setFillType] = useState<"full" | "partial">("full");
+  const [fillType, setFillType] = useState<"gtc" | "fok" | "ioc">("gtc");
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
@@ -515,9 +515,9 @@ export default function OwnBankDex() {
       }
 
       let flags = 0;
-      if (fillType === "full") {
+      if (fillType === "fok") {
         flags = 0x00040000;
-      } else if (orderType === "market") {
+      } else if (fillType === "ioc") {
         flags = 0x00080000;
       }
 
@@ -986,34 +986,49 @@ export default function OwnBankDex() {
 
             <div className="flex gap-1">
               <Button
-                variant={fillType === "full" ? "default" : "outline"}
+                variant={fillType === "gtc" ? "default" : "outline"}
                 size="sm"
                 className="flex-1"
-                onClick={() => setFillType("full")}
-                data-testid="button-fill-full"
+                onClick={() => setFillType("gtc")}
+                data-testid="button-fill-gtc"
+              >
+                Good Till Cancel
+              </Button>
+              <Button
+                variant={fillType === "fok" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setFillType("fok")}
+                data-testid="button-fill-fok"
               >
                 Fill or Kill
               </Button>
               <Button
-                variant={fillType === "partial" ? "default" : "outline"}
+                variant={fillType === "ioc" ? "default" : "outline"}
                 size="sm"
                 className="flex-1"
-                onClick={() => setFillType("partial")}
-                data-testid="button-fill-partial"
+                onClick={() => setFillType("ioc")}
+                data-testid="button-fill-ioc"
               >
-                Allow Partial
+                Immediate
               </Button>
             </div>
 
-            {fillType === "partial" && (
-              <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400" data-testid="text-partial-warning">
-                <strong>Partial fills enabled:</strong> Your order may be filled in parts. You'll receive whatever amount matches on the order book. Unfilled portions will {orderType === "limit" ? "remain open until cancelled." : "be cancelled immediately."}
+            {fillType === "gtc" && (
+              <div className="rounded-md bg-green-500/10 border border-green-500/30 p-2 text-xs text-green-600 dark:text-green-400" data-testid="text-gtc-info">
+                <strong>Good Till Cancel:</strong> Your order sits on the book until fully filled or you cancel it. May fill in parts over time.
               </div>
             )}
 
-            {fillType === "full" && (
-              <div className="rounded-md bg-green-500/10 border border-green-500/30 p-2 text-xs text-green-600 dark:text-green-400" data-testid="text-full-info">
-                <strong>Fill or Kill:</strong> Your entire order must be filled at once, or it won't execute at all. No partial fills.
+            {fillType === "fok" && (
+              <div className="rounded-md bg-blue-500/10 border border-blue-500/30 p-2 text-xs text-blue-600 dark:text-blue-400" data-testid="text-fok-info">
+                <strong>Fill or Kill:</strong> Your entire order must fill at once right now, or nothing happens. Use when you need the full amount guaranteed.
+              </div>
+            )}
+
+            {fillType === "ioc" && (
+              <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400" data-testid="text-ioc-info">
+                <strong>Immediate or Cancel:</strong> Fills whatever is available right now. Unfilled portions are cancelled immediately — nothing stays on the book.
               </div>
             )}
 
@@ -1310,8 +1325,12 @@ export default function OwnBankDex() {
               )}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-muted-foreground">Fill</span>
-                <Badge className={fillType === "full" ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30" : "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30"}>
-                  {fillType === "full" ? "Fill or Kill" : "Allow Partial"}
+                <Badge className={
+                  fillType === "gtc" ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30" :
+                  fillType === "fok" ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30" :
+                  "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30"
+                }>
+                  {fillType === "gtc" ? "Good Till Cancel" : fillType === "fok" ? "Fill or Kill" : "Immediate or Cancel"}
                 </Badge>
               </div>
               <div className="flex items-center justify-between gap-2">
@@ -1320,21 +1339,27 @@ export default function OwnBankDex() {
               </div>
             </div>
 
-            {fillType === "full" ? (
+            {fillType === "gtc" && (
               <div className="rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
-                <p className="text-xs text-green-800 dark:text-green-300 font-semibold">Fill or Kill</p>
+                <p className="text-xs text-green-800 dark:text-green-300 font-semibold">Good Till Cancel</p>
                 <p className="text-xs text-green-700/80 dark:text-green-400/80 mt-1">
-                  Your full {formatAmount(amount)} {pair.base.display} must be filled at once. If there isn't enough liquidity to fill the entire order, nothing will execute.
+                  Your order will be placed on the order book. It stays open until fully filled or you cancel it. It may fill in parts over time as matches are found.
                 </p>
               </div>
-            ) : (
+            )}
+            {fillType === "fok" && (
+              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
+                <p className="text-xs text-blue-800 dark:text-blue-300 font-semibold">Fill or Kill</p>
+                <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-1">
+                  Your full {formatAmount(amount)} {pair.base.display} must be filled at once right now. If there isn't enough liquidity, nothing will execute.
+                </p>
+              </div>
+            )}
+            {fillType === "ioc" && (
               <div className="rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 p-3">
-                <p className="text-xs text-yellow-800 dark:text-yellow-300 font-semibold">Partial Fills Allowed</p>
+                <p className="text-xs text-yellow-800 dark:text-yellow-300 font-semibold">Immediate or Cancel</p>
                 <p className="text-xs text-yellow-700/80 dark:text-yellow-400/80 mt-1">
-                  {orderType === "limit"
-                    ? "Your order will be placed on the order book. It may fill partially or fully. Any unfilled amount stays open until you cancel it (Good Till Cancelled)."
-                    : "Your order will fill whatever is available at the current market price. Any unfilled amount will be cancelled immediately."
-                  }
+                  Fills whatever is available right now at the {orderType === "market" ? "market" : "limit"} price. Any unfilled portion is cancelled immediately — nothing stays on the book.
                 </p>
               </div>
             )}
