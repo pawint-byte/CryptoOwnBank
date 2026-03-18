@@ -48,7 +48,7 @@ export default function PriceAlerts() {
     queryKey: ["/api/settings"],
   });
 
-  const isPremium = settings?.subscriptionTier === "premium";
+  const isPremium = settings?.subscriptionTier === "premium" || settings?.subscriptionTier === "pro" || settings?.subscriptionTier === "premium_annual";
   const activeAlerts = alerts?.filter((a) => a.isActive && !a.triggered) || [];
   const triggeredAlerts = alerts?.filter((a) => a.triggered) || [];
   const activeCount = activeAlerts.length;

@@ -142,7 +142,7 @@ export default function TaxReports() {
     }
   };
 
-  const isPremium = settings?.subscriptionTier === "premium";
+  const isPremium = settings?.subscriptionTier === "premium" || settings?.subscriptionTier === "pro" || settings?.subscriptionTier === "premium_annual";
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {

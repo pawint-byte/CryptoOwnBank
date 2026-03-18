@@ -899,14 +899,16 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <Badge
-                variant={subscriptionTier === "premium" ? "default" : "secondary"}
-                className={subscriptionTier === "premium" ? "bg-amber-500" : ""}
+                variant={subscriptionTier === "premium" || subscriptionTier === "pro" || subscriptionTier === "premium_annual" ? "default" : "secondary"}
+                className={subscriptionTier === "pro" ? "bg-purple-600" : subscriptionTier === "premium" || subscriptionTier === "premium_annual" ? "bg-amber-500" : ""}
                 data-testid="badge-subscription-tier"
               >
-                {subscriptionTier === "premium" ? "Premium" : "Free"}
+                {subscriptionTier === "pro" ? "Pro" : subscriptionTier === "premium" || subscriptionTier === "premium_annual" ? "Premium" : "Free"}
               </Badge>
               <span className="text-sm text-muted-foreground">
-                {subscriptionTier === "premium"
+                {subscriptionTier === "pro"
+                  ? "Full access to all features + business tools"
+                  : subscriptionTier === "premium" || subscriptionTier === "premium_annual"
                   ? "Full access to all features"
                   : "Basic features included"}
               </span>
