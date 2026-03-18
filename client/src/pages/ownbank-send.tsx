@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -351,9 +352,7 @@ export default function OwnBankSend() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
             <Send className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Connect your wallet from the OwnBank Dashboard to send and receive tokens.
-            </p>
+            <InlineXrplConnect />
           </CardContent>
         </Card>
 

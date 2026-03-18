@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { useAuth } from "@/hooks/use-auth";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -709,9 +710,7 @@ export default function OwnBankDex() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
             <ArrowRightLeft className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Connect your wallet from the OwnBank Dashboard to start trading on the XRPL DEX.
-            </p>
+            <InlineXrplConnect />
           </CardContent>
         </Card>
 
@@ -1658,9 +1657,9 @@ function QuickSwapPanel({ pair, bids, asks, loadingBook, isConnected, walletAddr
             </Button>
 
             {!isConnected && (
-              <p className="text-xs text-muted-foreground text-center">
-                Connect your wallet from the OwnBank Dashboard to swap.
-              </p>
+              <div className="pt-1">
+                <InlineXrplConnect />
+              </div>
             )}
             {isConnected && (
               <p className="text-[11px] text-muted-foreground text-center">

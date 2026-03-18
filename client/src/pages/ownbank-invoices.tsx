@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UserWallet, UserSettings } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -281,9 +282,7 @@ export default function OwnBankInvoices() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
             <FileText className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Connect your wallet from the OwnBank Dashboard to create invoices.
-            </p>
+            <InlineXrplConnect />
           </CardContent>
         </Card>
         <XrplDisclaimer />

@@ -52,6 +52,8 @@ Preferred communication style: Simple, everyday language.
 -   **Manual Wallets**: `chain: "manual"` wallets for tracking exchange-held or off-chain assets without a public address. Balance is manually maintained. Skips blockchain sync.
 -   **Lot Distribution**: Import position lots are distributed chronologically across live wallets until each wallet's capacity (live balance minus existing lots) is filled. Remaining lots stay on import with guidance to create manual entries.
 -   **User Wallets**: Multi-purpose, labeled wallet addresses.
+-   **Wallet Naming Convention**: All wallets use chain-prefixed labels enforced server-side. XRP wallets → `XRP_<name>`, Stellar wallets → `XLM_<name>`. The `POST /api/wallets` endpoint auto-prefixes labels and auto-generates smart names (`XRP_Wallet`, `XRP_Wallet_2`, etc.) when no label is provided. Rename endpoints (`PATCH /api/wallets/:id/label` and `PATCH /api/xaman-connections/:id/label`) sync labels bidirectionally between wallets and xaman_connections tables.
+-   **Unified Wallet Creation**: Wallet creation is identical regardless of where it happens — the Wallets & Addresses page, the Dashboard, feature pages (DEX, Send, Tokens, etc.), or Stellar pages. All paths go through the same server endpoint which enforces consistent naming. Feature pages use `InlineXrplConnect` (Xaman QR flow) or `InlineStellarConnect` (address input) for inline wallet creation in empty states.
 -   **Client-side Storage**: Zustand for wallet state, XRPL data, vault deposits, referral data. LocalStorage for UI preferences and temporary data.
 
 ## External Dependencies

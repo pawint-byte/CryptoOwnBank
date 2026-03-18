@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -320,9 +321,7 @@ export default function OwnBankTokens() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
             <Wallet className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Connect your wallet from the OwnBank Dashboard to manage tokens.
-            </p>
+            <InlineXrplConnect />
           </CardContent>
         </Card>
 

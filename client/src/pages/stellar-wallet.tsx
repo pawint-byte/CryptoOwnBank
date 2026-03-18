@@ -26,9 +26,12 @@ import {
   Coins,
   Plus,
   ArrowRightLeft,
+  Pencil,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { SeoHead } from "@/components/seo-head";
 import {
   useStellarStore,
@@ -95,6 +98,24 @@ export default function StellarWallet() {
   const [showAddAnother, setShowAddAnother] = useState(false);
   const [newAddressInput, setNewAddressInput] = useState("");
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  async function handleStellarRename(walletId: string) {
+    if (!renameValue.trim()) return;
+    const finalLabel = renameValue.trim().toUpperCase().startsWith("XLM_") || renameValue.trim().toUpperCase().startsWith("XLM ") || renameValue.trim().toUpperCase().startsWith("XLM-")
+      ? renameValue.trim()
+      : `XLM_${renameValue.trim()}`;
+    try {
+      await apiRequest("PATCH", `/api/wallets/${walletId}/label`, { label: finalLabel });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Wallet Renamed", description: `Updated to "${finalLabel}"` });
+      setRenamingId(null);
+      setRenameValue("");
+    } catch {
+      toast({ title: "Rename Failed", variant: "destructive" });
+    }
+  }
 
   const { data: trackerWallets = [] } = useQuery<TrackerWallet[]>({
     queryKey: ["/api/wallets"],
@@ -441,7 +462,43 @@ export default function StellarWallet() {
                 >
                   <Star className="h-4 w-4 shrink-0" style={{ color: STELLAR_PURPLE }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{activeWalletInfo.label || "Stellar Wallet"}</p>
+                    {renamingId === activeWalletInfo.id ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground font-mono shrink-0">XLM_</span>
+                        <Input
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          className="h-6 text-xs w-28"
+                          placeholder="Name..."
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === "Enter") handleStellarRename(activeWalletInfo.id);
+                            if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                          }}
+                          onClick={e => e.stopPropagation()}
+                          data-testid={`input-rename-stellar-active`}
+                        />
+                        <Button size="icon" variant="ghost" className="h-5 w-5" onClick={(e) => { e.stopPropagation(); handleStellarRename(activeWalletInfo.id); }}>
+                          <Check className="h-3 w-3 text-emerald-600" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-5 w-5" onClick={(e) => { e.stopPropagation(); setRenamingId(null); setRenameValue(""); }}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-medium truncate">{activeWalletInfo.label || "Stellar Wallet"}</p>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-5 w-5 shrink-0"
+                          onClick={(e) => { e.stopPropagation(); setRenamingId(activeWalletInfo.id); setRenameValue((activeWalletInfo.label || "").replace(/^XLM[_\s-]/i, "")); }}
+                          data-testid={`button-rename-stellar-active`}
+                        >
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground font-mono truncate">{activeWalletInfo.address}</p>
                   </div>
                   <Badge className="shrink-0 text-xs text-white" style={{ backgroundColor: STELLAR_PURPLE }}>

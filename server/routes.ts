@@ -172,11 +172,19 @@ export async function registerRoutes(
           (w) => w.chain === "xrp" && w.address.toLowerCase() === xrpAddress.toLowerCase()
         );
         if (!walletAlreadyTracked) {
+          let walletLabel = accountLabel || "";
+          if (!walletLabel) {
+            const xrpCount = existingWallets.filter(w => w.chain === "xrp").length;
+            walletLabel = xrpCount === 0 ? "XRP_Wallet" : `XRP_Wallet_${xrpCount + 1}`;
+          }
+          if (!walletLabel.toUpperCase().startsWith("XRP_") && !walletLabel.toUpperCase().startsWith("XRP ") && !walletLabel.toUpperCase().startsWith("XRP-")) {
+            walletLabel = `XRP_${walletLabel}`;
+          }
           await storage.createWallet({
             userId,
             chain: "xrp",
             address: xrpAddress,
-            label: accountLabel || "Xaman Wallet",
+            label: walletLabel,
           });
         }
       } catch (walletErr) {
@@ -5397,6 +5405,19 @@ export async function registerRoutes(
         return res.status(400).json({ message: "This wallet address is already added" });
       }
 
+      const chainPrefixMap: Record<string, string> = { xrp: "XRP", stellar: "XLM" };
+      const prefix = chainPrefixMap[parsed.chain] || "";
+      if (prefix && parsed.label) {
+        const upper = parsed.label.toUpperCase();
+        if (!upper.startsWith(`${prefix}_`) && !upper.startsWith(`${prefix} `) && !upper.startsWith(`${prefix}-`)) {
+          parsed.label = `${prefix}_${parsed.label}`;
+        }
+      }
+      if (prefix && !parsed.label) {
+        const sameChain = existing.filter(w => w.chain === parsed.chain).length;
+        parsed.label = sameChain === 0 ? `${prefix}_Wallet` : `${prefix}_Wallet_${sameChain + 1}`;
+      }
+
       const wallet = await storage.createWallet(parsed);
       res.json(wallet);
     } catch (error: any) {
@@ -5893,6 +5914,18 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Label is required" });
       }
       await storage.updateWalletLabel(req.params.id, label.trim());
+      if (wallet.chain === "xrp") {
+        try {
+          const { xamanConnections } = await import("@shared/schema");
+          const userConns = await db.select().from(xamanConnections).where(eq(xamanConnections.userId, userId));
+          const matchingConn = userConns.find(c => c.xrpAddress.toLowerCase() === wallet.address.toLowerCase());
+          if (matchingConn) {
+            await db.update(xamanConnections).set({ accountLabel: label.trim() }).where(eq(xamanConnections.id, matchingConn.id));
+          }
+        } catch (syncErr) {
+          console.error("[wallet-rename] xaman sync error:", syncErr);
+        }
+      }
       res.json({ message: "Wallet label updated" });
     } catch (error) {
       console.error("Rename wallet error:", error);

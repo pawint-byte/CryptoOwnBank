@@ -47,7 +47,7 @@ interface StellarState {
   setBalances: (xlm: number, balances: StellarBalance[]) => void;
   setLoading: (loading: boolean) => void;
   addRecentRecipient: (address: string) => void;
-  syncToServer: (address: string | null) => void;
+  syncToServer: (address: string | null, customLabel?: string) => void;
   loadFromServer: () => void;
 }
 
@@ -93,7 +93,7 @@ export const useStellarStore = create<StellarState>()(
           return { recentRecipients: [address, ...filtered].slice(0, 10) };
         }),
 
-      syncToServer: async (address) => {
+      syncToServer: async (address, customLabel) => {
         try {
           if (address) {
             await apiRequest("PUT", "/api/stellar/address", { stellarAddress: address });
@@ -101,7 +101,7 @@ export const useStellarStore = create<StellarState>()(
               await apiRequest("POST", "/api/wallets", {
                 chain: "stellar",
                 address,
-                label: "XLM_LOBSTR_OwnBank",
+                ...(customLabel ? { label: customLabel } : {}),
               });
             } catch {
             }

@@ -1334,6 +1334,55 @@ export default function Wallets() {
   const [mobileLinkPayload, setMobileLinkPayload] = useState<XummLinkPayload | null>(null);
   const [xamanAccountSwitched, setXamanAccountSwitched] = useState(false);
   const cancelPollRef = useRef<(() => void) | null>(null);
+  const [renamingWalletId, setRenamingWalletId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renamingConnId, setRenamingConnId] = useState<number | null>(null);
+  const [renameConnValue, setRenameConnValue] = useState("");
+
+  function getChainPrefix(chain: string): string {
+    if (chain === "xrp") return "XRP";
+    if (chain === "stellar") return "XLM";
+    if (chain === "manual") return "";
+    return chain.toUpperCase();
+  }
+
+  function ensurePrefix(name: string, chain: string): string {
+    const prefix = getChainPrefix(chain);
+    if (!prefix) return name;
+    const upper = name.toUpperCase();
+    if (upper.startsWith(`${prefix}_`) || upper.startsWith(`${prefix} `) || upper.startsWith(`${prefix}-`)) return name;
+    return `${prefix}_${name}`;
+  }
+
+  async function handleWalletRename(walletId: string, chain: string) {
+    if (!renameValue.trim()) return;
+    const finalLabel = ensurePrefix(renameValue.trim(), chain);
+    try {
+      await apiRequest("PATCH", `/api/wallets/${walletId}/label`, { label: finalLabel });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/xaman-connections"] });
+      toast({ title: "Wallet Renamed", description: `Updated to "${finalLabel}"` });
+      setRenamingWalletId(null);
+      setRenameValue("");
+    } catch {
+      toast({ title: "Rename Failed", variant: "destructive" });
+    }
+  }
+
+  async function handleConnRename(connId: number) {
+    if (!renameConnValue.trim()) return;
+    const finalLabel = ensurePrefix(renameConnValue.trim(), "xrp");
+    try {
+      await apiRequest("PATCH", `/api/xaman-connections/${connId}/label`, { label: finalLabel });
+      queryClient.invalidateQueries({ queryKey: ["/api/xaman-connections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Wallet Renamed", description: `Updated to "${finalLabel}"` });
+      setRenamingConnId(null);
+      setRenameConnValue("");
+    } catch {
+      toast({ title: "Rename Failed", variant: "destructive" });
+    }
+  }
 
   const isXamanLinked = (address: string) => {
     if (connectedXrplAddress && address.toLowerCase() === connectedXrplAddress.toLowerCase()) return true;
@@ -2301,8 +2350,43 @@ export default function Wallets() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{w.label || "Unlabeled"}</span>
-                          {linked && (
+                          {renamingWalletId === w.id ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-muted-foreground font-mono shrink-0">XRP_</span>
+                              <Input
+                                value={renameValue}
+                                onChange={e => setRenameValue(e.target.value)}
+                                className="h-6 text-xs w-32"
+                                placeholder="e.g. Ledger, Cold..."
+                                autoFocus
+                                onKeyDown={e => {
+                                  if (e.key === "Enter") handleWalletRename(w.id, "xrp");
+                                  if (e.key === "Escape") { setRenamingWalletId(null); setRenameValue(""); }
+                                }}
+                                data-testid={`input-rename-wallet-page-${w.id}`}
+                              />
+                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleWalletRename(w.id, "xrp")}>
+                                <Check className="h-3 w-3 text-emerald-600" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { setRenamingWalletId(null); setRenameValue(""); }}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-sm font-medium">{w.label || "Unlabeled"}</span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-5 w-5"
+                                onClick={() => { setRenamingWalletId(w.id); setRenameValue((w.label || "").replace(/^XRP[_\s-]/i, "")); }}
+                                data-testid={`button-rename-wallet-page-${w.id}`}
+                              >
+                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </>
+                          )}
+                          {linked && renamingWalletId !== w.id && (
                             <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600 dark:text-emerald-400">
                               <Link2 className="h-3 w-3 mr-1" />
                               Xaman Linked
@@ -2500,7 +2584,42 @@ export default function Wallets() {
                                       </div>
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="font-medium text-sm">{w.chain === "manual" ? (w.label || "Manual Entry") : (CHAIN_LABELS[w.chain] || w.chain)}</span>
+                                          {renamingWalletId === w.id ? (
+                                            <div className="flex items-center gap-1">
+                                              {getChainPrefix(w.chain) && <span className="text-[10px] text-muted-foreground font-mono shrink-0">{getChainPrefix(w.chain)}_</span>}
+                                              <Input
+                                                value={renameValue}
+                                                onChange={e => setRenameValue(e.target.value)}
+                                                className="h-6 text-xs w-32"
+                                                placeholder="Wallet name..."
+                                                autoFocus
+                                                onKeyDown={e => {
+                                                  if (e.key === "Enter") handleWalletRename(w.id, w.chain);
+                                                  if (e.key === "Escape") { setRenamingWalletId(null); setRenameValue(""); }
+                                                }}
+                                                data-testid={`input-rename-portfolio-${w.id}`}
+                                              />
+                                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleWalletRename(w.id, w.chain)}>
+                                                <Check className="h-3 w-3 text-emerald-600" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { setRenamingWalletId(null); setRenameValue(""); }}>
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <span className="font-medium text-sm">{w.label || (w.chain === "manual" ? "Manual Entry" : (CHAIN_LABELS[w.chain] || w.chain))}</span>
+                                              <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-5 w-5"
+                                                onClick={() => { setRenamingWalletId(w.id); setRenameValue((w.label || "").replace(new RegExp(`^${getChainPrefix(w.chain)}[_\\s-]`, "i"), "")); }}
+                                                data-testid={`button-rename-portfolio-${w.id}`}
+                                              >
+                                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                                              </Button>
+                                            </>
+                                          )}
                                           {w.chain === "manual" && (
                                             <Badge variant="outline" className="text-[10px] border-gray-400 text-gray-500">
                                               Manual

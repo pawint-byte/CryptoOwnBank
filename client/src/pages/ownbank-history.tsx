@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -265,13 +266,7 @@ export default function OwnBankHistory() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <WalletCards className="h-12 w-12 text-muted-foreground" />
-            <h2 className="text-lg font-semibold" data-testid="text-connect-prompt">
-              Wallet Not Connected
-            </h2>
-            <p className="text-muted-foreground text-center max-w-md">
-              Connect your XRPL wallet from the Wallet & Yield page to view your
-              on-chain transaction history.
-            </p>
+            <InlineXrplConnect />
           </CardContent>
         </Card>
         <XrplDisclaimer />

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { InlineStellarConnect } from "@/components/inline-stellar-connect";
 import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -587,9 +588,7 @@ export default function StellarSend() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
                 <ArrowDownToLine className="h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground text-center max-w-md">
-                  Connect your Stellar wallet from the Stellar Wallet page to generate receive QR codes and payment requests.
-                </p>
+                <InlineStellarConnect />
               </CardContent>
             </Card>
           ) : (

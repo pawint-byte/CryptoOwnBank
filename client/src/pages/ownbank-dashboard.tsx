@@ -220,17 +220,9 @@ export default function OwnBankDashboard() {
       console.error("Failed to save wallet to server:", err);
     }
     try {
-      const alreadyTracked = trackerXrpWallets.some(
-        (w) => w.address.toLowerCase() === address.toLowerCase()
-      );
-      if (!alreadyTracked) {
-        await apiRequest("POST", "/api/wallets", {
-          chain: "xrp",
-          address,
-          label: type === "xumm" ? "Xaman Wallet" : "Ledger Wallet",
-        });
-        queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
-      }
+      await apiRequest("POST", "/api/xaman-connections", { xrpAddress: address });
+      queryClient.invalidateQueries({ queryKey: ["/api/xaman-connections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
     } catch {
     }
   };

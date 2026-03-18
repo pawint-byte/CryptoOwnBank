@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { InlineStellarConnect } from "@/components/inline-stellar-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -208,9 +209,7 @@ export default function StellarInvoices() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
             <FileText className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Connect your Stellar wallet from the Stellar Wallet page to create invoices.
-            </p>
+            <InlineStellarConnect />
           </CardContent>
         </Card>
       </div>

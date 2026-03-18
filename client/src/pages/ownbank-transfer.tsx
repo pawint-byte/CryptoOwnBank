@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -329,14 +330,7 @@ export default function OwnBankTransfer() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <Wallet className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground text-center">
-              Connect your XRPL wallet to transfer between your accounts.
-            </p>
-            <Link href="/ownbank/signing-options">
-              <Button className="bg-[#00A4E4] hover:bg-[#0090cc] text-white" data-testid="button-connect-wallet">
-                Connect Wallet
-              </Button>
-            </Link>
+            <InlineXrplConnect />
           </CardContent>
         </Card>
       ) : walletsLoading ? (
