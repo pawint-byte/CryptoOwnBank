@@ -179,9 +179,9 @@ export default function StellarWallet() {
               <Wallet className="h-8 w-8" style={{ color: STELLAR_PURPLE }} />
             </div>
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold" data-testid="text-connect-heading">Connect Your Stellar Address</h2>
+              <h2 className="text-xl font-semibold" data-testid="text-connect-heading">Connect Your Stellar Wallet</h2>
               <p className="text-muted-foreground max-w-md">
-                Enter your Stellar public key to view your XLM balance, token holdings, and trustlines. Non-custodial — we never store your private keys.
+                Paste your Stellar public address to view your XLM balance, token holdings, and trustlines. Non-custodial — we never store your private keys.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-lg">
@@ -202,10 +202,39 @@ export default function StellarWallet() {
                 Connect
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground text-center max-w-md">
-              Your Stellar address (public key) starts with 'G' and is 56 characters long.
-              You can find it in LOBSTR, Freighter, Solar, or any Stellar wallet app.
-            </p>
+
+            <div className="w-full max-w-lg space-y-3">
+              <p className="text-sm font-medium text-center">How to find your address:</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: `${STELLAR_PURPLE}30` }}>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: "#4A90D9" }}>L</div>
+                    <span className="text-sm font-semibold" data-testid="text-lobstr-guide">LOBSTR</span>
+                  </div>
+                  <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
+                    <li>Open LOBSTR app</li>
+                    <li>Tap <strong>Receive</strong> (bottom bar)</li>
+                    <li>Copy the <strong>G...</strong> address shown</li>
+                    <li>Paste it above</li>
+                  </ol>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1.5" style={{ borderColor: `${STELLAR_PURPLE}30` }}>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" style={{ color: STELLAR_PURPLE }} />
+                    <span className="text-sm font-semibold" data-testid="text-other-wallets-guide">Freighter / Solar / Other</span>
+                  </div>
+                  <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
+                    <li>Open your Stellar wallet</li>
+                    <li>Go to <strong>Account</strong> or <strong>Receive</strong></li>
+                    <li>Copy your public key (starts with G)</li>
+                    <li>Paste it above</li>
+                  </ol>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Your Stellar address (public key) starts with 'G' and is 56 characters long. Never share your secret key.
+              </p>
+            </div>
             {trackerWallets.length > 0 && (
               <div className="w-full max-w-lg mt-4">
                 <p className="text-sm font-medium mb-2 text-center">Your XLM addresses from Portfolio Tracker:</p>

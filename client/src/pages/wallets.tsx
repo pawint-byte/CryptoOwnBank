@@ -93,6 +93,7 @@ import { CUSTODY_KNOWLEDGE } from "@/lib/custody-knowledge";
 import { COLD_WALLETS } from "@/lib/cold-wallet-data";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
+import { Link } from "wouter";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
 interface SubscriptionLimits {
@@ -2120,6 +2121,23 @@ export default function Wallets() {
           compact
           feature="Free users can track 1 blockchain address. Upgrade to Premium for unlimited addresses across all 24 blockchains."
         />
+      )}
+
+      {userWallets.some(w => w.chain === "stellar") && (
+        <div className="rounded-lg border p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3" style={{ borderColor: "#7B61FF40", backgroundColor: "#7B61FF08" }} data-testid="banner-stellar-ownbank">
+          <div className="flex items-center gap-2 min-w-0">
+            <Star className="h-5 w-5 shrink-0" style={{ color: "#7B61FF" }} />
+            <div>
+              <p className="text-sm font-medium">You have a Stellar address tracked here</p>
+              <p className="text-xs text-muted-foreground">Use OwnBank Stellar to send payments, trade on the DEX, manage tokens, and more.</p>
+            </div>
+          </div>
+          <Link href="/stellar/wallet" className="shrink-0">
+            <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: "#7B61FF60", color: "#7B61FF" }} data-testid="button-go-stellar-ownbank">
+              Open Stellar Wallet
+            </Button>
+          </Link>
+        </div>
       )}
 
       {userWallets.length > 0 && (
