@@ -778,6 +778,31 @@ export default function OwnBankWithdraw() {
               </Card>
             );
           })}
+
+          <Card className="border-blue-500/20 bg-blue-500/5">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">What happens to withdrawn RLUSD?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Soil withdrawals return your <strong>full position</strong> (principal + interest) to your connected wallet. Partial interest-only withdrawals are not currently supported by Soil.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Once RLUSD is back in your wallet, you decide what to do with it:
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-1 ml-3 list-disc">
+                    <li><strong>DCA to XRP</strong> — If you have an active DCA order, your RLUSD will automatically convert to XRP on your next scheduled run. <Link href="/ownbank/dca" className="text-[#00A4E4] underline">Set up DCA →</Link></li>
+                    <li><strong>Redeposit to Soil</strong> — Manually deposit back into a vault to continue earning yield</li>
+                    <li><strong>Hold as RLUSD</strong> — Keep it as a stablecoin in your wallet</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground italic">
+                    Tip: Set up DCA before withdrawing so your RLUSD doesn't sit idle.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
