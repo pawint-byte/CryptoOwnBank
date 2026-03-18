@@ -258,7 +258,7 @@ export default function DcaOrders() {
   const [executingOrderId, setExecutingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const pendingDcaOrderId = sessionStorage.getItem("dca_execute_order_id");
+    const pendingDcaOrderId = sessionStorage.getItem("dca_execute_order_id") || localStorage.getItem("dca_execute_order_id");
     if (!pendingDcaOrderId) return;
 
     if (hasPendingXummPayment()) {
@@ -270,7 +270,7 @@ export default function DcaOrders() {
               txHash: result.txHash || null,
             });
             try {
-              const tradeInfo = JSON.parse(sessionStorage.getItem("dca_pending_trade") || "{}");
+              const tradeInfo = JSON.parse(sessionStorage.getItem("dca_pending_trade") || localStorage.getItem("dca_pending_trade") || "{}");
               if (tradeInfo.spentAmount) {
                 await apiRequest("POST", "/api/record-dex-trade", {
                   txHash: result.txHash,
@@ -282,6 +282,7 @@ export default function DcaOrders() {
               }
             } catch {}
             sessionStorage.removeItem("dca_pending_trade");
+            localStorage.removeItem("dca_pending_trade");
             queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
             queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", pendingDcaOrderId] });
             toast({ title: "DCA executed successfully", description: "Your trade was confirmed on the XRPL." });
@@ -293,10 +294,13 @@ export default function DcaOrders() {
         }
         sessionStorage.removeItem("dca_execute_order_id");
         sessionStorage.removeItem("dca_pending_trade");
+        localStorage.removeItem("dca_execute_order_id");
+        localStorage.removeItem("dca_pending_trade");
         setExecutingOrderId(null);
       });
     } else {
       sessionStorage.removeItem("dca_execute_order_id");
+      localStorage.removeItem("dca_execute_order_id");
       setExecutingOrderId(null);
     }
   }, []);
@@ -387,12 +391,15 @@ export default function DcaOrders() {
       };
 
       sessionStorage.setItem("dca_execute_order_id", order.id);
-      sessionStorage.setItem("dca_pending_trade", JSON.stringify({
+      localStorage.setItem("dca_execute_order_id", order.id);
+      const dcaTradeData = JSON.stringify({
         spentAmount: spendAmount.toString(),
         spentCurrency: order.spendCurrency,
         receivedAmount: buyAmount,
         receivedCurrency: order.buyCurrency,
-      }));
+      });
+      sessionStorage.setItem("dca_pending_trade", dcaTradeData);
+      localStorage.setItem("dca_pending_trade", dcaTradeData);
       const result = await signTransaction(txJson);
 
       if (result.success) {
@@ -409,10 +416,15 @@ export default function DcaOrders() {
           });
         } catch {}
         sessionStorage.removeItem("dca_pending_trade");
+        localStorage.removeItem("dca_pending_trade");
+        localStorage.removeItem("dca_execute_order_id");
         queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
         queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", order.id] });
         toast({ title: "DCA executed successfully", description: `Swapped ${spendAmount} ${getTokenDisplay(order.spendCurrency)} on the DEX.` });
       } else {
+        sessionStorage.removeItem("dca_pending_trade");
+        localStorage.removeItem("dca_pending_trade");
+        localStorage.removeItem("dca_execute_order_id");
         toast({ title: "Trade not completed", description: result.error || "The transaction was rejected or expired.", variant: "destructive" });
       }
     } catch (err) {

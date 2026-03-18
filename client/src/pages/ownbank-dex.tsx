@@ -434,7 +434,7 @@ export default function OwnBankDex() {
         if (result.success) {
           toast({ title: "Order placed", description: "Your trade was submitted to the XRPL." });
           try {
-            const tradeInfo = JSON.parse(sessionStorage.getItem("dex_pending_trade") || "{}");
+            const tradeInfo = JSON.parse(sessionStorage.getItem("dex_pending_trade") || localStorage.getItem("dex_pending_trade") || "{}");
             if (tradeInfo.spentAmount) {
               apiRequest("POST", "/api/record-dex-trade", {
                 txHash: result.txHash,
@@ -446,10 +446,12 @@ export default function OwnBankDex() {
             }
           } catch {}
           sessionStorage.removeItem("dex_pending_trade");
+          localStorage.removeItem("dex_pending_trade");
           setTimeout(() => { fetchOrderBook(); fetchMyOffers(); }, 4000);
         } else {
           clearPendingXummPayment();
           sessionStorage.removeItem("dex_pending_trade");
+          localStorage.removeItem("dex_pending_trade");
           if (result.error && result.error !== "No pending payment") {
             toast({ title: "Trade not completed", description: result.error, variant: "destructive" });
           }
@@ -458,6 +460,7 @@ export default function OwnBankDex() {
         clearTimeout(timeout);
         clearPendingXummPayment();
         sessionStorage.removeItem("dex_pending_trade");
+        localStorage.removeItem("dex_pending_trade");
         setPlacingOrder(false);
       });
     }
@@ -549,7 +552,7 @@ export default function OwnBankDex() {
       }
 
       const totalVal = a * usePrice;
-      sessionStorage.setItem("dex_pending_trade", JSON.stringify({
+      const tradeData = JSON.stringify({
         side: orderSide,
         spentAmount: orderSide === "buy" ? totalVal.toString() : a.toString(),
         spentCurrency: orderSide === "buy" ? pair.counter.currency : pair.base.currency,
@@ -557,7 +560,9 @@ export default function OwnBankDex() {
         receivedCurrency: orderSide === "buy" ? pair.base.currency : pair.counter.currency,
         baseDisplay: pair.base.display,
         amount: formatAmount(amount),
-      }));
+      });
+      sessionStorage.setItem("dex_pending_trade", tradeData);
+      localStorage.setItem("dex_pending_trade", tradeData);
 
       const result = await signTransaction(txJson);
 
@@ -567,7 +572,7 @@ export default function OwnBankDex() {
           description: `${orderSide === "buy" ? "Buy" : "Sell"} order for ${formatAmount(amount)} ${pair.base.display} submitted successfully.`,
         });
         try {
-          const tradeInfo = JSON.parse(sessionStorage.getItem("dex_pending_trade") || "{}");
+          const tradeInfo = JSON.parse(sessionStorage.getItem("dex_pending_trade") || localStorage.getItem("dex_pending_trade") || "{}");
           apiRequest("POST", "/api/record-dex-trade", {
             txHash: result.txHash,
             spentAmount: tradeInfo.spentAmount,
@@ -576,6 +581,8 @@ export default function OwnBankDex() {
             receivedCurrency: tradeInfo.receivedCurrency,
           }).catch(() => {});
         } catch {}
+        sessionStorage.removeItem("dex_pending_trade");
+        localStorage.removeItem("dex_pending_trade");
         try {
           window.fetch("/api/dex/trade-notification", {
             method: "POST",
