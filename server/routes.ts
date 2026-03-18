@@ -8081,6 +8081,9 @@ export async function registerRoutes(
       }
       clientErrorRateMap.set(rateKey, now);
 
+      console.log(`[client-error] route=${route || "?"} source=${source || "?"} msg=${String(message).slice(0, 300)}`);
+      if (stack) console.log(`[client-error] stack=${String(stack).slice(0, 500)}`);
+
       const userId = req.user?.claims?.sub || null;
       const userEmail = req.user?.claims?.email || null;
 

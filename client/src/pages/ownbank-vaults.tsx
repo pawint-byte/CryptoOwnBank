@@ -73,6 +73,7 @@ export default function OwnBankVaults() {
   const { toast } = useToast();
   const {
     isConnected,
+    walletAddress,
     walletType,
     connect,
     vaultDeposits,
