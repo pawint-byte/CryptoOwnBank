@@ -259,7 +259,9 @@ export default function DcaOrders() {
 
   useEffect(() => {
     const pendingDcaOrderId = sessionStorage.getItem("dca_execute_order_id");
-    if (pendingDcaOrderId && hasPendingXummPayment()) {
+    if (!pendingDcaOrderId) return;
+
+    if (hasPendingXummPayment()) {
       setExecutingOrderId(pendingDcaOrderId);
       completePendingXummPayment().then(async (result) => {
         if (result.success) {
@@ -279,6 +281,9 @@ export default function DcaOrders() {
         sessionStorage.removeItem("dca_execute_order_id");
         setExecutingOrderId(null);
       });
+    } else {
+      sessionStorage.removeItem("dca_execute_order_id");
+      setExecutingOrderId(null);
     }
   }, []);
 
@@ -290,6 +295,7 @@ export default function DcaOrders() {
     }
 
     setExecutingOrderId(order.id);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     try {
       const spendAmount = parseFloat(order.spendAmount);
 
@@ -305,9 +311,15 @@ export default function DcaOrders() {
 
       toast({ title: "Fetching market price...", description: "Connecting to XRPL order book" });
 
+      const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+        Promise.race([
+          promise,
+          new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+        ]);
+
       let marketPrice = 0;
       try {
-        const book = await getOrderBook(buyCur, spendCur, 5);
+        const book = await withTimeout(getOrderBook(buyCur, spendCur, 5), 15000);
         if (book.asks && book.asks.length > 0) {
           marketPrice = parseFloat(book.asks[0].price);
         }
@@ -317,7 +329,7 @@ export default function DcaOrders() {
 
       if (marketPrice <= 0) {
         try {
-          const book = await getOrderBook(spendCur, buyCur, 5);
+          const book = await withTimeout(getOrderBook(spendCur, buyCur, 5), 10000);
           if (book.bids && book.bids.length > 0) {
             const bidPrice = parseFloat(book.bids[0].price);
             if (bidPrice > 0) marketPrice = 1 / bidPrice;
@@ -359,14 +371,16 @@ export default function DcaOrders() {
         queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", order.id] });
         toast({ title: "DCA executed successfully", description: `Swapped ${spendAmount} ${getTokenDisplay(order.spendCurrency)} on the DEX.` });
       } else {
-        toast({ title: "Trade cancelled", description: "The transaction was rejected or expired.", variant: "destructive" });
+        toast({ title: "Trade not completed", description: result.error || "The transaction was rejected or expired.", variant: "destructive" });
       }
     } catch (err) {
       console.error("[DCA] Execute now error:", err);
       toast({ title: "Execution failed", description: "Something went wrong. Try again.", variant: "destructive" });
     } finally {
-      sessionStorage.removeItem("dca_execute_order_id");
-      setExecutingOrderId(null);
+      if (!isMobile) {
+        sessionStorage.removeItem("dca_execute_order_id");
+        setExecutingOrderId(null);
+      }
     }
   }
 
