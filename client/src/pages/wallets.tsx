@@ -2309,9 +2309,36 @@ export default function Wallets() {
                             </Badge>
                           )}
                         </div>
-                        <code className="text-xs text-muted-foreground">
-                          {w.address.slice(0, 8)}...{w.address.slice(-6)}
-                        </code>
+                        <div className="flex items-center gap-1.5">
+                          <code className="text-xs text-muted-foreground">
+                            {w.address.slice(0, 8)}...{w.address.slice(-6)}
+                          </code>
+                          <button
+                            className="text-muted-foreground hover:text-foreground shrink-0"
+                            onClick={() => {
+                              navigator.clipboard.writeText(w.address);
+                              setCopiedAddress(w.address);
+                              setTimeout(() => setCopiedAddress(null), 2000);
+                              toast({ title: "Address copied", description: w.address });
+                            }}
+                            data-testid={`button-copy-xaman-${w.id}`}
+                          >
+                            {copiedAddress === w.address ? (
+                              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </button>
+                          <a
+                            href={getExplorerUrl("xrp", w.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground shrink-0"
+                            data-testid={`link-explorer-xaman-${w.id}`}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
                       </div>
                     </div>
                     {linked ? (
