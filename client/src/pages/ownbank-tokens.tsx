@@ -454,64 +454,6 @@ export default function OwnBankTokens() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="text-base" data-testid="text-popular-tokens-heading">
-            Popular Tokens — Quick Add
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {POPULAR_TOKENS.map((token) => {
-              const alreadySet = isPopularTokenAlreadySet(token, trustlines);
-              return (
-                <div
-                  key={token.name}
-                  className="rounded-md border p-3 space-y-2"
-                  data-testid={`card-popular-token-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold" data-testid={`text-token-name-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}>
-                      {token.name}
-                    </span>
-                    {alreadySet ? (
-                      <Badge
-                        variant="secondary"
-                        className="text-xs"
-                        data-testid={`badge-active-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}
-                      >
-                        Active
-                      </Badge>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickAdd(token)}
-                        disabled={isAdding}
-                        data-testid={`button-quick-add-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}
-                      >
-                        {isAdding ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                        )}
-                        Add
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground" data-testid={`text-token-desc-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}>
-                    {token.description}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono truncate">
-                    Issuer: {truncateAddress(token.issuer)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-base" data-testid="text-your-trustlines-heading">
             Your Trustlines
             {!loading && (
@@ -643,6 +585,64 @@ export default function OwnBankTokens() {
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="text-base" data-testid="text-popular-tokens-heading">
+            Popular Tokens — Quick Add
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {POPULAR_TOKENS.map((token) => {
+              const alreadySet = isPopularTokenAlreadySet(token, trustlines);
+              return (
+                <div
+                  key={token.name}
+                  className="rounded-md border p-3 space-y-2"
+                  data-testid={`card-popular-token-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold" data-testid={`text-token-name-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}>
+                      {token.name}
+                    </span>
+                    {alreadySet ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-xs"
+                        data-testid={`badge-active-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}
+                      >
+                        Active
+                      </Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleQuickAdd(token)}
+                        disabled={isAdding}
+                        data-testid={`button-quick-add-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}
+                      >
+                        {isAdding ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        Add
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground" data-testid={`text-token-desc-${token.name.replace(/[^a-zA-Z0-9]/g, "-")}`}>
+                    {token.description}
+                  </p>
+                  <p className="text-xs text-muted-foreground font-mono truncate">
+                    Issuer: {truncateAddress(token.issuer)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
