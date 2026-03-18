@@ -957,6 +957,8 @@ function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
       label: "Create your CryptoOwnBank account",
       done: true,
       tip: "You're here — done!",
+      href: undefined as string | undefined,
+      btnLabel: undefined as string | undefined,
     },
     {
       label: "Subscribe to Pro tier",
@@ -964,15 +966,17 @@ function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
       tip: hasPro
         ? "You're on Pro — XLS-66 lending is included in your subscription"
         : "XLS-66 lending requires a Pro subscription ($99/mo or $799/yr). Pro also includes the Legacy Plan, DeFi Borrowing Hub, treasury dashboard, and more.",
-      href: hasPro ? undefined : "/settings",
+      href: "/settings",
+      btnLabel: "Upgrade",
     },
     {
       label: "Add an XRP Ledger wallet address",
       done: hasXrpWallet,
       tip: hasXrpWallet
         ? `${xrpWallets.length} XRP wallet${xrpWallets.length > 1 ? "s" : ""} added`
-        : "Go to Portfolio → Wallets and add your XRP address. This is the address that will interact with XLS-66 vaults.",
+        : "Go to Wallets and add your XRP address. This is the wallet that will interact with XLS-66 vaults.",
       href: "/wallets",
+      btnLabel: "Add Wallet",
     },
     {
       label: "Connect Xaman (signing app)",
@@ -981,6 +985,7 @@ function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
         ? `${xamanConnections.length} Xaman connection${xamanConnections.length > 1 ? "s" : ""} active`
         : "Xaman is how you sign transactions — from your phone or via Ledger Bluetooth. It doesn't hold your crypto; the XRPL does.",
       href: "/wallets",
+      btnLabel: "Connect",
     },
     {
       label: "Link Xaman to your XRP wallet for signing",
@@ -989,29 +994,34 @@ function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
         ? "Your XRP wallet is linked to Xaman — ready to sign vault deposits"
         : "On the Wallets page, click 'Link to Xaman' next to your XRP wallet. This lets CryptoOwnBank send signing requests to your device.",
       href: "/wallets",
+      btnLabel: "Link",
     },
     {
       label: "Have XRP in your wallet for transaction fees",
       done: hasXrpWallet,
       tip: hasXrpWallet
         ? "Every XRPL transaction costs a fraction of a penny in XRP. You also need a 10 XRP reserve (XRPL requirement for all active wallets)."
-        : "You'll need a small amount of XRP to pay transaction fees (fractions of a penny) and the 10 XRP wallet reserve required by the XRPL.",
+        : "You'll need a small amount of XRP for transaction fees (fractions of a penny) and the 10 XRP wallet reserve. Buy XRP on any exchange and send it to your wallet address.",
+      href: "/ownbank",
+      btnLabel: "View Wallet",
     },
     {
-      label: "RLUSD trustline (for RLUSD vaults only)",
+      label: "Set up RLUSD trustline (for RLUSD vaults only)",
       done: soilReady,
       tip: soilReady
         ? "Already using Soil vaults? Your RLUSD trustline is already set up — you're good to go. If depositing into XRP-only vaults, no trustline needed."
-        : "Required only if you want to deposit into RLUSD vaults. XRP vaults don't need a trustline. Use the Trustlines tab below to set it up.",
-      action: "trustlines",
+        : "Required only if you want to deposit into RLUSD vaults. XRP vaults don't need a trustline. Click below to set it up.",
+      href: "/xls66-lending",
+      btnLabel: "Trustlines",
     },
     {
-      label: "Track your portfolio across multiple chains",
+      label: "Track your portfolio across multiple chains (optional)",
       done: hasMultipleChains,
       tip: hasMultipleChains
         ? `Tracking wallets across ${new Set(wallets.map((w: any) => w.chain)).size} chains — your full portfolio in one place`
-        : "Optional but recommended: add wallets from other chains (ETH, SOL, ADA, etc.) to see your full portfolio in one dashboard",
+        : "Add wallets from other chains (ETH, SOL, ADA, etc.) to see your full portfolio in one dashboard.",
       href: "/wallets",
+      btnLabel: "Add Wallets",
     },
   ];
 
@@ -1095,11 +1105,13 @@ function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
                 }`}
                 data-testid={`readiness-step-${i}`}
               >
-                <div className="mt-0.5">
+                <div className="mt-0.5 flex items-center gap-2">
                   {step.done ? (
                     <CheckCircle className="h-5 w-5 text-emerald-500" />
                   ) : (
-                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
+                    <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-muted-foreground">{i + 1}</span>
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1111,7 +1123,7 @@ function ReadinessChecklist({ hasPro = false }: { hasPro?: boolean }) {
                 {!step.done && step.href && (
                   <a href={step.href}>
                     <Button size="sm" variant="outline" className="shrink-0 text-xs h-7" data-testid={`readiness-action-${i}`}>
-                      Go <ArrowRight className="h-3 w-3 ml-1" />
+                      {step.btnLabel || "Go"} <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
                   </a>
                 )}
