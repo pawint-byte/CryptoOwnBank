@@ -399,7 +399,7 @@ export default function OwnBankDex() {
     try {
       const txs = await getAccountTransactions(walletAddress, 100);
       const trades = txs.filter(tx =>
-        tx.type === "OfferCreate" && tx.status === "tesSUCCESS"
+        tx.type === "OfferCreate" && tx.status === "Success"
       );
       setTradeHistory(trades);
     } catch {
