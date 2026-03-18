@@ -6563,6 +6563,89 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/record-dex-trade", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { txHash, spentAmount, spentCurrency, receivedAmount, receivedCurrency } = req.body;
+      if (!spentAmount || !spentCurrency || !receivedAmount || !receivedCurrency) {
+        return res.status(400).json({ message: "Missing trade details" });
+      }
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let dexAccount = existingAccounts.find(a => a.accountName === "XRPL DEX" && a.accountType === "wallet");
+      if (!dexAccount) {
+        dexAccount = await storage.createAccount({
+          userId,
+          provider: "xrp",
+          accountName: "XRPL DEX",
+          accountType: "wallet",
+        });
+      }
+
+      const spentNum = parseFloat(spentAmount);
+      const receivedNum = parseFloat(receivedAmount);
+      const pricePerUnit = spentNum / receivedNum;
+
+      const buySymbol = receivedCurrency === "524C555344000000000000000000000000000000" ? "RLUSD" : receivedCurrency;
+      const sellSymbol = spentCurrency === "524C555344000000000000000000000000000000" ? "RLUSD" : spentCurrency;
+
+      await storage.createTransaction({
+        userId,
+        accountId: dexAccount.id,
+        assetSymbol: buySymbol,
+        transactionType: "buy",
+        quantity: receivedNum.toFixed(8),
+        pricePerUnit: pricePerUnit.toFixed(8),
+        totalValue: spentNum.toFixed(2),
+        fee: "0",
+        transactionDate: new Date(),
+        externalId: txHash || null,
+        notes: `DCA/DEX: Bought ${receivedNum} ${buySymbol} with ${spentNum} ${sellSymbol}`,
+      });
+
+      const existingPositions = await storage.getPositionsByUser(userId);
+      const existingPos = existingPositions.find(p => p.assetSymbol === buySymbol && p.accountId === dexAccount!.id);
+      if (existingPos) {
+        const oldQty = parseFloat(existingPos.quantity);
+        const oldCost = parseFloat(existingPos.totalCostBasis);
+        const newQty = oldQty + receivedNum;
+        const newCost = oldCost + spentNum;
+        await storage.updatePosition(existingPos.id, {
+          quantity: newQty.toFixed(8),
+          averageCost: (newCost / newQty).toFixed(8),
+          totalCostBasis: newCost.toFixed(2),
+        });
+      } else {
+        await storage.createPosition({
+          userId,
+          accountId: dexAccount.id,
+          assetSymbol: buySymbol,
+          quantity: receivedNum.toFixed(8),
+          averageCost: pricePerUnit.toFixed(8),
+          totalCostBasis: spentNum.toFixed(2),
+        });
+      }
+
+      await storage.createTaxLot({
+        userId,
+        accountId: dexAccount.id,
+        assetSymbol: buySymbol,
+        quantity: receivedNum.toFixed(8),
+        costBasisPerUnit: pricePerUnit.toFixed(8),
+        totalCostBasis: spentNum.toFixed(2),
+        acquiredDate: new Date(),
+        source: "dex_trade",
+        externalId: txHash || null,
+      });
+
+      console.log(`[DEX] Recorded trade for ${userId}: ${receivedNum} ${buySymbol} for ${spentNum} ${sellSymbol}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Record DEX trade error:", error);
+      res.status(500).json({ message: "Failed to record trade" });
+    }
+  });
+
   app.post("/api/dca-orders/:id/execute", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

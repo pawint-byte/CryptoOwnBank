@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -422,9 +423,23 @@ export default function OwnBankDex() {
         setPlacingOrder(false);
         if (result.success) {
           toast({ title: "Order placed", description: "Your trade was submitted to the XRPL." });
+          try {
+            const tradeInfo = JSON.parse(sessionStorage.getItem("dex_pending_trade") || "{}");
+            if (tradeInfo.spentAmount) {
+              apiRequest("POST", "/api/record-dex-trade", {
+                txHash: result.txHash,
+                spentAmount: tradeInfo.spentAmount,
+                spentCurrency: tradeInfo.spentCurrency,
+                receivedAmount: tradeInfo.receivedAmount,
+                receivedCurrency: tradeInfo.receivedCurrency,
+              }).catch(() => {});
+            }
+          } catch {}
+          sessionStorage.removeItem("dex_pending_trade");
           setTimeout(() => { fetchOrderBook(); fetchMyOffers(); }, 4000);
         } else if (result.error !== "No pending payment") {
           toast({ title: "Trade not completed", description: result.error || "Transaction was cancelled or timed out.", variant: "destructive" });
+          sessionStorage.removeItem("dex_pending_trade");
         }
       });
     }
@@ -503,15 +518,35 @@ export default function OwnBankDex() {
         txJson.Flags = 0x00020000;
       }
 
+      const usePrice = orderType === "limit" ? p : parseFloat(orderSide === "buy" ? (asks[0]?.price || "0") : (bids[0]?.price || "0"));
+      const totalVal = a * usePrice;
+      sessionStorage.setItem("dex_pending_trade", JSON.stringify({
+        side: orderSide,
+        spentAmount: orderSide === "buy" ? totalVal.toString() : a.toString(),
+        spentCurrency: orderSide === "buy" ? pair.counter.currency : pair.base.currency,
+        receivedAmount: orderSide === "buy" ? a.toString() : totalVal.toString(),
+        receivedCurrency: orderSide === "buy" ? pair.base.currency : pair.counter.currency,
+        baseDisplay: pair.base.display,
+        amount: formatAmount(amount),
+      }));
+
       const result = await signTransaction(txJson);
 
       if (result.success) {
-        const usePrice = orderType === "limit" ? p : parseFloat(orderSide === "buy" ? (asks[0]?.price || "0") : (bids[0]?.price || "0"));
-        const totalVal = (a * usePrice).toFixed(6);
         toast({
           title: "Order Placed",
           description: `${orderSide === "buy" ? "Buy" : "Sell"} order for ${formatAmount(amount)} ${pair.base.display} submitted successfully.`,
         });
+        try {
+          const tradeInfo = JSON.parse(sessionStorage.getItem("dex_pending_trade") || "{}");
+          apiRequest("POST", "/api/record-dex-trade", {
+            txHash: result.txHash,
+            spentAmount: tradeInfo.spentAmount,
+            spentCurrency: tradeInfo.spentCurrency,
+            receivedAmount: tradeInfo.receivedAmount,
+            receivedCurrency: tradeInfo.receivedCurrency,
+          }).catch(() => {});
+        } catch {}
         try {
           window.fetch("/api/dex/trade-notification", {
             method: "POST",
@@ -525,12 +560,13 @@ export default function OwnBankDex() {
               counterAsset: pair.counter.display,
               amount: formatAmount(amount),
               price: usePrice.toString(),
-              total: totalVal,
+              total: totalVal.toFixed(6),
               walletAddress,
               pair: `${pair.base.display}/${pair.counter.display}`,
             }),
           }).catch(() => {});
         } catch {}
+        sessionStorage.removeItem("dex_pending_trade");
         setAmount("");
         setPrice("");
         setTimeout(() => {

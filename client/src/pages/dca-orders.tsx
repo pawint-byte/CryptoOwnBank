@@ -269,6 +269,19 @@ export default function DcaOrders() {
             await apiRequest("POST", `/api/dca-orders/${pendingDcaOrderId}/execute`, {
               txHash: result.txHash || null,
             });
+            try {
+              const tradeInfo = JSON.parse(sessionStorage.getItem("dca_pending_trade") || "{}");
+              if (tradeInfo.spentAmount) {
+                await apiRequest("POST", "/api/record-dex-trade", {
+                  txHash: result.txHash,
+                  spentAmount: tradeInfo.spentAmount,
+                  spentCurrency: tradeInfo.spentCurrency,
+                  receivedAmount: tradeInfo.receivedAmount,
+                  receivedCurrency: tradeInfo.receivedCurrency,
+                });
+              }
+            } catch {}
+            sessionStorage.removeItem("dca_pending_trade");
             queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
             queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", pendingDcaOrderId] });
             toast({ title: "DCA executed successfully", description: "Your trade was confirmed on the XRPL." });
@@ -279,6 +292,7 @@ export default function DcaOrders() {
           toast({ title: "Trade not completed", description: result.error || "Transaction was cancelled or timed out.", variant: "destructive" });
         }
         sessionStorage.removeItem("dca_execute_order_id");
+        sessionStorage.removeItem("dca_pending_trade");
         setExecutingOrderId(null);
       });
     } else {
@@ -361,12 +375,28 @@ export default function DcaOrders() {
       };
 
       sessionStorage.setItem("dca_execute_order_id", order.id);
+      sessionStorage.setItem("dca_pending_trade", JSON.stringify({
+        spentAmount: spendAmount.toString(),
+        spentCurrency: order.spendCurrency,
+        receivedAmount: buyAmount,
+        receivedCurrency: order.buyCurrency,
+      }));
       const result = await signTransaction(txJson);
 
       if (result.success) {
         await apiRequest("POST", `/api/dca-orders/${order.id}/execute`, {
           txHash: result.txHash || null,
         });
+        try {
+          await apiRequest("POST", "/api/record-dex-trade", {
+            txHash: result.txHash,
+            spentAmount: spendAmount.toString(),
+            spentCurrency: order.spendCurrency,
+            receivedAmount: buyAmount,
+            receivedCurrency: order.buyCurrency,
+          });
+        } catch {}
+        sessionStorage.removeItem("dca_pending_trade");
         queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
         queryClient.invalidateQueries({ queryKey: ["/api/dca-executions", order.id] });
         toast({ title: "DCA executed successfully", description: `Swapped ${spendAmount} ${getTokenDisplay(order.spendCurrency)} on the DEX.` });
