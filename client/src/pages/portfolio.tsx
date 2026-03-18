@@ -1145,7 +1145,7 @@ export default function Portfolio() {
                 <div>
                   <Label>Street Address</Label>
                   <Input
-                    placeholder="211 Summerwinds Drive"
+                    placeholder="123 Maple Street"
                     value={propertyForm.address}
                     onChange={(e) => setPropertyForm({ ...propertyForm, address: e.target.value })}
                     required
@@ -1156,7 +1156,7 @@ export default function Portfolio() {
                   <div>
                     <Label>City</Label>
                     <Input
-                      placeholder="Cary"
+                      placeholder="Austin"
                       value={propertyForm.city}
                       onChange={(e) => setPropertyForm({ ...propertyForm, city: e.target.value })}
                       required
@@ -1166,7 +1166,7 @@ export default function Portfolio() {
                   <div>
                     <Label>State / Province</Label>
                     <Input
-                      placeholder="NC"
+                      placeholder="TX"
                       value={propertyForm.stateProvince}
                       onChange={(e) => setPropertyForm({ ...propertyForm, stateProvince: e.target.value })}
                       data-testid="input-property-state"
@@ -1213,7 +1213,7 @@ export default function Portfolio() {
                   <div>
                     <Label>Zip / Postal Code</Label>
                     <Input
-                      placeholder="27518"
+                      placeholder="78701"
                       value={propertyForm.zipCode}
                       onChange={(e) => setPropertyForm({ ...propertyForm, zipCode: e.target.value })}
                       data-testid="input-property-zip"
@@ -1235,7 +1235,7 @@ export default function Portfolio() {
                   <Input
                     type="number"
                     step="0.01"
-                    placeholder="450000"
+                    placeholder="350000"
                     value={propertyForm.purchasePrice}
                     onChange={(e) => setPropertyForm({ ...propertyForm, purchasePrice: e.target.value })}
                     required
@@ -1245,7 +1245,7 @@ export default function Portfolio() {
                 <div>
                   <Label>Notes (optional)</Label>
                   <Input
-                    placeholder="Primary residence, 4BR/3BA"
+                    placeholder="e.g. Single-family home, 3BR/2BA"
                     value={propertyForm.notes}
                     onChange={(e) => setPropertyForm({ ...propertyForm, notes: e.target.value })}
                     data-testid="input-property-notes"
