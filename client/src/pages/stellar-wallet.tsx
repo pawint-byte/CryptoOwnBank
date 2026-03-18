@@ -177,6 +177,10 @@ export default function StellarWallet() {
     (w) => w.address.toLowerCase() !== stellarAddress?.toLowerCase()
   );
 
+  const activeWalletInfo = trackerWallets.find(
+    (w) => w.address.toLowerCase() === stellarAddress?.toLowerCase()
+  );
+
   const handleCopyAddress = () => {
     if (!stellarAddress) return;
     navigator.clipboard.writeText(stellarAddress);
@@ -377,7 +381,11 @@ export default function StellarWallet() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-stellar-wallet-title">Stellar Wallet</h1>
-          <p className="text-muted-foreground">View your Stellar balances and manage assets</p>
+          <p className="text-muted-foreground">
+            {activeWalletInfo?.label
+              ? <><span className="font-medium text-foreground">{activeWalletInfo.label}</span> — viewing balances</>
+              : "View your Stellar balances and manage assets"}
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <a
@@ -389,7 +397,7 @@ export default function StellarWallet() {
           >
             <Badge variant="outline" className="cursor-pointer hover:bg-accent/50 transition-colors" style={{ borderColor: `${STELLAR_PURPLE}40` }} data-testid="badge-stellar-address">
               <Star className="h-3 w-3 mr-1" style={{ color: STELLAR_PURPLE }} />
-              {truncateAddress(stellarAddress!)}
+              {activeWalletInfo?.label ? `${activeWalletInfo.label}: ${truncateAddress(stellarAddress!)}` : truncateAddress(stellarAddress!)}
               <ExternalLink className="h-3 w-3 ml-1 opacity-60" />
             </Badge>
           </a>
@@ -423,27 +431,41 @@ export default function StellarWallet() {
                 Add Another
               </Button>
             </div>
-            {otherTrackerWallets.length > 0 && (
-              <div className="space-y-2 mb-3">
-                {otherTrackerWallets.map((w) => (
-                  <div
-                    key={w.id}
-                    className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
-                    onClick={() => handleSwitchWallet(w.address)}
-                    data-testid={`button-switch-stellar-${w.id}`}
-                  >
-                    <Star className="h-4 w-4 shrink-0" style={{ color: STELLAR_PURPLE }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{w.label || "Stellar Wallet"}</p>
-                      <p className="text-xs text-muted-foreground font-mono truncate">{w.address}</p>
-                    </div>
-                    <Badge variant="outline" className="shrink-0 text-xs" style={{ borderColor: `${STELLAR_PURPLE}40`, color: STELLAR_PURPLE }}>
-                      Switch
-                    </Badge>
+            <div className="space-y-2 mb-3">
+              {activeWalletInfo && (
+                <div
+                  className="flex items-center gap-2 rounded-lg border-2 p-3"
+                  style={{ borderColor: STELLAR_PURPLE, backgroundColor: `${STELLAR_PURPLE}10` }}
+                  data-testid="card-active-stellar-wallet"
+                >
+                  <Star className="h-4 w-4 shrink-0" style={{ color: STELLAR_PURPLE }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{activeWalletInfo.label || "Stellar Wallet"}</p>
+                    <p className="text-xs text-muted-foreground font-mono truncate">{activeWalletInfo.address}</p>
                   </div>
-                ))}
-              </div>
-            )}
+                  <Badge className="shrink-0 text-xs text-white" style={{ backgroundColor: STELLAR_PURPLE }}>
+                    Active
+                  </Badge>
+                </div>
+              )}
+              {otherTrackerWallets.map((w) => (
+                <div
+                  key={w.id}
+                  className="flex items-center gap-2 rounded-lg border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                  onClick={() => handleSwitchWallet(w.address)}
+                  data-testid={`button-switch-stellar-${w.id}`}
+                >
+                  <Star className="h-4 w-4 shrink-0" style={{ color: STELLAR_PURPLE }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{w.label || "Stellar Wallet"}</p>
+                    <p className="text-xs text-muted-foreground font-mono truncate">{w.address}</p>
+                  </div>
+                  <Badge variant="outline" className="shrink-0 text-xs" style={{ borderColor: `${STELLAR_PURPLE}40`, color: STELLAR_PURPLE }}>
+                    Switch
+                  </Badge>
+                </div>
+              ))}
+            </div>
             {showAddAnother && (
               <div className="flex gap-2">
                 <Input
