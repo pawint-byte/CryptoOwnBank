@@ -339,6 +339,14 @@ const memberStories = [
     benefit: "One dashboard, 24 blockchains, all the research done for you — the information finds you.",
   },
   {
+    title: "Think in Value, Not USD Price",
+    icon: TrendingUp,
+    accent: "from-teal-500/10 to-cyan-500/10",
+    story:
+      "In 2010, someone paid 10,000 Bitcoin for two large pizzas. At today's prices, that's hundreds of millions of dollars — the most expensive pizza in history. But the real lesson isn't about regret. It's about how you measure your assets. If you only see crypto through a USD lens, you're still thinking in fiat — and the dollar loses purchasing power every year. An XRP is an XRP no matter whose hands it's in. A Bitcoin is a Bitcoin whether it buys two pizzas or a house. CryptoOwnBank helps you think in value: what can your crypto do for you? What does it buy? What does it earn? When the dollar devalues, your crypto doesn't lose value — the measuring stick changed, not the asset.",
+    benefit: "Stop measuring your wealth in a currency that loses value. Think in what your crypto can do.",
+  },
+  {
     title: "It Doesn't End — Even If You Can't Continue",
     icon: Users,
     accent: "from-rose-500/10 to-pink-500/10",
@@ -353,6 +361,7 @@ const whyNow = [
   { icon: Zap, text: "Regulatory clarity is advancing — institutional DeFi is coming to XRPL and beyond" },
   { icon: Globe, text: "RLUSD is growing as the regulated stablecoin of choice, backed by real assets" },
   { icon: TrendingUp, text: "Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent — why wait?" },
+  { icon: DollarSign, text: "The dollar loses purchasing power every year — your crypto doesn't. Think in value, not USD price" },
 ];
 
 const testimonials = [
@@ -1135,6 +1144,14 @@ export default function Landing() {
                 process. And it doesn't end — the Legacy Plan makes sure your crypto passes to your
                 family if something happens to you. Even if you leave? Your crypto is still in your wallet.
                 You're never locked in.
+              </p>
+              <p>
+                And stop measuring your wealth in a currency that loses value every year. In 2010,
+                someone paid 10,000 Bitcoin for two pizzas — the most expensive meal in history, if you
+                measure in dollars. But an XRP is an XRP no matter whose hands it's in. When the dollar
+                devalues, your crypto didn't lose value — the measuring stick changed. CryptoOwnBank
+                helps you think in what your assets can <span className="italic">do</span>, not what
+                they're "worth" in someone else's failing currency.
               </p>
             </div>
             <div className="pt-2">
