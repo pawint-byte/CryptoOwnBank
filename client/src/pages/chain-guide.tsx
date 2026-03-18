@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +39,155 @@ import {
   Send,
   Lock,
   FileText,
+  CheckCircle2,
+  ExternalLink,
+  Plus,
 } from "lucide-react";
+
+interface WalletData {
+  id: string;
+  chain: string;
+  address: string;
+  label?: string;
+  balances?: { assetSymbol: string; balance: string; usdValue: string }[];
+}
+
+const CHAIN_META: Record<string, { color: string; label: string; features: { label: string; href: string }[] }> = {
+  xrpl: {
+    color: "#00A4E4",
+    label: "XRP Ledger",
+    features: [
+      { label: "RLUSD Vaults", href: "/ownbank/vaults" },
+      { label: "DEX Trading", href: "/ownbank/dex" },
+      { label: "Send", href: "/ownbank/send" },
+    ],
+  },
+  stellar: {
+    color: "#7B61FF",
+    label: "Stellar (XLM)",
+    features: [
+      { label: "Send", href: "/stellar/send" },
+      { label: "DEX", href: "/stellar/dex" },
+      { label: "Remittances", href: "/stellar/remittances" },
+    ],
+  },
+  ethereum: {
+    color: "#627EEA",
+    label: "Ethereum",
+    features: [
+      { label: "Earn & Yield", href: "/rwa-yields" },
+    ],
+  },
+  solana: { color: "#9945FF", label: "Solana", features: [] },
+  polygon: { color: "#8247E5", label: "Polygon", features: [] },
+  bitcoin: { color: "#F7931A", label: "Bitcoin", features: [] },
+};
+
+function YourChainActivity() {
+  const { user } = useAuth();
+  const { data: walletsData } = useQuery<WalletData[]>({
+    queryKey: ["/api/wallets"],
+    enabled: !!user,
+  });
+
+  if (!user) return null;
+
+  if (!walletsData || walletsData.length === 0) {
+    return (
+      <Card className="border-dashed" data-testid="card-no-chains-cta">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+              <Wallet className="h-5 w-5 text-primary" />
+            </div>
+            <div className="space-y-1 flex-1">
+              <p className="text-sm font-medium">No chains active yet</p>
+              <p className="text-xs text-muted-foreground">
+                Connect a wallet to see your chain activity here — XRP Ledger, Stellar, Ethereum, and more.
+              </p>
+              <Link href="/wallets">
+                <Button size="sm" variant="outline" className="h-7 text-xs mt-1.5" data-testid="btn-add-wallet-chain-guide">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Wallet
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const chainMap: Record<string, { wallets: WalletData[]; totalUsd: number }> = {};
+  for (const w of walletsData) {
+    const key = w.chain.toLowerCase();
+    if (!chainMap[key]) chainMap[key] = { wallets: [], totalUsd: 0 };
+    chainMap[key].wallets.push(w);
+    for (const b of w.balances || []) {
+      chainMap[key].totalUsd += parseFloat(b.usdValue) || 0;
+    }
+  }
+
+  const activeChains = Object.entries(chainMap).sort((a, b) => b[1].totalUsd - a[1].totalUsd);
+  const totalValue = activeChains.reduce((s, [, v]) => s + v.totalUsd, 0);
+
+  return (
+    <Card data-testid="card-your-chain-activity">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+        <CardTitle className="text-base">Your Active Chains</CardTitle>
+        <Badge variant="secondary" data-testid="badge-total-chain-value">
+          ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {activeChains.map(([chainKey, data]) => {
+          const meta = CHAIN_META[chainKey] || { color: "#888", label: chainKey.toUpperCase(), features: [] };
+          return (
+            <div key={chainKey} className="rounded-lg border p-3 space-y-2" data-testid={`chain-active-${chainKey}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-md flex items-center justify-center" style={{ backgroundColor: `${meta.color}15` }}>
+                    <CheckCircle2 className="h-4 w-4" style={{ color: meta.color }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: meta.color }}>{meta.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {data.wallets.length} wallet{data.wallets.length > 1 ? "s" : ""} connected
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold">
+                    ${data.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+              {meta.features.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {meta.features.map((f) => (
+                    <Link key={f.href} href={f.href}>
+                      <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1" style={{ borderColor: `${meta.color}40`, color: meta.color }}>
+                        {f.label}
+                        <ArrowRight className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <Link href="/wallets" data-testid="link-add-wallet-chain-guide">
+          <div className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40 transition-colors cursor-pointer">
+            <Plus className="h-3.5 w-3.5" />
+            Add another wallet or chain
+          </div>
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
 
 const comparisonRows = [
   {
@@ -229,6 +379,8 @@ export default function ChainGuide() {
           CryptoOwnBank helps you leverage the best of both.
         </p>
       </div>
+
+      <YourChainActivity />
 
       <Card>
         <CardContent className="p-4">

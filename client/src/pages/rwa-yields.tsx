@@ -1695,6 +1695,10 @@ export default function RwaYields() {
         </p>
       </div>
 
+      <EarningStatusSection />
+
+      <MyYieldPositions />
+
       <Card data-testid="card-rwa-education">
         <CardContent className="p-5">
           <div className="flex items-start gap-3">
@@ -1713,10 +1717,6 @@ export default function RwaYields() {
       </Card>
 
       <RecommenderSection />
-
-      <EarningStatusSection />
-
-      <MyYieldPositions />
 
       <div>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-yield-opportunities-heading">
