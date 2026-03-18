@@ -2258,12 +2258,12 @@ export default function Wallets() {
             <Star className="h-5 w-5 shrink-0" style={{ color: "#7B61FF" }} />
             <div>
               <p className="text-sm font-medium">You have a Stellar address tracked here</p>
-              <p className="text-xs text-muted-foreground">Use XLM_OwnBank Stellar to send payments, trade on the DEX, manage tokens, and more.</p>
+              <p className="text-xs text-muted-foreground">Use OwnBank Stellar to send payments, trade on the DEX, manage tokens, and more.</p>
             </div>
           </div>
           <Link href="/stellar/wallet" className="shrink-0">
             <Button size="sm" variant="outline" className="text-xs" style={{ borderColor: "#7B61FF60", color: "#7B61FF" }} data-testid="button-go-stellar-ownbank">
-              Open Stellar Wallet
+              Open OwnBank Stellar
             </Button>
           </Link>
         </div>
