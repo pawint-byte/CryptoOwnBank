@@ -7972,6 +7972,106 @@ export async function registerRoutes(
     res.json({ symbols: Object.keys(TA_COINGECKO_IDS) });
   });
 
+  // Crypto News Feed (RSS aggregation)
+  const NEWS_FEEDS = [
+    { name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/", icon: "coindesk" },
+    { name: "CoinTelegraph", url: "https://cointelegraph.com/rss", icon: "cointelegraph" },
+    { name: "Decrypt", url: "https://decrypt.co/feed", icon: "decrypt" },
+    { name: "The Block", url: "https://www.theblock.co/rss.xml", icon: "theblock" },
+  ];
+
+  interface NewsItem {
+    title: string;
+    link: string;
+    pubDate: string;
+    source: string;
+    sourceIcon: string;
+    snippet: string;
+    categories: string[];
+  }
+
+  let newsCache: { items: NewsItem[]; fetchedAt: number } = { items: [], fetchedAt: 0 };
+  const NEWS_CACHE_INTERVAL = 15 * 60 * 1000;
+
+  async function fetchNewsFeeds(): Promise<NewsItem[]> {
+    const now = Date.now();
+    if (newsCache.fetchedAt > 0 && now - newsCache.fetchedAt < NEWS_CACHE_INTERVAL) {
+      return newsCache.items;
+    }
+
+    try {
+      const RssParser = (await import("rss-parser")).default;
+      const parser = new RssParser({
+        timeout: 10000,
+        headers: { "User-Agent": "CryptoOwnBank/1.0 NewsAggregator" },
+      });
+
+      const allItems: NewsItem[] = [];
+
+      const results = await Promise.allSettled(
+        NEWS_FEEDS.map(async (feed) => {
+          try {
+            const parsed = await parser.parseURL(feed.url);
+            return (parsed.items || []).slice(0, 15).map((item: any) => ({
+              title: (item.title || "").trim(),
+              link: item.link || "",
+              pubDate: item.pubDate || item.isoDate || "",
+              source: feed.name,
+              sourceIcon: feed.icon,
+              snippet: (item.contentSnippet || item.content || "")
+                .replace(/<[^>]*>/g, "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 200),
+              categories: (item.categories || []).slice(0, 3).map((c: any) =>
+                typeof c === "string" ? c : c?._ || ""
+              ).filter(Boolean),
+            }));
+          } catch (err) {
+            console.log(`[news] Failed to fetch ${feed.name}: ${(err as any)?.message?.slice(0, 60)}`);
+            return [];
+          }
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          allItems.push(...result.value);
+        }
+      }
+
+      allItems.sort((a, b) => {
+        const da = new Date(a.pubDate).getTime();
+        const db = new Date(b.pubDate).getTime();
+        return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
+      });
+
+      const deduplicated = allItems.filter((item, idx, arr) =>
+        arr.findIndex(i => i.title.toLowerCase() === item.title.toLowerCase()) === idx
+      );
+
+      newsCache = { items: deduplicated.slice(0, 50), fetchedAt: now };
+      console.log(`[news] Fetched ${deduplicated.length} articles from ${NEWS_FEEDS.length} sources`);
+    } catch (error) {
+      console.error("[news] Feed fetch failed:", (error as any)?.message);
+    }
+
+    return newsCache.items;
+  }
+
+  app.get("/api/news", async (_req: any, res) => {
+    try {
+      const items = await fetchNewsFeeds();
+      res.json({
+        items,
+        sources: NEWS_FEEDS.map(f => f.name),
+        fetchedAt: newsCache.fetchedAt ? new Date(newsCache.fetchedAt).toISOString() : null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load news" });
+    }
+  });
+
   app.get("/api/whale-alerts", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

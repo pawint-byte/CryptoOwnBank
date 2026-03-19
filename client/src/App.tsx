@@ -73,6 +73,7 @@ import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
 import PaymentQueue from "@/pages/payment-queue";
 import WhaleAlerts from "@/pages/whale-alerts";
+import CryptoNews from "@/pages/crypto-news";
 import TechnicalAnalysis from "@/pages/technical-analysis";
 import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import XLS66Lending from "@/pages/xls66-lending";
@@ -159,6 +160,7 @@ function AuthenticatedRoutes() {
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/price-alerts" component={PriceAlerts} />
         <Route path="/whale-alerts" component={WhaleAlerts} />
+        <Route path="/crypto-news" component={CryptoNews} />
         <Route path="/technical-analysis" component={TechnicalAnalysis} />
         <Route path="/wallets" component={WalletsPage} />
         <Route path="/statement-insights" component={StatementInsights} />

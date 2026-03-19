@@ -50,6 +50,7 @@ import {
   Repeat,
   HeartHandshake,
   Mail,
+  Newspaper,
 } from "lucide-react";
 import {
   Sidebar,
@@ -87,6 +88,7 @@ const allItems: NavItem[] = [
   { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "portfolio" },
   { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "portfolio" },
 
+  { title: "Crypto News", url: "/crypto-news", icon: Newspaper, group: "market" },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "market" },
   { title: "Whale Alerts", url: "/whale-alerts", icon: Fish, group: "market" },
   { title: "Technical Analysis", url: "/technical-analysis", icon: BarChart3, group: "market" },
