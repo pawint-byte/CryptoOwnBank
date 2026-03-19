@@ -43,7 +43,7 @@ const faqGroups = [
       },
       {
         q: "Why should I join now?",
-        a: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto. Regulatory clarity is advancing, RLUSD is growing as the regulated stablecoin of choice, and institutional DeFi is expanding — but banks are still paying 0.01–4.5%. CryptoOwnBank lets you start earning 5–8% fixed yield today while keeping full control of your assets. You choose your security level, you manage everything from one interface, you keep all your earnings, and the Recommendations Hub makes sure you never miss an opportunity. And the best part: you can make this decision entirely on your own — no third party needed in the process.",
+        a: "Because this migration is already happening — and the people who move first benefit the most. Finance is moving on-chain: stablecoins settle in seconds (not days), yield vaults pay 5–8% (not 0.01%), and payments cost fractions of a penny (not 2.9% + $0.30). Every person you pay on-chain is one less reason to go back to fiat. Every business that accepts crypto pulls their whole network forward. The snowball is already rolling. CryptoOwnBank gives you the tools to earn yield, trade on native DEXs, send payments globally, and track your portfolio — all non-custodial, all from one interface. The longer you wait, the more yield you leave on the table. The infrastructure is live today.",
       },
       {
         q: "Where is CryptoOwnBank headed?",

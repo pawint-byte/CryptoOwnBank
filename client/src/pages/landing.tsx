@@ -358,10 +358,11 @@ const memberStories = [
 
 const whyNow = [
   { icon: Shield, text: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto" },
-  { icon: Zap, text: "Regulatory clarity is advancing — institutional DeFi is coming to XRPL and beyond" },
-  { icon: Globe, text: "RLUSD is growing as the regulated stablecoin of choice, backed by real assets" },
-  { icon: TrendingUp, text: "Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent — why wait?" },
-  { icon: DollarSign, text: "The dollar loses purchasing power every year — your crypto doesn't. Think in value, not USD price" },
+  { icon: Zap, text: "This migration is inevitable. Fiat rails are slow, expensive, and built for institutions — not for you. On-chain finance is faster, cheaper, and puts you in control" },
+  { icon: Globe, text: "RLUSD is live on XRPL — a regulated, dollar-backed stablecoin you can hold, earn on, and spend without a bank account" },
+  { icon: Users, text: "Every person you pay on-chain is one less reason to go back to fiat. Every business that accepts crypto pulls their whole network forward. The snowball is rolling" },
+  { icon: TrendingUp, text: "Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent. The longer you wait, the more yield you leave on the table" },
+  { icon: DollarSign, text: "The dollar loses purchasing power every year. Once your value lives on the blockchain, you stop losing money to inflation, conversion fees, and intermediaries" },
 ];
 
 const testimonials = [
@@ -588,7 +589,7 @@ const faqGroups = [
       },
       {
         q: "Why should I join now?",
-        a: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto. CryptoOwnBank is where everything starts — all the work is done for you, all the information is brought to you, and the Legacy Plan makes sure it doesn't end. Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent. You choose your security level, no third party needed. Start today.",
+        a: "Because this migration is already happening — and the people who move first benefit the most. Stablecoins settle in seconds, yield vaults pay 5–8%, payments cost fractions of a penny. Every person you pay on-chain pulls another person forward. The snowball is rolling. CryptoOwnBank gives you the tools to earn, trade, pay, and protect your assets — all non-custodial, all from one interface. The infrastructure is live today.",
       },
     ],
   },
@@ -1043,12 +1044,11 @@ export default function Landing() {
                     <span className="block text-[#00A4E4]">Bank</span>
                   </h1>
                   <p className="text-lg text-muted-foreground max-w-lg">
-                    Own your crypto. Manage it from one interface. Keep all your earnings.
-                    All the work is done for you. All the information is brought to you.
-                    And it doesn't end — because your Legacy Plan makes sure your crypto passes to your family.
+                    The migration to on-chain finance is already happening. The only question is whether you're ahead of it or behind it.
+                    Get your money on the blockchain. Get everyone you do business with on the blockchain. Keep the value there.
                   </p>
                   <p className="text-sm text-muted-foreground/80 max-w-lg">
-                    Earn 5–8% fixed yield on RLUSD. Trade on native DEXs. Choose your security — cold wallet, hot wallet, hardware or phone signing. This is where everything starts. Even if you leave us, your crypto stays in your wallet.
+                    Earn 5–8% fixed yield on RLUSD. Trade on native DEXs. Pay anyone, anywhere, in seconds. Choose your security level. All the work is done for you. And it doesn't end — your Legacy Plan makes sure your crypto passes to your family. Even if you leave, your crypto stays in your wallet.
                   </p>
                 </div>
 
@@ -1203,6 +1203,61 @@ export default function Landing() {
               <a href="/login">
                 <Button size="lg" className="bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-break-loop-cta">
                   Break Free — Connect Your Wallet
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/30">
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium" data-testid="badge-inevitable">
+              <Globe className="h-3.5 w-3.5" />
+              Inevitable
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight" data-testid="heading-inevitable">
+              The Migration Has Already Started
+            </h2>
+            <div className="space-y-4 text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto">
+              <p>
+                Think about what happened to cash. First it was paper in your wallet. Then it was a number
+                on a bank's screen. Then it was a tap on your phone. Each step moved value to a faster, cheaper
+                system — and the old one didn't disappear overnight, it just became <span className="italic">unnecessary</span>.
+              </p>
+              <p>
+                That's happening again right now — except this time, the new system removes the middlemen.
+                On-chain stablecoins settle in seconds, not days. Yield vaults pay 5–8%, not 0.01%. Payments
+                cost fractions of a penny, not 2.9% + $0.30. And with self-custody, no platform can freeze your funds.
+              </p>
+              <p className="text-foreground font-medium text-lg">
+                The snowball is already rolling.
+              </p>
+              <p>
+                One freelancer gets paid in RLUSD. They pay their designer in RLUSD. That designer pays their
+                hosting provider. Each payment pulls another person on-chain — not because someone told them to,
+                but because it's <span className="text-foreground font-medium">faster, cheaper, and they keep more of their money</span>.
+              </p>
+              <p>
+                A business starts paying contractors on-chain. Those contractors pay their own vendors on-chain.
+                Every link in that chain is a person whose value now lives on the blockchain — earning yield
+                instead of sitting in a 0.01% checking account, moving instantly instead of waiting 3 business days.
+              </p>
+              <p>
+                Once someone's income, savings, and payments are all on-chain,
+                going back to fiat feels like going back to fax machines. It's slower. It costs more.
+                And someone else is always taking a cut.
+              </p>
+              <p className="text-foreground font-medium">
+                You don't have to wait for this future. The tools are live today.
+                CryptoOwnBank is where you manage it all — and every person you bring on-chain
+                makes the entire network stronger.
+              </p>
+            </div>
+            <div className="pt-2">
+              <a href="/login">
+                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700" data-testid="button-inevitable-cta">
+                  Get Ahead of the Shift — Start Free
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </a>
@@ -1965,7 +2020,10 @@ export default function Landing() {
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold mb-4" data-testid="heading-why-now">Why Members Are Joining Right Now</h2>
+              <h2 className="text-3xl font-bold mb-3" data-testid="heading-why-now">The Shift Is Already Happening</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                This isn't a prediction. It's a migration already in progress. The question isn't <span className="text-foreground font-medium italic">if</span> finance moves on-chain — it's whether you're leading or catching up.
+              </p>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               {whyNow.map((item, i) => (
@@ -1978,8 +2036,8 @@ export default function Landing() {
               ))}
             </div>
             <p className="text-center text-muted-foreground mt-8">
-              Crypto holders everywhere are already quietly earning on stablecoins.
-              CryptoOwnBank makes it dead simple and safe.
+              Every day you wait is another day your money sits in someone else's system, earning them fees while you earn nothing.
+              The people who move first don't just benefit first — they pull everyone around them forward.
             </p>
           </div>
         </section>
@@ -2285,11 +2343,11 @@ export default function Landing() {
                 <div className="inline-block p-6 rounded-xl bg-muted/50 border max-w-2xl" data-testid="text-onchain-bottom-line">
                   <p className="font-semibold text-lg mb-2">Bottom Line</p>
                   <p className="text-muted-foreground">
-                    We don't connect to banks because you don't need us to.
-                    You already have full control — and that's exactly how we want to keep it.
+                    Once your value is on the blockchain, you don't need permission to use it. You don't need a bank to hold it.
+                    You don't need an exchange to move it. And the more people who join you on-chain, the less anyone needs to rely on fiat rails.
                   </p>
                   <p className="text-sm text-[#00A4E4] font-medium mt-3">
-                    Your keys. Your funds. Your bank.
+                    Your keys. Your funds. Your bank. The future isn't coming — it's here.
                   </p>
                 </div>
               </div>
@@ -2456,10 +2514,10 @@ export default function Landing() {
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#00A4E4] text-white">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4" data-testid="heading-cta">Ready to Be Your Own Bank?</h2>
+            <h2 className="text-3xl font-bold mb-4" data-testid="heading-cta">The Migration Is Already Underway</h2>
             <p className="text-white/80 mb-8 max-w-xl mx-auto">
-              Connect your cold wallet, track your portfolio, deposit RLUSD, and start earning 5–8% fixed APR —
-              all while keeping full control of your keys. No bank required.
+              The infrastructure is live. The yields are real. People are already earning, trading, and paying on-chain every day.
+              Connect your wallet, start earning, and be the reason someone in your network makes the move too.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/login">
