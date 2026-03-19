@@ -340,7 +340,7 @@ export default function OwnBankVaults() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <WalletPicker
-            value={walletAddress!}
+            value={walletAddress || ""}
             onChange={(addr) => connect(addr, walletType || "xumm")}
             label="Active Wallet"
           />

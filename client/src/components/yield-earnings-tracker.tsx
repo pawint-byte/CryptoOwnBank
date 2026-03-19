@@ -125,21 +125,25 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
   const proj5y = computeCompoundProjection(totalPrincipal, weightedApr, 5);
   const proj10y = computeCompoundProjection(totalPrincipal, weightedApr, 10);
 
+  const roundedToday = Math.round(todayInterest * 1000) / 1000;
+  const roundedMonth = Math.round(thisMonthInterest * 1000) / 1000;
+  const roundedAllTime = Math.round(allTimeInterest * 1000) / 1000;
+
   useEffect(() => {
     const prev = prevEarnings.current;
     const newAnimating = {
-      today: prev.today !== 0 && Math.abs(todayInterest - prev.today) > 0.001,
-      month: prev.month !== 0 && Math.abs(thisMonthInterest - prev.month) > 0.001,
-      allTime: prev.allTime !== 0 && Math.abs(allTimeInterest - prev.allTime) > 0.001,
+      today: prev.today !== 0 && Math.abs(roundedToday - prev.today) > 0.001,
+      month: prev.month !== 0 && Math.abs(roundedMonth - prev.month) > 0.001,
+      allTime: prev.allTime !== 0 && Math.abs(roundedAllTime - prev.allTime) > 0.001,
     };
     setAnimating(newAnimating);
-    prevEarnings.current = { today: todayInterest, month: thisMonthInterest, allTime: allTimeInterest };
+    prevEarnings.current = { today: roundedToday, month: roundedMonth, allTime: roundedAllTime };
 
     if (newAnimating.today || newAnimating.month || newAnimating.allTime) {
       const timer = setTimeout(() => setAnimating({ today: false, month: false, allTime: false }), 600);
       return () => clearTimeout(timer);
     }
-  }, [tick, todayInterest, thisMonthInterest, allTimeInterest]);
+  }, [tick, roundedToday, roundedMonth, roundedAllTime]);
 
   const earnPerSecond = totalPrincipal * (weightedApr / 100) / 365 / 86400;
 
