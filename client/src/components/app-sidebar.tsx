@@ -128,6 +128,7 @@ const allItems: NavItem[] = [
   { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "planning" },
   { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "planning" },
 
+  { title: "Roadmap", url: "/roadmap", icon: Rocket, group: "learn" },
   { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "learn" },
   { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "learn" },
   { title: "FAQ", url: "/faq", icon: HelpCircle, group: "learn" },

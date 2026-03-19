@@ -17,6 +17,7 @@ import { ErrorBoundary, installGlobalErrorHandlers } from "@/components/error-bo
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import FAQ from "@/pages/faq";
+import Roadmap from "@/pages/roadmap";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import SetupGuide from "@/pages/setup-guide";
@@ -176,6 +177,7 @@ function AuthenticatedRoutes() {
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/roadmap" component={Roadmap} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
         <Route path="/admin/errors" component={AdminErrorMonitor} />
@@ -210,6 +212,7 @@ function Router() {
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/roadmap" component={Roadmap} />
         <Route path="/chain-guide" component={ChainGuide} />
         <Route path="/rwa-yields" component={RwaYields} />
         <Route path="/stablecoins" component={Stablecoins} />

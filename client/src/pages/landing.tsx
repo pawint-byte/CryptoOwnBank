@@ -2499,6 +2499,7 @@ export default function Landing() {
                 <a href="/migration-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-migration-guide">Migration Guide</a>
                 <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Getting Started</a>
                 <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
+                <a href="/roadmap" className="hover:text-[#00A4E4] transition-colors" data-testid="link-roadmap-footer">Roadmap</a>
                 <a href="/faq" className="hover:text-[#00A4E4] transition-colors" data-testid="link-faq-footer">FAQ</a>
                 <a href="/contact" className="hover:text-[#00A4E4] transition-colors" data-testid="link-contact">Contact &amp; Feedback</a>
               </div>

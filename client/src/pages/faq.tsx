@@ -45,6 +45,10 @@ const faqGroups = [
         q: "Why should I join now?",
         a: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto. Regulatory clarity is advancing, RLUSD is growing as the regulated stablecoin of choice, and institutional DeFi is expanding — but banks are still paying 0.01–4.5%. CryptoOwnBank lets you start earning 5–8% fixed yield today while keeping full control of your assets. You choose your security level, you manage everything from one interface, you keep all your earnings, and the Recommendations Hub makes sure you never miss an opportunity. And the best part: you can make this decision entirely on your own — no third party needed in the process.",
       },
+      {
+        q: "Where is CryptoOwnBank headed?",
+        a: 'Check the <a href="/roadmap" class="text-[#00A4E4] underline hover:no-underline">Roadmap</a> to see everything that\'s live today, what the ecosystem is building (XLS-66 on-ledger lending, fiat-to-wallet on-ramps, XRPL AMM expansion), and our longer-term vision. The bigger picture: get your money on the blockchain, get everyone you do business with on the blockchain, and keep the value there. The less you need fiat, the less you need the institutions that charge you to use it.',
+      },
     ],
   },
   {
