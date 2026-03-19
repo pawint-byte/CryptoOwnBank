@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ import {
   RefreshCw,
   Filter,
   Loader2,
+  Sparkles,
+  User,
 } from "lucide-react";
 
 interface NewsItem {
@@ -25,10 +28,21 @@ interface NewsItem {
   categories: string[];
 }
 
+interface PersonalizedItem extends NewsItem {
+  matchedAssets: string[];
+  relevanceScore: number;
+}
+
 interface NewsResponse {
   items: NewsItem[];
   sources: string[];
   fetchedAt: string | null;
+}
+
+interface PersonalizedResponse {
+  forYou: PersonalizedItem[];
+  heldAssets: string[];
+  totalMatched: number;
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -52,12 +66,72 @@ function formatTimeAgo(dateStr: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function NewsArticle({ item, idx, showAssetBadges }: { item: NewsItem & { matchedAssets?: string[] }; idx: number; showAssetBadges?: boolean }) {
+  return (
+    <a
+      href={item.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block group"
+      data-testid={`news-article-${idx}`}
+    >
+      <Card className="transition-all hover:shadow-md hover:border-[#00A4E4]/30 group-hover:bg-muted/30">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={`text-[10px] ${SOURCE_COLORS[item.source] || ""}`}>
+                  {item.source}
+                </Badge>
+                {item.pubDate && (
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTimeAgo(item.pubDate)}
+                  </span>
+                )}
+                {showAssetBadges && item.matchedAssets?.map(asset => (
+                  <Badge key={asset} className="text-[10px] bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30">
+                    {asset}
+                  </Badge>
+                ))}
+                {item.categories.slice(0, 2).map((cat, ci) => (
+                  <Badge key={ci} variant="secondary" className="text-[10px]">
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
+              <h3 className="font-semibold text-sm leading-tight group-hover:text-[#00A4E4] transition-colors" data-testid={`news-title-${idx}`}>
+                {item.title}
+              </h3>
+              {item.snippet && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {item.snippet}
+                </p>
+              )}
+            </div>
+            <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </CardContent>
+      </Card>
+    </a>
+  );
+}
+
 export default function CryptoNews() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSource, setActiveSource] = useState<string | null>(null);
+  const [forYouCollapsed, setForYouCollapsed] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery<NewsResponse>({
     queryKey: ["/api/news"],
+    refetchInterval: 15 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: personalizedData } = useQuery<PersonalizedResponse>({
+    queryKey: ["/api/news/personalized"],
+    enabled: !!user,
     refetchInterval: 15 * 60 * 1000,
     staleTime: 10 * 60 * 1000,
   });
@@ -87,6 +161,9 @@ export default function CryptoNews() {
     });
   })() : null;
 
+  const hasForYou = personalizedData && personalizedData.forYou.length > 0;
+  const isSearching = searchQuery.trim() || activeSource;
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -110,6 +187,89 @@ export default function CryptoNews() {
           Refresh
         </Button>
       </div>
+
+      {hasForYou && !isSearching && (
+        <Card className="border-[#00A4E4]/20 bg-[#00A4E4]/[0.02]" data-testid="section-for-you">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#00A4E4]" />
+                <CardTitle className="text-base">For You</CardTitle>
+                <Badge variant="outline" className="text-[10px] border-[#00A4E4]/30 text-[#00A4E4]">
+                  Based on your {personalizedData.heldAssets.length} held asset{personalizedData.heldAssets.length !== 1 ? "s" : ""}
+                </Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setForYouCollapsed(!forYouCollapsed)}
+                className="text-xs text-muted-foreground h-7"
+                data-testid="button-toggle-for-you"
+              >
+                {forYouCollapsed ? "Show" : "Hide"}
+              </Button>
+            </div>
+            {!forYouCollapsed && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                <User className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[11px] text-muted-foreground">Tracking:</span>
+                {personalizedData.heldAssets.slice(0, 12).map(asset => (
+                  <Badge key={asset} variant="secondary" className="text-[10px] h-5">
+                    {asset}
+                  </Badge>
+                ))}
+                {personalizedData.heldAssets.length > 12 && (
+                  <span className="text-[10px] text-muted-foreground">+{personalizedData.heldAssets.length - 12} more</span>
+                )}
+              </div>
+            )}
+          </CardHeader>
+          {!forYouCollapsed && (
+            <CardContent className="pt-0 space-y-2">
+              {personalizedData.forYou.slice(0, 5).map((item, idx) => (
+                <a
+                  key={`fy-${idx}`}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block group"
+                  data-testid={`for-you-article-${idx}`}
+                >
+                  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {item.matchedAssets.map(asset => (
+                          <Badge key={asset} className="text-[10px] bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30 h-4">
+                            {asset}
+                          </Badge>
+                        ))}
+                        <Badge variant="outline" className={`text-[10px] h-4 ${SOURCE_COLORS[item.source] || ""}`}>
+                          {item.source}
+                        </Badge>
+                        {item.pubDate && (
+                          <span className="text-[10px] text-muted-foreground">{formatTimeAgo(item.pubDate)}</span>
+                        )}
+                      </div>
+                      <h4 className="text-sm font-medium leading-tight group-hover:text-[#00A4E4] transition-colors">
+                        {item.title}
+                      </h4>
+                      {item.snippet && (
+                        <p className="text-[11px] text-muted-foreground line-clamp-1">{item.snippet}</p>
+                      )}
+                    </div>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </a>
+              ))}
+              {personalizedData.totalMatched > 5 && (
+                <p className="text-[11px] text-muted-foreground text-center pt-1">
+                  {personalizedData.totalMatched - 5} more article{personalizedData.totalMatched - 5 !== 1 ? "s" : ""} related to your assets in the feed below
+                </p>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -148,6 +308,14 @@ export default function CryptoNews() {
         </div>
       </div>
 
+      {!isSearching && hasForYou && (
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">All Headlines</span>
+          <Separator className="flex-1" />
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-[#00A4E4]" />
@@ -166,48 +334,7 @@ export default function CryptoNews() {
       ) : (
         <div className="space-y-3">
           {filteredItems.map((item, idx) => (
-            <a
-              key={`${item.source}-${idx}`}
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block group"
-              data-testid={`news-article-${idx}`}
-            >
-              <Card className="transition-all hover:shadow-md hover:border-[#00A4E4]/30 group-hover:bg-muted/30">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className={`text-[10px] ${SOURCE_COLORS[item.source] || ""}`}>
-                          {item.source}
-                        </Badge>
-                        {item.pubDate && (
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {formatTimeAgo(item.pubDate)}
-                          </span>
-                        )}
-                        {item.categories.slice(0, 2).map((cat, ci) => (
-                          <Badge key={ci} variant="secondary" className="text-[10px]">
-                            {cat}
-                          </Badge>
-                        ))}
-                      </div>
-                      <h3 className="font-semibold text-sm leading-tight group-hover:text-[#00A4E4] transition-colors" data-testid={`news-title-${idx}`}>
-                        {item.title}
-                      </h3>
-                      {item.snippet && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {item.snippet}
-                        </p>
-                      )}
-                    </div>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </CardContent>
-              </Card>
-            </a>
+            <NewsArticle key={`${item.source}-${idx}`} item={item} idx={idx} />
           ))}
         </div>
       )}

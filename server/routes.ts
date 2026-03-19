@@ -8072,6 +8072,106 @@ export async function registerRoutes(
     }
   });
 
+  const ASSET_KEYWORDS: Record<string, string[]> = {
+    XRP: ["xrp", "ripple", "xrpl", "rlusd", "xls-66", "xls-65", "xumm", "xaman"],
+    BTC: ["bitcoin", "btc", "satoshi", "lightning network", "ordinals"],
+    ETH: ["ethereum", "eth", "vitalik", "erc-20", "layer 2", "l2"],
+    XLM: ["stellar", "xlm", "stellar lumens"],
+    SOL: ["solana", "sol"],
+    ADA: ["cardano", "ada"],
+    DOT: ["polkadot", "dot", "parachain"],
+    AVAX: ["avalanche", "avax"],
+    MATIC: ["polygon", "matic", "pol"],
+    LINK: ["chainlink", "link"],
+    DOGE: ["dogecoin", "doge"],
+    ATOM: ["cosmos", "atom"],
+    ALGO: ["algorand", "algo"],
+    HBAR: ["hedera", "hbar"],
+    XDC: ["xdc", "xinfin"],
+    VET: ["vechain", "vet"],
+    CRO: ["cronos", "cro", "crypto.com"],
+    TON: ["toncoin", "ton", "telegram open network"],
+    USDT: ["tether", "usdt"],
+    USDC: ["usdc", "circle"],
+    RLUSD: ["rlusd", "ripple usd"],
+  };
+
+  const GENERAL_KEYWORDS = ["sec", "regulation", "etf", "defi", "stablecoin", "cbdc", "tax", "irs", "crypto ban", "exchange hack", "security breach"];
+
+  app.get("/api/news/personalized", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const balances = await db.select({
+        symbol: walletBalances.symbol,
+      }).from(walletBalances).where(eq(walletBalances.userId, userId));
+
+      const heldSymbols = [...new Set(balances.map(b => b.symbol?.toUpperCase()).filter(Boolean))];
+
+      const allKeywords: { keyword: string; asset: string }[] = [];
+      for (const symbol of heldSymbols) {
+        const keywords = ASSET_KEYWORDS[symbol];
+        if (keywords) {
+          for (const kw of keywords) {
+            allKeywords.push({ keyword: kw, asset: symbol });
+          }
+        } else {
+          allKeywords.push({ keyword: symbol.toLowerCase(), asset: symbol });
+        }
+      }
+
+      const allItems = await fetchNewsFeeds();
+
+      const forYou: (NewsItem & { matchedAssets: string[]; relevanceScore: number })[] = [];
+
+      for (const item of allItems) {
+        const searchText = `${item.title} ${item.snippet} ${item.categories.join(" ")}`.toLowerCase();
+        const matched = new Set<string>();
+        let score = 0;
+
+        for (const { keyword, asset } of allKeywords) {
+          if (searchText.includes(keyword)) {
+            matched.add(asset);
+            if (item.title.toLowerCase().includes(keyword)) {
+              score += 3;
+            } else {
+              score += 1;
+            }
+          }
+        }
+
+        for (const gk of GENERAL_KEYWORDS) {
+          if (searchText.includes(gk)) {
+            score += 0.5;
+          }
+        }
+
+        if (matched.size > 0) {
+          forYou.push({
+            ...item,
+            matchedAssets: [...matched],
+            relevanceScore: score,
+          });
+        }
+      }
+
+      forYou.sort((a, b) => {
+        if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore;
+        const da = new Date(a.pubDate).getTime();
+        const db2 = new Date(b.pubDate).getTime();
+        return (isNaN(db2) ? 0 : db2) - (isNaN(da) ? 0 : da);
+      });
+
+      res.json({
+        forYou: forYou.slice(0, 10),
+        heldAssets: heldSymbols,
+        totalMatched: forYou.length,
+      });
+    } catch (error) {
+      console.error("[news] Personalized feed error:", error);
+      res.status(500).json({ message: "Failed to load personalized news" });
+    }
+  });
+
   app.get("/api/whale-alerts", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
