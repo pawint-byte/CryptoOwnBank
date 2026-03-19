@@ -15,7 +15,6 @@ import {
   Gift,
   CheckCircle,
   XCircle,
-  ExternalLink,
   RefreshCw,
   Info,
   Shield,
@@ -498,65 +497,120 @@ export default function FlareFtso() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Info className="h-5 w-5 text-blue-500" />
-              How FTSO Delegation Works
+              How to Set Up &amp; Earn Flare Rewards
             </CardTitle>
             {showGuide ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </CardHeader>
         {showGuide && (
-          <CardContent className="space-y-4">
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-orange-600">1</span>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Wrap FLR to WFLR</p>
-                  <p>Use Bifrost Wallet or the Flare Portal to wrap your FLR tokens. Wrapping is instant and free (just gas). WFLR can be unwrapped back to FLR at any time.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-orange-600">2</span>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Delegate to FTSO Providers</p>
-                  <p>Choose one or two FTSO data providers to delegate your WFLR to. Providers submit price data to the network — if they're accurate, you earn rewards proportional to your delegation.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-orange-600">3</span>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Claim Rewards</p>
-                  <p>FTSO rewards are distributed every ~3.5 days (each reward epoch). You can claim them in Bifrost Wallet and re-delegate to compound your returns.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="h-6 w-6 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Gift className="h-3.5 w-3.5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Claim FlareDrops</p>
-                  <p>In addition to FTSO rewards, monthly FlareDrop distributions run through January 2026. You must have WFLR (wrapped) to be eligible. Claim each month in Bifrost Wallet.</p>
+          <CardContent className="space-y-6">
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                <Wallet className="h-4 w-4 text-orange-500" />
+                Step 1: Move FLR from Uphold to Bifrost Wallet
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Uphold does not support FTSO delegation or wrapping, so you need to move your FLR to a wallet that does. Bifrost Wallet is the most popular non-custodial Flare wallet — it handles wrapping, delegation, and FlareDrop claiming all in one app.</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Download <strong>Bifrost Wallet</strong> from the App Store (iOS) or Google Play (Android).</li>
+                  <li>Open Bifrost and create a new wallet. <strong>Write down your recovery phrase</strong> and store it securely — this is your only backup. Never share it with anyone.</li>
+                  <li>Once your wallet is created, tap <strong>Flare (FLR)</strong> in your asset list, then tap <strong>Receive</strong>. Copy your Flare C-chain address (starts with <code className="text-xs bg-muted px-1 rounded">0x</code>).</li>
+                  <li>Open Uphold. Go to your FLR balance, tap <strong>Transact → Send to a crypto network</strong>.</li>
+                  <li>Select <strong>Flare network</strong> as the destination network. Paste your Bifrost <code className="text-xs bg-muted px-1 rounded">0x</code> address. No destination tag or memo needed.</li>
+                  <li><strong>Send a small test amount first</strong> (e.g., 10 FLR) to confirm it arrives in Bifrost. Once confirmed, send the rest.</li>
+                </ol>
+                <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2.5 mt-2">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span><strong>Important:</strong> Make sure you select the <strong>Flare network</strong> when withdrawing from Uphold — not Ethereum, not XRPL. FLR is a native Flare C-chain token. Sending to the wrong network may result in lost funds.</span>
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-xs font-medium">Recommended Tools:</p>
-              <div className="flex flex-wrap gap-2">
-                <a href="https://bifrostwallet.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                  <ExternalLink className="h-3 w-3" /> Bifrost Wallet
-                </a>
-                <a href="https://portal.flare.network" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                  <ExternalLink className="h-3 w-3" /> Flare Portal
-                </a>
-                <a href="https://flarescan.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                  <ExternalLink className="h-3 w-3" /> FlareScan Explorer
-                </a>
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                <RefreshCw className="h-4 w-4 text-blue-500" />
+                Step 2: Wrap FLR to WFLR
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Wrapping converts your FLR into WFLR (Wrapped FLR). This is required for both FTSO delegation rewards AND FlareDrop eligibility. Your tokens stay in your wallet — wrapping just changes the token format.</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>In Bifrost Wallet, tap <strong>Flare (FLR)</strong> in your asset list.</li>
+                  <li>Tap <strong>Wrap</strong> (or look for the wrap option in the FLR token menu).</li>
+                  <li>Enter the amount you want to wrap. <strong>Leave a small amount unwrapped</strong> (5–10 FLR) to cover gas fees for future transactions.</li>
+                  <li>Confirm the transaction. Wrapping is instant and costs a tiny gas fee (fractions of a penny).</li>
+                  <li>Your WFLR balance will appear in Bifrost immediately. You can unwrap back to FLR at any time.</li>
+                </ol>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-4">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-green-500" />
+                Step 3: Delegate WFLR to FTSO Data Providers
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Delegation is what earns you the 5–15% APY. You're pointing your WFLR at data providers who submit price feeds to the Flare network. When their data is accurate, both you and the provider earn FLR rewards. <strong>Your WFLR never leaves your wallet</strong> — delegation is a signal, not a transfer.</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>In Bifrost Wallet, go to the <strong>FTSO Delegation</strong> section (usually under Earn or Staking).</li>
+                  <li>Browse the list of available FTSO data providers. You can delegate to <strong>up to 2 providers</strong>.</li>
+                  <li>Choose providers with a good track record of accurate price submissions and reasonable fee rates (typically 15–20%).</li>
+                  <li>Select how much of your WFLR to delegate to each provider (e.g., 50%/50% split or 100% to one).</li>
+                  <li>Confirm the delegation transaction. It takes effect in the next reward epoch (~3.5 days).</li>
+                </ol>
+                <div className="rounded border border-green-500/30 bg-green-500/5 p-2.5 mt-2">
+                  <p className="text-xs text-green-700 dark:text-green-400">
+                    <strong>Your WFLR stays in your wallet.</strong> Delegation doesn't move your tokens anywhere. You can change providers or undelegate at any time. Think of it like voting — you're lending your weight to a provider, not sending them your money.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-4">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                <Coins className="h-4 w-4 text-purple-500" />
+                Step 4: Claim Rewards &amp; FlareDrop
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>You now have two income streams: FTSO delegation rewards (every ~3.5 days) and monthly FlareDrop distributions.</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li><strong>FTSO rewards:</strong> In Bifrost Wallet, check the Rewards section regularly. Unclaimed rewards accumulate each epoch (~3.5 days). Tap <strong>Claim</strong> to receive your FLR.</li>
+                  <li><strong>FlareDrop:</strong> Each month, a FlareDrop distribution becomes claimable. In Bifrost, go to the FlareDrop section and tap <strong>Claim</strong>. The amount you receive is proportional to your WFLR balance.</li>
+                  <li><strong>Compound your earnings:</strong> After claiming, wrap the new FLR to WFLR and it automatically counts toward your existing delegation — increasing your future rewards. No need to re-delegate.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+                <Flame className="h-4 w-4 text-cyan-500" />
+                Step 5: Track on CryptoOwnBank
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Once your FLR is in Bifrost and you've set up delegation, come back to this page and connect your Flare address to track everything in one place.</p>
+                <ol className="list-decimal pl-5 space-y-1.5">
+                  <li>Copy your Flare C-chain address from Bifrost Wallet (the same <code className="text-xs bg-muted px-1 rounded">0x</code> address).</li>
+                  <li>Paste it into the wallet connection box at the top of this page.</li>
+                  <li>CryptoOwnBank reads your on-chain data directly — FLR balance, WFLR balance, delegation status, estimated rewards, and FlareDrop progress.</li>
+                  <li>Check back anytime to monitor your earnings. We never access your keys — read-only tracking only.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-3 bg-muted/30">
+              <p className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-blue-500" />
+                Key Reminders
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                <li><strong>Bifrost Wallet is non-custodial</strong> — your keys stay on your phone, just like Xaman for XRPL. Nobody else can access your FLR.</li>
+                <li><strong>Delegation does NOT transfer your tokens</strong> — your WFLR stays in your wallet the entire time. You can undelegate and unwrap at any time.</li>
+                <li><strong>Keep 5–10 FLR unwrapped</strong> for gas fees (wrapping, claiming, delegating all need a tiny gas payment in FLR).</li>
+                <li><strong>FlareDrop requires WFLR</strong> — if your FLR is unwrapped or sitting on an exchange, you're not eligible for the monthly drop.</li>
+                <li><strong>Claim rewards regularly</strong> — unclaimed FTSO rewards expire after a certain period. Check Bifrost every week or two.</li>
+                <li><strong>Coming from Uphold?</strong> Your monthly FlareDrop from holding XRP during the snapshot still lands on Uphold. Move that FLR to Bifrost too, wrap it, and it earns delegation rewards on top of the drop.</li>
+              </ul>
             </div>
           </CardContent>
         )}
