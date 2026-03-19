@@ -1960,6 +1960,7 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
+                  <SelectItem value="flare">Flare (FLR)</SelectItem>
                   <SelectItem value="stellar">Stellar (XLM)</SelectItem>
                   <SelectItem value="ethereum">Ethereum</SelectItem>
                   <SelectItem value="solana">Solana</SelectItem>
@@ -1977,7 +1978,7 @@ export default function SettingsPage() {
               <Label htmlFor="wallet-address">Wallet Address</Label>
               <Input
                 id="wallet-address"
-                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "stellar" ? "GXXXX...XXXX" : walletForm.chain === "ethereum" ? "0x..." : "Enter address"}
+                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "stellar" ? "GXXXX...XXXX" : walletForm.chain === "ethereum" || walletForm.chain === "flare" ? "0x..." : "Enter address"}
                 value={walletForm.address}
                 onChange={(e) => setWalletForm((f) => ({ ...f, address: e.target.value }))}
                 className="font-mono text-sm"
