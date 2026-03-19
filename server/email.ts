@@ -130,7 +130,8 @@ export async function sendWelcomeEmail(to: string, name: string) {
         <p style="color: #555; line-height: 1.6;">
           Your account is ready. You can now connect your cold wallet (Xumm or Ledger),
           deposit RLUSD into yield vaults, and start earning interest — all while keeping
-          full control of your keys.
+          full control of your keys. Explore XRPL AMM pools, Flare FTSO delegation rewards,
+          and live RWA yields from 10+ protocols.
         </p>
         <div style="background: #f0f9ff; border-left: 4px solid #00A4E4; padding: 15px; margin: 20px 0; border-radius: 4px;">
           <p style="margin: 0; color: #555;">
@@ -170,6 +171,9 @@ export async function sendAccountActivatedEmail(to: string, name: string) {
           <li>Track your crypto portfolio across multiple chains</li>
           <li>Deposit RLUSD into yield vaults and earn up to 8% APR</li>
           <li>Send payments, swap tokens on the DEX</li>
+          <li>Track XRPL AMM pool liquidity, LP positions & fee earnings</li>
+          <li>Monitor Flare FTSO delegation rewards & FlareDrop status</li>
+          <li>Compare live yields from 10+ RWA protocols</li>
           <li>Monitor whale wallets and real-time alerts</li>
         </ul>
         <div style="text-align: center; margin: 25px 0;">
@@ -478,6 +482,9 @@ export async function sendPremiumWelcomeEmail(to: string, plan: string) {
         <ul style="color: #555; line-height: 2;">
           <li>Auto-withdraw interest weekly</li>
           <li>Tax CSV export & year-end reports</li>
+          <li>XRPL AMM Pools — track live pool depth, LP positions & trading fees</li>
+          <li>Flare FTSO Rewards — delegation tracking, FlareDrop status & reward calculator</li>
+          <li>Earn & Yield Explorer — live rates from 10+ RWA protocols (Ondo, Maple, OpenEden & more)</li>
           <li>Priority new vault alerts</li>
           <li>XLS-66 lending early access (when available)</li>
         </ul>
@@ -507,9 +514,10 @@ export async function sendReEngagementEmail(to: string, name: string) {
           <ul style="color: #555; line-height: 2; margin: 0; padding-left: 20px;">
             <li><strong>Earn 5–8% fixed APR</strong> on RLUSD — fully non-custodial</li>
             <li><strong>Portfolio tracker</strong> — track all your crypto in one place</li>
+            <li><strong>XRPL AMM Pools</strong> — track live pool liquidity, LP positions & fee earnings</li>
+            <li><strong>Flare FTSO Rewards</strong> — delegation tracking, FlareDrop status & reward calculator</li>
+            <li><strong>Earn & Yield Explorer</strong> — live rates from Ondo, Maple, OpenEden, Goldfinch & 10+ protocols</li>
             <li><strong>Technical analysis</strong> — charts, indicators & signals</li>
-            <li><strong>RWA yield discovery</strong> — find real-world asset yields</li>
-            <li><strong>Stablecoin dashboard</strong> — monitor stablecoin metrics</li>
             <li><strong>Referral rewards</strong> — earn SEED points & free Premium months</li>
           </ul>
         </div>
@@ -567,10 +575,11 @@ export async function sendInactivityReminderEmail(to: string, name: string, days
           <p style="color: #0369a1; font-weight: 600; margin: 0 0 12px;">Recently added:</p>
           <ul style="color: #555; margin: 0; padding-left: 20px; line-height: 2;">
             <li><strong>RLUSD Yield Vaults</strong> — earn 5–8% fixed APR, fully non-custodial</li>
+            <li><strong>XRPL AMM Pools</strong> — track live pool liquidity, LP share & trading fee earnings</li>
+            <li><strong>Flare FTSO Rewards</strong> — delegation tracking, FlareDrop status & reward calculator</li>
+            <li><strong>Earn & Yield Explorer</strong> — live rates from 10+ RWA protocols via DefiLlama</li>
             <li><strong>Multi-chain portfolio tracker</strong> — XRP, BTC, ETH, SOL & more in one view</li>
             <li><strong>Technical analysis</strong> — interactive charts with indicators & signals</li>
-            <li><strong>RWA yield discovery</strong> — find real-world asset opportunities</li>
-            <li><strong>Stablecoin dashboard</strong> — live metrics for all major stablecoins</li>
             <li><strong>Referral rewards</strong> — earn SEED points & free Premium months</li>
           </ul>
         </div>

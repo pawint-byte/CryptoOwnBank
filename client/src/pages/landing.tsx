@@ -111,9 +111,9 @@ const xrplToolsComparison = [
     oldDesc: "Institutional firms provide liquidity, take spreads, you never see behind the curtain",
     newIcon: RefreshCw,
     newTitle: "AMM Pools",
-    newDesc: "Provide liquidity directly on-chain, earn fees transparently, fully decentralized",
-    link: "#",
-    status: "coming",
+    newDesc: "Track XRPL AMM pool liquidity, see your LP share, earn trading fees transparently on-chain",
+    link: "/amm-pools",
+    status: "live",
   },
   {
     oldIcon: Scale,
@@ -267,9 +267,25 @@ const features = [
     icon: Globe,
     title: "Earn & Yield Explorer",
     description:
-      "Earn 5–8% on tokenized treasuries and real-world assets. Compare yields from Ondo, Centrifuge, Soil, and more — all in one explorer with live APY data.",
+      "Earn 5–8% on tokenized treasuries and real-world assets. Compare live yields from Ondo, Maple, OpenEden, Goldfinch, Backed Finance, Centrifuge, Soil, and more — all in one explorer with real-time APY data pulled from DefiLlama.",
     link: "/rwa-yields",
     linkLabel: "Explore Earn & Yield",
+  },
+  {
+    icon: RefreshCw,
+    title: "XRPL AMM Pools",
+    description:
+      "Track live XRPL Automated Market Maker pools — XRP/RLUSD, XRP/USD, and XRP/USDT. See real-time pool depth, your LP token share, trading fee rates, and auction slot status. Includes impermanent loss education and step-by-step guides for providing liquidity.",
+    link: "/amm-pools",
+    linkLabel: "View AMM Pools",
+  },
+  {
+    icon: Zap,
+    title: "Flare FTSO Rewards",
+    description:
+      "Track your Flare (FLR) delegation rewards. Connect your Flare C-chain address to see FLR/WFLR balances, FTSO delegation status, estimated 5–15% APY, and FlareDrop claim progress. Includes a reward calculator and readiness checklist.",
+    link: "/flare",
+    linkLabel: "Flare Rewards",
   },
   {
     icon: DollarSign,

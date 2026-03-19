@@ -643,6 +643,39 @@ const faqGroups = [
     ],
   },
   {
+    heading: "XRPL AMM Pools & Flare FTSO",
+    items: [
+      {
+        q: "What are XRPL AMM Pools?",
+        a: "XRPL AMM (Automated Market Maker) pools are native liquidity pools built directly into the XRP Ledger. Unlike traditional order book trading where buyers and sellers match at specific prices, AMM pools allow anyone to provide liquidity by depositing two assets into a pool. In return, you earn a share of the trading fees generated when others swap between those assets. CryptoOwnBank tracks the live state of popular AMM pools — XRP/RLUSD, XRP/USD (Bitstamp), and XRP/USDT (GateHub) — showing real-time pool depth, your LP token share percentage, and current trading fee rates.",
+      },
+      {
+        q: "How do XRPL AMM pools differ from Uniswap or PancakeSwap?",
+        a: "The key difference is that XRPL AMM pools are native to the protocol — no separate smart contract, no third-party DEX app, no governance token required. On Ethereum, you need to connect to Uniswap (a third-party app), approve a smart contract, and pay $5–50 in gas fees. On the XRPL, the AMM is built into the ledger itself. You interact with it directly from your wallet. Fees are fractions of a penny. No smart contract risk. No bridge required. The AMM coexists with the traditional XRPL order book DEX, giving you both options on the same chain.",
+      },
+      {
+        q: "What is impermanent loss in AMM pools?",
+        a: "Impermanent loss occurs when the price ratio of the two assets in a pool changes after you deposit. If you provide liquidity for XRP/RLUSD and XRP's price doubles, you would have been better off simply holding your XRP rather than providing liquidity — because the pool rebalances and you end up with more RLUSD and less XRP. The loss is called 'impermanent' because it reverses if prices return to where they were when you deposited. Trading fees you earn from the pool may offset impermanent loss, especially in high-volume pools. The CryptoOwnBank AMM Pools page includes an educational section explaining this in detail.",
+      },
+      {
+        q: "What is Flare FTSO and how do delegation rewards work?",
+        a: "Flare is a Layer 1 blockchain designed to provide decentralized data to smart contracts. FTSO (Flare Time Series Oracle) is Flare's native price oracle system. You earn rewards by delegating your WFLR (wrapped FLR) to FTSO data providers — these are operators who submit price data to the network. When their data is accurate, both the provider and their delegators earn FLR rewards. Estimated APY is 5–15% depending on which providers you delegate to and current network participation rates.",
+      },
+      {
+        q: "What is FlareDrop and how do I claim it?",
+        a: "FlareDrop is a 36-month token distribution program that rewards Flare holders who wrap their FLR to WFLR. Each month, a portion of FLR tokens is distributed proportionally to WFLR holders. To be eligible: (1) Hold FLR in a supported wallet like Bifrost Wallet. (2) Wrap your FLR to WFLR. (3) Claim each monthly distribution through the Flare Portal or Bifrost Wallet. CryptoOwnBank's Flare page shows your current FlareDrop eligibility, which month the distribution is on, and a readiness checklist to make sure you're set up to receive drops.",
+      },
+      {
+        q: "How do I get started with Flare FTSO delegation?",
+        a: "Here's the step-by-step: (1) Get FLR tokens — buy on an exchange like Uphold, Kraken, or Bitrue, or receive them from the original FLR airdrop. (2) Move FLR to a supported wallet — Bifrost Wallet is the most popular option. Uphold doesn't support delegation directly. (3) Wrap your FLR to WFLR — this is done inside Bifrost Wallet with one tap. (4) Delegate WFLR to FTSO data providers — choose up to 2 providers and delegate your WFLR to them. (5) Claim rewards — rewards accumulate per epoch (~3.5 days) and can be claimed in Bifrost Wallet or the Flare Portal. CryptoOwnBank's Flare page has a readiness checklist that walks you through each step and shows your current delegation status.",
+      },
+      {
+        q: "What RWA protocols are covered in the Earn & Yield Explorer?",
+        a: 'The <a href="/rwa-yields" class="text-[#00A4E4] underline hover:no-underline">Earn & Yield Explorer</a> now covers 10+ protocols with live APY data pulled from DefiLlama: Soil Protocol (5–8% on RLUSD), Ondo Finance (USDY and OUSG backed by US Treasuries), Maple Finance (institutional credit), OpenEden (tokenized T-Bills), Backed Finance (bIB01 tokenized bonds), Goldfinch (emerging market credit, 7–10%), Centrifuge (real-world trade receivables), Aave and Compound (variable DeFi lending rates), Morpho (optimized lending), and Spark/MakerDAO. Yields update in real-time so you always see current rates, not stale estimates.',
+      },
+    ],
+  },
+  {
     heading: "Learn More",
     items: [
       {
