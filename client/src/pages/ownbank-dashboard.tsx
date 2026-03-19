@@ -679,7 +679,7 @@ export default function OwnBankDashboard() {
         </CardContent>
       </Card>
 
-      <YieldEarningsTracker vaultDeposits={vaultDeposits} compact />
+      <YieldEarningsTracker vaultDeposits={vaultDeposits} soilSummary={soilSummary} compact />
 
       {showDepositPrompt && (
         <Alert className="border-emerald-500/40 bg-emerald-500/5">

@@ -55,8 +55,9 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
     return () => clearInterval(interval);
   }, []);
 
-  const hasDeposits = vaultDeposits.length > 0 && vaultDeposits.some((d) => d.principal > 0);
-  if (!hasDeposits) return null;
+  const hasLocalDeposits = vaultDeposits.length > 0 && vaultDeposits.some((d) => d.principal > 0);
+  const hasSoilData = soilSummary && parseFloat(soilSummary.currentPrincipal) > 0;
+  if (!hasLocalDeposits && !hasSoilData) return null;
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -65,32 +66,60 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
   let todayInterest = 0;
   let thisMonthInterest = 0;
   let allTimeInterest = 0;
+  let totalPrincipal = 0;
+  let weightedApr = 0;
 
-  for (const dep of vaultDeposits) {
-    const totalInterest = calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
-    allTimeInterest += totalInterest;
+  if (hasSoilData) {
+    const principal = parseFloat(soilSummary!.currentPrincipal);
+    const apr = parseFloat(soilSummary!.weightedApr || "6.5");
+    totalPrincipal = principal;
+    weightedApr = apr;
+    allTimeInterest = parseFloat(soilSummary!.calculatedInterest);
 
-    const depositDate = new Date(dep.depositDate);
-    const dailyRate = dep.principal * (dep.apr / 100) / 365;
+    const dailyRate = principal * (apr / 100) / 365;
+    const depositDate = soilSummary!.firstDepositDate ? new Date(soilSummary!.firstDepositDate) : new Date();
 
     if (depositDate < startOfDay) {
       const hoursToday = (now.getTime() - startOfDay.getTime()) / (1000 * 60 * 60);
-      todayInterest += dailyRate * (hoursToday / 24);
-    } else if (depositDate >= startOfDay) {
+      todayInterest = dailyRate * (hoursToday / 24);
+    } else {
       const hoursSinceDeposit = (now.getTime() - depositDate.getTime()) / (1000 * 60 * 60);
-      todayInterest += dailyRate * (hoursSinceDeposit / 24);
+      todayInterest = dailyRate * (hoursSinceDeposit / 24);
     }
 
     if (depositDate < startOfMonth) {
       const daysThisMonth = (now.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24);
-      thisMonthInterest += dailyRate * daysThisMonth;
+      thisMonthInterest = dailyRate * daysThisMonth;
     } else {
-      thisMonthInterest += totalInterest;
+      thisMonthInterest = allTimeInterest;
     }
-  }
+  } else {
+    for (const dep of vaultDeposits) {
+      const totalInterest = calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
+      allTimeInterest += totalInterest;
 
-  const totalPrincipal = vaultDeposits.reduce((sum, d) => sum + d.principal, 0);
-  const weightedApr = getWeightedApr(vaultDeposits);
+      const depositDate = new Date(dep.depositDate);
+      const dailyRate = dep.principal * (dep.apr / 100) / 365;
+
+      if (depositDate < startOfDay) {
+        const hoursToday = (now.getTime() - startOfDay.getTime()) / (1000 * 60 * 60);
+        todayInterest += dailyRate * (hoursToday / 24);
+      } else if (depositDate >= startOfDay) {
+        const hoursSinceDeposit = (now.getTime() - depositDate.getTime()) / (1000 * 60 * 60);
+        todayInterest += dailyRate * (hoursSinceDeposit / 24);
+      }
+
+      if (depositDate < startOfMonth) {
+        const daysThisMonth = (now.getTime() - startOfMonth.getTime()) / (1000 * 60 * 60 * 24);
+        thisMonthInterest += dailyRate * daysThisMonth;
+      } else {
+        thisMonthInterest += totalInterest;
+      }
+    }
+
+    totalPrincipal = vaultDeposits.reduce((sum, d) => sum + d.principal, 0);
+    weightedApr = getWeightedApr(vaultDeposits);
+  }
 
   const proj1y = computeCompoundProjection(totalPrincipal, weightedApr, 1);
   const proj5y = computeCompoundProjection(totalPrincipal, weightedApr, 5);

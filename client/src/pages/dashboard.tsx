@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { RecommendationsHub } from "@/components/recommendations-hub";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { YieldEarningsTracker } from "@/components/yield-earnings-tracker";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -85,6 +86,40 @@ export default function Dashboard() {
     }));
 
   const { vaultDeposits } = useXrplStore();
+
+  const [soilSummary, setSoilSummary] = useState<{
+    currentPrincipal: string;
+    calculatedInterest: string;
+    weightedApr?: string;
+    firstDepositDate: string | null;
+    vaults?: Array<{ principal: string; apr: string }>;
+  } | null>(null);
+  const [soilSynced, setSoilSynced] = useState(false);
+
+  const xrplWallet = walletAddresses.find((w: any) => w.chain?.toLowerCase() === "xrpl" || w.chain?.toLowerCase() === "xrp");
+
+  const syncSoilForDashboard = useCallback(async () => {
+    if (!xrplWallet?.address) return;
+    try {
+      const response = await apiRequest("POST", "/api/soil/sync", {
+        walletAddress: xrplWallet.address,
+        walletType: "xumm",
+      });
+      const result = await response.json();
+      if (result.success && result.summary && parseFloat(result.summary.currentPrincipal) > 0) {
+        setSoilSummary(result.summary);
+      }
+    } catch {
+    } finally {
+      setSoilSynced(true);
+    }
+  }, [xrplWallet?.address]);
+
+  useEffect(() => {
+    if (xrplWallet?.address && !soilSynced) {
+      syncSoilForDashboard();
+    }
+  }, [xrplWallet?.address, soilSynced, syncSoilForDashboard]);
 
   const hasData = walletAddresses.length > 0 || exchangeBalances.length > 0;
 
@@ -240,7 +275,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <YieldEarningsTracker vaultDeposits={vaultDeposits} />
+      <YieldEarningsTracker vaultDeposits={vaultDeposits} soilSummary={soilSummary} />
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <PortfolioChart
