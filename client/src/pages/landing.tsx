@@ -994,8 +994,11 @@ export default function Landing() {
                 <Wallet className="h-5 w-5 text-white" />
               </div>
               <div>
-                <span className="text-lg font-semibold" data-testid="text-brand-name">CryptoOwnBank</span>
-                <span className="hidden sm:inline text-xs text-muted-foreground ml-2">Value Flows Free. You Own the Flow.</span>
+                <div>
+                  <span className="text-lg font-semibold" data-testid="text-brand-name">CryptoOwnBank</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground ml-2">Be Your Own Bank</span>
+                </div>
+                <span className="hidden sm:block text-[10px] italic text-muted-foreground/70">Value Flows Free. You Own the Flow.</span>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
