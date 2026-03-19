@@ -73,6 +73,7 @@ export async function getRwaLiveRates(): Promise<Record<string, any>> {
     "soil-liquid": { apy: 5.0, source: "protocol", chain: "XRPL" },
     "soil-credit": { apy: 8.0, source: "protocol", chain: "XRPL" },
     "xdc-tradefi": { apy: 7.0, source: "estimate", chain: "XDC" },
+    "flare-ftso": { apy: 8.5, source: "network-average", chain: "Flare" },
   };
 
   RWA_RATE_CACHE.data = result;
