@@ -10,6 +10,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import memberFlrStaking from "@assets/IMG_0107_1773957022639.png";
 import autoclaimScreenshot from "@assets/IMG_0108_1773957517213.png";
+import bifrostMenuScreenshot from "@assets/IMG_0109_1773958267636.png";
+import wrapConfirmScreenshot from "@assets/IMG_0111_1773958416955.png";
+import delegateListScreenshot from "@assets/IMG_0112_1773958470375.png";
+import batchDelegateScreenshot from "@assets/IMG_0114_1773958620161.png";
+import delegationCompleteScreenshot from "@assets/IMG_0115_1773958651120.png";
 import {
   Flame,
   Wallet,
@@ -539,9 +544,13 @@ export default function FlareFtso() {
               </p>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>Wrapping converts your FLR into WFLR (Wrapped FLR). This is required for both FTSO delegation rewards AND FlareDrop eligibility. Your tokens stay in your wallet — wrapping just changes the token format.</p>
+                <div className="flex gap-3 overflow-x-auto py-2">
+                  <img src={bifrostMenuScreenshot} alt="Bifrost Wallet menu showing Wrap and Delegate options" className="rounded-lg border shadow-sm h-48 w-auto" data-testid="img-bifrost-menu" />
+                  <img src={wrapConfirmScreenshot} alt="Bifrost showing 25,590 FLR successfully wrapped with transaction history" className="rounded-lg border shadow-sm h-48 w-auto" data-testid="img-wrap-confirm" />
+                </div>
                 <ol className="list-decimal pl-5 space-y-1.5">
                   <li>In Bifrost Wallet, tap <strong>Flare (FLR)</strong> in your asset list.</li>
-                  <li>Tap <strong>Wrap</strong> (or look for the wrap option in the FLR token menu).</li>
+                  <li>Tap the <strong>three-dot menu (•••)</strong> and select <strong>Wrap</strong> (shown in the screenshot above).</li>
                   <li>Enter the amount you want to wrap. <strong>Leave a small amount unwrapped</strong> (5–10 FLR) to cover gas fees for future transactions.</li>
                   <li>Confirm the transaction. Wrapping is instant and costs a tiny gas fee (fractions of a penny).</li>
                   <li>Your WFLR balance will appear in Bifrost immediately. You can unwrap back to FLR at any time.</li>
@@ -556,12 +565,18 @@ export default function FlareFtso() {
               </p>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>Delegation is what earns you the 5–15% APY. You're pointing your WFLR at data providers who submit price feeds to the Flare network. When their data is accurate, both you and the provider earn FLR rewards. <strong>Your WFLR never leaves your wallet</strong> — delegation is a signal, not a transfer.</p>
+                <div className="flex gap-3 overflow-x-auto py-2">
+                  <img src={delegateListScreenshot} alt="Bifrost FTSO provider list showing available data providers to delegate to" className="rounded-lg border shadow-sm h-48 w-auto" data-testid="img-delegate-list" />
+                  <img src={batchDelegateScreenshot} alt="Batch delegate confirmation showing 50/50 split between Bifrost Wallet and FTSO EU" className="rounded-lg border shadow-sm h-48 w-auto" data-testid="img-batch-delegate" />
+                  <img src={delegationCompleteScreenshot} alt="Completed delegation showing 2 of 2 providers active with 25,590 WFLR vote power" className="rounded-lg border shadow-sm h-48 w-auto" data-testid="img-delegation-complete" />
+                </div>
                 <ol className="list-decimal pl-5 space-y-1.5">
-                  <li>In Bifrost Wallet, go to the <strong>FTSO Delegation</strong> section (usually under Earn or Staking).</li>
-                  <li>Browse the list of available FTSO data providers. You can delegate to <strong>up to 2 providers</strong>.</li>
-                  <li>Choose providers with a good track record of accurate price submissions and reasonable fee rates (typically 15–20%).</li>
-                  <li>Select how much of your WFLR to delegate to each provider (e.g., 50%/50% split or 100% to one).</li>
-                  <li>Confirm the delegation transaction. It takes effect in the next reward epoch (~3.5 days).</li>
+                  <li>In Bifrost Wallet, tap the <strong>three-dot menu (•••)</strong> on your FLR asset and select <strong>Delegate</strong>, or go to the <strong>FTSO Delegation</strong> section.</li>
+                  <li>Browse the list of available FTSO data providers (shown above). You can delegate to <strong>up to 2 providers</strong>.</li>
+                  <li>Choose providers with a good track record — popular choices include <strong>Bifrost Wallet</strong> and <strong>FTSO EU</strong>.</li>
+                  <li>Select how much of your WFLR to delegate to each provider (e.g., 50%/50% split). The confirmation screen shows exactly what you're delegating before you commit.</li>
+                  <li>Confirm the batch delegation. The network fee is less than $0.01. Once confirmed, you'll see <strong>"Delegations (2 of 2)"</strong> with your full vote power allocated.</li>
+                  <li>Rewards start accumulating in the next reward epoch (~3.5 days). The autoclaimer handles collection for you.</li>
                 </ol>
                 <div className="rounded border border-green-500/30 bg-green-500/5 p-2.5 mt-2">
                   <p className="text-xs text-green-700 dark:text-green-400">
