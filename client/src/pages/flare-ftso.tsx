@@ -9,6 +9,7 @@ import { SeoHead } from "@/components/seo-head";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import memberFlrStaking from "@assets/IMG_0107_1773957022639.png";
+import autoclaimScreenshot from "@assets/IMG_0108_1773957517213.png";
 import {
   Flame,
   Wallet,
@@ -582,6 +583,34 @@ export default function FlareFtso() {
                   <li><strong>FlareDrop:</strong> Each month, a FlareDrop distribution becomes claimable. In Bifrost, go to the FlareDrop section and tap <strong>Claim</strong>. The amount you receive is proportional to your WFLR balance.</li>
                   <li><strong>Compound your earnings:</strong> After claiming, wrap the new FLR to WFLR and it automatically counts toward your existing delegation — increasing your future rewards. No need to re-delegate.</li>
                 </ol>
+
+                <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-3 mt-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="sm:w-36 shrink-0">
+                      <img
+                        src={autoclaimScreenshot}
+                        alt="Bifrost Wallet autoclaiming setup showing Bifrost Claim Bot with 3.20 FLR setup fee and 3.20 FLR per claim"
+                        className="rounded-lg border shadow-sm w-full sm:w-36"
+                        data-testid="img-autoclaim"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-purple-500" />
+                        Pro Tip: Enable Autoclaiming
+                      </p>
+                      <p className="text-xs">
+                        When you first open Bifrost, you'll see a prompt to <strong>Enable Autoclaiming</strong>. This lets the <strong>Bifrost Claim Bot</strong> automatically claim your FTSO rewards so they don't expire — you don't have to remember to do it manually.
+                      </p>
+                      <p className="text-xs">
+                        <strong>Cost:</strong> 3.20 FLR one-time setup fee + 3.20 FLR per claim (about $0.03 at current prices). This is well worth it — unclaimed FTSO rewards expire, and the bot handles everything for you.
+                      </p>
+                      <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                        We recommend enabling this. It's a small cost that protects your rewards from expiring.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
