@@ -133,6 +133,9 @@ const CHAIN_LABELS: Record<string, string> = {
   verge: "XVG",
   xdc: "XDC",
   polygon: "POL",
+  sui: "SUI",
+  sonic: "S",
+  fet: "FET",
   manual: "MAN",
 };
 
@@ -162,6 +165,9 @@ const CHAIN_COLORS: Record<string, string> = {
   verge: "#00CBFF",
   xdc: "#1E4B6E",
   polygon: "#8247E5",
+  sui: "#4DA2FF",
+  sonic: "#5A5AFF",
+  fet: "#1B1464",
   manual: "#888888",
 };
 
@@ -394,6 +400,9 @@ function getExplorerUrl(chain: string, address: string): string {
     verge: `https://verge-blockchain.info/address/${address}`,
     xdc: `https://xdc.blocksscan.io/address/${address.startsWith("xdc") ? address : "xdc" + address.slice(2)}`,
     polygon: `https://polygonscan.com/address/${address}`,
+    sui: `https://suiscan.xyz/mainnet/account/${address}`,
+    sonic: `https://sonicscan.org/address/${address}`,
+    fet: `https://www.mintscan.io/fetchai/address/${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -1893,6 +1902,7 @@ export default function Wallets() {
     { value: "digibyte", label: "DigiByte (DGB)" },
     { value: "dogecoin", label: "Dogecoin (DOGE)" },
     { value: "ethereum", label: "Ethereum (ETH)" },
+    { value: "fet", label: "Fetch.ai / ASI (FET)" },
     { value: "flare", label: "Flare (FLR)" },
     { value: "hedera", label: "Hedera (HBAR)" },
     { value: "litecoin", label: "Litecoin (LTC)" },
@@ -1900,7 +1910,9 @@ export default function Wallets() {
     { value: "polkadot", label: "Polkadot (DOT)" },
     { value: "polygon", label: "Polygon (POL)" },
     { value: "solana", label: "Solana (SOL)" },
+    { value: "sonic", label: "Sonic (S)" },
     { value: "stellar", label: "Stellar (XLM)" },
+    { value: "sui", label: "Sui (SUI)" },
     { value: "ton", label: "TON (TON)" },
     { value: "tron", label: "Tron (TRX)" },
     { value: "vechain", label: "VeChain (VET)" },

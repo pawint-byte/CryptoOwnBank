@@ -1551,7 +1551,121 @@ export async function getPolygonBalance(address: string): Promise<ChainBalance[]
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon";
+async function getSuiBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const resp = await fetch("https://fullnode.mainnet.sui.io:443", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "suix_getBalance", params: [address] }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const json = await resp.json();
+    if (json.result) {
+      const balance = Number(json.result.totalBalance) / 1e9;
+      const cgId = COINGECKO_IDS["SUI"];
+      let usdPrice = 0;
+      if (cgId) {
+        try {
+          const priceResp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cgId}&vs_currencies=usd`);
+          const priceData = await priceResp.json();
+          usdPrice = priceData[cgId]?.usd || 0;
+        } catch {}
+      }
+      return [{ symbol: "SUI", balance, usdValue: balance * usdPrice }];
+    }
+    return [];
+  } catch (err) {
+    console.error("SUI balance fetch error:", err);
+    return [];
+  }
+}
+
+async function getSonicBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const resp = await fetch("https://rpc.soniclabs.com", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [address, "latest"] }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const json = await resp.json();
+    if (json.result) {
+      const balance = Number(BigInt(json.result)) / 1e18;
+      const cgId = COINGECKO_IDS["S"];
+      let usdPrice = 0;
+      if (cgId) {
+        try {
+          const priceResp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cgId}&vs_currencies=usd`);
+          const priceData = await priceResp.json();
+          usdPrice = priceData[cgId]?.usd || 0;
+        } catch {}
+      }
+      return [{ symbol: "S", balance, usdValue: balance * usdPrice }];
+    }
+    return [];
+  } catch (err) {
+    console.error("Sonic balance fetch error:", err);
+    return [];
+  }
+}
+
+async function getFetBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    if (address.startsWith("fetch1")) {
+      const resp = await fetch(`https://rest-fetchhub.fetch.ai/cosmos/bank/v1beta1/balances/${address}`, {
+        signal: AbortSignal.timeout(15000),
+      });
+      const json = await resp.json();
+      const balances: ChainBalance[] = [];
+      const fetEntry = (json.balances || []).find((b: any) => b.denom === "afet");
+      if (fetEntry) {
+        const balance = Number(fetEntry.amount) / 1e18;
+        const cgId = COINGECKO_IDS["FET"];
+        let usdPrice = 0;
+        if (cgId) {
+          try {
+            const priceResp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cgId}&vs_currencies=usd`);
+            const priceData = await priceResp.json();
+            usdPrice = priceData[cgId]?.usd || 0;
+          } catch {}
+        }
+        balances.push({ symbol: "FET", balance, usdValue: balance * usdPrice });
+      }
+      return balances;
+    }
+    if (address.startsWith("0x")) {
+      const resp = await fetch("https://eth.llamarpc.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", id: 1, method: "eth_call",
+          params: [{ to: "0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85", data: "0x70a08231" + address.slice(2).toLowerCase().padStart(64, "0") }, "latest"],
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const json = await resp.json();
+      if (json.result) {
+        const balance = Number(BigInt(json.result)) / 1e18;
+        const cgId = COINGECKO_IDS["FET"];
+        let usdPrice = 0;
+        if (cgId) {
+          try {
+            const priceResp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cgId}&vs_currencies=usd`);
+            const priceData = await priceResp.json();
+            usdPrice = priceData[cgId]?.usd || 0;
+          } catch {}
+        }
+        return [{ symbol: "FET", balance, usdValue: balance * usdPrice }];
+      }
+    }
+    return [];
+  } catch (err) {
+    console.error("FET balance fetch error:", err);
+    return [];
+  }
+}
+
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon" | "sui" | "sonic" | "fet";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -1579,6 +1693,9 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   verge: { name: "Verge", symbol: "XVG", addressPattern: "^D[1-9A-HJ-NP-Za-km-z]{33}$", example: "D..." },
   xdc: { name: "XDC Network", symbol: "XDC", addressPattern: "^(xdc[a-fA-F0-9]{40}|0x[a-fA-F0-9]{40})$", example: "xdc..." },
   polygon: { name: "Polygon", symbol: "POL", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  sui: { name: "Sui", symbol: "SUI", addressPattern: "^0x[a-fA-F0-9]{64}$", example: "0x..." },
+  sonic: { name: "Sonic", symbol: "S", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  fet: { name: "Fetch.ai / ASI", symbol: "FET", addressPattern: "^(fetch1|0x)", example: "fetch1..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -1633,6 +1750,12 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getXdcBalance(address);
     case "polygon":
       return getPolygonBalance(address);
+    case "sui":
+      return getSuiBalance(address);
+    case "sonic":
+      return getSonicBalance(address);
+    case "fet":
+      return getFetBalance(address);
     default:
       return [];
   }
@@ -1648,7 +1771,7 @@ export function detectCorrectChain(storedChain: SupportedChain, address: string)
     "bitcoin", "ethereum", "solana", "xrp", "flare", "ton", "litecoin", "dogecoin",
     "tron", "cardano", "algorand", "cosmos", "hedera", "polkadot",
     "stellar", "vechain", "cronos", "nervos", "zilliqa", "digibyte",
-    "casper", "verge", "avalanche", "xdc", "polygon",
+    "casper", "verge", "avalanche", "xdc", "polygon", "sui", "sonic", "fet",
   ];
   for (const chain of priorityOrder) {
     if (chain === storedChain) continue;

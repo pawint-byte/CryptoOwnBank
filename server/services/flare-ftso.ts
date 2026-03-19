@@ -44,7 +44,7 @@ async function getWflrBalance(address: string): Promise<string> {
 
 async function getDelegationInfo(address: string): Promise<any[]> {
   try {
-    const delegatesOfSelector = "0xbf2d3e84";
+    const delegatesOfSelector = "0x9926b430";
     const data = delegatesOfSelector + encodeAddress(address);
 
     const result = await rpcCall("eth_call", [
@@ -61,25 +61,26 @@ async function getDelegationInfo(address: string): Promise<any[]> {
 
     const addressesOffset = parseInt(hex.slice(0, 64), 16) * 2;
     const bipsOffset = parseInt(hex.slice(64, 128), 16) * 2;
-    const countOffset = parseInt(hex.slice(128, 192), 16) * 2;
-    const count = parseInt(hex.slice(countOffset, countOffset + 64), 16);
-
-    if (count === 0 || isNaN(count) || count > 10) return [];
 
     const addressCount = parseInt(hex.slice(addressesOffset, addressesOffset + 64), 16);
     const bipsCount = parseInt(hex.slice(bipsOffset, bipsOffset + 64), 16);
+    const count = Math.min(addressCount, bipsCount);
 
-    for (let i = 0; i < Math.min(addressCount, bipsCount, count); i++) {
+    if (count === 0 || isNaN(count) || count > 10) return [];
+
+    for (let i = 0; i < count; i++) {
       const addrHex = hex.slice(addressesOffset + 64 + i * 64, addressesOffset + 128 + i * 64);
       const bipsHex = hex.slice(bipsOffset + 64 + i * 64, bipsOffset + 128 + i * 64);
       const providerAddr = "0x" + addrHex.slice(24);
       const bips = parseInt(bipsHex, 16);
 
-      delegations.push({
-        provider: providerAddr,
-        percentBips: bips,
-        percent: (bips / 100).toFixed(1),
-      });
+      if (bips > 0) {
+        delegations.push({
+          provider: providerAddr,
+          percentBips: bips,
+          percent: (bips / 100).toFixed(1),
+        });
+      }
     }
 
     return delegations;
@@ -124,7 +125,7 @@ export async function getFlareWalletInfo(address: string): Promise<any> {
 
     const totalFlr = parseFloat(flrBalance) + parseFloat(wflrBalance);
     const isWrapped = parseFloat(wflrBalance) > 0;
-    const isDelegated = delegations.length > 0;
+    const isDelegated = delegations.length > 0 || isWrapped;
 
     const estimatedApy = isDelegated ? 8.5 : 0;
     const estimatedMonthlyReward = isDelegated

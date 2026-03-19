@@ -1964,11 +1964,14 @@ export default function SettingsPage() {
                   <SelectItem value="cardano">Cardano</SelectItem>
                   <SelectItem value="cosmos">Cosmos</SelectItem>
                   <SelectItem value="ethereum">Ethereum</SelectItem>
+                  <SelectItem value="fet">Fetch.ai / ASI (FET)</SelectItem>
                   <SelectItem value="flare">Flare (FLR)</SelectItem>
                   <SelectItem value="hedera">Hedera</SelectItem>
                   <SelectItem value="polkadot">Polkadot</SelectItem>
                   <SelectItem value="solana">Solana</SelectItem>
+                  <SelectItem value="sonic">Sonic (S)</SelectItem>
                   <SelectItem value="stellar">Stellar (XLM)</SelectItem>
+                  <SelectItem value="sui">Sui (SUI)</SelectItem>
                   <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
