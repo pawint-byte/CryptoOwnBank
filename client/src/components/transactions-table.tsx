@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { safeParseDate } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@shared/schema";
@@ -78,7 +79,7 @@ export function TransactionsTable({
           {displayTransactions.map((tx) => (
             <TableRow key={tx.id} data-testid={`transaction-row-${tx.id}`}>
               <TableCell className="font-mono text-xs sm:text-sm whitespace-nowrap">
-                {format(new Date(tx.transactionDate), "MMM d, yyyy")}
+                {format(safeParseDate(tx.transactionDate), "MMM d, yyyy")}
               </TableCell>
               <TableCell>
                 <Badge

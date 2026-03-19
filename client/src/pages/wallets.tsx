@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
+import { safeParseDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1094,7 +1095,7 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
   if (editing) {
     return (
       <div className="flex items-center gap-1 py-1 px-2 rounded bg-muted/30 border text-xs">
-        <span className="text-muted-foreground shrink-0">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+        <span className="text-muted-foreground shrink-0">{format(safeParseDate(lot.acquiredDate), "MMM d, yyyy")}</span>
         <span className="text-muted-foreground shrink-0 mx-1">·</span>
         <span className="shrink-0 font-mono">{formatBalance(qty, 4)}</span>
         <span className="text-muted-foreground shrink-0 mx-1">@</span>
@@ -1130,7 +1131,7 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
           <span className="text-[9px] font-medium px-1 py-0.5 rounded shrink-0 uppercase bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
             <Ban className="h-2.5 w-2.5 inline mr-0.5" />Loss
           </span>
-          <span className="text-muted-foreground shrink-0 line-through">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+          <span className="text-muted-foreground shrink-0 line-through">{format(safeParseDate(lot.acquiredDate), "MMM d, yyyy")}</span>
           <span className="text-muted-foreground shrink-0">·</span>
           <span className="font-mono shrink-0 line-through">{formatBalance(qty, 4)}</span>
           <span className="text-muted-foreground shrink-0">@</span>
@@ -1156,7 +1157,7 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
             {lot.acquisitionType === "earned" ? "Earned" : lot.acquisitionType === "airdrop" ? "Airdrop" : "Transfer"}
           </span>
         )}
-        <span className="text-muted-foreground shrink-0">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+        <span className="text-muted-foreground shrink-0">{format(safeParseDate(lot.acquiredDate), "MMM d, yyyy")}</span>
         <span className="text-muted-foreground shrink-0">·</span>
         <span className="font-mono shrink-0">{formatBalance(qty, 4)}</span>
         <span className="text-muted-foreground shrink-0">@</span>
@@ -1208,7 +1209,7 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
             <AlertDialogHeader>
               <AlertDialogTitle>Remove lot?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will remove the {formatBalance(qty, 4)} {lot.assetSymbol} lot from {format(new Date(lot.acquiredDate), "MMM d, yyyy")} and update your cost basis. No loss will be recorded — use "Write Off" instead if this was lost to a scam or hack.
+                This will remove the {formatBalance(qty, 4)} {lot.assetSymbol} lot from {format(safeParseDate(lot.acquiredDate), "MMM d, yyyy")} and update your cost basis. No loss will be recorded — use "Write Off" instead if this was lost to a scam or hack.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -3119,7 +3120,7 @@ export default function Wallets() {
                                                 const lc = parseFloat(lot.costBasisPerUnit);
                                                 return (
                                                   <div key={lot.id} className="flex items-center justify-between text-[10px] font-mono py-0.5 px-1 rounded hover:bg-muted/30">
-                                                    <span className="text-muted-foreground">{format(new Date(lot.acquiredDate), "MMM d, yyyy")}</span>
+                                                    <span className="text-muted-foreground">{format(safeParseDate(lot.acquiredDate), "MMM d, yyyy")}</span>
                                                     <span>{formatBalance(lq, 4)} @ {formatUsd(lc)} = {formatUsd(lq * lc)}</span>
                                                   </div>
                                                 );

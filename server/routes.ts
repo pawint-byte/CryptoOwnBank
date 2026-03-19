@@ -12,6 +12,18 @@ import { eq, desc, sql, and } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
 
+function safeServerDate(dateValue: string | Date): Date {
+  if (dateValue instanceof Date) return dateValue;
+  const str = String(dateValue);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return new Date(str + "T12:00:00");
+  }
+  if (/^\d{4}-\d{2}-\d{2}T00:00:00(\.000)?Z?$/.test(str)) {
+    return new Date(str.slice(0, 10) + "T12:00:00");
+  }
+  return new Date(str);
+}
+
 function detectChainMismatch(chain: string, address: string): string | null {
   const a = address.trim();
   const patterns: Record<string, (addr: string) => boolean> = {
@@ -1276,7 +1288,7 @@ export async function registerRoutes(
         userId,
         walletBalanceId: id,
         assetSymbol: balance.assetSymbol,
-        acquiredDate: new Date(acquiredDate),
+        acquiredDate: safeServerDate(acquiredDate),
         originalQuantity: qty.toString(),
         remainingQuantity: qty.toString(),
         costBasisPerUnit: cost.toString(),
@@ -1333,7 +1345,7 @@ export async function registerRoutes(
         updates.costBasisPerUnit = cost.toString();
       }
       if (acquiredDate !== undefined) {
-        updates.acquiredDate = new Date(acquiredDate);
+        updates.acquiredDate = safeServerDate(acquiredDate);
       }
       if (note !== undefined) {
         updates.note = note || null;
@@ -2435,7 +2447,7 @@ export async function registerRoutes(
         pricePerUnit: price.toString(),
         totalValue: totalVal.toFixed(2),
         fee: data.fee || "0",
-        transactionDate: new Date(data.transactionDate),
+        transactionDate: safeServerDate(data.transactionDate),
         notes: data.notes,
       });
 
@@ -2473,7 +2485,7 @@ export async function registerRoutes(
           userId,
           transactionId: transaction.id,
           assetSymbol: data.assetSymbol.toUpperCase(),
-          acquiredDate: new Date(data.transactionDate),
+          acquiredDate: safeServerDate(data.transactionDate),
           originalQuantity: qty.toString(),
           remainingQuantity: qty.toString(),
           costBasisPerUnit: price.toString(),
@@ -7357,7 +7369,7 @@ export async function registerRoutes(
 
           let transactionDate = new Date();
           if (dateStr) {
-            const parsed = new Date(dateStr);
+            const parsed = safeServerDate(dateStr);
             if (!isNaN(parsed.getTime())) transactionDate = parsed;
           }
 

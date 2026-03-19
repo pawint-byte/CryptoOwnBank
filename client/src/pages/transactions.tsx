@@ -328,7 +328,7 @@ export default function Transactions() {
     mutationFn: async (values: TransactionFormValues) => {
       return apiRequest("POST", "/api/transactions", {
         ...values,
-        transactionDate: new Date(values.transactionDate).toISOString(),
+        transactionDate: values.transactionDate + "T12:00:00",
       });
     },
     onSuccess: () => {
