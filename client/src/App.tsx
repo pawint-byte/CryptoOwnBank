@@ -79,6 +79,8 @@ import TechnicalAnalysis from "@/pages/technical-analysis";
 import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import XLS66Lending from "@/pages/xls66-lending";
 import LegacyPlan from "@/pages/legacy-plan";
+import AmmPools from "@/pages/amm-pools";
+import FlareFtso from "@/pages/flare-ftso";
 import { OfflineBanner } from "@/components/offline-banner";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -174,6 +176,8 @@ function AuthenticatedRoutes() {
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/legacy-plan" component={LegacyPlan} />
+        <Route path="/amm-pools" component={AmmPools} />
+        <Route path="/flare" component={FlareFtso} />
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
@@ -226,6 +230,8 @@ function Router() {
         <Route path="/stellar/remittances" component={StellarRemittances} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/native-staking" component={NativeStaking} />
+        <Route path="/amm-pools" component={AmmPools} />
+        <Route path="/flare" component={FlareFtso} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
         <Route path="/snapshot/:token" component={Snapshot} />

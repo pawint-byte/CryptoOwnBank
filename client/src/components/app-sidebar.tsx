@@ -51,6 +51,8 @@ import {
   HeartHandshake,
   Mail,
   Newspaper,
+  Flame,
+  Droplets,
 } from "lucide-react";
 import {
   Sidebar,
@@ -94,7 +96,9 @@ const allItems: NavItem[] = [
   { title: "Technical Analysis", url: "/technical-analysis", icon: BarChart3, group: "market" },
   { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "market" },
   { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "market" },
+  { title: "AMM Pools", url: "/amm-pools", icon: Droplets, group: "market" },
   { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "market" },
+  { title: "Flare FTSO", url: "/flare", icon: Flame, group: "market" },
 
   { title: "Wallet & Yield", url: "/ownbank", icon: Landmark, color: "#00A4E4", group: "ownbank" },
   { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },

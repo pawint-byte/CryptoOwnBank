@@ -7804,6 +7804,61 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/rwa/live-rates", async (_req: any, res) => {
+    try {
+      const { getRwaLiveRates } = await import("./services/rwa-rates");
+      const rates = await getRwaLiveRates();
+      res.json(rates);
+    } catch (error) {
+      console.error("RWA live rates error:", error);
+      res.status(500).json({ message: "Failed to fetch RWA rates" });
+    }
+  });
+
+  app.get("/api/xrpl/amm-pools", async (_req: any, res) => {
+    try {
+      const { getAmmPoolInfo } = await import("./services/xrpl-amm");
+      const pools = await getAmmPoolInfo();
+      res.json(pools);
+    } catch (error) {
+      console.error("AMM pools error:", error);
+      res.status(500).json({ message: "Failed to fetch AMM pool data" });
+    }
+  });
+
+  app.get("/api/xrpl/amm-positions/:address", isAuthenticated, async (req: any, res) => {
+    try {
+      const { getUserAmmPositions } = await import("./services/xrpl-amm");
+      const positions = await getUserAmmPositions(req.params.address);
+      res.json(positions);
+    } catch (error) {
+      console.error("AMM positions error:", error);
+      res.status(500).json({ message: "Failed to fetch AMM positions" });
+    }
+  });
+
+  app.get("/api/flare/wallet/:address", isAuthenticated, async (req: any, res) => {
+    try {
+      const { getFlareWalletInfo } = await import("./services/flare-ftso");
+      const info = await getFlareWalletInfo(req.params.address);
+      res.json(info);
+    } catch (error) {
+      console.error("Flare wallet error:", error);
+      res.status(500).json({ message: "Failed to fetch Flare wallet data" });
+    }
+  });
+
+  app.get("/api/flare/network-stats", async (_req: any, res) => {
+    try {
+      const { getFlareNetworkStats } = await import("./services/flare-ftso");
+      const stats = await getFlareNetworkStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Flare network stats error:", error);
+      res.status(500).json({ message: "Failed to fetch Flare network stats" });
+    }
+  });
+
   app.get("/api/market-data/prices", isAuthenticated, async (_req: any, res) => {
     try {
       const { getCachedPrices } = await import("./services/market-data");

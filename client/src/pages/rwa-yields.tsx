@@ -227,6 +227,87 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     ],
   },
   {
+    id: "openeden",
+    category: "yield",
+    protocol: "OpenEden",
+    chain: "Ethereum / Arbitrum",
+    asset: "TBILL",
+    apyRange: "~5.0%",
+    apyMid: 5.0,
+    backingType: "US Treasury Bills",
+    tvl: "$100M+",
+    riskLevel: "Low",
+    link: "https://openeden.com",
+    description: "OpenEden provides tokenized US Treasury Bills with on-chain transparency. TBILL tokens are backed 1:1 by short-term US T-Bills held by a qualified custodian. Institutional-grade compliance with daily NAV updates.",
+    integrated: false,
+    minInvestment: "$1,000",
+    lockup: "T+0 to T+1 redemption",
+    kycRequired: true,
+    tokenReceived: "TBILL token on Ethereum/Arbitrum",
+    trackingChain: "ethereum",
+    steps: [
+      "Visit openeden.com and create an account",
+      "Complete identity verification (KYC/AML) — OpenEden requires institutional-grade compliance",
+      "Connect your Ethereum or Arbitrum wallet",
+      "Deposit USDC to mint TBILL tokens — backed by US Treasury Bills",
+      "Add your wallet to CryptoOwnBank to track your TBILL position and yield automatically",
+    ],
+  },
+  {
+    id: "backed-finance",
+    category: "yield",
+    protocol: "Backed Finance",
+    chain: "Ethereum / Gnosis",
+    asset: "bIB01",
+    apyRange: "~4.8%",
+    apyMid: 4.8,
+    backingType: "iShares Treasury Bond ETF",
+    tvl: "$50M+",
+    riskLevel: "Low",
+    link: "https://backed.fi",
+    description: "Backed Finance tokenizes regulated financial instruments. bIB01 tracks the iShares $ Treasury Bond 0-1yr UCITS ETF, providing on-chain exposure to short-term US Treasury bonds with Swiss regulatory oversight.",
+    integrated: false,
+    minInvestment: "$100",
+    lockup: "T+1 redemption via Backed platform",
+    kycRequired: true,
+    tokenReceived: "bIB01 token on Ethereum",
+    trackingChain: "ethereum",
+    steps: [
+      "Visit backed.fi and review available tokenized securities",
+      "Create an account and complete KYC verification (Swiss regulatory requirement)",
+      "Connect your Ethereum wallet",
+      "Purchase bIB01 tokens — each token tracks the underlying Treasury Bond ETF",
+      "Add your wallet to CryptoOwnBank to track your bIB01 balance and NAV performance",
+    ],
+  },
+  {
+    id: "goldfinch",
+    category: "yield",
+    protocol: "Goldfinch",
+    chain: "Ethereum",
+    asset: "FIDU",
+    apyRange: "7–10%",
+    apyMid: 8.5,
+    backingType: "Emerging Market Lending",
+    tvl: "$80M+",
+    riskLevel: "High",
+    link: "https://goldfinch.finance",
+    description: "Goldfinch provides decentralized lending to real-world businesses in emerging markets. Higher yields reflect the credit risk of lending to borrowers in developing economies. Backed by real loan portfolios with on-chain auditing.",
+    integrated: false,
+    minInvestment: "$100",
+    lockup: "Variable — depends on loan maturity and pool liquidity",
+    kycRequired: true,
+    tokenReceived: "FIDU token on Ethereum",
+    trackingChain: "ethereum",
+    steps: [
+      "Visit app.goldfinch.finance and connect your Ethereum wallet",
+      "Complete identity verification through Goldfinch's UID system",
+      "Browse the Senior Pool (diversified) or individual Borrower Pools (higher risk/reward)",
+      "Deposit USDC to receive FIDU tokens representing your share of the lending pool",
+      "Add your Ethereum wallet to CryptoOwnBank to track your FIDU position and accrued yield",
+    ],
+  },
+  {
     id: "uphold-payroll",
     category: "cashback",
     protocol: "Uphold Payroll",
@@ -385,9 +466,12 @@ const COMPARISON_DATA: ComparisonRow[] = [
   { type: "Traditional", product: "Bank Savings Account", apy: "~0.5%", apyNum: 0.5, notes: "FDIC insured, instant access, negligible yield" },
   { type: "Traditional", product: "High-Yield Savings", apy: "~4.5%", apyNum: 4.5, notes: "Online banks, FDIC insured, variable rate" },
   { type: "Traditional", product: "Money Market Fund", apy: "~5.0%", apyNum: 5.0, notes: "Not FDIC insured, daily liquidity, government bonds" },
+  { type: "Tokenized", product: "OpenEden TBILL", apy: "~5.0%", apyNum: 5.0, notes: "Tokenized US T-Bills, institutional-grade, on-chain NAV" },
   { type: "Tokenized", product: "USDY (Ondo)", apy: "~5.2%", apyNum: 5.2, notes: "Tokenized treasuries, 24/7 settlement, blockchain-native" },
   { type: "Tokenized", product: "Soil RLUSD Vaults", apy: "5–8%", apyNum: 6.5, notes: "XRPL-native, credit-backed, non-custodial" },
   { type: "Tokenized", product: "Centrifuge Pools", apy: "4–10%", apyNum: 7.0, notes: "Real estate, invoices, trade finance pools" },
+  { type: "Tokenized", product: "Maple Finance", apy: "6–12%", apyNum: 9.0, notes: "Institutional lending pools, higher yield, credit risk" },
+  { type: "Tokenized", product: "Goldfinch", apy: "7–10%", apyNum: 8.5, notes: "Emerging market loans, high yield, high risk" },
 ];
 
 interface RiskInfo {
@@ -1679,6 +1763,11 @@ function MyYieldPositions() {
 }
 
 export default function RwaYields() {
+  const { data: liveRates } = useQuery<Record<string, { apy: number; tvl?: number; source?: string }>>({
+    queryKey: ["/api/rwa/live-rates"],
+    refetchInterval: 30 * 60 * 1000,
+  });
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <SeoHead
@@ -1687,12 +1776,22 @@ export default function RwaYields() {
         path="/rwa-yields"
       />
       <div>
-        <h1 className="text-2xl font-bold" data-testid="text-rwa-yields-title">
-          Earn & Yield Explorer
-        </h1>
-        <p className="text-muted-foreground mt-1" data-testid="text-rwa-yields-subtitle">
-          Discover every way to earn on your crypto — yield vaults, RWA lending, cashback rewards, and more — all from one place
-        </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold" data-testid="text-rwa-yields-title">
+              Earn & Yield Explorer
+            </h1>
+            <p className="text-muted-foreground mt-1" data-testid="text-rwa-yields-subtitle">
+              Discover every way to earn on your crypto — yield vaults, RWA lending, cashback rewards, and more — all from one place
+            </p>
+          </div>
+          {liveRates && Object.keys(liveRates).length > 0 && (
+            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30" data-testid="badge-live-rates">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse" />
+              Live rates from {Object.keys(liveRates).length} protocols
+            </Badge>
+          )}
+        </div>
       </div>
 
       <EarningStatusSection />
