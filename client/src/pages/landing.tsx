@@ -152,7 +152,7 @@ const whyPoints = [
   },
   {
     icon: Zap,
-    text: "All the work is done for you — the Recommendations Hub surfaces yields, staking, and DeFi you'd otherwise miss. The information comes to you",
+    text: "All the work is done for you — the Recommendations Hub surfaces yields, personalized Crypto News matches articles to your assets, and the information comes to you",
   },
   {
     icon: FileText,
@@ -515,7 +515,7 @@ const onChainReasons = [
     title: "All the Work Is Done for You — And It Doesn't End",
     points: [
       "You keep 100% of your yield — no processing fees, no withdrawal fees, no platform cut. All your earnings stay with you.",
-      "All the research is done for you — the Recommendations Hub, Statement Insights, and yield analysis bring the information to you. You don't go looking.",
+      "All the research is done for you — the Recommendations Hub, Statement Insights, yield analysis, and personalized Crypto News bring the information to you. You don't go looking.",
       "And it doesn't end: the Legacy Plan (dead man's switch) makes sure your crypto passes to your family. Not to an exchange. Not to a bankruptcy court. To the people you chose.",
     ],
     highlight: "This is where everything starts. All the work is done for you, all the information comes to you, and the Legacy Plan ensures it never ends.",

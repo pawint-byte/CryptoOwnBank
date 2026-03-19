@@ -266,7 +266,7 @@ const faqGroups = [
       },
       {
         q: "What do I get with Premium?",
-        a: "Premium unlocks the full cockpit — own your crypto, manage it from one interface, keep all your earnings. XRPL DEX trading (44 pairs with Quick Swap and Advanced order book), Stellar DEX trading (13 pairs), unlimited exchange connections, unlimited blockchain addresses across all 24 chains, complete transaction history, CSV import, unlimited price alerts, full Recommendations Hub with personalized yield optimization that surfaces opportunities you'd otherwise miss, Statement Insights that compare your bank rates vs. on-chain yields, extended Whale Alerts with custom thresholds, and Technical Analysis with all indicators and up to 10 years of chart data. Choose monthly ($29/mo) or annual ($199/yr) to also unlock complete tax reports. Your security level is your choice — cold wallet, hot wallet, hardware or phone signing.",
+        a: "Premium unlocks the full cockpit — own your crypto, manage it from one interface, keep all your earnings. XRPL DEX trading (44 pairs with Quick Swap and Advanced order book), Stellar DEX trading (13 pairs), unlimited exchange connections, unlimited blockchain addresses across all 24 chains, complete transaction history, CSV import, unlimited price alerts, full Recommendations Hub with personalized yield optimization that surfaces opportunities you'd otherwise miss, Statement Insights that compare your bank rates vs. on-chain yields, extended Whale Alerts with custom thresholds, Technical Analysis with all indicators and up to 10 years of chart data, and personalized Crypto News that surfaces articles matching the assets you hold. Choose monthly ($29/mo) or annual ($199/yr) to also unlock complete tax reports. Your security level is your choice — cold wallet, hot wallet, hardware or phone signing.",
       },
       {
         q: "Can I use Soil vaults without Premium?",
@@ -532,6 +532,14 @@ const faqGroups = [
         a: "CryptoOwnBank charges no platform fees for using the Token Manager, DEX Trading, DCA Orders, or Send & Receive on either chain. The only cost is the network fee — approximately 0.00001 XRP per transaction on XRPL, or 0.00001 XLM (100 stroops) on Stellar. Both are a fraction of a fraction of a penny. Compare that to $25–50 wire transfer fees, $5–15 stock trading commissions, or 1–3% exchange fees. These are two of the cheapest networks to transact on.",
       },
       {
+        q: "What is Crypto News?",
+        a: 'The <a href="/crypto-news" class="text-[#00A4E4] underline hover:no-underline">Crypto News</a> page aggregates the latest headlines from CoinDesk, CoinTelegraph, Decrypt, and The Block — the most trusted names in crypto journalism. Articles refresh every 15 minutes and open in a new tab to the original source. You can filter by source or search by keyword.',
+      },
+      {
+        q: "What is the 'For You' news section?",
+        a: "When you're logged in, the Crypto News page shows a personalized \"For You\" section at the top. It scans every article and matches it against the assets you actually hold in your wallets. If you own XRP, BTC, ETH, or any of 20+ supported assets, articles mentioning those assets are surfaced automatically with blue asset badges so you know exactly why it's relevant. It stays in one dedicated section — no pop-ups, no banners, no distractions elsewhere on the site. The information comes to you when you're ready for it.",
+      },
+      {
         q: "What are Whale Alerts?",
         a: "Whale Alerts is real-time monitoring of large XRP and RLUSD transfers on the XRP Ledger. The system watches for transactions of 1 million XRP or more, and 500,000 RLUSD or more. You see the amount, direction, and identified wallets (e.g. Binance, Ripple, Kraken, Bitstamp) in real time — so you know when big players are moving funds. Free users see the last 24 hours of whale activity; Premium and Pro users see extended history.",
       },
@@ -777,7 +785,7 @@ export default function FAQ() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <SeoHead
         title="FAQ — CryptoOwnBank | Frequently Asked Questions"
-        description="Get answers about CryptoOwnBank — portfolio tracking across 24 blockchains, RLUSD yield vaults, cold wallet security, whale alerts, technical analysis, exchange API keys, stablecoins, and more."
+        description="Get answers about CryptoOwnBank — portfolio tracking across 24 blockchains, RLUSD yield vaults, cold wallet security, crypto news, whale alerts, technical analysis, exchange API keys, stablecoins, and more."
         path="/faq"
         jsonLd={faqJsonLd}
       />

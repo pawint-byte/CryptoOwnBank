@@ -65,6 +65,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     audienceTier: "all",
   },
   {
+    title: "New: Crypto News — Headlines That Match Your Holdings",
+    description: "We just launched something we've been working on: Crypto News.\n\nIt's a dedicated news page that pulls the latest headlines from CoinDesk, CoinTelegraph, Decrypt, and The Block — refreshed every 15 minutes.\n\nBut here's the part that matters: when you're logged in, a personalized \"For You\" section appears at the top. It scans every article and matches it against the assets you actually hold. If you own XRP, BTC, ETH, SOL, or any of 20+ supported assets, relevant articles surface automatically with asset badges so you know exactly why it matters to you.\n\nNo pop-ups. No banners. No notifications cluttering your dashboard. The news lives on its own page — you go there when you're ready, and the information is waiting.\n\nThis is free for everyone. The personalized \"For You\" matching works for all logged-in users regardless of subscription tier.\n\nYou'll find Crypto News in the sidebar under Market & Yields.",
+    ctaLabel: "Check Out Crypto News",
+    ctaUrl: "https://cryptoownbank.com/crypto-news",
+    audienceTier: "all",
+  },
+  {
     title: "XLS-66 Validator Update — Here's Where We Stand",
     description: "Quick update on the XLS-66 amendment vote:\n\nXLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) are both in the validator voting phase. You can track live progress directly on the XLS-66 page — we pull data straight from the XRPL every 10 minutes.\n\nWhat to do while we wait:\n\n📋 Complete your readiness checklist — make sure your wallet, Xaman, and trustlines are set up\n🧮 Try the yield calculator — model potential earnings at different APR rates\n📖 Read \"What is XLS-66 & How Does It Work?\" on the lending page\n\nWhen validators hit 80% for 2 consecutive weeks on rippled 3.1.0+, the feature activates automatically — and CryptoOwnBank will be ready from day one.\n\nNo action required on your end other than being prepared. We'll notify you the moment it goes live.",
     ctaLabel: "Track Validator Progress",
