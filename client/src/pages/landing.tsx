@@ -179,7 +179,7 @@ const howItWorks = [
     icon: Coins,
     title: "Deposit to Yield Vaults",
     description:
-      "Send RLUSD into Soil's fixed-yield pools (already earning 5–8%). Your position earns yield daily — withdraw your full position anytime through Soil.",
+      "Send RLUSD into Soil's fixed-yield pools (already earning 5–8%). Your position earns yield daily — watch it grow in real-time on the live Yield Earnings Tracker. Withdraw your full position anytime through Soil.",
     detail:
       "RLUSD is Ripple's regulated stablecoin pegged 1:1 to USD. Soil Protocol lends it to institutional borrowers and passes yield back to you.",
   },

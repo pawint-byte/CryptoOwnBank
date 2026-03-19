@@ -262,7 +262,7 @@ const faqGroups = [
     items: [
       {
         q: "What's included in the free plan?",
-        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), 1 exchange connection, 1 blockchain address, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, 1 price alert, and 7 days of transaction history. Upgrade to Premium to unlock DEX trading on both XRPL (44 pairs) and Stellar (13 pairs), full Recommendations Hub with Best in Class rankings, personalized staking guides, DeFi comparisons, portfolio search/filter/sort, unlimited alerts, Statement Insights, and full transaction history. Enough to get started and see the value on the free tier.",
+        a: "Free users get Soil vault access (deposit RLUSD, earn yield, manual withdrawals), live Yield Earnings Tracker with compound projections, 1 exchange connection, 1 blockchain address, basic Recommendations Hub overview (see what yield opportunities exist for your assets), yield calculator, 1 price alert, and 7 days of transaction history. Upgrade to Premium to unlock DEX trading on both XRPL (44 pairs) and Stellar (13 pairs), full Recommendations Hub with Best in Class rankings, personalized staking guides, DeFi comparisons, portfolio search/filter/sort, unlimited alerts, Statement Insights, and full transaction history. Enough to get started and see the value on the free tier.",
       },
       {
         q: "What do I get with Premium?",
@@ -309,8 +309,12 @@ const faqGroups = [
         a: "Set a target price for any supported crypto (XRP, BTC, ETH, SOL, ADA, and more). Choose whether you want to be notified when the price goes above or below your target. Our system checks prices every 60 seconds and sends you an email notification when your alert triggers. Free users can have 1 active alert; Premium users get unlimited alerts.",
       },
       {
+        q: "What is the Yield Earnings Tracker?",
+        a: "When you have active Soil vault deposits, a live Yield Earnings Tracker appears on your dashboard showing exactly how much you've earned — Today, This Month, and All Time — with the numbers ticking upward in real-time. It also shows compound projections at 1 Year, 5 Years, and 10 Years based on your actual deposited amounts and APR rates, assuming you reinvest your earnings monthly. The tracker reinforces the core promise: you keep 100% of your yield with no platform fees. It's on both the main Dashboard and the OwnBank dashboard so it's the first thing you see when you log in.",
+      },
+      {
         q: "What is the Yield Calculator?",
-        a: "The Yield Calculator is a free public tool (no login required) that lets you estimate how much you'd earn by depositing RLUSD into Soil vaults. Enter any amount, choose Treasury (5.2% APR) or CREDIT+ (8.0% APR), and toggle between simple and compound interest to see projected daily, weekly, monthly, and yearly earnings. Try it at /yield-calculator.",
+        a: 'The <a href="/yield-calculator" class="text-[#00A4E4] underline hover:no-underline">Yield Calculator</a> is a free public tool (no login required) that lets you estimate how much you\'d earn by depositing RLUSD into Soil vaults. Enter any amount, choose Treasury (5.2% APR) or CREDIT+ (8.0% APR), and toggle between simple and compound interest to see projected daily, weekly, monthly, and yearly earnings.',
       },
       {
         q: "Can I export my tax report as a PDF?",

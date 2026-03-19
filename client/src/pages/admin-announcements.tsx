@@ -65,6 +65,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     audienceTier: "all",
   },
   {
+    title: "New: Live Yield Earnings Tracker — Watch Your Money Grow",
+    description: "Your dashboard just got more powerful.\n\nIf you have RLUSD deposited in a Soil vault, you'll now see a live Yield Earnings Tracker right on your dashboard — both the main Dashboard and the OwnBank page.\n\nHere's what it shows:\n\n💰 Today — how much you've earned so far today\n📅 This Month — your earnings for the current month\n📈 All Time — total interest earned since your first deposit\n\nThe numbers tick upward in real-time, with a live per-second rate so you can literally watch your money grow.\n\nBut here's the part that really matters: Compound Projections.\n\nBased on your actual deposited amounts and APR rates, the tracker shows what you'd earn at 1 Year, 5 Years, and 10 Years — assuming you reinvest your earnings monthly. This is the compound effect: your interest earns interest, and the numbers get very real very fast.\n\nNo platform fees. No middleman. You keep 100% of every dollar you see on that tracker.\n\nThis feature is free for all members with active vault deposits. If you haven't deposited yet, this is your sign — connect your wallet, deposit RLUSD into a Soil vault, and watch the counter start ticking.",
+    ctaLabel: "See Your Earnings Live",
+    ctaUrl: "https://cryptoownbank.com/ownbank",
+    audienceTier: "all",
+  },
+  {
     title: "New: Crypto News — Headlines That Match Your Holdings",
     description: "We just launched something we've been working on: Crypto News.\n\nIt's a dedicated news page that pulls the latest headlines from CoinDesk, CoinTelegraph, Decrypt, and The Block — refreshed every 15 minutes.\n\nBut here's the part that matters: when you're logged in, a personalized \"For You\" section appears at the top. It scans every article and matches it against the assets you actually hold. If you own XRP, BTC, ETH, SOL, or any of 20+ supported assets, relevant articles surface automatically with asset badges so you know exactly why it matters to you.\n\nNo pop-ups. No banners. No notifications cluttering your dashboard. The news lives on its own page — you go there when you're ready, and the information is waiting.\n\nThis is free for everyone. The personalized \"For You\" matching works for all logged-in users regardless of subscription tier.\n\nYou'll find Crypto News in the sidebar under Market & Yields.",
     ctaLabel: "Check Out Crypto News",
