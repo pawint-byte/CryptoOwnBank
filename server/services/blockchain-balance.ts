@@ -100,6 +100,7 @@ const COINGECKO_IDS: Record<string, string> = {
   ATH: "aethir",
   DAG: "constellation-labs",
   FLR: "flare-networks",
+  WFLR: "flare-networks",
   KAS: "kaspa",
   MINA: "mina-protocol",
   NXRA: "allianceblock-nexera",
@@ -1550,13 +1551,14 @@ export async function getPolygonBalance(address: string): Promise<ChainBalance[]
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon";
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
   ethereum: { name: "Ethereum", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   solana: { name: "Solana", symbol: "SOL", addressPattern: "^[1-9A-HJ-NP-Za-km-z]{43,44}$", example: "DRpb..." },
   xrp: { name: "XRP Ledger", symbol: "XRP", addressPattern: "^r[1-9A-HJ-NP-Za-km-z]{24,34}$", example: "rXXX..." },
+  flare: { name: "Flare", symbol: "FLR", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   dogecoin: { name: "Dogecoin", symbol: "DOGE", addressPattern: "^D[1-9A-HJ-NP-Za-km-z]{33}$", example: "D7Y..." },
   litecoin: { name: "Litecoin", symbol: "LTC", addressPattern: "^(L|M|ltc1)", example: "ltc1q..." },
   cardano: { name: "Cardano", symbol: "ADA", addressPattern: "^addr1", example: "addr1..." },
@@ -1589,6 +1591,8 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getSolanaBalance(address);
     case "xrp":
       return getXrpBalance(address);
+    case "flare":
+      return getFlareBalance(address);
     case "dogecoin":
       return getDogeBalance(address);
     case "litecoin":
@@ -1641,7 +1645,7 @@ export function detectCorrectChain(storedChain: SupportedChain, address: string)
     return null;
   }
   const priorityOrder: SupportedChain[] = [
-    "bitcoin", "ethereum", "solana", "xrp", "ton", "litecoin", "dogecoin",
+    "bitcoin", "ethereum", "solana", "xrp", "flare", "ton", "litecoin", "dogecoin",
     "tron", "cardano", "algorand", "cosmos", "hedera", "polkadot",
     "stellar", "vechain", "cronos", "nervos", "zilliqa", "digibyte",
     "casper", "verge", "avalanche", "xdc", "polygon",
@@ -1654,6 +1658,72 @@ export function detectCorrectChain(storedChain: SupportedChain, address: string)
     }
   }
   return null;
+}
+
+export async function getFlareBalance(address: string): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  const FLARE_RPC = "https://flare-api.flare.network/ext/C/rpc";
+  const WFLR_CONTRACT = "0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d";
+
+  try {
+    const nativeRes = await fetch(FLARE_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getBalance",
+        params: [address, "latest"],
+      }),
+    });
+    const nativeData = await nativeRes.json();
+    if (nativeData.result) {
+      const wei = BigInt(nativeData.result);
+      const flr = Number(wei / 10n ** 12n) / 1e6;
+      if (flr > 0) {
+        const prices = await getPrices(["FLR"]);
+        balances.push({
+          symbol: "FLR",
+          balance: flr,
+          usdValue: flr * (prices.FLR || 0),
+        });
+      }
+    }
+  } catch (e) {
+    console.log(`Flare native balance error for ${address.slice(0, 12)}...:`, e);
+  }
+
+  try {
+    const balanceOfData = "0x70a08231" + address.slice(2).toLowerCase().padStart(64, "0");
+    const wflrRes = await fetch(FLARE_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "eth_call",
+        params: [{ to: WFLR_CONTRACT, data: balanceOfData }, "latest"],
+      }),
+    });
+    const wflrData = await wflrRes.json();
+    if (wflrData.result && wflrData.result !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+      const wei = BigInt(wflrData.result);
+      const wflr = Number(wei / 10n ** 12n) / 1e6;
+      if (wflr > 0) {
+        const prices = await getPrices(["FLR"]);
+        balances.push({
+          symbol: "WFLR",
+          balance: wflr,
+          usdValue: wflr * (prices.FLR || 0),
+        });
+      }
+    }
+  } catch (e) {
+    console.log(`Flare WFLR balance error for ${address.slice(0, 12)}...:`, e);
+  }
+
+  console.log(`Flare: found ${balances.length} assets for ${address.slice(0, 12)}...`);
+  return balances;
 }
 
 export async function getTonBalance(address: string): Promise<ChainBalance[]> {
