@@ -1959,17 +1959,17 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
-                  <SelectItem value="flare">Flare (FLR)</SelectItem>
-                  <SelectItem value="stellar">Stellar (XLM)</SelectItem>
-                  <SelectItem value="ethereum">Ethereum</SelectItem>
-                  <SelectItem value="solana">Solana</SelectItem>
+                  <SelectItem value="avalanche">Avalanche</SelectItem>
                   <SelectItem value="bitcoin">Bitcoin</SelectItem>
                   <SelectItem value="cardano">Cardano</SelectItem>
-                  <SelectItem value="polkadot">Polkadot</SelectItem>
                   <SelectItem value="cosmos">Cosmos</SelectItem>
-                  <SelectItem value="avalanche">Avalanche</SelectItem>
+                  <SelectItem value="ethereum">Ethereum</SelectItem>
+                  <SelectItem value="flare">Flare (FLR)</SelectItem>
                   <SelectItem value="hedera">Hedera</SelectItem>
+                  <SelectItem value="polkadot">Polkadot</SelectItem>
+                  <SelectItem value="solana">Solana</SelectItem>
+                  <SelectItem value="stellar">Stellar (XLM)</SelectItem>
+                  <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
