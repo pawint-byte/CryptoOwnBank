@@ -995,7 +995,7 @@ export default function Landing() {
               </div>
               <div>
                 <span className="text-lg font-semibold" data-testid="text-brand-name">CryptoOwnBank</span>
-                <span className="hidden sm:inline text-xs text-muted-foreground ml-2">Be Your Own Bank</span>
+                <span className="hidden sm:inline text-xs text-muted-foreground ml-2">Value Flows Free. You Own the Flow.</span>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
@@ -2547,6 +2547,7 @@ export default function Landing() {
                 <Wallet className="h-5 w-5 text-[#00A4E4]" />
                 <span className="font-semibold text-gray-200">CryptoOwnBank</span>
               </div>
+              <p className="text-[10px] italic text-gray-500 mb-2">Value Flows Free. You Own the Flow.</p>
               <p className="text-xs leading-relaxed">
                 Your non-custodial crypto command center. Track portfolios, earn yield on RLUSD, and manage taxes — all without giving up your keys.
               </p>

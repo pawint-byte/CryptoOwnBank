@@ -337,7 +337,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">CryptoOwnBank</span>
-            <span className="text-xs text-muted-foreground">Portfolio & Yield</span>
+            <span className="text-xs text-muted-foreground">Value Flows Free. You Own the Flow.</span>
           </div>
         </div>
       </SidebarHeader>
