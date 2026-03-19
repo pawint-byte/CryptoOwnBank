@@ -143,6 +143,21 @@ export default function AdminAnnouncements() {
 
   const canSend = title.trim() && description.trim();
 
+  const sentTitles = new Set(announcements.map((a) => a.title));
+
+  const sortedDrafts = [...SAVED_DRAFTS].sort((a, b) => {
+    const aSent = sentTitles.has(a.title);
+    const bSent = sentTitles.has(b.title);
+    if (aSent !== bSent) return aSent ? 1 : -1;
+    return 0;
+  });
+
+  const sortedAnnouncements = [...announcements].sort((a, b) => {
+    const dateA = a.sentAt ? new Date(a.sentAt).getTime() : 0;
+    const dateB = b.sentAt ? new Date(b.sentAt).getTime() : 0;
+    return dateB - dateA;
+  });
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-6">
       <div className="flex items-center gap-3">
@@ -163,17 +178,19 @@ export default function AdminAnnouncements() {
                     <FileText className="h-4 w-4" />
                     Ready-to-Send Drafts
                   </CardTitle>
-                  <CardDescription>{SAVED_DRAFTS.length} pre-written announcements — click one to load it</CardDescription>
+                  <CardDescription>
+                    {SAVED_DRAFTS.length} drafts — {SAVED_DRAFTS.filter(d => !sentTitles.has(d.title)).length} not yet sent
+                  </CardDescription>
                 </div>
                 {showDrafts ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </div>
             </CardHeader>
             {showDrafts && (
               <CardContent className="space-y-2">
-                {SAVED_DRAFTS.map((draft, i) => (
+                {sortedDrafts.map((draft, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between gap-3 rounded-md border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                    className={`flex items-center justify-between gap-3 rounded-md border p-3 cursor-pointer transition-colors ${sentTitles.has(draft.title) ? "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 opacity-75" : "border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10"}`}
                     onClick={() => {
                       setTitle(draft.title);
                       setDescription(draft.description);
@@ -185,11 +202,30 @@ export default function AdminAnnouncements() {
                     }}
                     data-testid={`draft-${i}`}
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{draft.title}</p>
                       <p className="text-xs text-muted-foreground line-clamp-1">{draft.description.split("\n")[0]}</p>
                     </div>
-                    <Badge variant="outline" className="shrink-0 text-[10px]">{draft.audienceTier}</Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {(() => {
+                        const sentAnn = announcements.find((a) => a.title === draft.title);
+                        if (sentAnn) {
+                          return (
+                            <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600">
+                              <CheckCircle className="h-2.5 w-2.5 mr-1" />
+                              Sent {sentAnn.sentAt ? new Date(sentAnn.sentAt).toLocaleDateString() : ""}
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600">
+                            <Clock className="h-2.5 w-2.5 mr-1" />
+                            Not sent
+                          </Badge>
+                        );
+                      })()}
+                      <Badge variant="outline" className="shrink-0 text-[10px]">{draft.audienceTier}</Badge>
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -358,8 +394,11 @@ export default function AdminAnnouncements() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Send History</CardTitle>
-              <CardDescription>{announcements.length} announcement{announcements.length !== 1 ? "s" : ""} sent</CardDescription>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                Send History
+              </CardTitle>
+              <CardDescription>{announcements.length} announcement{announcements.length !== 1 ? "s" : ""} sent — newest first</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -368,29 +407,36 @@ export default function AdminAnnouncements() {
                 <p className="text-sm text-muted-foreground">No announcements sent yet.</p>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                  {announcements.map((ann) => (
-                    <div key={ann.id} className="rounded-md border p-3 space-y-1.5" data-testid={`card-announcement-${ann.id}`}>
+                  {sortedAnnouncements.map((ann, idx) => (
+                    <div key={ann.id} className={`rounded-md border p-3 space-y-1.5 ${idx === 0 ? "border-emerald-500/30 bg-emerald-500/5" : ""}`} data-testid={`card-announcement-${ann.id}`}>
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-medium text-sm leading-tight">{ann.title}</p>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {ann.audienceTier}
-                        </Badge>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {idx === 0 && (
+                            <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 border-emerald-500/30" variant="outline">
+                              Latest
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-[10px]">
+                            {ann.audienceTier}
+                          </Badge>
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2">{ann.description}</p>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                          {ann.totalSent}
+                        <span className="flex items-center gap-1 text-emerald-600">
+                          <CheckCircle className="h-3 w-3" />
+                          {ann.totalSent} delivered
                         </span>
                         {(ann.totalFailed ?? 0) > 0 && (
-                          <span className="flex items-center gap-1">
-                            <XCircle className="h-3 w-3 text-red-500" />
-                            {ann.totalFailed}
+                          <span className="flex items-center gap-1 text-red-500">
+                            <XCircle className="h-3 w-3" />
+                            {ann.totalFailed} failed
                           </span>
                         )}
-                        <span>of {ann.totalRecipients}</span>
-                        <span className="ml-auto">
-                          {ann.sentAt ? new Date(ann.sentAt).toLocaleDateString() : ""}
+                        <span>of {ann.totalRecipients} recipients</span>
+                        <span className="ml-auto font-medium">
+                          {ann.sentAt ? new Date(ann.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
                         </span>
                       </div>
                     </div>
