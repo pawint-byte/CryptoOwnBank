@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SeoHead } from "@/components/seo-head";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import memberFlrStaking from "@assets/IMG_0107_1773957022639.png";
 import {
   Flame,
   Wallet,
@@ -26,6 +27,8 @@ import {
   Target,
   Clock,
   Coins,
+  Users,
+  ArrowRight,
 } from "lucide-react";
 
 interface FlareWalletInfo {
@@ -595,6 +598,52 @@ export default function FlareFtso() {
                   <li>CryptoOwnBank reads your on-chain data directly — FLR balance, WFLR balance, delegation status, estimated rewards, and FlareDrop progress.</li>
                   <li>Check back anytime to monitor your earnings. We never access your keys — read-only tracking only.</li>
                 </ol>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-4">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                <Users className="h-4 w-4 text-indigo-500" />
+                Member Spotlight: From 3.39% to Full FTSO Yield
+              </p>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="md:w-44 shrink-0">
+                  <img
+                    src={memberFlrStaking}
+                    alt="Member's FLR staking position showing 25,486 FLR earning 3.39% APY on a centralized exchange"
+                    className="rounded-lg border shadow-sm w-full md:w-44"
+                    data-testid="img-member-spotlight"
+                  />
+                </div>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>
+                    One of our members had <strong>25,486 FLR</strong> staked on a centralized exchange, earning <strong>3.39% APY</strong> — about <strong>$0.13 per week</strong> in rewards. That's roughly $6.75 per year on a $212 position.
+                  </p>
+                  <p>
+                    After discovering the difference, they decided to unstake, move their FLR to Bifrost Wallet, wrap to WFLR, and delegate to FTSO providers. The potential difference:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 my-2">
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-2.5 text-center">
+                      <p className="text-xs text-muted-foreground">Exchange Staking</p>
+                      <p className="text-lg font-bold text-red-500">3.39%</p>
+                      <p className="text-xs text-muted-foreground">~$7/yr on 25K FLR</p>
+                    </div>
+                    <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-2.5 text-center">
+                      <p className="text-xs text-muted-foreground">FTSO Delegation</p>
+                      <p className="text-lg font-bold text-green-500">5–15%</p>
+                      <p className="text-xs text-muted-foreground">~$10–32/yr + FlareDrop</p>
+                    </div>
+                  </div>
+                  <p>
+                    Beyond the higher APY, FTSO delegation keeps your tokens in <strong>your own wallet</strong> — not on an exchange. You hold the keys. Plus, wrapped WFLR qualifies for the monthly <strong>FlareDrop</strong>, which is an entirely separate reward stream on top of delegation yield.
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <ArrowRight className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                      This member followed the 5-step guide above to make the switch. The whole process takes about 15 minutes.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
