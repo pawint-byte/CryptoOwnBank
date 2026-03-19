@@ -8,6 +8,8 @@ import { AllocationChart } from "@/components/allocation-chart";
 import { TransactionsTable } from "@/components/transactions-table";
 import { RecommendationsHub } from "@/components/recommendations-hub";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { YieldEarningsTracker } from "@/components/yield-earnings-tracker";
+import { useXrplStore } from "@/lib/xrpl-store";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -81,6 +83,8 @@ export default function Dashboard() {
       balance: parseFloat(p.quantity) || 0,
       usdValue: p.currentValue || 0,
     }));
+
+  const { vaultDeposits } = useXrplStore();
 
   const hasData = walletAddresses.length > 0 || exchangeBalances.length > 0;
 
@@ -235,6 +239,8 @@ export default function Dashboard() {
           isLoading={isLoading}
         />
       </div>
+
+      <YieldEarningsTracker vaultDeposits={vaultDeposits} />
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <PortfolioChart

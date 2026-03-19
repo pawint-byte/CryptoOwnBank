@@ -64,6 +64,7 @@ import {
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
 import { SocialShare } from "@/components/social-share";
+import { YieldEarningsTracker } from "@/components/yield-earnings-tracker";
 
 function truncateAddress(addr: string): string {
   if (addr.length <= 12) return addr;
@@ -677,6 +678,8 @@ export default function OwnBankDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <YieldEarningsTracker vaultDeposits={vaultDeposits} compact />
 
       {showDepositPrompt && (
         <Alert className="border-emerald-500/40 bg-emerald-500/5">
