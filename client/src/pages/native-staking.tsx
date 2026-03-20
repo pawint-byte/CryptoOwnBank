@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,8 @@ import {
   ArrowRight,
   BarChart3,
   Layers,
+  ArrowRightLeft,
+  LineChart,
 } from "lucide-react";
 
 interface StakingChain {
