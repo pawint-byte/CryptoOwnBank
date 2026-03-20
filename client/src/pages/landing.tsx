@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import heroVideoUrl from "@assets/CryptoOwnBank__1-Min_Pitch_(Security_&_Control)_1080p_caption_1774019224403.mp4";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SeoHead } from "@/components/seo-head";
 import {
@@ -127,11 +128,6 @@ const xrplToolsComparison = [
   },
 ];
 
-const heroStats = [
-  { label: "RLUSD Yield", value: "5–8%", sub: "Fixed APR" },
-  { label: "Your Principal", value: "100%", sub: "Always Locked" },
-  { label: "Your Keys", value: "Yours", sub: "Non-Custodial" },
-];
 
 const whyPoints = [
   {
@@ -1100,70 +1096,20 @@ export default function Landing() {
               </div>
 
               <div className="relative">
-                <div className="relative rounded-xl border bg-card p-6 shadow-lg">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-10 w-10 rounded-full bg-[#00A4E4]/10 flex items-center justify-center">
-                        <Wallet className="h-5 w-5 text-[#00A4E4]" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Connected Wallet</p>
-                        <p className="font-mono text-sm font-medium" data-testid="text-demo-wallet">rN7dP...k4Xm9</p>
-                      </div>
-                      <div className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-medium">
-                        Connected
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      {heroStats.map((stat, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-muted/60 text-center">
-                          <p className="text-xs text-muted-foreground">{stat.label}</p>
-                          <p className="text-lg font-bold text-[#00A4E4]">{stat.value}</p>
-                          <p className="text-xs text-muted-foreground">{stat.sub}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                        <div className="flex items-center gap-2">
-                          <Landmark className="h-4 w-4 text-emerald-600" />
-                          <div>
-                            <p className="text-sm font-medium">Soil Treasury Vault</p>
-                            <p className="text-xs text-muted-foreground">US Treasury backed</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-emerald-600">5.2% APR</p>
-                          <p className="text-xs text-muted-foreground">$10,000 deposited</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-blue-600" />
-                          <div>
-                            <p className="text-sm font-medium">Soil Private Credit</p>
-                            <p className="text-xs text-muted-foreground">Private credit backed</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-blue-600">8.0% APR</p>
-                          <p className="text-xs text-muted-foreground">$5,000 deposited</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Earned Interest (This Month)</p>
-                        <p className="text-xl font-bold text-emerald-600">+$76.44</p>
-                      </div>
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                        Withdraw Interest
-                      </Button>
-                    </div>
-                  </div>
+                <div className="relative rounded-xl border bg-card shadow-lg overflow-hidden">
+                  <video
+                    className="w-full h-auto rounded-xl"
+                    controls
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    poster="/logo.png"
+                    data-testid="video-hero-pitch"
+                  >
+                    <source src={heroVideoUrl} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
                 <div className="absolute -z-10 -inset-4 bg-gradient-to-r from-[#00A4E4]/20 to-emerald-500/20 rounded-xl blur-2xl opacity-50" />
               </div>
