@@ -1,5 +1,248 @@
 export type CustodyType = "on_chain" | "custodial";
 
+const WALLET_LINKS: Record<string, string> = {
+  "MetaMask": "https://metamask.io",
+  "MetaMask (ERC-20)": "https://metamask.io",
+  "MetaMask (Optimism network)": "https://metamask.io",
+  "MetaMask (Arbitrum network)": "https://metamask.io",
+  "MetaMask (Fantom network)": "https://metamask.io",
+  "MetaMask (ETC network)": "https://metamask.io",
+  "MetaMask (Base network)": "https://metamask.io",
+  "MetaMask (Songbird RPC)": "https://metamask.io",
+  "MetaMask (Flare RPC)": "https://metamask.io",
+  "MetaMask (Chiliz Chain)": "https://metamask.io",
+  "MetaMask (Filecoin EVM)": "https://metamask.io",
+  "Ledger Nano X": "https://www.ledger.com",
+  "Ledger Nano X (via Ronin)": "https://www.ledger.com",
+  "Trezor": "https://trezor.io",
+  "ELLIPAL": "https://www.ellipal.com",
+  "Phantom": "https://phantom.app",
+  "Phantom (Solana)": "https://phantom.app",
+  "Solflare": "https://solflare.com",
+  "Trust Wallet": "https://trustwallet.com",
+  "Coinbase Wallet": "https://www.coinbase.com/wallet",
+  "Keplr": "https://wallet.keplr.app",
+  "Leap Wallet": "https://leapwallet.io",
+  "Xaman (XUMM)": "https://xaman.app",
+  "HashPack": "https://www.hashpack.app",
+  "Pera Wallet": "https://perawallet.app",
+  "ADALite": "https://adalite.io",
+  "Yoroi Wallet": "https://yoroi-wallet.com",
+  "Tonkeeper": "https://tonkeeper.com",
+  "MyTonWallet": "https://mytonwallet.io",
+  "MyNearWallet": "https://app.mynearwallet.com",
+  "NEAR Wallet (browser extension)": "https://mynearwallet.com",
+  "Sui Wallet (browser extension)": "https://suiwallet.com",
+  "Petra Wallet": "https://petra.app",
+  "Martian Wallet": "https://martianwallet.xyz",
+  "Polkadot.js": "https://polkadot.js.org/apps",
+  "Nova Wallet": "https://novawallet.io",
+  "Bifrost Wallet": "https://bifrostwallet.com",
+  "Compass Wallet": "https://compass.sh",
+  "Auro Wallet": "https://www.aurowallet.com",
+  "Stargazer Wallet": "https://stargazer.network",
+  "Natrium (mobile)": "https://natrium.io",
+  "Nault (web)": "https://nault.cc",
+  "Electron Cash": "https://electroncash.org",
+  "Monero GUI Wallet": "https://www.getmonero.org/downloads",
+  "Cake Wallet": "https://cakewallet.com",
+  "Feather Wallet": "https://featherwallet.org",
+  "Firefly Wallet": "https://firefly.iota.org",
+  "MultiversX Web Wallet": "https://wallet.multiversx.com",
+  "xPortal App": "https://xportal.com",
+  "Casper Wallet (browser extension)": "https://www.casperwallet.io",
+  "Oasis Wallet": "https://wallet.oasis.io",
+  "Kaspa Web Wallet": "https://kaspa.org",
+  "KDX Desktop Wallet": "https://kdx.app",
+  "Tangem": "https://tangem.com",
+  "XDC Web Wallet": "https://wallet.xdc.org",
+  "Crypto.com DeFi Wallet": "https://crypto.com/defi-wallet",
+  "Coinomi": "https://www.coinomi.com",
+  "Ronin Wallet": "https://wallet.roninchain.com",
+  "Ravencoin Core Wallet": "https://ravencoin.org",
+  "DigiByte Core Wallet": "https://digibyte.org",
+  "World App": "https://worldcoin.org/download",
+  "Ice Wallet App": "https://ice.io",
+  "SubWallet": "https://subwallet.app",
+  "Plug Wallet": "https://plugwallet.ooo",
+  "NNS dApp (Internet Identity)": "https://nns.ic0.app",
+  "Leather (Hiro) Wallet": "https://leather.io",
+  "Xverse Wallet": "https://www.xverse.app",
+  "Flow Wallet (Lilico)": "https://lilico.app",
+  "Temple Wallet": "https://templewallet.com",
+  "Kukai Wallet": "https://wallet.kukai.app",
+  "fWallet": "https://pwawallet.fantom.network",
+  "XDEFI Wallet": "https://www.xdefi.io",
+  "Rainbow Wallet": "https://rainbow.me",
+  "Rabby Wallet": "https://rabby.io",
+  "Uniswap Wallet": "https://wallet.uniswap.org",
+  "Glif Wallet": "https://glif.io",
+  "JoyID Wallet": "https://app.joy.id",
+  "Neuron Wallet": "https://www.nervos.org/wallets",
+  "Harmony Chrome Extension": "https://staking.harmony.one",
+  "Cosmostation": "https://wallet.cosmostation.io",
+  "Polkadot.js (Bittensor network)": "https://polkadot.js.org/apps",
+  "Lattice Exchange": "https://lattice.exchange",
+  "SafePal": "https://www.safepal.com",
+};
+
+interface EcosystemInfo {
+  wallets: { name: string; link: string }[];
+  stakeable: boolean;
+  stakingNote?: string;
+}
+
+const ECOSYSTEM_WALLET_MAP: Record<string, EcosystemInfo> = {
+  ethereum: {
+    wallets: [
+      { name: "MetaMask", link: "https://metamask.io" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+      { name: "Rabby Wallet", link: "https://rabby.io" },
+    ],
+    stakeable: false,
+  },
+  solana: {
+    wallets: [
+      { name: "Phantom", link: "https://phantom.app" },
+      { name: "Solflare", link: "https://solflare.com" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: true,
+    stakingNote: "Solana tokens can often be staked via Phantom or Solflare",
+  },
+  cosmos: {
+    wallets: [
+      { name: "Keplr", link: "https://wallet.keplr.app" },
+      { name: "Leap Wallet", link: "https://leapwallet.io" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: true,
+    stakingNote: "Cosmos ecosystem tokens can typically be delegated to validators via Keplr or Leap",
+  },
+  polkadot: {
+    wallets: [
+      { name: "Polkadot.js", link: "https://polkadot.js.org/apps" },
+      { name: "Nova Wallet", link: "https://novawallet.io" },
+      { name: "SubWallet", link: "https://subwallet.app" },
+    ],
+    stakeable: true,
+    stakingNote: "Substrate-based tokens can usually be staked via Polkadot.js or Nova Wallet",
+  },
+  bitcoin: {
+    wallets: [
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+      { name: "Trezor", link: "https://trezor.io" },
+      { name: "ELLIPAL", link: "https://www.ellipal.com" },
+    ],
+    stakeable: false,
+  },
+  ton: {
+    wallets: [
+      { name: "Tonkeeper", link: "https://tonkeeper.com" },
+      { name: "MyTonWallet", link: "https://mytonwallet.io" },
+    ],
+    stakeable: true,
+    stakingNote: "TON tokens can be staked via Tonkeeper pool staking",
+  },
+  xrpl: {
+    wallets: [
+      { name: "Xaman (XUMM)", link: "https://xaman.app" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: false,
+  },
+  avalanche: {
+    wallets: [
+      { name: "Core Wallet", link: "https://core.app" },
+      { name: "MetaMask", link: "https://metamask.io" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: true,
+    stakingNote: "AVAX can be delegated to validators via Core Wallet",
+  },
+  near: {
+    wallets: [
+      { name: "MyNearWallet", link: "https://app.mynearwallet.com" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: true,
+    stakingNote: "NEAR tokens can be delegated to validators via MyNearWallet",
+  },
+  stellar: {
+    wallets: [
+      { name: "Lobstr", link: "https://lobstr.co" },
+      { name: "Solar Wallet", link: "https://solarwallet.io" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: false,
+  },
+  tron: {
+    wallets: [
+      { name: "TronLink", link: "https://www.tronlink.org" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: true,
+    stakingNote: "TRX can be frozen and delegated to Super Representatives via TronScan",
+  },
+  bsc: {
+    wallets: [
+      { name: "MetaMask", link: "https://metamask.io" },
+      { name: "Trust Wallet", link: "https://trustwallet.com" },
+      { name: "Ledger Nano X", link: "https://www.ledger.com" },
+    ],
+    stakeable: true,
+    stakingNote: "BNB can be staked via BNB Chain staking portal",
+  },
+};
+
+const TOKEN_ECOSYSTEM_HINTS: Record<string, string> = {
+  ATOM: "cosmos", OSMO: "cosmos", TIA: "cosmos", DYDX: "cosmos", AKT: "cosmos",
+  INJ: "cosmos", SEI: "cosmos", KAVA: "cosmos", FET: "cosmos", SCRT: "cosmos",
+  JUNO: "cosmos", EVMOS: "cosmos", STRD: "cosmos", REGEN: "cosmos",
+  SOL: "solana", RAY: "solana", JUP: "solana", PYTH: "solana", BONK: "solana",
+  ORCA: "solana", MNGO: "solana", RENDER: "solana", HNT: "solana", W: "solana",
+  JTO: "solana", TENSOR: "solana", WIF: "solana", BOME: "solana",
+  ETH: "ethereum", LINK: "ethereum", UNI: "ethereum", AAVE: "ethereum",
+  MKR: "ethereum", LDO: "ethereum", ENS: "ethereum", GRT: "ethereum",
+  SHIB: "ethereum", PEPE: "ethereum", SAND: "ethereum", MANA: "ethereum",
+  CRV: "ethereum", COMP: "ethereum", SNX: "ethereum", SUSHI: "ethereum",
+  "1INCH": "ethereum", BAL: "ethereum", PENDLE: "ethereum", ENA: "ethereum",
+  RPL: "ethereum", SSV: "ethereum", ANKR: "ethereum", BLUR: "ethereum",
+  DOT: "polkadot", KSM: "polkadot", GLMR: "polkadot", ASTR: "polkadot",
+  ACA: "polkadot", TAO: "polkadot", PEAQ: "polkadot", CKB: "polkadot",
+  BTC: "bitcoin", BCH: "bitcoin", LTC: "bitcoin", DOGE: "bitcoin",
+  KAS: "bitcoin", DGB: "bitcoin", RVN: "bitcoin",
+  TON: "ton", NOT: "ton",
+  XRP: "xrpl", XLM: "stellar",
+  AVAX: "avalanche", QI: "avalanche", JOE: "avalanche",
+  NEAR: "near",
+  TRX: "tron",
+  BNB: "bsc", CAKE: "bsc",
+  ARB: "ethereum", OP: "ethereum", IMX: "ethereum",
+  POL: "ethereum", MATIC: "ethereum",
+  VIRTUAL: "ethereum", ONDO: "ethereum", WLD: "ethereum",
+  QNT: "ethereum", JASMY: "ethereum", CHZ: "ethereum",
+  WOO: "ethereum", GALA: "ethereum", AXS: "ethereum",
+  LEO: "ethereum",
+};
+
+function getEcosystemFallback(symbol: string): EcosystemInfo | null {
+  const eco = TOKEN_ECOSYSTEM_HINTS[symbol];
+  if (eco && ECOSYSTEM_WALLET_MAP[eco]) return ECOSYSTEM_WALLET_MAP[eco];
+  return null;
+}
+
+function walletActionItems(walletNames: string[], symbol: string): ActionItem[] {
+  return walletNames.slice(0, 3).map(name => {
+    const link = WALLET_LINKS[name];
+    return {
+      text: `Set up ${name} to hold your ${symbol}`,
+      link: link || undefined,
+      custodyBadge: "on_chain" as CustodyType,
+    };
+  });
+}
+
 export interface StakingOption {
   platform: string;
   method: string;
@@ -1540,6 +1783,41 @@ export function evaluateAsset(
   }
 
   if (!knowledge) {
+    const ecosystem = getEcosystemFallback(symbol);
+    if (ecosystem && location === "exchange") {
+      const actions: ActionItem[] = [
+        { text: `Withdraw ${symbol} from ${provider} to your own wallet for self-custody`, custodyBadge: "on_chain" as CustodyType },
+        ...ecosystem.wallets.map(w => ({
+          text: `Set up ${w.name} to hold your ${symbol}`,
+          link: w.link,
+          custodyBadge: "on_chain" as CustodyType,
+        })),
+      ];
+      if (ecosystem.stakeable && ecosystem.stakingNote) {
+        actions.push({ text: ecosystem.stakingNote, custodyBadge: "on_chain" as CustodyType });
+      }
+      return {
+        symbol, name: displayName, type: "move_to_cold",
+        title: "Move to Self-Custody",
+        description: `${symbol} is on ${provider} (custodial). Move it to your own wallet for true ownership — ${ecosystem.wallets[0].name} is the recommended option.`,
+        currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
+        actionItems: actions,
+        custodyInfo: {
+          type: "custodial" as CustodyType,
+          explanation: `${provider} is custodial — move to your own wallet for true ownership`,
+        },
+      };
+    }
+    if (ecosystem && location === "cold_wallet") {
+      return {
+        symbol, name: displayName, type: "optimal", title: "Self-Custodied",
+        description: `${symbol} is safely in your own wallet on ${provider} — you control your keys.${ecosystem.stakeable && ecosystem.stakingNote ? ` ${ecosystem.stakingNote}.` : ""}`,
+        currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
+        actionItems: ecosystem.stakeable && ecosystem.stakingNote
+          ? [{ text: ecosystem.stakingNote, custodyBadge: "on_chain" as CustodyType }]
+          : [],
+      };
+    }
     return {
       symbol, name: displayName, type: "no_data", title: "No Data Available",
       description: `We don't have optimization data for ${symbol} yet. Your funds are ${location === "cold_wallet" ? `safely self-custodied on ${provider}` : location === "exchange" ? `on ${provider} — consider moving to a cold wallet for safety` : `in DeFi on ${provider}`}.`,
@@ -1845,7 +2123,7 @@ export function evaluateAsset(
           actionItems: [
             bestAnyExch?.link ? { text: `Move to ${bestAnyExch.exchange} for ${bestAnyExch.apyRange} APY (custodial)`, link: bestAnyExch.link, custodyBadge: "custodial" as CustodyType } : null,
             { text: "For true ownership, move to your cold wallet — no yield, but you own your assets", custodyBadge: "on_chain" as CustodyType },
-            knowledge.selfCustodyWallets ? { text: `Recommended self-custody wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
+            ...(knowledge.selfCustodyWallets ? walletActionItems(knowledge.selfCustodyWallets, symbol) : []),
           ].filter(Boolean) as ActionItem[],
           riskNote: exchangeCustodyNote,
           custodyInfo: {
@@ -1858,12 +2136,12 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "move_to_cold",
         title: "Move to Self-Custody",
-        description: `${symbol} is on ${provider} (custodial) with no yield available. Moving to your cold wallet gives you full ownership — your keys, your crypto.`,
+        description: `${symbol} is on ${provider} (custodial) with no yield available. Moving to your cold wallet gives you full ownership — your keys, your crypto.${knowledge.selfCustodyWallets?.[0] ? ` Use ${knowledge.selfCustodyWallets[0]} to manage it.` : ""}`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: [
-          { text: `Withdraw ${symbol} from ${provider} to your cold wallet`, custodyBadge: "on_chain" as CustodyType },
+          { text: `Withdraw ${symbol} from ${provider} to your own wallet`, custodyBadge: "on_chain" as CustodyType },
+          ...(knowledge.selfCustodyWallets ? walletActionItems(knowledge.selfCustodyWallets, symbol) : []),
           { text: "Self-custody protects against exchange hacks, freezes, or insolvency" },
-          knowledge.selfCustodyWallets ? { text: `Recommended self-custody wallets: ${knowledge.selfCustodyWallets.join(", ")}` } : null,
         ].filter(Boolean) as ActionItem[],
         custodyInfo: {
           type: "custodial" as CustodyType,
