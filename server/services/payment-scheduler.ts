@@ -535,18 +535,29 @@ let autoWithdrawInterval: NodeJS.Timeout | null = null;
 
 export function startPaymentScheduler(): void {
   if (schedulerInterval) return;
-  schedulerInterval = setInterval(async () => {
-    await processScheduledPayments();
-    await processDcaOrders();
-    await processLegacyPlans();
-  }, 60 * 60 * 1000);
+  const paymentOffsetMs = 90 * 60 * 1000;
+  const withdrawOffsetMs = 120 * 60 * 1000;
 
-  autoWithdrawInterval = setInterval(async () => {
-    await processAutoWithdrawals();
-  }, 2 * 60 * 60 * 1000);
+  setTimeout(() => {
+    processScheduledPayments().catch(() => {});
+    processDcaOrders().catch(() => {});
+    processLegacyPlans().catch(() => {});
+    schedulerInterval = setInterval(async () => {
+      await processScheduledPayments();
+      await processDcaOrders();
+      await processLegacyPlans();
+    }, 4 * 60 * 60 * 1000);
+  }, paymentOffsetMs);
 
-  console.log("[PaymentScheduler] Started — checking every 60 minutes (payments + DCA + legacy)");
-  console.log("[AutoWithdraw] Started — checking every 2 hours");
+  setTimeout(() => {
+    processAutoWithdrawals().catch(() => {});
+    autoWithdrawInterval = setInterval(async () => {
+      await processAutoWithdrawals();
+    }, 4 * 60 * 60 * 1000);
+  }, withdrawOffsetMs);
+
+  console.log("[PaymentScheduler] Started — checking every 4h, offset 90min (payments + DCA + legacy)");
+  console.log("[AutoWithdraw] Started — checking every 4h, offset 120min");
 }
 
 export function stopPaymentScheduler(): void {

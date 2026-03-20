@@ -175,12 +175,12 @@ export function getChainlinkTrackedSymbols(): string[] {
 }
 
 export function startMarketDataScheduler(hours: number): void {
-  console.log(`[market-data] Scheduler started — refreshing every ${hours} hours`);
+  const offsetMs = 30 * 60 * 1000;
+  console.log(`[market-data] Scheduler started — refreshing every ${hours}h, offset 30min`);
   setTimeout(async () => {
     await refreshAllMarketData().catch(err => console.error("[market-data] Initial refresh error:", err));
-  }, 10000);
-
-  setInterval(() => {
-    refreshAllMarketData().catch(err => console.error("[market-data] Scheduled refresh error:", err));
-  }, hours * 60 * 60 * 1000);
+    setInterval(() => {
+      refreshAllMarketData().catch(err => console.error("[market-data] Scheduled refresh error:", err));
+    }, hours * 60 * 60 * 1000);
+  }, offsetMs);
 }

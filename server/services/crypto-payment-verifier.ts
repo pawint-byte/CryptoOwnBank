@@ -867,14 +867,18 @@ let verifierInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startCryptoPaymentVerifier() {
   if (verifierInterval) return;
-  verifierInterval = setInterval(async () => {
-    try {
-      await verifyPendingPayments();
-    } catch (err) {
-      console.error("[crypto-verify] Verifier error:", err);
-    }
-  }, 30 * 60 * 1000);
-  console.log("[crypto-verify] Payment verifier started (runs every 30 minutes)");
+  const offsetMs = 60 * 60 * 1000;
+  setTimeout(() => {
+    verifyPendingPayments().catch(err => console.error("[crypto-verify] Initial check error:", err));
+    verifierInterval = setInterval(async () => {
+      try {
+        await verifyPendingPayments();
+      } catch (err) {
+        console.error("[crypto-verify] Verifier error:", err);
+      }
+    }, 4 * 60 * 60 * 1000);
+  }, offsetMs);
+  console.log("[crypto-verify] Payment verifier started (runs every 4h, offset 60min)");
 }
 
 export function stopCryptoPaymentVerifier() {

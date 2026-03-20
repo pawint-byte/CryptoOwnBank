@@ -8760,7 +8760,7 @@ export async function registerRoutes(
   seedPriceCache();
 
   const { startMarketDataScheduler } = await import("./services/market-data");
-  startMarketDataScheduler(2);
+  startMarketDataScheduler(4);
 
   const { startWhaleMonitor } = await import("./services/whale-monitor");
   startWhaleMonitor();
@@ -9034,59 +9034,63 @@ async function fetchCurrentPrices(assets: string[]): Promise<Record<string, numb
   }
 }
 
-function startPriceAlertChecker() {
-  setInterval(async () => {
-    try {
-      const activeAlerts = await storage.getActivePriceAlerts();
-      if (activeAlerts.length === 0) return;
+async function runPriceAlertCheck() {
+  try {
+    const activeAlerts = await storage.getActivePriceAlerts();
+    if (activeAlerts.length === 0) return;
 
-      const uniqueAssets = Array.from(new Set(activeAlerts.map((a) => a.asset)));
-      const prices = await fetchCurrentPrices(uniqueAssets);
+    const uniqueAssets = Array.from(new Set(activeAlerts.map((a) => a.asset)));
+    const prices = await fetchCurrentPrices(uniqueAssets);
 
-      if (Object.keys(prices).length === 0) return;
+    if (Object.keys(prices).length === 0) return;
 
-      for (const alert of activeAlerts) {
-        const currentPrice = prices[alert.asset.toUpperCase()];
-        if (currentPrice === undefined) continue;
+    for (const alert of activeAlerts) {
+      const currentPrice = prices[alert.asset.toUpperCase()];
+      if (currentPrice === undefined) continue;
 
-        const target = parseFloat(alert.targetPrice);
-        let triggered = false;
+      const target = parseFloat(alert.targetPrice);
+      let triggered = false;
 
-        if (alert.direction === "above" && currentPrice >= target) {
-          triggered = true;
-        } else if (alert.direction === "below" && currentPrice <= target) {
-          triggered = true;
-        }
+      if (alert.direction === "above" && currentPrice >= target) {
+        triggered = true;
+      } else if (alert.direction === "below" && currentPrice <= target) {
+        triggered = true;
+      }
 
-        if (triggered) {
-          await storage.markPriceAlertTriggered(alert.id);
+      if (triggered) {
+        await storage.markPriceAlertTriggered(alert.id);
 
-          try {
-            const [user] = await db
-              .select({ email: users.email })
-              .from(users)
-              .where(eq(users.id, alert.userId));
+        try {
+          const [user] = await db
+            .select({ email: users.email })
+            .from(users)
+            .where(eq(users.id, alert.userId));
 
-            if (user?.email) {
-              await sendPriceAlertEmail(
-                user.email,
-                alert.asset,
-                alert.targetPrice,
-                currentPrice.toFixed(4),
-                alert.direction
-              );
-            }
-          } catch (emailError) {
-            console.error("Failed to send price alert email:", emailError);
+          if (user?.email) {
+            await sendPriceAlertEmail(
+              user.email,
+              alert.asset,
+              alert.targetPrice,
+              currentPrice.toFixed(4),
+              alert.direction
+            );
           }
+        } catch (emailError) {
+          console.error("Failed to send price alert email:", emailError);
         }
       }
-    } catch (error) {
-      console.error("Price alert checker error:", error);
     }
-  }, 60 * 60 * 1000);
+  } catch (error) {
+    console.error("Price alert checker error:", error);
+  }
+}
 
-  console.log("Price alert checker started (runs every 60 minutes)");
+function startPriceAlertChecker() {
+  setTimeout(() => {
+    runPriceAlertCheck();
+    setInterval(runPriceAlertCheck, 4 * 60 * 60 * 1000);
+  }, 0);
+  console.log("Price alert checker started (runs every 4h, offset 0min)");
 
   import("./services/crypto-payment-verifier").then(({ startCryptoPaymentVerifier }) => {
     startCryptoPaymentVerifier();

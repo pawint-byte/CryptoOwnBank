@@ -258,9 +258,12 @@ async function checkAndExpireAddons() {
 }
 
 export function startSubscriptionRenewalService() {
-  console.log("[renewal] Starting subscription renewal service (checks every hour)");
-  setInterval(checkAndRenewSubscriptions, 60 * 60 * 1000);
-  setInterval(checkAndExpireAddons, 60 * 60 * 1000);
-  setTimeout(checkAndRenewSubscriptions, 30_000);
-  setTimeout(checkAndExpireAddons, 35_000);
+  const offsetMs = 150 * 60 * 1000;
+  console.log("[renewal] Starting subscription renewal service (checks every 4h, offset 150min)");
+  setTimeout(() => {
+    checkAndRenewSubscriptions().catch(() => {});
+    checkAndExpireAddons().catch(() => {});
+    setInterval(checkAndRenewSubscriptions, 4 * 60 * 60 * 1000);
+    setInterval(checkAndExpireAddons, 4 * 60 * 60 * 1000);
+  }, offsetMs);
 }
