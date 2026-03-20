@@ -813,6 +813,7 @@ export async function sendLegacyBeneficiaryDelivery(
               <td style="padding: 8px; color: #64748b;">${w.chain}</td>
               <td style="padding: 8px; color: #64748b; font-family: monospace; font-size: 11px;">${w.address ? (w.address.length > 20 ? w.address.slice(0, 10) + "..." + w.address.slice(-8) : w.address) : "—"}</td>
             </tr>
+            ${w.notes ? `<tr style="border-bottom: 1px solid #f1f5f9;"><td colspan="3" style="padding: 4px 8px 8px; color: #64748b; font-size: 11px; white-space: pre-wrap; background: #f8fafc;">📝 ${w.notes}</td></tr>` : ""}
           `).join("")}
         </tbody>
       </table>

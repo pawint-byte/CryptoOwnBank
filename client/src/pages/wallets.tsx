@@ -1814,6 +1814,20 @@ export default function Wallets() {
     },
   });
 
+  const autoNotesMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/wallets/auto-notes", {});
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: `Notes added to ${data.wallets?.length || 0} wallets` });
+    },
+    onError: () => {
+      toast({ title: "Failed to auto-fill notes", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (values: WalletFormValues) => {
     createMutation.mutate(values);
   };
@@ -1987,16 +2001,30 @@ export default function Wallets() {
         </div>
         <div className="flex gap-2">
           {userWallets.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => syncAllMutation.mutate()}
-              disabled={syncAllMutation.isPending}
-              data-testid="button-sync-all"
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", syncAllMutation.isPending && "animate-spin")} />
-              Sync All
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncAllMutation.mutate()}
+                disabled={syncAllMutation.isPending}
+                data-testid="button-sync-all"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", syncAllMutation.isPending && "animate-spin")} />
+                Sync All
+              </Button>
+              {userWallets.some(w => !w.notes) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => autoNotesMutation.mutate()}
+                  disabled={autoNotesMutation.isPending}
+                  data-testid="button-auto-notes"
+                >
+                  <StickyNote className={cn("h-4 w-4 mr-2", autoNotesMutation.isPending && "animate-spin")} />
+                  {autoNotesMutation.isPending ? "Filling..." : "Auto-fill Notes"}
+                </Button>
+              )}
+            </>
           )}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>

@@ -6205,6 +6205,111 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/wallets/auto-notes", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userWallets = await storage.getWalletsByUser(userId);
+      const updated: string[] = [];
+
+      const chainNotes: Record<string, (w: any) => string> = {
+        xrp: (w) => {
+          const lines = ["App: Xaman (XUMM)", "URL: https://xumm.app", "Extension: Xaman browser extension or mobile app"];
+          if (w.label?.toLowerCase().includes("ledger")) lines.push("Cold wallet: Ledger Nano — connect via USB");
+          return lines.join("\n");
+        },
+        stellar: (w) => {
+          const lines = ["App: StellarTerm or Lobstr", "URL: https://stellarterm.com / https://lobstr.co", "Extension: Freighter wallet (browser extension)"];
+          if (w.label?.toLowerCase().includes("ledger")) lines.push("Cold wallet: Ledger Nano — connect via USB");
+          return lines.join("\n");
+        },
+        hedera: (w) => {
+          const lines = ["App: HashPack", "URL: https://www.hashpack.app", "Extension: HashPack browser extension"];
+          if (w.label?.toLowerCase().includes("stader") || w.label?.toLowerCase().includes("staking")) lines.push("Staking: Wipro node via HashPack");
+          if (w.label?.toLowerCase().includes("ledger")) lines.push("Cold wallet: Ledger Nano — connect via HashPack");
+          return lines.join("\n");
+        },
+        cardano: (w) => {
+          const lines: string[] = [];
+          const lbl = (w.label || "").toLowerCase();
+          if (lbl.includes("adalite") || lbl.includes("ledger")) {
+            lines.push("App: ADALite", "URL: https://adalite.io", "Cold wallet: Ledger Nano — connect via USB to ADALite");
+            lines.push("Staking: Delegated — check pool saturation periodically");
+          } else if (lbl.includes("eternl") || lbl.includes("ccvault")) {
+            lines.push("App: Eternl (formerly ccvault)", "URL: https://eternl.io", "Extension: Eternl browser extension");
+          } else if (lbl.includes("coinbase")) {
+            lines.push("App: Coinbase", "URL: https://coinbase.com", "Note: Check if ADA staking is enabled on Coinbase");
+          } else if (lbl.includes("uphold")) {
+            lines.push("App: Uphold", "URL: https://uphold.com", "Note: Uphold may offer limited staking — check Earn section");
+          } else {
+            lines.push("App: ADALite or Eternl recommended", "URL: https://adalite.io / https://eternl.io");
+          }
+          return lines.join("\n");
+        },
+        solana: (w) => {
+          const lines = ["App: Phantom or Solflare", "URL: https://phantom.app / https://solflare.com", "Extension: Phantom or Solflare browser extension"];
+          if (w.label?.toLowerCase().includes("ledger")) lines.push("Cold wallet: Ledger Nano — connect via Phantom");
+          return lines.join("\n");
+        },
+        ethereum: (w) => {
+          const lines = ["App: MetaMask or Rabby", "URL: https://metamask.io", "Extension: MetaMask browser extension"];
+          if (w.label?.toLowerCase().includes("ledger")) lines.push("Cold wallet: Ledger Nano — connect via MetaMask");
+          return lines.join("\n");
+        },
+        bitcoin: (w) => {
+          const lines: string[] = [];
+          const lbl = (w.label || "").toLowerCase();
+          if (lbl.includes("ledger") || lbl.includes("cold")) {
+            lines.push("App: Ledger Live", "URL: https://ledger.com", "Cold wallet: Ledger Nano — connect via USB");
+          } else if (lbl.includes("trezor")) {
+            lines.push("App: Trezor Suite", "URL: https://trezor.io/trezor-suite", "Cold wallet: Trezor — connect via USB");
+          } else {
+            lines.push("App: Ledger Live or Electrum", "URL: https://ledger.com / https://electrum.org");
+          }
+          return lines.join("\n");
+        },
+        polkadot: (w) => ["App: Polkadot.js or Nova Wallet", "URL: https://polkadot.js.org/apps", "Extension: Polkadot.js browser extension"].join("\n"),
+        cosmos: (w) => ["App: Keplr", "URL: https://wallet.keplr.app", "Extension: Keplr browser extension"].join("\n"),
+        avalanche: (w) => ["App: Core Wallet", "URL: https://core.app", "Extension: Core browser extension or MetaMask"].join("\n"),
+        polygon: (w) => ["App: MetaMask (Polygon network)", "URL: https://metamask.io", "Extension: MetaMask — add Polygon RPC"].join("\n"),
+        algorand: (w) => ["App: Pera Wallet", "URL: https://perawallet.app", "Extension: Pera Wallet mobile app"].join("\n"),
+        tron: (w) => ["App: TronLink", "URL: https://www.tronlink.org", "Extension: TronLink browser extension"].join("\n"),
+        zilliqa: (w) => {
+          const lines = ["App: Zillet.io", "URL: https://zillet.io", "Extension: ZilPay browser extension"];
+          lines.push("Staking: Native delegation via Zillet dashboard");
+          return lines.join("\n");
+        },
+        flare: (w) => ["App: Bifrost Wallet or MetaMask", "URL: https://bifrostwallet.com", "Extension: MetaMask — add Flare RPC (chainId 14)"].join("\n"),
+        near: (w) => ["App: NEAR Wallet or MyNearWallet", "URL: https://app.mynearwallet.com", "Extension: NEAR Wallet browser extension"].join("\n"),
+        cronos: (w) => ["App: Crypto.com DeFi Wallet or MetaMask", "URL: https://crypto.com/defi-wallet", "Extension: MetaMask — add Cronos RPC"].join("\n"),
+      };
+
+      for (const w of userWallets) {
+        if (w.notes && w.notes.trim().length > 0) continue;
+        const generator = chainNotes[w.chain];
+        if (!generator) continue;
+
+        const balances = await storage.getWalletBalances(w.id);
+        const totalBal = balances.reduce((sum, b) => sum + parseFloat(b.usdValue || "0"), 0);
+        let note = generator(w);
+        if (totalBal > 0) {
+          note += `\nApprox value: $${totalBal.toFixed(2)}`;
+        }
+        const assetList = balances.filter(b => parseFloat(b.balance) > 0).map(b => `${b.assetSymbol}: ${parseFloat(b.balance).toFixed(4)}`);
+        if (assetList.length > 0) {
+          note += `\nHoldings: ${assetList.join(", ")}`;
+        }
+
+        await db.update(wallets).set({ notes: note }).where(eq(wallets.id, w.id));
+        updated.push(w.label || w.chain);
+      }
+
+      res.json({ message: `Auto-populated notes for ${updated.length} wallets`, wallets: updated });
+    } catch (error) {
+      console.error("Auto-populate notes error:", error);
+      res.status(500).json({ message: "Failed to auto-populate notes" });
+    }
+  });
+
   app.patch("/api/xaman-connections/:id/label", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
