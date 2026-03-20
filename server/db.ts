@@ -12,9 +12,9 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  max: 30,
+  idleTimeoutMillis: 20000,
+  connectionTimeoutMillis: 15000,
 });
 
 pool.on("error", (err) => {

@@ -979,16 +979,22 @@ export async function registerRoutes(
         "hsl(var(--chart-5))",
       ];
 
-      const dashPriceCacheRows = await db.select().from(priceCacheTable);
+      const [dashPriceCacheRows, allAssets] = await Promise.all([
+        db.select().from(priceCacheTable),
+        storage.getAllAssets(),
+      ]);
       const dashPriceLookup: Record<string, number> = {};
       for (const row of dashPriceCacheRows) {
         dashPriceLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
       }
+      const assetPriceLookup: Record<string, number> = {};
+      for (const a of allAssets) {
+        if (a.currentPrice) assetPriceLookup[a.symbol.toUpperCase()] = parseFloat(a.currentPrice);
+      }
 
       for (const pos of positionsData) {
         if (pos.isAddressed) continue;
-        const asset = await storage.getAsset(pos.assetSymbol);
-        let currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+        let currentPrice = assetPriceLookup[pos.assetSymbol.toUpperCase()] || 0;
         if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
           currentPrice = dashPriceLookup[pos.assetSymbol.toUpperCase()] || 0;
         }
@@ -1061,10 +1067,11 @@ export async function registerRoutes(
       const positionsData = await storage.getPositionsByUser(userId);
       const accounts = await storage.getAccountsByUser(userId);
       const accountMap = new Map(accounts.map(a => [a.id, a]));
+      const allAssetsForPos = await storage.getAllAssets();
+      const assetPriceMap = new Map(allAssetsForPos.map(a => [a.symbol.toUpperCase(), a.currentPrice ? parseFloat(a.currentPrice) : 0]));
       const enriched = [];
       for (const pos of positionsData) {
-        const asset = await storage.getAsset(pos.assetSymbol);
-        const currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+        const currentPrice = assetPriceMap.get(pos.assetSymbol.toUpperCase()) || 0;
         const qty = parseFloat(pos.quantity);
         const value = qty * currentPrice;
         const costBasis = parseFloat(pos.totalCostBasis);
@@ -2701,18 +2708,22 @@ export async function registerRoutes(
         "hsl(var(--chart-5))",
       ];
 
-      const priceCacheRows = await db.select().from(priceCacheTable);
+      const [priceCacheRows, allAssetsPortfolio] = await Promise.all([
+        db.select().from(priceCacheTable),
+        storage.getAllAssets(),
+      ]);
       const priceCacheLookup: Record<string, number> = {};
       for (const row of priceCacheRows) {
         priceCacheLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
       }
+      const portfolioAssetPrices: Record<string, number> = {};
+      for (const a of allAssetsPortfolio) {
+        if (a.currentPrice) portfolioAssetPrices[a.symbol.toUpperCase()] = parseFloat(a.currentPrice);
+      }
 
       const positionsWithMarket = await Promise.all(
         positionsData.map(async (pos, index) => {
-          const asset = await storage.getAsset(pos.assetSymbol);
-          let currentPrice = asset?.currentPrice 
-            ? parseFloat(asset.currentPrice) 
-            : 0;
+          let currentPrice = portfolioAssetPrices[pos.assetSymbol.toUpperCase()] || 0;
           if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
             currentPrice = priceCacheLookup[pos.assetSymbol.toUpperCase()] || 0;
           }
@@ -2754,8 +2765,7 @@ export async function registerRoutes(
 
         if (usdVal === 0 && bal > 0) {
           const sym = wb.assetSymbol.toUpperCase();
-          const asset = await storage.getAsset(sym);
-          let resolvedPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+          let resolvedPrice = portfolioAssetPrices[sym] || 0;
           if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
             resolvedPrice = priceCacheLookup[sym] || 0;
           }

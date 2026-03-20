@@ -190,7 +190,7 @@ async function connectAndSubscribe() {
       });
 
       whaleClient.on("disconnected", () => {
-        console.log("[whale-monitor] Disconnected, will reconnect in 30s");
+        console.log("[whale-monitor] Disconnected, will reconnect in 2min");
         scheduleReconnect();
       });
 
@@ -209,7 +209,7 @@ async function connectAndSubscribe() {
   scheduleReconnect(60_000);
 }
 
-function scheduleReconnect(delay = 30_000) {
+function scheduleReconnect(delay = 120_000) {
   if (reconnectTimer) clearTimeout(reconnectTimer);
   reconnectTimer = setTimeout(() => {
     if (isRunning) {
