@@ -659,11 +659,8 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
     if (ada <= 0) return [];
 
     const prices = await getPrices(["ADA"]);
-    const balances: ChainBalance[] = [{
-      symbol: "ADA",
-      balance: ada,
-      usdValue: ada * (prices.ADA || 0),
-    }];
+    const balances: ChainBalance[] = [];
+    let isDelegated = false;
 
     if (entry.stake_address) {
       try {
@@ -675,16 +672,13 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
         if (stakeResp.ok) {
           const stakeData = await stakeResp.json();
           const stakeEntry = Array.isArray(stakeData) ? stakeData[0] : null;
-          if (stakeEntry) {
-            const delegated = parseInt(stakeEntry.delegated_pool ? stakeEntry.total_balance || "0" : "0");
-            const staked = delegated / 1e6 - ada;
-            if (staked > 0.01) {
-              balances.push({
-                symbol: "ADA (staked)",
-                balance: staked,
-                usdValue: staked * (prices.ADA || 0),
-              });
-            }
+          if (stakeEntry && stakeEntry.delegated_pool) {
+            isDelegated = true;
+            balances.push({
+              symbol: "ADA (staked)",
+              balance: ada,
+              usdValue: ada * (prices.ADA || 0),
+            });
             const rewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
             if (rewards > 0.01) {
               balances.push({
@@ -696,6 +690,14 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
           }
         }
       } catch {}
+    }
+
+    if (!isDelegated) {
+      balances.push({
+        symbol: "ADA",
+        balance: ada,
+        usdValue: ada * (prices.ADA || 0),
+      });
     }
 
     console.log(`Cardano scan: found ${balances.length} assets for ${address.slice(0, 15)}...`);
