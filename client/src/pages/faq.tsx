@@ -113,6 +113,31 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Exchange Risks & Exit Strategies",
+    items: [
+      {
+        q: "What happens when an exchange delists a token I hold?",
+        a: "Exchanges regularly delist tokens due to declining liquidity, regulatory changes, or business decisions — and they typically give 10–30 days notice. If you don't act, your remaining tokens are usually auto-converted to fiat (often at unfavorable rates) or frozen. This is a core risk of custodial platforms: you don't control the rules. When you receive a delisting notice, you have three options: (1) Withdraw to a self-custody wallet — if the token has a native wallet app or is an ERC-20 token (MetaMask, Ledger), move it off the exchange while you still can. (2) Sell on the exchange — convert to a stablecoin or another asset before the deadline, on your terms. (3) Do nothing — the exchange converts it automatically, usually to your default fiat currency. Option 1 is always preferred if the token has real value and a viable self-custody option.",
+      },
+      {
+        q: "How do I know where to move a delisted token?",
+        a: "It depends on what blockchain the token lives on. ERC-20 tokens (like BONE, LRC, BADGER, REN) can go to any Ethereum wallet — MetaMask, Ledger, or any hardware wallet with Ethereum support. Native chain tokens (like SGB/Songbird) need a wallet that supports that specific chain — for SGB, that's Bifrost Wallet (same ecosystem as Flare). Before withdrawing, always check: (1) Does the exchange allow withdrawals for this token? Some freeze withdrawals before delisting. (2) What network/chain is the token on? Choose the right network when withdrawing. (3) Is the gas fee worth it? If you hold $5 worth of an ERC-20 token and gas is $10, it's cheaper to sell. CryptoOwnBank's Recommendations Hub identifies which of your assets are on exchanges and suggests self-custody alternatives, so you're already prepared before a delisting happens.",
+      },
+      {
+        q: "What happened with Ledger dropping Siacoin — can wallets delist too?",
+        a: "Yes — and this is an important distinction. Hardware wallet companies like Ledger manage which blockchain apps are available in their app catalog. When Ledger removed the Sia app, users could no longer manage SC through Ledger Live, even though the coins were still on the blockchain at their address. The coins aren't lost — they're still on-chain — but accessing them requires using a different wallet tool (like Sia-UI) with your recovery phrase. This is why CryptoOwnBank recommends documenting access methods in your wallet notes and Legacy Plan. If an app or wallet drops support, your notes tell you (or your beneficiary) exactly how to recover access using alternative tools. The lesson: your keys control your crypto, but the app you use to access those keys can change. Always have a backup plan documented.",
+      },
+      {
+        q: "How can I protect myself from exchange and platform risks?",
+        a: "Five rules that cover most situations: (1) Don't leave large balances on exchanges longer than needed — buy, then withdraw to your own wallet. (2) Use CryptoOwnBank's wallet notes to document how to access each wallet, what app or extension is needed, and any cold wallet details. This is critical for your Legacy Plan. (3) Diversify where your assets sit — don't keep everything on one exchange or in one wallet. (4) Pay attention to exchange emails about delistings, maintenance, or policy changes — they're easy to miss but have real deadlines. (5) Prefer on-chain staking and DeFi over exchange earn programs — when you stake natively (like HBAR on HashPack or ADA on ADALite), no company can change the terms or freeze your position. CryptoOwnBank's Recommendations Hub flags every asset sitting on an exchange and shows you on-chain alternatives where you keep full control.",
+      },
+      {
+        q: "Should I keep anything on an exchange?",
+        a: "Only what you're actively trading or need for liquidity. Think of an exchange like a cash register — you keep enough in it to operate, but you don't store your savings there. For long-term holds, move to a cold wallet (Ledger, ELLIPAL, CypheRock). For yield, use on-chain staking or protocols like Soil where you keep your keys. For active trading, keep a working balance on the exchange but withdraw profits regularly. The FTX collapse proved that even the biggest exchanges can fail overnight. Uphold regularly delists tokens. Coinbase changes earn rates. When your assets are in your own wallet, none of those decisions affect you.",
+      },
+    ],
+  },
+  {
     heading: "Yield & Soil Mechanics",
     items: [
       {
