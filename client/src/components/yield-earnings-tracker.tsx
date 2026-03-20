@@ -50,14 +50,9 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
   const prevEarnings = useRef<{ today: number; month: number; allTime: number }>({ today: 0, month: 0, allTime: 0 });
   const [animating, setAnimating] = useState<{ today: boolean; month: boolean; allTime: boolean }>({ today: false, month: false, allTime: false });
 
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   const hasLocalDeposits = vaultDeposits.length > 0 && vaultDeposits.some((d) => d.principal > 0);
   const hasSoilData = soilSummary && parseFloat(soilSummary.currentPrincipal) > 0;
-  if (!hasLocalDeposits && !hasSoilData) return null;
+  const hasData = hasLocalDeposits || hasSoilData;
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -93,7 +88,7 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
     } else {
       thisMonthInterest = allTimeInterest;
     }
-  } else {
+  } else if (hasLocalDeposits) {
     for (const dep of vaultDeposits) {
       const totalInterest = calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
       allTimeInterest += totalInterest;
@@ -130,6 +125,12 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
   const roundedAllTime = Math.round(allTimeInterest * 1000) / 1000;
 
   useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!hasData) return;
     const prev = prevEarnings.current;
     const newAnimating = {
       today: prev.today !== 0 && Math.abs(roundedToday - prev.today) > 0.001,
@@ -143,7 +144,9 @@ export function YieldEarningsTracker({ vaultDeposits, soilSummary, compact }: Yi
       const timer = setTimeout(() => setAnimating({ today: false, month: false, allTime: false }), 600);
       return () => clearTimeout(timer);
     }
-  }, [tick, roundedToday, roundedMonth, roundedAllTime]);
+  }, [tick, roundedToday, roundedMonth, roundedAllTime, hasData]);
+
+  if (!hasData) return null;
 
   const earnPerSecond = totalPrincipal * (weightedApr / 100) / 365 / 86400;
 
