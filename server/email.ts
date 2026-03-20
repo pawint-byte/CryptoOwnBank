@@ -745,7 +745,7 @@ export async function sendLegacyBeneficiaryDelivery(
   seedPhraseInstructions: string | null,
   additionalNotes: string | null,
   splitPieces: string | null,
-  walletSummary: Array<{ name: string; chain: string; address?: string }>,
+  walletSummary: Array<{ name: string; chain: string; address?: string; notes?: string }>,
   assetSummary: Array<{ asset: string; balance: string; value?: string }>,
 ) {
   const walletLabels: Record<string, string> = {

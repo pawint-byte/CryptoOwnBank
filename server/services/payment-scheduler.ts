@@ -137,6 +137,7 @@ async function processLegacyPlans(): Promise<void> {
               name: w.label || w.address?.slice(0, 12) + "..." || "Unnamed",
               chain: w.chain || "Unknown",
               address: w.address || undefined,
+              notes: w.notes || undefined,
             }));
 
             const balances = await storage.getWalletBalancesByUser(plan.userId);

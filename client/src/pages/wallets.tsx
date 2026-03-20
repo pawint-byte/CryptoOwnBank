@@ -89,7 +89,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban, Shuffle, Shield, Snowflake } from "lucide-react";
+import { Smartphone, Link2, LinkIcon, Loader2, ArrowRightLeft, Ban, Shuffle, Shield, Snowflake, StickyNote } from "lucide-react";
 import { CUSTODY_KNOWLEDGE } from "@/lib/custody-knowledge";
 import { COLD_WALLETS } from "@/lib/cold-wallet-data";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
@@ -1350,6 +1350,8 @@ export default function Wallets() {
   const [renameValue, setRenameValue] = useState("");
   const [renamingConnId, setRenamingConnId] = useState<number | null>(null);
   const [renameConnValue, setRenameConnValue] = useState("");
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [notesValue, setNotesValue] = useState("");
 
   function getChainPrefix(chain: string): string {
     if (chain === "xrp") return "XRP";
@@ -1378,6 +1380,18 @@ export default function Wallets() {
       setRenameValue("");
     } catch {
       toast({ title: "Rename Failed", variant: "destructive" });
+    }
+  }
+
+  async function handleSaveNotes(walletId: string) {
+    try {
+      await apiRequest("PATCH", `/api/wallets/${walletId}/notes`, { notes: notesValue });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Notes Saved" });
+      setEditingNotesId(null);
+      setNotesValue("");
+    } catch {
+      toast({ title: "Failed to save notes", variant: "destructive" });
     }
   }
 
@@ -2823,6 +2837,49 @@ export default function Wallets() {
                                       Last synced: {format(new Date(w.lastSyncAt), "MMM d, yyyy h:mm a")}
                                     </p>
                                   )}
+                                  <div className="mt-2 border-t pt-2">
+                                    {editingNotesId === w.id ? (
+                                      <div className="space-y-1.5">
+                                        <textarea
+                                          value={notesValue}
+                                          onChange={e => setNotesValue(e.target.value)}
+                                          className="w-full text-xs bg-muted/50 border rounded-md p-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary min-h-[60px]"
+                                          placeholder="How to access, password hints, staking details, connection method..."
+                                          autoFocus
+                                          data-testid={`input-notes-${w.id}`}
+                                        />
+                                        <div className="flex gap-1.5">
+                                          <Button size="sm" className="h-6 text-xs px-2" onClick={() => handleSaveNotes(w.id)} data-testid={`button-save-notes-${w.id}`}>
+                                            Save
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => { setEditingNotesId(null); setNotesValue(""); }}>
+                                            Cancel
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-start gap-1.5 group">
+                                        <StickyNote className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+                                        {w.notes ? (
+                                          <button
+                                            className="text-xs text-muted-foreground text-left whitespace-pre-wrap hover:text-foreground transition-colors cursor-pointer"
+                                            onClick={() => { setEditingNotesId(w.id); setNotesValue(w.notes || ""); }}
+                                            data-testid={`button-edit-notes-${w.id}`}
+                                          >
+                                            {w.notes}
+                                          </button>
+                                        ) : (
+                                          <button
+                                            className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors italic cursor-pointer"
+                                            onClick={() => { setEditingNotesId(w.id); setNotesValue(""); }}
+                                            data-testid={`button-add-notes-${w.id}`}
+                                          >
+                                            Add notes (access method, password hints, staking info...)
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}

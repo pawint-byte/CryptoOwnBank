@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import multer from "multer";
@@ -6183,6 +6183,25 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Rename wallet error:", error);
       res.status(500).json({ message: "Failed to rename wallet" });
+    }
+  });
+
+  app.patch("/api/wallets/:id/notes", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      const { notes } = req.body;
+      if (typeof notes !== "string") {
+        return res.status(400).json({ message: "Notes must be a string" });
+      }
+      await db.update(wallets).set({ notes: notes.trim() || null }).where(eq(wallets.id, req.params.id));
+      res.json({ message: "Wallet notes updated" });
+    } catch (error) {
+      console.error("Update wallet notes error:", error);
+      res.status(500).json({ message: "Failed to update wallet notes" });
     }
   });
 
