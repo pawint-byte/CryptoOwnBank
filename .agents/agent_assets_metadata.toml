@@ -6,3 +6,9 @@ id = "5SYBb-a6hAnLWmo2e9Esi"
 uri = "file://attached_assets/cryptoownbank_thumbnail.png"
 type = "image"
 title = "CryptoOwnBank - SCF Project Thumbnail"
+
+[[outputs]]
+id = "54wLVQmy-7g8Tw02B6Lup"
+uri = "file://attached_assets/cryptoownbank-logo-v2.png"
+type = "image"
+title = "Option 2 — Vault + Blockchain Logo"
