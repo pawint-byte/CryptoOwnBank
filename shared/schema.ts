@@ -1064,3 +1064,17 @@ export const housingIndices = pgTable("housing_indices", {
 ]);
 
 export type HousingIndex = typeof housingIndices.$inferSelect;
+
+export const dismissedRecommendations = pgTable("dismissed_recommendations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  assetSymbol: varchar("asset_symbol", { length: 20 }).notNull(),
+  walletLabel: varchar("wallet_label", { length: 200 }),
+  reason: varchar("reason", { length: 50 }).default("addressed"),
+  dismissedAt: timestamp("dismissed_at").defaultNow(),
+}, (table) => [
+  index("idx_dismissed_recs_user").on(table.userId),
+  unique("uq_dismissed_recs_user_asset_wallet").on(table.userId, table.assetSymbol, table.walletLabel),
+]);
+
+export type DismissedRecommendation = typeof dismissedRecommendations.$inferSelect;

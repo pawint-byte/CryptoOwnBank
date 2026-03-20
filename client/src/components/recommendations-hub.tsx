@@ -24,7 +24,7 @@ import {
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
   CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
   Zap, Lock, Sparkles, Globe, Building2, Trophy, Crown, ShieldCheck,
-  HardDrive, ShoppingCart, Star, Cpu, CreditCard, Wifi, WifiOff,
+  HardDrive, ShoppingCart, Star, Cpu, CreditCard, Wifi, WifiOff, EyeOff, Eye, Check,
 } from "lucide-react";
 
 interface WalletData {
@@ -103,6 +103,46 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     queryKey: ["/api/subscription/limits"],
   });
   const isFullHub = subLimits?.recommendationsHub === "full" || subLimits?.tier === "premium" || subLimits?.tier === "pro";
+
+  const { data: dismissedRecs } = useQuery<{ id: number; assetSymbol: string; walletLabel: string | null; reason: string }[]>({
+    queryKey: ["/api/dismissed-recommendations"],
+  });
+
+  const dismissMutation = useMutation({
+    mutationFn: (data: { assetSymbol: string; walletLabel?: string; reason?: string }) =>
+      apiRequest("POST", "/api/dismissed-recommendations", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dismissed-recommendations"] });
+      toast({ title: "Recommendation dismissed — marked as addressed" });
+    },
+    onError: () => toast({ title: "Failed to dismiss", variant: "destructive" }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/dismissed-recommendations/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dismissed-recommendations"] });
+      toast({ title: "Recommendation restored" });
+    },
+    onError: () => toast({ title: "Failed to restore", variant: "destructive" }),
+  });
+
+  const isDismissed = (symbol: string, location?: string) => {
+    if (!dismissedRecs) return false;
+    return dismissedRecs.some(d =>
+      d.assetSymbol === symbol.toUpperCase() &&
+      (!d.walletLabel || d.walletLabel === location)
+    );
+  };
+
+  const getDismissedId = (symbol: string, location?: string) => {
+    if (!dismissedRecs) return null;
+    const match = dismissedRecs.find(d =>
+      d.assetSymbol === symbol.toUpperCase() &&
+      (!d.walletLabel || d.walletLabel === location)
+    );
+    return match?.id || null;
+  };
 
   const refreshMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/market-data/refresh", {}),
@@ -188,11 +228,13 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
     recsBySymbol[r.symbol].push(r);
   }
 
-  const totalMissedAnnual = recommendations.reduce((sum, r) => sum + r.missedAnnual, 0);
   const scamRecs = recommendations.filter(r => r.type === "scam_warning");
-  const actionableRecs = recommendations.filter(r =>
+  const allActionableRecs = recommendations.filter(r =>
     r.type !== "optimal" && r.type !== "no_action" && r.type !== "no_data" && r.type !== "scam_warning"
   );
+  const actionableRecs = allActionableRecs.filter(r => !isDismissed(r.symbol, r.currentLocation));
+  const dismissedActionable = allActionableRecs.filter(r => isDismissed(r.symbol, r.currentLocation));
+  const totalMissedAnnual = actionableRecs.reduce((sum, r) => sum + r.missedAnnual, 0);
   const optimalRecs = recommendations.filter(r => r.type === "optimal");
 
   const stakeableOwned = getStakeableAssets().filter(a => {
@@ -295,10 +337,35 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
                   {actionableRecs
                     .sort((a, b) => b.missedAnnual - a.missedAnnual)
                     .map((rec, i) => (
-                      <RecommendationCard key={`${rec.symbol}-${rec.currentLocation}-${i}`} rec={rec} />
+                      <RecommendationCard
+                        key={`${rec.symbol}-${rec.currentLocation}-${i}`}
+                        rec={rec}
+                        onDismiss={(symbol, location) => dismissMutation.mutate({ assetSymbol: symbol, walletLabel: location })}
+                        isPending={dismissMutation.isPending}
+                      />
                     ))}
                 </div>
               </>
+            )}
+
+            {dismissedActionable.length > 0 && (
+              <details className="mb-6">
+                <summary className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors mb-3">
+                  <EyeOff className="h-4 w-4" />
+                  {dismissedActionable.length} addressed / hidden recommendation{dismissedActionable.length > 1 ? "s" : ""}
+                </summary>
+                <div className="space-y-3 opacity-60">
+                  {dismissedActionable.map((rec, i) => (
+                    <RecommendationCard
+                      key={`dismissed-${rec.symbol}-${rec.currentLocation}-${i}`}
+                      rec={rec}
+                      onRestore={(id) => restoreMutation.mutate(id)}
+                      dismissedId={getDismissedId(rec.symbol, rec.currentLocation)}
+                      isPending={restoreMutation.isPending}
+                    />
+                  ))}
+                </div>
+              </details>
             )}
 
             {optimalRecs.length > 0 && (
@@ -1243,7 +1310,7 @@ function ColdWalletTab({ heldAssets, isFullHub }: { heldAssets: string[]; isFull
   );
 }
 
-function RecommendationCard({ rec }: { rec: AssetRecommendation }) {
+function RecommendationCard({ rec, onDismiss, onRestore, dismissedId, isPending }: { rec: AssetRecommendation; onDismiss?: (symbol: string, location?: string) => void; onRestore?: (id: number) => void; dismissedId?: number | null; isPending?: boolean }) {
   const typeConfig: Record<string, { icon: React.ReactNode; borderColor: string; bgColor: string }> = {
     move_to_cold: { icon: <Shield className="h-5 w-5 text-blue-500" />, borderColor: "border-blue-300 dark:border-blue-700", bgColor: "bg-blue-50/50 dark:bg-blue-950/20" },
     split_strategy: { icon: <ArrowRightLeft className="h-5 w-5 text-purple-500" />, borderColor: "border-purple-300 dark:border-purple-700", bgColor: "bg-purple-50/50 dark:bg-purple-950/20" },
@@ -1341,6 +1408,29 @@ function RecommendationCard({ rec }: { rec: AssetRecommendation }) {
               <Shield className="h-3 w-3 mt-0.5 shrink-0" />
               {rec.riskNote}
             </p>
+          )}
+
+          {onDismiss && !dismissedId && (
+            <button
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-3 transition-colors"
+              onClick={() => onDismiss(rec.symbol, rec.currentLocation)}
+              disabled={isPending}
+              data-testid={`button-dismiss-${rec.symbol}`}
+            >
+              <Check className="h-3 w-3" />
+              I've addressed this — hide it
+            </button>
+          )}
+          {onRestore && dismissedId && (
+            <button
+              className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-3 transition-colors"
+              onClick={() => onRestore(dismissedId)}
+              disabled={isPending}
+              data-testid={`button-restore-${rec.symbol}`}
+            >
+              <Eye className="h-3 w-3" />
+              Restore this recommendation
+            </button>
           )}
         </div>
       </div>

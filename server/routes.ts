@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import multer from "multer";
@@ -8070,6 +8070,51 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Flare network stats error:", error);
       res.status(500).json({ message: "Failed to fetch Flare network stats" });
+    }
+  });
+
+  app.get("/api/dismissed-recommendations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const dismissed = await db.select().from(dismissedRecommendations).where(eq(dismissedRecommendations.userId, userId));
+      res.json(dismissed);
+    } catch (error) {
+      console.error("Get dismissed recommendations error:", error);
+      res.status(500).json({ message: "Failed to get dismissed recommendations" });
+    }
+  });
+
+  app.post("/api/dismissed-recommendations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetSymbol, walletLabel, reason } = req.body;
+      if (!assetSymbol || typeof assetSymbol !== "string") {
+        return res.status(400).json({ message: "assetSymbol is required" });
+      }
+      await db.insert(dismissedRecommendations).values({
+        userId,
+        assetSymbol: assetSymbol.toUpperCase(),
+        walletLabel: walletLabel || null,
+        reason: reason || "addressed",
+      }).onConflictDoNothing();
+      res.json({ message: "Recommendation dismissed" });
+    } catch (error) {
+      console.error("Dismiss recommendation error:", error);
+      res.status(500).json({ message: "Failed to dismiss recommendation" });
+    }
+  });
+
+  app.delete("/api/dismissed-recommendations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      await db.delete(dismissedRecommendations).where(
+        and(eq(dismissedRecommendations.id, id), eq(dismissedRecommendations.userId, userId))
+      );
+      res.json({ message: "Recommendation restored" });
+    } catch (error) {
+      console.error("Restore recommendation error:", error);
+      res.status(500).json({ message: "Failed to restore recommendation" });
     }
   });
 
