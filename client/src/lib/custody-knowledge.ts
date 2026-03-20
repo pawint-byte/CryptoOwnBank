@@ -32,6 +32,12 @@ export interface ExchangeEarnOption {
   custodyType: CustodyType;
 }
 
+export interface WalletTip {
+  trigger: "staking" | "rewards" | "unstaked" | "general";
+  text: string;
+  link?: string;
+}
+
 export interface AssetKnowledge {
   symbol: string;
   name: string;
@@ -42,6 +48,7 @@ export interface AssetKnowledge {
   warnings?: string[];
   selfCustodyWallets?: string[];
   withdrawable?: boolean;
+  walletTips?: WalletTip[];
 }
 
 export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
@@ -123,6 +130,32 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "SundaeSwap Liquidity", defiApy: "5.0–15.0%", defiApyMid: 10.0, riskLevel: "High", link: "https://sundaeswap.finance", custodyType: "on_chain", blockchain: "Cardano" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "Daedalus", "Yoroi", "Eternl"],
+    walletTips: [
+      { trigger: "unstaked", text: "Delegate your ADA to a stake pool using Eternl or Yoroi wallet connected to your Ledger", link: "https://eternl.io" },
+      { trigger: "staking", text: "Your ADA is delegated and earning rewards — Cardano staking keeps your funds liquid" },
+      { trigger: "rewards", text: "Claim your ADA staking rewards through your wallet app — rewards are added to your delegated balance automatically on Cardano" },
+    ],
+  },
+  ZIL: {
+    symbol: "ZIL",
+    name: "Zilliqa",
+    stakeable: true,
+    withdrawable: true,
+    stakingOptions: [
+      { platform: "Native Staking", method: "SSN Delegation", apyRange: "10–13%", apyMid: 11.5, link: "https://v1.zillet.io/staking", custodyType: "on_chain", blockchain: "Zilliqa" },
+    ],
+    exchangeEarnOptions: [
+      { exchange: "Binance", program: "ZIL Staking", apyRange: "8.0–10.0%", apyMid: 9.0, flexible: false, link: "https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196", custodyType: "custodial" },
+    ],
+    defiAlternatives: [
+      { tradFiProduct: "High-Yield Savings (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "ZIL Native Staking", defiApy: "10–13%", defiApyMid: 11.5, riskLevel: "Low", link: "https://v1.zillet.io/staking", custodyType: "on_chain", blockchain: "Zilliqa" },
+    ],
+    selfCustodyWallets: ["Ledger Nano X", "Zillet", "Moonlet"],
+    walletTips: [
+      { trigger: "unstaked", text: "Go to v1.zillet.io and connect your hardware wallet to stake your ZIL tokens", link: "https://v1.zillet.io/staking" },
+      { trigger: "staking", text: "Your ZIL is delegated to a seed node and earning rewards via Zillet" },
+      { trigger: "rewards", text: "Go to v1.zillet.io and connect your hardware wallet to claim your ZIL staking rewards", link: "https://v1.zillet.io/staking" },
+    ],
   },
   DOT: {
     symbol: "DOT",
@@ -267,6 +300,11 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
       { tradFiProduct: "Money Market (5.0% APY)", tradFiApy: "5.0%", defiProtocol: "SaucerSwap Pools", defiApy: "5.0–15.0%", defiApyMid: 8.0, riskLevel: "Medium", link: "https://www.saucerswap.finance", custodyType: "on_chain", blockchain: "Hedera" },
     ],
     selfCustodyWallets: ["Ledger Nano X", "HashPack", "Blade Wallet"],
+    walletTips: [
+      { trigger: "unstaked", text: "Install the HashPack browser extension and connect your Ledger to stake HBAR", link: "https://www.hashpack.app" },
+      { trigger: "staking", text: "Manage your HBAR staking via the HashPack browser extension — click STAKE tab to view rewards", link: "https://www.hashpack.app" },
+      { trigger: "rewards", text: "Your HBAR staking rewards are auto-compounded — no need to claim manually" },
+    ],
   },
   USDC: {
     symbol: "USDC",
@@ -624,6 +662,14 @@ export function getWalletSpecificActions(symbol: string, walletLabel: string): A
   return actions;
 }
 
+export function getWalletTip(symbol: string, trigger: WalletTip["trigger"]): ActionItem | null {
+  const knowledge = CUSTODY_KNOWLEDGE[symbol];
+  if (!knowledge?.walletTips) return null;
+  const tip = knowledge.walletTips.find(t => t.trigger === trigger);
+  if (!tip) return null;
+  return { text: tip.text, link: tip.link };
+}
+
 export type RecommendationType =
   | "optimal"
   | "move_to_cold"
@@ -851,13 +897,17 @@ export function evaluateAsset(
     }
 
     if (isAlreadyStaked) {
+      const stakingTip = getWalletTip(symbol, "staking");
+      const rewardsTip = getWalletTip(symbol, "rewards");
+      const items: ActionItem[] = [];
+      if (bestStakingSource?.link) items.push({ text: `Earning ~${bestStaking.toFixed(1)}% APY via ${bestStakingSource.platform}`, link: bestStakingSource.link });
+      if (stakingTip) items.push(stakingTip);
+      if (rewardsTip) items.push(rewardsTip);
       return {
         symbol, name: displayName, type: "optimal", title: "Already Staking",
         description: `${symbol} is staked on your ${provider} wallet — safe and earning yield.`,
         currentLocation: provider, currentYield: bestStaking, bestYield: bestStaking, bestYieldSource: bestStakingSource?.platform || provider, usdValue, missedAnnual: 0,
-        actionItems: bestStakingSource?.link
-          ? [{ text: `Earning ~${bestStaking.toFixed(1)}% APY via ${bestStakingSource.platform}`, link: bestStakingSource.link }]
-          : [],
+        actionItems: items,
       };
     }
 
@@ -869,6 +919,19 @@ export function evaluateAsset(
       const liquidPct = 100 - stakedPct;
       const missed = usdValue * (bestSelfCustodyYield / 100);
       const totalEarning = stakedContext.stakedUsdOnSameWallet * (bestSelfCustodyYield / 100);
+      const stakingTip = getWalletTip(symbol, missed > 10 ? "unstaked" : "staking");
+      let items: ActionItem[];
+      if (missed > 10 && walletActions.length > 0) {
+        items = [...walletActions];
+      } else if (missed > 10) {
+        items = [
+          bestStaking > 0 ? { text: `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
+          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
+        ].filter(Boolean) as ActionItem[];
+      } else {
+        items = [];
+      }
+      if (stakingTip) items.push(stakingTip);
       return {
         symbol, name: displayName, type: missed > 10 ? "stake_available" : "optimal",
         title: missed > 10 ? "Partially Staked" : "Already Staking",
@@ -877,12 +940,7 @@ export function evaluateAsset(
           : `${stakedPct}% of your ${symbol} on ${provider} is staked and earning ~$${totalEarning.toFixed(0)}/year (~${bestSelfCustodyYield.toFixed(1)}% APY). Total value: $${totalOnWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
         currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
         bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue: totalOnWallet, missedAnnual: missed > 10 ? missed : 0,
-        actionItems: missed > 10 && walletActions.length > 0
-          ? walletActions
-          : missed > 10 ? [
-            bestStaking > 0 ? { text: `Stake remaining via ${bestStakingSource?.platform} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link } : null,
-            bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link } : null,
-          ].filter(Boolean) as ActionItem[] : [],
+        actionItems: items,
       };
     }
 
