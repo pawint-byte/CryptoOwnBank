@@ -1324,21 +1324,90 @@ export async function getZilliqaBalance(address: string): Promise<ChainBalance[]
       if (converted) hexAddr = converted;
     }
     if (hexAddr.startsWith("0x")) hexAddr = hexAddr.slice(2);
+    const hexAddrLower = hexAddr.toLowerCase();
+    const hexAddr0x = "0x" + hexAddrLower;
 
     const resp = await fetch("https://api.zilliqa.com/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: "1", jsonrpc: "2.0", method: "GetBalance", params: [hexAddr] }),
+      body: JSON.stringify({ id: "1", jsonrpc: "2.0", method: "GetBalance", params: [hexAddrLower] }),
     });
     const data = await resp.json();
+    const prices = await getPrices(["ZIL"]);
+    const zilPrice = prices.ZIL || 0;
+
     if (data.result && data.result.balance) {
       const qaBalance = BigInt(data.result.balance);
       const zil = Number(qaBalance / 10n ** 6n) / 1e6;
       if (zil > 0) {
-        const prices = await getPrices(["ZIL"]);
-        balances.push({ symbol: "ZIL", balance: zil, usdValue: zil * (prices.ZIL || 0) });
+        balances.push({ symbol: "ZIL", balance: zil, usdValue: zil * zilPrice });
       }
     }
+
+    try {
+      const STAKING_PROXY = "zil1v25at4s3eh9w34uqqhe3vdvfsvcwq6un3fupc2";
+      const stakingHex = bech32ToHex(STAKING_PROXY);
+      if (stakingHex) {
+        const stateResp = await fetch("https://api.zilliqa.com/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: "1", jsonrpc: "2.0", method: "GetSmartContractSubState",
+            params: [stakingHex.replace("0x", ""), "deposit_amt_deleg", [hexAddr0x]],
+          }),
+        });
+        const stateData = await stateResp.json();
+        if (stateData.result?.deposit_amt_deleg?.[hexAddr0x]) {
+          const delegations = stateData.result.deposit_amt_deleg[hexAddr0x];
+          let totalStaked = 0n;
+          for (const ssnAddr of Object.keys(delegations)) {
+            totalStaked += BigInt(delegations[ssnAddr]);
+          }
+          const stakedZil = Number(totalStaked / 10n ** 6n) / 1e6;
+          if (stakedZil > 0.01) {
+            balances.push({ symbol: "ZIL (staked)", balance: stakedZil, usdValue: stakedZil * zilPrice });
+          }
+        }
+
+        const rewardResp = await fetch("https://api.zilliqa.com/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: "1", jsonrpc: "2.0", method: "GetSmartContractSubState",
+            params: [stakingHex.replace("0x", ""), "deleg_stake_per_cycle", [hexAddr0x]],
+          }),
+        });
+        const rewardData = await rewardResp.json();
+        if (rewardData.result?.deleg_stake_per_cycle?.[hexAddr0x]) {
+          const buffResp = await fetch("https://api.zilliqa.com/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: "1", jsonrpc: "2.0", method: "GetSmartContractSubState",
+              params: [stakingHex.replace("0x", ""), "buff_deposit_deleg", [hexAddr0x]],
+            }),
+          });
+          const buffData = await buffResp.json();
+          let buffTotal = 0n;
+          if (buffData.result?.buff_deposit_deleg?.[hexAddr0x]) {
+            const buffs = buffData.result.buff_deposit_deleg[hexAddr0x];
+            for (const ssnAddr of Object.keys(buffs)) {
+              const cycles = buffs[ssnAddr];
+              for (const cycle of Object.keys(cycles)) {
+                buffTotal += BigInt(cycles[cycle]);
+              }
+            }
+          }
+          const buffZil = Number(buffTotal / 10n ** 6n) / 1e6;
+          if (buffZil > 0.01) {
+            balances.push({ symbol: "ZIL (rewards)", balance: buffZil, usdValue: buffZil * zilPrice });
+          }
+        }
+      }
+    } catch (stakingErr) {
+      console.error("ZIL staking data fetch error:", stakingErr);
+    }
+
     console.log(`ZIL scan: found ${balances.length} assets for ${address}`);
   } catch (err) {
     console.error("Zilliqa balance fetch error:", err);
