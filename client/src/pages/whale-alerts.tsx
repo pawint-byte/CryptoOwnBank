@@ -832,7 +832,7 @@ export default function WhaleAlerts() {
                     <span className="font-mono text-xs">{truncateAddress(selectedAlertData.receiverAddress)}</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeAgo(selectedAlertData.timestamp)}</span>
                   <span>{new Date(selectedAlertData.timestamp).toLocaleString()}</span>
                   <a
@@ -843,6 +843,20 @@ export default function WhaleAlerts() {
                     data-testid="link-detail-explorer"
                   >
                     View on XRPScan <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <div className="flex gap-2 mt-2 pt-2 border-t">
+                  <a href="/ownbank/dex">
+                    <Button size="sm" variant="default" className="text-xs" data-testid="button-whale-trade">
+                      <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                      Trade {selectedAlertData.currency} on DEX
+                    </Button>
+                  </a>
+                  <a href="/technical-analysis">
+                    <Button size="sm" variant="outline" className="text-xs" data-testid="button-whale-chart">
+                      <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                      View {selectedAlertData.currency} Chart
+                    </Button>
                   </a>
                 </div>
               </div>

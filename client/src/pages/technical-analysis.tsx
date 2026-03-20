@@ -27,7 +27,7 @@ import {
   Cell,
   Customized,
 } from "recharts";
-import { BarChart3, Lock, ArrowRight, TrendingUp, AlertTriangle, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Lock, ArrowRight, ArrowRightLeft, TrendingUp, AlertTriangle, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import {
   calculateSMA,
   calculateEMA,
@@ -510,6 +510,12 @@ export default function TechnicalAnalysis() {
               ))}
             </SelectContent>
           </Select>
+          <a href="/ownbank/dex">
+            <Button size="sm" variant="default" className="text-xs" data-testid="button-ta-trade">
+              <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
+              Trade {symbol}
+            </Button>
+          </a>
           <div className="flex rounded-lg border overflow-hidden">
             {TIMEFRAMES.map((tf) => {
               const locked = !tf.free && !isPaidUser;

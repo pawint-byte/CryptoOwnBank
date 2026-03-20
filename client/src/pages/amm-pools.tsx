@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ import {
   Percent,
   ChevronDown,
   ChevronUp,
+  ArrowRightLeft,
+  ArrowRight,
 } from "lucide-react";
 
 interface AmmPool {
@@ -216,6 +219,24 @@ export default function AmmPools() {
                       <p className="text-xs text-muted-foreground">Trading Fee</p>
                       <p className="font-medium text-green-600">{pool.tradingFeePercent}% per trade</p>
                     </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                    <Link href="/ownbank/dex">
+                      <Button size="sm" variant="default" className="text-xs" data-testid={`button-trade-${pool.id}`}>
+                        <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
+                        Trade {pool.asset1Currency}/{pool.asset2Currency}
+                      </Button>
+                    </Link>
+                    <a
+                      href={`https://xrpscan.com/account/${pool.account}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" variant="outline" className="text-xs" data-testid={`button-view-pool-${pool.id}`}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                        View on XRPScan
+                      </Button>
+                    </a>
                   </div>
                 </div>
               ))}
