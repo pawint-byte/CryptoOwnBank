@@ -1006,9 +1006,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#00A4E4]">
-                <Wallet className="h-5 w-5 text-white" />
-              </div>
+              <img src="/logo.png" alt="CryptoOwnBank" className="h-9 w-9 rounded-md" />
               <div>
                 <div>
                   <span className="text-lg font-semibold" data-testid="text-brand-name">CryptoOwnBank</span>
@@ -2563,7 +2561,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Wallet className="h-5 w-5 text-[#00A4E4]" />
+                <img src="/logo.png" alt="CryptoOwnBank" className="h-6 w-6 rounded" />
                 <span className="font-semibold text-gray-200">CryptoOwnBank</span>
               </div>
               <p className="text-[10px] italic text-gray-500 mb-2">Value Flows Free. You Own the Flow.</p>

@@ -336,9 +336,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary">
-            <PieChart className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src="/logo.png" alt="CryptoOwnBank" className="h-9 w-9 rounded-md" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">CryptoOwnBank</span>
             <span className="text-[10px] text-muted-foreground">Be Your Own Bank</span>
