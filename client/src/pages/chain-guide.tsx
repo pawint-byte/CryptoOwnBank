@@ -632,13 +632,39 @@ export default function ChainGuide() {
             ))}
           </div>
 
-          <div className="rounded-md bg-muted/30 border border-muted p-4 text-center space-y-2" data-testid="text-chain-guide-cta">
+          <div className="rounded-md bg-muted/30 border border-muted p-4 text-center space-y-3" data-testid="text-chain-guide-cta">
             <p className="text-sm font-medium">
               You don't have to choose one chain. Use the right tool for each job.
             </p>
             <p className="text-xs text-muted-foreground">
               CryptoOwnBank positions XRP as your institutional savings engine and XLM as your retail payments rail — both managed from one non-custodial dashboard.
             </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
+              <Link href="/ownbank/dex" data-testid="link-cta-trade-xrp">
+                <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4]">
+                  <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+                  Trade on XRPL DEX
+                </Button>
+              </Link>
+              <Link href="/stellar-dex" data-testid="link-cta-trade-xlm">
+                <Button size="sm" variant="outline" className="border-[#7B61FF]/40 text-[#7B61FF]">
+                  <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+                  Trade on Stellar DEX
+                </Button>
+              </Link>
+              <Link href="/ownbank/vaults" data-testid="link-cta-earn-yield">
+                <Button size="sm" variant="outline">
+                  <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+                  Earn Yield on RLUSD
+                </Button>
+              </Link>
+              <Link href="/wallets" data-testid="link-cta-add-wallets">
+                <Button size="sm" variant="outline">
+                  <Wallet className="h-3.5 w-3.5 mr-1.5" />
+                  Add Wallet Addresses
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

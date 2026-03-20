@@ -242,15 +242,27 @@ export default function PriceAlerts() {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => deleteMutation.mutate(alert.id)}
-                    disabled={deleteMutation.isPending}
-                    data-testid={`button-delete-alert-${alert.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Link href="/ownbank/dex">
+                      <Button size="sm" variant="ghost" className="h-8 text-xs text-[#00A4E4]" data-testid={`trade-alert-${alert.id}`}>
+                        Trade
+                      </Button>
+                    </Link>
+                    <Link href={`/technical-analysis?symbol=${alert.asset}`}>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs" data-testid={`chart-alert-${alert.id}`}>
+                        Chart
+                      </Button>
+                    </Link>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => deleteMutation.mutate(alert.id)}
+                      disabled={deleteMutation.isPending}
+                      data-testid={`button-delete-alert-${alert.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -287,15 +299,27 @@ export default function PriceAlerts() {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => deleteMutation.mutate(alert.id)}
-                    disabled={deleteMutation.isPending}
-                    data-testid={`button-delete-triggered-${alert.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Link href="/ownbank/dex">
+                      <Button size="sm" variant="ghost" className="h-8 text-xs text-[#00A4E4]" data-testid={`trade-triggered-${alert.id}`}>
+                        Trade
+                      </Button>
+                    </Link>
+                    <Link href={`/technical-analysis?symbol=${alert.asset}`}>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs" data-testid={`chart-triggered-${alert.id}`}>
+                        Chart
+                      </Button>
+                    </Link>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => deleteMutation.mutate(alert.id)}
+                      disabled={deleteMutation.isPending}
+                      data-testid={`button-delete-triggered-${alert.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

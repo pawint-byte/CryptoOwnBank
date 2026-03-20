@@ -359,7 +359,25 @@ function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain
                   </ul>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/ownbank/dex" data-testid={`trade-dex-${chain.ticker}`}>
+                    <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4]">
+                      <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+                      Trade {chain.ticker} on DEX
+                    </Button>
+                  </Link>
+                  <Link href={`/technical-analysis?symbol=${chain.ticker}`} data-testid={`chart-${chain.ticker}`}>
+                    <Button size="sm" variant="outline">
+                      <LineChart className="h-3.5 w-3.5 mr-1.5" />
+                      View Chart
+                    </Button>
+                  </Link>
+                  <Link href="/wallets" data-testid={`track-${chain.ticker}`}>
+                    <Button size="sm" variant="outline">
+                      <Wallet className="h-3.5 w-3.5 mr-1.5" />
+                      Track in Portfolio
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"

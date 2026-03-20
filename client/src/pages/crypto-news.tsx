@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -227,39 +228,55 @@ export default function CryptoNews() {
           {!forYouCollapsed && (
             <CardContent className="pt-0 space-y-2">
               {personalizedData.forYou.slice(0, 5).map((item, idx) => (
-                <a
-                  key={`fy-${idx}`}
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block group"
-                  data-testid={`for-you-article-${idx}`}
-                >
-                  <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {item.matchedAssets.map(asset => (
-                          <Badge key={asset} className="text-[10px] bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30 h-4">
-                            {asset}
+                <div key={`fy-${idx}`} data-testid={`for-you-article-${idx}`}>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block group"
+                  >
+                    <div className="flex items-start gap-3 p-3 pb-1 rounded-t-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {item.matchedAssets.map(asset => (
+                            <Badge key={asset} className="text-[10px] bg-[#00A4E4]/10 text-[#00A4E4] border-[#00A4E4]/30 h-4">
+                              {asset}
+                            </Badge>
+                          ))}
+                          <Badge variant="outline" className={`text-[10px] h-4 ${SOURCE_COLORS[item.source] || ""}`}>
+                            {item.source}
                           </Badge>
-                        ))}
-                        <Badge variant="outline" className={`text-[10px] h-4 ${SOURCE_COLORS[item.source] || ""}`}>
-                          {item.source}
-                        </Badge>
-                        {item.pubDate && (
-                          <span className="text-[10px] text-muted-foreground">{formatTimeAgo(item.pubDate)}</span>
+                          {item.pubDate && (
+                            <span className="text-[10px] text-muted-foreground">{formatTimeAgo(item.pubDate)}</span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-medium leading-tight group-hover:text-[#00A4E4] transition-colors">
+                          {item.title}
+                        </h4>
+                        {item.snippet && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-1">{item.snippet}</p>
                         )}
                       </div>
-                      <h4 className="text-sm font-medium leading-tight group-hover:text-[#00A4E4] transition-colors">
-                        {item.title}
-                      </h4>
-                      {item.snippet && (
-                        <p className="text-[11px] text-muted-foreground line-clamp-1">{item.snippet}</p>
-                      )}
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                  <div className="flex items-center gap-1 px-3 pb-2">
+                    {item.matchedAssets.slice(0, 2).map(asset => (
+                      <Link key={asset} href="/ownbank/dex">
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-[#00A4E4] px-2" data-testid={`trade-news-${asset}-${idx}`}>
+                          Trade {asset}
+                        </Button>
+                      </Link>
+                    ))}
+                    {item.matchedAssets[0] && (
+                      <Link href={`/technical-analysis?symbol=${item.matchedAssets[0]}`}>
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" data-testid={`chart-news-${idx}`}>
+                          View Chart
+                        </Button>
+                      </Link>
+                    )}
                   </div>
-                </a>
+                </div>
               ))}
               {personalizedData.totalMatched > 5 && (
                 <p className="text-[11px] text-muted-foreground text-center pt-1">

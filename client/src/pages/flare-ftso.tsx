@@ -15,6 +15,7 @@ import wrapConfirmScreenshot from "@assets/IMG_0111_1773958416955.png";
 import delegateListScreenshot from "@assets/IMG_0112_1773958470375.png";
 import batchDelegateScreenshot from "@assets/IMG_0114_1773958620161.png";
 import delegationCompleteScreenshot from "@assets/IMG_0115_1773958651120.png";
+import { Link } from "wouter";
 import {
   Flame,
   Wallet,
@@ -35,6 +36,8 @@ import {
   Coins,
   Users,
   ArrowRight,
+  ArrowRightLeft,
+  ExternalLink,
 } from "lucide-react";
 
 interface FlareWalletInfo {
@@ -147,6 +150,26 @@ export default function FlareFtso() {
             <h1 className="text-2xl font-bold" data-testid="text-page-title">Flare FTSO Rewards</h1>
             <p className="text-muted-foreground text-sm">Track delegation rewards, FlareDrop claims, and WFLR positions</p>
           </div>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/ownbank/dex" data-testid="link-trade-flr-dex">
+            <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4]">
+              <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+              Trade FLR
+            </Button>
+          </Link>
+          <Link href="/technical-analysis?symbol=FLR" data-testid="link-chart-flr">
+            <Button size="sm" variant="outline">
+              <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+              View Chart
+            </Button>
+          </Link>
+          <a href="https://bifrostwallet.com" target="_blank" rel="noopener noreferrer" data-testid="link-bifrost-download">
+            <Button size="sm" variant="outline">
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              Get Bifrost Wallet
+            </Button>
+          </a>
         </div>
         {savedAddress && (
           <Button variant="outline" size="sm" onClick={() => refetchWallet()} data-testid="button-refresh-flare">

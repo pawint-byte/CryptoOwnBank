@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
   Lock,
   Scale,
   Compass,
+  Wallet,
 } from "lucide-react";
 
 interface InsuranceProtocol {
@@ -360,6 +362,28 @@ export default function Insurance() {
                 </div>
               );
             })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-[#00A4E4]/20 bg-[#00A4E4]/5" data-testid="card-cta-portfolio-insurance">
+        <CardContent className="py-5">
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <div className="h-12 w-12 rounded-lg bg-[#00A4E4]/10 flex items-center justify-center shrink-0">
+              <Wallet className="h-6 w-6 text-[#00A4E4]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-1">Know What to Protect</h3>
+              <p className="text-sm text-muted-foreground">
+                Review your portfolio to identify which assets and DeFi positions would benefit most from coverage.
+              </p>
+            </div>
+            <Link href="/portfolio" data-testid="link-cta-portfolio-insurance">
+              <Button className="bg-[#00A4E4] text-white border-[#00A4E4] shrink-0">
+                <Wallet className="h-4 w-4 mr-2" />
+                View Your Portfolio
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
