@@ -4281,6 +4281,74 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/bulk-delete-lots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const { lotIds } = req.body;
+      if (!Array.isArray(lotIds) || lotIds.length === 0) {
+        return res.status(400).json({ message: "lotIds array required" });
+      }
+      let deleted = 0;
+      for (const lotId of lotIds) {
+        try {
+          await storage.deleteTaxLot(lotId);
+          deleted++;
+        } catch {}
+      }
+      res.json({ message: `Deleted ${deleted} of ${lotIds.length} lots` });
+    } catch (error) {
+      console.error("Bulk delete lots error:", error);
+      res.status(500).json({ message: "Failed to bulk delete lots" });
+    }
+  });
+
+  app.get("/api/duplicate-lots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const allLots = await storage.getTaxLotsByUser(userId);
+
+      const groups: Record<string, typeof allLots> = {};
+      for (const lot of allLots) {
+        const qty = parseFloat(lot.remainingQuantity).toFixed(4);
+        const dateStr = new Date(lot.acquiredDate).toISOString().split("T")[0];
+        const key = `${lot.assetSymbol}|${qty}|${dateStr}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(lot);
+      }
+
+      const duplicates: { key: string; assetSymbol: string; quantity: string; date: string; lots: any[] }[] = [];
+      for (const [key, lots] of Object.entries(groups)) {
+        if (lots.length > 1) {
+          const [sym, qty, date] = key.split("|");
+          duplicates.push({
+            key,
+            assetSymbol: sym,
+            quantity: qty,
+            date,
+            lots: lots.map(l => ({
+              id: l.id,
+              acquisitionType: l.acquisitionType,
+              note: l.note,
+              costBasisPerUnit: l.costBasisPerUnit,
+              walletBalanceId: l.walletBalanceId,
+              transactionId: l.transactionId,
+            })),
+          });
+        }
+      }
+
+      duplicates.sort((a, b) => a.assetSymbol.localeCompare(b.assetSymbol) || a.date.localeCompare(b.date));
+      res.json({ totalDuplicateGroups: duplicates.length, duplicates });
+    } catch (error) {
+      console.error("Duplicate lots error:", error);
+      res.status(500).json({ message: "Failed to find duplicates" });
+    }
+  });
+
   app.post("/api/admin/payment-addresses", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
