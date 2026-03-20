@@ -539,14 +539,14 @@ export function startPaymentScheduler(): void {
     await processScheduledPayments();
     await processDcaOrders();
     await processLegacyPlans();
-  }, 60000);
+  }, 60 * 60 * 1000);
 
   autoWithdrawInterval = setInterval(async () => {
     await processAutoWithdrawals();
-  }, 5 * 60 * 1000);
+  }, 2 * 60 * 60 * 1000);
 
-  console.log("[PaymentScheduler] Started — checking every 60 seconds (payments + DCA + legacy)");
-  console.log("[AutoWithdraw] Started — checking every 5 minutes");
+  console.log("[PaymentScheduler] Started — checking every 60 minutes (payments + DCA + legacy)");
+  console.log("[AutoWithdraw] Started — checking every 2 hours");
 }
 
 export function stopPaymentScheduler(): void {

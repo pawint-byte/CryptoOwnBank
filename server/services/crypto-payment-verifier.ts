@@ -873,8 +873,8 @@ export function startCryptoPaymentVerifier() {
     } catch (err) {
       console.error("[crypto-verify] Verifier error:", err);
     }
-  }, 60_000);
-  console.log("[crypto-verify] Payment verifier started (runs every 60 seconds)");
+  }, 30 * 60 * 1000);
+  console.log("[crypto-verify] Payment verifier started (runs every 30 minutes)");
 }
 
 export function stopCryptoPaymentVerifier() {

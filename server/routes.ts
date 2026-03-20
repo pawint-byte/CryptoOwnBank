@@ -9074,9 +9074,9 @@ function startPriceAlertChecker() {
     } catch (error) {
       console.error("Price alert checker error:", error);
     }
-  }, 60000);
+  }, 60 * 60 * 1000);
 
-  console.log("Price alert checker started (runs every 60 seconds)");
+  console.log("Price alert checker started (runs every 60 minutes)");
 
   import("./services/crypto-payment-verifier").then(({ startCryptoPaymentVerifier }) => {
     startCryptoPaymentVerifier();
