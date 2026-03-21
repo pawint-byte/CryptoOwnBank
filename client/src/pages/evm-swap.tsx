@@ -132,7 +132,8 @@ export default function EvmSwap() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const tier = (user as any)?.subscriptionTier || "free";
-  const hasPremium = tier === "premium" || tier === "pro" || tier === "premium_annual";
+  const isAdmin = (user as any)?.isAdmin === true;
+  const hasPremium = isAdmin || tier === "premium" || tier === "pro" || tier === "premium_annual";
 
   const tokens = POPULAR_TOKENS[selectedChainId] || [];
   const srcTokenInfo = tokens.find(t => t.address === srcToken);
