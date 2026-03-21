@@ -153,6 +153,11 @@ export default function SettingsPage() {
     queryKey: ["/api/user-wallets"],
   });
 
+  const { data: paymentAddresses = [] } = useQuery<{ chain: string; address: string }[]>({
+    queryKey: ["/api/crypto-payment/addresses"],
+  });
+  const paymentAddressSet = new Set(paymentAddresses.map(pa => pa.address.toLowerCase()));
+
   const { data: addonCatalog = {} } = useQuery<Record<string, any>>({
     queryKey: ["/api/addons/catalog"],
   });
@@ -932,10 +937,12 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {myWallets.map((w) => (
+                {myWallets.map((w) => {
+                  const isPaymentWallet = paymentAddressSet.has(w.address.toLowerCase());
+                  return (
                   <div
                     key={w.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+                    className={`flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors ${isPaymentWallet ? "border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-950/20" : ""}`}
                     data-testid={`wallet-item-${w.id}`}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -943,6 +950,7 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm truncate" data-testid={`text-wallet-label-${w.id}`}>{w.label}</span>
                           {w.isPrimary && <Star className="h-3 w-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
+                          {isPaymentWallet && <Badge className="text-[9px] px-1.5 py-0 bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-400 dark:border-green-700" variant="outline">Accepts Payments</Badge>}
                         </div>
                         <span className="text-xs font-mono text-muted-foreground truncate max-w-[220px]" data-testid={`text-wallet-address-${w.id}`}>
                           {w.address.length > 20 ? `${w.address.slice(0, 10)}...${w.address.slice(-8)}` : w.address}
@@ -981,7 +989,8 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
