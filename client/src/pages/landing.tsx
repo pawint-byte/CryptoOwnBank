@@ -478,7 +478,7 @@ const premiumFeatures = [
   "EVM Swap (1inch) + Cross-Chain Swap (LI.FI) + XRPL Bridge (Axelar/Squid — ETH → native XRP)",
   "WalletConnect — scan QR code to connect MetaMask Mobile, Trust Wallet, Rainbow, Coinbase Wallet, or 50+ other mobile wallets",
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
-  "Earn & Accumulate XRP — auto-convert vault interest into XRP on the DEX (configurable %, min threshold)",
+  "Earn & Accumulate XRP — withdraw full Soil vault position + DCA a portion into XRP on the DEX (you approve each step in Xaman)",
   "Unlimited CSV imports",
   "Unlimited blockchain addresses across 24 chains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, TON, XLM, MATIC, and more)",
   "Full ERC-20, SPL, TRC-20, VIP-180 & CRC-20 token auto-detection",
