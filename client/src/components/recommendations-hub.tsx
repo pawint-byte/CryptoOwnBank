@@ -212,6 +212,8 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
         ? { stakedUsdOnSameWallet: stakedInfo.usd, stakedBalanceOnSameWallet: stakedInfo.balance }
         : undefined;
       const rec = evaluateAsset(sym, "cold_wallet", w.label || `${w.chain} wallet`, usd, isStaked, stakedContext);
+      const tokenKnowledge = CUSTODY_KNOWLEDGE[sym];
+      if (tokenKnowledge?.notes) rec.notes = tokenKnowledge.notes;
       recommendations.push(rec);
     }
   }
@@ -219,6 +221,8 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   for (const eb of exchangeBalances) {
     const sym = eb.asset.toUpperCase();
     const rec = evaluateAsset(sym, "exchange", eb.provider, eb.usdValue, false);
+    const tokenKnowledge = CUSTODY_KNOWLEDGE[sym];
+    if (tokenKnowledge?.notes) rec.notes = tokenKnowledge.notes;
     recommendations.push(rec);
   }
 
@@ -1407,6 +1411,13 @@ function RecommendationCard({ rec, onDismiss, onRestore, dismissedId, isPending 
             <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
               <Shield className="h-3 w-3 mt-0.5 shrink-0" />
               {rec.riskNote}
+            </p>
+          )}
+
+          {rec.notes && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1 bg-muted/50 rounded p-2" data-testid={`notes-${rec.symbol}`}>
+              <Info className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
+              {rec.notes}
             </p>
           )}
 

@@ -22,6 +22,9 @@ const WALLET_LINKS: Record<string, string> = {
   "Trust Wallet": "https://trustwallet.com",
   "Coinbase Wallet": "https://www.coinbase.com/wallet",
   "Keplr": "https://wallet.keplr.app",
+  "Keplr + Ledger": "https://wallet.keplr.app",
+  "MetaMask + Ledger": "https://metamask.io",
+  "Cosmostation + Ledger": "https://wallet.cosmostation.io",
   "Leap Wallet": "https://leapwallet.io",
   "Xaman (XUMM)": "https://xaman.app",
   "HashPack": "https://www.hashpack.app",
@@ -368,6 +371,7 @@ export interface AssetKnowledge {
   selfCustodyWallets?: string[];
   withdrawable?: boolean;
   walletTips?: WalletTip[];
+  notes?: string;
 }
 
 export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
@@ -925,13 +929,15 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
   },
   FET: {
     symbol: "FET",
-    name: "Fetch.ai",
+    name: "Artificial Superintelligence Alliance (ASI)",
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Cosmostation / Keplr", method: "Validator Delegation", apyRange: "7–12%", apyMid: 9.5, link: "https://wallet.cosmostation.io/fetchai", custodyType: "on_chain", blockchain: "Fetch.ai" },
+      { platform: "Keplr + Ledger", method: "Validator Delegation (Cosmos SDK)", apyRange: "7–12%", apyMid: 9.5, link: "https://wallet.keplr.app/chains/fetchhub", custodyType: "on_chain", blockchain: "Fetch.ai" },
+      { platform: "Cosmostation + Ledger", method: "Validator Delegation", apyRange: "7–12%", apyMid: 9.5, link: "https://wallet.cosmostation.io/fetchai", custodyType: "on_chain", blockchain: "Fetch.ai" },
     ],
-    selfCustodyWallets: ["Cosmostation", "Keplr", "Ledger Nano X"],
+    notes: "FET is a Cosmos SDK chain — connect your Ledger to Keplr to stake directly. If your FET is an ERC-20 on Ethereum, you'll need to bridge it to the native Fetch.ai chain first via the ASI Alliance bridge (https://bridge.asi.ai). Once on the native chain, stake through Keplr with Ledger signing for cold wallet security.",
+    selfCustodyWallets: ["Keplr + Ledger", "Cosmostation + Ledger", "MetaMask (ERC-20 only)", "Ledger Nano X"],
   },
   WLD: {
     symbol: "WLD",
@@ -1031,9 +1037,89 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Chainlink Staking v0.2", method: "Community Staking Pool", apyRange: "4–6%", apyMid: 5.0, link: "https://staking.chain.link", custodyType: "on_chain", blockchain: "Ethereum" },
+      { platform: "Chainlink Staking v0.2 (MetaMask + Ledger)", method: "Community Staking Pool", apyRange: "4–6%", apyMid: 5.0, link: "https://staking.chain.link", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
-    selfCustodyWallets: ["MetaMask", "Ledger Nano X", "Trezor"],
+    notes: "Chainlink staking is done through staking.chain.link — connect MetaMask with your Ledger for cold wallet signing. The Community Pool requires a minimum of 1 LINK. Staking has a capacity cap and may have a waitlist. Your LINK stays on Ethereum, secured by your Ledger. Keplr cannot stake LINK — use MetaMask + Ledger instead.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X", "Trezor"],
+  },
+  RNDR: {
+    symbol: "RNDR",
+    name: "Render Network",
+    stakeable: false,
+    withdrawable: true,
+    notes: "RNDR does not have traditional staking. You earn RNDR by contributing GPU power to the Render Network as a node operator, not by locking tokens. As a holder, RNDR is a hold-only asset — keep it in cold storage on your Ledger via MetaMask. Some DeFi protocols may offer RNDR lending/LP opportunities but they carry smart contract risk.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X", "Coinbase Wallet"],
+  },
+  SPELL: {
+    symbol: "SPELL",
+    name: "Spell Token (Abracadabra)",
+    stakeable: true,
+    withdrawable: true,
+    stakingOptions: [
+      { platform: "Abracadabra.money (MetaMask + Ledger)", method: "sSPELL Staking", apyRange: "5–15%", apyMid: 10.0, link: "https://abracadabra.money/stake", custodyType: "on_chain", blockchain: "Ethereum" },
+    ],
+    notes: "Stake SPELL for sSPELL on Abracadabra.money to earn a share of platform fees. Connect MetaMask with your Ledger for cold wallet signing. sSPELL is an auto-compounding token — your staked position grows over time.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X"],
+  },
+  stETH: {
+    symbol: "stETH",
+    name: "Lido Staked ETH",
+    stakeable: false,
+    withdrawable: true,
+    notes: "stETH is already staked ETH earning ~3% APY through Lido. No further action needed — you're already earning. You can also use stETH as collateral on Aave or other DeFi protocols for additional yield. Hold in MetaMask + Ledger for cold wallet security. To unstake, use the Lido withdrawal portal at stake.lido.fi.",
+    defiAlternatives: [
+      { tradFiProduct: "Already Staked (Lido)", tradFiApy: "~3%", defiProtocol: "Aave (supply stETH)", defiApy: "1–3%", defiApyMid: 2.0, riskLevel: "Medium", link: "https://app.aave.com", custodyType: "on_chain", blockchain: "Ethereum" },
+    ],
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X"],
+  },
+  XCN: {
+    symbol: "XCN",
+    name: "Onyxcoin (Chain)",
+    stakeable: true,
+    withdrawable: true,
+    stakingOptions: [
+      { platform: "Onyx Protocol (MetaMask + Ledger)", method: "XCN Staking", apyRange: "5–10%", apyMid: 7.5, link: "https://onyx.org", custodyType: "on_chain", blockchain: "Ethereum" },
+    ],
+    notes: "Stake XCN through the Onyx Protocol governance portal. Connect MetaMask with your Ledger for cold wallet signing.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X"],
+  },
+  DNT: {
+    symbol: "DNT",
+    name: "district0x",
+    stakeable: false,
+    withdrawable: true,
+    notes: "DNT is a governance token for district0x — no traditional staking available. Hold in cold storage via MetaMask + Ledger.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X"],
+  },
+  VRA: {
+    symbol: "VRA",
+    name: "Verasity",
+    stakeable: true,
+    withdrawable: true,
+    stakingOptions: [
+      { platform: "VeraWallet", method: "VRA Staking", apyRange: "10–18%", apyMid: 14.0, link: "https://verawallet.tv", custodyType: "custodial", blockchain: "Ethereum" },
+    ],
+    notes: "VRA staking is available through VeraWallet with competitive APY. Note: VeraWallet is custodial — you'd need to transfer VRA to their platform. For cold wallet security, keep VRA on Ledger via MetaMask and accept no staking yield.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X"],
+  },
+  REEF: {
+    symbol: "REEF",
+    name: "Reef",
+    stakeable: true,
+    withdrawable: true,
+    stakingOptions: [
+      { platform: "Reef Chain", method: "Validator Nomination", apyRange: "15–30%", apyMid: 22.0, link: "https://reef.io", custodyType: "on_chain", blockchain: "Reef Chain" },
+    ],
+    notes: "REEF has its own chain (Reef Chain) with validator staking. The ERC-20 version on Ethereum cannot be staked — you'd need to bridge to Reef Chain. Given the project's smaller size, evaluate the risk carefully before bridging.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Reef Chain Extension", "Ledger Nano X"],
+  },
+  PRQ: {
+    symbol: "PRQ",
+    name: "PARSIQ",
+    stakeable: false,
+    withdrawable: true,
+    notes: "PRQ does not currently offer staking. Hold in cold storage via MetaMask + Ledger. PARSIQ is a blockchain analytics platform — PRQ is its utility token.",
+    selfCustodyWallets: ["MetaMask + Ledger", "Ledger Nano X"],
   },
   UNI: {
     symbol: "UNI",
@@ -1760,6 +1846,7 @@ export interface AssetRecommendation {
   missedAnnual: number;
   actionItems: ActionItem[];
   riskNote?: string;
+  notes?: string;
   custodyInfo?: {
     type: CustodyType;
     blockchain?: string;
