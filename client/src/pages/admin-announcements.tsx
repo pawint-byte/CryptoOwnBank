@@ -120,8 +120,10 @@ export default function AdminAnnouncements() {
     onSuccess: async (res) => {
       const data = await res.json();
       toast({
-        title: "Announcement sent",
-        description: `${data.sent} of ${data.total} emails delivered successfully.`,
+        title: data.queued ? "Announcement queued" : "Announcement sent",
+        description: data.queued
+          ? `Sending to ${data.total} recipients in the background. Refresh in a minute to see delivery stats.`
+          : `${data.sent} of ${data.total} emails delivered successfully.`,
       });
       setTitle("");
       setDescription("");

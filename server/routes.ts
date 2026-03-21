@@ -8792,30 +8792,6 @@ export async function registerRoutes(
         });
       }
 
-      let sent = 0;
-      let failed = 0;
-      const errors: string[] = [];
-
-      for (const u of validUsers) {
-        try {
-          const unsubUrl = `https://cryptoownbank.com/unsubscribe?uid=${u.id}`;
-          await sendFeatureAnnouncementEmail(
-            u.email!,
-            u.firstName || "there",
-            title,
-            description,
-            ctaLabel || null,
-            ctaUrl || null,
-            unsubUrl,
-          );
-          sent++;
-          await new Promise(r => setTimeout(r, 300));
-        } catch (err: any) {
-          failed++;
-          errors.push(`${u.email}: ${err.message}`);
-        }
-      }
-
       const [announcement] = await db.insert(featureAnnouncements).values({
         title,
         description,
@@ -8824,11 +8800,43 @@ export async function registerRoutes(
         audienceTier: audienceTier || "all",
         sentBy: user?.email || userId,
         totalRecipients: validUsers.length,
-        totalSent: sent,
-        totalFailed: failed,
+        totalSent: 0,
+        totalFailed: 0,
       }).returning();
 
-      res.json({ announcement, sent, failed, total: validUsers.length, errors: errors.slice(0, 10) });
+      res.json({ announcement, sent: 0, failed: 0, total: validUsers.length, queued: true });
+
+      (async () => {
+        let sent = 0;
+        let failed = 0;
+        for (const u of validUsers) {
+          try {
+            const unsubUrl = `https://cryptoownbank.com/unsubscribe?uid=${u.id}`;
+            await sendFeatureAnnouncementEmail(
+              u.email!,
+              u.firstName || "there",
+              title,
+              description,
+              ctaLabel || null,
+              ctaUrl || null,
+              unsubUrl,
+            );
+            sent++;
+            await new Promise(r => setTimeout(r, 300));
+          } catch (err: any) {
+            failed++;
+            console.error(`[announcement] Failed to email ${u.email}:`, err.message);
+          }
+        }
+        try {
+          await db.update(featureAnnouncements)
+            .set({ totalSent: sent, totalFailed: failed })
+            .where(eq(featureAnnouncements.id, announcement.id));
+          console.log(`[announcement] "${title}" — ${sent} sent, ${failed} failed out of ${validUsers.length}`);
+        } catch (e: any) {
+          console.error("[announcement] Failed to update send counts:", e.message);
+        }
+      })();
     } catch (error: any) {
       console.error("Send announcement error:", error);
       res.status(500).json({ message: "Failed to send announcement", error: error.message });
