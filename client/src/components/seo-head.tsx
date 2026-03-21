@@ -2,8 +2,8 @@ import { useEffect } from "react";
 
 const BASE_URL = "https://cryptoownbank.com";
 const SITE_NAME = "CryptoOwnBank";
-const DEFAULT_TITLE = "CryptoOwnBank — Be Your Own Bank | Track Crypto & Earn Yield";
-const DEFAULT_DESCRIPTION = "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR. Connect your cold wallet, track your portfolio, and earn real yield — principal always protected.";
+const DEFAULT_TITLE = "CryptoOwnBank — Be Your Own Bank | Multi-Chain Crypto Platform";
+const DEFAULT_DESCRIPTION = "Non-custodial multi-chain crypto platform. Portfolio tracker, RLUSD yield vaults (5-8% APR), XRPL & Stellar DEX trading, EVM swaps via 1inch, cross-chain bridging, DCA orders, Legacy Plan, whale alerts, and more. Your keys, your crypto.";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 interface SeoHeadProps {

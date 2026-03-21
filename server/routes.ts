@@ -80,6 +80,21 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  app.get("/robots.txt", (_req, res) => {
+    res.header("Content-Type", "text/plain");
+    res.send(`User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /ownbank/
+Disallow: /stellar/wallet
+Disallow: /stellar/tokens
+Disallow: /stellar/dex
+
+Sitemap: https://cryptoownbank.com/sitemap.xml
+`);
+  });
+
   app.get("/sitemap.xml", (_req, res) => {
     const baseUrl = "https://cryptoownbank.com";
     const publicRoutes = [
@@ -88,6 +103,10 @@ export async function registerRoutes(
       { path: "/chain-guide", priority: "0.8", changefreq: "monthly" },
       { path: "/rwa-yields", priority: "0.8", changefreq: "weekly" },
       { path: "/stablecoins", priority: "0.8", changefreq: "weekly" },
+      { path: "/crypto-news", priority: "0.8", changefreq: "daily" },
+      { path: "/whale-alerts", priority: "0.7", changefreq: "daily" },
+      { path: "/xls66-lending", priority: "0.8", changefreq: "weekly" },
+      { path: "/roadmap", priority: "0.6", changefreq: "monthly" },
       { path: "/insurance", priority: "0.7", changefreq: "monthly" },
       { path: "/migration-guide", priority: "0.7", changefreq: "monthly" },
       { path: "/faq", priority: "0.8", changefreq: "monthly" },
