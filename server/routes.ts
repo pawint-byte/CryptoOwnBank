@@ -5699,6 +5699,36 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/wallets/sync-to-settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const portfolioWallets = await storage.getWalletsByUser(userId);
+      const settingsWallets = await storage.getUserWallets(userId);
+      let synced = 0;
+      for (const pw of portfolioWallets) {
+        if (!pw.address || pw.chain === "manual") continue;
+        const exists = settingsWallets.find(
+          (sw) => sw.chain === pw.chain && sw.address.toLowerCase() === pw.address.toLowerCase()
+        );
+        if (!exists) {
+          await storage.createUserWallet({
+            userId,
+            label: pw.label || `${pw.chain.toUpperCase()} Wallet`,
+            address: pw.address,
+            chain: pw.chain,
+            purpose: "general",
+            isPrimary: settingsWallets.filter(sw => sw.chain === pw.chain).length === 0 && synced === 0,
+          });
+          synced++;
+        }
+      }
+      res.json({ synced, total: portfolioWallets.filter(w => w.address && w.chain !== "manual").length });
+    } catch (error: any) {
+      console.error("Wallet sync error:", error);
+      res.status(500).json({ message: "Failed to sync wallets" });
+    }
+  });
+
   app.post("/api/wallets/manual", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

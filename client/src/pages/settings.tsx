@@ -67,6 +67,7 @@ import {
   Star,
   Tag,
   Building2,
+  RefreshCw,
   Globe,
   Mail,
   Phone,
@@ -195,6 +196,19 @@ export default function SettingsPage() {
       toast({ title: "Wallet removed" });
     },
     onError: () => toast({ title: "Failed to remove wallet", variant: "destructive" }),
+  });
+
+  const syncWalletsMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/wallets/sync-to-settings"),
+    onSuccess: async (res) => {
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/user-wallets"] });
+      toast({
+        title: data.synced > 0 ? `${data.synced} wallet${data.synced > 1 ? "s" : ""} synced` : "All wallets already synced",
+        description: data.synced > 0 ? "Portfolio wallets copied to your Settings wallets." : "No new wallets to add.",
+      });
+    },
+    onError: () => toast({ title: "Sync failed", variant: "destructive" }),
   });
 
   const openAddWallet = () => {
@@ -862,9 +876,21 @@ export default function SettingsPage() {
                   Organize your wallets by purpose — yield, spending, receiving, savings, or trading
                 </CardDescription>
               </div>
-              <Button size="sm" onClick={openAddWallet} data-testid="button-add-wallet">
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => syncWalletsMutation.mutate()}
+                  disabled={syncWalletsMutation.isPending}
+                  data-testid="button-sync-wallets"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1 ${syncWalletsMutation.isPending ? "animate-spin" : ""}`} />
+                  {syncWalletsMutation.isPending ? "Syncing..." : "Sync from Portfolio"}
+                </Button>
+                <Button size="sm" onClick={openAddWallet} data-testid="button-add-wallet">
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
