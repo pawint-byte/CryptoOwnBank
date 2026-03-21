@@ -218,6 +218,9 @@ export default function CrossChainSwap() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [bridgeStatus, setBridgeStatus] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [srcTokenBalance, setSrcTokenBalance] = useState<string | null>(null);
+  const [nativeBalance, setNativeBalance] = useState<string | null>(null);
+  const [isFetchingBalance, setIsFetchingBalance] = useState(false);
 
   const tier = (user as any)?.subscriptionTier || "free";
   const isAdmin = (user as any)?.isAdmin === true;
@@ -251,6 +254,56 @@ export default function CrossChainSwap() {
     setQuote(null);
     setQuoteError(null);
   }, [toChainId]);
+
+  useEffect(() => {
+    if (!isConnected || !address) { setNativeBalance(null); return; }
+    const chainInfo = EVM_CHAINS[fromChainId];
+    if (!chainInfo) return;
+    (async () => {
+      try {
+        const resp = await fetch(chainInfo.rpcUrl, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [address, "latest"] }),
+        });
+        const json = await resp.json();
+        if (!json.result) return;
+        const balWei = BigInt(json.result);
+        const whole = balWei / BigInt(10 ** 18);
+        const frac = balWei % BigInt(10 ** 18);
+        const fracStr = frac.toString().padStart(18, "0").slice(0, 6);
+        setNativeBalance(`${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0");
+      } catch { setNativeBalance(null); }
+    })();
+  }, [isConnected, address, fromChainId]);
+
+  useEffect(() => {
+    if (!isConnected || !address || !fromToken) { setSrcTokenBalance(null); return; }
+    const isNative = fromToken === "0x0000000000000000000000000000000000000000";
+    if (isNative) { setSrcTokenBalance(nativeBalance); return; }
+    const chainInfo = EVM_CHAINS[fromChainId];
+    if (!chainInfo || !fromTokenInfo) return;
+    setIsFetchingBalance(true);
+    (async () => {
+      try {
+        const paddedAddr = address.slice(2).toLowerCase().padStart(64, "0");
+        const resp = await fetch(chainInfo.rpcUrl, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: fromToken, data: "0x70a08231" + paddedAddr }, "latest"] }),
+        });
+        const json = await resp.json();
+        if (!json.result || json.result === "0x") { setSrcTokenBalance("0"); return; }
+        const rawBal = BigInt(json.result);
+        const decimals = fromTokenInfo.decimals;
+        const divisor = BigInt(10 ** decimals);
+        const whole = rawBal / divisor;
+        const frac = rawBal % divisor;
+        const fracStr = frac.toString().padStart(decimals, "0").slice(0, 6);
+        setSrcTokenBalance(`${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0");
+      } catch { setSrcTokenBalance(null); } finally { setIsFetchingBalance(false); }
+    })();
+  }, [isConnected, address, fromToken, fromChainId, nativeBalance]);
+
+  const walletLabel = walletProvider === "metamask" ? "MetaMask" : walletProvider === "walletconnect" ? "WalletConnect" : "Wallet";
 
   const fetchQuote = useCallback(async () => {
     if (!fromToken || !toToken || !amount || parseFloat(amount) <= 0 || !address) return;
@@ -534,8 +587,9 @@ export default function CrossChainSwap() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    {walletProvider === "metamask" ? <Wallet className="h-3.5 w-3.5 text-orange-500" /> : <SiWalletconnect className="h-3.5 w-3.5 text-blue-500" />}
                     <span className="text-sm font-medium" data-testid="text-wallet-address">
-                      {shortenAddress(address || "")}
+                      {walletLabel} · {shortenAddress(address || "")}
                     </span>
                     {chainId && EVM_CHAINS[chainId] && (
                       <Badge variant="outline" className="text-xs" data-testid="badge-chain">
@@ -594,6 +648,31 @@ export default function CrossChainSwap() {
                     onChange={e => { setAmount(e.target.value); setQuote(null); }}
                     data-testid="input-amount"
                   />
+                  {isConnected && srcTokenBalance !== null && (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                      <span data-testid="text-src-balance">
+                        Balance: <span className="font-medium text-foreground">{srcTokenBalance} {fromTokenInfo?.symbol}</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="text-primary hover:underline font-medium"
+                        onClick={() => { if (srcTokenBalance) { setAmount(srcTokenBalance); setQuote(null); } }}
+                        data-testid="button-max-amount"
+                      >
+                        MAX
+                      </button>
+                    </div>
+                  )}
+                  {isConnected && isFetchingBalance && (
+                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Fetching balance...
+                    </div>
+                  )}
+                  {isConnected && amount && srcTokenBalance !== null && parseFloat(amount) > parseFloat(srcTokenBalance) && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
+                      <AlertTriangle className="h-3 w-3" /> Insufficient balance
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-center">
