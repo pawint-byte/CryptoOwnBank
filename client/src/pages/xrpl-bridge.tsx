@@ -44,7 +44,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useEvmWallet, EVM_CHAINS, sendEvmTransaction, getExplorerTxUrl, shortenAddress } from "@/lib/evm-wallet";
-import { signPayment } from "@/lib/xumm-connector";
+import { signPayment, connectXumm } from "@/lib/xumm-connector";
+import { useXrplStore } from "@/lib/xrpl-store";
+import { getBalances } from "@/lib/xrpl-client";
 import { SiWalletconnect } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 
@@ -103,6 +105,9 @@ export default function XrplBridge() {
   const { user } = useAuth();
   const { toast } = useToast();
   const evmWallet = useEvmWallet();
+
+  const xrplStore = useXrplStore();
+  const [connectingXumm, setConnectingXumm] = useState(false);
 
   const isAdmin = (user as any)?.isAdmin === true;
   const hasPremium = isAdmin || user?.subscriptionTier === "premium" || user?.subscriptionTier === "pro" || user?.subscriptionTier === "premium_annual";
@@ -364,6 +369,35 @@ export default function XrplBridge() {
   }, [evmWallet.address]);
 
   const reverseDestChainInfo = DEST_EVM_CHAINS.find(c => c.chainId === reverseDestChain);
+
+  useEffect(() => {
+    if (xrplStore.isConnected && xrplStore.walletAddress && direction === "xrpl-to-evm") {
+      getBalances(xrplStore.walletAddress).then(b => {
+        xrplStore.updateBalances(b.xrp, b.rlusd);
+      }).catch(() => {});
+    }
+  }, [xrplStore.isConnected, xrplStore.walletAddress, direction]);
+
+  const handleConnectXaman = async () => {
+    setConnectingXumm(true);
+    try {
+      const result = await connectXumm();
+      if (result.success && result.address) {
+        xrplStore.connect(result.address, "xumm");
+        try {
+          const balances = await getBalances(result.address);
+          xrplStore.updateBalances(balances.xrp, balances.rlusd);
+        } catch {}
+        toast({ title: "Xaman Connected", description: `Connected: ${result.address.slice(0, 8)}...${result.address.slice(-4)}` });
+      } else {
+        toast({ title: "Connection Failed", description: result.error || "Could not connect Xaman.", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Connection Error", description: err.message || "Failed to connect Xaman", variant: "destructive" });
+    } finally {
+      setConnectingXumm(false);
+    }
+  };
 
   const executeReverseBridge = async () => {
     if (!reverseAmount || parseFloat(reverseAmount) <= 0 || !reverseEvmAddress) return;
@@ -929,14 +963,65 @@ export default function XrplBridge() {
               </Badge>
             </div>
 
+            {!xrplStore.isConnected ? (
+              <div className="space-y-4">
+                <div className="text-center py-6">
+                  <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="font-semibold text-lg">Connect Xaman Wallet</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Connect your Xaman wallet to bridge XRP to EVM chains
+                  </p>
+                </div>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleConnectXaman}
+                    disabled={connectingXumm}
+                    className="gap-2"
+                    data-testid="button-connect-xaman-bridge"
+                  >
+                    {connectingXumm ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
+                    {connectingXumm ? "Connecting..." : "Connect Xaman"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-green-500/10 text-green-600 border-green-500/30">Connected</Badge>
+                  <span className="text-sm font-mono" data-testid="text-xaman-address">
+                    {xrplStore.walletAddress?.slice(0, 8)}...{xrplStore.walletAddress?.slice(-4)}
+                  </span>
+                  <Badge variant="outline" className="text-xs">Xaman</Badge>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => xrplStore.disconnect()} data-testid="button-disconnect-xaman">
+                  Disconnect
+                </Button>
+              </div>
+
               <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-600 dark:text-blue-400">FROM (XRP Ledger)</span>
                   <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-xs">Source</Badge>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">XRP Amount</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs text-muted-foreground">XRP Amount</label>
+                    {xrplStore.xrpBalance > 0 && (
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                        onClick={() => {
+                          const maxSend = Math.max(0, xrplStore.xrpBalance - 10);
+                          setReverseAmount(maxSend.toString());
+                        }}
+                        data-testid="button-max-reverse-bridge"
+                      >
+                        Balance: <span className="font-medium text-foreground">{xrplStore.xrpBalance.toLocaleString(undefined, { maximumFractionDigits: 6 })} XRP</span>
+                        <span className="text-primary ml-1 font-semibold">MAX</span>
+                      </button>
+                    )}
+                  </div>
                   <Input
                     type="number"
                     placeholder="0.0 XRP"
@@ -946,6 +1031,16 @@ export default function XrplBridge() {
                     step="any"
                     data-testid="input-reverse-bridge-amount"
                   />
+                  {xrplStore.xrpBalance > 0 && reverseAmount && parseFloat(reverseAmount) > xrplStore.xrpBalance - 10 && (
+                    <p className="text-xs text-amber-500 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> 10 XRP reserve must remain in your wallet
+                    </p>
+                  )}
+                  {xrplStore.xrpBalance === 0 && (
+                    <p className="text-xs text-amber-500 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> No XRP balance detected — fund your wallet to bridge
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Info className="h-3.5 w-3.5" />
@@ -1087,6 +1182,7 @@ export default function XrplBridge() {
                 </Card>
               )}
             </div>
+            )}
           </CardContent>
         </Card>
         )}
