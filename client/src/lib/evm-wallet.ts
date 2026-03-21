@@ -185,7 +185,7 @@ export const useEvmWallet = create<EvmWalletState>()(
                     chainName: chain.name,
                     rpcUrls: [chain.rpcUrl],
                     blockExplorerUrls: [chain.explorerUrl],
-                    nativeCurrencies: [chain.nativeCurrency],
+                    nativeCurrency: chain.nativeCurrency,
                   }],
                 });
                 set({ chainId });

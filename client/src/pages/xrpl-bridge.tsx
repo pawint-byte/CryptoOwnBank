@@ -44,6 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useEvmWallet, EVM_CHAINS, sendEvmTransaction, getExplorerTxUrl, shortenAddress } from "@/lib/evm-wallet";
+import { signPayment } from "@/lib/xumm-connector";
 import { SiWalletconnect } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 
@@ -76,6 +77,8 @@ interface RouteEstimate {
   gasCosts: Array<{ amount: string; amountUSD: string; token: { symbol: string } }>;
 }
 
+const AXELAR_XRPL_GATEWAY = "rfmS3zqrQrka8wVyhXifEeyTwe8AMz2Yhw";
+
 const SUPPORTED_SOURCE_CHAINS = [
   { chainId: "1", name: "Ethereum", icon: "🔷" },
   { chainId: "137", name: "Polygon", icon: "🟣" },
@@ -84,6 +87,16 @@ const SUPPORTED_SOURCE_CHAINS = [
   { chainId: "8453", name: "Base", icon: "🔵" },
   { chainId: "43114", name: "Avalanche", icon: "🔺" },
   { chainId: "56", name: "BNB Chain", icon: "🟡" },
+];
+
+const DEST_EVM_CHAINS = [
+  { chainId: "1", name: "Ethereum", icon: "🔷", axelarName: "ethereum" },
+  { chainId: "137", name: "Polygon", icon: "🟣", axelarName: "polygon" },
+  { chainId: "42161", name: "Arbitrum", icon: "🔵", axelarName: "arbitrum" },
+  { chainId: "10", name: "Optimism", icon: "🔴", axelarName: "optimism" },
+  { chainId: "8453", name: "Base", icon: "🔵", axelarName: "base" },
+  { chainId: "43114", name: "Avalanche", icon: "🔺", axelarName: "avalanche" },
+  { chainId: "56", name: "BNB Chain", icon: "🟡", axelarName: "binance" },
 ];
 
 export default function XrplBridge() {
@@ -106,6 +119,13 @@ export default function XrplBridge() {
   const [isSwapping, setIsSwapping] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [bridgeStatus, setBridgeStatus] = useState<{ status: string; txHash?: string } | null>(null);
+
+  const [reverseDestChain, setReverseDestChain] = useState("1");
+  const [reverseEvmAddress, setReverseEvmAddress] = useState("");
+  const [reverseAmount, setReverseAmount] = useState("");
+  const [reverseBridgeStatus, setReverseBridgeStatus] = useState<{ status: string; txHash?: string } | null>(null);
+  const [isReverseBridging, setIsReverseBridging] = useState(false);
+  const [showReverseConfirm, setShowReverseConfirm] = useState(false);
 
   const { data: bridgeConfig } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/xrpl-bridge/status-check"],
@@ -275,6 +295,104 @@ export default function XrplBridge() {
       setBridgeStatus(null);
     } finally {
       setIsSwapping(false);
+    }
+  };
+
+  useEffect(() => {
+    if (evmWallet.address && !reverseEvmAddress) {
+      setReverseEvmAddress(evmWallet.address);
+    }
+  }, [evmWallet.address]);
+
+  const reverseDestChainInfo = DEST_EVM_CHAINS.find(c => c.chainId === reverseDestChain);
+
+  const executeReverseBridge = async () => {
+    if (!reverseAmount || parseFloat(reverseAmount) <= 0 || !reverseEvmAddress) return;
+
+    setIsReverseBridging(true);
+    setShowReverseConfirm(false);
+    setReverseBridgeStatus({ status: "signing" });
+
+    try {
+      const xrpDrops = Math.floor(parseFloat(reverseAmount) * 1_000_000).toString();
+
+      const destChainName = reverseDestChainInfo?.axelarName || "ethereum";
+      const memoData = JSON.stringify({
+        destination_chain: destChainName,
+        destination_address: reverseEvmAddress,
+        payload: null,
+        type: 2,
+      });
+
+      const result = await signPayment(
+        AXELAR_XRPL_GATEWAY,
+        xrpDrops,
+        {
+          memos: [
+            { MemoType: "text/plain", MemoData: memoData },
+          ],
+        }
+      );
+
+      if (result.success && result.txHash) {
+        setReverseBridgeStatus({ status: "bridging", txHash: result.txHash });
+        toast({
+          title: "Bridge Transaction Submitted",
+          description: "XRP sent to Axelar gateway. Cross-chain delivery in progress...",
+        });
+
+        let attempts = 0;
+        const maxAttempts = 60;
+        const checkStatus = async () => {
+          try {
+            const statusRes = await apiRequest("GET",
+              `/api/xrpl-bridge/tx-status?transactionId=${result.txHash}&fromChainId=xrpl&toChainId=${reverseDestChain}`
+            );
+            const statusData = await statusRes.json();
+
+            if (statusData.squidTransactionStatus === "success" || statusData.status === "success") {
+              setReverseBridgeStatus({ status: "completed", txHash: result.txHash });
+              toast({ title: "Bridge Complete!", description: `Tokens delivered to your ${reverseDestChainInfo?.name || "EVM"} wallet` });
+              return;
+            }
+            if (statusData.squidTransactionStatus === "failed" || statusData.status === "failed") {
+              setReverseBridgeStatus({ status: "failed", txHash: result.txHash });
+              toast({ title: "Bridge Failed", description: "The cross-chain transfer failed", variant: "destructive" });
+              return;
+            }
+
+            attempts++;
+            if (attempts < maxAttempts) {
+              setTimeout(checkStatus, 15000);
+            } else {
+              setReverseBridgeStatus({ status: "timeout", txHash: result.txHash });
+            }
+          } catch {
+            attempts++;
+            if (attempts < maxAttempts) {
+              setTimeout(checkStatus, 15000);
+            }
+          }
+        };
+
+        setTimeout(checkStatus, 30000);
+      } else {
+        setReverseBridgeStatus(null);
+        toast({
+          title: "Bridge Cancelled",
+          description: result.error || "Transaction was not signed",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Bridge Failed",
+        description: err.message || "Failed to initiate bridge",
+        variant: "destructive",
+      });
+      setReverseBridgeStatus(null);
+    } finally {
+      setIsReverseBridging(false);
     }
   };
 

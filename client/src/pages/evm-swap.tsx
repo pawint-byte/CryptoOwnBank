@@ -132,6 +132,8 @@ export default function EvmSwap() {
   const [swapTxHash, setSwapTxHash] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [nativeBalance, setNativeBalance] = useState<string | null>(null);
+  const [srcTokenBalance, setSrcTokenBalance] = useState<string | null>(null);
+  const [isFetchingBalance, setIsFetchingBalance] = useState(false);
 
   const tier = (user as any)?.subscriptionTier || "free";
   const isAdmin = (user as any)?.isAdmin === true;
@@ -187,6 +189,58 @@ export default function EvmSwap() {
 
     fetchBalance();
   }, [isConnected, address, selectedChainId]);
+
+  useEffect(() => {
+    if (!isConnected || !address || !srcToken) {
+      setSrcTokenBalance(null);
+      return;
+    }
+    if (srcToken === NATIVE_TOKEN) {
+      setSrcTokenBalance(nativeBalance);
+      return;
+    }
+    const chainInfo = EVM_CHAINS[selectedChainId];
+    if (!chainInfo) return;
+    const tokenInfo = tokens.find(t => t.address === srcToken);
+    if (!tokenInfo) return;
+
+    setIsFetchingBalance(true);
+    const fetchErc20Balance = async () => {
+      try {
+        const balanceOfSig = "0x70a08231";
+        const paddedAddr = address.slice(2).toLowerCase().padStart(64, "0");
+        const callData = balanceOfSig + paddedAddr;
+
+        const resp = await fetch(chainInfo.rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0", id: 1, method: "eth_call",
+            params: [{ to: srcToken, data: callData }, "latest"],
+          }),
+        });
+        const json = await resp.json();
+        if (!json.result || json.result === "0x") {
+          setSrcTokenBalance("0");
+          return;
+        }
+        const rawBal = BigInt(json.result);
+        const decimals = tokenInfo.decimals;
+        const divisor = BigInt(10 ** decimals);
+        const whole = rawBal / divisor;
+        const frac = rawBal % divisor;
+        const fracStr = frac.toString().padStart(decimals, "0").slice(0, 6);
+        const formatted = `${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0";
+        setSrcTokenBalance(formatted);
+      } catch {
+        setSrcTokenBalance(null);
+      } finally {
+        setIsFetchingBalance(false);
+      }
+    };
+
+    fetchErc20Balance();
+  }, [isConnected, address, srcToken, selectedChainId, nativeBalance]);
 
   const walletLabel = walletProvider === "metamask" ? "MetaMask" : walletProvider === "walletconnect" ? "WalletConnect" : "Wallet";
 
@@ -481,24 +535,33 @@ export default function EvmSwap() {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-muted-foreground">You Pay</label>
-                  {isConnected && nativeBalance !== null && srcToken === NATIVE_TOKEN && (
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => {
-                        const maxAmount = Math.max(0, parseFloat(nativeBalance) - 0.005);
-                        if (maxAmount > 0) setAmount(maxAmount.toFixed(6));
-                      }}
-                      data-testid="button-max-balance"
-                    >
-                      Balance: <span className="font-medium text-foreground">{nativeBalance} {EVM_CHAINS[selectedChainId]?.nativeCurrency.symbol}</span> <span className="text-primary ml-1">MAX</span>
-                    </button>
-                  )}
-                  {isConnected && nativeBalance !== null && srcToken !== NATIVE_TOKEN && (
-                    <span className="text-xs text-muted-foreground" data-testid="text-native-balance">
-                      {EVM_CHAINS[selectedChainId]?.nativeCurrency.symbol}: {nativeBalance} (gas)
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {isConnected && srcToken !== NATIVE_TOKEN && nativeBalance !== null && (
+                      <span className="text-xs text-muted-foreground" data-testid="text-native-balance">
+                        {EVM_CHAINS[selectedChainId]?.nativeCurrency.symbol}: {nativeBalance} (gas)
+                      </span>
+                    )}
+                    {isConnected && srcTokenBalance !== null && (
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => {
+                          const bal = parseFloat(srcTokenBalance);
+                          if (bal <= 0) return;
+                          const maxAmount = srcToken === NATIVE_TOKEN ? Math.max(0, bal - 0.005) : bal;
+                          if (maxAmount > 0) setAmount(maxAmount.toFixed(6));
+                        }}
+                        data-testid="button-max-balance"
+                      >
+                        Balance: <span className="font-medium text-foreground">{srcTokenBalance} {srcTokenInfo?.symbol}</span> <span className="text-primary ml-1">MAX</span>
+                      </button>
+                    )}
+                    {isConnected && srcTokenBalance === null && isFetchingBalance && (
+                      <span className="text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin inline mr-1" />Loading balance...
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Select value={srcToken} onValueChange={(v) => { setSrcToken(v); setQuote(null); }}>
