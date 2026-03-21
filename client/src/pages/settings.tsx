@@ -1985,19 +1985,30 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="avalanche">Avalanche</SelectItem>
-                  <SelectItem value="bitcoin">Bitcoin</SelectItem>
-                  <SelectItem value="cardano">Cardano</SelectItem>
-                  <SelectItem value="cosmos">Cosmos</SelectItem>
-                  <SelectItem value="ethereum">Ethereum</SelectItem>
+                  <SelectItem value="algorand">Algorand (ALGO)</SelectItem>
+                  <SelectItem value="avalanche">Avalanche (AVAX)</SelectItem>
+                  <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>
+                  <SelectItem value="cardano">Cardano (ADA)</SelectItem>
+                  <SelectItem value="cosmos">Cosmos (ATOM)</SelectItem>
+                  <SelectItem value="cronos">Cronos (CRO)</SelectItem>
+                  <SelectItem value="digibyte">DigiByte (DGB)</SelectItem>
+                  <SelectItem value="dogecoin">Dogecoin (DOGE)</SelectItem>
+                  <SelectItem value="ethereum">Ethereum (ETH)</SelectItem>
                   <SelectItem value="fet">Fetch.ai / ASI (FET)</SelectItem>
                   <SelectItem value="flare">Flare (FLR)</SelectItem>
-                  <SelectItem value="hedera">Hedera</SelectItem>
-                  <SelectItem value="polkadot">Polkadot</SelectItem>
-                  <SelectItem value="solana">Solana</SelectItem>
+                  <SelectItem value="hedera">Hedera (HBAR)</SelectItem>
+                  <SelectItem value="litecoin">Litecoin (LTC)</SelectItem>
+                  <SelectItem value="polkadot">Polkadot (DOT)</SelectItem>
+                  <SelectItem value="polygon">Polygon (POL)</SelectItem>
+                  <SelectItem value="solana">Solana (SOL)</SelectItem>
                   <SelectItem value="sonic">Sonic (S)</SelectItem>
                   <SelectItem value="stellar">Stellar (XLM)</SelectItem>
                   <SelectItem value="sui">Sui (SUI)</SelectItem>
+                  <SelectItem value="ton">TON</SelectItem>
+                  <SelectItem value="tron">Tron (TRX)</SelectItem>
+                  <SelectItem value="vechain">VeChain (VET)</SelectItem>
+                  <SelectItem value="verge">Verge (XVG)</SelectItem>
+                  <SelectItem value="xdc">XDC Network</SelectItem>
                   <SelectItem value="xrpl">XRPL (XRP Ledger)</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
@@ -2007,7 +2018,7 @@ export default function SettingsPage() {
               <Label htmlFor="wallet-address">Wallet Address</Label>
               <Input
                 id="wallet-address"
-                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "stellar" ? "GXXXX...XXXX" : walletForm.chain === "ethereum" || walletForm.chain === "flare" ? "0x..." : "Enter address"}
+                placeholder={walletForm.chain === "xrpl" ? "rXXXX...XXXX" : walletForm.chain === "stellar" ? "GXXXX...XXXX" : ["ethereum", "flare", "polygon", "avalanche", "cronos", "vechain", "xdc"].includes(walletForm.chain) ? "0x..." : "Enter address"}
                 value={walletForm.address}
                 onChange={(e) => setWalletForm((f) => ({ ...f, address: e.target.value }))}
                 className="font-mono text-sm"
