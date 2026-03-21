@@ -124,7 +124,7 @@ const xrplToolsComparison = [
     oldDesc: "Move assets between systems? Convert to fiat, wire it, convert back — days of waiting, fees at every step",
     newIcon: GitCompareArrows,
     newTitle: "XRPL Bridge",
-    newDesc: "Bridge ETH/USDC from Ethereum directly to native XRP on the XRP Ledger via Axelar — minutes, not days",
+    newDesc: "Bridge both ways — EVM to XRP or XRP to EVM — via Axelar. MetaMask or Xaman signing, minutes not days",
     link: "/ownbank/xrpl-bridge",
     status: "live",
   },
@@ -247,7 +247,7 @@ const features = [
     icon: Zap,
     title: "EVM Swap, Cross-Chain & XRPL Bridge",
     description:
-      "Swap thousands of tokens on any EVM chain via 1inch, bridge across EVM chains via LI.FI, or bridge directly from Ethereum to native XRP on the XRP Ledger via Axelar (Squid Router). Connect with MetaMask, WalletConnect (50+ mobile wallets), or Ledger. Non-custodial, best-price routing.",
+      "Swap thousands of tokens on any EVM chain via 1inch with live token balances, MAX button, and seamless wallet switching (MetaMask ↔ WalletConnect). Bridge across EVM chains via LI.FI, or bridge bidirectionally between EVM chains and the XRP Ledger via Axelar — EVM→XRP or XRP→EVM. Non-custodial, best-price routing.",
     link: "/ownbank/evm-swap",
     linkLabel: "Open EVM Swap",
   },
@@ -355,12 +355,12 @@ const memberStories = [
     benefit: "5–8% fixed APR on RLUSD. No platform fees. Every cent of yield is yours.",
   },
   {
-    title: "Bridge Your World — EVM to XRP in Minutes",
+    title: "Bridge Both Ways — EVM ↔ XRP in Minutes",
     icon: GitCompareArrows,
     accent: "from-indigo-500/10 to-blue-500/10",
     story:
-      "You hold ETH on Ethereum. You want native XRP on the XRP Ledger. Before, you'd sell ETH on an exchange, withdraw fiat, buy XRP on another exchange, then withdraw to your wallet — days of waiting, multiple fees, and your funds sitting on custodial platforms the entire time. The XRPL Bridge (powered by Axelar via Squid Router) eliminates all of that. Connect your MetaMask or WalletConnect wallet, enter your XRPL destination address, and bridge directly from Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, or BNB Chain to native XRP. Non-custodial throughout — Axelar secures the cross-chain transfer, and your XRP arrives on the XRP Ledger in minutes.",
-    benefit: "Bridge ETH/USDC to native XRP without touching an exchange. 7 EVM chains supported. Minutes, not days.",
+      "You hold ETH on Ethereum and want native XRP — or you hold XRP and want tokens on Ethereum or Arbitrum. Before, you'd sell on one exchange, withdraw fiat, buy on another, then withdraw to your wallet — days of waiting, multiple fees, and your funds on custodial platforms the entire time. The XRPL Bridge (powered by Axelar) eliminates all of that in both directions. EVM→XRPL: connect MetaMask or WalletConnect, enter your XRPL address, and bridge from Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, or BNB Chain to native XRP via Squid Router. XRPL→EVM: sign a payment in Xaman to the Axelar gateway with your destination chain and EVM address — your XRP bridges to the EVM chain of your choice. Non-custodial throughout, settled in minutes.",
+    benefit: "Bidirectional bridge — EVM→XRP via Squid Router, XRP→EVM via Xaman + Axelar gateway. 7 EVM chains. Minutes, not days.",
   },
   {
     title: "Security the Way You Want It",
@@ -416,7 +416,7 @@ const whyNow = [
   { icon: Shield, text: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto" },
   { icon: Zap, text: "This migration is inevitable. Fiat rails are slow, expensive, and built for institutions — not for you. On-chain finance is faster, cheaper, and puts you in control" },
   { icon: Globe, text: "RLUSD is live on XRPL — a regulated, dollar-backed stablecoin you can hold, earn on, and spend without a bank account" },
-  { icon: GitCompareArrows, text: "The XRPL Bridge is live — bridge assets from Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, or BNB Chain directly to native XRP. No exchange needed, no fiat conversion" },
+  { icon: GitCompareArrows, text: "The XRPL Bridge is live and bidirectional — bridge EVM assets to native XRP, or bridge XRP to EVM chains. 7 chains supported, Axelar-secured, no exchange needed" },
   { icon: Users, text: "Every person you pay on-chain is one less reason to go back to fiat. Every business that accepts crypto pulls their whole network forward. The snowball is rolling" },
   { icon: TrendingUp, text: "Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent. The longer you wait, the more yield you leave on the table" },
   { icon: Smartphone, text: "Install CryptoOwnBank on your phone as a PWA — full-screen app, no App Store needed. Your entire crypto dashboard is one tap away" },
@@ -467,7 +467,7 @@ const testimonials = [
     persona: "Portfolio Migrator",
   },
   {
-    quote: "I bridged ETH from Arbitrum to native XRP in about 10 minutes. No exchange, no KYC, no fiat conversion. Connected WalletConnect on my phone, entered my XRPL address, signed the transaction, and XRP showed up in my Xaman wallet. That's how cross-chain should work.",
+    quote: "I bridged ETH from Arbitrum to native XRP in about 10 minutes — and then bridged some XRP back to Ethereum the next day using Xaman. Both directions work. No exchange, no KYC, no fiat conversion. Connected WalletConnect on my phone, signed the transaction, done. That's how cross-chain should work.",
     author: "ChainHopper",
     role: "Premium Member",
     persona: "Cross-Chain Bridge User",
@@ -531,7 +531,7 @@ const freeTierFeatures = [
 const premiumFeatures = [
   "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
-  "EVM Swap (1inch) + Cross-Chain Swap (LI.FI) + XRPL Bridge (Axelar/Squid — ETH → native XRP)",
+  "EVM Swap (1inch — live token balances, MAX button, wallet switching) + Cross-Chain Swap (LI.FI) + XRPL Bridge (bidirectional — EVM↔XRP via Axelar)",
   "WalletConnect — scan QR code to connect MetaMask Mobile, Trust Wallet, Rainbow, Coinbase Wallet, or 50+ other mobile wallets",
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Earn & Accumulate XRP — withdraw full Soil vault position + DCA a portion into XRP on the DEX (you approve each step in Xaman)",
