@@ -110,6 +110,41 @@ export const useEvmWallet = create<EvmWalletState>()(
     {
       name: "evm-wallet-storage",
       partialize: (state) => ({ address: state.address, chainId: state.chainId, isConnected: state.isConnected }),
+      onRehydrate: () => {
+        return (state) => {
+          if (state?.isConnected) {
+            if (typeof window === "undefined" || !(window as any).ethereum) {
+              state.address = null;
+              state.chainId = null;
+              state.isConnected = false;
+              state.error = null;
+            } else {
+              const ethereum = (window as any).ethereum;
+              ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
+                if (!accounts || accounts.length === 0) {
+                  useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null });
+                } else {
+                  ethereum.request({ method: "eth_chainId" }).then((chainHex: string) => {
+                    useEvmWallet.setState({ address: accounts[0], chainId: parseInt(chainHex, 16) });
+                  }).catch(() => {});
+                  ethereum.on("accountsChanged", (accs: string[]) => {
+                    if (accs.length === 0) {
+                      useEvmWallet.setState({ address: null, isConnected: false, chainId: null });
+                    } else {
+                      useEvmWallet.setState({ address: accs[0] });
+                    }
+                  });
+                  ethereum.on("chainChanged", (newChainHex: string) => {
+                    useEvmWallet.setState({ chainId: parseInt(newChainHex, 16) });
+                  });
+                }
+              }).catch(() => {
+                useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null });
+              });
+            }
+          }
+        };
+      },
     }
   )
 );
