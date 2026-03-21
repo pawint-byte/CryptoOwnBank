@@ -131,6 +131,7 @@ export default function EvmSwap() {
   const [isApproving, setIsApproving] = useState(false);
   const [swapTxHash, setSwapTxHash] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [nativeBalance, setNativeBalance] = useState<string | null>(null);
 
   const tier = (user as any)?.subscriptionTier || "free";
   const isAdmin = (user as any)?.isAdmin === true;
@@ -155,6 +156,37 @@ export default function EvmSwap() {
       setSelectedChainId(chainId);
     }
   }, [chainId]);
+
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setNativeBalance(null);
+      return;
+    }
+    const chainInfo = EVM_CHAINS[selectedChainId];
+    if (!chainInfo) return;
+
+    const fetchBalance = async () => {
+      try {
+        const resp = await fetch(chainInfo.rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [address, "latest"] }),
+        });
+        const json = await resp.json();
+        if (!json.result) return;
+        const balWei = BigInt(json.result);
+        const whole = balWei / BigInt(10 ** 18);
+        const frac = balWei % BigInt(10 ** 18);
+        const fracStr = frac.toString().padStart(18, "0").slice(0, 6);
+        const formatted = `${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0";
+        setNativeBalance(formatted);
+      } catch {
+        setNativeBalance(null);
+      }
+    };
+
+    fetchBalance();
+  }, [isConnected, address, selectedChainId]);
 
   const fetchQuote = useCallback(async () => {
     if (!srcToken || !dstToken || !amount || parseFloat(amount) <= 0) return;
@@ -272,6 +304,10 @@ export default function EvmSwap() {
         toast({ title: "Transaction rejected", description: "You cancelled the transaction in your wallet.", variant: "destructive" });
       } else if (rawMsg.includes("429")) {
         toast({ title: "Rate limited", description: "Too many requests — please wait a few seconds and try again.", variant: "destructive" });
+      } else if (rawMsg.includes("Bad Request") && rawMsg.includes("fromTokenBalance")) {
+        toast({ title: "Insufficient balance", description: `You don't have enough ${srcTokenInfo?.symbol || "tokens"} for this swap. Try a smaller amount.`, variant: "destructive" });
+      } else if (rawMsg.includes("insufficient funds") || rawMsg.includes("insufficient balance")) {
+        toast({ title: "Insufficient balance", description: `You don't have enough ${srcTokenInfo?.symbol || "tokens"} for this swap. Try a smaller amount.`, variant: "destructive" });
       } else {
         toast({ title: "Swap failed", description: rawMsg, variant: "destructive" });
       }
@@ -410,7 +446,27 @@ export default function EvmSwap() {
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">You Pay</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">You Pay</label>
+                  {isConnected && nativeBalance !== null && srcToken === NATIVE_TOKEN && (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => {
+                        const maxAmount = Math.max(0, parseFloat(nativeBalance) - 0.005);
+                        if (maxAmount > 0) setAmount(maxAmount.toFixed(6));
+                      }}
+                      data-testid="button-max-balance"
+                    >
+                      Balance: <span className="font-medium text-foreground">{nativeBalance} {EVM_CHAINS[selectedChainId]?.nativeCurrency.symbol}</span> <span className="text-primary ml-1">MAX</span>
+                    </button>
+                  )}
+                  {isConnected && nativeBalance !== null && srcToken !== NATIVE_TOKEN && (
+                    <span className="text-xs text-muted-foreground" data-testid="text-native-balance">
+                      {EVM_CHAINS[selectedChainId]?.nativeCurrency.symbol}: {nativeBalance} (gas)
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Select value={srcToken} onValueChange={(v) => { setSrcToken(v); setQuote(null); }}>
                     <SelectTrigger className="w-[160px]" data-testid="select-src-token">

@@ -9140,7 +9140,12 @@ export async function registerRoutes(
       res.json(data);
     } catch (err: any) {
       console.error("[1inch] Swap error:", err.message);
-      res.status(500).json({ message: err.message });
+      const msg = err.message || "";
+      if (msg.includes("Bad Request") && msg.includes("fromTokenBalance")) {
+        res.status(400).json({ message: "Insufficient balance — your wallet doesn't have enough of this token to complete the swap. Try a smaller amount." });
+      } else {
+        res.status(500).json({ message: msg });
+      }
     }
   });
 
