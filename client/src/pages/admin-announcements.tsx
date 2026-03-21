@@ -79,6 +79,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     audienceTier: "all",
   },
   {
+    title: "New: EVM Swap — Trade Thousands of Tokens Across 7 Chains",
+    description: "You can now swap any ERC-20 token directly from CryptoOwnBank — powered by the 1inch aggregator, which finds the best price across hundreds of DEXs.\n\nHere's what's included:\n\n⛓️ 7 Chains Supported — Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, and BNB Chain\n🔗 Connect MetaMask — works with browser extension and Ledger hardware wallets\n💰 Best Price Routing — 1inch scans 300+ liquidity sources to get you the best swap rate\n🔐 Non-Custodial — your tokens never leave your wallet. You sign every transaction yourself\n⚙️ Adjustable Slippage — set your tolerance from 0.5% to 3%\n📊 Real-Time Quotes — see the exact amount you'll receive before you swap\n\nHow it works:\n1. Connect your MetaMask wallet\n2. Pick your chain and tokens\n3. Enter an amount — we show you the best quote instantly\n4. Approve the token (one-time per token), then swap\n5. Track your transaction on the block explorer\n\nEVM Swap is available now for Premium and Pro members.\n\nOne platform. XRPL, Stellar, and now 7 EVM chains. Your keys, your trades.",
+    ctaLabel: "Try EVM Swap",
+    ctaUrl: "https://cryptoownbank.com/ownbank/evm-swap",
+    audienceTier: "all",
+  },
+  {
     title: "XLS-66 Validator Update — Here's Where We Stand",
     description: "Quick update on the XLS-66 amendment vote:\n\nXLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) are both in the validator voting phase. You can track live progress directly on the XLS-66 page — we pull data straight from the XRPL every 10 minutes.\n\nWhat to do while we wait:\n\n📋 Complete your readiness checklist — make sure your wallet, Xaman, and trustlines are set up\n🧮 Try the yield calculator — model potential earnings at different APR rates\n📖 Read \"What is XLS-66 & How Does It Work?\" on the lending page\n\nWhen validators hit 80% for 2 consecutive weeks on rippled 3.1.0+, the feature activates automatically — and CryptoOwnBank will be ready from day one.\n\nNo action required on your end other than being prepared. We'll notify you the moment it goes live.",
     ctaLabel: "Track Validator Progress",
