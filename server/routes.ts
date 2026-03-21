@@ -8925,6 +8925,137 @@ export async function registerRoutes(
     }
   });
 
+  const ONEINCH_API_KEY = process.env.ONEINCH_API_KEY || "";
+  const ONEINCH_AFFILIATE = "0xEc4e0f92BE6A1054FCfF951a5d28E55eB250E8a7";
+  const ONEINCH_FEE = 1;
+  const EVM_SUPPORTED_CHAINS = [1, 137, 42161, 10, 8453, 43114, 56];
+
+  async function oneinchFetch(path: string) {
+    if (!ONEINCH_API_KEY) throw new Error("1inch API key not configured");
+    const resp = await fetch(`https://api.1inch.dev${path}`, {
+      headers: {
+        "Authorization": `Bearer ${ONEINCH_API_KEY}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`1inch API error ${resp.status}: ${text}`);
+    }
+    return resp.json();
+  }
+
+  app.get("/api/evm/supported-chains", (_req, res) => {
+    res.json({ chains: EVM_SUPPORTED_CHAINS });
+  });
+
+  app.get("/api/evm/tokens/:chainId", isAuthenticated, async (req: any, res) => {
+    try {
+      const chainId = parseInt(req.params.chainId);
+      if (!EVM_SUPPORTED_CHAINS.includes(chainId)) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+      const data = await oneinchFetch(`/token/v1.2/${chainId}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[1inch] Token list error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/evm/quote", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chainId, src, dst, amount } = req.query;
+      if (!chainId || !src || !dst || !amount) {
+        return res.status(400).json({ message: "Missing required params: chainId, src, dst, amount" });
+      }
+      const chain = parseInt(chainId as string);
+      if (!EVM_SUPPORTED_CHAINS.includes(chain)) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+      const params = new URLSearchParams({
+        src: src as string,
+        dst: dst as string,
+        amount: amount as string,
+        fee: ONEINCH_FEE.toString(),
+      });
+      const data = await oneinchFetch(`/swap/v6.0/${chain}/quote?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[1inch] Quote error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/evm/approve", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chainId, tokenAddress, amount } = req.query;
+      if (!chainId || !tokenAddress) {
+        return res.status(400).json({ message: "Missing required params: chainId, tokenAddress" });
+      }
+      const chain = parseInt(chainId as string);
+      if (!EVM_SUPPORTED_CHAINS.includes(chain)) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+      const params = new URLSearchParams({ tokenAddress: tokenAddress as string });
+      if (amount) params.set("amount", amount as string);
+      const data = await oneinchFetch(`/swap/v6.0/${chain}/approve/transaction?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[1inch] Approve error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/evm/allowance", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chainId, tokenAddress, walletAddress } = req.query;
+      if (!chainId || !tokenAddress || !walletAddress) {
+        return res.status(400).json({ message: "Missing required params" });
+      }
+      const chain = parseInt(chainId as string);
+      if (!EVM_SUPPORTED_CHAINS.includes(chain)) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+      const params = new URLSearchParams({
+        tokenAddress: tokenAddress as string,
+        walletAddress: walletAddress as string,
+      });
+      const data = await oneinchFetch(`/swap/v6.0/${chain}/approve/allowance?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[1inch] Allowance error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/evm/swap", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chainId, src, dst, amount, from, slippage } = req.query;
+      if (!chainId || !src || !dst || !amount || !from) {
+        return res.status(400).json({ message: "Missing required params: chainId, src, dst, amount, from" });
+      }
+      const chain = parseInt(chainId as string);
+      if (!EVM_SUPPORTED_CHAINS.includes(chain)) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+      const params = new URLSearchParams({
+        src: src as string,
+        dst: dst as string,
+        amount: amount as string,
+        from: from as string,
+        slippage: (slippage as string) || "1",
+        referrer: ONEINCH_AFFILIATE,
+        fee: ONEINCH_FEE.toString(),
+      });
+      const data = await oneinchFetch(`/swap/v6.0/${chain}/swap?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[1inch] Swap error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   startPriceAlertChecker();
   seedPriceCache();
 
@@ -9443,134 +9574,4 @@ function startPriceAlertChecker() {
     }
   }, 8000);
 
-  const ONEINCH_API_KEY = process.env.ONEINCH_API_KEY || "";
-  const ONEINCH_AFFILIATE = "0xEc4e0f92BE6A1054FCfF951a5d28E55eB250E8a7";
-  const ONEINCH_FEE = 1;
-  const SUPPORTED_CHAINS = [1, 137, 42161, 10, 8453, 43114, 56];
-
-  async function oneinchFetch(path: string) {
-    if (!ONEINCH_API_KEY) throw new Error("1inch API key not configured");
-    const resp = await fetch(`https://api.1inch.dev${path}`, {
-      headers: {
-        "Authorization": `Bearer ${ONEINCH_API_KEY}`,
-        "Accept": "application/json",
-      },
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`1inch API error ${resp.status}: ${text}`);
-    }
-    return resp.json();
-  }
-
-  app.get("/api/evm/supported-chains", (_req, res) => {
-    res.json({ chains: SUPPORTED_CHAINS });
-  });
-
-  app.get("/api/evm/tokens/:chainId", isAuthenticated, async (req: any, res) => {
-    try {
-      const chainId = parseInt(req.params.chainId);
-      if (!SUPPORTED_CHAINS.includes(chainId)) {
-        return res.status(400).json({ message: "Unsupported chain" });
-      }
-      const data = await oneinchFetch(`/token/v1.2/${chainId}`);
-      res.json(data);
-    } catch (err: any) {
-      console.error("[1inch] Token list error:", err.message);
-      res.status(500).json({ message: err.message });
-    }
-  });
-
-  app.get("/api/evm/quote", isAuthenticated, async (req: any, res) => {
-    try {
-      const { chainId, src, dst, amount } = req.query;
-      if (!chainId || !src || !dst || !amount) {
-        return res.status(400).json({ message: "Missing required params: chainId, src, dst, amount" });
-      }
-      const chain = parseInt(chainId as string);
-      if (!SUPPORTED_CHAINS.includes(chain)) {
-        return res.status(400).json({ message: "Unsupported chain" });
-      }
-      const params = new URLSearchParams({
-        src: src as string,
-        dst: dst as string,
-        amount: amount as string,
-        fee: ONEINCH_FEE.toString(),
-      });
-      const data = await oneinchFetch(`/swap/v6.0/${chain}/quote?${params}`);
-      res.json(data);
-    } catch (err: any) {
-      console.error("[1inch] Quote error:", err.message);
-      res.status(500).json({ message: err.message });
-    }
-  });
-
-  app.get("/api/evm/approve", isAuthenticated, async (req: any, res) => {
-    try {
-      const { chainId, tokenAddress, amount } = req.query;
-      if (!chainId || !tokenAddress) {
-        return res.status(400).json({ message: "Missing required params: chainId, tokenAddress" });
-      }
-      const chain = parseInt(chainId as string);
-      if (!SUPPORTED_CHAINS.includes(chain)) {
-        return res.status(400).json({ message: "Unsupported chain" });
-      }
-      const params = new URLSearchParams({ tokenAddress: tokenAddress as string });
-      if (amount) params.set("amount", amount as string);
-      const data = await oneinchFetch(`/swap/v6.0/${chain}/approve/transaction?${params}`);
-      res.json(data);
-    } catch (err: any) {
-      console.error("[1inch] Approve error:", err.message);
-      res.status(500).json({ message: err.message });
-    }
-  });
-
-  app.get("/api/evm/allowance", isAuthenticated, async (req: any, res) => {
-    try {
-      const { chainId, tokenAddress, walletAddress } = req.query;
-      if (!chainId || !tokenAddress || !walletAddress) {
-        return res.status(400).json({ message: "Missing required params" });
-      }
-      const chain = parseInt(chainId as string);
-      if (!SUPPORTED_CHAINS.includes(chain)) {
-        return res.status(400).json({ message: "Unsupported chain" });
-      }
-      const params = new URLSearchParams({
-        tokenAddress: tokenAddress as string,
-        walletAddress: walletAddress as string,
-      });
-      const data = await oneinchFetch(`/swap/v6.0/${chain}/approve/allowance?${params}`);
-      res.json(data);
-    } catch (err: any) {
-      console.error("[1inch] Allowance error:", err.message);
-      res.status(500).json({ message: err.message });
-    }
-  });
-
-  app.get("/api/evm/swap", isAuthenticated, async (req: any, res) => {
-    try {
-      const { chainId, src, dst, amount, from, slippage } = req.query;
-      if (!chainId || !src || !dst || !amount || !from) {
-        return res.status(400).json({ message: "Missing required params: chainId, src, dst, amount, from" });
-      }
-      const chain = parseInt(chainId as string);
-      if (!SUPPORTED_CHAINS.includes(chain)) {
-        return res.status(400).json({ message: "Unsupported chain" });
-      }
-      const params = new URLSearchParams({
-        src: src as string,
-        dst: dst as string,
-        amount: amount as string,
-        from: from as string,
-        slippage: (slippage as string) || "1",
-        referrer: ONEINCH_AFFILIATE,
-        fee: ONEINCH_FEE.toString(),
-      });
-      const data = await oneinchFetch(`/swap/v6.0/${chain}/swap?${params}`);
-      res.json(data);
-    } catch (err: any) {
-      console.error("[1inch] Swap error:", err.message);
-      res.status(500).json({ message: err.message });
-    }
-  });
 }

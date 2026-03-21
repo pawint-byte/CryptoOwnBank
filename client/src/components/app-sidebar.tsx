@@ -104,6 +104,7 @@ const allItems: NavItem[] = [
   { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
   { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, color: "#00A4E4", group: "ownbank" },
   { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, color: "#00A4E4", group: "ownbank" },
+  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, color: "#00A4E4", group: "ownbank" },
   { title: "DCA Orders", url: "/ownbank/dca", icon: Repeat, color: "#00A4E4", group: "ownbank" },
   { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
   { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, color: "#00A4E4", group: "ownbank" },

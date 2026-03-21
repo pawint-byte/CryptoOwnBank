@@ -31,6 +31,7 @@ Preferred communication style: Simple, everyday language.
     -   **Branding**: Customizable business profiles for invoices and payment links.
     -   **Technical Analysis**: Interactive price charts with indicators (SMA, EMA, RSI, MACD, Bollinger Bands) for 21 assets.
     -   **XRPL Whale Alerts**: Real-time monitoring of large XRP (≥1M) and RLUSD (≥500K) transactions on XRPL.
+    -   **EVM Swap**: Multi-chain token swap powered by 1inch aggregation across Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, and BNB Chain. MetaMask + Ledger signing, token approval flow, slippage control, 1% affiliate fee. Premium/Pro tier required.
     -   **Payment Queue**: Offline payment caching with auto-sync when online for XRPL and Stellar payments.
     -   **Native Staking Guide**: Educational content for staking across XRP, ADA, ATOM, DOT, SOL.
     -   **XLS-65/66 Native Vaults & Lending**: Infrastructure for XRPL Single Asset Vaults and Lending Protocol, with amendment auto-detection and live vault discovery.
@@ -81,6 +82,15 @@ Preferred communication style: Simple, everyday language.
 ### Email Service
 -   Resend
 -   Nodemailer
+
+### EVM / DeFi
+-   ethers.js v6 (EVM wallet connection, transaction signing)
+-   1inch Aggregation API v6 (DEX swap routing, token approval, quote/swap across 7 EVM chains)
+-   MetaMask / Ledger signing via browser wallet (non-custodial)
+-   Supported chains: Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, BNB Chain
+-   Affiliate fee: 1% to 0xEc4e0f92BE6A1054FCfF951a5d28E55eB250E8a7
+-   Frontend: `client/src/pages/evm-swap.tsx`, `client/src/lib/evm-wallet.ts`
+-   Backend proxy: `/api/evm/*` routes in `server/routes.ts`
 
 ### Market Data
 -   CoinGecko API (prices, 24h change)

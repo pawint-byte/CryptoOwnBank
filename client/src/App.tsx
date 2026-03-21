@@ -40,6 +40,7 @@ import OwnBankReferrals from "@/pages/ownbank-referrals";
 import SigningOptions from "@/pages/signing-options";
 import OwnBankTokens from "@/pages/ownbank-tokens";
 import OwnBankDex from "@/pages/ownbank-dex";
+import EvmSwap from "@/pages/evm-swap";
 import OwnBankSend from "@/pages/ownbank-send";
 import OwnBankTransfer from "@/pages/ownbank-transfer";
 import Contact from "@/pages/contact";
@@ -145,6 +146,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/signing-options" component={SigningOptions} />
         <Route path="/ownbank/tokens" component={OwnBankTokens} />
         <Route path="/ownbank/dex" component={OwnBankDex} />
+        <Route path="/ownbank/evm-swap" component={EvmSwap} />
         <Route path="/ownbank/send" component={OwnBankSend} />
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
