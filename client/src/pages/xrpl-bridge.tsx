@@ -104,7 +104,8 @@ export default function XrplBridge() {
   const { toast } = useToast();
   const evmWallet = useEvmWallet();
 
-  const hasPremium = user?.subscriptionTier === "premium" || user?.subscriptionTier === "pro";
+  const isAdmin = (user as any)?.isAdmin === true;
+  const hasPremium = isAdmin || user?.subscriptionTier === "premium" || user?.subscriptionTier === "pro" || user?.subscriptionTier === "premium_annual";
 
   const [sourceChain, setSourceChain] = useState("1");
   const [sourceToken, setSourceToken] = useState("");
@@ -475,7 +476,24 @@ export default function XrplBridge() {
           </Card>
         )}
 
-        {!isConfigured && (
+        <div className="flex rounded-lg border overflow-hidden" data-testid="bridge-direction-toggle">
+          <button
+            className={`flex-1 py-2.5 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${direction === "evm-to-xrpl" ? "bg-primary text-primary-foreground" : "bg-muted/30 hover:bg-muted/60 text-muted-foreground"}`}
+            onClick={() => { setDirection("evm-to-xrpl"); setReverseBridgeStatus(null); }}
+            data-testid="button-direction-evm-to-xrpl"
+          >
+            <ArrowRight className="h-4 w-4" /> EVM → XRPL
+          </button>
+          <button
+            className={`flex-1 py-2.5 px-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${direction === "xrpl-to-evm" ? "bg-primary text-primary-foreground" : "bg-muted/30 hover:bg-muted/60 text-muted-foreground"}`}
+            onClick={() => { setDirection("xrpl-to-evm"); setBridgeStatus(null); }}
+            data-testid="button-direction-xrpl-to-evm"
+          >
+            <ArrowRight className="h-4 w-4" /> XRPL → EVM
+          </button>
+        </div>
+
+        {!isConfigured && direction === "evm-to-xrpl" && (
           <Card className="border-amber-500/50 bg-amber-500/5">
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
@@ -503,6 +521,7 @@ export default function XrplBridge() {
           </Card>
         )}
 
+        {direction === "evm-to-xrpl" ? (
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-4">
@@ -815,12 +834,174 @@ export default function XrplBridge() {
             )}
           </CardContent>
         </Card>
+        ) : (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Shield className="h-3 w-3" /> Axelar Secured
+              </Badge>
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Globe className="h-3 w-3" /> Xaman Signing
+              </Badge>
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <Link2 className="h-3 w-3" /> Non-Custodial
+              </Badge>
+            </div>
 
-        <Card className="bg-muted/30">
+            <div className="space-y-4">
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">FROM (XRP Ledger)</span>
+                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-xs">Source</Badge>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">XRP Amount</label>
+                  <Input
+                    type="number"
+                    placeholder="0.0 XRP"
+                    value={reverseAmount}
+                    onChange={e => setReverseAmount(e.target.value)}
+                    min="0"
+                    step="any"
+                    data-testid="input-reverse-bridge-amount"
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Info className="h-3.5 w-3.5" />
+                  <span>Signed via Xaman — your keys never leave your device</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center -my-1">
+                <div className="bg-primary/10 rounded-full p-2">
+                  <ArrowDownUp className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+
+              <div className="bg-muted/30 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">TO (EVM Chain)</span>
+                  <Badge variant="outline" className="text-xs">Destination</Badge>
+                </div>
+
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Destination Chain</label>
+                  <Select value={reverseDestChain} onValueChange={setReverseDestChain}>
+                    <SelectTrigger data-testid="select-reverse-dest-chain">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEST_EVM_CHAINS.map(c => (
+                        <SelectItem key={c.chainId} value={c.chainId}>
+                          {c.icon} {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">EVM Destination Address (0x...)</label>
+                  <Input
+                    placeholder="0x..."
+                    value={reverseEvmAddress}
+                    onChange={e => setReverseEvmAddress(e.target.value)}
+                    className="font-mono text-sm"
+                    data-testid="input-reverse-evm-address"
+                  />
+                  {reverseEvmAddress && !reverseEvmAddress.startsWith("0x") && (
+                    <p className="text-xs text-red-500 mt-1">EVM addresses start with '0x'</p>
+                  )}
+                  {evmWallet.address && reverseEvmAddress !== evmWallet.address && (
+                    <button
+                      type="button"
+                      className="text-xs text-primary hover:underline mt-1"
+                      onClick={() => setReverseEvmAddress(evmWallet.address || "")}
+                      data-testid="button-use-connected-address"
+                    >
+                      Use connected wallet: {shortenAddress(evmWallet.address)}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                className="w-full gap-2"
+                size="lg"
+                disabled={!reverseAmount || parseFloat(reverseAmount) <= 0 || !reverseEvmAddress || !reverseEvmAddress.startsWith("0x") || isReverseBridging}
+                onClick={() => setShowReverseConfirm(true)}
+                data-testid="button-reverse-bridge"
+              >
+                {isReverseBridging ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Bridging...</>
+                ) : (
+                  <><Zap className="h-4 w-4" /> Bridge XRP to {reverseDestChainInfo?.name || "EVM"}</>
+                )}
+              </Button>
+
+              {reverseBridgeStatus && (
+                <Card className={`border-${reverseBridgeStatus.status === "completed" ? "green" : reverseBridgeStatus.status === "failed" ? "red" : "blue"}-500/30`}>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-3">
+                      {reverseBridgeStatus.status === "signing" && <Loader2 className="h-5 w-5 animate-spin text-blue-500" />}
+                      {reverseBridgeStatus.status === "bridging" && <Loader2 className="h-5 w-5 animate-spin text-orange-500" />}
+                      {reverseBridgeStatus.status === "completed" && <CheckCircle className="h-5 w-5 text-green-500" />}
+                      {reverseBridgeStatus.status === "failed" && <AlertTriangle className="h-5 w-5 text-red-500" />}
+                      {reverseBridgeStatus.status === "timeout" && <Clock className="h-5 w-5 text-amber-500" />}
+                      <div>
+                        <p className="font-medium">
+                          {reverseBridgeStatus.status === "signing" && "Open Xaman to sign..."}
+                          {reverseBridgeStatus.status === "bridging" && "Bridging in Progress..."}
+                          {reverseBridgeStatus.status === "completed" && "Bridge Complete!"}
+                          {reverseBridgeStatus.status === "failed" && "Bridge Failed"}
+                          {reverseBridgeStatus.status === "timeout" && "Status Check Timeout"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {reverseBridgeStatus.status === "signing" && "Scan the QR code or approve in Xaman to sign the transaction."}
+                          {reverseBridgeStatus.status === "bridging" && "XRP sent to Axelar gateway. Cross-chain delivery may take 5-15 minutes."}
+                          {reverseBridgeStatus.status === "completed" && `Tokens delivered to your ${reverseDestChainInfo?.name || "EVM"} wallet.`}
+                          {reverseBridgeStatus.status === "failed" && "The cross-chain transfer encountered an error."}
+                          {reverseBridgeStatus.status === "timeout" && "Status tracking timed out. Check Axelarscan for your transaction."}
+                        </p>
+                      </div>
+                    </div>
+                    {reverseBridgeStatus.txHash && (
+                      <div className="mt-3">
+                        <a
+                          href={`https://livenet.xrpl.org/transactions/${reverseBridgeStatus.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+                          data-testid="link-xrpl-explorer-tx"
+                        >
+                          View on XRPL Explorer <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <a
+                          href={`https://axelarscan.io/gmp/${reverseBridgeStatus.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-500 hover:underline flex items-center gap-1 mt-1"
+                          data-testid="link-reverse-axelar-scan"
+                        >
+                          Track on Axelarscan <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        )}
+
+        <Card className="bg-muted/30" data-testid="card-bridge-info">
           <CardContent className="pt-4">
             <h3 className="font-semibold mb-2 flex items-center gap-2">
-              <Info className="h-4 w-4" /> How XRPL Bridge Works
+              <Info className="h-4 w-4" /> {direction === "evm-to-xrpl" ? "How EVM → XRPL Bridge Works" : "How XRPL → EVM Bridge Works"}
             </h3>
+            {direction === "evm-to-xrpl" ? (
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>
                 <strong>1. Connect EVM Wallet</strong> — Use MetaMask or WalletConnect to connect your Ethereum/EVM wallet.
@@ -835,11 +1016,27 @@ export default function XrplBridge() {
                 <strong>4. Bridge</strong> — Sign the transaction in your wallet. Axelar secures the cross-chain transfer, delivering native XRP to your XRPL address.
               </p>
             </div>
+            ) : (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                <strong>1. Enter XRP Amount</strong> — Specify how much XRP you want to bridge to an EVM chain.
+              </p>
+              <p>
+                <strong>2. Choose Destination</strong> — Select the EVM chain (Ethereum, Polygon, Arbitrum, etc.) and enter your EVM wallet address.
+              </p>
+              <p>
+                <strong>3. Sign with Xaman</strong> — A payment to the Axelar XRPL gateway is created. Scan the QR or approve in Xaman.
+              </p>
+              <p>
+                <strong>4. Cross-Chain Delivery</strong> — Axelar picks up the payment and delivers wrapped XRP (or your chosen token) to your EVM wallet. Typically takes 5-15 minutes.
+              </p>
+            </div>
+            )}
             <div className="mt-3 pt-3 border-t flex flex-wrap gap-2">
               <Badge variant="secondary" className="text-xs">Axelar Security</Badge>
               <Badge variant="secondary" className="text-xs">Non-Custodial</Badge>
-              <Badge variant="secondary" className="text-xs">100+ EVM Chains</Badge>
-              <Badge variant="secondary" className="text-xs">Native XRP Delivery</Badge>
+              <Badge variant="secondary" className="text-xs">{direction === "evm-to-xrpl" ? "EVM → XRPL" : "XRPL → EVM"}</Badge>
+              <Badge variant="secondary" className="text-xs">{direction === "evm-to-xrpl" ? "Native XRP Delivery" : "Xaman Signing"}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -895,6 +1092,55 @@ export default function XrplBridge() {
             <Button onClick={executeBridge} disabled={isSwapping} className="gap-2" data-testid="button-confirm-bridge">
               {isSwapping ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
               Confirm Bridge
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReverseConfirm} onOpenChange={setShowReverseConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm XRPL → EVM Bridge</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Send</span>
+              <span className="font-medium">{reverseAmount} XRP</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">From</span>
+              <span className="font-medium">XRP Ledger (via Xaman)</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">To Chain</span>
+              <span className="font-medium">{reverseDestChainInfo?.name || "Ethereum"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">EVM Address</span>
+              <span className="font-mono text-sm">{shortenAddress(reverseEvmAddress)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gateway</span>
+              <span className="font-mono text-xs">{shortenAddress(AXELAR_XRPL_GATEWAY)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Est. Time</span>
+              <span>5-15 minutes</span>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mt-2">
+              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                XRP will be sent to the Axelar XRPL gateway. Ensure your EVM destination address is correct — cross-chain transactions cannot be reversed.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReverseConfirm(false)} data-testid="button-cancel-reverse-bridge">
+              Cancel
+            </Button>
+            <Button onClick={executeReverseBridge} disabled={isReverseBridging} className="gap-2" data-testid="button-confirm-reverse-bridge">
+              {isReverseBridging ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
+              Sign with Xaman
             </Button>
           </DialogFooter>
         </DialogContent>
