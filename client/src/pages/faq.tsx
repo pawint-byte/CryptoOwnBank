@@ -174,7 +174,7 @@ const faqGroups = [
       },
       {
         q: "What is Earn & Accumulate XRP?",
-        a: 'Earn & Accumulate is the strategy for turning Soil vault yield into XRP. The flow: (1) Your RLUSD earns yield in a Soil vault. (2) When you\'re ready, withdraw your full position via Soil — RLUSD returns to your wallet. (3) Your DCA order (if active) automatically converts the RLUSD to XRP on the next scheduled run via the XRPL DEX. You control the DCA settings: how much to convert, how often, and minimum amounts. Set up DCA before withdrawing so the RLUSD starts working immediately. Available to Premium ($29/mo) and Pro ($99/mo) members.',
+        a: 'Earn & Accumulate is the strategy for accumulating XRP from your Soil vault position. The flow: (1) Your RLUSD earns yield in a Soil vault. (2) When you\'re ready, withdraw your full position (principal + interest) via Soil — Soil only supports full withdrawal, no partial, no interest-only. (3) RLUSD returns to your wallet. (4) Your DCA order (if active) converts a configured portion into XRP on the next scheduled run via the XRPL DEX — you control how much with a slider (10–100%) and a minimum threshold. (5) After the conversion, redeposit your remaining principal back into Soil to keep earning. Every step requires your approval in Xaman — nothing happens without your signature. Set up DCA before withdrawing so your RLUSD starts working immediately. Available to Premium ($29/mo) and Pro ($99/mo) members.',
       },
       {
         q: "Can I withdraw just the interest from a Soil vault?",
@@ -705,6 +705,23 @@ const faqGroups = [
       {
         q: "What RWA protocols are covered in the Earn & Yield Explorer?",
         a: 'The <a href="/rwa-yields" class="text-[#00A4E4] underline hover:no-underline">Earn & Yield Explorer</a> now covers 10+ protocols with live APY data pulled from DefiLlama: Soil Protocol (5–8% on RLUSD), Ondo Finance (USDY and OUSG backed by US Treasuries), Maple Finance (institutional credit), OpenEden (tokenized T-Bills), Backed Finance (bIB01 tokenized bonds), Goldfinch (emerging market credit, 7–10%), Centrifuge (real-world trade receivables), Aave and Compound (variable DeFi lending rates), Morpho (optimized lending), and Spark/MakerDAO. Yields update in real-time so you always see current rates, not stale estimates.',
+      },
+    ],
+  },
+  {
+    heading: "Mobile App & PWA",
+    items: [
+      {
+        q: "Is there a CryptoOwnBank mobile app?",
+        a: "CryptoOwnBank works as a Progressive Web App (PWA) — you can install it directly from your browser to your phone's home screen. It opens full screen like a native app, with its own icon and fast loading. No App Store or Google Play needed. On iPhone: open CryptoOwnBank in Safari, tap the Share button, then 'Add to Home Screen.' On Android: open in Chrome, tap the three-dot menu, then 'Install app' or 'Add to Home Screen.' Once installed, you have your entire crypto dashboard one tap away — portfolio, DCA approvals, whale alerts, Legacy Plan, everything.",
+      },
+      {
+        q: "Why a PWA instead of a native App Store app?",
+        a: "Three reasons: (1) No gatekeeper — Apple and Google can reject, delay, or remove apps from their stores. A PWA goes directly from our server to your phone. No middleman deciding whether you can have access. (2) Instant updates — when we push an update, you get it immediately on your next visit. No waiting for App Store review. No version fragmentation. (3) Same codebase — the PWA is the same app you use on desktop, so every feature is available on mobile from day one. PWAs support offline caching, push notifications, and full-screen mode. For a non-custodial crypto tool, this is the ideal delivery method — your app, your phone, no intermediary.",
+      },
+      {
+        q: "Does the PWA work offline?",
+        a: "The app shell and recently viewed pages are cached for fast loading. However, most features (portfolio data, live prices, DEX trading, whale alerts) require an internet connection because they pull real-time data from blockchains and APIs. The PWA ensures the app loads quickly even on slow connections and keeps working if you briefly lose signal.",
       },
     ],
   },

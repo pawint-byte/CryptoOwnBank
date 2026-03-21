@@ -15,3 +15,4 @@ if (gaId) {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+

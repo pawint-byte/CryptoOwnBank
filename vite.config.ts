@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: "CryptoOwnBank — Be Your Own Bank",
         short_name: "CryptoOwnBank",
-        description: "Non-custodial crypto portfolio tracker with yield vaults, offline payment queuing, and multi-chain support.",
+        description: "Non-custodial crypto portfolio tracker with RLUSD yield vaults, DEX trading, DCA orders, EVM Swap, Cross-Chain Swap, XRPL Bridge, and 24-chain support. Your keys, your crypto.",
         theme_color: "#00A4E4",
         background_color: "#0a0a0a",
         display: "standalone",

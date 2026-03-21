@@ -53,6 +53,8 @@ import {
   Waves,
   CandlestickChart,
   Repeat,
+  GitCompareArrows,
+  Smartphone,
 } from "lucide-react";
 
 const xrplToolsComparison = [
@@ -114,6 +116,16 @@ const xrplToolsComparison = [
     newTitle: "AMM Pools",
     newDesc: "Track XRPL AMM pool liquidity, see your LP share, earn trading fees transparently on-chain",
     link: "/amm-pools",
+    status: "live",
+  },
+  {
+    oldIcon: ArrowLeftRight,
+    oldTitle: "Cross-Border Bridge (SWIFT/Banks)",
+    oldDesc: "Move assets between systems? Convert to fiat, wire it, convert back — days of waiting, fees at every step",
+    newIcon: GitCompareArrows,
+    newTitle: "XRPL Bridge",
+    newDesc: "Bridge ETH/USDC from Ethereum directly to native XRP on the XRP Ledger via Axelar — minutes, not days",
+    link: "/ownbank/xrpl-bridge",
     status: "live",
   },
   {
@@ -343,19 +355,35 @@ const memberStories = [
     benefit: "5–8% fixed APR on RLUSD. No platform fees. Every cent of yield is yours.",
   },
   {
+    title: "Bridge Your World — EVM to XRP in Minutes",
+    icon: GitCompareArrows,
+    accent: "from-indigo-500/10 to-blue-500/10",
+    story:
+      "You hold ETH on Ethereum. You want native XRP on the XRP Ledger. Before, you'd sell ETH on an exchange, withdraw fiat, buy XRP on another exchange, then withdraw to your wallet — days of waiting, multiple fees, and your funds sitting on custodial platforms the entire time. The XRPL Bridge (powered by Axelar via Squid Router) eliminates all of that. Connect your MetaMask or WalletConnect wallet, enter your XRPL destination address, and bridge directly from Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, or BNB Chain to native XRP. Non-custodial throughout — Axelar secures the cross-chain transfer, and your XRP arrives on the XRP Ledger in minutes.",
+    benefit: "Bridge ETH/USDC to native XRP without touching an exchange. 7 EVM chains supported. Minutes, not days.",
+  },
+  {
     title: "Security the Way You Want It",
     icon: Lock,
     accent: "from-purple-500/10 to-violet-500/10",
     story:
-      "CryptoOwnBank gives you the control and ownership you need while enforcing security the way you want. Cold wallet for maximum protection? Ledger hardware signing for every transaction. Hot wallet for convenience? Xaman on your phone. On-ramp or off-ramp? Your choice. YOU hold your keys, YOU choose where your money earns yield, YOU decide when to withdraw. No bank can freeze your account, change your terms, or deny you access.",
-    benefit: "Cold wallet, hot wallet, hardware signing, phone signing — your security, your rules.",
+      "CryptoOwnBank gives you the control and ownership you need while enforcing security the way you want. Cold wallet for maximum protection? Ledger hardware signing for every transaction. Hot wallet for convenience? Xaman on your phone. WalletConnect for mobile? Scan a QR code with MetaMask Mobile, Trust Wallet, Rainbow, or 50+ other wallets. On-ramp or off-ramp? Your choice. YOU hold your keys, YOU choose where your money earns yield, YOU decide when to withdraw. No bank can freeze your account, change your terms, or deny you access.",
+    benefit: "Cold wallet, hot wallet, hardware signing, phone signing, WalletConnect — your security, your rules.",
+  },
+  {
+    title: "Earn & Accumulate — Turn Yield into XRP",
+    icon: Coins,
+    accent: "from-emerald-500/10 to-teal-500/10",
+    story:
+      "Your RLUSD earns 5–8% APR in a Soil vault. When you're ready to take profits, you withdraw your full position (principal + interest — Soil only supports full withdrawal). Your RLUSD returns to your wallet. From there, your DCA order converts a portion into XRP on the XRPL DEX on the next scheduled run. You control how much to convert with a slider (10–100%) and set a minimum threshold. After the conversion, you can redeposit your remaining principal back into Soil to keep earning. Every step requires your approval in Xaman — nothing happens without your signature.",
+    benefit: "Soil yield → withdraw full position → DCA a portion to XRP → redeposit principal. You approve each step.",
   },
   {
     title: "All the Work Is Done for You",
     icon: BarChart3,
     accent: "from-amber-500/10 to-orange-500/10",
     story:
-      "Most people leave money on the table because they don't know what's available. CryptoOwnBank does the work for you: the Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities. Statement Insights compares your bank rates against what you could earn on-chain. You don't go looking for information — the information comes to you. This is where everything starts: one interface, all your crypto, all your opportunities, all your tools.",
+      "Most people leave money on the table because they don't know what's available. CryptoOwnBank does the work for you: the Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities. Statement Insights compares your bank rates against what you could earn on-chain. Whale Alerts show you large XRP and RLUSD movements in real time. Technical Analysis identifies chart patterns and explains them in plain English. You don't go looking for information — the information comes to you. This is where everything starts: one interface, all your crypto, all your opportunities, all your tools.",
     benefit: "One dashboard, 24 blockchains, all the research done for you — the information finds you.",
   },
   {
@@ -374,14 +402,24 @@ const memberStories = [
       "Self-custody solves the exchange risk. But there's one risk it can't solve alone: if something happens to you, your family doesn't know how to access your wallets. The same security that protects you from exchanges also means nobody can call a support line to recover your funds. The Legacy Plan is a dead man's switch — it checks in with you periodically. If you stop responding, your designated beneficiaries receive encrypted instructions for accessing your wallets. Your crypto stays in your wallets, earning yield, until the moment it transfers to the people you chose. Not to an exchange. Not to a bankruptcy court. To your family. CryptoOwnBank is where everything starts — and it doesn't end.",
     benefit: "Crypto inheritance solved. Your family receives your wallets, not a bankruptcy notice. (Included free with Pro.)",
   },
+  {
+    title: "Your Bank in Your Pocket",
+    icon: Smartphone,
+    accent: "from-sky-500/10 to-blue-500/10",
+    story:
+      "CryptoOwnBank works as a Progressive Web App — install it on your iPhone or Android home screen and it looks and feels like a native app. Full screen, fast loading, your own icon. No App Store needed, no waiting for approval, no middleman deciding whether you can have access. Open your browser, tap 'Add to Home Screen,' and your entire crypto dashboard is one tap away. Check your portfolio, approve DCA orders, monitor whale alerts, review your Legacy Plan — all from your phone, all non-custodial.",
+    benefit: "Install on your phone from the browser. No App Store needed. Your entire dashboard in your pocket.",
+  },
 ];
 
 const whyNow = [
   { icon: Shield, text: "Every exchange that has failed proved the same lesson: if you don't hold your keys, you don't own your crypto" },
   { icon: Zap, text: "This migration is inevitable. Fiat rails are slow, expensive, and built for institutions — not for you. On-chain finance is faster, cheaper, and puts you in control" },
   { icon: Globe, text: "RLUSD is live on XRPL — a regulated, dollar-backed stablecoin you can hold, earn on, and spend without a bank account" },
+  { icon: GitCompareArrows, text: "The XRPL Bridge is live — bridge assets from Ethereum, Arbitrum, Optimism, Base, Polygon, Avalanche, or BNB Chain directly to native XRP. No exchange needed, no fiat conversion" },
   { icon: Users, text: "Every person you pay on-chain is one less reason to go back to fiat. Every business that accepts crypto pulls their whole network forward. The snowball is rolling" },
   { icon: TrendingUp, text: "Banks pay 0.01–4.5%. You can earn 5–8% and keep every cent. The longer you wait, the more yield you leave on the table" },
+  { icon: Smartphone, text: "Install CryptoOwnBank on your phone as a PWA — full-screen app, no App Store needed. Your entire crypto dashboard is one tap away" },
   { icon: DollarSign, text: "The dollar loses purchasing power every year. Once your value lives on the blockchain, you stop losing money to inflation, conversion fees, and intermediaries" },
 ];
 
@@ -429,10 +467,28 @@ const testimonials = [
     persona: "Portfolio Migrator",
   },
   {
+    quote: "I bridged ETH from Arbitrum to native XRP in about 10 minutes. No exchange, no KYC, no fiat conversion. Connected WalletConnect on my phone, entered my XRPL address, signed the transaction, and XRP showed up in my Xaman wallet. That's how cross-chain should work.",
+    author: "ChainHopper",
+    role: "Premium Member",
+    persona: "Cross-Chain Bridge User",
+  },
+  {
     quote: "I set price alerts for BTC, ETH, and XRP and just wait. No need to watch charts all day. When something hits my target, I get notified. Clean, simple, no noise. And my crypto is in my own wallet the entire time — no exchange risk while I sleep.",
     author: "PatientCapital",
     role: "Free Tier User",
     persona: "Set-and-Forget Investor",
+  },
+  {
+    quote: "I earn yield on RLUSD in Soil, then withdraw my full position when I'm ready. My DCA order converts part of it to XRP automatically on the next run, and I redeposit my principal back to keep earning. Each step is one approval in Xaman. Simple loop — earn, convert, redeposit.",
+    author: "YieldLoop",
+    role: "Pro Member",
+    persona: "Earn & Accumulate Strategist",
+  },
+  {
+    quote: "Added CryptoOwnBank to my iPhone home screen — it opens full screen like a real app. I check my portfolio, approve DCA buys, and monitor whale alerts on the train every morning. No App Store needed.",
+    author: "MobileFirst",
+    role: "Premium Member",
+    persona: "Mobile PWA User",
   },
   {
     quote: "I run a small web design studio. Stripe was taking 2.9% of every invoice — on a $5,000 project that's $145 gone. Now clients pay me in RLUSD, it settles in 4 seconds, and I keep every dollar. No chargebacks, no frozen accounts, no third party who can decide I can't access my own money.",
