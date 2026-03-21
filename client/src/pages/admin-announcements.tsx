@@ -92,6 +92,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     ctaUrl: "https://cryptoownbank.com/xls66-lending",
     audienceTier: "all",
   },
+  {
+    title: "New: XRPL Bridge — Move Assets Between XRP Ledger and EVM Chains",
+    description: "You can now bridge assets between the XRP Ledger and 7 EVM chains — both directions — directly from CryptoOwnBank.\n\n🔁 Bidirectional Bridge\nEVM → XRPL: Send tokens from Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, or BNB Chain to the XRP Ledger. Powered by Squid Router + Axelar.\nXRPL → EVM: Send XRP from the XRP Ledger to any EVM chain. Sign with Xaman — one tap on your phone and you're done.\n\n📱 Mobile-Friendly\nOn your phone, Xaman and MetaMask are native apps — signing is instant. No browser extensions needed. WalletConnect lets you use your phone wallet even when browsing on desktop.\n\n💰 Live Balances & MAX Button\nBoth directions show your real-time token balance with a MAX button. The XRPL side reserves 10 XRP for your account minimum. The EVM side supports native tokens and ERC-20s.\n\n🔐 Non-Custodial\nYou sign every transaction yourself — we never hold your tokens.\n\nAvailable now for Premium and Pro members.",
+    ctaLabel: "Try the XRPL Bridge",
+    ctaUrl: "https://cryptoownbank.com/ownbank/xrpl-bridge",
+    audienceTier: "all",
+  },
 ];
 
 export default function AdminAnnouncements() {
