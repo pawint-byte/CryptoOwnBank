@@ -104,7 +104,7 @@ const allItems: NavItem[] = [
   { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
   { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, color: "#00A4E4", group: "ownbank" },
   { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, color: "#00A4E4", group: "ownbank" },
-  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, color: "#00A4E4", group: "ownbank" },
+  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, color: "#F7931A", group: "evm" },
   { title: "DCA Orders", url: "/ownbank/dca", icon: Repeat, color: "#00A4E4", group: "ownbank" },
   { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
   { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, color: "#00A4E4", group: "ownbank" },
@@ -283,6 +283,7 @@ export function AppSidebar() {
   const portfolioItems = allItems.filter((i) => i.group === "portfolio");
   const marketItems = allItems.filter((i) => i.group === "market");
   const ownbankItems = allItems.filter((i) => i.group === "ownbank");
+  const evmItems = allItems.filter((i) => i.group === "evm");
   const stellarItems = allItems.filter((i) => i.group === "stellar");
   const planningItems = allItems.filter((i) => i.group === "planning");
   const learnItems = allItems.filter((i) => i.group === "learn");
@@ -374,6 +375,8 @@ export function AppSidebar() {
           ownbankItems,
           "#00A4E4",
         )}
+
+        {renderCollapsibleGroup("evm", "OwnBank EVM", evmItems, "#F7931A")}
 
         {renderCollapsibleGroup("stellar", "OwnBank Stellar", stellarItems, "#7B61FF")}
 
