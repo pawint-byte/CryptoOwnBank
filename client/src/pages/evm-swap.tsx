@@ -556,6 +556,30 @@ export default function EvmSwap() {
         </div>
 
         <div className="space-y-4">
+          {!isConnected && (
+            <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  Before You Start
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground space-y-3" data-testid="card-prerequisites">
+                <p className="font-medium text-foreground">You need a MetaMask wallet to use EVM Swap:</p>
+                <ol className="list-decimal list-inside space-y-1.5">
+                  <li>Install the <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline font-medium">MetaMask browser extension</a></li>
+                  <li>Create or import a wallet with ETH or tokens on the chain you want to trade</li>
+                  <li>Click "Connect MetaMask" above to link your wallet</li>
+                  <li>Pick your tokens, get a quote, and approve the swap</li>
+                </ol>
+                <div className="pt-1 border-t border-amber-200 dark:border-amber-800 space-y-1">
+                  <p><span className="font-medium text-foreground">Ledger users:</span> Connect your Ledger to MetaMask first, then connect MetaMask here. Your Ledger signs every transaction.</p>
+                  <p><span className="font-medium text-foreground">Gas fees:</span> You need a small amount of the native token (ETH, POL, BNB, etc.) on the chain you're trading to pay for gas.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
