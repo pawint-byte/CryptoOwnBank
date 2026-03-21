@@ -233,9 +233,9 @@ const features = [
   },
   {
     icon: Zap,
-    title: "EVM Swap & Cross-Chain — 30+ Chains",
+    title: "EVM Swap, Cross-Chain & XRPL Bridge",
     description:
-      "Swap thousands of tokens on any single EVM chain via 1inch, or bridge + swap across different chains via LI.FI — all from one screen. Connect with MetaMask, WalletConnect (50+ mobile wallets via QR scan), or Ledger. Non-custodial, best-price routing, full route visualization.",
+      "Swap thousands of tokens on any EVM chain via 1inch, bridge across EVM chains via LI.FI, or bridge directly from Ethereum to native XRP on the XRP Ledger via Axelar (Squid Router). Connect with MetaMask, WalletConnect (50+ mobile wallets), or Ledger. Non-custodial, best-price routing.",
     link: "/ownbank/evm-swap",
     linkLabel: "Open EVM Swap",
   },
@@ -475,7 +475,7 @@ const freeTierFeatures = [
 const premiumFeatures = [
   "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
-  "EVM Swap — swap thousands of tokens across 7 chains via 1inch + Cross-Chain Swap (bridge between chains via LI.FI)",
+  "EVM Swap (1inch) + Cross-Chain Swap (LI.FI) + XRPL Bridge (Axelar/Squid — ETH → native XRP)",
   "WalletConnect — scan QR code to connect MetaMask Mobile, Trust Wallet, Rainbow, Coinbase Wallet, or 50+ other mobile wallets",
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Earn & Accumulate XRP — auto-convert vault interest into XRP on the DEX (configurable %, min threshold)",

@@ -9162,19 +9162,20 @@ export async function registerRoutes(
     }
   });
 
-  function requirePremiumTier(req: any, res: any): boolean {
+  async function requirePremiumTier(req: any, res: any): Promise<boolean> {
     const user = req.user;
     if (!user) { res.status(401).json({ message: "Authentication required" }); return false; }
-    const tier = user.subscriptionTier || "free";
-    const isAdmin = user.isAdmin === true;
-    if (isAdmin || tier === "premium" || tier === "pro" || tier === "premium_annual") return true;
+    const userId = user.claims?.sub;
+    if (!userId) { res.status(401).json({ message: "Authentication required" }); return false; }
+    const { tier } = await getEffectiveTier(userId);
+    if (tier === "premium" || tier === "pro" || tier === "premium_annual") return true;
     res.status(403).json({ message: "Premium subscription required for cross-chain swaps" });
     return false;
   }
 
   app.get("/api/cross-chain/quote", isAuthenticated, async (req: any, res) => {
     try {
-      if (!requirePremiumTier(req, res)) return;
+      if (!(await requirePremiumTier(req, res))) return;
       const { fromChain, toChain, fromToken, toToken, fromAmount, fromAddress, slippage } = req.query;
       if (!fromChain || !toChain || !fromToken || !toToken || !fromAmount || !fromAddress) {
         return res.status(400).json({ message: "Missing required params: fromChain, toChain, fromToken, toToken, fromAmount, fromAddress" });
@@ -9199,7 +9200,7 @@ export async function registerRoutes(
 
   app.post("/api/cross-chain/routes", isAuthenticated, async (req: any, res) => {
     try {
-      if (!requirePremiumTier(req, res)) return;
+      if (!(await requirePremiumTier(req, res))) return;
       const { fromChainId, toChainId, fromTokenAddress, toTokenAddress, fromAmount, fromAddress, slippage } = req.body;
       if (!fromChainId || !toChainId || !fromTokenAddress || !toTokenAddress || !fromAmount || !fromAddress) {
         return res.status(400).json({ message: "Missing required body fields" });
@@ -9229,7 +9230,7 @@ export async function registerRoutes(
 
   app.get("/api/cross-chain/status", isAuthenticated, async (req: any, res) => {
     try {
-      if (!requirePremiumTier(req, res)) return;
+      if (!(await requirePremiumTier(req, res))) return;
       const { txHash, bridge, fromChain, toChain } = req.query;
       if (!txHash) {
         return res.status(400).json({ message: "Missing txHash" });
@@ -9248,7 +9249,7 @@ export async function registerRoutes(
 
   app.get("/api/cross-chain/step-transaction", isAuthenticated, async (req: any, res) => {
     try {
-      if (!requirePremiumTier(req, res)) return;
+      if (!(await requirePremiumTier(req, res))) return;
       const { routeId, stepId } = req.query;
       if (!routeId || !stepId) {
         return res.status(400).json({ message: "Missing routeId or stepId" });
@@ -9258,6 +9259,114 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("[LI.FI] Step transaction error:", err.message);
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── XRPL Bridge (Squid Router / Axelar-powered) ──
+  const SQUID_BASE = "https://apiplus.squidrouter.com/v2";
+  const SQUID_INTEGRATOR_ID = process.env.SQUID_INTEGRATOR_ID || "";
+
+  async function squidFetch(path: string, options?: { method?: string; body?: any }) {
+    if (!SQUID_INTEGRATOR_ID) {
+      throw new Error("Squid integrator ID not configured");
+    }
+    const resp = await fetch(`${SQUID_BASE}${path}`, {
+      method: options?.method || "GET",
+      headers: {
+        "x-integrator-id": SQUID_INTEGRATOR_ID,
+        "Accept": "application/json",
+        ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(options?.body ? { body: JSON.stringify(options.body) } : {}),
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`Squid API error ${resp.status}: ${text}`);
+    }
+    return resp.json();
+  }
+
+  app.get("/api/xrpl-bridge/status-check", (_req, res) => {
+    res.json({ configured: !!SQUID_INTEGRATOR_ID });
+  });
+
+  app.get("/api/xrpl-bridge/chains", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requirePremiumTier(req, res))) return;
+      const data = await squidFetch("/sdk-info");
+      const chains = (data.chains || []).map((c: any) => ({
+        chainId: c.chainId,
+        chainName: c.chainName,
+        networkName: c.networkName,
+        type: c.type,
+        nativeCurrency: c.nativeCurrency,
+        chainIconURI: c.chainIconURI,
+      }));
+      res.json({ chains });
+    } catch (err: any) {
+      console.error("[Squid] Chains error:", err.message);
+      res.status(500).json({ message: "Failed to fetch bridge chains. Please try again." });
+    }
+  });
+
+  app.get("/api/xrpl-bridge/tokens", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requirePremiumTier(req, res))) return;
+      const { chainId } = req.query;
+      const data = await squidFetch("/sdk-info");
+      const allTokens = data.tokens || {};
+      if (chainId) {
+        res.json({ tokens: allTokens[chainId] || [] });
+      } else {
+        res.json({ tokens: allTokens });
+      }
+    } catch (err: any) {
+      console.error("[Squid] Tokens error:", err.message);
+      res.status(500).json({ message: "Failed to fetch bridge tokens. Please try again." });
+    }
+  });
+
+  app.post("/api/xrpl-bridge/route", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requirePremiumTier(req, res))) return;
+      const { fromChain, toChain, fromToken, toToken, fromAmount, fromAddress, toAddress, slippageConfig } = req.body;
+      if (!fromChain || !toChain || !fromToken || !toToken || !fromAmount || !fromAddress || !toAddress) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      const data = await squidFetch("/route", {
+        method: "POST",
+        body: {
+          fromChain,
+          toChain,
+          fromToken,
+          toToken,
+          fromAmount,
+          fromAddress,
+          toAddress,
+          slippageConfig: slippageConfig || { autoMode: 1 },
+        },
+      });
+      res.json(data);
+    } catch (err: any) {
+      console.error("[Squid] Route error:", err.message);
+      res.status(500).json({ message: "Failed to get bridge route. Please check your inputs and try again." });
+    }
+  });
+
+  app.get("/api/xrpl-bridge/tx-status", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!(await requirePremiumTier(req, res))) return;
+      const { transactionId, requestId, fromChainId, toChainId } = req.query;
+      const params = new URLSearchParams();
+      if (transactionId) params.set("transactionId", transactionId as string);
+      if (requestId) params.set("requestId", requestId as string);
+      if (fromChainId) params.set("fromChainId", fromChainId as string);
+      if (toChainId) params.set("toChainId", toChainId as string);
+      const data = await squidFetch(`/status?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[Squid] Status error:", err.message);
+      res.status(500).json({ message: "Failed to check bridge status. Please try again." });
     }
   });
 
