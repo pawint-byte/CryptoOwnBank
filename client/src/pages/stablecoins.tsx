@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/seo-head";
 import { AFFILIATE_LINKS } from "@/lib/xrpl-client";
+import { useXrplStore } from "@/lib/xrpl-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -381,6 +382,7 @@ function StablecoinCard({ coin }: { coin: StablecoinEntry }) {
 
 export default function Stablecoins() {
   const [activeTab, setActiveTab] = useState("directory");
+  const { rlusdBalance, vaultDeposits, isConnected: xrplConnected } = useXrplStore();
 
   const { data: walletsData } = useQuery<WalletData[]>({
     queryKey: ["/api/wallets"],
@@ -411,6 +413,31 @@ export default function Stablecoins() {
             location: w.label || `${w.chain} wallet`,
           });
         }
+      }
+    }
+  }
+
+  if (xrplConnected && rlusdBalance > 0) {
+    const alreadyHasXrplRlusd = userHoldings.some(h => h.symbol === "RLUSD" && h.location.toLowerCase().includes("xrpl"));
+    if (!alreadyHasXrplRlusd) {
+      userHoldings.push({
+        symbol: "RLUSD",
+        balance: rlusdBalance,
+        usdValue: rlusdBalance,
+        location: "XRPL Wallet",
+      });
+    }
+  }
+
+  if (xrplConnected && vaultDeposits.length > 0) {
+    for (const vault of vaultDeposits) {
+      if (vault.principal > 0) {
+        userHoldings.push({
+          symbol: "RLUSD",
+          balance: vault.principal,
+          usdValue: vault.principal,
+          location: `Soil ${vault.vaultName}`,
+        });
       }
     }
   }
