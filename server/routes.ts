@@ -9114,6 +9114,153 @@ export async function registerRoutes(
     }
   });
 
+  const LIFI_BASE = "https://li.quest/v1";
+
+  async function lifiFetch(path: string, options?: { method?: string; body?: any }) {
+    const resp = await fetch(`${LIFI_BASE}${path}`, {
+      method: options?.method || "GET",
+      headers: {
+        "Accept": "application/json",
+        ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(options?.body ? { body: JSON.stringify(options.body) } : {}),
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`LI.FI API error ${resp.status}: ${text}`);
+    }
+    return resp.json();
+  }
+
+  app.get("/api/cross-chain/chains", async (_req, res) => {
+    try {
+      const data = await lifiFetch("/chains?chainTypes=EVM");
+      const chains = data.chains.map((c: any) => ({
+        id: c.id,
+        key: c.key,
+        name: c.name,
+        coin: c.coin,
+        logoURI: c.logoURI,
+        nativeToken: c.nativeToken,
+      }));
+      res.json({ chains });
+    } catch (err: any) {
+      console.error("[LI.FI] Chains error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/cross-chain/tokens", async (req, res) => {
+    try {
+      const { chains } = req.query;
+      const params = chains ? `?chains=${chains}` : "";
+      const data = await lifiFetch(`/tokens${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[LI.FI] Tokens error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  function requirePremiumTier(req: any, res: any): boolean {
+    const user = req.user;
+    if (!user) { res.status(401).json({ message: "Authentication required" }); return false; }
+    const tier = user.subscriptionTier || "free";
+    const isAdmin = user.isAdmin === true;
+    if (isAdmin || tier === "premium" || tier === "pro" || tier === "premium_annual") return true;
+    res.status(403).json({ message: "Premium subscription required for cross-chain swaps" });
+    return false;
+  }
+
+  app.get("/api/cross-chain/quote", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!requirePremiumTier(req, res)) return;
+      const { fromChain, toChain, fromToken, toToken, fromAmount, fromAddress, slippage } = req.query;
+      if (!fromChain || !toChain || !fromToken || !toToken || !fromAmount || !fromAddress) {
+        return res.status(400).json({ message: "Missing required params: fromChain, toChain, fromToken, toToken, fromAmount, fromAddress" });
+      }
+      const params = new URLSearchParams({
+        fromChain: fromChain as string,
+        toChain: toChain as string,
+        fromToken: fromToken as string,
+        toToken: toToken as string,
+        fromAmount: fromAmount as string,
+        fromAddress: fromAddress as string,
+        slippage: (slippage as string) || "0.03",
+        integrator: "cryptoownbank",
+      });
+      const data = await lifiFetch(`/quote?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[LI.FI] Quote error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/cross-chain/routes", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!requirePremiumTier(req, res)) return;
+      const { fromChainId, toChainId, fromTokenAddress, toTokenAddress, fromAmount, fromAddress, slippage } = req.body;
+      if (!fromChainId || !toChainId || !fromTokenAddress || !toTokenAddress || !fromAmount || !fromAddress) {
+        return res.status(400).json({ message: "Missing required body fields" });
+      }
+      const data = await lifiFetch("/advanced/routes", {
+        method: "POST",
+        body: {
+          fromChainId: parseInt(fromChainId),
+          toChainId: parseInt(toChainId),
+          fromTokenAddress,
+          toTokenAddress,
+          fromAmount,
+          fromAddress,
+          options: {
+            slippage: parseFloat(slippage || "0.03"),
+            order: "RECOMMENDED",
+            integrator: "cryptoownbank",
+          },
+        },
+      });
+      res.json(data);
+    } catch (err: any) {
+      console.error("[LI.FI] Routes error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/cross-chain/status", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!requirePremiumTier(req, res)) return;
+      const { txHash, bridge, fromChain, toChain } = req.query;
+      if (!txHash) {
+        return res.status(400).json({ message: "Missing txHash" });
+      }
+      const params = new URLSearchParams({ txHash: txHash as string });
+      if (bridge) params.set("bridge", bridge as string);
+      if (fromChain) params.set("fromChain", fromChain as string);
+      if (toChain) params.set("toChain", toChain as string);
+      const data = await lifiFetch(`/status?${params}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[LI.FI] Status error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/cross-chain/step-transaction", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!requirePremiumTier(req, res)) return;
+      const { routeId, stepId } = req.query;
+      if (!routeId || !stepId) {
+        return res.status(400).json({ message: "Missing routeId or stepId" });
+      }
+      const data = await lifiFetch(`/advanced/stepTransaction?route=${routeId}&step=${stepId}`);
+      res.json(data);
+    } catch (err: any) {
+      console.error("[LI.FI] Step transaction error:", err.message);
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   startPriceAlertChecker();
   seedPriceCache();
 

@@ -32,6 +32,7 @@ Preferred communication style: Simple, everyday language.
     -   **Technical Analysis**: Interactive price charts with indicators (SMA, EMA, RSI, MACD, Bollinger Bands) for 21 assets.
     -   **XRPL Whale Alerts**: Real-time monitoring of large XRP (≥1M) and RLUSD (≥500K) transactions on XRPL.
     -   **EVM Swap**: Multi-chain token swap powered by 1inch aggregation across Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, and BNB Chain. MetaMask + Ledger signing, token approval flow, slippage control, 1% affiliate fee. Premium/Pro tier required.
+    -   **Cross-Chain Swap**: Cross-chain token swaps powered by LI.FI aggregator — bridge + swap tokens across different EVM chains in one flow. Supports 30+ chains via 15+ bridges (Across, Stargate, Hop, etc.). Route visualization with step-by-step breakdown, estimated time, gas costs, and fee transparency. Sequential transaction approval via MetaMask. Status tracking for bridge settlement. Premium/Pro tier required. Backend: `server/routes.ts` (LI.FI proxy routes). Frontend: `client/src/pages/cross-chain-swap.tsx`.
     -   **Payment Queue**: Offline payment caching with auto-sync when online for XRPL and Stellar payments.
     -   **Native Staking Guide**: Educational content for staking across XRP, ADA, ATOM, DOT, SOL.
     -   **XLS-65/66 Native Vaults & Lending**: Infrastructure for XRPL Single Asset Vaults and Lending Protocol, with amendment auto-detection and live vault discovery.
