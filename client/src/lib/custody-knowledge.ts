@@ -226,6 +226,82 @@ const TOKEN_ECOSYSTEM_HINTS: Record<string, string> = {
   LEO: "ethereum",
 };
 
+interface ExchangeWithdrawalInfo {
+  supported: boolean;
+  note?: string;
+  workaround?: string;
+}
+
+const EXCHANGE_WITHDRAWAL_RESTRICTIONS: Record<string, Record<string, ExchangeWithdrawalInfo>> = {
+  uphold: {
+    ADA: { supported: false, note: "Uphold does not support ADA withdrawals to the Cardano blockchain", workaround: "Swap ADA to XRP or XLM on Uphold → withdraw to Coinbase or Kraken → re-buy ADA → withdraw to your Cardano wallet" },
+    KSM: { supported: false, note: "Uphold does not support KSM withdrawals to the Kusama network", workaround: "Swap KSM to XRP or XLM on Uphold → withdraw to Kraken → re-buy KSM → withdraw to Nova Wallet or Polkadot.js" },
+    DOT: { supported: false, note: "Uphold does not support DOT withdrawals to the Polkadot network", workaround: "Swap DOT to XRP or XLM on Uphold → withdraw to Kraken or Binance → re-buy DOT → withdraw to Polkadot.js or Nova Wallet" },
+    ATOM: { supported: false, note: "Uphold does not support ATOM withdrawals to the Cosmos network", workaround: "Swap ATOM to XRP or XLM on Uphold → withdraw to Coinbase or Kraken → re-buy ATOM → withdraw to Keplr" },
+    ALGO: { supported: false, note: "Uphold does not support ALGO withdrawals to the Algorand network", workaround: "Swap ALGO to XRP or XLM on Uphold → withdraw to Coinbase → re-buy ALGO → withdraw to Pera Wallet" },
+    INJ: { supported: false, note: "Uphold does not support INJ withdrawals to the Injective network", workaround: "Swap INJ to XRP or XLM on Uphold → withdraw to Binance → re-buy INJ → withdraw to Keplr" },
+    NEAR: { supported: false, note: "Uphold does not support NEAR withdrawals to the NEAR network", workaround: "Swap NEAR to XRP or XLM on Uphold → withdraw to Binance or Coinbase → re-buy NEAR → withdraw to MyNearWallet" },
+    HBAR: { supported: false, note: "Uphold does not support HBAR withdrawals to the Hedera network", workaround: "Swap HBAR to XRP or XLM on Uphold → withdraw to Coinbase → re-buy HBAR → withdraw to HashPack" },
+    IOTA: { supported: false, note: "Uphold does not support IOTA withdrawals", workaround: "Swap IOTA to XRP or XLM on Uphold → withdraw to Binance → re-buy IOTA → withdraw to Firefly Wallet" },
+    VET: { supported: false, note: "Uphold does not support VET withdrawals to the VeChain network", workaround: "Swap VET to XRP or XLM on Uphold → withdraw to Binance → re-buy VET → withdraw to VeChainThor Wallet" },
+    ONE: { supported: false, note: "Uphold does not support ONE withdrawals to the Harmony network", workaround: "Swap ONE to XRP or XLM on Uphold → withdraw to Binance → re-buy ONE → withdraw to Harmony wallet" },
+    THETA: { supported: false, note: "Uphold does not support THETA withdrawals", workaround: "Swap THETA to XRP or XLM on Uphold → withdraw to Binance → re-buy THETA → withdraw to Theta Web Wallet" },
+    MINA: { supported: false, note: "Uphold does not support MINA withdrawals", workaround: "Swap MINA to XRP or XLM on Uphold → withdraw to Coinbase → re-buy MINA → withdraw to Auro Wallet" },
+    EGLD: { supported: false, note: "Uphold does not support EGLD withdrawals to the MultiversX network", workaround: "Swap EGLD to XRP or XLM on Uphold → withdraw to Binance → re-buy EGLD → withdraw to xPortal" },
+    CSPR: { supported: false, note: "Uphold does not support CSPR withdrawals to the Casper network", workaround: "Swap CSPR to XRP or XLM on Uphold → withdraw to an exchange that supports CSPR → re-buy → withdraw to Casper Wallet" },
+    ROSE: { supported: false, note: "Uphold does not support ROSE withdrawals to the Oasis network", workaround: "Swap ROSE to XRP or XLM on Uphold → withdraw to Binance → re-buy ROSE → withdraw to Oasis Wallet" },
+    SGB: { supported: false, note: "Uphold does not support SGB withdrawals to the Songbird network", workaround: "Swap SGB to XRP or XLM on Uphold → withdraw → re-buy SGB on a DEX or Bifrost Wallet" },
+    FIL: { supported: false, note: "Uphold does not support FIL withdrawals to the Filecoin network", workaround: "Swap FIL to XRP or XLM on Uphold → withdraw to Coinbase or Kraken → re-buy FIL → withdraw to Glif or MetaMask" },
+    SEI: { supported: false, note: "Uphold does not support SEI withdrawals", workaround: "Swap SEI to XRP or XLM on Uphold → withdraw to Binance → re-buy SEI → withdraw to Compass Wallet or Keplr" },
+    DAG: { supported: false, note: "Uphold does not support DAG withdrawals", workaround: "Swap DAG to XRP or XLM on Uphold → withdraw to an exchange with DAG support → re-buy → withdraw to Stargazer Wallet" },
+    ICE: { supported: false, note: "Uphold does not support ICE withdrawals", workaround: "Swap ICE to XRP or XLM on Uphold → withdraw → re-buy ICE on a supporting exchange" },
+    PEAQ: { supported: false, note: "Uphold does not support PEAQ withdrawals", workaround: "Swap PEAQ to XRP or XLM on Uphold → withdraw → re-buy PEAQ on a supporting exchange → withdraw to SubWallet" },
+    XRP: { supported: true, note: "Uphold supports XRP withdrawals on the XRPL — low fees" },
+    XLM: { supported: true, note: "Uphold supports XLM withdrawals on the Stellar network — low fees" },
+    BTC: { supported: true, note: "Uphold supports BTC withdrawals on the Bitcoin network" },
+    ETH: { supported: true, note: "Uphold supports ETH withdrawals on the Ethereum network — watch gas fees" },
+    LTC: { supported: true, note: "Uphold supports LTC withdrawals on the Litecoin network — low fees" },
+    DOGE: { supported: true, note: "Uphold supports DOGE withdrawals on the Dogecoin network" },
+    SOL: { supported: true, note: "Uphold supports SOL withdrawals on the Solana network" },
+    AVAX: { supported: true, note: "Uphold supports AVAX withdrawals on the Avalanche C-Chain" },
+    BAT: { supported: true, note: "Uphold supports BAT withdrawals as an ERC-20 token" },
+    SUI: { supported: true, note: "Uphold supports SUI withdrawals on the Sui network" },
+    APT: { supported: true, note: "Uphold supports APT withdrawals on the Aptos network" },
+    TAO: { supported: true, note: "Uphold supports TAO withdrawals on the Bittensor network" },
+  },
+  coinbase: {
+    ADA: { supported: true, note: "Coinbase supports ADA withdrawals on the Cardano network" },
+    DOT: { supported: true, note: "Coinbase supports DOT withdrawals on the Polkadot network" },
+    ATOM: { supported: true, note: "Coinbase supports ATOM withdrawals on the Cosmos network" },
+    ALGO: { supported: true, note: "Coinbase supports ALGO withdrawals on the Algorand network" },
+    SOL: { supported: true, note: "Coinbase supports SOL withdrawals on the Solana network" },
+    NEAR: { supported: true, note: "Coinbase supports NEAR withdrawals on the NEAR network" },
+    HBAR: { supported: true, note: "Coinbase supports HBAR withdrawals on the Hedera network" },
+    MINA: { supported: true, note: "Coinbase supports MINA withdrawals on the Mina network" },
+    XRP: { supported: true, note: "Coinbase supports XRP withdrawals on the XRPL" },
+  },
+  kraken: {
+    ADA: { supported: true, note: "Kraken supports ADA withdrawals on the Cardano network" },
+    DOT: { supported: true, note: "Kraken supports DOT withdrawals on the Polkadot network" },
+    KSM: { supported: true, note: "Kraken supports KSM withdrawals on the Kusama network" },
+    ATOM: { supported: true, note: "Kraken supports ATOM withdrawals on the Cosmos network" },
+    ALGO: { supported: true, note: "Kraken supports ALGO withdrawals on the Algorand network" },
+    SOL: { supported: true, note: "Kraken supports SOL withdrawals on the Solana network" },
+    XRP: { supported: true, note: "Kraken supports XRP withdrawals on the XRPL" },
+    NEAR: { supported: true, note: "Kraken supports NEAR withdrawals on the NEAR network" },
+  },
+};
+
+function getExchangeWithdrawalInfo(symbol: string, exchange: string): ExchangeWithdrawalInfo | null {
+  const exchangeNorm = exchange.toLowerCase().trim();
+  for (const [exKey, tokens] of Object.entries(EXCHANGE_WITHDRAWAL_RESTRICTIONS)) {
+    if (exchangeNorm.includes(exKey)) {
+      return tokens[symbol] || null;
+    }
+  }
+  return null;
+}
+
 function getEcosystemFallback(symbol: string): EcosystemInfo | null {
   const eco = TOKEN_ECOSYSTEM_HINTS[symbol];
   if (eco && ECOSYSTEM_WALLET_MAP[eco]) return ECOSYSTEM_WALLET_MAP[eco];
@@ -2001,7 +2077,10 @@ export function evaluateAsset(
   }
 
   if (location === "exchange") {
-    const canWithdraw = knowledge.withdrawable !== false;
+    const exchangeWithdrawal = getExchangeWithdrawalInfo(symbol, provider);
+    const canWithdraw = exchangeWithdrawal ? exchangeWithdrawal.supported : knowledge.withdrawable !== false;
+    const withdrawalBlockedNote = (!canWithdraw && exchangeWithdrawal?.note) ? exchangeWithdrawal.note : null;
+    const withdrawalWorkaround = (!canWithdraw && exchangeWithdrawal?.workaround) ? exchangeWithdrawal.workaround : null;
     const exchangeCustodyNote = `${provider} is a custodial platform — they hold your assets on your behalf. Not your keys, not your crypto.`;
 
     if (bestExchangeEarnOnCurrent > 0 && bestSelfCustodyYield > 0) {
@@ -2011,13 +2090,19 @@ export function evaluateAsset(
         const onChainSource = bestStaking >= bestDefi ? bestStakingSource : null;
         const onChainDefi = bestDefi > bestStaking ? bestDefiSource : null;
         const onChainBlockchain = onChainSource?.blockchain || onChainDefi?.blockchain || "";
+        const moveActions: (ActionItem | null)[] = canWithdraw
+          ? [{ text: `Move to cold wallet and stake on-chain via ${bestSelfCustodyLabel} on ${onChainBlockchain}`, link: stakingLink, custodyBadge: "on_chain" as CustodyType }]
+          : [
+              { text: `⚠️ ${withdrawalBlockedNote || `${symbol} cannot be withdrawn directly from ${provider}`}` },
+              withdrawalWorkaround ? { text: `Workaround: ${withdrawalWorkaround}` } : null,
+            ];
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Better On-Chain Yield Available",
-          description: `${provider} (custodial) offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but on-chain staking via ${bestSelfCustodyLabel} on ${onChainBlockchain} offers ${bestSelfCustodyYield.toFixed(1)}% — and you keep your keys.`,
+          description: `${provider} (custodial) offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but on-chain staking via ${bestSelfCustodyLabel} on ${onChainBlockchain} offers ${bestSelfCustodyYield.toFixed(1)}% — and you keep your keys.${!canWithdraw ? ` Note: ${provider} does not support direct ${symbol} withdrawals.` : ""}`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
           actionItems: [
-            canWithdraw ? { text: `Move to cold wallet and stake on-chain via ${bestSelfCustodyLabel} on ${onChainBlockchain}`, link: stakingLink, custodyBadge: "on_chain" } : null,
+            ...moveActions,
             { text: `Keep some on ${provider} for liquidity — but remember, ${provider} is custodial`, custodyBadge: "custodial" },
             bestExchangeEarnOnCurrentSource?.link ? { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource.apyRange} on ${provider} (custodial)`, link: bestExchangeEarnOnCurrentSource.link, custodyBadge: "custodial" } : null,
           ].filter(Boolean) as ActionItem[],
@@ -2072,11 +2157,19 @@ export function evaluateAsset(
       const stakingLink = bestStaking >= bestDefi ? bestStakingSource?.link : bestDefiSource?.link;
       const stakingApy = bestStakingSource?.apyRange || bestDefiSource?.defiApy || "";
       const stakingBlockchain = bestStakingSource?.blockchain || bestDefiSource?.blockchain || "";
-      const actions: ActionItem[] = [
-        canWithdraw ? { text: `Withdraw ${symbol} from ${provider} (custodial) to your cold wallet` } : { text: `${symbol} may not be withdrawable from ${provider}` },
+      const actions: ActionItem[] = [];
+      if (canWithdraw) {
+        actions.push({ text: `Withdraw ${symbol} from ${provider} to your own wallet`, custodyBadge: "on_chain" });
+      } else {
+        actions.push({ text: `⚠️ ${withdrawalBlockedNote || `${symbol} cannot be withdrawn directly from ${provider}`}` });
+        if (withdrawalWorkaround) {
+          actions.push({ text: `Workaround: ${withdrawalWorkaround}` });
+        }
+      }
+      actions.push(
         { text: `Stake on-chain via ${stakingName} on ${stakingBlockchain} for ${stakingApy} APY — you keep your keys`, link: stakingLink, custodyBadge: "on_chain" },
         { text: `Check if ${provider} offers an earn/staking program for ${symbol} — we can't detect enrollment automatically` },
-      ];
+      );
       if (bestExchangeEarnAnywhere > 0 && bestExchangeEarnAnywhere > bestSelfCustodyYield) {
         const bestAnyExch = knowledge.exchangeEarnOptions?.reduce((best, e) => e.apyMid > (best?.apyMid || 0) ? e : best, null as ExchangeEarnOption | null);
         if (bestAnyExch) {
@@ -2101,9 +2194,14 @@ export function evaluateAsset(
       if (!canWithdraw) {
         return {
           symbol, name: displayName, type: "no_action", title: "No Action Available",
-          description: `${symbol} on ${provider} (custodial) — no yield options and withdrawal may not be available.`,
+          description: `${symbol} on ${provider} (custodial) — no yield options.${withdrawalBlockedNote ? ` ${withdrawalBlockedNote}.` : " Withdrawal may not be available."}`,
           currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
-          actionItems: [],
+          actionItems: withdrawalWorkaround
+            ? [
+                { text: `⚠️ ${withdrawalBlockedNote || "Direct withdrawal not supported"}` },
+                { text: `Workaround: ${withdrawalWorkaround}` },
+              ]
+            : [],
           riskNote: exchangeCustodyNote,
           custodyInfo: {
             type: "custodial" as CustodyType,
