@@ -233,9 +233,9 @@ const features = [
   },
   {
     icon: Zap,
-    title: "EVM Swap — 7 Chains, Best Price",
+    title: "EVM Swap & Cross-Chain — 30+ Chains",
     description:
-      "Swap thousands of ERC-20 tokens across Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, and BNB Chain. Powered by 1inch, every swap is routed through the best DEX for the best rate — signed directly from your MetaMask or Ledger. Non-custodial, one click.",
+      "Swap thousands of tokens on any single EVM chain via 1inch, or bridge + swap across different chains via LI.FI — all from one screen. Connect with MetaMask, WalletConnect (50+ mobile wallets via QR scan), or Ledger. Non-custodial, best-price routing, full route visualization.",
     link: "/ownbank/evm-swap",
     linkLabel: "Open EVM Swap",
   },
@@ -475,7 +475,8 @@ const freeTierFeatures = [
 const premiumFeatures = [
   "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
-  "EVM Swap — swap thousands of tokens across 7 chains (Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, BNB) via 1inch",
+  "EVM Swap — swap thousands of tokens across 7 chains via 1inch + Cross-Chain Swap (bridge between chains via LI.FI)",
+  "WalletConnect — scan QR code to connect MetaMask Mobile, Trust Wallet, Rainbow, Coinbase Wallet, or 50+ other mobile wallets",
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Earn & Accumulate XRP — auto-convert vault interest into XRP on the DEX (configurable %, min threshold)",
   "Unlimited CSV imports",
@@ -586,7 +587,7 @@ const faqGroups = [
       },
       {
         q: "Why does CryptoOwnBank focus on XRPL and Stellar instead of Ethereum or Solana?",
-        a: "Because we don't believe in patchwork. On Ethereum, a simple swap requires MetaMask, Uniswap (a third-party smart contract), ETH for gas ($5–50), and hope the contract hasn't been exploited. On BNB Chain: different wallet, different DEX (PancakeSwap), different gas token. Solana: another wallet, another aggregator (Jupiter), another set of permissions. Every layer is another company, another point of failure. The XRP Ledger and Stellar are different — the decentralized exchange is built into the protocol itself. No third-party app runs it. No smart contract to exploit. No governance token to hold. You open your wallet, pick a pair, sign the trade, and it settles in 4 seconds. That said, we know many users hold ERC-20 tokens — so we built EVM Swap (powered by 1inch) to aggregate the best prices across every DEX on 7 EVM chains. Connect MetaMask, swap in one click, your tokens never leave your control. Native DEX simplicity on XRPL/Stellar, best-price aggregation on EVM chains.",
+        a: "Because we don't believe in patchwork. On Ethereum, a simple swap requires MetaMask, Uniswap (a third-party smart contract), ETH for gas ($5–50), and hope the contract hasn't been exploited. On BNB Chain: different wallet, different DEX (PancakeSwap), different gas token. Solana: another wallet, another aggregator (Jupiter), another set of permissions. Every layer is another company, another point of failure. The XRP Ledger and Stellar are different — the decentralized exchange is built into the protocol itself. No third-party app runs it. No smart contract to exploit. No governance token to hold. You open your wallet, pick a pair, sign the trade, and it settles in 4 seconds. That said, we know many users hold ERC-20 tokens — so we built EVM Swap (powered by 1inch) for same-chain swaps and Cross-Chain Swap (powered by LI.FI) for bridging between chains — both from one screen. Connect via MetaMask, WalletConnect (scan a QR code with any of 50+ mobile wallets), or Ledger. Your tokens never leave your control. Native DEX simplicity on XRPL/Stellar, best-price aggregation and cross-chain bridging on EVM chains.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
