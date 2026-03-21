@@ -128,6 +128,9 @@ export default function XrplBridge() {
   const [isReverseBridging, setIsReverseBridging] = useState(false);
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
 
+  const [tokenBalance, setTokenBalance] = useState<string | null>(null);
+  const [isFetchingBalance, setIsFetchingBalance] = useState(false);
+
   const { data: bridgeConfig } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/xrpl-bridge/status-check"],
   });
@@ -177,6 +180,61 @@ export default function XrplBridge() {
   }, [sourceChain]);
 
   const selectedToken = availableTokens.find(t => t.address === sourceToken);
+
+  const NATIVE_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+  const isNativeToken = sourceToken.toLowerCase() === NATIVE_ADDR.toLowerCase();
+
+  useEffect(() => {
+    if (!evmWallet.isConnected || !evmWallet.address || !sourceToken) {
+      setTokenBalance(null);
+      return;
+    }
+    const chainInfo = EVM_CHAINS[parseInt(sourceChain)];
+    if (!chainInfo) { setTokenBalance(null); return; }
+
+    setIsFetchingBalance(true);
+    const fetchBal = async () => {
+      try {
+        if (isNativeToken) {
+          const resp = await fetch(chainInfo.rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [evmWallet.address, "latest"] }),
+          });
+          const json = await resp.json();
+          if (!json.result) { setTokenBalance("0"); return; }
+          const balWei = BigInt(json.result);
+          const whole = balWei / BigInt(10 ** 18);
+          const frac = balWei % BigInt(10 ** 18);
+          const fracStr = frac.toString().padStart(18, "0").slice(0, 6);
+          setTokenBalance(`${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0");
+        } else {
+          const decimals = selectedToken?.decimals || 6;
+          const balanceOfSig = "0x70a08231";
+          const paddedAddr = evmWallet.address!.slice(2).toLowerCase().padStart(64, "0");
+          const callData = balanceOfSig + paddedAddr;
+          const resp = await fetch(chainInfo.rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: sourceToken, data: callData }, "latest"] }),
+          });
+          const json = await resp.json();
+          if (!json.result || json.result === "0x") { setTokenBalance("0"); return; }
+          const rawBal = BigInt(json.result);
+          const divisor = BigInt(10 ** decimals);
+          const whole = rawBal / divisor;
+          const frac = rawBal % divisor;
+          const fracStr = frac.toString().padStart(decimals, "0").slice(0, 6);
+          setTokenBalance(`${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0");
+        }
+      } catch {
+        setTokenBalance(null);
+      } finally {
+        setIsFetchingBalance(false);
+      }
+    };
+    fetchBal();
+  }, [evmWallet.isConnected, evmWallet.address, sourceChain, sourceToken]);
 
   const getQuote = useCallback(async () => {
     if (!amount || !xrplAddress || !evmWallet.address || !sourceToken) return;
@@ -633,7 +691,24 @@ export default function XrplBridge() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Amount</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs text-muted-foreground">Amount</label>
+                      {evmWallet.isConnected && tokenBalance !== null ? (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          onClick={() => { setAmount(tokenBalance); setQuote(null); }}
+                          data-testid="button-max-bridge"
+                        >
+                          Balance: <span className="font-medium text-foreground">{tokenBalance} {selectedToken?.symbol}</span>
+                          <span className="text-primary ml-1 font-semibold">MAX</span>
+                        </button>
+                      ) : isFetchingBalance ? (
+                        <span className="text-xs text-muted-foreground">Loading balance...</span>
+                      ) : evmWallet.isConnected ? (
+                        <span className="text-xs text-amber-500">Could not fetch balance</span>
+                      ) : null}
+                    </div>
                     <Input
                       type="number"
                       placeholder={`0.0 ${selectedToken?.symbol || ""}`}
@@ -643,6 +718,11 @@ export default function XrplBridge() {
                       step="any"
                       data-testid="input-bridge-amount"
                     />
+                    {evmWallet.isConnected && tokenBalance !== null && amount && parseFloat(amount) > parseFloat(tokenBalance) && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Insufficient {selectedToken?.symbol} balance
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -902,7 +982,20 @@ export default function XrplBridge() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">EVM Destination Address (0x...)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs text-muted-foreground">EVM Destination Address (0x...)</label>
+                    {evmWallet.isConnected && evmWallet.address && (
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                        onClick={() => setReverseEvmAddress(evmWallet.address || "")}
+                        data-testid="button-use-connected-address"
+                      >
+                        <Wallet className="h-3 w-3" />
+                        Use {evmWallet.walletProvider === "walletconnect" ? "WalletConnect" : "MetaMask"} · {shortenAddress(evmWallet.address)}
+                      </button>
+                    )}
+                  </div>
                   <Input
                     placeholder="0x..."
                     value={reverseEvmAddress}
@@ -913,15 +1006,17 @@ export default function XrplBridge() {
                   {reverseEvmAddress && !reverseEvmAddress.startsWith("0x") && (
                     <p className="text-xs text-red-500 mt-1">EVM addresses start with '0x'</p>
                   )}
-                  {evmWallet.address && reverseEvmAddress !== evmWallet.address && (
-                    <button
-                      type="button"
-                      className="text-xs text-primary hover:underline mt-1"
-                      onClick={() => setReverseEvmAddress(evmWallet.address || "")}
-                      data-testid="button-use-connected-address"
-                    >
-                      Use connected wallet: {shortenAddress(evmWallet.address)}
-                    </button>
+                  {reverseEvmAddress && evmWallet.address && reverseEvmAddress === evmWallet.address && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      {evmWallet.walletProvider === "walletconnect" ? "WalletConnect" : "MetaMask"} wallet connected
+                    </p>
+                  )}
+                  {!evmWallet.isConnected && !reverseEvmAddress && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Connect your EVM wallet above to auto-fill, or paste any 0x address
+                    </p>
                   )}
                 </div>
               </div>
@@ -1117,7 +1212,14 @@ export default function XrplBridge() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">EVM Address</span>
-              <span className="font-mono text-sm">{shortenAddress(reverseEvmAddress)}</span>
+              <div className="text-right">
+                {evmWallet.address && reverseEvmAddress === evmWallet.address && (
+                  <span className="text-xs text-muted-foreground mr-1">
+                    {evmWallet.walletProvider === "walletconnect" ? "WalletConnect" : "MetaMask"} ·
+                  </span>
+                )}
+                <span className="font-mono text-sm">{shortenAddress(reverseEvmAddress)}</span>
+              </div>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Gateway</span>
