@@ -30,6 +30,7 @@ export const users = pgTable("users", {
   lastReminderSentAt: timestamp("last_reminder_sent_at"),
   securityPhrase: varchar("security_phrase"),
   unsubscribedFromAnnouncements: boolean("unsubscribed_from_announcements").default(false),
+  tosAcceptedAt: timestamp("tos_accepted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

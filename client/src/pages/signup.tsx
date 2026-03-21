@@ -15,11 +15,15 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
   const signupMutation = useMutation({
     mutationFn: async () => {
+      if (!acceptedTerms) {
+        throw new Error("You must agree to the Terms of Service and Privacy Policy");
+      }
       if (password !== confirmPassword) {
         throw new Error("Passwords do not match");
       }
@@ -219,10 +223,31 @@ export default function Signup() {
                 )}
               </div>
 
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="acceptTerms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 accent-[#00A4E4] cursor-pointer"
+                  data-testid="checkbox-accept-terms"
+                />
+                <label htmlFor="acceptTerms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                  I agree to the{" "}
+                  <a href="/legal" target="_blank" className="text-[#00A4E4] hover:underline font-medium">
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a href="/privacy" target="_blank" className="text-[#00A4E4] hover:underline font-medium">
+                    Privacy Policy
+                  </a>
+                </label>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-[#00A4E4] hover:bg-[#0090c9]"
-                disabled={signupMutation.isPending}
+                disabled={signupMutation.isPending || !acceptedTerms}
                 data-testid="button-signup-submit"
               >
                 {signupMutation.isPending ? "Creating Account..." : "Create Account"}

@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -13,6 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary, installGlobalErrorHandlers } from "@/components/error-boundary";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Shield } from "lucide-react";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -86,6 +89,77 @@ import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
 import { OfflineBanner } from "@/components/offline-banner";
 
+const TOS_LAST_UPDATED = new Date("2026-03-21T00:00:00Z");
+
+function TosAcceptanceModal() {
+  const { user } = useAuth();
+  const [accepted, setAccepted] = useState(false);
+
+  const needsAcceptance = user && !user.tosAcceptedAt;
+  const needsReAcceptance = user?.tosAcceptedAt && new Date(user.tosAcceptedAt) < TOS_LAST_UPDATED;
+  const showModal = needsAcceptance || needsReAcceptance;
+
+  const acceptMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/auth/accept-tos", { method: "POST", credentials: "include" });
+      if (!res.ok) throw new Error("Failed to accept terms");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+  });
+
+  if (!showModal) return null;
+
+  return (
+    <Dialog open={true}>
+      <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2" data-testid="heading-tos-modal">
+            <Shield className="h-5 w-5 text-[#00A4E4]" />
+            {needsReAcceptance ? "Updated Terms of Service" : "Terms of Service"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm text-muted-foreground">
+          {needsReAcceptance ? (
+            <p>We've updated our Terms of Service and Privacy Policy to cover new features including DEX trading, EVM swaps, cross-chain bridging, and more. Please review and accept to continue.</p>
+          ) : (
+            <p>Please review and accept our Terms of Service and Privacy Policy to continue using CryptoOwnBank.</p>
+          )}
+          <div className="flex flex-col gap-2 text-xs">
+            <a href="/legal" target="_blank" className="text-[#00A4E4] hover:underline font-medium">Read Terms of Service</a>
+            <a href="/privacy" target="_blank" className="text-[#00A4E4] hover:underline font-medium">Read Privacy Policy</a>
+          </div>
+          <div className="flex items-start gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="tosModalAccept"
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#00A4E4] cursor-pointer"
+              data-testid="checkbox-tos-modal-accept"
+            />
+            <label htmlFor="tosModalAccept" className="text-xs cursor-pointer leading-relaxed">
+              I have read and agree to the Terms of Service and Privacy Policy
+            </label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            className="w-full bg-[#00A4E4] hover:bg-[#0090c9]"
+            disabled={!accepted || acceptMutation.isPending}
+            onClick={() => acceptMutation.mutate()}
+            data-testid="button-accept-tos"
+          >
+            {acceptMutation.isPending ? "Accepting..." : "Accept & Continue"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
     "--sidebar-width": "16rem",
@@ -94,6 +168,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <TosAcceptanceModal />
       <div className="flex flex-col h-screen w-full">
         <div className="bg-[#00A4E4] text-white text-center py-1 text-xs font-medium shrink-0" data-testid="banner-beta-app">
           Beta — Early Access &middot; Your feedback shapes the product

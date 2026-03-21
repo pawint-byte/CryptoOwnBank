@@ -85,6 +85,21 @@ export default function Legal() {
             </div>
 
             <div className="border-t pt-6">
+              <h2 className="text-xl font-semibold mb-3 text-foreground">DEX Trading, Swaps &amp; Bridging</h2>
+              <p className="text-foreground leading-relaxed">
+                CryptoOwnBank provides a non-custodial interface for decentralized exchange (DEX) trading on the
+                XRP Ledger and Stellar, EVM token swaps via the 1inch aggregator, cross-chain swaps via LI.FI,
+                and cross-chain bridging via Axelar/Squid Router. All transactions are initiated and signed by you
+                using your own wallet (Xaman, MetaMask, WalletConnect, or Ledger). We do not execute, settle, or
+                intermediate any trade. Swap routing, price quotes, and bridge execution are provided by third-party
+                protocols — we display their data but do not guarantee accuracy, availability, or execution. Slippage,
+                failed transactions, bridge delays, and smart contract risks are inherent to decentralized finance.
+                You accept full responsibility for any trades, swaps, or bridge transactions you initiate.
+                A 1% affiliate fee may be included in EVM swap transactions.
+              </p>
+            </div>
+
+            <div className="border-t pt-6">
               <h2 className="text-xl font-semibold mb-3 text-foreground">Third-Party Protocols &amp; Links</h2>
               <p className="text-foreground leading-relaxed">
                 Links to Soil, exchanges (Binance, Kraken, Coinbase, etc.), or other services are provided for

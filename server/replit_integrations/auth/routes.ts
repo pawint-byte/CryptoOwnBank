@@ -30,6 +30,17 @@ function getAppUrl(req: any): string {
 }
 
 export function registerAuthRoutes(app: Express): void {
+  app.post("/api/auth/accept-tos", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await db.update(users).set({ tosAcceptedAt: new Date() }).where(eq(users.id, userId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error accepting TOS:", error);
+      res.status(500).json({ message: "Failed to accept terms" });
+    }
+  });
+
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -87,6 +98,7 @@ export function registerAuthRoutes(app: Express): void {
           emailVerifyToken: isAdminEmail ? null : verifyToken,
           authProvider: "email",
           isAdmin: isAdminEmail,
+          tosAcceptedAt: new Date(),
         })
         .returning();
 
