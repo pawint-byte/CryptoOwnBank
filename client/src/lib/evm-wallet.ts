@@ -11,17 +11,55 @@ export const EVM_CHAINS: Record<number, { name: string; shortName: string; rpcUr
   56: { name: "BNB Chain", shortName: "BNB", rpcUrl: "https://bsc-dataseed.binance.org", explorerUrl: "https://bscscan.com", nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 } },
 };
 
+type WalletProvider = "metamask" | "walletconnect" | null;
+
+let wcProviderInstance: any = null;
+
 interface EvmWalletState {
   address: string | null;
   chainId: number | null;
   isConnected: boolean;
   isConnecting: boolean;
   error: string | null;
+  walletProvider: WalletProvider;
 
   connect: () => Promise<void>;
+  connectWalletConnect: () => Promise<void>;
   disconnect: () => void;
   switchChain: (chainId: number) => Promise<void>;
   setError: (error: string | null) => void;
+}
+
+async function getWalletConnectProvider() {
+  if (wcProviderInstance) return wcProviderInstance;
+
+  const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+  if (!projectId) throw new Error("WalletConnect project ID not configured");
+
+  const { default: EthereumProvider } = await import("@walletconnect/ethereum-provider");
+
+  const rpcMap: Record<number, string> = {};
+  const chainIds: number[] = [];
+  for (const [id, chain] of Object.entries(EVM_CHAINS)) {
+    rpcMap[parseInt(id)] = chain.rpcUrl;
+    chainIds.push(parseInt(id));
+  }
+
+  wcProviderInstance = await EthereumProvider.init({
+    projectId,
+    chains: [1],
+    optionalChains: chainIds.filter(c => c !== 1),
+    rpcMap,
+    showQrModal: true,
+    metadata: {
+      name: "CryptoOwnBank",
+      description: "Multi-chain crypto portfolio & swap platform",
+      url: "https://cryptoownbank.com",
+      icons: ["https://cryptoownbank.com/favicon.ico"],
+    },
+  });
+
+  return wcProviderInstance;
 }
 
 export const useEvmWallet = create<EvmWalletState>()(
@@ -32,6 +70,7 @@ export const useEvmWallet = create<EvmWalletState>()(
       isConnected: false,
       isConnecting: false,
       error: null,
+      walletProvider: null,
 
       connect: async () => {
         if (typeof window === "undefined" || !(window as any).ethereum) {
@@ -49,11 +88,12 @@ export const useEvmWallet = create<EvmWalletState>()(
             chainId,
             isConnected: true,
             isConnecting: false,
+            walletProvider: "metamask",
           });
 
           ethereum.on("accountsChanged", (accs: string[]) => {
             if (accs.length === 0) {
-              set({ address: null, isConnected: false, chainId: null });
+              set({ address: null, isConnected: false, chainId: null, walletProvider: null });
             } else {
               set({ address: accs[0] });
             }
@@ -67,14 +107,68 @@ export const useEvmWallet = create<EvmWalletState>()(
         }
       },
 
+      connectWalletConnect: async () => {
+        set({ isConnecting: true, error: null });
+        try {
+          const provider = await getWalletConnectProvider();
+
+          await provider.connect();
+
+          const accounts = provider.accounts;
+          const chainId = provider.chainId;
+
+          if (!accounts || accounts.length === 0) {
+            throw new Error("No accounts returned from WalletConnect");
+          }
+
+          set({
+            address: accounts[0],
+            chainId,
+            isConnected: true,
+            isConnecting: false,
+            walletProvider: "walletconnect",
+          });
+
+          provider.on("accountsChanged", (accs: string[]) => {
+            if (accs.length === 0) {
+              set({ address: null, isConnected: false, chainId: null, walletProvider: null });
+              wcProviderInstance = null;
+            } else {
+              set({ address: accs[0] });
+            }
+          });
+
+          provider.on("chainChanged", (newChainId: number) => {
+            set({ chainId: newChainId });
+          });
+
+          provider.on("disconnect", () => {
+            set({ address: null, chainId: null, isConnected: false, walletProvider: null });
+            wcProviderInstance = null;
+          });
+        } catch (err: any) {
+          set({ error: err.message || "Failed to connect via WalletConnect", isConnecting: false });
+        }
+      },
+
       disconnect: () => {
-        set({ address: null, chainId: null, isConnected: false, error: null });
+        const { walletProvider } = get();
+        if (walletProvider === "walletconnect" && wcProviderInstance) {
+          try {
+            wcProviderInstance.disconnect();
+          } catch {}
+          wcProviderInstance = null;
+        }
+        set({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
       },
 
       switchChain: async (chainId: number) => {
-        if (!(window as any).ethereum) return;
+        const { walletProvider } = get();
+        const provider = walletProvider === "walletconnect" ? wcProviderInstance : (window as any).ethereum;
+        if (!provider) return;
+
         try {
-          await (window as any).ethereum.request({
+          await provider.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: `0x${chainId.toString(16)}` }],
           });
@@ -84,7 +178,7 @@ export const useEvmWallet = create<EvmWalletState>()(
             const chain = EVM_CHAINS[chainId];
             if (chain) {
               try {
-                await (window as any).ethereum.request({
+                await provider.request({
                   method: "wallet_addEthereumChain",
                   params: [{
                     chainId: `0x${chainId.toString(16)}`,
@@ -109,38 +203,71 @@ export const useEvmWallet = create<EvmWalletState>()(
     }),
     {
       name: "evm-wallet-storage",
-      partialize: (state) => ({ address: state.address, chainId: state.chainId, isConnected: state.isConnected }),
+      partialize: (state) => ({ address: state.address, chainId: state.chainId, isConnected: state.isConnected, walletProvider: state.walletProvider }),
       onRehydrate: () => {
         return (state) => {
           if (state?.isConnected) {
-            if (typeof window === "undefined" || !(window as any).ethereum) {
-              state.address = null;
-              state.chainId = null;
-              state.isConnected = false;
-              state.error = null;
-            } else {
-              const ethereum = (window as any).ethereum;
-              ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
-                if (!accounts || accounts.length === 0) {
-                  useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null });
+            if (state.walletProvider === "walletconnect") {
+              getWalletConnectProvider().then(provider => {
+                if (provider.connected) {
+                  const accounts = provider.accounts;
+                  if (accounts && accounts.length > 0) {
+                    useEvmWallet.setState({ address: accounts[0], chainId: provider.chainId });
+                    provider.on("accountsChanged", (accs: string[]) => {
+                      if (accs.length === 0) {
+                        useEvmWallet.setState({ address: null, isConnected: false, chainId: null, walletProvider: null });
+                        wcProviderInstance = null;
+                      } else {
+                        useEvmWallet.setState({ address: accs[0] });
+                      }
+                    });
+                    provider.on("chainChanged", (newChainId: number) => {
+                      useEvmWallet.setState({ chainId: newChainId });
+                    });
+                    provider.on("disconnect", () => {
+                      useEvmWallet.setState({ address: null, chainId: null, isConnected: false, walletProvider: null });
+                      wcProviderInstance = null;
+                    });
+                  } else {
+                    useEvmWallet.setState({ address: null, chainId: null, isConnected: false, walletProvider: null });
+                  }
                 } else {
-                  ethereum.request({ method: "eth_chainId" }).then((chainHex: string) => {
-                    useEvmWallet.setState({ address: accounts[0], chainId: parseInt(chainHex, 16) });
-                  }).catch(() => {});
-                  ethereum.on("accountsChanged", (accs: string[]) => {
-                    if (accs.length === 0) {
-                      useEvmWallet.setState({ address: null, isConnected: false, chainId: null });
-                    } else {
-                      useEvmWallet.setState({ address: accs[0] });
-                    }
-                  });
-                  ethereum.on("chainChanged", (newChainHex: string) => {
-                    useEvmWallet.setState({ chainId: parseInt(newChainHex, 16) });
-                  });
+                  useEvmWallet.setState({ address: null, chainId: null, isConnected: false, walletProvider: null });
                 }
               }).catch(() => {
-                useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null });
+                useEvmWallet.setState({ address: null, chainId: null, isConnected: false, walletProvider: null });
               });
+            } else {
+              if (typeof window === "undefined" || !(window as any).ethereum) {
+                state.address = null;
+                state.chainId = null;
+                state.isConnected = false;
+                state.error = null;
+                state.walletProvider = null;
+              } else {
+                const ethereum = (window as any).ethereum;
+                ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
+                  if (!accounts || accounts.length === 0) {
+                    useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
+                  } else {
+                    ethereum.request({ method: "eth_chainId" }).then((chainHex: string) => {
+                      useEvmWallet.setState({ address: accounts[0], chainId: parseInt(chainHex, 16) });
+                    }).catch(() => {});
+                    ethereum.on("accountsChanged", (accs: string[]) => {
+                      if (accs.length === 0) {
+                        useEvmWallet.setState({ address: null, isConnected: false, chainId: null, walletProvider: null });
+                      } else {
+                        useEvmWallet.setState({ address: accs[0] });
+                      }
+                    });
+                    ethereum.on("chainChanged", (newChainHex: string) => {
+                      useEvmWallet.setState({ chainId: parseInt(newChainHex, 16) });
+                    });
+                  }
+                }).catch(() => {
+                  useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
+                });
+              }
             }
           }
         };
@@ -150,8 +277,11 @@ export const useEvmWallet = create<EvmWalletState>()(
 );
 
 export async function sendEvmTransaction(txData: any): Promise<string> {
-  if (!(window as any).ethereum) throw new Error("MetaMask not detected");
-  const txHash = await (window as any).ethereum.request({
+  const { walletProvider } = useEvmWallet.getState();
+  const provider = walletProvider === "walletconnect" ? wcProviderInstance : (window as any).ethereum;
+  if (!provider) throw new Error("No wallet connected");
+
+  const txHash = await provider.request({
     method: "eth_sendTransaction",
     params: [txData],
   });

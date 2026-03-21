@@ -37,6 +37,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useEvmWallet, EVM_CHAINS, sendEvmTransaction, getExplorerTxUrl, shortenAddress } from "@/lib/evm-wallet";
+import { SiWalletconnect } from "react-icons/si";
 
 const POPULAR_TOKENS: Record<number, { address: string; symbol: string; name: string; decimals: number; logoURI?: string }[]> = {
   1: [
@@ -113,7 +114,7 @@ interface SwapResult {
 export default function EvmSwap() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { address, chainId, isConnected, isConnecting, connect, disconnect, switchChain, error: walletError } = useEvmWallet();
+  const { address, chainId, isConnected, isConnecting, connect, connectWalletConnect, disconnect, switchChain, walletProvider, error: walletError } = useEvmWallet();
 
   const [selectedChainId, setSelectedChainId] = useState(1);
   const [srcToken, setSrcToken] = useState<string>(NATIVE_TOKEN);
@@ -312,10 +313,16 @@ export default function EvmSwap() {
               </Button>
             </div>
           ) : (
-            <Button onClick={connect} disabled={isConnecting} data-testid="button-connect-wallet">
-              {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wallet className="h-4 w-4 mr-2" />}
-              Connect MetaMask
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={connect} disabled={isConnecting} data-testid="button-connect-metamask">
+                {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wallet className="h-4 w-4 mr-2" />}
+                MetaMask
+              </Button>
+              <Button onClick={connectWalletConnect} disabled={isConnecting} variant="outline" data-testid="button-connect-walletconnect">
+                {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <SiWalletconnect className="h-4 w-4 mr-2" />}
+                WalletConnect
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -565,11 +572,11 @@ export default function EvmSwap() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground space-y-3" data-testid="card-prerequisites">
-                <p className="font-medium text-foreground">You need a MetaMask wallet to use EVM Swap:</p>
+                <p className="font-medium text-foreground">Connect your wallet to use EVM Swap:</p>
                 <ol className="list-decimal list-inside space-y-1.5">
-                  <li>Install the <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline font-medium">MetaMask browser extension</a></li>
-                  <li>Create or import a wallet with ETH or tokens on the chain you want to trade</li>
-                  <li>Click "Connect MetaMask" above to link your wallet</li>
+                  <li><strong>MetaMask</strong> — Use the browser extension (<a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="text-[#00A4E4] underline font-medium">install here</a>)</li>
+                  <li><strong>WalletConnect</strong> — Scan QR code with MetaMask Mobile, Trust Wallet, Rainbow, Coinbase Wallet, or 50+ other wallets</li>
+                  <li>Have ETH or tokens on the chain you want to trade</li>
                   <li>Pick your tokens, get a quote, and approve the swap</li>
                 </ol>
                 <div className="pt-1 border-t border-amber-200 dark:border-amber-800 space-y-1">

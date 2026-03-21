@@ -42,6 +42,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useEvmWallet, EVM_CHAINS, sendEvmTransaction, getExplorerTxUrl, shortenAddress } from "@/lib/evm-wallet";
+import { SiWalletconnect } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 
 interface LifiChain {
@@ -197,7 +198,7 @@ function formatDuration(seconds: number): string {
 export default function CrossChainSwap() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { address, chainId, isConnected, isConnecting, connect, disconnect, switchChain, error: walletError } = useEvmWallet();
+  const { address, chainId, isConnected, isConnecting, connect, connectWalletConnect, disconnect, switchChain, walletProvider, error: walletError } = useEvmWallet();
 
   const [fromChainId, setFromChainId] = useState(1);
   const [toChainId, setToChainId] = useState(137);
@@ -494,21 +495,32 @@ export default function CrossChainSwap() {
                     <Info className="h-4 w-4 text-blue-500" /> Before You Start
                   </h4>
                   <ul className="text-xs text-muted-foreground space-y-1">
-                    <li>• MetaMask browser extension required</li>
+                    <li>• Connect via MetaMask (browser extension) or WalletConnect (scan QR with any mobile wallet)</li>
                     <li>• Your tokens stay in your wallet — we never hold your funds</li>
                     <li>• Cross-chain swaps use bridges (Across, Stargate, etc.) to move tokens between chains</li>
                     <li>• Bridge times vary: 1–20 minutes depending on the route</li>
                   </ul>
                 </div>
-                <Button
-                  onClick={connect}
-                  disabled={isConnecting}
-                  className="bg-orange-500 hover:bg-orange-600"
-                  data-testid="button-connect-wallet"
-                >
-                  {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wallet className="h-4 w-4 mr-2" />}
-                  Connect MetaMask
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={connect}
+                    disabled={isConnecting}
+                    className="bg-orange-500 hover:bg-orange-600"
+                    data-testid="button-connect-metamask"
+                  >
+                    {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wallet className="h-4 w-4 mr-2" />}
+                    MetaMask
+                  </Button>
+                  <Button
+                    onClick={connectWalletConnect}
+                    disabled={isConnecting}
+                    variant="outline"
+                    data-testid="button-connect-walletconnect"
+                  >
+                    {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <SiWalletconnect className="h-4 w-4 mr-2 text-blue-500" />}
+                    WalletConnect
+                  </Button>
+                </div>
                 {walletError && (
                   <p className="text-xs text-red-500" data-testid="text-wallet-error">{walletError}</p>
                 )}
