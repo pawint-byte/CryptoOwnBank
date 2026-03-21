@@ -188,6 +188,8 @@ export default function EvmSwap() {
     fetchBalance();
   }, [isConnected, address, selectedChainId]);
 
+  const walletLabel = walletProvider === "metamask" ? "MetaMask" : walletProvider === "walletconnect" ? "WalletConnect" : "Wallet";
+
   const fetchQuote = useCallback(async () => {
     if (!srcToken || !dstToken || !amount || parseFloat(amount) <= 0) return;
     const srcInfo = tokens.find(t => t.address === srcToken);
@@ -340,10 +342,15 @@ export default function EvmSwap() {
         <div className="flex items-center gap-2">
           {isConnected && address ? (
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="gap-1 py-1" data-testid="badge-wallet-address">
+              <Badge
+                variant="outline"
+                className="gap-1.5 py-1 cursor-help"
+                title={`${walletLabel}: ${address}`}
+                data-testid="badge-wallet-address"
+              >
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 {walletProvider === "metamask" ? <Wallet className="h-3 w-3" /> : <SiWalletconnect className="h-3 w-3" />}
-                {shortenAddress(address)}
+                <span>{walletLabel} · {shortenAddress(address)}</span>
               </Badge>
               <Badge variant="outline" className="gap-1 py-1" data-testid="badge-chain">
                 {EVM_CHAINS[chainId || 1]?.shortName || "Unknown"}
