@@ -1235,8 +1235,12 @@ function EarningStatusSection() {
                 </div>
                 <div className={`px-3 pb-2 text-[11px] ${holdingUsd > 0 ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`} data-testid={`holding-tip-${opp.id}`}>
                   {holdingUsd > 0
-                    ? `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${opp.asset} — deposit to start earning ${opp.apyRange}.`
-                    : `You don't hold ${opp.asset} yet. Consider adding it to earn ${opp.apyRange} yield.`}
+                    ? opp.category === "cashback"
+                      ? `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${opp.asset}. Sign up to start earning ${opp.apyRange} in XRP rewards.`
+                      : `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${opp.asset} — deposit to start earning ${opp.apyRange}.`
+                    : opp.category === "cashback"
+                      ? `Sign up for ${opp.protocol} to earn ${opp.apyRange} in XRP rewards.`
+                      : `You don't hold ${opp.asset} yet. Consider adding it to earn ${opp.apyRange} yield.`}
                 </div>
               </div>
             ))}
