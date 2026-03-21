@@ -339,15 +339,41 @@ export default function EvmSwap() {
         </div>
         <div className="flex items-center gap-2">
           {isConnected && address ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="gap-1 py-1" data-testid="badge-wallet-address">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
+                {walletProvider === "metamask" ? <Wallet className="h-3 w-3" /> : <SiWalletconnect className="h-3 w-3" />}
                 {shortenAddress(address)}
               </Badge>
               <Badge variant="outline" className="gap-1 py-1" data-testid="badge-chain">
                 {EVM_CHAINS[chainId || 1]?.shortName || "Unknown"}
               </Badge>
-              <Button size="sm" variant="ghost" onClick={disconnect} data-testid="button-disconnect-wallet">
+              {walletProvider === "metamask" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => { disconnect(); setTimeout(() => connectWalletConnect(), 100); }}
+                  disabled={isConnecting}
+                  data-testid="button-switch-walletconnect"
+                >
+                  <SiWalletconnect className="h-3 w-3 mr-1" />
+                  Switch to WalletConnect
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => { disconnect(); setTimeout(() => connect(), 100); }}
+                  disabled={isConnecting}
+                  data-testid="button-switch-metamask"
+                >
+                  <Wallet className="h-3 w-3 mr-1" />
+                  Switch to MetaMask
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={disconnect} data-testid="button-disconnect-wallet">
                 Disconnect
               </Button>
             </div>
