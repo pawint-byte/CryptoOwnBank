@@ -168,7 +168,8 @@ export default function EvmSwap() {
       const res = await apiRequest("GET", `/api/evm/quote?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}`);
       const data = await res.json();
       if (data.message) {
-        setQuoteError(data.message);
+        const msg = data.message.includes("429") ? "Rate limited — please wait a few seconds and try again" : data.message;
+        setQuoteError(msg);
         setQuote(null);
       } else {
         setQuote(data);
@@ -266,11 +267,13 @@ export default function EvmSwap() {
         setQuote(null);
       }
     } catch (err: any) {
-      const msg = err.message || "Swap failed";
-      if (msg.includes("User denied") || msg.includes("rejected")) {
+      const rawMsg = err.message || "Swap failed";
+      if (rawMsg.includes("User denied") || rawMsg.includes("rejected")) {
         toast({ title: "Transaction rejected", description: "You cancelled the transaction in your wallet.", variant: "destructive" });
+      } else if (rawMsg.includes("429")) {
+        toast({ title: "Rate limited", description: "Too many requests — please wait a few seconds and try again.", variant: "destructive" });
       } else {
-        toast({ title: "Swap failed", description: msg, variant: "destructive" });
+        toast({ title: "Swap failed", description: rawMsg, variant: "destructive" });
       }
     } finally {
       setIsSwapping(false);

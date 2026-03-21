@@ -8988,17 +8988,37 @@ export async function registerRoutes(
   const ONEINCH_FEE = 1;
   const EVM_SUPPORTED_CHAINS = [1, 137, 42161, 10, 8453, 43114, 56];
 
-  async function oneinchFetch(path: string) {
+  let lastOneinchCall = 0;
+  const ONEINCH_MIN_INTERVAL = 1200;
+
+  async function oneinchFetch(path: string, retries = 3): Promise<any> {
     if (!ONEINCH_API_KEY) throw new Error("1inch API key not configured");
+
+    const now = Date.now();
+    const elapsed = now - lastOneinchCall;
+    if (elapsed < ONEINCH_MIN_INTERVAL) {
+      await new Promise((r) => setTimeout(r, ONEINCH_MIN_INTERVAL - elapsed));
+    }
+    lastOneinchCall = Date.now();
+
     const resp = await fetch(`https://api.1inch.dev${path}`, {
       headers: {
         "Authorization": `Bearer ${ONEINCH_API_KEY}`,
         "Accept": "application/json",
       },
     });
+
+    if (resp.status === 429 && retries > 0) {
+      const retryAfter = parseInt(resp.headers.get("retry-after") || "0") * 1000;
+      const delay = Math.max(retryAfter, 2000 * (4 - retries));
+      console.log(`[1inch] Rate limited, retrying in ${delay}ms (${retries} retries left)`);
+      await new Promise((r) => setTimeout(r, delay));
+      return oneinchFetch(path, retries - 1);
+    }
+
     if (!resp.ok) {
       const text = await resp.text();
-      throw new Error(`1inch API error ${resp.status}: ${text}`);
+      throw new Error(`${resp.status}: ${text}`);
     }
     return resp.json();
   }
@@ -9007,16 +9027,26 @@ export async function registerRoutes(
     res.json({ chains: EVM_SUPPORTED_CHAINS });
   });
 
+  const tokenListCache: Record<number, { data: any; ts: number }> = {};
+  const TOKEN_CACHE_TTL = 30 * 60 * 1000;
+
   app.get("/api/evm/tokens/:chainId", isAuthenticated, async (req: any, res) => {
+    const chainId = parseInt(req.params.chainId);
     try {
-      const chainId = parseInt(req.params.chainId);
       if (!EVM_SUPPORTED_CHAINS.includes(chainId)) {
         return res.status(400).json({ message: "Unsupported chain" });
       }
+      const cached = tokenListCache[chainId];
+      if (cached && Date.now() - cached.ts < TOKEN_CACHE_TTL) {
+        return res.json(cached.data);
+      }
       const data = await oneinchFetch(`/token/v1.2/${chainId}`);
+      tokenListCache[chainId] = { data, ts: Date.now() };
       res.json(data);
     } catch (err: any) {
       console.error("[1inch] Token list error:", err.message);
+      const cached = tokenListCache[chainId];
+      if (cached) return res.json(cached.data);
       res.status(500).json({ message: err.message });
     }
   });
