@@ -232,10 +232,18 @@ const features = [
     linkLabel: "Set Up DCA",
   },
   {
+    icon: Zap,
+    title: "EVM Swap — 7 Chains, Best Price",
+    description:
+      "Swap thousands of ERC-20 tokens across Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, and BNB Chain. Powered by 1inch, every swap is routed through the best DEX for the best rate — signed directly from your MetaMask or Ledger. Non-custodial, one click.",
+    link: "/ownbank/evm-swap",
+    linkLabel: "Open EVM Swap",
+  },
+  {
     icon: Shield,
     title: "100% Non-Custodial",
     description:
-      "We never touch your keys. All transactions are signed on your device — Xaman or Ledger. You always control your funds.",
+      "We never touch your keys. All transactions are signed on your device — Xaman, MetaMask, or Ledger. You always control your funds.",
   },
   {
     icon: Lock,
@@ -467,6 +475,7 @@ const freeTierFeatures = [
 const premiumFeatures = [
   "XRPL DEX trading — 44 pairs (Quick Swap + Advanced order book)",
   "Stellar DEX trading — 13 pairs (Quick Swap + live order book)",
+  "EVM Swap — swap thousands of tokens across 7 chains (Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, BNB) via 1inch",
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Earn & Accumulate XRP — auto-convert vault interest into XRP on the DEX (configurable %, min threshold)",
   "Unlimited CSV imports",
@@ -577,7 +586,7 @@ const faqGroups = [
       },
       {
         q: "Why does CryptoOwnBank focus on XRPL and Stellar instead of Ethereum or Solana?",
-        a: "Because we don't believe in patchwork. On Ethereum, a simple swap requires MetaMask, Uniswap (a third-party smart contract), ETH for gas ($5–50), and hope the contract hasn't been exploited. On BNB Chain: different wallet, different DEX (PancakeSwap), different gas token. Solana: another wallet, another aggregator (Jupiter), another set of permissions. Every layer is another company, another point of failure. The XRP Ledger and Stellar are different — the decentralized exchange is built into the protocol itself. No third-party app runs it. No smart contract to exploit. No governance token to hold. You open your wallet, pick a pair, sign the trade, and it settles in 4 seconds. Our philosophy: get your assets on the blockchain, use XRP as your bridge currency, and the native DEX handles the rest. One chain, one wallet, one bridge — not five apps, three gas tokens, and two browser extensions.",
+        a: "Because we don't believe in patchwork. On Ethereum, a simple swap requires MetaMask, Uniswap (a third-party smart contract), ETH for gas ($5–50), and hope the contract hasn't been exploited. On BNB Chain: different wallet, different DEX (PancakeSwap), different gas token. Solana: another wallet, another aggregator (Jupiter), another set of permissions. Every layer is another company, another point of failure. The XRP Ledger and Stellar are different — the decentralized exchange is built into the protocol itself. No third-party app runs it. No smart contract to exploit. No governance token to hold. You open your wallet, pick a pair, sign the trade, and it settles in 4 seconds. That said, we know many users hold ERC-20 tokens — so we built EVM Swap (powered by 1inch) to aggregate the best prices across every DEX on 7 EVM chains. Connect MetaMask, swap in one click, your tokens never leave your control. Native DEX simplicity on XRPL/Stellar, best-price aggregation on EVM chains.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",
@@ -585,7 +594,7 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Three tiers: Free (basic tracking + Soil vault access), Premium ($29/mo or $199/yr — unlimited wallets, DEX trading, full Recommendations Hub), and Pro ($99/mo or $799/yr — treasury tools, team seats, Legacy Plan). Nine optional add-ons. Affiliate referrals (disclosed transparently). We never take fees from your yields or principal — you keep 100% of what you earn. And because we never hold your assets, if you cancel or leave, your crypto is still in your wallet.",
+        a: "Three tiers: Free (basic tracking + Soil vault access), Premium ($29/mo or $199/yr — unlimited wallets, DEX trading, EVM Swap, full Recommendations Hub), and Pro ($99/mo or $799/yr — treasury tools, team seats, Legacy Plan). Nine optional add-ons. Affiliate referrals (disclosed transparently). A 1% platform fee on EVM Swap trades. We never take fees from your yields or principal — you keep 100% of what you earn. And because we never hold your assets, if you cancel or leave, your crypto is still in your wallet.",
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
