@@ -5672,6 +5672,26 @@ export async function registerRoutes(
       }
 
       const wallet = await storage.createWallet(parsed);
+
+      try {
+        const existingUserWallets = await storage.getUserWallets(userId);
+        const alreadyExists = existingUserWallets.find(
+          (uw) => uw.chain === parsed.chain && uw.address.toLowerCase() === parsed.address.toLowerCase()
+        );
+        if (!alreadyExists) {
+          await storage.createUserWallet({
+            userId,
+            label: parsed.label || wallet.label || `${parsed.chain.toUpperCase()} Wallet`,
+            address: parsed.address,
+            chain: parsed.chain,
+            purpose: "general",
+            isPrimary: existingUserWallets.filter(uw => uw.chain === parsed.chain).length === 0,
+          });
+        }
+      } catch (syncErr: any) {
+        console.warn("[wallet-sync] Failed to auto-create user wallet:", syncErr.message);
+      }
+
       res.json(wallet);
     } catch (error: any) {
       console.error("Create wallet error:", error);
