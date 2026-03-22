@@ -1,3 +1,15 @@
+export const STOCK_ETF_SYMBOLS: Set<string> = new Set([
+  "AAPL", "ABBV", "ACHR", "AIEQ", "AGNMF", "ARLO", "ASTS", "ATYR",
+  "BIGZ", "CSCO", "CRC", "EZPZ", "GE", "HD", "ICLN", "IVV",
+  "JMIA", "KSCP", "LIDR", "MO", "NFLX", "NIO", "NVDA",
+  "PFE", "PLTR", "PYXS", "QBTS", "QS", "ROBO", "SEV", "SNDL", "SOCL",
+  "STGC", "TXT", "UAMY", "UL", "VGT", "VT", "VTI", "VWO",
+]);
+
+export function isStockOrETF(symbol: string): boolean {
+  return STOCK_ETF_SYMBOLS.has(symbol.toUpperCase());
+}
+
 export const ASSET_CATEGORIES: Record<string, string> = {
   BTC: "Layer 1",
   ETH: "Smart Contracts",
@@ -191,7 +203,6 @@ export const ASSET_CATEGORIES: Record<string, string> = {
   NXRA: "DeFi",
   MXC: "IoT",
   QSP: "DeFi",
-  LSS: "DeFi",
   VRA: "Web3",
   XCN: "DeFi",
   EPX: "DeFi",
@@ -200,7 +211,6 @@ export const ASSET_CATEGORIES: Record<string, string> = {
   WSOL: "Layer 1",
   PEAQ: "IoT",
   AITECH: "AI",
-  CNQ: "Finance",
   "$ADS": "Web3",
   CLXY: "DeFi",
 };
@@ -226,9 +236,11 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Privacy": "hsl(0, 50%, 45%)",
   "Supply Chain": "hsl(100, 50%, 45%)",
   "Internet": "hsl(220, 70%, 55%)",
+  "Stock & ETF": "hsl(50, 70%, 45%)",
   "Other": "hsl(0, 0%, 50%)",
 };
 
 export function getAssetCategory(symbol: string): string {
+  if (isStockOrETF(symbol)) return "Stock & ETF";
   return ASSET_CATEGORIES[symbol.toUpperCase()] || "Other";
 }

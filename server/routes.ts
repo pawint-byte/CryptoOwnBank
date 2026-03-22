@@ -4379,6 +4379,105 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/admin/remove-duplicate-lots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const allLots = await storage.getTaxLotsByUser(userId);
+
+      const groups: Record<string, typeof allLots> = {};
+      for (const lot of allLots) {
+        const qty = parseFloat(lot.originalQuantity).toFixed(4);
+        const dateStr = new Date(lot.acquiredDate).toISOString().split("T")[0];
+        const price = parseFloat(lot.costBasisPerUnit).toFixed(6);
+        const key = `${lot.assetSymbol}|${qty}|${dateStr}|${price}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(lot);
+      }
+
+      let removedCount = 0;
+      const removedDetails: { symbol: string; date: string; qty: string }[] = [];
+
+      for (const [key, lots] of Object.entries(groups)) {
+        if (lots.length > 1) {
+          const toRemove = lots.slice(1);
+          for (const lot of toRemove) {
+            try {
+              await storage.deleteTaxLot(lot.id);
+              removedCount++;
+              const [sym, qty, date] = key.split("|");
+              removedDetails.push({ symbol: sym, date, qty });
+            } catch (e) {
+              console.error(`Failed to delete duplicate lot ${lot.id}:`, e);
+            }
+          }
+        }
+      }
+
+      console.log(`[dedup] Removed ${removedCount} duplicate lots for user ${userId}`);
+      res.json({ removed: removedCount, details: removedDetails });
+    } catch (error) {
+      console.error("Remove duplicate lots error:", error);
+      res.status(500).json({ message: "Failed to remove duplicates" });
+    }
+  });
+
+  app.post("/api/admin/recalc-positions-from-lots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const positionsData = await storage.getPositionsByUser(userId);
+
+      const lotTotals: Record<string, { qty: number; costBasis: number; count: number }> = {};
+      for (const lot of allLots) {
+        const sym = lot.assetSymbol;
+        if (!lotTotals[sym]) lotTotals[sym] = { qty: 0, costBasis: 0, count: 0 };
+        const qty = parseFloat(lot.remainingQuantity);
+        const price = parseFloat(lot.costBasisPerUnit);
+        lotTotals[sym].qty += qty;
+        lotTotals[sym].costBasis += qty * price;
+        lotTotals[sym].count++;
+      }
+
+      let updated = 0;
+      const changes: { symbol: string; oldQty: string; newQty: string; lotCount: number }[] = [];
+
+      for (const pos of positionsData) {
+        const lotData = lotTotals[pos.assetSymbol];
+        if (lotData) {
+          const newQty = lotData.qty.toFixed(8);
+          const newCostBasis = lotData.costBasis.toFixed(2);
+          const newAvgCost = lotData.qty > 0 ? (lotData.costBasis / lotData.qty).toFixed(8) : "0";
+          const oldQty = parseFloat(pos.quantity).toFixed(8);
+          if (oldQty !== newQty) {
+            await storage.updatePosition(pos.id, {
+              quantity: newQty,
+              totalCostBasis: newCostBasis,
+              averageCost: newAvgCost,
+            });
+            changes.push({ symbol: pos.assetSymbol, oldQty, newQty, lotCount: lotData.count });
+            updated++;
+          }
+        }
+      }
+
+      console.log(`[recalc] Updated ${updated} positions from lot data for user ${userId}`);
+      res.json({ updated, changes });
+    } catch (error) {
+      console.error("Recalc positions error:", error);
+      res.status(500).json({ message: "Failed to recalculate positions" });
+    }
+  });
+
   app.get("/api/duplicate-lots", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -10014,5 +10113,76 @@ function startPriceAlertChecker() {
       console.error("[seed] Chain-prefix rename error:", err);
     }
   }, 8000);
+
+  setTimeout(async () => {
+    try {
+      const ADMIN_USER_ID = "3e7353fc-9f2f-4f72-aba9-93c49b629b89";
+      const allLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
+
+      const groups: Record<string, typeof allLots> = {};
+      for (const lot of allLots) {
+        const qty = parseFloat(lot.originalQuantity).toFixed(4);
+        const dateStr = new Date(lot.acquiredDate).toISOString().split("T")[0];
+        const price = parseFloat(lot.costBasisPerUnit).toFixed(6);
+        const key = `${lot.assetSymbol}|${qty}|${dateStr}|${price}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(lot);
+      }
+
+      let removedCount = 0;
+      for (const [, lots] of Object.entries(groups)) {
+        if (lots.length > 1) {
+          const toRemove = lots.slice(1);
+          for (const lot of toRemove) {
+            try {
+              await storage.deleteTaxLot(lot.id);
+              removedCount++;
+            } catch {}
+          }
+        }
+      }
+
+      if (removedCount > 0) {
+        console.log(`[dedup] Removed ${removedCount} duplicate tax lots`);
+
+        const remainingLots = await storage.getTaxLotsByUser(ADMIN_USER_ID);
+        const positionsData = await storage.getPositionsByUser(ADMIN_USER_ID);
+
+        const lotTotals: Record<string, { qty: number; costBasis: number }> = {};
+        for (const lot of remainingLots) {
+          const sym = lot.assetSymbol;
+          if (!lotTotals[sym]) lotTotals[sym] = { qty: 0, costBasis: 0 };
+          const q = parseFloat(lot.remainingQuantity);
+          const p = parseFloat(lot.costBasisPerUnit);
+          lotTotals[sym].qty += q;
+          lotTotals[sym].costBasis += q * p;
+        }
+
+        let recalcCount = 0;
+        for (const pos of positionsData) {
+          const lotData = lotTotals[pos.assetSymbol];
+          if (lotData) {
+            const newQty = lotData.qty.toFixed(8);
+            const oldQty = parseFloat(pos.quantity).toFixed(8);
+            if (oldQty !== newQty) {
+              const newCostBasis = lotData.costBasis.toFixed(2);
+              const newAvgCost = lotData.qty > 0 ? (lotData.costBasis / lotData.qty).toFixed(8) : "0";
+              await storage.updatePosition(pos.id, {
+                quantity: newQty,
+                totalCostBasis: newCostBasis,
+                averageCost: newAvgCost,
+              });
+              recalcCount++;
+            }
+          }
+        }
+        if (recalcCount > 0) {
+          console.log(`[dedup] Recalculated ${recalcCount} positions from corrected lots`);
+        }
+      }
+    } catch (err) {
+      console.error("[dedup] Startup dedup error:", err);
+    }
+  }, 12000);
 
 }

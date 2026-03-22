@@ -14,7 +14,7 @@ import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { getAssetCategory, CATEGORY_COLORS } from "@shared/asset-categories";
+import { getAssetCategory, CATEGORY_COLORS, isStockOrETF } from "@shared/asset-categories";
 import type { Position } from "@shared/schema";
 
 interface PositionWithMarket extends Position {
@@ -399,6 +399,12 @@ export default function Portfolio() {
     return result;
   }, [displayPositions, searchTerm, sourceFilter, sortBy]);
 
+  const cryptoFiltered = useMemo(() => filtered.filter(p => !isStockOrETF(p.assetSymbol)), [filtered]);
+  const stockFiltered = useMemo(() => filtered.filter(p => isStockOrETF(p.assetSymbol)), [filtered]);
+
+  const stockTotalValue = useMemo(() => stockFiltered.reduce((sum, p) => sum + (p.currentValue || 0), 0), [stockFiltered]);
+  const stockTotalCostBasis = useMemo(() => stockFiltered.reduce((sum, p) => sum + parseFloat(p.totalCostBasis), 0), [stockFiltered]);
+
   const consolidated = useMemo(() => {
     const map = new Map<string, {
       symbol: string;
@@ -409,7 +415,7 @@ export default function Portfolio() {
       positions: PositionWithMarket[];
     }>();
 
-    for (const p of filtered) {
+    for (const p of cryptoFiltered) {
       if (p.isAddressed) continue;
       const sym = p.assetSymbol;
       const existing = map.get(sym) || { symbol: sym, totalQty: 0, totalCostBasis: 0, totalValue: 0, sources: [], positions: [] };
@@ -424,7 +430,7 @@ export default function Portfolio() {
     }
 
     return [...map.values()].sort((a, b) => b.totalValue - a.totalValue);
-  }, [filtered]);
+  }, [cryptoFiltered]);
 
   const categoryData = useMemo(() => {
     const map = new Map<string, {
@@ -434,7 +440,7 @@ export default function Portfolio() {
       assets: Array<{ symbol: string; value: number; qty: number; costBasis: number }>;
     }>();
 
-    for (const p of filtered) {
+    for (const p of cryptoFiltered) {
       if (p.isAddressed) continue;
       const cat = getAssetCategory(p.assetSymbol);
       const existing = map.get(cat) || { category: cat, totalValue: 0, totalCostBasis: 0, assets: [] };
@@ -457,7 +463,7 @@ export default function Portfolio() {
     }
 
     return [...map.values()].sort((a, b) => b.totalValue - a.totalValue);
-  }, [filtered]);
+  }, [cryptoFiltered]);
 
   const categoryAllocation = useMemo(() => {
     return categoryData.map(c => ({
@@ -468,7 +474,7 @@ export default function Portfolio() {
   }, [categoryData]);
 
   const symbolCounts = new Map<string, number>();
-  filtered.forEach(p => symbolCounts.set(p.assetSymbol, (symbolCounts.get(p.assetSymbol) || 0) + 1));
+  cryptoFiltered.forEach(p => symbolCounts.set(p.assetSymbol, (symbolCounts.get(p.assetSymbol) || 0) + 1));
   const duplicateSymbols = new Set<string>();
   symbolCounts.forEach((count, symbol) => { if (count > 1) duplicateSymbols.add(symbol); });
 
@@ -802,7 +808,7 @@ export default function Portfolio() {
           <CardContent>
             {viewMode === "holdings" && (
               <>
-                {filtered.length === 0 ? (
+                {cryptoFiltered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                       <svg className="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -818,9 +824,9 @@ export default function Portfolio() {
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {filtered.map((position, idx) => {
+                    {cryptoFiltered.map((position, idx) => {
                       const isDupe = duplicateSymbols.has(position.assetSymbol);
-                      const isFirstOfGroup = sortBy === "name" && (idx === 0 || filtered[idx - 1].assetSymbol !== position.assetSymbol);
+                      const isFirstOfGroup = sortBy === "name" && (idx === 0 || cryptoFiltered[idx - 1].assetSymbol !== position.assetSymbol);
                       const isAddr = position.isAddressed;
                       const isGroupCollapsed = isDupe && sortBy === "name" && collapsedGroups.has(position.assetSymbol);
 
@@ -828,7 +834,7 @@ export default function Portfolio() {
                       const hideRow = isGroupCollapsed && isFirstOfGroup;
 
                       const groupTotal = isDupe && isFirstOfGroup
-                        ? filtered.filter(p => p.assetSymbol === position.assetSymbol).reduce((sum, p) => sum + (p.currentValue || 0), 0)
+                        ? cryptoFiltered.filter(p => p.assetSymbol === position.assetSymbol).reduce((sum, p) => sum + (p.currentValue || 0), 0)
                         : 0;
                       const groupCount = isDupe && isFirstOfGroup
                         ? symbolCounts.get(position.assetSymbol) || 0
@@ -1111,6 +1117,60 @@ export default function Portfolio() {
           />
         </div>
       </div>
+
+      {stockFiltered.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-yellow-600" />
+              Stocks & ETFs
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Traditional investments tracked separately from crypto • {stockFiltered.length} position{stockFiltered.length !== 1 ? "s" : ""}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {stockFiltered.map((position) => {
+                const gainLoss = position.gainLoss || 0;
+                const gainLossPercent = position.gainLossPercent || 0;
+                return (
+                  <div
+                    key={position.id}
+                    className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border"
+                    data-testid={`stock-row-${position.assetSymbol}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-full bg-yellow-500/10 flex items-center justify-center text-xs font-bold text-yellow-700 dark:text-yellow-400 shrink-0">
+                        {position.assetSymbol.slice(0, 2)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{position.assetSymbol}</p>
+                        <p className="text-xs text-muted-foreground">{parseFloat(position.quantity).toLocaleString(undefined, { maximumFractionDigits: 4 })} shares</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{formatCurrency(position.currentValue || 0)}</p>
+                      <p className={cn("text-xs", gainLoss > 0 ? "text-green-600" : gainLoss < 0 ? "text-red-600" : "text-muted-foreground")}>
+                        {gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} ({gainLossPercent > 0 ? "+" : ""}{gainLossPercent.toFixed(1)}%)
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 pt-3 border-t flex justify-between text-sm">
+              <span className="text-muted-foreground">Total Stocks & ETFs</span>
+              <div className="text-right">
+                <span className="font-semibold">{formatCurrency(stockTotalValue)}</span>
+                <span className={cn("ml-2 text-xs", stockTotalValue - stockTotalCostBasis > 0 ? "text-green-600" : "text-red-600")}>
+                  {stockTotalValue - stockTotalCostBasis > 0 ? "+" : ""}{formatCurrency(stockTotalValue - stockTotalCostBasis)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
