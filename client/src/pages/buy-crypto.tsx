@@ -1,12 +1,15 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserData } from "@/hooks/use-user-data";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   ShoppingCart,
   Wallet,
@@ -25,9 +28,11 @@ import {
   AlertTriangle,
   Sparkles,
   Star,
+  Copy,
+  Plus,
 } from "lucide-react";
 
-type Step = "token" | "wallet" | "instructions";
+type Step = "token" | "wallet" | "address" | "instructions";
 
 interface TokenOption {
   symbol: string;
@@ -515,6 +520,26 @@ function getNextStepLink(token: string): { label: string; url: string } | null {
   }
 }
 
+const tokenToChain: Record<string, string> = {
+  XRP: "xrp",
+  XLM: "stellar",
+  ETH: "ethereum",
+  BTC: "bitcoin",
+  SOL: "solana",
+  ADA: "cardano",
+  ATOM: "cosmos",
+  DOT: "polkadot",
+  AVAX: "avalanche",
+  MATIC: "polygon",
+  TRX: "tron",
+  DOGE: "dogecoin",
+  LTC: "litecoin",
+  HBAR: "hedera",
+  ALGO: "algorand",
+  CRO: "cronos",
+  FLR: "flare",
+};
+
 const walletNameToKey: Record<string, string> = {
   "Xaman (XUMM)": "xaman",
   "CypheRock X1": "cypherock",
@@ -603,19 +628,29 @@ function detectUserChains(walletRecords: any[]): Set<string> {
 
 export default function BuyCrypto() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [step, setStep] = useState<Step>("token");
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null);
   const [showFaq, setShowFaq] = useState(false);
+  const [newAddress, setNewAddress] = useState("");
+  const [newLabel, setNewLabel] = useState("");
 
-  const { data: accounts = [] } = useQuery<any[]>({
+  const { data: savedWallets = [] } = useQuery<any[]>({
     queryKey: ["/api/wallets"],
     enabled: !!user,
   });
 
-  const userWallets = useMemo(() => detectUserWallets(accounts), [accounts]);
-  const userChains = useMemo(() => detectUserChains(accounts), [accounts]);
+  const userWallets = useMemo(() => detectUserWallets(savedWallets), [savedWallets]);
+  const userChains = useMemo(() => detectUserChains(savedWallets), [savedWallets]);
   const hasAnyWallets = userWallets.size > 0;
+
+  const savedAddressForToken = useMemo(() => {
+    if (!selectedToken) return null;
+    const chain = tokenToChain[selectedToken];
+    if (!chain) return null;
+    return savedWallets.find((w: any) => w.chain === chain) || null;
+  }, [selectedToken, savedWallets]);
 
   const availableWallets = useMemo(() => {
     if (!selectedToken) return [];
@@ -630,13 +665,32 @@ export default function BuyCrypto() {
     return sorted;
   }, [selectedToken, userWallets]);
 
+  const addWalletMutation = useMutation({
+    mutationFn: async (data: { chain: string; address: string; label: string }) => {
+      const res = await apiRequest("POST", "/api/wallets", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({ title: "Address saved!", description: "Your wallet address has been saved to your profile. It's ready for all future purchases." });
+      setNewAddress("");
+      setNewLabel("");
+      setStep("instructions");
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not save address", description: err.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
   function handleTokenSelect(symbol: string) {
     setSelectedToken(symbol);
     setSelectedWallet(null);
+    setNewAddress("");
+    setNewLabel("");
     const wallets = walletsByToken[symbol];
     if (wallets && wallets.length === 1) {
       setSelectedWallet(wallets[0]);
-      setStep("instructions");
+      setStep("address");
     } else {
       setStep("wallet");
     }
@@ -644,11 +698,13 @@ export default function BuyCrypto() {
 
   function handleWalletSelect(wallet: WalletOption) {
     setSelectedWallet(wallet);
-    setStep("instructions");
+    setStep("address");
   }
 
   function handleBack() {
     if (step === "instructions") {
+      setStep("address");
+    } else if (step === "address") {
       const wallets = selectedToken ? walletsByToken[selectedToken] || [] : [];
       if (wallets.length === 1) {
         setStep("token");
@@ -668,6 +724,19 @@ export default function BuyCrypto() {
     setStep("token");
     setSelectedToken(null);
     setSelectedWallet(null);
+    setNewAddress("");
+    setNewLabel("");
+  }
+
+  function handleSaveAddress() {
+    if (!selectedToken || !newAddress.trim()) return;
+    const chain = tokenToChain[selectedToken];
+    if (!chain) return;
+    addWalletMutation.mutate({
+      chain,
+      address: newAddress.trim(),
+      label: newLabel.trim() || `${selectedToken} wallet`,
+    });
   }
 
   const tokenData = tokens.find((t) => t.symbol === selectedToken);
@@ -697,7 +766,7 @@ export default function BuyCrypto() {
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm flex-wrap">
         <Badge variant={step === "token" ? "default" : "outline"} className="gap-1">
           1. Choose Token
         </Badge>
@@ -706,8 +775,12 @@ export default function BuyCrypto() {
           2. Pick Wallet
         </Badge>
         <ArrowRight className="h-3 w-3 text-muted-foreground" />
+        <Badge variant={step === "address" ? "default" : "outline"} className="gap-1">
+          3. Save Address
+        </Badge>
+        <ArrowRight className="h-3 w-3 text-muted-foreground" />
         <Badge variant={step === "instructions" ? "default" : "outline"} className="gap-1">
-          3. Buy
+          4. Buy
         </Badge>
       </div>
 
@@ -873,6 +946,157 @@ export default function BuyCrypto() {
               })}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {step === "address" && selectedToken && selectedWallet && (
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-address">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+
+          {savedAddressForToken ? (
+            <Card className="border-green-500/20 bg-green-500/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Your {selectedToken} Address Is Ready
+                </CardTitle>
+                <CardDescription>
+                  You already have a {tokenData?.name || selectedToken} address saved. Tokens you buy will arrive at this address automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">{savedAddressForToken.label || "Wallet"}</p>
+                    <p className="text-sm font-mono truncate" data-testid="text-saved-address">{savedAddressForToken.address}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(savedAddressForToken.address);
+                      toast({ title: "Copied!", description: "Address copied to clipboard." });
+                    }}
+                    data-testid="button-copy-address"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Set up once, works forever — any time you buy {selectedToken}, it arrives at this address. You can also share this address with anyone who wants to send you {selectedToken}.
+                </p>
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                  onClick={() => setStep("instructions")}
+                  data-testid="button-continue-to-buy"
+                >
+                  Continue to Buy Instructions <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ) : user ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-blue-600" />
+                  Save Your {selectedToken} Address
+                </CardTitle>
+                <CardDescription>
+                  Before you buy, save your {tokenData?.name || selectedToken} receive address here. Set it up once and it works forever — every future purchase lands at this address automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card className="border-blue-500/20 bg-blue-500/5">
+                  <CardContent className="pt-4">
+                    <p className="text-sm font-medium mb-2">How to find your address:</p>
+                    <ol className="text-sm text-muted-foreground space-y-1.5">
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">1</span>
+                        Open <strong>{selectedWallet.name}</strong> on your phone or computer
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">2</span>
+                        Tap <strong>Receive</strong> (or <strong>Deposit</strong>) for {selectedToken}
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">3</span>
+                        Copy the address shown (it's your public receive address — safe to share)
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">4</span>
+                        Paste it below and save — you only need to do this once
+                      </li>
+                    </ol>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Your {selectedToken} Address</label>
+                    <Input
+                      placeholder={`Paste your ${selectedToken} receive address here`}
+                      value={newAddress}
+                      onChange={(e) => setNewAddress(e.target.value)}
+                      className="font-mono text-sm"
+                      data-testid="input-wallet-address"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Label (optional)</label>
+                    <Input
+                      placeholder={`e.g., My ${selectedWallet.name} ${selectedToken}`}
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                      data-testid="input-wallet-label"
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                    disabled={!newAddress.trim() || addWalletMutation.isPending}
+                    onClick={handleSaveAddress}
+                    data-testid="button-save-address"
+                  >
+                    {addWalletMutation.isPending ? (
+                      "Saving..."
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" /> Save Address & Continue
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="border-t pt-3">
+                  <Button
+                    variant="ghost"
+                    className="w-full text-muted-foreground"
+                    onClick={() => setStep("instructions")}
+                    data-testid="button-skip-address"
+                  >
+                    Skip for now — I'll add my address later
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Tip:</strong> Sign in to save your {selectedToken} address to your profile. Once saved, we'll automatically track your balance whenever you buy.
+                </p>
+                <Button
+                  className="w-full"
+                  onClick={() => setStep("instructions")}
+                  data-testid="button-continue-no-auth"
+                >
+                  Continue to Buy Instructions <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -1053,6 +1277,15 @@ export default function BuyCrypto() {
                 All recommended wallets and on-ramp providers are established, regulated services. For maximum security,
                 use a Ledger hardware wallet — your keys are stored on the device and never exposed to the internet.
                 We recommend starting with a small test purchase to verify everything works before buying larger amounts.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">What's the "Save Address" step about?</p>
+              <p className="text-sm text-muted-foreground">
+                When you set up a wallet, it gives you a receive address — like a mailing address for crypto.
+                We ask you to save that address here once so we can track your balance automatically. Set it up once,
+                and it works forever — every future purchase on that chain shows up here. You can also share your
+                address with anyone who wants to send you crypto.
               </p>
             </div>
             <div className="space-y-1">
