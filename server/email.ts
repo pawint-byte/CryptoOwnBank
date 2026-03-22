@@ -467,6 +467,81 @@ export async function sendPriceAlertEmail(
   await sendEmail(to, `Price Alert: ${asset} ${directionText} $${targetPrice}`, html);
 }
 
+export async function sendCryptoPaymentReceivedEmail(
+  adminEmail: string,
+  details: {
+    userName: string;
+    userEmail: string;
+    plan: string;
+    chain: string;
+    asset: string;
+    amount: string;
+    toAddress: string;
+    walletLabel: string;
+    txHash?: string | null;
+    usdAmount: string;
+  }
+) {
+  const planLabels: Record<string, string> = {
+    monthly: "Premium Monthly ($29/mo)",
+    yearly: "Premium Annual ($199/yr)",
+    "pro-monthly": "Pro Monthly ($99/mo)",
+    "pro-yearly": "Pro Annual ($799/yr)",
+  };
+  const planLabel = details.plan.startsWith("addon:")
+    ? `Add-on: ${details.plan.replace("addon:", "")}`
+    : planLabels[details.plan] || details.plan;
+
+  const explorerLinks: Record<string, string> = {
+    bitcoin: `https://mempool.space/tx/${details.txHash}`,
+    ethereum: `https://etherscan.io/tx/${details.txHash}`,
+    solana: `https://solscan.io/tx/${details.txHash}`,
+    xrp: `https://livenet.xrpl.org/transactions/${details.txHash}`,
+    rlusd: `https://livenet.xrpl.org/transactions/${details.txHash}`,
+    stellar: `https://stellarchain.io/transactions/${details.txHash}`,
+    polygon: `https://polygonscan.com/tx/${details.txHash}`,
+    avalanche: `https://snowscan.xyz/tx/${details.txHash}`,
+    cardano: `https://cardanoscan.io/transaction/${details.txHash}`,
+    tron: `https://tronscan.org/#/transaction/${details.txHash}`,
+    dogecoin: `https://dogechain.info/tx/${details.txHash}`,
+    litecoin: `https://litecoinspace.org/tx/${details.txHash}`,
+    cosmos: `https://www.mintscan.io/cosmos/tx/${details.txHash}`,
+    algorand: `https://allo.info/tx/${details.txHash}`,
+    hedera: `https://hashscan.io/mainnet/transaction/${details.txHash}`,
+    polkadot: `https://polkadot.subscan.io/extrinsic/${details.txHash}`,
+    ton: `https://tonscan.org/tx/${details.txHash}`,
+  };
+  const explorerUrl = details.txHash ? (explorerLinks[details.chain] || null) : null;
+  const txRow = details.txHash
+    ? `<tr><td style="padding:8px 12px;color:#999;font-size:13px;">TX Hash</td><td style="padding:8px 12px;font-size:13px;word-break:break-all;">${explorerUrl ? `<a href="${explorerUrl}" style="color:#00A4E4;">${details.txHash}</a>` : details.txHash}</td></tr>`
+    : "";
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #10b981;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #10b981; margin: 5px 0 0; font-weight: 600;">Crypto Payment Received</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333; margin-bottom: 20px;">New Subscription Payment</h2>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;">
+          <tr style="background:#f9fafb;"><td style="padding:8px 12px;color:#999;font-size:13px;">Member</td><td style="padding:8px 12px;font-size:13px;font-weight:600;">${escapeHtml(details.userName)} (${escapeHtml(details.userEmail)})</td></tr>
+          <tr><td style="padding:8px 12px;color:#999;font-size:13px;">Plan</td><td style="padding:8px 12px;font-size:13px;font-weight:600;">${planLabel}</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:8px 12px;color:#999;font-size:13px;">Amount</td><td style="padding:8px 12px;font-size:13px;font-weight:600;">${details.amount} ${details.asset} (~$${details.usdAmount} USD)</td></tr>
+          <tr><td style="padding:8px 12px;color:#999;font-size:13px;">Blockchain</td><td style="padding:8px 12px;font-size:13px;">${details.chain.charAt(0).toUpperCase() + details.chain.slice(1)}</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:8px 12px;color:#999;font-size:13px;">Wallet</td><td style="padding:8px 12px;font-size:13px;">${escapeHtml(details.walletLabel)}</td></tr>
+          <tr><td style="padding:8px 12px;color:#999;font-size:13px;">Address</td><td style="padding:8px 12px;font-size:11px;word-break:break-all;font-family:monospace;">${details.toAddress}</td></tr>
+          ${txRow}
+        </table>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>Subscription has been automatically activated.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(adminEmail, `Crypto Payment: ${details.amount} ${details.asset} from ${details.userName}`, html);
+}
+
 export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

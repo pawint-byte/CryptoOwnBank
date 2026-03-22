@@ -1,5 +1,7 @@
 import { storage } from "../storage";
 import type { CryptoPayment } from "@shared/schema";
+import { ADMIN_EMAILS } from "@shared/constants";
+import { sendCryptoPaymentReceivedEmail, sendPremiumWelcomeEmail } from "../email";
 
 const CHAIN_TO_ASSET: Record<string, string> = {
   bitcoin: "BTC",
@@ -784,6 +786,7 @@ async function activateSubscription(payment: CryptoPayment) {
       expiresAt,
     });
     console.log(`[crypto-verify] Activated addon ${addonKey} for user ${payment.userId} via ${payment.chain}, expires ${expiresAt.toISOString()}`);
+    await notifyAdminOfPayment(payment);
     return;
   }
 
@@ -820,6 +823,51 @@ async function activateSubscription(payment: CryptoPayment) {
     stripeSubscriptionId: existing?.stripeSubscriptionId || null,
   });
   console.log(`[crypto-verify] Activated ${billingCycle} ${tier} for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
+
+  await notifyAdminOfPayment(payment);
+}
+
+async function notifyAdminOfPayment(payment: CryptoPayment) {
+  try {
+    const { db } = await import("../db");
+    const { users } = await import("@shared/models/auth");
+    const { eq } = await import("drizzle-orm");
+
+    const [user] = await db.select().from(users).where(eq(users.id, payment.userId));
+    const userName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "Unknown" : "Unknown";
+    const userEmail = user?.email || "unknown";
+
+    const addresses = await storage.getCryptoPaymentAddresses(true);
+    const paymentAddr = addresses.find(a => a.chain.toLowerCase() === payment.chain.toLowerCase());
+    const walletLabel = paymentAddr?.label || "Unknown";
+
+    const asset = CHAIN_TO_ASSET[payment.chain] || payment.expectedAsset || payment.chain.toUpperCase();
+
+    for (const adminEmail of ADMIN_EMAILS) {
+      await sendCryptoPaymentReceivedEmail(adminEmail, {
+        userName,
+        userEmail,
+        plan: payment.plan,
+        chain: payment.chain,
+        asset,
+        amount: payment.expectedAmount,
+        toAddress: payment.toAddress,
+        walletLabel,
+        txHash: payment.txHash,
+        usdAmount: payment.usdAmount,
+      });
+    }
+
+    if (user?.email) {
+      const planLabel = payment.plan.includes("pro") ? "Pro" : "Premium";
+      const cycle = payment.plan.includes("yearly") ? "Annual" : "Monthly";
+      await sendPremiumWelcomeEmail(user.email, `${planLabel} ${cycle} (paid with ${asset})`);
+    }
+
+    console.log(`[crypto-verify] Payment notification emails sent for payment ${payment.id}`);
+  } catch (err) {
+    console.error(`[crypto-verify] Failed to send payment notification:`, err);
+  }
 }
 
 async function verifyPendingPayments() {
