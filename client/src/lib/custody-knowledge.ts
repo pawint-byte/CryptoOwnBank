@@ -1813,7 +1813,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
     ellipal: [
       { text: "ELLIPAL is air-gapped and cannot connect to the XDC Web Wallet — you need to move XDC to a different wallet first" },
       { text: "Recommended: Send XDC from ELLIPAL to a Tangem wallet — Tangem supports XDC natively and can connect to the XDC Web Wallet to stake", link: "https://tangem.com" },
-      { text: "Alternative: Send XDC to MetaMask (add XDC Network RPC: https://rocket.xdc.org, Chain ID 50), then connect to XDC Web Wallet" },
+      { text: "Alternative: Send XDC to MetaMask (add XDC Network RPC: https://erpc.xinfin.network, Chain ID 50), then connect to XDC Web Wallet" },
       { text: "Alternative: Send XDC to the XDC Web Wallet directly (create a wallet at wallet.xdc.network)", link: "https://wallet.xdc.network" },
       { text: "Note: Ledger Live doesn't support XDC — Ledger hardware only works via desktop Chrome with WebUSB" },
     ],
@@ -1830,7 +1830,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
     xaman: [],
     tronlink: [],
     metamask: [
-      { text: "Add the XDC Network RPC to MetaMask (Network Name: XDC, RPC: https://rocket.xdc.org, Chain ID: 50, Symbol: XDC)" },
+      { text: "Add the XDC Network RPC to MetaMask (Network Name: XDC Mainnet, RPC: https://erpc.xinfin.network, Chain ID: 50, Symbol: XDC, Explorer: https://xdcscan.io)" },
       { text: "Connect MetaMask to the XDC Web Wallet to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
     ],
     stader: [],
