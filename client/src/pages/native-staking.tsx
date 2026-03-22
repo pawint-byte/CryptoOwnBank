@@ -41,6 +41,8 @@ interface StakingChain {
   wallets: { name: string; url: string }[];
   howItWorks: string[];
   whyNative: string;
+  earlyYieldNote?: string;
+  earlyYieldLink?: string;
   considerations: string[];
   explorerUrl: string;
   learnUrl: string;
@@ -71,6 +73,8 @@ const STAKING_CHAINS: StakingChain[] = [
       "Withdraw anytime by signing a VaultWithdraw — shares are redeemed for your XRP plus earned yield",
     ],
     whyNative: "No smart contracts, no bridges, no third-party dependencies. Lending is built directly into the XRPL transaction engine. Your cold wallet signs every transaction via Xaman — keys never leave your device.",
+    earlyYieldNote: "While XLS-65/66 is pending, you can earn yield on your XRP today through the earnXRP vault (~3-4% APR). Your XRP bridges to Flare, earns yield as FXRP, and redeems back to native XRP anytime — all signed from your cold wallet via Xaman.",
+    earlyYieldLink: "/flare",
     considerations: [
       "XLS-65 is currently in validator voting (~17% of 80% needed to activate)",
       "How voting works: Validators don't vote yes or no — they signal support by upgrading their server software (rippled 3.1+). Validators on older versions haven't rejected it, they simply haven't upgraded yet. When 80% of validators are running the new version for 2 continuous weeks, the amendment activates automatically. The timeline depends on how quickly validator operators choose to upgrade.",
@@ -361,6 +365,21 @@ function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain
               </p>
               <p className="text-sm text-muted-foreground">{chain.whyNative}</p>
             </div>
+
+            {chain.earlyYieldNote && (
+              <Link href={chain.earlyYieldLink || "/flare"}>
+                <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-3 cursor-pointer hover:border-emerald-400 transition-colors" data-testid={`early-yield-${chain.ticker}`}>
+                  <div className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+                    <TrendingUp className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium mb-1">Earn yield on {chain.ticker} today</p>
+                      <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">{chain.earlyYieldNote}</p>
+                      <p className="text-xs font-medium mt-1.5 flex items-center gap-1">View full guide + Ledger setup <ArrowRight className="h-3 w-3" /></p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
 
             {isPaid ? (
               <>

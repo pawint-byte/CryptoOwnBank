@@ -802,7 +802,7 @@ export default function FlareFtso() {
             <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <Target className="h-4 w-4 text-blue-500" />
-                Getting Started (Step by Step)
+                Getting Started with Xaman (Quick Start)
               </p>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li><strong>Update Xaman</strong> — Make sure you have the latest version with Flare Smart Accounts support (added February 2026).</li>
@@ -812,9 +812,30 @@ export default function FlareFtso() {
                 <li><strong>Monitor</strong> — Track positions in Xaman or Flare explorers. Yield accrues in FXRP.</li>
                 <li><strong>Redeem</strong> — Unwrap FXRP back to native XRP anytime. One transaction, straight to your cold wallet.</li>
               </ol>
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 mt-2">
-                <p className="text-xs text-muted-foreground"><strong>Recommendation:</strong> Start small — test with 100-500 XRP to validate the full round-trip (deposit → earn → redeem) before committing a larger position. Use a general-purpose wallet, not your primary receiving address.</p>
+            </div>
+
+            <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-4 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Shield className="h-4 w-4 text-indigo-500" />
+                Using Ledger + Xaman Together
+              </p>
+              <p className="text-sm text-muted-foreground">If you use a Ledger hardware wallet for cold storage, here's how to set up earnXRP while keeping your keys on the Ledger:</p>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li><strong>Pair Ledger with Xaman</strong> — In Xaman, go to Settings → Accounts → Add Account → Import (read-only). Scan the QR code or enter your XRPL address from your Ledger. This makes your Ledger address visible in Xaman without exposing your private keys.</li>
+                <li><strong>Install the XRP app on Ledger</strong> — Open Ledger Live, go to My Ledger, and install or update the XRP app. Make sure your Ledger firmware is up to date.</li>
+                <li><strong>Enable Flare Smart Accounts in Xaman</strong> — With your Ledger-linked account selected in Xaman, enable Flare Smart Accounts. This creates the bridge between XRPL and Flare for that address.</li>
+                <li><strong>Initiate earnXRP in Xaman</strong> — Select the Upshift earnXRP option. Xaman will prepare the transaction and prompt you to sign.</li>
+                <li><strong>Sign on Ledger</strong> — When Xaman shows the signing request, connect your Ledger via USB or Bluetooth. Open the XRP app on your Ledger and approve the transaction on the device screen. Your private keys never leave the Ledger.</li>
+                <li><strong>Confirm and monitor</strong> — Once signed, your XRP bridges to Flare, mints as FXRP, and starts earning. Track the position in Xaman.</li>
+                <li><strong>To redeem</strong> — Same process in reverse: initiate the withdrawal in Xaman, sign with your Ledger, and your XRP (plus yield) returns to your Ledger-controlled address.</li>
+              </ol>
+              <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-3 mt-2 space-y-1">
+                <p className="text-xs text-muted-foreground"><strong>Why Ledger + Xaman?</strong> Xaman acts as the interface and bridge coordinator, while your Ledger holds the keys. You get the convenience of Xaman's one-click earnXRP with the security of hardware signing. Every transaction requires physical approval on your Ledger — no software wallet can move your XRP without you pressing the button.</p>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+              <p className="text-xs text-muted-foreground"><strong>Recommendation:</strong> Start small — test with 100-500 XRP to validate the full round-trip (deposit → earn → redeem) before committing a larger position. Use a general-purpose wallet, not your primary receiving address.</p>
             </div>
           </CardContent>
         )}
