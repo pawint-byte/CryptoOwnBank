@@ -1062,6 +1062,26 @@ export default function Reconciliation() {
     },
   });
 
+  const deleteYahooPositionsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/reconcile/delete-yahoo-positions");
+      return res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({
+        title: "Yahoo Import Positions Deleted",
+        description: result.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to delete Yahoo positions", description: error.message, variant: "destructive" });
+    },
+  });
+
   const addressedMutation = useMutation({
     mutationFn: async ({ id, addressed }: { id: string; addressed: boolean }) => {
       await apiRequest("PATCH", `/api/positions/${id}/addressed`, { addressed });
@@ -1219,21 +1239,42 @@ export default function Reconciliation() {
                 </div>
               )}
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
-              onClick={() => csvReconcileMutation.mutate()}
-              disabled={csvReconcileMutation.isPending}
-              data-testid="button-csv-reconcile"
-            >
-              {csvReconcileMutation.isPending ? (
-                <RefreshCcw className="h-4 w-4 mr-1.5 animate-spin" />
-              ) : (
-                <ArrowRightLeft className="h-4 w-4 mr-1.5" />
-              )}
-              {csvReconcileMutation.isPending ? "Importing..." : "Import Cost Basis"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                onClick={() => csvReconcileMutation.mutate()}
+                disabled={csvReconcileMutation.isPending}
+                data-testid="button-csv-reconcile"
+              >
+                {csvReconcileMutation.isPending ? (
+                  <RefreshCcw className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <ArrowRightLeft className="h-4 w-4 mr-1.5" />
+                )}
+                {csvReconcileMutation.isPending ? "Importing..." : "Import Cost Basis"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-500/50 text-red-600 hover:bg-red-500/10"
+                onClick={() => {
+                  if (window.confirm("Delete all Yahoo Finance Import positions? This removes the duplicate entries. Your tax lots and wallet balances are NOT affected.")) {
+                    deleteYahooPositionsMutation.mutate();
+                  }
+                }}
+                disabled={deleteYahooPositionsMutation.isPending}
+                data-testid="button-delete-yahoo-positions"
+              >
+                {deleteYahooPositionsMutation.isPending ? (
+                  <RefreshCcw className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                )}
+                {deleteYahooPositionsMutation.isPending ? "Deleting..." : "Delete Yahoo Import Positions"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

@@ -2014,6 +2014,35 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/reconcile/delete-yahoo-positions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      const yahooAccount = existingAccounts.find(a => a.provider === "yahoo_import");
+      if (!yahooAccount) {
+        return res.status(404).json({ message: "No Yahoo Finance Import account found" });
+      }
+
+      const allPositions = await storage.getPositionsByUser(userId);
+      const yahooPositions = allPositions.filter(p => p.accountId === yahooAccount.id);
+
+      let deleted = 0;
+      for (const pos of yahooPositions) {
+        await storage.deletePosition(pos.id);
+        deleted++;
+      }
+
+      res.json({
+        message: `Deleted ${deleted} Yahoo Finance Import positions`,
+        deleted,
+        accountId: yahooAccount.id,
+      });
+    } catch (error) {
+      console.error("Delete Yahoo positions error:", error);
+      res.status(500).json({ message: "Failed to delete Yahoo positions" });
+    }
+  });
+
   app.post("/api/positions/merge", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
