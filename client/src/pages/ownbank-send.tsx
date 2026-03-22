@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/hooks/use-user-data";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { WalletPicker } from "@/components/wallet-picker";
 import {
@@ -70,25 +71,10 @@ import {
   Building2,
 } from "lucide-react";
 
-const CONTACTS_KEY = "ownbank-contacts";
-
 interface Contact {
   name: string;
   address: string;
   tag?: string;
-}
-
-function loadContacts(): Contact[] {
-  try {
-    const raw = localStorage.getItem(CONTACTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveContacts(contacts: Contact[]) {
-  localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
 }
 
 function truncateAddress(addr: string): string {
@@ -136,7 +122,7 @@ export default function OwnBankSend() {
   const [recentTxs, setRecentTxs] = useState<XrplTransaction[]>([]);
   const [loadingTxs, setLoadingTxs] = useState(false);
 
-  const [contacts, setContacts] = useState<Contact[]>(loadContacts);
+  const { data: contacts, save: saveContacts } = useUserData<Contact[]>("xrpl_contacts", []);
   const [showAddContact, setShowAddContact] = useState(false);
   const [newContactName, setNewContactName] = useState("");
   const [newContactAddress, setNewContactAddress] = useState("");
@@ -311,7 +297,6 @@ export default function OwnBankSend() {
       ...contacts,
       { name: newContactName.trim(), address: newContactAddress.trim(), tag: newContactTag.trim() || undefined },
     ];
-    setContacts(updated);
     saveContacts(updated);
     setNewContactName("");
     setNewContactAddress("");
@@ -322,7 +307,6 @@ export default function OwnBankSend() {
 
   function handleRemoveContact(index: number) {
     const updated = contacts.filter((_, i) => i !== index);
-    setContacts(updated);
     saveContacts(updated);
   }
 

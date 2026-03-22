@@ -37,6 +37,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/hooks/use-user-data";
 import {
   Send,
   ChevronDown,
@@ -107,22 +108,10 @@ function deriveCurrenciesFromBalances(balances: StellarBalance[]): CurrencyOptio
   return fromWallet;
 }
 
-const CONTACTS_KEY = "stellar-contacts";
-
 interface StellarContact {
   name: string;
   address: string;
   memo?: string;
-}
-
-function loadContacts(): StellarContact[] {
-  try {
-    return JSON.parse(localStorage.getItem(CONTACTS_KEY) || "[]");
-  } catch { return []; }
-}
-
-function saveContacts(contacts: StellarContact[]) {
-  localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
 }
 
 function truncateAddress(addr: string): string {
@@ -151,7 +140,7 @@ export default function StellarSend() {
   const [receiveCurrencyValue, setReceiveCurrencyValue] = useState("XLM");
   const [receiveMemo, setReceiveMemo] = useState("");
 
-  const [contacts, setContacts] = useState<StellarContact[]>(loadContacts);
+  const { data: contacts, save: saveContacts } = useUserData<StellarContact[]>("stellar_contacts", []);
   const [newContactName, setNewContactName] = useState("");
   const [newContactAddress, setNewContactAddress] = useState("");
   const [newContactMemo, setNewContactMemo] = useState("");
@@ -219,7 +208,6 @@ export default function StellarSend() {
       return;
     }
     const updated = [...contacts, { name: newContactName.trim(), address: newContactAddress.trim(), memo: newContactMemo.trim() || undefined }];
-    setContacts(updated);
     saveContacts(updated);
     setNewContactName("");
     setNewContactAddress("");
@@ -230,7 +218,6 @@ export default function StellarSend() {
 
   function handleDeleteContact(idx: number) {
     const updated = contacts.filter((_, i) => i !== idx);
-    setContacts(updated);
     saveContacts(updated);
     toast({ title: "Contact Removed" });
   }

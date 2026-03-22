@@ -51,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/hooks/use-user-data";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
 import {
@@ -131,22 +132,6 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
 
 const DEFAULT_COLUMNS: ColumnKey[] = ["date", "type", "direction", "asset", "quantity", "price", "total", "fee", "source"];
 
-const STORAGE_KEY = "transactions-columns";
-
-function loadColumnPrefs(): ColumnKey[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved) as ColumnKey[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return DEFAULT_COLUMNS;
-}
-
-function saveColumnPrefs(cols: ColumnKey[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cols));
-}
 
 function formatUsd(value: number): string {
   if (value === 0) return "$0.00";
@@ -257,7 +242,7 @@ export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(loadColumnPrefs);
+  const { data: visibleColumns, save: saveColumnPrefs } = useUserData<ColumnKey[]>("transactions_columns", DEFAULT_COLUMNS);
   const [xrplTransactions, setXrplTransactions] = useState<XrplTransaction[]>([]);
   const [xrpPrice, setXrpPrice] = useState<number>(0);
   const [xrplLoading, setXrplLoading] = useState(false);
@@ -301,12 +286,9 @@ export default function Transactions() {
   }, [fetchXrplTxs]);
 
   const toggleColumn = (col: ColumnKey) => {
-    setVisibleColumns((prev) => {
-      const next = prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col];
-      if (next.length === 0) return prev;
-      saveColumnPrefs(next);
-      return next;
-    });
+    const next = visibleColumns.includes(col) ? visibleColumns.filter((c) => c !== col) : [...visibleColumns, col];
+    if (next.length === 0) return;
+    saveColumnPrefs(next);
   };
 
   const isCol = (col: ColumnKey) => visibleColumns.includes(col);

@@ -114,7 +114,6 @@ const TEMPLATES: TemplateConfig[] = [
   },
 ];
 
-const CONTACTS_KEY = "ownbank-contacts";
 
 interface ParsedRow {
   data: Record<string, string>;
@@ -416,7 +415,9 @@ export default function QuickStart() {
 
       if (preview.templateType === "contacts") {
         try {
-          const existing = JSON.parse(localStorage.getItem(CONTACTS_KEY) || "[]");
+          const existRes = await fetch("/api/user-data/xrpl_contacts", { credentials: "include" });
+          const existData = await existRes.json();
+          const existing = existData.value || [];
           const newContacts = validRows.map(r => ({
             name: r.data["name"],
             address: r.data["address"],
@@ -428,7 +429,7 @@ export default function QuickStart() {
           const existingAddrs = new Set(existing.map((c: any) => c.address));
           const toAdd = newContacts.filter(c => !existingAddrs.has(c.address));
           const merged = [...existing, ...toAdd];
-          localStorage.setItem(CONTACTS_KEY, JSON.stringify(merged));
+          await fetch("/api/user-data/xrpl_contacts", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ value: merged }) });
           success = toAdd.length;
           const skipped = newContacts.length - toAdd.length;
           if (skipped > 0) {
@@ -442,7 +443,9 @@ export default function QuickStart() {
 
       if (preview.templateType === "payees") {
         try {
-          const existing = JSON.parse(localStorage.getItem("ownbank-payees") || "[]");
+          const existRes = await fetch("/api/user-data/xrpl_payees", { credentials: "include" });
+          const existData = await existRes.json();
+          const existing = existData.value || [];
           const newPayees = validRows.map(r => ({
             name: r.data["name"],
             address: r.data["address"],
@@ -456,7 +459,7 @@ export default function QuickStart() {
           const existingNames = new Set(existing.map((p: any) => p.name));
           const toAdd = newPayees.filter(p => !existingNames.has(p.name));
           const merged = [...existing, ...toAdd];
-          localStorage.setItem("ownbank-payees", JSON.stringify(merged));
+          await fetch("/api/user-data/xrpl_payees", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ value: merged }) });
           success = toAdd.length;
           const skipped = newPayees.length - toAdd.length;
           if (skipped > 0) {
@@ -490,7 +493,9 @@ export default function QuickStart() {
 
         if (bankRows.length > 0) {
           try {
-            const existing = JSON.parse(localStorage.getItem("treasury-bank-accounts") || "[]");
+            const existRes = await fetch("/api/user-data/treasury_bank_accounts", { credentials: "include" });
+            const existData = await existRes.json();
+            const existing = existData.value || [];
             const newBanks = bankRows.map(r => ({
               bankName: r.data["bankName"],
               accountType: r.data["accountType"],
@@ -499,7 +504,7 @@ export default function QuickStart() {
               walletLabel: r.data["walletLabel"] || "",
             }));
             const merged = [...existing, ...newBanks];
-            localStorage.setItem("treasury-bank-accounts", JSON.stringify(merged));
+            await fetch("/api/user-data/treasury_bank_accounts", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ value: merged }) });
             success += bankRows.length;
           } catch (err: any) {
             failed += bankRows.length;

@@ -41,6 +41,7 @@ import {
   Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/hooks/use-user-data";
 import { SeoHead } from "@/components/seo-head";
 import { useStellarStore } from "@/lib/stellar-store";
 import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
@@ -62,8 +63,6 @@ interface StellarInvoice {
   createdAt: string;
 }
 
-const STORAGE_KEY = "stellar-invoices";
-
 const CURRENCIES = [
   { value: "XLM", label: "XLM (Stellar Lumens)", issuer: null },
   { value: "USDC", label: "USDC (Circle)", issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN" },
@@ -74,19 +73,6 @@ function generateInvoiceId(): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `SINV-${ts}-${rand}`;
-}
-
-function loadInvoices(): StellarInvoice[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveInvoices(invoices: StellarInvoice[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
 }
 
 function generatePayLink(invoice: StellarInvoice): string {
@@ -117,7 +103,7 @@ export default function StellarInvoices() {
   const { toast } = useToast();
   const { stellarAddress, isConnected } = useStellarStore();
 
-  const [invoices, setInvoices] = useState<StellarInvoice[]>(loadInvoices);
+  const { data: invoices, save: saveInvoices } = useUserData<StellarInvoice[]>("stellar_invoices", []);
   const [createOpen, setCreateOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [selected, setSelected] = useState<StellarInvoice | null>(null);
@@ -170,7 +156,6 @@ export default function StellarInvoices() {
     };
 
     const updated = [invoice, ...invoices];
-    setInvoices(updated);
     saveInvoices(updated);
     setCreateOpen(false);
     resetForm();
@@ -179,7 +164,6 @@ export default function StellarInvoices() {
 
   function handleDelete(id: string) {
     const updated = invoices.filter((inv) => inv.id !== id);
-    setInvoices(updated);
     saveInvoices(updated);
     toast({ title: "Invoice Deleted" });
   }

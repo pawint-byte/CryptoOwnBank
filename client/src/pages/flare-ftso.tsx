@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SeoHead } from "@/components/seo-head";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/hooks/use-user-data";
 import memberFlrStaking from "@assets/IMG_0107_1773957022639.png";
 import autoclaimScreenshot from "@assets/IMG_0108_1773957517213.png";
 import bifrostMenuScreenshot from "@assets/IMG_0109_1773958267636.png";
@@ -92,9 +93,7 @@ export default function FlareFtso() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [flareAddress, setFlareAddress] = useState("");
-  const [savedAddress, setSavedAddress] = useState(() => {
-    try { return localStorage.getItem("flare_address") || ""; } catch { return ""; }
-  });
+  const { data: savedAddress, save: saveFlareAddress, remove: removeFlareAddress } = useUserData("flare_address", "");
   const [showGuide, setShowGuide] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [calcAmount, setCalcAmount] = useState("20000");
@@ -118,15 +117,13 @@ export default function FlareFtso() {
       toast({ title: "Invalid address", description: "Enter a valid Flare C-chain address starting with 0x", variant: "destructive" });
       return;
     }
-    setSavedAddress(addr);
-    try { localStorage.setItem("flare_address", addr); } catch {}
+    saveFlareAddress(addr);
     toast({ title: "Flare wallet connected", description: "Fetching your delegation and reward data..." });
   }
 
   function handleDisconnect() {
-    setSavedAddress("");
     setFlareAddress("");
-    try { localStorage.removeItem("flare_address"); } catch {}
+    removeFlareAddress();
     toast({ title: "Flare wallet disconnected" });
   }
 

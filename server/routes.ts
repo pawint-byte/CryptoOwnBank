@@ -3276,6 +3276,50 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.get("/api/user-data/:key", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { key } = req.params;
+      const settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      res.json({ value: store[key] ?? null });
+    } catch (error) {
+      console.error("User data read error:", error);
+      res.status(500).json({ message: "Failed to read user data" });
+    }
+  });
+
+  app.put("/api/user-data/:key", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { key } = req.params;
+      const { value } = req.body;
+      let settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      store[key] = value;
+      await storage.upsertUserSettings({ userId, userDataStore: store });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("User data write error:", error);
+      res.status(500).json({ message: "Failed to save user data" });
+    }
+  });
+
+  app.delete("/api/user-data/:key", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { key } = req.params;
+      const settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      delete store[key];
+      await storage.upsertUserSettings({ userId, userDataStore: store });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("User data delete error:", error);
+      res.status(500).json({ message: "Failed to delete user data" });
+    }
+  });
+
   app.put("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

@@ -48,6 +48,7 @@ import {
 import { useXrplStore } from "@/lib/xrpl-store";
 import { WalletPicker } from "@/components/wallet-picker";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/hooks/use-user-data";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 
 interface BusinessBrand {
@@ -73,8 +74,6 @@ interface Invoice {
   brand?: BusinessBrand;
 }
 
-const STORAGE_KEY = "ownbank-invoices";
-
 const CURRENCIES = [
   { value: "XRP", label: "XRP" },
   { value: "RLUSD", label: "RLUSD" },
@@ -85,19 +84,6 @@ function generateInvoiceId(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `INV-${timestamp}-${random}`;
-}
-
-function loadInvoices(): Invoice[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveInvoices(invoices: Invoice[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
 }
 
 function generatePayLink(invoice: Invoice): string {
@@ -174,7 +160,7 @@ export default function OwnBankInvoices() {
   const defaultTag = receivingWallets.length > 0 ? (receivingWallets[0].destinationTag || "") : "";
 
   const invoicePrintRef = useRef<HTMLDivElement>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>(loadInvoices);
+  const { data: invoices, save: saveInvoices } = useUserData<Invoice[]>("xrpl_invoices", []);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -238,7 +224,6 @@ export default function OwnBankInvoices() {
     };
 
     const updated = [invoice, ...invoices];
-    setInvoices(updated);
     saveInvoices(updated);
     setCreateModalOpen(false);
     resetForm();
@@ -248,7 +233,6 @@ export default function OwnBankInvoices() {
 
   function handleDeleteInvoice(id: string) {
     const updated = invoices.filter((inv) => inv.id !== id);
-    setInvoices(updated);
     saveInvoices(updated);
     toast({ title: "Invoice Deleted", description: "Invoice has been removed." });
   }

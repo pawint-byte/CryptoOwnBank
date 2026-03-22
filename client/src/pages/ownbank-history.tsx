@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useUserData } from "@/hooks/use-user-data";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,22 +72,6 @@ const DEFAULT_COLUMNS: ColumnKey[] = ["hash", "type", "direction", "amount", "us
 
 const MOBILE_HIDDEN_COLUMNS: ColumnKey[] = ["fee", "address", "usdValue", "status"];
 
-const STORAGE_KEY = "xrpl-history-columns";
-
-function loadColumnPrefs(): ColumnKey[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved) as ColumnKey[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return DEFAULT_COLUMNS;
-}
-
-function saveColumnPrefs(cols: ColumnKey[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cols));
-}
 
 function truncateHash(hash: string): string {
   if (!hash) return "";
@@ -199,17 +184,14 @@ export default function OwnBankHistory() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TxFilter>("all");
   const [xrpPrice, setXrpPrice] = useState<number>(0);
-  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(loadColumnPrefs);
+  const { data: visibleColumns, save: saveColumnPrefs } = useUserData<ColumnKey[]>("xrpl_history_columns", DEFAULT_COLUMNS);
 
   const toggleColumn = (col: ColumnKey) => {
-    setVisibleColumns((prev) => {
-      const next = prev.includes(col)
-        ? prev.filter((c) => c !== col)
-        : [...prev, col];
-      if (next.length === 0) return prev;
-      saveColumnPrefs(next);
-      return next;
-    });
+    const next = visibleColumns.includes(col)
+      ? visibleColumns.filter((c) => c !== col)
+      : [...visibleColumns, col];
+    if (next.length === 0) return;
+    saveColumnPrefs(next);
   };
 
   const isColumnVisible = (col: ColumnKey) => visibleColumns.includes(col);

@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useUserData } from "@/hooks/use-user-data";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -144,47 +145,44 @@ const allItems: NavItem[] = [
 
 const DEFAULT_FAVORITES = ["/", "/portfolio", "/rwa-yields", "/stablecoins", "/chain-guide"];
 
-const STORAGE_KEY_FAVS = "sidebar-favorites";
-const STORAGE_KEY_GROUPS = "sidebar-groups-open";
-
 function useFavorites() {
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_FAVS);
-      return stored ? JSON.parse(stored) : DEFAULT_FAVORITES;
-    } catch {
-      return DEFAULT_FAVORITES;
+  const { data: serverFavorites, save: saveFavorites } = useUserData<string[]>("sidebar_favorites", DEFAULT_FAVORITES);
+  const [favorites, setFavorites] = useState<string[]>(DEFAULT_FAVORITES);
+
+  useEffect(() => {
+    if (serverFavorites && serverFavorites.length > 0) {
+      setFavorites(serverFavorites);
     }
-  });
+  }, [serverFavorites]);
 
   const toggle = useCallback((url: string) => {
     setFavorites((prev) => {
       const next = prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url];
-      localStorage.setItem(STORAGE_KEY_FAVS, JSON.stringify(next));
+      saveFavorites(next);
       return next;
     });
-  }, []);
+  }, [saveFavorites]);
 
   return { favorites, toggle, isFav: (url: string) => favorites.includes(url) };
 }
 
 function useGroupState(defaults: Record<string, boolean>) {
-  const [open, setOpen] = useState<Record<string, boolean>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_GROUPS);
-      return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
-    } catch {
-      return defaults;
+  const { data: serverGroups, save: saveGroups } = useUserData<Record<string, boolean>>("sidebar_groups", defaults);
+  const [open, setOpen] = useState<Record<string, boolean>>(defaults);
+
+  useEffect(() => {
+    if (serverGroups) {
+      setOpen((prev) => ({ ...prev, ...serverGroups }));
     }
-  });
+  }, [serverGroups]);
 
   const toggleGroup = useCallback((key: string) => {
     setOpen((prev) => {
       const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(next));
+      saveGroups(next);
       return next;
     });
-  }, []);
+  }, [saveGroups]);
 
   return { open, toggleGroup };
 }
