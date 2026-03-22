@@ -96,6 +96,7 @@ export default function FlareFtso() {
   const { data: savedAddress, save: saveFlareAddress, remove: removeFlareAddress } = useUserData("flare_address", "");
   const [showGuide, setShowGuide] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
+  const [showEarnXrp, setShowEarnXrp] = useState(false);
   const [calcAmount, setCalcAmount] = useState("20000");
   const [calcApy, setCalcApy] = useState("8.5");
 
@@ -724,6 +725,96 @@ export default function FlareFtso() {
                 <li><strong>Claim rewards regularly</strong> — unclaimed FTSO rewards expire after a certain period. Check Bifrost every week or two.</li>
                 <li><strong>Coming from Uphold?</strong> Your monthly FlareDrop from holding XRP during the snapshot still lands on Uphold. Move that FLR to Bifrost too, wrap it, and it earns delegation rewards on top of the drop.</li>
               </ul>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      <Card className="border-orange-500/30">
+        <CardHeader className="cursor-pointer" onClick={() => setShowEarnXrp(!showEarnXrp)} data-testid="btn-toggle-earnxrp">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-orange-500" />
+              <div>
+                <CardTitle className="text-lg">earnXRP Vault — Earn Yield on Your XRP</CardTitle>
+                <CardDescription>Self-custody yield via Flare's FXRP bridge (Upshift + Clearstar)</CardDescription>
+              </div>
+            </div>
+            {showEarnXrp ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </div>
+        </CardHeader>
+        {showEarnXrp && (
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-orange-500" />
+                What is the earnXRP Vault?
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>The <strong>earnXRP vault</strong> (by Upshift, curated by Clearstar) lets you earn yield on your XRP while maintaining full self-custody. It went live in December 2025, with one-click Xaman integration added in February 2026.</p>
+                <p>As of mid-March 2026, FXRP liquidity is approaching <strong>$200 million</strong> — significant traction for a new product.</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4 text-orange-500" />
+                How It Works
+              </p>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li><strong>Deposit XRP via Xaman</strong> — Open Xaman, select the Upshift earnXRP option. Your cold wallet signs the transaction. XRP gets bridged to Flare and minted 1:1 as FXRP.</li>
+                <li><strong>FXRP earns yield automatically</strong> — Your FXRP is deployed into Clearstar-curated strategies (lending, liquidity provision). Yield accrues and compounds in FXRP on-chain.</li>
+                <li><strong>Redeem anytime</strong> — Unwrap FXRP back to native XRP with one transaction. Your XRP returns to your cold wallet. No lock-ups beyond network fees.</li>
+              </ol>
+              <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 mt-2">
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">Yes — you get more XRP back. If you deposit 1,000 XRP and earn 3.5% over a year, you redeem ~1,035 XRP. The yield accrues as additional FXRP which converts back to real XRP.</p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Shield className="h-4 w-4 text-orange-500" />
+                Key Details & Risks
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="space-y-2">
+                  <p className="font-medium text-green-600 dark:text-green-400">Pros:</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> Self-custody — keys never leave your device</li>
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> No lock-ups — redeem to XRP anytime</li>
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> One-click via Xaman — no manual bridging</li>
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> ~3-4% variable yield on idle XRP</li>
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> $200M+ liquidity — real traction</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium text-orange-600 dark:text-orange-400">Risks to consider:</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Smart contract risk — bridge/vault code bugs</li>
+                    <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Variable yield — 3-4% is recent, not guaranteed</li>
+                    <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Flare network dependency</li>
+                    <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Clearstar strategy curation trust</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Target className="h-4 w-4 text-blue-500" />
+                Getting Started (Step by Step)
+              </p>
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
+                <li><strong>Update Xaman</strong> — Make sure you have the latest version with Flare Smart Accounts support (added February 2026).</li>
+                <li><strong>Enable Flare Smart Accounts</strong> — In Xaman, this enables direct XRPL-to-Flare bridging with no manual steps.</li>
+                <li><strong>Select earnXRP</strong> — From Xaman's home screen, select the Upshift earnXRP option.</li>
+                <li><strong>Sign with your cold wallet</strong> — Your hardware/cold wallet signs the transaction. XRP mints 1:1 as FXRP and deploys automatically.</li>
+                <li><strong>Monitor</strong> — Track positions in Xaman or Flare explorers. Yield accrues in FXRP.</li>
+                <li><strong>Redeem</strong> — Unwrap FXRP back to native XRP anytime. One transaction, straight to your cold wallet.</li>
+              </ol>
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 mt-2">
+                <p className="text-xs text-muted-foreground"><strong>Recommendation:</strong> Start small — test with 100-500 XRP to validate the full round-trip (deposit → earn → redeem) before committing a larger position. Use a general-purpose wallet, not your primary receiving address.</p>
+              </div>
             </div>
           </CardContent>
         )}
