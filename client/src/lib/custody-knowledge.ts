@@ -1859,6 +1859,13 @@ export type RecommendationType =
   | "no_action"
   | "no_data";
 
+export interface DecisionStep {
+  question: string;
+  answer: "yes" | "no" | "info" | "action";
+  detail: string;
+  link?: string;
+}
+
 export interface AssetRecommendation {
   symbol: string;
   name: string;
@@ -1872,6 +1879,7 @@ export interface AssetRecommendation {
   usdValue: number;
   missedAnnual: number;
   actionItems: ActionItem[];
+  decisionPath?: DecisionStep[];
   riskNote?: string;
   notes?: string;
   custodyInfo?: {
@@ -1974,6 +1982,7 @@ export function evaluateAsset(
 
   if (!knowledge) {
     const ecosystem = getEcosystemFallback(symbol);
+    const fbFmt = `$${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     if (ecosystem && location === "exchange") {
       const actions: ActionItem[] = [
         { text: `Withdraw ${symbol} from ${provider} to your own wallet for self-custody`, custodyBadge: "on_chain" as CustodyType },
@@ -1989,9 +1998,16 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "move_to_cold",
         title: "Move to Self-Custody",
-        description: `${symbol} is on ${provider} (custodial). Move it to your own wallet for true ownership — ${ecosystem.wallets[0].name} is the recommended option.`,
+        description: `${fbFmt} of ${symbol} on ${provider} (custodial). Move it to your own wallet for true ownership — ${ecosystem.wallets[0].name} is the recommended option.`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: actions,
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fbFmt} of ${symbol} on ${provider} (exchange)` },
+          { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — not your keys, not your crypto` },
+          { question: "Can you withdraw to your own wallet?", answer: "yes", detail: `Withdraw to ${ecosystem.wallets[0].name} for self-custody` },
+          ...(ecosystem.stakeable ? [{ question: "Is yield available?", answer: "yes" as const, detail: ecosystem.stakingNote || "Staking available after moving to self-custody" }] : []),
+          { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you're comfortable on the exchange" },
+        ],
         custodyInfo: {
           type: "custodial" as CustodyType,
           explanation: `${provider} is custodial — move to your own wallet for true ownership`,
@@ -2001,11 +2017,16 @@ export function evaluateAsset(
     if (ecosystem && location === "cold_wallet") {
       return {
         symbol, name: displayName, type: "optimal", title: "Self-Custodied",
-        description: `${symbol} is safely in your own wallet on ${provider} — you control your keys.${ecosystem.stakeable && ecosystem.stakingNote ? ` ${ecosystem.stakingNote}.` : ""}`,
+        description: `${fbFmt} of ${symbol} safely in your own wallet on ${provider} — you control your keys.${ecosystem.stakeable && ecosystem.stakingNote ? ` ${ecosystem.stakingNote}.` : ""}`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: ecosystem.stakeable && ecosystem.stakingNote
           ? [{ text: ecosystem.stakingNote, custodyBadge: "on_chain" as CustodyType }]
           : [],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fbFmt} of ${symbol} on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          ...(ecosystem.stakeable ? [{ question: "Is yield available?", answer: "yes" as const, detail: ecosystem.stakingNote || "Staking may be available" }] : [{ question: "Is yield available?", answer: "no" as const, detail: "No known staking options for this asset" }]),
+        ],
       };
     }
     return {
@@ -2013,14 +2034,19 @@ export function evaluateAsset(
       description: `We don't have optimization data for ${symbol} yet. Your funds are ${location === "cold_wallet" ? `safely self-custodied on ${provider}` : location === "exchange" ? `on ${provider} — consider moving to a cold wallet for safety` : `in DeFi on ${provider}`}.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
       actionItems: location === "exchange" ? [{ text: "Consider moving to a cold wallet for self-custody" }] : [],
+      decisionPath: [
+        { question: "What do you have and where?", answer: "info", detail: `${fbFmt} of ${symbol} on ${provider}` },
+        { question: "Is it on a wallet you control?", answer: location === "cold_wallet" ? "yes" : "no", detail: location === "cold_wallet" ? "Self-custody — your keys" : `${provider} is custodial` },
+        ...(location === "exchange" ? [{ question: "Should you move to self-custody?", answer: "action" as const, detail: "Consider withdrawing to your own wallet for true ownership" }] : []),
+      ],
     };
   }
 
   const bestStaking = knowledge.stakingOptions?.reduce((best, opt) => opt.apyMid > best ? opt.apyMid : best, 0) || 0;
-  const bestStakingSource = knowledge.stakingOptions?.reduce((best, opt) => opt.apyMid > (best?.apyMid || 0) ? opt : best, null as StakingOption | null);
+  const bestStakingSource = knowledge.stakingOptions?.reduce((best, opt) => opt.apyMid > (best?.apyMid || 0) ? opt : best, null as StakingOption | null) ?? null;
 
   const bestDefi = knowledge.defiAlternatives?.reduce((best, alt) => alt.defiApyMid > best ? alt.defiApyMid : best, 0) || 0;
-  const bestDefiSource = knowledge.defiAlternatives?.reduce((best, alt) => alt.defiApyMid > (best?.defiApyMid || 0) ? alt : best, null as DefiAlternative | null);
+  const bestDefiSource = knowledge.defiAlternatives?.reduce((best, alt) => alt.defiApyMid > (best?.defiApyMid || 0) ? alt : best, null as DefiAlternative | null) ?? null;
 
   const bestSelfCustodyYield = Math.max(bestStaking, bestDefi);
   const bestSelfCustodyLabel = bestStaking >= bestDefi
@@ -2063,12 +2089,19 @@ export function evaluateAsset(
     const walletBrand = detectWalletBrand(provider);
     const walletActions = getWalletSpecificActions(symbol, provider);
 
+    const fmtVal = `$${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
     if (symbol === "VET") {
       return {
         symbol, name: displayName, type: "optimal", title: "Earning Passively",
         description: `VET on your ${provider} wallet generates VTHO automatically just by holding it — no staking action needed.`,
         currentLocation: provider, currentYield: 1.5, bestYield: 1.5, bestYieldSource: "VTHO Generation", usdValue, missedAnnual: 0,
         actionItems: [VET_PASSIVE_NOTE],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of VET on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          { question: "Is it earning yield?", answer: "yes", detail: "VET generates VTHO passively just by holding — no action needed" },
+        ],
       };
     }
 
@@ -2078,6 +2111,11 @@ export function evaluateAsset(
         description: `stETH on your ${provider} wallet is already staked ETH via Lido — it earns ~3.2% APY automatically just by holding it.`,
         currentLocation: provider, currentYield: 3.2, bestYield: 3.2, bestYieldSource: "Lido", usdValue, missedAnnual: 0,
         actionItems: [{ text: "stETH earns Ethereum staking rewards automatically — no action needed", link: "https://lido.fi" }],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of stETH on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          { question: "Is it earning yield?", answer: "yes", detail: "stETH earns ~3.2% APY via Lido automatically — no action needed" },
+        ],
       };
     }
 
@@ -2087,6 +2125,11 @@ export function evaluateAsset(
         description: `VTHO on your ${provider} wallet is generated passively by your VET holdings. It can be used for transactions on VeChain or traded.`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: [{ text: "VTHO is generated by holding VET — consider saving or trading it" }],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of VTHO on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          { question: "Is yield available?", answer: "no", detail: "VTHO is a utility token generated by VET — hold, use for gas, or trade" },
+        ],
       };
     }
 
@@ -2096,6 +2139,11 @@ export function evaluateAsset(
         description: `HBARX on ${provider} represents your staked HBAR via Stader — earning staking rewards automatically.`,
         currentLocation: provider, currentYield: 3.0, bestYield: 3.0, bestYieldSource: "Stader", usdValue, missedAnnual: 0,
         actionItems: [{ text: "HBARX accrues staking rewards automatically — no action needed", link: "https://www.staderlabs.com/hedera/" }],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of HBARX on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          { question: "Is it earning yield?", answer: "yes", detail: "HBARX is liquid-staked HBAR via Stader — earning ~3% APY automatically" },
+        ],
       };
     }
 
@@ -2107,6 +2155,11 @@ export function evaluateAsset(
         actionItems: [
           { text: "Your HBAR is staked via Stader — HBARX represents your staked position", link: "https://www.staderlabs.com/hedera/" },
           { text: "Staking rewards accrue automatically — no action needed" },
+        ],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of HBAR on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          { question: "Is it earning yield?", answer: "yes", detail: "Staked via Stader liquid staking — earning ~3% APY automatically" },
         ],
       };
     }
@@ -2123,6 +2176,11 @@ export function evaluateAsset(
         description: `${symbol} is staked on your ${provider} wallet — safe and earning yield.`,
         currentLocation: provider, currentYield: bestStaking, bestYield: bestStaking, bestYieldSource: bestStakingSource?.platform || provider, usdValue, missedAnnual: 0,
         actionItems: items,
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of ${symbol} on ${provider} (self-custody)` },
+          { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+          { question: "Is it earning yield?", answer: "yes", detail: `Staked and earning ~${bestStaking.toFixed(1)}% APY via ${bestStakingSource?.platform || provider}` },
+        ],
       };
     }
 
@@ -2161,6 +2219,25 @@ export function evaluateAsset(
         description = `${stakedPct}% of your ${symbol} on ${provider} ($${stakedContext.stakedUsdOnSameWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is staked and earning ~$${totalEarning.toFixed(0)}/year. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — but ${provider} cannot stake the rest directly. You would need to move it to a compatible wallet.`;
       }
 
+      const partialPath: DecisionStep[] = [
+        { question: "What do you have and where?", answer: "info", detail: `$${totalOnWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })} of ${symbol} on ${provider} (self-custody)` },
+        { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+        { question: "Is it earning yield?", answer: "yes", detail: `${stakedPct}% is staked — earning ~$${totalEarning.toFixed(0)}/year` },
+      ];
+      if (missed > 10) {
+        partialPath.push(
+          { question: "Is ALL of it earning?", answer: "no", detail: `${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is sitting idle — ~$${missed.toFixed(0)}/year left on the table` },
+          canDirectlyStake
+            ? { question: "Can your wallet stake the rest?", answer: "yes", detail: `Stake remaining ${symbol} directly from ${provider}` }
+            : { question: "Can your wallet stake the rest?", answer: "no", detail: `${provider} can't stake the rest — transfer to a compatible wallet, or sell/swap to move` },
+        );
+      }
+      if (!canDirectlyStake && missed > 10) {
+        partialPath.push(
+          { question: "OK to leave it as-is?", answer: "action", detail: "If you're comfortable, mark as addressed to hide this recommendation" },
+        );
+      }
+
       return {
         symbol, name: displayName, type: missed > 10 ? "stake_available" : "optimal",
         title: missed > 10 ? "Partially Staked" : "Already Staking",
@@ -2168,6 +2245,7 @@ export function evaluateAsset(
         currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
         bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue: totalOnWallet, missedAnnual: missed > 10 ? missed : 0,
         actionItems: items,
+        decisionPath: partialPath,
       };
     }
 
@@ -2185,14 +2263,50 @@ export function evaluateAsset(
         a.link && !a.text.toLowerCase().includes("cannot") && !a.text.toLowerCase().includes("doesn't support") && !a.text.toLowerCase().includes("does not support") && !a.text.toLowerCase().includes("need to send") && !a.text.toLowerCase().includes("would need to")
       );
 
+      const fmtValue = `$${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+      const fmtMissed = `$${missed.toFixed(0)}`;
+
       let description: string;
+      let items: ActionItem[];
+
       if (canWalletStakeDirectly) {
-        const onChainNote = primaryCustody?.type === "on_chain"
-          ? ` This is on-chain on ${bestBlockchain} — you keep ownership of your assets.`
-          : "";
-        description = `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.${onChainNote}`;
+        description = `You hold ${fmtValue} of ${symbol} on your ${provider} wallet (self-custody). Earning available: ~${bestSelfCustodyYield.toFixed(1)}% APY via ${bestPlatform}${bestBlockchain ? ` on ${bestBlockchain}` : ""} — that's ~${fmtMissed}/year and you keep ownership of your assets.`;
+        items = walletActions.length > 0 ? walletActions : [
+          bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} on ${bestStakingSource?.blockchain} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link, custodyBadge: bestStakingSource?.custodyType } : null,
+          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} on ${bestDefiSource?.blockchain} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link, custodyBadge: bestDefiSource?.custodyType } : null,
+        ].filter(Boolean) as ActionItem[];
       } else {
-        description = `You hold $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} of ${symbol} on your ${provider} wallet. Best yield: ~${bestSelfCustodyYield.toFixed(1)}% APY via ${bestPlatform}${bestBlockchain ? ` on ${bestBlockchain}` : ""} (~$${missed.toFixed(0)}/year). However, ${provider} cannot stake ${symbol} directly — you would need to move it to a compatible wallet first.`;
+        const compatibleWallets = knowledge.selfCustodyWallets?.filter(w => {
+          const wLower = w.toLowerCase();
+          return !wLower.includes(walletBrand) && wLower !== "ellipal" && wLower !== "cypherock" && wLower !== "arculus" && wLower !== "safepal";
+        }) || [];
+        const transferTarget = compatibleWallets.length > 0 ? compatibleWallets.join(" or ") : bestPlatform;
+
+        description = `You hold ${fmtValue} of ${symbol} on your ${provider} wallet (self-custody). ${symbol} can earn ~${bestSelfCustodyYield.toFixed(1)}% APY (~${fmtMissed}/year) via ${bestPlatform}${bestBlockchain ? ` on ${bestBlockchain}` : ""}, but ${provider} cannot connect to ${bestPlatform} directly.`;
+        items = walletActions.length > 0 ? [...walletActions] : [];
+        if (items.length === 0) {
+          items.push({ text: `${provider} cannot stake ${symbol} — transfer to ${transferTarget} to earn yield`, custodyBadge: "on_chain" as CustodyType });
+        }
+        items.push({ text: `If direct transfer isn't available, sell ${symbol} on an exchange and rebuy on a staking-compatible wallet` });
+      }
+
+      const yieldPath: DecisionStep[] = [
+        { question: "What do you have and where?", answer: "info", detail: `${fmtValue} of ${symbol} on ${provider} (self-custody)` },
+        { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+        { question: "Is yield available for this asset?", answer: "yes", detail: `~${bestSelfCustodyYield.toFixed(1)}% APY via ${bestPlatform}${bestBlockchain ? ` on ${bestBlockchain}` : ""} (~${fmtMissed}/year)` },
+      ];
+
+      if (canWalletStakeDirectly) {
+        yieldPath.push(
+          { question: "Can your wallet earn it directly?", answer: "yes", detail: `${provider} can connect to ${bestPlatform} — stake directly` },
+        );
+      } else {
+        yieldPath.push(
+          { question: "Can your wallet earn it directly?", answer: "no", detail: `${provider} cannot connect to ${bestPlatform}` },
+          { question: "Can you transfer to a compatible wallet?", answer: "action", detail: `Send ${symbol} to a wallet that supports staking (e.g. Ledger, native wallet)` },
+          { question: "If transfer isn't possible?", answer: "action", detail: `Sell ${symbol} on an exchange and rebuy on a staking-compatible wallet` },
+          { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed to hide this recommendation" },
+        );
       }
 
       return {
@@ -2200,19 +2314,22 @@ export function evaluateAsset(
         title: "Yield Available",
         description,
         currentLocation: provider, currentYield: 0, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
-        actionItems: walletActions.length > 0 ? walletActions : [
-          bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} on ${bestStakingSource?.blockchain} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link, custodyBadge: bestStakingSource?.custodyType } : null,
-          bestDefi > 0 ? { text: `Use ${bestDefiSource?.defiProtocol} on ${bestDefiSource?.blockchain} (${bestDefiSource?.defiApy} APY)`, link: bestDefiSource?.link, custodyBadge: bestDefiSource?.custodyType } : null,
-        ].filter(Boolean) as ActionItem[],
+        actionItems: items,
+        decisionPath: yieldPath,
         custodyInfo: primaryCustody,
       };
     }
 
     return {
-      symbol, name: displayName, type: "optimal", title: "Safe & Secure",
-      description: `${symbol} on your ${provider} wallet — fully self-custodied. No native staking is available for this asset.`,
+      symbol, name: displayName, type: "optimal", title: "Self-Custodied",
+      description: `You hold ${fmtVal} of ${symbol} on your ${provider} wallet — self-custody, no staking or yield is available for this asset. Your keys, your crypto.`,
       currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
       actionItems: [],
+      decisionPath: [
+        { question: "What do you have and where?", answer: "info", detail: `${fmtVal} of ${symbol} on ${provider} (self-custody)` },
+        { question: "Is it on a wallet you control?", answer: "yes", detail: `${provider} — your keys, your crypto` },
+        { question: "Is yield available?", answer: "no", detail: "No staking or yield options exist for this asset" },
+      ],
     };
   }
 
@@ -2222,6 +2339,7 @@ export function evaluateAsset(
     const withdrawalBlockedNote = (!canWithdraw && exchangeWithdrawal?.note) ? exchangeWithdrawal.note : null;
     const withdrawalWorkaround = (!canWithdraw && exchangeWithdrawal?.workaround) ? exchangeWithdrawal.workaround : null;
     const exchangeCustodyNote = `${provider} is a custodial platform — they hold your assets on your behalf. Not your keys, not your crypto.`;
+    const eFmt = `$${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
     if (bestExchangeEarnOnCurrent > 0 && bestSelfCustodyYield > 0) {
       if (bestSelfCustodyYield > bestExchangeEarnOnCurrent) {
@@ -2236,16 +2354,32 @@ export function evaluateAsset(
               { text: `⚠️ ${withdrawalBlockedNote || `${symbol} cannot be withdrawn directly from ${provider}`}` },
               withdrawalWorkaround ? { text: `Workaround: ${withdrawalWorkaround}` } : null,
             ];
+        const exchPath: DecisionStep[] = [
+          { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+          { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — they hold your ${symbol}. Not your keys.` },
+          { question: "Can you withdraw to your own wallet?", answer: canWithdraw ? "yes" : "no", detail: canWithdraw ? `${symbol} can be withdrawn from ${provider}` : (withdrawalBlockedNote || `${symbol} cannot be withdrawn directly`) },
+        ];
+        if (canWithdraw) {
+          exchPath.push(
+            { question: "Is better yield available on-chain?", answer: "yes", detail: `${bestSelfCustodyYield.toFixed(1)}% on-chain vs ${bestExchangeEarnOnCurrentSource?.apyRange} on ${provider} — move and stake` },
+          );
+        } else {
+          exchPath.push(
+            { question: "Can you sell/swap to move it?", answer: "action", detail: `Sell ${symbol} on ${provider}, withdraw proceeds, rebuy on self-custody` },
+          );
+        }
+        exchPath.push({ question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you choose to keep earning on the exchange" });
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Better On-Chain Yield Available",
-          description: `${provider} (custodial) offers ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}, but on-chain staking via ${bestSelfCustodyLabel} on ${onChainBlockchain} offers ${bestSelfCustodyYield.toFixed(1)}% — and you keep your keys.${!canWithdraw ? ` Note: ${provider} does not support direct ${symbol} withdrawals.` : ""}`,
+          description: `${eFmt} of ${symbol} on ${provider} (custodial) earning ${bestExchangeEarnOnCurrentSource?.apyRange} APY. On-chain staking via ${bestSelfCustodyLabel} on ${onChainBlockchain} offers ${bestSelfCustodyYield.toFixed(1)}% — and you keep your keys.${!canWithdraw ? ` Note: ${provider} does not support direct ${symbol} withdrawals.` : ""}`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
           actionItems: [
             ...moveActions,
             { text: `Keep some on ${provider} for liquidity — but remember, ${provider} is custodial`, custodyBadge: "custodial" },
             bestExchangeEarnOnCurrentSource?.link ? { text: `Currently earning up to ${bestExchangeEarnOnCurrentSource.apyRange} on ${provider} (custodial)`, link: bestExchangeEarnOnCurrentSource.link, custodyBadge: "custodial" } : null,
           ].filter(Boolean) as ActionItem[],
+          decisionPath: exchPath,
           riskNote: exchangeCustodyNote,
           custodyInfo: onChainSource
             ? getCustodyInfo(onChainSource, "staking")
@@ -2255,13 +2389,20 @@ export function evaluateAsset(
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Earning on Exchange — Consider Self-Custody",
-          description: `${provider} (custodial) offers competitive ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${symbol}. On-chain yield (${bestSelfCustodyYield.toFixed(1)}%) is similar or lower, but self-custody means you own your assets.`,
+          description: `${eFmt} of ${symbol} on ${provider} (custodial) earning competitive ${bestExchangeEarnOnCurrentSource?.apyRange} APY. On-chain yield (${bestSelfCustodyYield.toFixed(1)}%) is similar or lower, but self-custody means you own your assets.`,
           currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestExchangeEarnOnCurrent, bestYieldSource: `${provider} ${bestExchangeEarnOnCurrentSource?.program}`, usdValue, missedAnnual: 0,
           actionItems: [
             { text: `You're earning well on ${provider} — but your assets are held by the exchange`, custodyBadge: "custodial" as CustodyType },
             canWithdraw ? { text: "For true ownership, move a portion to your cold wallet", custodyBadge: "on_chain" as CustodyType } : null,
             { text: "Keep enough on exchange for easy liquidation if needed" },
           ].filter(Boolean) as ActionItem[],
+          decisionPath: [
+            { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+            { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — they hold your ${symbol}` },
+            { question: "Is it earning yield?", answer: "yes", detail: `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} APY — competitive with on-chain` },
+            { question: "Should you move to self-custody?", answer: "action", detail: canWithdraw ? "You can withdraw for ownership, but yield difference is minimal" : "Consider if self-custody ownership outweighs the convenience" },
+            { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you're comfortable with exchange custody" },
+          ],
           riskNote: exchangeCustodyNote,
           custodyInfo: {
             type: "custodial" as CustodyType,
@@ -2275,7 +2416,7 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "split_strategy",
         title: "Earning on Exchange — No On-Chain Alternative",
-        description: `${symbol} earns ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${provider} (custodial). No on-chain staking exists for this asset, so this is the best yield option — but your assets are held by ${provider}.`,
+        description: `${eFmt} of ${symbol} on ${provider} (custodial) earning ${bestExchangeEarnOnCurrentSource?.apyRange} APY. No on-chain staking exists for this asset — this is the best yield option, but your assets are held by ${provider}.`,
         currentLocation: provider, currentYield: bestExchangeEarnOnCurrent, bestYield: bestExchangeEarnOnCurrent, bestYieldSource: `${provider} ${bestExchangeEarnOnCurrentSource?.program}`, usdValue, missedAnnual: 0,
         actionItems: [
           bestExchangeEarnOnCurrentSource?.link
@@ -2283,6 +2424,14 @@ export function evaluateAsset(
             : { text: `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} on ${provider} — best available, but custodial`, custodyBadge: "custodial" as CustodyType },
           canWithdraw ? { text: "Move a portion to cold wallet for self-custody (no yield, but you own it)", custodyBadge: "on_chain" as CustodyType } : null,
         ].filter(Boolean) as ActionItem[],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+          { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — they hold your ${symbol}` },
+          { question: "Is it earning yield?", answer: "yes", detail: `Earning ${bestExchangeEarnOnCurrentSource?.apyRange} APY on ${provider}` },
+          { question: "Is on-chain staking available?", answer: "no", detail: "No on-chain alternative exists — exchange yield is the only option" },
+          { question: "Should you move for self-custody?", answer: "action", detail: canWithdraw ? "You could withdraw for ownership (no yield), or leave for yield" : "Cannot withdraw directly — would need to sell/swap to move" },
+          { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you're comfortable" },
+        ],
         riskNote: exchangeCustodyNote,
         custodyInfo: {
           type: "custodial" as CustodyType,
@@ -2318,12 +2467,27 @@ export function evaluateAsset(
       }
       const primarySource = bestStaking >= bestDefi ? bestStakingSource : null;
       const primaryDefi = bestDefi > bestStaking ? bestDefiSource : null;
+      const exchMovePath: DecisionStep[] = [
+        { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+        { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — not your keys, not your crypto` },
+        { question: "Is it earning anything here?", answer: "no", detail: `${symbol} is sitting idle on ${provider} — earning nothing` },
+        { question: "Can you withdraw to your own wallet?", answer: canWithdraw ? "yes" : "no", detail: canWithdraw ? `Withdraw ${symbol} from ${provider} to self-custody` : (withdrawalBlockedNote || `Cannot withdraw ${symbol} directly`) },
+      ];
+      if (canWithdraw) {
+        exchMovePath.push({ question: "Is yield available on-chain?", answer: "yes", detail: `Stake via ${stakingName} on ${stakingBlockchain} for ${stakingApy} APY — you keep your keys` });
+      } else {
+        exchMovePath.push(
+          { question: "Can you sell/swap to move it?", answer: "action", detail: withdrawalWorkaround || `Sell ${symbol} on ${provider}, withdraw proceeds, rebuy on self-custody wallet` },
+        );
+      }
+      exchMovePath.push({ question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you choose to keep it on the exchange" });
       return {
         symbol, name: displayName, type: "move_to_cold",
         title: "Move to Self-Custody & Earn On-Chain",
-        description: `${symbol} is sitting on ${provider} (custodial) earning nothing. Moving to your own wallet and staking on-chain could earn ~$${missed.toFixed(0)}/year (${bestOverall.toFixed(1)}% APY via ${bestOverallSource} on ${stakingBlockchain}).`,
+        description: `${eFmt} of ${symbol} sitting on ${provider} (custodial) earning nothing. Moving to your own wallet and staking on-chain could earn ~$${missed.toFixed(0)}/year (${bestOverall.toFixed(1)}% APY via ${bestOverallSource} on ${stakingBlockchain}).`,
         currentLocation: provider, currentYield: 0, bestYield: bestOverall, bestYieldSource: bestOverallSource, usdValue, missedAnnual: missed,
         actionItems: actions,
+        decisionPath: exchMovePath,
         custodyInfo: primarySource
           ? getCustodyInfo(primarySource, "staking")
           : getCustodyInfo(primaryDefi, "defi"),
@@ -2334,7 +2498,7 @@ export function evaluateAsset(
       if (!canWithdraw) {
         return {
           symbol, name: displayName, type: "no_action", title: "No Action Available",
-          description: `${symbol} on ${provider} (custodial) — no yield options.${withdrawalBlockedNote ? ` ${withdrawalBlockedNote}.` : " Withdrawal may not be available."}`,
+          description: `${eFmt} of ${symbol} on ${provider} (custodial) — no yield options.${withdrawalBlockedNote ? ` ${withdrawalBlockedNote}.` : " Withdrawal may not be available."}`,
           currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
           actionItems: withdrawalWorkaround
             ? [
@@ -2342,6 +2506,14 @@ export function evaluateAsset(
                 { text: `Workaround: ${withdrawalWorkaround}` },
               ]
             : [],
+          decisionPath: [
+            { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+            { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial` },
+            { question: "Can you withdraw it?", answer: "no", detail: withdrawalBlockedNote || "Withdrawal may not be supported" },
+            { question: "Can you sell/swap to move?", answer: "action", detail: withdrawalWorkaround || `Sell ${symbol} on ${provider} and rebuy elsewhere if you want to move it` },
+            { question: "Is yield available?", answer: "no", detail: "No yield options — on exchange or on-chain" },
+            { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you're comfortable" },
+          ],
           riskNote: exchangeCustodyNote,
           custodyInfo: {
             type: "custodial" as CustodyType,
@@ -2356,13 +2528,21 @@ export function evaluateAsset(
         return {
           symbol, name: displayName, type: "split_strategy",
           title: "Yield Available — But Only Custodial",
-          description: `${symbol} is on ${provider} (custodial) earning nothing. ${bestAnyExch?.exchange} offers ${bestAnyExch?.apyRange} APY via ${bestAnyExch?.program} — but that's also custodial. No on-chain option exists.`,
+          description: `${eFmt} of ${symbol} on ${provider} (custodial) earning nothing. ${bestAnyExch?.exchange} offers ${bestAnyExch?.apyRange} APY via ${bestAnyExch?.program} — but that's also custodial. No on-chain option exists.`,
           currentLocation: provider, currentYield: 0, bestYield: bestExchangeEarnAnywhere, bestYieldSource: bestAnyExch ? `${bestAnyExch.exchange} ${bestAnyExch.program}` : "", usdValue, missedAnnual: missed,
           actionItems: [
             bestAnyExch?.link ? { text: `Move to ${bestAnyExch.exchange} for ${bestAnyExch.apyRange} APY (custodial)`, link: bestAnyExch.link, custodyBadge: "custodial" as CustodyType } : null,
             { text: "For true ownership, move to your cold wallet — no yield, but you own your assets", custodyBadge: "on_chain" as CustodyType },
             ...(knowledge.selfCustodyWallets ? walletActionItems(knowledge.selfCustodyWallets, symbol) : []),
           ].filter(Boolean) as ActionItem[],
+          decisionPath: [
+            { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+            { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — they hold your ${symbol}` },
+            { question: "Is it earning yield here?", answer: "no", detail: `${symbol} is sitting idle on ${provider}` },
+            { question: "Can you move to your own wallet?", answer: "yes", detail: `Withdraw to self-custody for true ownership` },
+            { question: "Is on-chain yield available?", answer: "no", detail: `No on-chain staking for ${symbol} — exchange yield only (${bestAnyExch?.apyRange} via ${bestAnyExch?.exchange})` },
+            { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you're comfortable" },
+          ],
           riskNote: exchangeCustodyNote,
           custodyInfo: {
             type: "custodial" as CustodyType,
@@ -2374,13 +2554,20 @@ export function evaluateAsset(
       return {
         symbol, name: displayName, type: "move_to_cold",
         title: "Move to Self-Custody",
-        description: `${symbol} is on ${provider} (custodial) with no yield available. Moving to your cold wallet gives you full ownership — your keys, your crypto.${knowledge.selfCustodyWallets?.[0] ? ` Use ${knowledge.selfCustodyWallets[0]} to manage it.` : ""}`,
+        description: `${eFmt} of ${symbol} on ${provider} (custodial) with no yield available. Moving to your cold wallet gives you full ownership — your keys, your crypto.${knowledge.selfCustodyWallets?.[0] ? ` Use ${knowledge.selfCustodyWallets[0]} to manage it.` : ""}`,
         currentLocation: provider, currentYield: 0, bestYield: 0, bestYieldSource: "", usdValue, missedAnnual: 0,
         actionItems: [
           { text: `Withdraw ${symbol} from ${provider} to your own wallet`, custodyBadge: "on_chain" as CustodyType },
           ...(knowledge.selfCustodyWallets ? walletActionItems(knowledge.selfCustodyWallets, symbol) : []),
           { text: "Self-custody protects against exchange hacks, freezes, or insolvency" },
         ].filter(Boolean) as ActionItem[],
+        decisionPath: [
+          { question: "What do you have and where?", answer: "info", detail: `${eFmt} of ${symbol} on ${provider} (exchange)` },
+          { question: "Is it on a wallet you control?", answer: "no", detail: `${provider} is custodial — not your keys, not your crypto` },
+          { question: "Can you withdraw it?", answer: "yes", detail: `Withdraw ${symbol} to your own wallet for full ownership` },
+          { question: "Is yield available?", answer: "no", detail: "No staking or yield options — but self-custody means safety" },
+          { question: "OK to leave it as-is?", answer: "action", detail: "Mark as addressed if you're comfortable on the exchange" },
+        ],
         custodyInfo: {
           type: "custodial" as CustodyType,
           explanation: `${provider} is custodial — move to your own wallet for true ownership`,

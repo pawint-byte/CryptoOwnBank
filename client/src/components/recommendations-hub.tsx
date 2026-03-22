@@ -18,13 +18,14 @@ import {
 } from "@/lib/custody-knowledge";
 import { getWalletRecommendations, getQuickPicks, COLD_WALLETS } from "@/lib/cold-wallet-data";
 import type { ColdWallet, WalletRecommendation } from "@/lib/cold-wallet-data";
-import type { AssetRecommendation, StakedContext, CustodyType, BestInClassEntry } from "@/lib/custody-knowledge";
+import type { AssetRecommendation, StakedContext, CustodyType, BestInClassEntry, DecisionStep } from "@/lib/custody-knowledge";
 import {
   RefreshCw, TrendingUp, TrendingDown, Shield, ArrowRightLeft,
   Coins, BarChart3, Bell, ExternalLink, AlertTriangle,
   CheckCircle, XCircle, Mail, Wallet, Info, DollarSign,
   Zap, Lock, Sparkles, Globe, Building2, Trophy, Crown, ShieldCheck,
   HardDrive, ShoppingCart, Star, Cpu, CreditCard, Wifi, WifiOff, EyeOff, Eye, Check,
+  ChevronDown, ChevronRight,
 } from "lucide-react";
 
 interface WalletData {
@@ -1314,6 +1315,51 @@ function ColdWalletTab({ heldAssets, isFullHub }: { heldAssets: string[]; isFull
   );
 }
 
+function DecisionPathFlow({ steps }: { steps: DecisionStep[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const answerStyle: Record<DecisionStep["answer"], { icon: React.ReactNode; color: string }> = {
+    yes: { icon: <CheckCircle className="h-3.5 w-3.5" />, color: "text-emerald-600 dark:text-emerald-400" },
+    no: { icon: <XCircle className="h-3.5 w-3.5" />, color: "text-red-500 dark:text-red-400" },
+    info: { icon: <Info className="h-3.5 w-3.5" />, color: "text-blue-500 dark:text-blue-400" },
+    action: { icon: <ChevronRight className="h-3.5 w-3.5" />, color: "text-amber-600 dark:text-amber-400" },
+  };
+
+  return (
+    <div className="mt-3" data-testid="decision-path">
+      <button
+        className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setExpanded(!expanded)}
+        data-testid="button-toggle-decision-path"
+      >
+        {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        Decision Guide
+      </button>
+      {expanded && (
+        <div className="mt-2 ml-1 space-y-0" data-testid="decision-path-steps">
+          {steps.map((step, i) => {
+            const style = answerStyle[step.answer];
+            const isLast = i === steps.length - 1;
+            return (
+              <div key={i} className="flex items-stretch gap-0">
+                <div className="flex flex-col items-center w-5 shrink-0">
+                  <div className={`mt-1 ${style.color}`}>{style.icon}</div>
+                  {!isLast && <div className="flex-1 w-px bg-border my-0.5" />}
+                </div>
+                <div className={`flex-1 min-w-0 pb-2 ${isLast ? "" : ""}`}>
+                  <p className="text-xs font-medium leading-tight">{step.question}</p>
+                  <p className={`text-xs mt-0.5 leading-snug ${step.answer === "action" ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"}`}>
+                    {step.detail}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecommendationCard({ rec, onDismiss, onRestore, dismissedId, isPending }: { rec: AssetRecommendation; onDismiss?: (symbol: string, location?: string) => void; onRestore?: (id: number) => void; dismissedId?: number | null; isPending?: boolean }) {
   const typeConfig: Record<string, { icon: React.ReactNode; borderColor: string; bgColor: string }> = {
     move_to_cold: { icon: <Shield className="h-5 w-5 text-blue-500" />, borderColor: "border-blue-300 dark:border-blue-700", bgColor: "bg-blue-50/50 dark:bg-blue-950/20" },
@@ -1405,6 +1451,10 @@ function RecommendationCard({ rec, onDismiss, onRestore, dismissedId, isPending 
                 </div>
               ))}
             </div>
+          )}
+
+          {rec.decisionPath && rec.decisionPath.length > 0 && (
+            <DecisionPathFlow steps={rec.decisionPath} />
           )}
 
           {rec.riskNote && (
