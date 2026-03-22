@@ -816,12 +816,11 @@ export default function FlareFtso() {
                 Getting Started with Xaman (Quick Start)
               </p>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
-                <li><strong>Update Xaman</strong> — Make sure you have the latest version with Flare Smart Accounts support (added February 2026).</li>
-                <li><strong>Enable Flare Smart Accounts</strong> — In Xaman, this enables direct XRPL-to-Flare bridging with no manual steps.</li>
-                <li><strong>Select earnXRP</strong> — From Xaman's home screen, select the Upshift earnXRP option.</li>
-                <li><strong>Sign with your cold wallet</strong> — Your hardware/cold wallet signs the transaction. XRP mints 1:1 as FXRP and deploys automatically.</li>
-                <li><strong>Monitor</strong> — Track positions in Xaman or Flare explorers. Yield accrues in FXRP.</li>
-                <li><strong>Redeem</strong> — Unwrap FXRP back to native XRP anytime. One transaction, straight to your cold wallet.</li>
+                <li><strong>Update Xaman</strong> — Make sure you have the latest version (Flare Smart Accounts support was added in February 2026).</li>
+                <li><strong>Open the earnXRP xApp</strong> — Tap the xApps icon in Xaman's bottom menu and search for "earnXRP" or "Upshift." The xApp handles everything — including activating the Flare Smart Account for your address if needed. There's no separate button to find.</li>
+                <li><strong>Choose amount and sign</strong> — Enter how much XRP to deposit. Your wallet signs the transaction. XRP bridges to Flare, mints 1:1 as FXRP, and deploys automatically.</li>
+                <li><strong>Monitor</strong> — Track your position in the earnXRP xApp or Flare explorers. Yield accrues in FXRP.</li>
+                <li><strong>Redeem</strong> — Open the earnXRP xApp, select withdraw. FXRP unwraps back to native XRP and returns to your wallet. One transaction.</li>
               </ol>
             </div>
 
@@ -836,11 +835,11 @@ export default function FlareFtso() {
               </div>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li><strong>Pair Ledger with Xaman</strong> — In Xaman, go to Settings → Accounts → Add Account → Import (read-only). Scan the QR code or enter your XRPL address from Ledger Live. This makes your Ledger address visible in Xaman without exposing your private keys.</li>
-                <li><strong>Enable Flare Smart Accounts in Xaman</strong> — With your Ledger-linked account selected in Xaman, enable Flare Smart Accounts. This creates the bridge between XRPL and Flare for that address.</li>
-                <li><strong>Initiate earnXRP in Xaman</strong> — Select the Upshift earnXRP option. Xaman will prepare the transaction and prompt you to sign.</li>
+                <li><strong>Open the earnXRP xApp</strong> — With your Ledger-linked account selected in Xaman, tap the xApps icon (bottom menu) and search for "earnXRP" or "Upshift." Open the xApp — it will detect your account and walk you through the setup, including activating the Flare Smart Account for that address if it hasn't been set up yet. There's no separate "enable" button to find; the xApp handles it as part of the flow.</li>
+                <li><strong>Choose amount and initiate</strong> — Enter the amount of XRP you want to deposit into the earnXRP vault. The xApp will prepare the transaction and prompt you to sign.</li>
                 <li><strong>Sign on Ledger</strong> — When Xaman shows the signing request, connect your Ledger via USB or Bluetooth. Open the XRP app on your Ledger and approve the transaction on the device screen. Your private keys never leave the Ledger.</li>
-                <li><strong>Confirm and monitor</strong> — Once signed, your XRP bridges to Flare, mints as FXRP, and starts earning. Track the position in Xaman.</li>
-                <li><strong>To redeem</strong> — Same process in reverse: initiate the withdrawal in Xaman, sign with your Ledger, and your XRP (plus yield) returns to your Ledger-controlled address.</li>
+                <li><strong>Confirm and monitor</strong> — Once signed, your XRP bridges to Flare, mints as FXRP, and starts earning yield. Track your position in Xaman under the earnXRP xApp.</li>
+                <li><strong>To redeem</strong> — Same process in reverse: open the earnXRP xApp in Xaman, select withdraw, sign with your Ledger, and your XRP (plus yield) returns to your Ledger-controlled address.</li>
               </ol>
               <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-3 mt-2 space-y-1">
                 <p className="text-xs text-muted-foreground"><strong>Why Ledger + Xaman?</strong> Xaman acts as the interface and bridge coordinator, while your Ledger holds the keys. You get the convenience of Xaman's one-click earnXRP with the security of hardware signing. Every transaction requires physical approval on your Ledger — no software wallet can move your XRP without you pressing the button.</p>
