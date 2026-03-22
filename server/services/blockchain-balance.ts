@@ -426,14 +426,50 @@ export async function getSolanaBalance(address: string): Promise<ChainBalance[]>
 
     const lamports = data.result?.value || 0;
     const sol = lamports / 1e9;
+    const prices = await getPrices(["SOL"]);
     if (sol > 0) {
-      const prices = await getPrices(["SOL"]);
       balances.push({
         symbol: "SOL",
         balance: sol,
         usdValue: sol * (prices.SOL || 0),
       });
     }
+
+    try {
+      const stakeData = await fetchJson(RPC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 10,
+          method: "getStakeActivation" in {} ? "getStakeActivation" : "getProgramAccounts",
+          params: [
+            "Stake11111111111111111111111111111111111111",
+            {
+              encoding: "jsonParsed",
+              filters: [
+                { memcmp: { offset: 12, bytes: address } },
+              ],
+            },
+          ],
+        }),
+      });
+      const stakeAccounts = stakeData.result || [];
+      let totalStakedSol = 0;
+      for (const acc of stakeAccounts) {
+        const info = acc.account?.data?.parsed?.info;
+        if (info?.stake?.delegation?.stake) {
+          totalStakedSol += parseInt(info.stake.delegation.stake) / 1e9;
+        }
+      }
+      if (totalStakedSol > 0.001) {
+        balances.push({
+          symbol: "SOL (staked)",
+          balance: totalStakedSol,
+          usdValue: totalStakedSol * (prices.SOL || 0),
+        });
+      }
+    } catch {}
   } catch (err) {
     console.error("Solana native balance fetch error:", err);
   }

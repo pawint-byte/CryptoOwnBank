@@ -93,12 +93,13 @@ const STAKING_CHAINS: StakingChain[] = [
     mechanism: "Protocol-Level Delegation",
     riskLevel: "Low",
     wallets: [
+      { name: "AdaLite", url: "https://adalite.io" },
       { name: "Yoroi", url: "https://yoroi-wallet.com" },
       { name: "Daedalus", url: "https://daedaluswallet.io" },
       { name: "Eternl", url: "https://eternl.io" },
     ],
     howItWorks: [
-      "Open your Cardano wallet (Yoroi, Daedalus, or Eternl)",
+      "Open your Cardano wallet (AdaLite, Yoroi, Daedalus, or Eternl) — AdaLite is a lightweight web-based wallet that works with hardware wallets like Ledger and Trezor",
       "Go to the Staking/Delegation section",
       "Browse available stake pools — look for pools with good uptime, reasonable fees (2–5%), and consistent block production",
       "Click 'Delegate' and confirm the transaction (~2 ADA deposit, refundable)",
@@ -227,7 +228,21 @@ const STAKING_CHAINS: StakingChain[] = [
   },
 ];
 
-function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain: StakingChain; isPaid: boolean; expanded: boolean; onToggle: () => void; userBalance?: { amount: number; usdValue: number } }) {
+interface UserStakingBalance {
+  total: number;
+  totalUsd: number;
+  staked: number;
+  stakedUsd: number;
+  rewards: number;
+  rewardsUsd: number;
+  unstaked: number;
+  unstakedUsd: number;
+}
+
+function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain: StakingChain; isPaid: boolean; expanded: boolean; onToggle: () => void; userBalance?: UserStakingBalance }) {
+  const fmtAmount = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const fmtUsd = (n: number) => "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return (
     <Card className="hover:shadow-md transition-shadow" data-testid={`staking-card-${chain.ticker}`}>
       <CardContent className="p-0">
@@ -249,11 +264,20 @@ function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain
                 ) : (
                   <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">Live</Badge>
                 )}
+                {userBalance && userBalance.staked > 0 && (
+                  <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">Staking</Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{chain.mechanism}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {userBalance && userBalance.staked > 0 && (
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{fmtAmount(userBalance.staked)} {chain.ticker}</p>
+                <p className="text-[10px] text-muted-foreground">staked</p>
+              </div>
+            )}
             <div className="text-right">
               <p className="text-lg font-bold" style={{ color: chain.color }}>{chain.apr}</p>
               <p className="text-[10px] text-muted-foreground">APR</p>
@@ -264,10 +288,42 @@ function StakingCard({ chain, isPaid, expanded, onToggle, userBalance }: { chain
 
         {expanded && (
           <div className="px-4 pb-4 space-y-4 border-t pt-4">
-            {userBalance && userBalance.amount > 0 ? (
-              <div className="flex items-start gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20 px-3 py-2 text-sm text-green-700 dark:text-green-400" data-testid={`holding-banner-${chain.ticker}`}>
-                <Coins className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>You hold <strong>{userBalance.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} {chain.ticker}</strong> (${userBalance.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}). Staking at {chain.apr} APR could earn ~${((userBalance.usdValue * (chain.aprLow + chain.aprHigh) / 200)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/year.</span>
+            {userBalance && userBalance.total > 0 ? (
+              <div className="space-y-2">
+                {userBalance.staked > 0 ? (
+                  <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-3" data-testid={`holding-banner-${chain.ticker}`}>
+                    <div className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400 mb-2">
+                      <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                      <span>You are actively staking <strong>{fmtAmount(userBalance.staked)} {chain.ticker}</strong> ({fmtUsd(userBalance.stakedUsd)}). Earning ~{fmtUsd(userBalance.stakedUsd * (chain.aprLow + chain.aprHigh) / 200)}/year at {chain.apr} APR.</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                      <div className="bg-white/50 dark:bg-black/20 rounded px-2.5 py-1.5">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Staked</p>
+                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{fmtAmount(userBalance.staked)} {chain.ticker}</p>
+                        <p className="text-[10px] text-muted-foreground">{fmtUsd(userBalance.stakedUsd)}</p>
+                      </div>
+                      {userBalance.rewards > 0 && (
+                        <div className="bg-white/50 dark:bg-black/20 rounded px-2.5 py-1.5">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Rewards</p>
+                          <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">{fmtAmount(userBalance.rewards)} {chain.ticker}</p>
+                          <p className="text-[10px] text-muted-foreground">{fmtUsd(userBalance.rewardsUsd)}</p>
+                        </div>
+                      )}
+                      {userBalance.unstaked > 0.01 && (
+                        <div className="bg-white/50 dark:bg-black/20 rounded px-2.5 py-1.5">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Unstaked</p>
+                          <p className="text-sm font-semibold">{fmtAmount(userBalance.unstaked)} {chain.ticker}</p>
+                          <p className="text-[10px] text-muted-foreground">{fmtUsd(userBalance.unstakedUsd)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-400" data-testid={`holding-banner-${chain.ticker}`}>
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>You hold <strong>{fmtAmount(userBalance.total)} {chain.ticker}</strong> ({fmtUsd(userBalance.totalUsd)}) but none appears to be staked yet. Staking at {chain.apr} APR could earn ~{fmtUsd(userBalance.totalUsd * (chain.aprLow + chain.aprHigh) / 200)}/year.</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-start gap-2 rounded-md border border-muted bg-muted/30 px-3 py-2 text-sm text-muted-foreground" data-testid={`nudge-banner-${chain.ticker}`}>
@@ -445,16 +501,33 @@ export default function NativeStakingPage() {
     enabled: !!user,
   });
 
-  const userBalancesByTicker: Record<string, { amount: number; usdValue: number }> = {};
+  const userBalancesByTicker: Record<string, UserStakingBalance> = {};
   if (walletsData) {
     for (const w of walletsData) {
       for (const b of w.balances || []) {
-        const sym = b.assetSymbol.toUpperCase().replace(/\s*\(STAKED\)/i, "");
+        const rawSym = b.assetSymbol.toUpperCase();
+        const isStaked = /\(STAKED\)/i.test(rawSym);
+        const isRewards = /\(REWARDS\)/i.test(rawSym);
+        const baseSym = rawSym.replace(/\s*\(STAKED\)/i, "").replace(/\s*\(REWARDS\)/i, "");
         for (const [ticker, syms] of Object.entries(TICKER_TO_SYMBOL)) {
-          if (syms.includes(sym)) {
-            if (!userBalancesByTicker[ticker]) userBalancesByTicker[ticker] = { amount: 0, usdValue: 0 };
-            userBalancesByTicker[ticker].amount += parseFloat(b.balance) || 0;
-            userBalancesByTicker[ticker].usdValue += parseFloat(b.usdValue) || 0;
+          if (syms.includes(baseSym)) {
+            if (!userBalancesByTicker[ticker]) {
+              userBalancesByTicker[ticker] = { total: 0, totalUsd: 0, staked: 0, stakedUsd: 0, rewards: 0, rewardsUsd: 0, unstaked: 0, unstakedUsd: 0 };
+            }
+            const amt = parseFloat(b.balance) || 0;
+            const usd = parseFloat(b.usdValue) || 0;
+            userBalancesByTicker[ticker].total += amt;
+            userBalancesByTicker[ticker].totalUsd += usd;
+            if (isStaked) {
+              userBalancesByTicker[ticker].staked += amt;
+              userBalancesByTicker[ticker].stakedUsd += usd;
+            } else if (isRewards) {
+              userBalancesByTicker[ticker].rewards += amt;
+              userBalancesByTicker[ticker].rewardsUsd += usd;
+            } else {
+              userBalancesByTicker[ticker].unstaked += amt;
+              userBalancesByTicker[ticker].unstakedUsd += usd;
+            }
           }
         }
       }
@@ -501,6 +574,31 @@ export default function NativeStakingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {user && Object.values(userBalancesByTicker).some(b => b.staked > 0) && (
+        <Card className="border-emerald-200 dark:border-emerald-800 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20" data-testid="staking-summary">
+          <CardContent className="p-4">
+            <p className="font-semibold text-sm flex items-center gap-1.5 mb-3">
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
+              Your Active Staking Positions
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {STAKING_CHAINS.filter(c => userBalancesByTicker[c.ticker]?.staked > 0).map(chain => {
+                const bal = userBalancesByTicker[chain.ticker];
+                const yearlyYield = bal.stakedUsd * (chain.aprLow + chain.aprHigh) / 200;
+                return (
+                  <div key={chain.ticker} className="bg-white/60 dark:bg-black/20 rounded-lg p-2.5 text-center">
+                    <p className="text-xs font-medium" style={{ color: chain.color }}>{chain.name}</p>
+                    <p className="text-sm font-bold mt-0.5">{bal.staked.toLocaleString(undefined, { maximumFractionDigits: 2 })} {chain.ticker}</p>
+                    <p className="text-[10px] text-muted-foreground">${bal.stakedUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })} staked</p>
+                    {yearlyYield > 0 && <p className="text-[10px] text-emerald-600 dark:text-emerald-400">~${yearlyYield.toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card>
