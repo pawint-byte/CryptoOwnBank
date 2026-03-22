@@ -885,7 +885,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "XDC Web Wallet", method: "Masternode Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://wallet.xdc.network", custodyType: "on_chain", blockchain: "XDC Network" },
     ],
-    selfCustodyWallets: ["XDC Web Wallet", "MetaMask (with XDC RPC)"],
+    selfCustodyWallets: ["XDC Web Wallet", "MetaMask (with XDC RPC)", "Ledger (desktop Chrome only via WebUSB)"],
   },
   SGB: {
     symbol: "SGB",
@@ -1801,29 +1801,35 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
   },
   XDC: {
     ledger: [
-      { text: "Connect your Ledger to the XDC Web Wallet (wallet.xdc.network) to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
+      { text: "Ledger Live does not support XDC accounts — but the Ledger hardware device CAN connect to the XDC Web Wallet via WebUSB" },
+      { text: "Important: WebUSB only works on desktop Chrome or Brave — will NOT work on Safari, mobile browsers, or Firefox" },
+      { text: "On a desktop computer, open Chrome → go to wallet.xdc.network → choose Hardware Wallet → Ledger → delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
     ],
     ellipal: [
-      { text: "ELLIPAL is air-gapped and cannot connect to the XDC Web Wallet directly — to stake XDC, you would need to send it to an XDC Web Wallet or Ledger first" },
-      { text: "Use XDC Web Wallet (supports WalletConnect, browser extension, or hardware wallet) to delegate to a masternode", link: "https://wallet.xdc.network" },
+      { text: "ELLIPAL is air-gapped and cannot connect to the XDC Web Wallet — you would need to send XDC to a hot wallet first" },
+      { text: "Option 1: Send XDC from ELLIPAL to a MetaMask wallet (add XDC Network RPC), then connect MetaMask to XDC Web Wallet to stake" },
+      { text: "Option 2: Send XDC from ELLIPAL to the XDC Web Wallet directly (create a wallet at wallet.xdc.network)", link: "https://wallet.xdc.network" },
+      { text: "Note: Ledger Live doesn't support XDC, so sending to Ledger won't help unless you use desktop Chrome with WebUSB" },
     ],
     safepal: [
       { text: "SafePal's DApp browser may support the XDC Web Wallet — try connecting via WalletConnect", link: "https://wallet.xdc.network" },
     ],
     cypherock: [
-      { text: "CypheRock doesn't support XDC staking — send XDC to a Ledger or XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+      { text: "CypheRock doesn't support XDC staking — send XDC to MetaMask (with XDC Network RPC) or the XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
     ],
     arculus: [
-      { text: "Arculus doesn't support XDC staking — send XDC to a Ledger or XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+      { text: "Arculus doesn't support XDC staking — send XDC to MetaMask (with XDC Network RPC) or the XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
     ],
     xaman: [],
     tronlink: [],
     metamask: [
-      { text: "Add the XDC Network RPC to MetaMask and connect to the XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+      { text: "Add the XDC Network RPC to MetaMask (Network Name: XDC, RPC: https://rpc.xdc.org, Chain ID: 50, Symbol: XDC)" },
+      { text: "Connect MetaMask to the XDC Web Wallet to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
     ],
     stader: [],
     unknown: [
       { text: "Use the XDC Web Wallet to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
+      { text: "Easiest path: MetaMask with XDC Network RPC, or create a wallet at wallet.xdc.network" },
     ],
   },
 };
