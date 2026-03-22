@@ -885,7 +885,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "XDC Web Wallet", method: "Masternode Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://wallet.xdc.network", custodyType: "on_chain", blockchain: "XDC Network" },
     ],
-    selfCustodyWallets: ["XDC Web Wallet", "MetaMask (with XDC RPC)", "Ledger (desktop Chrome only via WebUSB)"],
+    selfCustodyWallets: ["Tangem", "XDC Web Wallet", "MetaMask (with XDC RPC)", "Ledger (desktop Chrome only via WebUSB)"],
   },
   SGB: {
     symbol: "SGB",
@@ -1555,7 +1555,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
   },
 };
 
-type WalletBrand = "ledger" | "ellipal" | "cypherock" | "safepal" | "arculus" | "xaman" | "tronlink" | "metamask" | "stader" | "unknown";
+type WalletBrand = "ledger" | "ellipal" | "cypherock" | "safepal" | "arculus" | "xaman" | "tronlink" | "metamask" | "stader" | "tangem" | "unknown";
 
 function detectWalletBrand(label: string): WalletBrand {
   const l = label.toLowerCase().trim();
@@ -1564,6 +1564,7 @@ function detectWalletBrand(label: string): WalletBrand {
   if (l.includes("cypherock") || l.includes("cyphe")) return "cypherock";
   if (l.includes("safepal")) return "safepal";
   if (l.includes("arculus")) return "arculus";
+  if (l.includes("tangem")) return "tangem";
   if (l.includes("xaman") || l.includes("xumm")) return "xaman";
   if (l.includes("tronlink")) return "tronlink";
   if (l.includes("metamask")) return "metamask";
@@ -1800,25 +1801,31 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
     ],
   },
   XDC: {
+    tangem: [
+      { text: "Tangem supports XDC natively — send XDC to your Tangem wallet and connect to the XDC Web Wallet to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
+    ],
     ledger: [
       { text: "Ledger Live does not support XDC accounts — but the Ledger hardware device CAN connect to the XDC Web Wallet via WebUSB" },
       { text: "Important: WebUSB only works on desktop Chrome or Brave — will NOT work on Safari, mobile browsers, or Firefox" },
       { text: "On a desktop computer, open Chrome → go to wallet.xdc.network → choose Hardware Wallet → Ledger → delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
+      { text: "Alternative: Use a Tangem wallet instead — it supports XDC natively without WebUSB limitations", link: "https://tangem.com" },
     ],
     ellipal: [
-      { text: "ELLIPAL is air-gapped and cannot connect to the XDC Web Wallet — you would need to send XDC to a hot wallet first" },
-      { text: "Option 1: Send XDC from ELLIPAL to a MetaMask wallet (add XDC Network RPC: https://rocket.xdc.org, Chain ID 50), then connect MetaMask to XDC Web Wallet to stake" },
-      { text: "Option 2: Send XDC from ELLIPAL to the XDC Web Wallet directly (create a wallet at wallet.xdc.network)", link: "https://wallet.xdc.network" },
-      { text: "Note: Ledger Live doesn't support XDC, so sending to Ledger won't help unless you use desktop Chrome with WebUSB" },
+      { text: "ELLIPAL is air-gapped and cannot connect to the XDC Web Wallet — you need to move XDC to a different wallet first" },
+      { text: "Recommended: Send XDC from ELLIPAL to a Tangem wallet — Tangem supports XDC natively and can connect to the XDC Web Wallet to stake", link: "https://tangem.com" },
+      { text: "Alternative: Send XDC to MetaMask (add XDC Network RPC: https://rocket.xdc.org, Chain ID 50), then connect to XDC Web Wallet" },
+      { text: "Alternative: Send XDC to the XDC Web Wallet directly (create a wallet at wallet.xdc.network)", link: "https://wallet.xdc.network" },
+      { text: "Note: Ledger Live doesn't support XDC — Ledger hardware only works via desktop Chrome with WebUSB" },
     ],
     safepal: [
       { text: "SafePal's DApp browser may support the XDC Web Wallet — try connecting via WalletConnect", link: "https://wallet.xdc.network" },
+      { text: "Alternative: Send XDC to a Tangem wallet which supports XDC natively", link: "https://tangem.com" },
     ],
     cypherock: [
-      { text: "CypheRock doesn't support XDC staking — send XDC to MetaMask (with XDC Network RPC) or the XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+      { text: "CypheRock doesn't support XDC staking — send XDC to a Tangem wallet or MetaMask (with XDC Network RPC) to delegate to a masternode", link: "https://wallet.xdc.network" },
     ],
     arculus: [
-      { text: "Arculus doesn't support XDC staking — send XDC to MetaMask (with XDC Network RPC) or the XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+      { text: "Arculus doesn't support XDC staking — send XDC to a Tangem wallet or MetaMask (with XDC Network RPC) to delegate to a masternode", link: "https://wallet.xdc.network" },
     ],
     xaman: [],
     tronlink: [],
@@ -1829,7 +1836,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
     stader: [],
     unknown: [
       { text: "Use the XDC Web Wallet to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
-      { text: "Easiest path: MetaMask with XDC Network RPC, or create a wallet at wallet.xdc.network" },
+      { text: "Easiest path: Tangem wallet (native XDC support) or MetaMask with XDC Network RPC" },
     ],
   },
 };
