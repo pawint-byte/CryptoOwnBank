@@ -9981,6 +9981,27 @@ function startPriceAlertChecker() {
       if (totalRenamed > 0) {
         console.log(`[seed] Chain-prefix rename: updated ${totalRenamed} wallet/connection labels`);
       }
+
+      // Clean up manually-added duplicate wallets (keep synced versions)
+      const allUserWallets = await db.select({ id: wallets.id, label: wallets.label, address: wallets.address, chain: wallets.chain }).from(wallets);
+
+      const dupeCleanups = [
+        { keepLabel: "XRP_LEDGER", removeLabel: "XRP_Payment_Address", address: "rwQ6SJMX6j7R5mVUXg5tSPgKRKvH12YQzc" },
+        { keepLabel: "XRP_DeathKeepers (Xaman)", removeLabel: "RLUS_Payment_Address", address: "rpwKnLcsi441mHxvUZtBeMHumLSSEzzqEY" },
+      ];
+      for (const dupe of dupeCleanups) {
+        const matching = allUserWallets.filter(w => w.address === dupe.address && w.label === dupe.removeLabel);
+        for (const w of matching) {
+          await storage.deleteWallet(w.id);
+          console.log(`[cleanup] Removed duplicate wallet "${dupe.removeLabel}" (keeping "${dupe.keepLabel}")`);
+        }
+      }
+
+      const arculusMatches = allUserWallets.filter(w => (w.label === "Arculus " || w.label === "Arculus") && w.address === "r4NX5ZUTUNHLxUkjp5mUge87EMuhojmfoU");
+      for (const w of arculusMatches) {
+        await storage.updateWalletLabel(w.id, "XRP_Arculus");
+        console.log(`[cleanup] Renamed "${w.label}" -> "XRP_Arculus"`);
+      }
     } catch (err) {
       console.error("[seed] Chain-prefix rename error:", err);
     }
