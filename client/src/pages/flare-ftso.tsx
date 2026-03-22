@@ -831,9 +831,11 @@ export default function FlareFtso() {
                 Using Ledger + Xaman Together
               </p>
               <p className="text-sm text-muted-foreground">If you use a Ledger hardware wallet for cold storage, here's how to set up earnXRP while keeping your keys on the Ledger:</p>
+              <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-3 mb-2">
+                <p className="text-xs text-muted-foreground"><strong>Prerequisites:</strong> You need your Ledger already set up with the XRP app installed and an XRP account created in Ledger Live. If you haven't done this yet, open Ledger Live → My Ledger → install the XRP app, then go to Accounts → Add Account → XRP to create your XRP account. Make sure your Ledger firmware is up to date.</p>
+              </div>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
-                <li><strong>Pair Ledger with Xaman</strong> — In Xaman, go to Settings → Accounts → Add Account → Import (read-only). Scan the QR code or enter your XRPL address from your Ledger. This makes your Ledger address visible in Xaman without exposing your private keys.</li>
-                <li><strong>Install the XRP app on Ledger</strong> — Open Ledger Live, go to My Ledger, and install or update the XRP app. Make sure your Ledger firmware is up to date.</li>
+                <li><strong>Pair Ledger with Xaman</strong> — In Xaman, go to Settings → Accounts → Add Account → Import (read-only). Scan the QR code or enter your XRPL address from Ledger Live. This makes your Ledger address visible in Xaman without exposing your private keys.</li>
                 <li><strong>Enable Flare Smart Accounts in Xaman</strong> — With your Ledger-linked account selected in Xaman, enable Flare Smart Accounts. This creates the bridge between XRPL and Flare for that address.</li>
                 <li><strong>Initiate earnXRP in Xaman</strong> — Select the Upshift earnXRP option. Xaman will prepare the transaction and prompt you to sign.</li>
                 <li><strong>Sign on Ledger</strong> — When Xaman shows the signing request, connect your Ledger via USB or Bluetooth. Open the XRP app on your Ledger and approve the transaction on the device screen. Your private keys never leave the Ledger.</li>
