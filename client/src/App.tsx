@@ -87,6 +87,7 @@ import XLS66Lending from "@/pages/xls66-lending";
 import LegacyPlan from "@/pages/legacy-plan";
 import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
+import BuyCrypto from "@/pages/buy-crypto";
 import { OfflineBanner } from "@/components/offline-banner";
 
 const TOS_LAST_UPDATED = new Date("2026-03-21T00:00:00Z");
@@ -260,6 +261,7 @@ function AuthenticatedRoutes() {
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
         <Route path="/native-staking" component={NativeStaking} />
+        <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
         <Route path="/roadmap" component={Roadmap} />
@@ -313,6 +315,7 @@ function Router() {
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
+        <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
         <Route path="/snapshot/:token" component={Snapshot} />
