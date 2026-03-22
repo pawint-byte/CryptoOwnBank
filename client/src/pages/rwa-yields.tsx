@@ -1140,7 +1140,11 @@ function EarningStatusSection() {
     const hasWallet = coveredChains.has(chainKey);
     const isIntegratedAndActive = opp.integrated && hasWallet;
     const assetSym = opp.asset.toUpperCase();
-    const holdingUsd = assetBalances[assetSym] || 0;
+    let holdingUsd = assetBalances[assetSym] || 0;
+    if (holdingUsd === 0 && assetSym.endsWith("-BASED")) {
+      const baseToken = assetSym.replace(/-BASED$/, "");
+      holdingUsd = assetBalances[baseToken] || 0;
+    }
     return { opp, hasWallet, isTracking: isIntegratedAndActive, holdingUsd };
   });
 
@@ -1234,13 +1238,16 @@ function EarningStatusSection() {
                 </div>
                 </div>
                 <div className={`px-3 pb-2 text-[11px] ${holdingUsd > 0 ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`} data-testid={`holding-tip-${opp.id}`}>
-                  {holdingUsd > 0
-                    ? opp.category === "cashback"
-                      ? `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${opp.asset}. Sign up to start earning ${opp.apyRange} in XRP rewards.`
-                      : `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${opp.asset} — deposit to start earning ${opp.apyRange}.`
-                    : opp.category === "cashback"
-                      ? `Sign up for ${opp.protocol} to earn ${opp.apyRange} in XRP rewards.`
-                      : `You don't hold ${opp.asset} yet. Consider adding it to earn ${opp.apyRange} yield.`}
+                  {(() => {
+                    const displayAsset = opp.asset.toUpperCase().endsWith("-BASED") ? opp.asset.replace(/-based$/i, "") : opp.asset;
+                    return holdingUsd > 0
+                      ? opp.category === "cashback"
+                        ? `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${displayAsset}. Sign up to start earning ${opp.apyRange} in XRP rewards.`
+                        : `You hold $${holdingUsd.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} in ${displayAsset} — deposit to start earning ${opp.apyRange}.`
+                      : opp.category === "cashback"
+                        ? `Sign up for ${opp.protocol} to earn ${opp.apyRange} in XRP rewards.`
+                        : `You don't hold ${displayAsset} yet. Consider adding it to earn ${opp.apyRange} yield.`;
+                  })()}
                 </div>
               </div>
             ))}
