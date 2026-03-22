@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 export function useUserData<T = any>(key: string, defaultValue: T) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const query = useQuery<T>({
     queryKey: ["/api/user-data", key],
@@ -12,6 +14,8 @@ export function useUserData<T = any>(key: string, defaultValue: T) {
       const data = await res.json();
       return data.value ?? defaultValue;
     },
+    enabled: !!user,
+    staleTime: 30_000,
   });
 
   const mutation = useMutation({

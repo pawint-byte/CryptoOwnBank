@@ -93,7 +93,7 @@ export default function FlareFtso() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [flareAddress, setFlareAddress] = useState("");
-  const { data: savedAddress, save: saveFlareAddress, remove: removeFlareAddress } = useUserData("flare_address", "");
+  const { data: savedAddress, save: saveFlareAddress, remove: removeFlareAddress, isLoading: addressLoading } = useUserData("flare_address", "");
   const [showGuide, setShowGuide] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [showEarnXrp, setShowEarnXrp] = useState(false);
@@ -220,7 +220,18 @@ export default function FlareFtso() {
         </Card>
       </div>
 
-      {!savedAddress ? (
+      {(user && addressLoading) ? (
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            <Skeleton className="h-6 w-48" />
+            <div className="grid grid-cols-3 gap-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      ) : !savedAddress ? (
         <Card className="border-orange-500/20 bg-orange-500/5">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
