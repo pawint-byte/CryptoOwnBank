@@ -1525,8 +1525,8 @@ export default function Landing() {
                       <Store className="h-4 w-4 text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Merchants & freelancers</p>
-                      <p className="text-xs text-muted-foreground">Accept RLUSD (dollar-pegged) or any XRPL token. No signup forms, no processing fees, no chargebacks. Customer scans a QR code, signs with their wallet, and payment settles in seconds.</p>
+                      <p className="text-sm font-medium">Merchants & freelancers — OwnCoin POS</p>
+                      <p className="text-xs text-muted-foreground">Your portable crypto point-of-sale. Accept RLUSD (dollar-pegged) or any XRPL token. No signup forms, no processing fees, no chargebacks. Open OwnCoin POS, show your QR code, and payment settles in 4 seconds.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3" data-testid="text-corridor-point-1">

@@ -33,7 +33,7 @@ The platform supports 24+ blockchain networks and integrates deeply with the **X
 - **Whale Alerts** — Real-time monitoring of large XRP and RLUSD movements with configurable thresholds
 - **Send & Receive** — Direct XRP/token payments with destination tag support
 - **Invoices & Recurring Payments** — Create payment requests and schedule automated recurring payments
-- **My Card** — QR-based payment card for receiving funds at point of sale
+- **OwnCoin POS** — Portable crypto point-of-sale terminal for receiving payments via QR code
 
 ### Stellar Features
 - **Stellar Wallet** — Native XLM and Stellar asset management

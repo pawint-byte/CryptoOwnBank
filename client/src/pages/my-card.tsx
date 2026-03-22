@@ -195,9 +195,9 @@ export default function MyCardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold" data-testid="text-mycard-title">My Payment Card</h1>
+        <h1 className="text-2xl font-bold" data-testid="text-mycard-title">OwnCoin POS</h1>
         <p className="text-muted-foreground">
-          Show this QR code to receive payments instantly — on the move, at a meeting, or at a market stall
+          Your portable point-of-sale — show this QR code to receive crypto payments instantly, anywhere
         </p>
       </div>
 
@@ -235,7 +235,7 @@ export default function MyCardPage() {
             {activeAddress ? (
               <>
                 <div className="flex justify-center">
-                  <div className="p-3 rounded-xl border-2 border-[#00A4E4]/20 bg-white shadow-sm" data-testid="qr-payment-card">
+                  <div className="p-3 rounded-xl border-2 border-[#00A4E4]/20 bg-white shadow-sm" data-testid="qr-owncoin-pos">
                     <img
                       src={qrSrc}
                       alt="Scan to pay"
@@ -385,7 +385,7 @@ export default function MyCardPage() {
                   <p className="text-xs text-muted-foreground">
                     Add your business name and logo in{" "}
                     <a href="/settings" className="text-[#00A4E4] underline">Settings</a>{" "}
-                    to brand your payment card
+                    to brand your OwnCoin POS
                   </p>
                 </div>
               )}

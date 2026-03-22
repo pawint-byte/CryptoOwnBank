@@ -111,7 +111,7 @@ const allItems: NavItem[] = [
   { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
   { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, color: "#00A4E4", group: "ownbank" },
   { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, color: "#00A4E4", group: "ownbank" },
-  { title: "My Payment Card", url: "/ownbank/my-card", icon: QrCode, color: "#00A4E4", group: "ownbank" },
+  { title: "OwnCoin POS", url: "/ownbank/my-card", icon: QrCode, color: "#00A4E4", group: "ownbank" },
   { title: "Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, color: "#00A4E4", group: "ownbank" },
   { title: "Recurring Payments", url: "/ownbank/recurring", icon: CalendarClock, color: "#00A4E4", group: "ownbank" },
   { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, color: "#00A4E4", group: "ownbank" },

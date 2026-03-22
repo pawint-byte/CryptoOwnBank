@@ -619,7 +619,11 @@ const faqGroups = [
     items: [
       {
         q: "Can I use CryptoOwnBank to accept payments for my business?",
-        a: "Yes. Connect your XRPL wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code or wallet address with customers. When they pay, the transaction settles directly to your wallet in 4 seconds. CryptoOwnBank is the tooling layer — we give you the tools to process your own payments. We never sit between you and your customer, never hold funds, and never take a percentage. It's like having a point-of-sale terminal that runs on the blockchain instead of through a payment processor.",
+        a: "Yes. Connect your XRPL wallet, set up trustlines for the currencies you want to accept (like RLUSD), and use OwnCoin POS — your portable crypto point-of-sale. Open it on your phone, pick your receiving wallet and currency, and a QR code appears instantly. Your customer scans it with Xaman or any XRPL wallet, taps approve, and payment settles directly to your wallet in 4 seconds. CryptoOwnBank is the tooling layer — we give you the tools to process your own payments. We never sit between you and your customer, never hold funds, and never take a percentage. No processing fees, no chargebacks, no merchant account needed.",
+      },
+      {
+        q: "What is OwnCoin POS?",
+        a: "OwnCoin POS is your portable crypto point-of-sale terminal — built into CryptoOwnBank. Go to OwnCoin POS in the sidebar under OwnBank XRPL. Select which wallet receives funds (XRP, RLUSD, XLM, USDC, or any supported currency), optionally set an amount, and a branded QR code appears on your screen. Your customer scans it and pays — no app download required on their end, just any compatible wallet. You can also share the payment link via text, email, or social media. If you add your business name and logo in Settings, the card displays your branding so it looks professional. Use it at a market stall, in a meeting, at a food truck, or anywhere you do business. Settlement is 4 seconds on XRPL, near-zero fees, no chargebacks, and the money goes directly to your cold wallet.",
       },
       {
         q: "How does this compare to Stripe or PayPal for accepting payments?",
