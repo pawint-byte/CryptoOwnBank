@@ -297,11 +297,19 @@ const features = [
   },
   {
     icon: Zap,
-    title: "Flare FTSO Rewards",
+    title: "Flare FTSO Rewards & earnXRP",
     description:
-      "Track your Flare (FLR) delegation rewards. Connect your Flare C-chain address to see FLR/WFLR balances, FTSO delegation status, estimated 5–15% APY, and FlareDrop claim progress. Includes a reward calculator and readiness checklist.",
+      "Track your Flare (FLR) delegation rewards and earn yield on your XRP. Connect your Flare C-chain address to see FLR/WFLR balances, FTSO delegation status, and estimated 5–15% APY. Plus the earnXRP vault guide — earn ~3-4% on your XRP via Flare's FXRP bridge with full Ledger + Xaman hardware wallet setup walkthrough.",
     link: "/flare",
-    linkLabel: "Flare Rewards",
+    linkLabel: "Flare & earnXRP",
+  },
+  {
+    icon: Pickaxe,
+    title: "Native Staking Guide",
+    description:
+      "Earn yield directly from the blockchain — no intermediaries, no smart contract risk. Track your staked vs unstaked positions across Cardano (3-4% APR), Cosmos (15-20%), Polkadot (12-15%), and Solana (6-8%). See exactly what's earning and what's sitting idle, with step-by-step staking guides using AdaLite, Keplr, Nova Wallet, and Phantom.",
+    link: "/native-staking",
+    linkLabel: "Native Staking",
   },
   {
     icon: DollarSign,
