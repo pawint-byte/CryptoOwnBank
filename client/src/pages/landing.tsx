@@ -300,7 +300,7 @@ const features = [
     icon: Zap,
     title: "Flare FTSO Rewards & earnXRP",
     description:
-      "Track your Flare (FLR) delegation rewards and earn yield on your XRP. Connect your Flare C-chain address to see FLR/WFLR balances, FTSO delegation status, and estimated 5–15% APY. Plus the earnXRP vault guide — earn ~3-4% on your XRP via Flare's FXRP bridge with full Ledger + Xaman hardware wallet setup walkthrough.",
+      "Track your Flare (FLR) delegation rewards and earn yield on your XRP. Connect your Flare C-chain address to see FLR/WFLR balances, FTSO delegation status, and estimated 5–15% APY. Plus the earnXRP vault guide — 3.4% estimated APY on XRP via Flare's FXRP bridge (vault at capacity, deposits paused — sign up to be notified). Full Ledger + Xaman hardware wallet setup walkthrough included.",
     link: "/flare",
     linkLabel: "Flare & earnXRP",
   },

@@ -748,7 +748,7 @@ export default function FlareFtso() {
               <Coins className="h-5 w-5 text-orange-500" />
               <div>
                 <CardTitle className="text-lg">earnXRP Vault — Earn Yield on Your XRP</CardTitle>
-                <CardDescription>Self-custody yield via Flare's FXRP bridge (Upshift + Clearstar)</CardDescription>
+                <CardDescription>Self-custody yield via Flare's FXRP bridge (Upshift + Clearstar) — vault currently full, deposits paused</CardDescription>
               </div>
             </div>
             {showEarnXrp ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -762,8 +762,8 @@ export default function FlareFtso() {
                 What is the earnXRP Vault?
               </p>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>The <strong>earnXRP vault</strong> (by Upshift, curated by Clearstar) lets you earn yield on your XRP while maintaining full self-custody. It went live in December 2025, with one-click Xaman integration added in February 2026.</p>
-                <p>As of mid-March 2026, FXRP liquidity is approaching <strong>$200 million</strong> — significant traction for a new product.</p>
+                <p>The <strong>earnXRP vault</strong> (by Upshift, curated by Clearstar) lets you earn yield on your XRP while maintaining full self-custody. In Xaman, it's called <strong>"Flare XRPFi Yield"</strong> — find it in the xApps tab. It went live in December 2025, with one-click Xaman integration added in February 2026.</p>
+                <p>As of March 2026, the vault has reached its <strong>25M FXRP capacity</strong> ($35M+ TVL) at <strong>3.4% estimated APY</strong>. New deposits are temporarily paused — you can tap "Notify me" in the xApp to get alerted when deposits reopen.</p>
               </div>
             </div>
 
@@ -773,7 +773,7 @@ export default function FlareFtso() {
                 How It Works
               </p>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
-                <li><strong>Deposit XRP via Xaman</strong> — Open Xaman, select the Upshift earnXRP option. Your cold wallet signs the transaction. XRP gets bridged to Flare and minted 1:1 as FXRP.</li>
+                <li><strong>Deposit XRP via Xaman</strong> — Open the "Flare XRPFi Yield" xApp in Xaman (xApps tab → search "Flare XRPFi Yield"). Tap Deposit, enter your amount, and sign the transaction. XRP gets bridged to Flare and minted 1:1 as FXRP.</li>
                 <li><strong>FXRP earns yield automatically</strong> — Your FXRP is deployed into Clearstar-curated strategies (lending, liquidity provision). Yield accrues and compounds in FXRP on-chain.</li>
                 <li><strong>Redeem anytime</strong> — Unwrap FXRP back to native XRP with one transaction. Your XRP returns to your cold wallet. No lock-ups beyond network fees.</li>
               </ol>
@@ -794,15 +794,15 @@ export default function FlareFtso() {
                     <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> Self-custody — keys never leave your device</li>
                     <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> No lock-ups — redeem to XRP anytime</li>
                     <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> One-click via Xaman — no manual bridging</li>
-                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> ~3-4% variable yield on idle XRP</li>
-                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> $200M+ liquidity — real traction</li>
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> ~3.4% estimated APY on idle XRP</li>
+                    <li className="flex items-start gap-2"><CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" /> $35M+ TVL (25M FXRP) — real traction</li>
                   </ul>
                 </div>
                 <div className="space-y-2">
                   <p className="font-medium text-orange-600 dark:text-orange-400">Risks to consider:</p>
                   <ul className="space-y-1 text-muted-foreground">
                     <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Smart contract risk — bridge/vault code bugs</li>
-                    <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Variable yield — 3-4% is recent, not guaranteed</li>
+                    <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Variable yield — 3.4% is current estimate, not guaranteed</li>
                     <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Flare network dependency</li>
                     <li className="flex items-start gap-2"><AlertTriangle className="h-3.5 w-3.5 text-orange-500 mt-0.5 shrink-0" /> Clearstar strategy curation trust</li>
                   </ul>
@@ -817,10 +817,12 @@ export default function FlareFtso() {
               </p>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li><strong>Update Xaman</strong> — Make sure you have the latest version (Flare Smart Accounts support was added in February 2026).</li>
-                <li><strong>Open the earnXRP xApp</strong> — Tap the xApps icon in Xaman's bottom menu and search for "earnXRP" or "Upshift." The xApp handles everything — including activating the Flare Smart Account for your address if needed. There's no separate button to find.</li>
-                <li><strong>Choose amount and sign</strong> — Enter how much XRP to deposit. Your wallet signs the transaction. XRP bridges to Flare, mints 1:1 as FXRP, and deploys automatically.</li>
-                <li><strong>Monitor</strong> — Track your position in the earnXRP xApp or Flare explorers. Yield accrues in FXRP.</li>
-                <li><strong>Redeem</strong> — Open the earnXRP xApp, select withdraw. FXRP unwraps back to native XRP and returns to your wallet. One transaction.</li>
+                <li><strong>Open "Flare XRPFi Yield"</strong> — Tap the xApps icon in Xaman's bottom menu. Look under "What's new" or "Popular" for <strong>Flare XRPFi Yield</strong>, or search for it. The xApp handles everything — including activating the Flare Smart Account for your address if needed.</li>
+                <li><strong>Acknowledge the virtual asset disclaimer</strong> — The xApp will explain that FXRP is a "virtual asset" that lives on the Flare network, not XRPL. Tap "I understand" to continue.</li>
+                <li><strong>Tap Deposit and sign</strong> — Enter how much XRP to deposit. Your wallet signs the transaction. XRP bridges to Flare, mints 1:1 as FXRP, and deploys automatically.</li>
+                <li><strong>Monitor</strong> — Your Upshift Vault balance and FXRP position appear in the xApp alongside your XRP balance. Yield accrues in FXRP.</li>
+                <li><strong>Redeem</strong> — Tap Withdraw in the xApp. FXRP unwraps back to native XRP and returns to your wallet. One transaction.</li>
+                <li><strong>Note: Vault capacity</strong> — The vault has a 25M FXRP limit. When full, deposits are paused — tap "Notify me" in the xApp to get alerted when they reopen.</li>
               </ol>
             </div>
 
@@ -835,8 +837,8 @@ export default function FlareFtso() {
               </div>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li><strong>Pair Ledger with Xaman</strong> — In Xaman, go to Settings → Accounts → Add Account → Import (read-only). Scan the QR code or enter your XRPL address from Ledger Live. This makes your Ledger address visible in Xaman without exposing your private keys.</li>
-                <li><strong>Open the earnXRP xApp</strong> — With your Ledger-linked account selected in Xaman, tap the xApps icon (bottom menu) and search for "earnXRP" or "Upshift." Open the xApp — it will detect your account and walk you through the setup, including activating the Flare Smart Account for that address if it hasn't been set up yet. There's no separate "enable" button to find; the xApp handles it as part of the flow.</li>
-                <li><strong>Choose amount and initiate</strong> — Enter the amount of XRP you want to deposit into the earnXRP vault. The xApp will prepare the transaction and prompt you to sign.</li>
+                <li><strong>Open "Flare XRPFi Yield"</strong> — With your Ledger-linked account selected in Xaman, tap the xApps icon (bottom menu). Look under "What's new" or "Popular" for <strong>Flare XRPFi Yield</strong>, or search for it. The xApp will detect your account and walk you through the setup, including activating the Flare Smart Account for that address if needed. Acknowledge the virtual asset disclaimer by tapping "I understand."</li>
+                <li><strong>Tap Deposit and choose amount</strong> — Enter how much XRP to deposit. The xApp will prepare the transaction and prompt you to sign.</li>
                 <li><strong>Sign on Ledger</strong> — When Xaman shows the signing request, connect your Ledger via USB or Bluetooth. Open the XRP app on your Ledger and approve the transaction on the device screen. Your private keys never leave the Ledger.</li>
                 <li><strong>Confirm and monitor</strong> — Once signed, your XRP bridges to Flare, mints as FXRP, and starts earning yield. Track your position in Xaman under the earnXRP xApp.</li>
                 <li><strong>To redeem</strong> — Same process in reverse: open the earnXRP xApp in Xaman, select withdraw, sign with your Ledger, and your XRP (plus yield) returns to your Ledger-controlled address.</li>
