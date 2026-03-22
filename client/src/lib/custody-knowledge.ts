@@ -43,7 +43,7 @@ const WALLET_LINKS: Record<string, string> = {
   "Bifrost Wallet": "https://bifrostwallet.com",
   "Compass Wallet": "https://compass.sh",
   "Auro Wallet": "https://www.aurowallet.com",
-  "Stargazer Wallet": "https://stargazer.network",
+  "Stargazer Wallet": "https://constellationnetwork.io",
   "Natrium (mobile)": "https://natrium.io",
   "Nault (web)": "https://nault.cc",
   "Electron Cash": "https://electroncash.org",
@@ -58,8 +58,8 @@ const WALLET_LINKS: Record<string, string> = {
   "Kaspa Web Wallet": "https://kaspa.org",
   "KDX Desktop Wallet": "https://kdx.app",
   "Tangem": "https://tangem.com",
-  "XDC Web Wallet": "https://wallet.xdc.org",
-  "Crypto.com DeFi Wallet": "https://crypto.com/defi-wallet",
+  "XDC Web Wallet": "https://wallet.xdc.network",
+  "Crypto.com DeFi Wallet": "https://crypto.com",
   "Coinomi": "https://www.coinomi.com",
   "Ronin Wallet": "https://wallet.roninchain.com",
   "Ravencoin Core Wallet": "https://ravencoin.org",
@@ -883,7 +883,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "XDC Web Wallet", method: "Masternode Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://wallet.xdc.org", custodyType: "on_chain", blockchain: "XDC Network" },
+      { platform: "XDC Web Wallet", method: "Masternode Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://wallet.xdc.network", custodyType: "on_chain", blockchain: "XDC Network" },
     ],
     selfCustodyWallets: ["XDC Web Wallet", "ELLIPAL", "Ledger Nano X"],
   },
@@ -986,7 +986,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Stargazer Wallet", method: "Soft Node Staking", apyRange: "8–12%", apyMid: 10.0, link: "https://stargazer.network", custodyType: "on_chain", blockchain: "Constellation" },
+      { platform: "Stargazer Wallet", method: "Soft Node Staking", apyRange: "8–12%", apyMid: 10.0, link: "https://constellationnetwork.io", custodyType: "on_chain", blockchain: "Constellation" },
     ],
     selfCustodyWallets: ["Stargazer Wallet", "Lattice Exchange"],
   },
@@ -1194,7 +1194,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Immutable Staking", method: "IMX Staking", apyRange: "3–6%", apyMid: 4.5, link: "https://staking.immutable.com", custodyType: "on_chain", blockchain: "Ethereum" },
+      { platform: "Immutable Staking", method: "IMX Staking", apyRange: "3–6%", apyMid: 4.5, link: "https://www.immutable.com", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     selfCustodyWallets: ["MetaMask", "Ledger Nano X"],
   },
@@ -1329,7 +1329,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Crypto.com DeFi Wallet", method: "CRO Validator Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://crypto.com/defi-wallet", custodyType: "on_chain", blockchain: "Cronos" },
+      { platform: "Crypto.com DeFi Wallet", method: "CRO Validator Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://crypto.com", custodyType: "on_chain", blockchain: "Cronos" },
       { platform: "Keplr Wallet", method: "CRO Validator Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://wallet.keplr.app/chains/crypto-org", custodyType: "on_chain", blockchain: "Cronos" },
     ],
     selfCustodyWallets: ["Crypto.com DeFi Wallet", "Keplr", "Ledger Nano X"],
@@ -1340,7 +1340,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "The Sandbox Staking", method: "SAND Staking", apyRange: "5–10%", apyMid: 7.5, link: "https://staking.sandbox.game", custodyType: "on_chain", blockchain: "Ethereum" },
+      { platform: "The Sandbox Staking", method: "SAND Staking", apyRange: "5–10%", apyMid: 7.5, link: "https://www.sandbox.game/staking", custodyType: "on_chain", blockchain: "Ethereum" },
     ],
     selfCustodyWallets: ["MetaMask", "Ledger Nano X"],
   },
@@ -1538,7 +1538,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakeable: true,
     withdrawable: true,
     stakingOptions: [
-      { platform: "Chiliz Chain", method: "CHZ Staking", apyRange: "8–12%", apyMid: 10.0, link: "https://staking.chiliz.com", custodyType: "on_chain", blockchain: "Chiliz Chain" },
+      { platform: "Chiliz Chain", method: "CHZ Staking", apyRange: "8–12%", apyMid: 10.0, link: "https://chiliz.com/staking", custodyType: "on_chain", blockchain: "Chiliz Chain" },
     ],
     selfCustodyWallets: ["MetaMask (Chiliz Chain)", "Ledger Nano X"],
   },
@@ -1786,7 +1786,7 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Your CRO is already staked via Ledger — earning validator delegation rewards" },
     ],
     ellipal: [
-      { text: "ELLIPAL does not support CRO staking — use the Crypto.com DeFi Wallet or Keplr to delegate CRO", link: "https://crypto.com/defi-wallet" },
+      { text: "ELLIPAL does not support CRO staking — use the Crypto.com DeFi Wallet or Keplr to delegate CRO", link: "https://crypto.com" },
     ],
     safepal: [],
     cypherock: [],

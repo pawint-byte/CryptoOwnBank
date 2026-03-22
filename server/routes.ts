@@ -6492,7 +6492,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         },
         flare: (w) => ["App: Bifrost Wallet or MetaMask", "URL: https://bifrostwallet.com", "Extension: MetaMask — add Flare RPC (chainId 14)"].join("\n"),
         near: (w) => ["App: NEAR Wallet or MyNearWallet", "URL: https://app.mynearwallet.com", "Extension: NEAR Wallet browser extension"].join("\n"),
-        cronos: (w) => ["App: Crypto.com DeFi Wallet or MetaMask", "URL: https://crypto.com/defi-wallet", "Extension: MetaMask — add Cronos RPC"].join("\n"),
+        cronos: (w) => ["App: Crypto.com DeFi Wallet or MetaMask", "URL: https://crypto.com", "Extension: MetaMask — add Cronos RPC"].join("\n"),
       };
 
       for (const w of userWallets) {
