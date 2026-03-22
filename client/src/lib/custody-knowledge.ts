@@ -2147,12 +2147,24 @@ export function evaluateAsset(
         items = [];
       }
       if (stakingTip) items.push(stakingTip);
+
+      const canDirectlyStake = walletActions.length === 0 || walletActions.some(a =>
+        a.link && !a.text.toLowerCase().includes("cannot") && !a.text.toLowerCase().includes("doesn't support") && !a.text.toLowerCase().includes("does not support") && !a.text.toLowerCase().includes("need to send") && !a.text.toLowerCase().includes("would need to")
+      );
+
+      let description: string;
+      if (missed <= 10) {
+        description = `${stakedPct}% of your ${symbol} on ${provider} is staked and earning ~$${totalEarning.toFixed(0)}/year (~${bestSelfCustodyYield.toFixed(1)}% APY). Total value: $${totalOnWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`;
+      } else if (canDirectlyStake) {
+        description = `${stakedPct}% of your ${symbol} on ${provider} ($${stakedContext.stakedUsdOnSameWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is staked and earning ~$${totalEarning.toFixed(0)}/year. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — staking it could earn ~$${missed.toFixed(0)}/year more.`;
+      } else {
+        description = `${stakedPct}% of your ${symbol} on ${provider} ($${stakedContext.stakedUsdOnSameWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is staked and earning ~$${totalEarning.toFixed(0)}/year. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — but ${provider} cannot stake the rest directly. You would need to move it to a compatible wallet.`;
+      }
+
       return {
         symbol, name: displayName, type: missed > 10 ? "stake_available" : "optimal",
         title: missed > 10 ? "Partially Staked" : "Already Staking",
-        description: missed > 10
-          ? `${stakedPct}% of your ${symbol} on ${provider} ($${stakedContext.stakedUsdOnSameWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is staked and earning ~$${totalEarning.toFixed(0)}/year. The remaining ${liquidPct}% ($${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) is liquid — staking it could earn ~$${missed.toFixed(0)}/year more.`
-          : `${stakedPct}% of your ${symbol} on ${provider} is staked and earning ~$${totalEarning.toFixed(0)}/year (~${bestSelfCustodyYield.toFixed(1)}% APY). Total value: $${totalOnWallet.toLocaleString(undefined, { maximumFractionDigits: 0 })}.`,
+        description,
         currentLocation: provider, currentYield: bestSelfCustodyYield, bestYield: bestSelfCustodyYield,
         bestYieldSource: bestStakingSource?.platform || bestSelfCustodyLabel, usdValue: totalOnWallet, missedAnnual: missed > 10 ? missed : 0,
         actionItems: items,
@@ -2166,13 +2178,27 @@ export function evaluateAsset(
       const primaryCustody = bestSource
         ? getCustodyInfo(bestSource, "staking")
         : getCustodyInfo(bestDefiSrc, "defi");
-      const onChainNote = primaryCustody?.type === "on_chain"
-        ? ` This is on-chain on ${primaryCustody.blockchain} — you keep ownership of your assets.`
-        : "";
+      const bestPlatform = bestSource?.platform || bestDefiSrc?.defiProtocol || "";
+      const bestBlockchain = bestSource?.blockchain || bestDefiSrc?.blockchain || "";
+
+      const canWalletStakeDirectly = walletActions.length === 0 || walletActions.some(a =>
+        a.link && !a.text.toLowerCase().includes("cannot") && !a.text.toLowerCase().includes("doesn't support") && !a.text.toLowerCase().includes("does not support") && !a.text.toLowerCase().includes("need to send") && !a.text.toLowerCase().includes("would need to")
+      );
+
+      let description: string;
+      if (canWalletStakeDirectly) {
+        const onChainNote = primaryCustody?.type === "on_chain"
+          ? ` This is on-chain on ${bestBlockchain} — you keep ownership of your assets.`
+          : "";
+        description = `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.${onChainNote}`;
+      } else {
+        description = `You hold $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })} of ${symbol} on your ${provider} wallet. Best yield: ~${bestSelfCustodyYield.toFixed(1)}% APY via ${bestPlatform}${bestBlockchain ? ` on ${bestBlockchain}` : ""} (~$${missed.toFixed(0)}/year). However, ${provider} cannot stake ${symbol} directly — you would need to move it to a compatible wallet first.`;
+      }
+
       return {
         symbol, name: displayName, type: "stake_available",
         title: "Yield Available",
-        description: `${symbol} on your ${provider} wallet could earn ~${bestSelfCustodyYield.toFixed(1)}% APY by staking — that's ~$${missed.toFixed(0)}/year on $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}.${onChainNote}`,
+        description,
         currentLocation: provider, currentYield: 0, bestYield: bestSelfCustodyYield, bestYieldSource: bestSelfCustodyLabel, usdValue, missedAnnual: missed,
         actionItems: walletActions.length > 0 ? walletActions : [
           bestStaking > 0 ? { text: `Stake via ${bestStakingSource?.platform} on ${bestStakingSource?.blockchain} (${bestStakingSource?.apyRange} APY)`, link: bestStakingSource?.link, custodyBadge: bestStakingSource?.custodyType } : null,
