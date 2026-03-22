@@ -1569,8 +1569,9 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">Pay with Crypto</span>
                               <Badge className="bg-amber-500 text-[10px] px-1.5">Preferred</Badge>
+                              <Badge className="bg-emerald-500 text-[10px] px-1.5">10% Off</Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground">Stay on-chain. Pay with any supported cryptocurrency.</p>
+                            <p className="text-xs text-muted-foreground">Stay on-chain. Pay with any of 25 supported cryptocurrencies. Save 10%.</p>
                           </div>
                         </div>
                       </div>
@@ -1636,7 +1637,7 @@ export default function SettingsPage() {
                               ) : (
                                 <Coins className="h-4 w-4 mr-2" />
                               )}
-                              Pay ${billingCycle === "yearly" ? tierPrices[selectedTier].yearly : tierPrices[selectedTier].monthly} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"}
+                              Pay ${(billingCycle === "yearly" ? tierPrices[selectedTier].yearly * 0.9 : tierPrices[selectedTier].monthly * 0.9).toFixed(2)} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"} <span className="ml-1 text-xs opacity-75">(10% off)</span>
                             </Button>
                           </>
                         )}

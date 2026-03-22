@@ -2185,7 +2185,7 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$29</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $199/yr — Save $149 · Pay with crypto (25 chains) or card</p>
+                  <p className="text-sm text-[#00A4E4] font-medium mb-4">or $199/yr — Save $149 · <span className="text-emerald-600 dark:text-emerald-400">10% off with crypto</span> · 25 chains or card</p>
                   <ul className="space-y-3 mb-4">
                     {premiumFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
@@ -2224,7 +2224,7 @@ export default function Landing() {
                     <span className="text-3xl font-bold">$99</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-4">or $799/yr — Save $389 · Pay with crypto or card</p>
+                  <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-4">or $799/yr — Save $389 · <span className="text-emerald-600 dark:text-emerald-400">10% off with crypto</span> · 25 chains or card</p>
                   <ul className="space-y-3 mb-6">
                     {proFeatures.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">

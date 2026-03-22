@@ -4013,7 +4013,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const addonConfig = ADDONS[addonKey as AddonKey];
-      const usdAmount = addonConfig.amount / 100;
+      const usdAmount = Math.round(addonConfig.amount * 0.9) / 100;
 
       const ALL_SUPPORTED_CHAINS = [
         "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
@@ -4174,10 +4174,10 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const USD_AMOUNTS: Record<string, number> = {
-        monthly: 29,
-        yearly: 199,
-        "pro-monthly": 99,
-        "pro-yearly": 799,
+        monthly: 26.10,
+        yearly: 179.10,
+        "pro-monthly": 89.10,
+        "pro-yearly": 719.10,
       };
       const usdAmount = USD_AMOUNTS[plan];
 
