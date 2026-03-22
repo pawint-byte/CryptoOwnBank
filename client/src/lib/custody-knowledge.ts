@@ -1799,6 +1799,33 @@ const WALLET_STAKING_GUIDES: Record<string, Record<WalletBrand, WalletAction[]>>
       { text: "Delegate CRO to a Cronos validator for staking rewards" },
     ],
   },
+  XDC: {
+    ledger: [
+      { text: "Connect your Ledger to the XDC Web Wallet (wallet.xdc.network) to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
+    ],
+    ellipal: [
+      { text: "ELLIPAL is air-gapped and cannot connect to the XDC Web Wallet directly — to stake XDC, you would need to send it to an XDC Web Wallet or Ledger first" },
+      { text: "Use XDC Web Wallet (supports WalletConnect, browser extension, or hardware wallet) to delegate to a masternode", link: "https://wallet.xdc.network" },
+    ],
+    safepal: [
+      { text: "SafePal's DApp browser may support the XDC Web Wallet — try connecting via WalletConnect", link: "https://wallet.xdc.network" },
+    ],
+    cypherock: [
+      { text: "CypheRock doesn't support XDC staking — send XDC to a Ledger or XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+    ],
+    arculus: [
+      { text: "Arculus doesn't support XDC staking — send XDC to a Ledger or XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+    ],
+    xaman: [],
+    tronlink: [],
+    metamask: [
+      { text: "Add the XDC Network RPC to MetaMask and connect to the XDC Web Wallet to delegate to a masternode", link: "https://wallet.xdc.network" },
+    ],
+    stader: [],
+    unknown: [
+      { text: "Use the XDC Web Wallet to delegate to a masternode for 8–12% APY", link: "https://wallet.xdc.network" },
+    ],
+  },
 };
 
 const VET_PASSIVE_NOTE: ActionItem = {
