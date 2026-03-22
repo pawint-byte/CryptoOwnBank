@@ -885,7 +885,7 @@ export const CUSTODY_KNOWLEDGE: Record<string, AssetKnowledge> = {
     stakingOptions: [
       { platform: "XDC Web Wallet", method: "Masternode Delegation", apyRange: "8–12%", apyMid: 10.0, link: "https://wallet.xdc.network", custodyType: "on_chain", blockchain: "XDC Network" },
     ],
-    selfCustodyWallets: ["XDC Web Wallet", "ELLIPAL", "Ledger Nano X"],
+    selfCustodyWallets: ["XDC Web Wallet", "MetaMask (with XDC RPC)"],
   },
   SGB: {
     symbol: "SGB",
