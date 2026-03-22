@@ -90,7 +90,7 @@ function formatFlr(value: string | number): string {
 }
 
 export default function FlareFtso() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [flareAddress, setFlareAddress] = useState("");
   const { data: savedAddress, save: saveFlareAddress, remove: removeFlareAddress, isLoading: addressLoading } = useUserData("flare_address", "");
@@ -220,7 +220,7 @@ export default function FlareFtso() {
         </Card>
       </div>
 
-      {(user && addressLoading) ? (
+      {(authLoading || (user && addressLoading)) ? (
         <Card>
           <CardContent className="pt-4 space-y-3">
             <Skeleton className="h-6 w-48" />

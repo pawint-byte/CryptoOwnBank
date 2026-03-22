@@ -10002,6 +10002,14 @@ function startPriceAlertChecker() {
         await storage.updateWalletLabel(w.id, "XRP_Arculus");
         console.log(`[cleanup] Renamed "${w.label}" -> "XRP_Arculus"`);
       }
+
+      const mismatchedWallets = allUserWallets.filter(w =>
+        w.chain === "stellar" && w.address.startsWith("0x")
+      );
+      for (const w of mismatchedWallets) {
+        await storage.deleteWallet(w.id);
+        console.log(`[cleanup] Removed mismatched wallet: "${w.label}" (0x address stored as stellar chain)`);
+      }
     } catch (err) {
       console.error("[seed] Chain-prefix rename error:", err);
     }
