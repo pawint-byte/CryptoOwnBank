@@ -762,8 +762,22 @@ export default function FlareFtso() {
                 What is the earnXRP Vault?
               </p>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>The <strong>earnXRP vault</strong> (by Upshift, curated by Clearstar) lets you earn yield on your XRP while maintaining full self-custody. In Xaman, it's called <strong>"Flare XRPFi Yield"</strong> — find it in the xApps tab. It went live in December 2025, with one-click Xaman integration added in February 2026.</p>
-                <p>As of March 2026, the vault has reached its <strong>25M FXRP capacity</strong> ($35M+ TVL) at <strong>3.4% estimated APY</strong>. New deposits are temporarily paused — you can tap "Notify me" in the xApp to get alerted when deposits reopen.</p>
+                <p>The <strong>"Flare XRPFi Yield"</strong> xApp in Xaman lets you earn yield on your XRP while maintaining full self-custody. Open Xaman → xApps tab → search "Flare XRPFi Yield." Your XRP bridges to Flare and mints 1:1 as FXRP, which you can then deploy into multiple yield options — all from the same xApp.</p>
+                <p>As of March 2026, the original earnXRP vault has reached its <strong>25M FXRP capacity</strong> ($35M+ TVL). But two additional providers are live, and more Xaman integrations are incoming:</p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 mt-2">
+                <div className="rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 space-y-1">
+                  <p className="text-sm font-semibold">Firelight stXRP — Live (Dec 2025)</p>
+                  <p className="text-xs text-muted-foreground">Mint FXRP → stake for liquid stXRP. Earn variable yield via Firelight's insurance/DeFi model. stXRP is tradable on SparkDEX and Enosys, so your position stays liquid.</p>
+                </div>
+                <div className="rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 space-y-1">
+                  <p className="text-sm font-semibold">Morpho + Mystic Lending — Live (Feb 2026)</p>
+                  <p className="text-xs text-muted-foreground">Lend FXRP in curated vaults or borrow against it (USDT0/FLR-backed). Variable yields ~2–5%. Claim and redeem anytime.</p>
+                </div>
+                <div className="rounded-lg border border-orange-500/20 bg-orange-500/10 p-3 space-y-1">
+                  <p className="text-sm font-semibold">earnXRP Vault (Upshift + Clearstar) — 3.4% APY</p>
+                  <p className="text-xs text-muted-foreground">The original vault — currently full at 25M FXRP. Capacity expansions and 2 more Xaman providers incoming. Tap "Notify me" in the xApp to get alerted when deposits reopen.</p>
+                </div>
               </div>
             </div>
 
@@ -773,12 +787,18 @@ export default function FlareFtso() {
                 How It Works
               </p>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
-                <li><strong>Deposit XRP via Xaman</strong> — Open the "Flare XRPFi Yield" xApp in Xaman (xApps tab → search "Flare XRPFi Yield"). Tap Deposit, enter your amount, and sign the transaction. XRP gets bridged to Flare and minted 1:1 as FXRP.</li>
-                <li><strong>FXRP earns yield automatically</strong> — Your FXRP is deployed into Clearstar-curated strategies (lending, liquidity provision). Yield accrues and compounds in FXRP on-chain.</li>
-                <li><strong>Redeem anytime</strong> — Unwrap FXRP back to native XRP with one transaction. Your XRP returns to your cold wallet. No lock-ups beyond network fees.</li>
+                <li><strong>Bridge XRP to FXRP via Xaman</strong> — Open the "Flare XRPFi Yield" xApp in Xaman (xApps tab → search "Flare XRPFi Yield"). Tap Deposit, enter your amount, and sign the transaction. Your XRP bridges to Flare and mints 1:1 as FXRP.</li>
+                <li><strong>Choose how to earn</strong> — Once you have FXRP, you can deploy it into any of the available providers:
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li><strong>Firelight</strong> — Stake FXRP for liquid stXRP. Variable yield. Tradable on SparkDEX/Enosys.</li>
+                    <li><strong>Morpho/Mystic</strong> — Lend FXRP in curated vaults (~2–5% variable). Can also borrow against it.</li>
+                    <li><strong>earnXRP vault</strong> — Clearstar-curated strategies (~3.4% APY). Currently full — waitlist available.</li>
+                  </ul>
+                </li>
+                <li><strong>Redeem anytime</strong> — Claim/redeem your position, unwrap FXRP back to native XRP with one transaction. Your XRP returns to your cold wallet. No lock-ups.</li>
               </ol>
               <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 mt-2">
-                <p className="text-sm font-medium text-green-700 dark:text-green-400">Yes — you get more XRP back. If you deposit 1,000 XRP and earn 3.5% over a year, you redeem ~1,035 XRP. The yield accrues as additional FXRP which converts back to real XRP.</p>
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">Yes — you get more XRP back. If you deposit 1,000 XRP and earn 3% over a year, you redeem ~1,030 XRP. The yield accrues as additional FXRP which converts back to real XRP.</p>
               </div>
             </div>
 
@@ -817,12 +837,12 @@ export default function FlareFtso() {
               </p>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li><strong>Update Xaman</strong> — Make sure you have the latest version (Flare Smart Accounts support was added in February 2026).</li>
-                <li><strong>Open "Flare XRPFi Yield"</strong> — Tap the xApps icon in Xaman's bottom menu. Look under "What's new" or "Popular" for <strong>Flare XRPFi Yield</strong>, or search for it. The xApp handles everything — including activating the Flare Smart Account for your address if needed.</li>
+                <li><strong>Open "Flare XRPFi Yield"</strong> — Tap the xApps icon in Xaman's bottom menu. Look under "What's new" or "Popular" for <strong>Flare XRPFi Yield</strong>, or search for it. You can also search for Firelight or Morpho directly. The xApp handles activating the Flare Smart Account for your address if needed.</li>
                 <li><strong>Acknowledge the virtual asset disclaimer</strong> — The xApp will explain that FXRP is a "virtual asset" that lives on the Flare network, not XRPL. Tap "I understand" to continue.</li>
-                <li><strong>Tap Deposit and sign</strong> — Enter how much XRP to deposit. Your wallet signs the transaction. XRP bridges to Flare, mints 1:1 as FXRP, and deploys automatically.</li>
-                <li><strong>Monitor</strong> — Your Upshift Vault balance and FXRP position appear in the xApp alongside your XRP balance. Yield accrues in FXRP.</li>
-                <li><strong>Redeem</strong> — Tap Withdraw in the xApp. FXRP unwraps back to native XRP and returns to your wallet. One transaction.</li>
-                <li><strong>Note: Vault capacity</strong> — The vault has a 25M FXRP limit. When full, deposits are paused — tap "Notify me" in the xApp to get alerted when they reopen.</li>
+                <li><strong>Bridge XRP → FXRP</strong> — Tap Deposit, enter your amount, and sign. Your XRP bridges to Flare and mints 1:1 as FXRP.</li>
+                <li><strong>Choose your yield provider</strong> — Stake on Firelight (liquid stXRP), lend on Morpho/Mystic (~2–5%), or join the earnXRP vault waitlist (~3.4%). Claim and redeem anytime.</li>
+                <li><strong>Monitor</strong> — Your FXRP position and vault balances appear in the xApp. Yield accrues on-chain.</li>
+                <li><strong>Redeem</strong> — Tap Withdraw. FXRP unwraps back to native XRP and returns to your wallet. One transaction.</li>
               </ol>
             </div>
 
@@ -837,11 +857,12 @@ export default function FlareFtso() {
               </div>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-muted-foreground">
                 <li><strong>Pair Ledger with Xaman</strong> — In Xaman, go to Settings → Accounts → Add Account → Import (read-only). Scan the QR code or enter your XRPL address from Ledger Live. This makes your Ledger address visible in Xaman without exposing your private keys.</li>
-                <li><strong>Open "Flare XRPFi Yield"</strong> — With your Ledger-linked account selected in Xaman, tap the xApps icon (bottom menu). Look under "What's new" or "Popular" for <strong>Flare XRPFi Yield</strong>, or search for it. The xApp will detect your account and walk you through the setup, including activating the Flare Smart Account for that address if needed. Acknowledge the virtual asset disclaimer by tapping "I understand."</li>
-                <li><strong>Tap Deposit and choose amount</strong> — Enter how much XRP to deposit. The xApp will prepare the transaction and prompt you to sign.</li>
+                <li><strong>Open "Flare XRPFi Yield"</strong> — With your Ledger-linked account selected in Xaman, tap the xApps icon (bottom menu). Look under "What's new" or "Popular" for <strong>Flare XRPFi Yield</strong>, or search for it (also try Firelight or Morpho). The xApp will detect your account and walk you through the setup, including activating the Flare Smart Account for that address if needed. Acknowledge the virtual asset disclaimer by tapping "I understand."</li>
+                <li><strong>Bridge XRP → FXRP</strong> — Tap Deposit and enter how much XRP to bridge. The xApp will prepare the transaction and prompt you to sign.</li>
                 <li><strong>Sign on Ledger</strong> — When Xaman shows the signing request, connect your Ledger via USB or Bluetooth. Open the XRP app on your Ledger and approve the transaction on the device screen. Your private keys never leave the Ledger.</li>
-                <li><strong>Confirm and monitor</strong> — Once signed, your XRP bridges to Flare, mints as FXRP, and starts earning yield. Track your position in Xaman under the earnXRP xApp.</li>
-                <li><strong>To redeem</strong> — Same process in reverse: open the earnXRP xApp in Xaman, select withdraw, sign with your Ledger, and your XRP (plus yield) returns to your Ledger-controlled address.</li>
+                <li><strong>Choose your yield provider</strong> — Stake on Firelight (liquid stXRP), lend on Morpho/Mystic (~2–5%), or join the earnXRP vault waitlist (~3.4%). Each provider transaction requires Ledger signing.</li>
+                <li><strong>Confirm and monitor</strong> — Once signed, your FXRP is deployed and starts earning. Track your position in the xApp.</li>
+                <li><strong>To redeem</strong> — Same process in reverse: open the xApp, select withdraw, sign with your Ledger, and your XRP (plus yield) returns to your Ledger-controlled address.</li>
               </ol>
               <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-3 mt-2 space-y-1">
                 <p className="text-xs text-muted-foreground"><strong>Why Ledger + Xaman?</strong> Xaman acts as the interface and bridge coordinator, while your Ledger holds the keys. You get the convenience of Xaman's one-click earnXRP with the security of hardware signing. Every transaction requires physical approval on your Ledger — no software wallet can move your XRP without you pressing the button.</p>
