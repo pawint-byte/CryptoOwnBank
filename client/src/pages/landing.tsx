@@ -55,6 +55,7 @@ import {
   Repeat,
   GitCompareArrows,
   Smartphone,
+  Pickaxe,
 } from "lucide-react";
 
 const xrplToolsComparison = [
