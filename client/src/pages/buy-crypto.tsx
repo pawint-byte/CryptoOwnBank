@@ -1276,7 +1276,17 @@ export default function BuyCrypto() {
                 </Card>
 
                 {selectedWallet.deepLink && (
-                  <a href={selectedWallet.deepLink} className="block">
+                  <a
+                    href={selectedWallet.deepLink}
+                    className="block"
+                    onClick={(e) => {
+                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                      if (!isMobile) {
+                        e.preventDefault();
+                        window.open(selectedWallet.downloadUrl, "_blank");
+                      }
+                    }}
+                  >
                     <Button variant="outline" className="w-full gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-wallet-app">
                       <ExternalLink className="h-4 w-4" />
                       Open {selectedWallet.name} App
@@ -1489,7 +1499,16 @@ export default function BuyCrypto() {
 
               <div className="flex items-center gap-3 pt-2 flex-wrap">
                 {selectedWallet.deepLink && (
-                  <a href={selectedWallet.deepLink}>
+                  <a
+                    href={selectedWallet.deepLink}
+                    onClick={(e) => {
+                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                      if (!isMobile) {
+                        e.preventDefault();
+                        window.open(selectedWallet.downloadUrl, "_blank");
+                      }
+                    }}
+                  >
                     <Button variant="outline" className="gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-app">
                       <Smartphone className="h-4 w-4" />
                       Open {selectedWallet.name}
