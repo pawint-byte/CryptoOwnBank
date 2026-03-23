@@ -4602,8 +4602,26 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const allLots = await storage.getTaxLotsByUser(userId);
       const positionsData = await storage.getPositionsByUser(userId);
 
+      // Clean up known bad lots (WLFI 141M manual entry error)
+      const badLots = allLots.filter(l => 
+        l.assetSymbol === 'WLFI' && parseFloat(l.originalQuantity) > 100000000
+      );
+      for (const bad of badLots) {
+        await db.delete(taxLots).where(eq(taxLots.id, bad.id));
+        console.log(`[admin-cleanup] Deleted bad lot: ${bad.assetSymbol} qty=${bad.originalQuantity}`);
+      }
+      const badPositions = positionsData.filter(p =>
+        p.assetSymbol === 'WLFI' && parseFloat(p.quantity) > 100000000
+      );
+      for (const bad of badPositions) {
+        await db.execute(sql`DELETE FROM positions WHERE id = ${bad.id}`);
+        console.log(`[admin-cleanup] Deleted bad position: ${bad.assetSymbol} qty=${bad.quantity}`);
+      }
+
+      const cleanLots = allLots.filter(l => !(l.assetSymbol === 'WLFI' && parseFloat(l.originalQuantity) > 100000000));
+
       const lotTotals: Record<string, { qty: number; costBasis: number; count: number }> = {};
-      for (const lot of allLots) {
+      for (const lot of cleanLots) {
         const sym = lot.assetSymbol;
         if (!lotTotals[sym]) lotTotals[sym] = { qty: 0, costBasis: 0, count: 0 };
         const qty = parseFloat(lot.remainingQuantity);
