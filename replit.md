@@ -105,9 +105,45 @@ Preferred communication style: Simple, everyday language.
 -   **Onramper**: API key requested (email sent). Once received, integrate Onramper widget into Buy Crypto page (`client/src/pages/buy-crypto.tsx`) to replace direct provider links with embedded aggregator widget (MoonPay, Transak, Banxa, etc. in one UI). User approved this integration.
 -   Current fallback: Direct links to MoonPay, Transak, Topper with pre-filled wallet addresses.
 
-### Pending Action Items
--   Onramper widget integration — waiting on API key
--   GitHub push — local branch is ahead of origin/main, user needs to push from Shell or Git panel
+### Pending Action Items / To-Do List
+**IMPORTANT: This list must be reviewed at the start of every session and kept up to date. Never lose track of user decisions or pending work.**
+
+#### Waiting on External
+- [ ] **Onramper widget integration** — API key requested (email sent). Once received, integrate into Buy Crypto page to replace direct provider links with embedded aggregator widget. User approved this integration.
+- [ ] **MoonPay partner account** — Needed to embed MoonPay on-ramp widget directly instead of linking out. Separate from Onramper.
+- [ ] **FRED API key** — Needed for live S&P/Case-Shiller housing data in Real Estate Tracker. Currently using fallback appreciation rates.
+
+#### Data Cleanup (User Action Required)
+- [ ] **40 manual wallet balances still inflated** — Coinbase, Uphold, Crypto.com balances are original manual entries, not lot sums. User will fix manually.
+- [ ] **1,406 original Yahoo import transactions** still in production DB — positions and CSV lots were cleaned up (158 positions deleted, 419 lots deleted), but raw transactions remain.
+
+#### Known Limitations
+- [ ] **XDC on MetaMask iOS** — Cannot fetch Chain ID from tested RPCs. Desktop works fine. No fix available yet.
+- [ ] **SQUID_INTEGRATOR_ID** — Verify this env var is set for XRPL Bridge (Axelar/Squid Router). May be using default/public key.
+
+#### Features to Verify / Test
+- [ ] **Legacy Plan** — Dead-man switch, beneficiary emails, split delivery, annual review attestation
+- [ ] **DCA orders** — Automated scheduling, Xaman approval flow, execution tracking
+- [ ] **Earn & Accumulate** — Soil withdraw → RLUSD → XRP DCA → redeposit flow
+- [ ] **Cross-Chain Swap** — LI.FI bridge aggregator, route visualization, status tracking
+- [ ] **XRPL Bridge** — Squid/Axelar bridging from EVM to XRP
+- [ ] **Payment scheduler / Recurring payments** — Automated payment creation and execution
+- [ ] **Invoice system** — Creation, sharing, QR codes, payment verification
+- [ ] **Flare FTSO rewards** — Delegation status, APY projections, FlareDrop tracking
+
+#### GitHub
+- [ ] **Push to GitHub** — Local branch is ahead of origin/main. User needs to push from Shell (`git push origin main`) or Git panel.
+
+#### Completed Recently
+- [x] Security hardening — Helmet, rate limiting, sameSite cookies (2026-03-23)
+- [x] Unit test suite — 68 tests for financial math + technical indicators (2026-03-23)
+- [x] Precision rounding — round2/round8 for all financial calculations (2026-03-23)
+- [x] Buy Crypto page improvements — FLR token, swap suggestions, clickable providers, deep links (2026-03-23)
+- [x] Yahoo CSV cleanup — 158 positions + 419 lots deleted, reconciliation made re-runnable
+- [x] Whale Alerts, Technical Analysis, Wallet ID features
+- [x] Landing page and FAQ updates
+- [x] Frontend error reporting to server (error boundary + global handlers)
+- [x] WalletConnect auto-reconnect on page refresh
 
 ### Analytics
 -   Google Analytics 4 (GA4)
