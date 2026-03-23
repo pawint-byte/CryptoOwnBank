@@ -3,6 +3,9 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+const MAX_AUTO_RETRIES = 2;
+const RETRY_COOLDOWN_MS = 3000;
+
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
@@ -10,16 +13,20 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  retryCount: number;
+  lastErrorTime: number;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private autoRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, retryCount: 0, lastErrorTime: 0 };
   }
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
+    return { hasError: true, error, lastErrorTime: Date.now() };
   }
 
   componentDidCatch(error: Error, errorInfo: { componentStack?: string | null }) {
@@ -30,16 +37,39 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       route: window.location.pathname,
       metadata: {
         componentStack: errorInfo.componentStack?.slice(0, 2000),
+        retryCount: this.state.retryCount,
       },
     });
+
+    if (this.state.retryCount < MAX_AUTO_RETRIES) {
+      const delay = this.state.retryCount === 0 ? 500 : 1500;
+      this.autoRetryTimer = setTimeout(() => {
+        this.setState((prev) => ({
+          hasError: false,
+          error: null,
+          retryCount: prev.retryCount + 1,
+        }));
+      }, delay);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.autoRetryTimer) {
+      clearTimeout(this.autoRetryTimer);
+    }
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, retryCount: 0 });
+  };
+
+  handleNavigateHome = () => {
+    this.setState({ hasError: false, error: null, retryCount: 0 });
+    window.location.href = "/";
   };
 
   render() {
-    if (this.state.hasError) {
+    if (this.state.hasError && this.state.retryCount >= MAX_AUTO_RETRIES) {
       return (
         <div className="flex items-center justify-center min-h-[400px] p-6">
           <Card className="max-w-md w-full">
@@ -66,7 +96,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => window.location.href = "/"}
+                  onClick={this.handleNavigateHome}
                   data-testid="button-error-home"
                 >
                   Go Home
