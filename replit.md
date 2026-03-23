@@ -6,6 +6,15 @@ CryptoBroker Tracker is a comprehensive cryptocurrency and investment portfolio 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Session Continuity Rules
+**CRITICAL: Read this section at the start of EVERY session.**
+1. **Read the to-do list** below before doing anything. Review open items with the user.
+2. **Read `session-logs/`** — these contain summaries of past conversations. Read the most recent ones to understand context and what was discussed previously.
+3. **At the end of every session**, write a new session log to `session-logs/YYYY-MM-DD.md` (or append if one exists for today) covering: what was done, decisions made, open items, and anything the user mentioned.
+4. **Update the to-do list** whenever items are completed, added, or changed.
+5. **Never ask the user to re-explain** something that's already captured in session logs or the to-do list.
+6. The user (pawint@me.com) has been building this project over many sessions. Treat every session as a continuation, not a fresh start.
+
 ## System Architecture
 
 ### Frontend
