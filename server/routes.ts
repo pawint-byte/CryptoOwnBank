@@ -10397,4 +10397,26 @@ function startPriceAlertChecker() {
     }
   }, 12000);
 
+  // One-time cleanup: remove bad WLFI lot (141M manual entry error) and its position
+  setTimeout(async () => {
+    try {
+      const badWlfiLots = await db.select().from(taxLots).where(
+        and(eq(taxLots.assetSymbol, 'WLFI'), sql`CAST(original_quantity AS numeric) > 100000000`)
+      );
+      for (const lot of badWlfiLots) {
+        await db.delete(taxLots).where(eq(taxLots.id, lot.id));
+        console.log(`[startup-cleanup] Deleted bad WLFI lot: ${lot.id} qty=${lot.originalQuantity}`);
+      }
+      if (badWlfiLots.length > 0) {
+        const badPositions = await db.execute(sql`SELECT id FROM positions WHERE asset_symbol = 'WLFI' AND CAST(quantity AS numeric) > 100000000`);
+        for (const row of badPositions.rows) {
+          await db.execute(sql`DELETE FROM positions WHERE id = ${row.id}`);
+          console.log(`[startup-cleanup] Deleted bad WLFI position: ${row.id}`);
+        }
+      }
+    } catch (err) {
+      console.error("[startup-cleanup] WLFI cleanup error:", err);
+    }
+  }, 15000);
+
 }
