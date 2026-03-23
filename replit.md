@@ -52,6 +52,7 @@ Preferred communication style: Simple, everyday language.
     -   Email Notifications: Transactional emails for deposits, withdrawals, DEX trades, renewals, alerts, etc. Anti-phishing security phrase system injected into all outgoing emails via centralized `sendEmail` in `server/email.ts`. Feature announcement email system with admin composer, live preview, tier-based audience filtering, send history, and unsubscribe support.
     -   Monetization: Freemium model (Free, Premium, Pro tiers) and A La Carte Add-Ons with crypto and Stripe payments.
     -   Error Monitoring & Alerting: Server-side error capturing, client-side error reporting, and admin alerting via email.
+    -   Security Middleware: Helmet (security headers), express-rate-limit (300 req/15 min API, 30 req/15 min auth), session cookies with httpOnly + secure + sameSite=lax.
 
 ### Data Storage
 -   **Database**: PostgreSQL with Drizzle ORM.

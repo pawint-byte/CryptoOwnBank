@@ -23,6 +23,14 @@ The platform supports 24+ blockchain networks and integrates deeply with the **X
 - **Tax reports** — IRS-ready CSV, PDF, and TurboTax export formats
 - **Statement insights** — Upload bank/brokerage statements to compare traditional vs. crypto yields
 - **Manual imports** — CSV support for Ledger Live, Yahoo Finance, and CoinTracker
+- **Real estate tracker** — Track property holdings alongside crypto for total net worth view
+
+### Trading & Swaps
+- **EVM Swap** — Token swaps on Ethereum, Polygon, Avalanche, and other EVM chains via 1inch aggregator
+- **Cross-Chain Swap** — Swap tokens across different blockchains using LI.FI bridge aggregator
+- **XRPL Bridge** — Bridge assets between XRP Ledger and EVM chains
+- **DCA Orders** — Automated dollar-cost averaging with customizable intervals
+- **Buy Crypto** — Guided on-ramp wizard with MoonPay, Transak, and Topper integration pre-filled with wallet addresses
 
 ### XRPL (XRP Ledger) Features
 - **RLUSD Yield Vaults** — Non-custodial deposits into Soil Protocol vaults earning 5.2%–8% APR on Real World Asset-backed yields
@@ -30,10 +38,11 @@ The platform supports 24+ blockchain networks and integrates deeply with the **X
 - **Token Manager** — Set and manage XRPL trustlines for any issued token
 - **Escrow Tracking** — Monitor and manage XRPL escrow conditions
 - **XLS-66 Lending** — Support for the upcoming on-ledger lending amendment
-- **Whale Alerts** — Real-time monitoring of large XRP and RLUSD movements with configurable thresholds
+- **Whale Alerts** — Real-time monitoring of large XRP and RLUSD movements with configurable thresholds, powered by live WebSocket feeds
 - **Send & Receive** — Direct XRP/token payments with destination tag support
 - **Invoices & Recurring Payments** — Create payment requests and schedule automated recurring payments
 - **OwnCoin POS** — Portable crypto point-of-sale terminal for receiving payments via QR code
+- **Wallet ID** — Human-readable wallet identification via PayString and XRPL x-address lookup
 
 ### Stellar Features
 - **Stellar Wallet** — Native XLM and Stellar asset management
@@ -51,10 +60,11 @@ The platform supports 24+ blockchain networks and integrates deeply with the **X
 - **Technical Analysis** — Candlestick charts with automated pattern detection and 10-year price history
 - **Recommendations Hub** — Personalized staking and yield suggestions based on current holdings
 
-### Self-Custody Guidance
-- **Cold wallet recommendations** — Per-asset suggestions for hardware wallet security
+### Self-Custody & Legacy
+- **Cold wallet recommendations** — Per-asset suggestions for hardware wallet security (Ledger, Trezor, Tangem, etc.)
 - **Hold reason flags** — Flag assets intentionally kept on exchanges (staking, trading, liquidity) to suppress move-to-cold-wallet suggestions
 - **Custody knowledge base** — Built-in data on which hardware wallets support which chains
+- **Legacy Plan** — Digital inheritance planning for crypto assets with designated beneficiaries and recovery instructions
 
 ---
 
@@ -67,8 +77,12 @@ The platform supports 24+ blockchain networks and integrates deeply with the **X
 | **Database** | PostgreSQL with Drizzle ORM |
 | **XRPL** | xrpl.js, Xaman (XUMM) SDK for transaction signing |
 | **Stellar** | Stellar SDK for payments and DEX operations |
-| **Payments** | Stripe for subscription billing |
+| **EVM Swaps** | 1inch Aggregation API |
+| **Cross-Chain** | LI.FI Bridge Aggregator |
+| **Payments** | Stripe for subscription billing, crypto payments (XRP, XLM, RLUSD) |
 | **Price Data** | CoinGecko API, Chainlink price feeds, DeFiLlama |
+| **Security** | Helmet, express-rate-limit, httpOnly/secure/sameSite cookies |
+| **Monitoring** | Custom error monitor with email alerts and fingerprinted error tracking |
 | **Deployment** | Replit |
 
 ---
@@ -86,6 +100,8 @@ client/                  # React frontend
 server/                  # Express backend
   routes.ts              # All API endpoints
   storage.ts             # Database interface (CRUD)
+  errorMonitor.ts        # Error capture, fingerprinting, and email alerting
+  services/              # Background services (whale monitor, price cache, DCA, etc.)
   vite.ts                # Dev server configuration
 
 shared/                  # Shared between frontend and backend
@@ -103,20 +119,40 @@ shared/                  # Shared between frontend and backend
 | **Premium** | $29/mo or $199/yr | Unlimited exchanges/wallets, DEX trading, full history, tax reports |
 | **Pro** | $99/mo or $799/yr | XLS-66 lending, DeFi borrowing, batch payments, team seats |
 
+10% discount available when paying with crypto (XRP, XLM, RLUSD).
+
 ---
 
 ## Blockchain Networks Supported
 
-Bitcoin, Ethereum, XRP Ledger, Stellar, Solana, Cardano, Polkadot, Algorand, Cosmos, Tron, Cronos, Avalanche, Polygon, Hedera, Sui, Aptos, Near, Tezos, and more.
+Bitcoin, Ethereum, XRP Ledger, Stellar, Solana, Cardano, Polkadot, Algorand, Cosmos, Tron, Cronos, Avalanche, Polygon, Hedera, Sui, Aptos, Near, Tezos, Flare, XDC, and more.
 
 ---
 
 ## Security
 
-- **Non-custodial** — CryptoOwnBank never holds private keys or custodies user funds
-- **Wallet signing** — All on-chain transactions are signed in the user's own wallet (Xaman/XUMM, Ledger, etc.)
-- **Read-only tracking** — Public addresses are used for balance tracking only
-- **Encrypted credentials** — Exchange API keys are stored with encryption at rest
+### Non-Custodial Architecture
+- CryptoOwnBank **never holds private keys** or custodies user funds
+- All on-chain transactions are signed in the user's own wallet (Xaman/XUMM, Ledger, etc.)
+- Public addresses are used for read-only balance tracking only
+
+### Server-Side Protections
+- **Helmet** — Security headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, etc.)
+- **Rate limiting** — API endpoints rate-limited (300 req/15 min general, 30 req/15 min for auth routes) to prevent abuse
+- **Session security** — httpOnly, secure, sameSite=lax cookies with PostgreSQL-backed session store
+- **Encrypted credentials** — Exchange API keys stored with encryption at rest
+- **Parameterized queries** — Drizzle ORM prevents SQL injection throughout
+
+### Monitoring & Alerting
+- Custom error monitor with SHA-256 fingerprinting for deduplication
+- Critical error email alerts (rate-limited to 1 per 15 minutes)
+- Unhandled promise rejection and uncaught exception capture
+- Request metadata logging (method, route, status, duration)
+
+### Best Practices
+- No API keys or secrets logged to console
+- CoinGecko/Chainlink API calls include backoff and retry on rate limits
+- XUMM payload signing delegated to user's wallet — server never touches private keys
 
 ---
 
