@@ -6,7 +6,7 @@ import {
   TrendingUp,
   MoreHorizontal,
 } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const tabs = [
   { label: "Home", icon: LayoutDashboard, url: "/" },
@@ -20,6 +20,7 @@ const ownbankPaths = ["/ownbank", "/stellar/"];
 
 export function MobileTabBar() {
   const [location] = useLocation();
+  const { toggleSidebar } = useSidebar();
 
   const isActive = (url: string) => {
     if (url === "/") return location === "/";
@@ -53,15 +54,14 @@ export function MobileTabBar() {
             </Link>
           );
         })}
-        <SidebarTrigger asChild>
-          <button
-            className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground transition-colors"
-            data-testid="tab-more"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight">More</span>
-          </button>
-        </SidebarTrigger>
+        <button
+          onClick={toggleSidebar}
+          className="flex flex-col items-center justify-center gap-0.5 w-16 h-full text-muted-foreground transition-colors"
+          data-testid="tab-more"
+        >
+          <MoreHorizontal className="h-5 w-5" />
+          <span className="text-[10px] font-medium leading-tight">More</span>
+        </button>
       </div>
     </nav>
   );
