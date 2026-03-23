@@ -4582,7 +4582,10 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       let updated = 0;
-      const changes: { symbol: string; oldQty: string; newQty: string; lotCount: number }[] = [];
+      let created = 0;
+      const changes: { symbol: string; action: string; oldQty?: string; newQty: string; lotCount: number }[] = [];
+
+      const existingSymbols = new Set(positionsData.map(p => p.assetSymbol));
 
       for (const pos of positionsData) {
         const lotData = lotTotals[pos.assetSymbol];
@@ -4597,14 +4600,40 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
               totalCostBasis: newCostBasis,
               averageCost: newAvgCost,
             });
-            changes.push({ symbol: pos.assetSymbol, oldQty, newQty, lotCount: lotData.count });
+            changes.push({ symbol: pos.assetSymbol, action: "updated", oldQty, newQty, lotCount: lotData.count });
             updated++;
           }
         }
       }
 
-      console.log(`[recalc] Updated ${updated} positions from lot data for user ${userId}`);
-      res.json({ updated, changes });
+      const userAccounts = await storage.getAccountsByUser(userId);
+      const yahooAccount = userAccounts.find(a => a.provider === "yahoo_import");
+      const fallbackAccount = yahooAccount || userAccounts[0];
+
+      if (fallbackAccount) {
+        for (const [sym, lotData] of Object.entries(lotTotals)) {
+          if (existingSymbols.has(sym)) continue;
+          if (lotData.qty <= 0) continue;
+
+          const newQty = lotData.qty.toFixed(8);
+          const newCostBasis = lotData.costBasis.toFixed(2);
+          const newAvgCost = lotData.qty > 0 ? (lotData.costBasis / lotData.qty).toFixed(8) : "0";
+
+          await storage.createPosition({
+            userId,
+            accountId: fallbackAccount.id,
+            assetSymbol: sym,
+            quantity: newQty,
+            averageCost: newAvgCost,
+            totalCostBasis: newCostBasis,
+          });
+          changes.push({ symbol: sym, action: "created", newQty, lotCount: lotData.count });
+          created++;
+        }
+      }
+
+      console.log(`[recalc] Updated ${updated}, created ${created} positions from lot data for user ${userId}`);
+      res.json({ updated, created, changes });
     } catch (error) {
       console.error("Recalc positions error:", error);
       res.status(500).json({ message: "Failed to recalculate positions" });
