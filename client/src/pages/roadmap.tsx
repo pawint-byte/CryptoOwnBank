@@ -247,6 +247,20 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     phase: "horizon",
+    title: "Automated Tax-Loss Harvesting",
+    description: "One-click suggestions to realize losses and rebalance into similar yield positions. Scans your portfolio for unrealized losses, surfaces harvest opportunities with estimated tax savings, and flags wash sale windows — so you can make informed decisions before year-end. You review and execute every trade yourself.",
+    category: "Tax",
+    icon: FileText,
+  },
+  {
+    phase: "horizon",
+    title: "Borrow Against Yield Positions",
+    description: "Access liquidity without selling your earning positions. When XRPL-native lending protocols go live (via XLS-65/66) and cross-chain lending matures, we'll surface borrowing options directly in your dashboard. You interact with the lending protocol directly — CryptoOwnBank never holds collateral or sets loan terms.",
+    category: "Earn",
+    icon: Landmark,
+  },
+  {
+    phase: "horizon",
     title: "AI-Powered Portfolio Assistant",
     description: "An on-platform AI assistant that can suggest portfolio rebalancing, flag tax-loss harvesting opportunities, set up DCA schedules, and surface yield strategies — all within our non-custodial framework. You always approve and sign every transaction yourself. Powered by emerging standards like MCP (Model Context Protocol) and hardware wallet signing, so the AI proposes and you decide.",
     category: "Intelligence",
