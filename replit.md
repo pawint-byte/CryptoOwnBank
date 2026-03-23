@@ -116,9 +116,16 @@ Preferred communication style: Simple, everyday language.
 -   CoinGecko API (prices, 24h change)
 -   DefiLlama Yields API (DeFi yield data)
 
-### On-Ramp
--   **Onramper**: API key requested (email sent). Once received, integrate Onramper widget into Buy Crypto page (`client/src/pages/buy-crypto.tsx`) to replace direct provider links with embedded aggregator widget (MoonPay, Transak, Banxa, etc. in one UI). User approved this integration.
--   Current fallback: Direct links to MoonPay, Transak, Topper with pre-filled wallet addresses.
+### On-Ramp / Off-Ramp Strategy
+**Goal**: Members need to buy crypto with fiat (on-ramp) AND sell crypto back to fiat (off-ramp) — all within the site. Keep the user on-site as much as possible, pre-fill their known wallet addresses so the experience is smooth.
+
+**History & Decisions**:
+- Evaluated Stripe's on-ramp — rejected because Stripe does not offer off-ramp (sell crypto → fiat).
+- Submitted partner applications to **MoonPay**, **Transak**, and **Onramper** to embed their widgets directly on-site.
+- If partner applications are rejected, fallback plan is to still use these providers but with a polished link-out experience: pre-fill wallet addresses, guide the user through the flow, keep as much on-site as possible.
+- **Onramper** is an aggregator (wraps MoonPay, Transak, Banxa, etc. in one widget) — preferred solution if API key is received.
+
+**Current State**: Buy Crypto page (`client/src/pages/buy-crypto.tsx`) has direct links to MoonPay, Transak, and Topper with pre-filled wallet addresses. This is the fallback experience until partner accounts are approved.
 
 ### Pending Action Items / To-Do List
 **IMPORTANT: This list must be reviewed at the start of every session and kept up to date. Never lose track of user decisions or pending work.**
