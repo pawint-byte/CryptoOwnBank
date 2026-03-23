@@ -101,5 +101,13 @@ Preferred communication style: Simple, everyday language.
 -   CoinGecko API (prices, 24h change)
 -   DefiLlama Yields API (DeFi yield data)
 
+### On-Ramp
+-   **Onramper**: API key requested (email sent). Once received, integrate Onramper widget into Buy Crypto page (`client/src/pages/buy-crypto.tsx`) to replace direct provider links with embedded aggregator widget (MoonPay, Transak, Banxa, etc. in one UI). User approved this integration.
+-   Current fallback: Direct links to MoonPay, Transak, Topper with pre-filled wallet addresses.
+
+### Pending Action Items
+-   Onramper widget integration — waiting on API key
+-   GitHub push — local branch is ahead of origin/main, user needs to push from Shell or Git panel
+
 ### Analytics
 -   Google Analytics 4 (GA4)
