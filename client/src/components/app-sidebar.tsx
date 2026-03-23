@@ -78,6 +78,13 @@ type NavItem = {
   icon: any;
   color?: string;
   group?: string;
+  chain?: "xrpl" | "stellar" | "evm";
+};
+
+const CHAIN_COLORS = {
+  xrpl: "#00A4E4",
+  stellar: "#7B61FF",
+  evm: "#F7931A",
 };
 
 const allItems: NavItem[] = [
@@ -103,35 +110,35 @@ const allItems: NavItem[] = [
   { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "market" },
   { title: "Flare FTSO", url: "/flare", icon: Flame, group: "market" },
 
-  { title: "Wallet & Yield", url: "/ownbank", icon: Landmark, color: "#00A4E4", group: "ownbank" },
-  { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, color: "#00A4E4", group: "ownbank" },
-  { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, color: "#00A4E4", group: "ownbank" },
-  { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, color: "#00A4E4", group: "ownbank" },
-  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, color: "#F7931A", group: "evm" },
-  { title: "Cross-Chain", url: "/ownbank/cross-chain", icon: Route, color: "#F7931A", group: "evm" },
-  { title: "XRPL Bridge", url: "/ownbank/xrpl-bridge", icon: GitCompareArrows, color: "#2563EB", group: "evm" },
-  { title: "DCA Orders", url: "/ownbank/dca", icon: Repeat, color: "#00A4E4", group: "ownbank" },
-  { title: "Send & Receive", url: "/ownbank/send", icon: Send, color: "#00A4E4", group: "ownbank" },
-  { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, color: "#00A4E4", group: "ownbank" },
-  { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, color: "#00A4E4", group: "ownbank" },
-  { title: "OwnCoin POS", url: "/ownbank/my-card", icon: QrCode, color: "#00A4E4", group: "ownbank" },
-  { title: "Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, color: "#00A4E4", group: "ownbank" },
-  { title: "Recurring Payments", url: "/ownbank/recurring", icon: CalendarClock, color: "#00A4E4", group: "ownbank" },
-  { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, color: "#00A4E4", group: "ownbank" },
-  { title: "History", url: "/ownbank/history", icon: History, color: "#00A4E4", group: "ownbank" },
-  { title: "My Referrals", url: "/ownbank/referrals", icon: Users, color: "#00A4E4", group: "ownbank" },
-  { title: "XLS-66 Lending", url: "/xls66-lending", icon: Gem, color: "#00A4E4", group: "ownbank" },
-  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, color: "#00A4E4", group: "ownbank" },
+  { title: "Dashboard", url: "/ownbank", icon: Landmark, group: "ownbank", chain: "xrpl" },
+  { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, group: "ownbank", chain: "xrpl" },
+  { title: "Wallet", url: "/stellar/wallet", icon: Wallet, group: "ownbank", chain: "stellar" },
+  { title: "Token Manager", url: "/ownbank/tokens", icon: Coins, group: "ownbank", chain: "xrpl" },
+  { title: "Token Manager", url: "/stellar/tokens", icon: Coins, group: "ownbank", chain: "stellar" },
+  { title: "DEX Trading", url: "/ownbank/dex", icon: TrendingUp, group: "ownbank", chain: "xrpl" },
+  { title: "DEX Trading", url: "/stellar/dex", icon: TrendingUp, group: "ownbank", chain: "stellar" },
+  { title: "DCA Orders", url: "/ownbank/dca", icon: Repeat, group: "ownbank", chain: "xrpl" },
+  { title: "DCA Orders", url: "/stellar/dca", icon: Repeat, group: "ownbank", chain: "stellar" },
+  { title: "Send & Receive", url: "/ownbank/send", icon: Send, group: "ownbank", chain: "xrpl" },
+  { title: "Send & Receive", url: "/stellar/send", icon: Send, group: "ownbank", chain: "stellar" },
+  { title: "Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, group: "ownbank", chain: "xrpl" },
+  { title: "Invoices", url: "/stellar/invoices", icon: InvoiceIcon, group: "ownbank", chain: "stellar" },
+  { title: "Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, group: "ownbank", chain: "xrpl" },
+  { title: "Payment Queue", url: "/stellar/payment-queue", icon: CloudUpload, group: "ownbank", chain: "stellar" },
+  { title: "Recurring Payments", url: "/ownbank/recurring", icon: CalendarClock, group: "ownbank", chain: "xrpl" },
+  { title: "Recurring Payments", url: "/stellar/recurring", icon: CalendarClock, group: "ownbank", chain: "stellar" },
+  { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, group: "ownbank", chain: "xrpl" },
+  { title: "OwnCoin POS", url: "/ownbank/my-card", icon: QrCode, group: "ownbank", chain: "xrpl" },
+  { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, group: "ownbank", chain: "xrpl" },
+  { title: "History", url: "/ownbank/history", icon: History, group: "ownbank", chain: "xrpl" },
+  { title: "My Referrals", url: "/ownbank/referrals", icon: Users, group: "ownbank", chain: "xrpl" },
+  { title: "XLS-66 Lending", url: "/xls66-lending", icon: Gem, group: "ownbank", chain: "xrpl" },
+  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, group: "ownbank", chain: "xrpl" },
+  { title: "Remittances", url: "/stellar/remittances", icon: Star, group: "ownbank", chain: "stellar" },
 
-  { title: "Wallet", url: "/stellar/wallet", icon: Wallet, color: "#7B61FF", group: "stellar" },
-  { title: "Send & Receive", url: "/stellar/send", icon: Send, color: "#7B61FF", group: "stellar" },
-  { title: "Token Manager", url: "/stellar/tokens", icon: Coins, color: "#7B61FF", group: "stellar" },
-  { title: "Invoices", url: "/stellar/invoices", icon: InvoiceIcon, color: "#7B61FF", group: "stellar" },
-  { title: "DEX Trading", url: "/stellar/dex", icon: TrendingUp, color: "#7B61FF", group: "stellar" },
-  { title: "DCA Orders", url: "/stellar/dca", icon: Repeat, color: "#7B61FF", group: "stellar" },
-  { title: "Payment Queue", url: "/stellar/payment-queue", icon: CloudUpload, color: "#7B61FF", group: "stellar" },
-  { title: "Recurring Payments", url: "/stellar/recurring", icon: CalendarClock, color: "#7B61FF", group: "stellar" },
-  { title: "Remittances", url: "/stellar/remittances", icon: Star, color: "#7B61FF", group: "stellar" },
+  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, group: "bridges" },
+  { title: "Cross-Chain", url: "/ownbank/cross-chain", icon: Route, group: "bridges" },
+  { title: "XRPL Bridge", url: "/ownbank/xrpl-bridge", icon: GitCompareArrows, group: "bridges" },
 
   { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "planning" },
   { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "planning" },
@@ -189,6 +196,24 @@ function useGroupState(defaults: Record<string, boolean>) {
   return { open, toggleGroup };
 }
 
+function useChainFilter() {
+  const { data: serverChain, save: saveChain } = useUserData<"all" | "xrpl" | "stellar">("sidebar_chain_filter", "all");
+  const [chain, setChainState] = useState<"all" | "xrpl" | "stellar">("all");
+
+  useEffect(() => {
+    if (serverChain) {
+      setChainState(serverChain);
+    }
+  }, [serverChain]);
+
+  const setChain = useCallback((c: "all" | "xrpl" | "stellar") => {
+    setChainState(c);
+    saveChain(c);
+  }, [saveChain]);
+
+  return { chain, setChain };
+}
+
 function NavItemRow({
   item,
   testPrefix,
@@ -206,6 +231,7 @@ function NavItemRow({
 }) {
   const [hovered, setHovered] = useState(false);
   const Icon = item.icon;
+  const chainColor = item.chain ? CHAIN_COLORS[item.chain] : item.color;
 
   return (
     <SidebarMenuItem>
@@ -223,9 +249,17 @@ function NavItemRow({
           <Link href={item.url}>
             <Icon
               className="h-4 w-4"
-              style={item.color ? { color: item.color } : undefined}
+              style={chainColor ? { color: chainColor } : undefined}
             />
             <span>{item.title}</span>
+            {item.chain && (
+              <span
+                className="ml-auto text-[9px] font-medium uppercase opacity-50"
+                style={{ color: CHAIN_COLORS[item.chain] }}
+              >
+                {item.chain === "xrpl" ? "XRP" : "XLM"}
+              </span>
+            )}
           </Link>
         </SidebarMenuButton>
         {showFavStar && hovered && (
@@ -251,6 +285,34 @@ function NavItemRow({
   );
 }
 
+function ChainSwitcher({ chain, setChain }: { chain: "all" | "xrpl" | "stellar"; setChain: (c: "all" | "xrpl" | "stellar") => void }) {
+  const options: { value: "all" | "xrpl" | "stellar"; label: string; color?: string }[] = [
+    { value: "all", label: "All" },
+    { value: "xrpl", label: "XRPL", color: CHAIN_COLORS.xrpl },
+    { value: "stellar", label: "Stellar", color: CHAIN_COLORS.stellar },
+  ];
+
+  return (
+    <div className="flex gap-1 px-3 py-1.5" data-testid="chain-switcher">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => setChain(opt.value)}
+          className={`flex-1 text-[10px] font-medium py-1 px-2 rounded-md transition-colors ${
+            chain === opt.value
+              ? "bg-accent text-accent-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+          }`}
+          style={chain === opt.value && opt.color ? { borderBottom: `2px solid ${opt.color}` } : undefined}
+          data-testid={`chain-switch-${opt.value}`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function AppSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
@@ -265,10 +327,11 @@ export function AppSidebar() {
     portfolio: false,
     market: false,
     ownbank: false,
-    stellar: false,
+    bridges: false,
     planning: false,
     learn: false,
   });
+  const { chain, setChain } = useChainFilter();
 
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
@@ -280,13 +343,17 @@ export function AppSidebar() {
     return "U";
   };
 
+  const filterByChain = (items: NavItem[]) => {
+    if (chain === "all") return items;
+    return items.filter((i) => !i.chain || i.chain === chain);
+  };
+
   const favoriteItems = allItems.filter((i) => favorites.includes(i.url));
   const startItems = allItems.filter((i) => i.group === "start");
   const portfolioItems = allItems.filter((i) => i.group === "portfolio");
   const marketItems = allItems.filter((i) => i.group === "market");
-  const ownbankItems = allItems.filter((i) => i.group === "ownbank");
-  const evmItems = allItems.filter((i) => i.group === "evm");
-  const stellarItems = allItems.filter((i) => i.group === "stellar");
+  const ownbankItems = filterByChain(allItems.filter((i) => i.group === "ownbank"));
+  const bridgeItems = allItems.filter((i) => i.group === "bridges");
   const planningItems = allItems.filter((i) => i.group === "planning");
   const learnItems = allItems.filter((i) => i.group === "learn");
 
@@ -371,16 +438,38 @@ export function AppSidebar() {
 
         {renderCollapsibleGroup("market", "Market & Yields", marketItems)}
 
-        {renderCollapsibleGroup(
-          "ownbank",
-          "OwnBank XRPL",
-          ownbankItems,
-          "#00A4E4",
-        )}
+        <SidebarGroup>
+          <SidebarGroupLabel
+            className="cursor-pointer select-none hover:bg-accent/30 transition-colors rounded-md"
+            onClick={() => toggleGroup("ownbank")}
+            data-testid="group-toggle-ownbank"
+          >
+            <span className="flex items-center gap-2 flex-1">
+              <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#00A4E4] to-[#7B61FF]" />
+              OwnBank
+              <Badge variant="outline" className="text-[9px] h-4 px-1 font-normal">
+                {chain === "all" ? "All" : chain === "xrpl" ? "XRPL" : "Stellar"}
+              </Badge>
+            </span>
+            {open["ownbank"] ? (
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </SidebarGroupLabel>
+          {open["ownbank"] && (
+            <>
+              <ChainSwitcher chain={chain} setChain={setChain} />
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {ownbankItems.map((item) => renderItem(item, "ownbank"))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </>
+          )}
+        </SidebarGroup>
 
-        {renderCollapsibleGroup("evm", "OwnBank EVM", evmItems, "#F7931A")}
-
-        {renderCollapsibleGroup("stellar", "OwnBank Stellar", stellarItems, "#7B61FF")}
+        {renderCollapsibleGroup("bridges", "Swap & Bridge", bridgeItems, "#F7931A")}
 
         {renderCollapsibleGroup("planning", "Planning & Tools", planningItems)}
 

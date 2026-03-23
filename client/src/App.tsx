@@ -16,6 +16,7 @@ import { ErrorBoundary, installGlobalErrorHandlers } from "@/components/error-bo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
+import { MobileTabBar } from "@/components/mobile-tab-bar";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -182,7 +183,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <ThemeToggle />
             </header>
-            <main className="flex-1 overflow-auto p-4 lg:p-6">
+            <main className="flex-1 overflow-auto p-4 lg:p-6 pb-20 md:pb-6">
               {children}
               <footer className="mt-8 pt-4 border-t text-center space-y-1" data-testid="footer-app">
                 <p className="text-xs text-muted-foreground">
@@ -201,6 +202,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         </div>
+        <MobileTabBar />
       </div>
     </SidebarProvider>
   );
