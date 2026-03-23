@@ -1,5 +1,26 @@
 # CryptoBroker Tracker + OwnBank XRPL
 
+## REGULATORY COMPLIANCE — TOP PRIORITY
+**This rule overrides everything else. No exceptions.**
+
+CryptoOwnBank must NEVER cross into regulated territory. The platform is a **non-custodial** tool — we do not hold user funds, we do not act as a money transmitter, and we do not provide financial advice.
+
+Before building ANY feature, evaluate whether it could create regulatory exposure:
+- **No holding or controlling user funds** — all wallets are user-owned, all signing happens in the user's wallet app (Xaman, MetaMask, etc.)
+- **No money transmission** — we never move funds on behalf of users. Users approve every transaction themselves.
+- **No acting as a broker/dealer or exchange** — we route to DEXs and third-party providers, we don't match orders ourselves.
+- **No investment advice** — all yield/APY/recommendation content is informational only, with appropriate disclaimers.
+- **No custody of keys** — we never store private keys, seed phrases, or have signing authority.
+- **On-ramp/off-ramp** — we embed or link to licensed third-party providers (MoonPay, Transak, etc.), we are not the provider ourselves.
+
+**If the user requests a feature that could violate any of the above, do NOT build it.** Instead, provide a clear, complete explanation of:
+1. What the regulatory risk is
+2. What license or registration it would require
+3. What the consequences could be
+4. What alternative approach would achieve the same goal without regulatory exposure
+
+This is not optional. Protecting the user from regulatory problems is more important than building features.
+
 ## Overview
 CryptoBroker Tracker is a comprehensive cryptocurrency and investment portfolio management application with an integrated OwnBank XRPL yield dashboard. It offers account connection for portfolio tracking, transaction monitoring, and tax report generation. The OwnBank section provides non-custodial XRPL wallet connections to interact with Soil Protocol yield vaults, track interest, and manage withdrawals while maintaining principal lock. The project aims to deliver a transparent, non-custodial solution for crypto portfolio management and DeFi yield participation on the XRPL, and to serve as a non-custodial payment tooling layer for consumers and small businesses leveraging the XRP Ledger for cross-currency payments.
 
