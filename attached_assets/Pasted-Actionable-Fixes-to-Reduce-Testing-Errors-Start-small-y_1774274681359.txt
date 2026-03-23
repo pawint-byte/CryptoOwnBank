@@ -1,0 +1,60 @@
+Actionable Fixes to Reduce Testing Errors
+Start small — you don't need 100% coverage overnight. Focus on high-pain areas first (e.g., wallet connect, yield fetches, tax calculations, portfolio sync).
+
+Add Basic Unit Tests (Quickest Win)
+Use Vitest (fast, modern, Vite-compatible) since your frontend is Vite-based.
+Install: npm install -D vitest @vitest/ui jsdom (in client/)
+Add to client/vite.config.ts:TypeScript/// <reference types="vitest" />
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+  },
+})
+Create client/src/setupTests.ts for common mocks (e.g., fetch, console).
+Test example (for a hook like usePortfolio or yield fetch):TypeScript// client/src/hooks/useYieldVaults.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { useYieldVaults } from './useYieldVaults';  // your hook
+
+vi.mock('xrpl', () => ({ /* mock xrpl client */ }));
+
+describe('useYieldVaults', () => {
+  it('fetches vaults successfully', async () => {
+    // Mock successful API response
+    global.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([{ apr: 5.2 }]) })) as any;
+    const { result } = renderHook(() => useYieldVaults());
+    // Wait for query to resolve + assert
+    expect(result.current.data?.[0].apr).toBe(5.2);
+  });
+
+  it('handles rate limit error', async () => {
+    global.fetch = vi.fn(() => Promise.reject(new Error('429'))) as any;
+    // ... assert error state or toast shown
+  });
+});
+→ Run with npx vitest or add script "test": "vitest". This catches logic bugs before manual runs.
+Mock External Services (Biggest Error Reducer)
+Use msw (Mock Service Worker) for API mocking in tests + dev:
+npm install msw → set up handlers for CoinGecko, xrpl endpoints, etc.
+For XRPL/Xaman: Mock xrpl.Client and xaman payloads (e.g., return fake signed tx).
+For DB: Use an in-memory SQLite via Drizzle in tests, or mock queries with vi.spyOn(db, 'select').
+
+Add Integration / E2E Tests Selectively
+Playwright (great for wallet flows):
+npm install -D @playwright/test
+Test wallet connect flow without real wallet: mock window.ethereum or Xaman SDK.
+Focus on 3-5 critical paths: login → connect wallet → fetch portfolio → submit yield deposit → check tax report.
+
+Improve Dev Debugging Setup
+Use better error logging: In Express, add morgan + custom error handler that logs full stack + request body.
+Frontend: Add React Error Boundary + console.group for XRPL calls.
+Use local overrides: .env.local with mock API keys, proxy price feeds to local JSON files during dev.
+Replit → consider local dev with Docker Compose (Postgres + backend + frontend) for more stable testing.
+
+Quick Checklist for Your Next Feature Test
+Before testing manually: Run npm test (once added).
+Mock externals first.
+Test happy path + 2-3 errors (timeout, 401, invalid data).
+If error occurs → reproduce in isolation (e.g., curl the backend route, or isolated hook test).
