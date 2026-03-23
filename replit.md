@@ -119,8 +119,12 @@ Preferred communication style: Simple, everyday language.
 
 #### Waiting on External
 - [ ] **Onramper widget integration** — API key requested (email sent). Once received, integrate into Buy Crypto page to replace direct provider links with embedded aggregator widget. User approved this integration.
-- [ ] **MoonPay partner account** — Needed to embed MoonPay on-ramp widget directly instead of linking out. Separate from Onramper.
+- [ ] **MoonPay partner application** — Application submitted, waiting for approval. Once approved, can embed MoonPay on-ramp widget directly instead of linking out.
+- [ ] **Transak partner application** — Application submitted, waiting for approval. Once approved, can embed Transak on-ramp widget directly.
 - [ ] **FRED API key** — Needed for live S&P/Case-Shiller housing data in Real Estate Tracker. Currently using fallback appreciation rates.
+- [ ] **Stellar funding application** — Submitted application to the Stellar Development Foundation for a grant to help drive and build out the site. Waiting for response.
+- [ ] **Ripple grant application** — Ripple opens new grant applications in Spring 2026. Plan to submit once applications open. Watch for announcement.
+- [ ] **XLS-65/66 XRPL Lending (Validators)** — XLS-66 lending protocol is built and ready. Waiting for XRPL validator upgrade count to reach 80% before the amendment activates. Once live, we can enable XRP lending on the platform. Monitor validator count at the XRPL amendment tracker.
 
 #### Data Cleanup (User Action Required)
 - [ ] **40 manual wallet balances still inflated** — Coinbase, Uphold, Crypto.com balances are original manual entries, not lot sums. User will fix manually.
