@@ -131,6 +131,7 @@ Preferred communication style: Simple, everyday language.
 - [ ] **Stellar funding application** — Submitted application to the Stellar Development Foundation for a grant to help drive and build out the site. Waiting for response.
 - [ ] **Ripple grant application** — Ripple opens new grant applications in Spring 2026. Plan to submit once applications open. Watch for announcement.
 - [ ] **XLS-65/66 XRPL Lending (Validators)** — XLS-66 lending protocol is built and ready. Waiting for XRPL validator upgrade count to reach 80% before the amendment activates. Once live, we can enable XRP lending on the platform. Monitor validator count at the XRPL amendment tracker.
+- [ ] **Ramp Network** — Evaluate whether to add as an on-ramp provider on the Buy Crypto page. Not currently integrated. Status unknown — may have been discussed in a prior session but no record exists.
 
 #### Data Cleanup (User Action Required)
 - [ ] **40 manual wallet balances still inflated** — Coinbase, Uphold, Crypto.com balances are original manual entries, not lot sums. User will fix manually.
