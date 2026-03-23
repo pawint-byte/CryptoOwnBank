@@ -1853,6 +1853,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         quantity: number;
         commission: number;
         comment: string;
+        exchange: string;
       }
 
       const csvLots: CsvLot[] = [];
@@ -1865,8 +1866,24 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         const qty = parseFloat(parts[11] || "0");
         const comm = parseFloat(parts[12] || "0");
         const comment = (parts[15] || "").trim();
+        const commentLower = comment.toLowerCase().trim();
+        let exchange = "";
+        if (commentLower.includes("coinbase") || commentLower === "cb wallet") exchange = "coinbase";
+        else if (commentLower.includes("uphold") || commentLower === "uohold") exchange = "uphold";
+        else if (commentLower.includes("crypto.com") || commentLower === "cro" || commentLower.includes("crypto earn")) exchange = "crypto.com";
+        else if (commentLower.includes("ledger")) exchange = "ledger";
+        else if (commentLower.includes("ellipal")) exchange = "ellipal";
+        else if (commentLower.includes("safepal")) exchange = "safepal";
+        else if (commentLower.includes("cypherock")) exchange = "cypherock";
+        else if (commentLower.includes("robinhood")) exchange = "robinhood";
+        else if (commentLower.includes("webull")) exchange = "webull";
+        else if (commentLower.includes("ally")) exchange = "ally";
+        else if (commentLower.includes("schwab")) exchange = "schwab";
+        else if (commentLower.includes("e*trade")) exchange = "e*trade";
+        else if (commentLower.includes("stash")) exchange = "stash";
+        else if (commentLower.includes("greenlight")) exchange = "greenlight";
         if (sym && qty > 0) {
-          csvLots.push({ symbol: sym, tradeDate: td, purchasePrice: pp, quantity: qty, commission: comm, comment });
+          csvLots.push({ symbol: sym, tradeDate: td, purchasePrice: pp, quantity: qty, commission: comm, comment, exchange });
         }
       }
 
@@ -1880,116 +1897,126 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const userWallets = await storage.getWalletsByUser(userId);
       const walletMap = new Map(userWallets.map(w => [w.id, w]));
 
+      const wbBySymbol: Record<string, typeof allWalletBalances> = {};
+      for (const wb of allWalletBalances) {
+        const sym = wb.assetSymbol.replace(" (staked)", "");
+        if (!wbBySymbol[sym]) wbBySymbol[sym] = [];
+        wbBySymbol[sym].push(wb);
+      }
+
       const results: any[] = [];
       let totalLotsCreated = 0;
       let totalAssetsMatched = 0;
+      const processedWbIds = new Set<string>();
 
-      for (const wb of allWalletBalances) {
-        const sym = wb.assetSymbol.replace(" (staked)", "");
-        const lots = csvBySymbol[sym];
-        if (!lots || lots.length === 0) continue;
+      for (const [sym, lots] of Object.entries(csvBySymbol)) {
+        const walletBalances = wbBySymbol[sym];
+        if (!walletBalances || walletBalances.length === 0) continue;
 
-        const existingLots = await storage.getTaxLotsByWalletBalance(userId, wb.id);
-        if (existingLots.length > 0) {
+        for (const wb of walletBalances) {
+          if (processedWbIds.has(wb.id)) continue;
+          const wallet = walletMap.get(wb.walletId);
+          const walletLabel = (wallet?.label || "").toUpperCase();
+
+          const existingYahooCsvLots = await storage.getTaxLotsByWalletBalance(userId, wb.id);
+          const hasYahooCsvLots = existingYahooCsvLots.some(l => l.note && l.note.startsWith("Yahoo CSV"));
+          if (hasYahooCsvLots) {
+            results.push({
+              symbol: sym,
+              walletBalance: wb.id,
+              wallet: wallet?.label || "Unknown",
+              status: "skipped",
+              reason: `Already has Yahoo CSV lots`,
+            });
+            processedWbIds.add(wb.id);
+            continue;
+          }
+
+          const matchingLots = lots.filter(l => {
+            if (!l.exchange) {
+              if (walletBalances.length === 1) return true;
+              return false;
+            }
+            const ex = l.exchange.toUpperCase();
+            if (ex === "CRYPTO.COM" && (walletLabel.includes("CRYPTO") || walletLabel.includes("CRO"))) return true;
+            if (ex === "COINBASE" && (walletLabel.includes("COINBASE") || walletLabel.includes("CB"))) return true;
+            if (walletLabel.includes(ex)) return true;
+            return false;
+          });
+
+          if (matchingLots.length === 0) {
+            results.push({
+              symbol: sym,
+              walletBalance: wb.id,
+              wallet: wallet?.label || "Unknown",
+              status: "skipped",
+              reason: "No CSV lots matched this wallet",
+            });
+            processedWbIds.add(wb.id);
+            continue;
+          }
+
+          matchingLots.sort((a, b) => (a.tradeDate || "0").localeCompare(b.tradeDate || "0"));
+
+          let lotsCreated = 0;
+          let totalCost = 0;
+          let totalQty = 0;
+
+          for (const lot of matchingLots) {
+            const dateStr = lot.tradeDate;
+            let acquiredDate: Date;
+            if (dateStr && dateStr.length === 8) {
+              const y = dateStr.slice(0, 4);
+              const m = dateStr.slice(4, 6);
+              const d = dateStr.slice(6, 8);
+              acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
+            } else {
+              acquiredDate = new Date();
+            }
+
+            const notePrefix = lot.purchasePrice === 0 ? "Yahoo CSV (free/airdrop)" : "Yahoo CSV";
+            const noteText = lot.comment ? `${notePrefix}: ${lot.comment}` : `${notePrefix} import`;
+
+            await storage.createTaxLot({
+              userId,
+              walletBalanceId: wb.id,
+              assetSymbol: sym,
+              acquiredDate,
+              originalQuantity: lot.quantity.toString(),
+              remainingQuantity: lot.quantity.toString(),
+              costBasisPerUnit: lot.purchasePrice.toString(),
+              note: noteText,
+            });
+
+            totalCost += lot.quantity * lot.purchasePrice;
+            totalQty += lot.quantity;
+            lotsCreated++;
+          }
+
+          if (totalQty > 0) {
+            const existingAllLots = await storage.getTaxLotsByWalletBalance(userId, wb.id);
+            const allTotalQty = existingAllLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+            const allTotalCost = existingAllLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+            const avgCost = allTotalQty > 0 ? allTotalCost / allTotalQty : 0;
+            await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), allTotalCost.toFixed(2));
+          }
+
           results.push({
             symbol: sym,
             walletBalance: wb.id,
-            wallet: walletMap.get(wb.walletId)?.label || "Unknown",
-            status: "skipped",
-            reason: `Already has ${existingLots.length} purchase lots`,
-          });
-          continue;
-        }
-
-        const walletBalance = parseFloat(wb.balance);
-        const lotsWithPrice = lots.filter(l => l.purchasePrice > 0);
-
-        lotsWithPrice.sort((a, b) => {
-          const da = a.tradeDate || "0";
-          const db = b.tradeDate || "0";
-          return da.localeCompare(db);
-        });
-
-        let lotsCreated = 0;
-        let totalCost = 0;
-        let totalQty = 0;
-
-        for (const lot of lotsWithPrice) {
-          const dateStr = lot.tradeDate;
-          let acquiredDate: Date;
-          if (dateStr && dateStr.length === 8) {
-            const y = dateStr.slice(0, 4);
-            const m = dateStr.slice(4, 6);
-            const d = dateStr.slice(6, 8);
-            acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
-          } else {
-            acquiredDate = new Date();
-          }
-
-          await storage.createTaxLot({
-            userId,
-            walletBalanceId: wb.id,
-            assetSymbol: sym,
-            acquiredDate,
-            originalQuantity: lot.quantity.toString(),
-            remainingQuantity: lot.quantity.toString(),
-            costBasisPerUnit: lot.purchasePrice.toString(),
-            note: lot.comment ? `Yahoo CSV: ${lot.comment}` : "Yahoo CSV import",
+            wallet: wallet?.label || "Unknown",
+            chain: wallet?.chain || "unknown",
+            status: "reconciled",
+            lotsCreated,
+            totalCost: totalCost.toFixed(2),
+            avgCost: totalQty > 0 ? (totalCost / totalQty).toFixed(6) : "0",
+            csvQuantity: totalQty.toFixed(2),
           });
 
-          totalCost += lot.quantity * lot.purchasePrice;
-          totalQty += lot.quantity;
-          lotsCreated++;
+          totalLotsCreated += lotsCreated;
+          totalAssetsMatched++;
+          processedWbIds.add(wb.id);
         }
-
-        for (const lot of lots.filter(l => l.purchasePrice === 0)) {
-          const dateStr = lot.tradeDate;
-          let acquiredDate: Date;
-          if (dateStr && dateStr.length === 8) {
-            const y = dateStr.slice(0, 4);
-            const m = dateStr.slice(4, 6);
-            const d = dateStr.slice(6, 8);
-            acquiredDate = new Date(`${y}-${m}-${d}T00:00:00Z`);
-          } else {
-            acquiredDate = new Date();
-          }
-
-          await storage.createTaxLot({
-            userId,
-            walletBalanceId: wb.id,
-            assetSymbol: sym,
-            acquiredDate,
-            originalQuantity: lot.quantity.toString(),
-            remainingQuantity: lot.quantity.toString(),
-            costBasisPerUnit: "0",
-            note: lot.comment ? `Yahoo CSV (free/airdrop): ${lot.comment}` : "Yahoo CSV (free/airdrop)",
-          });
-
-          totalQty += lot.quantity;
-          lotsCreated++;
-        }
-
-        if (totalQty > 0) {
-          const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
-          await storage.updateWalletBalanceCostData(wb.id, avgCost.toFixed(8), totalCost.toFixed(2));
-        }
-
-        const wallet = walletMap.get(wb.walletId);
-        results.push({
-          symbol: sym,
-          walletBalance: wb.id,
-          wallet: wallet?.label || "Unknown",
-          chain: wallet?.chain || "unknown",
-          status: "reconciled",
-          lotsCreated,
-          totalCost: totalCost.toFixed(2),
-          avgCost: totalQty > 0 ? (totalCost / totalQty).toFixed(6) : "0",
-          csvQuantity: totalQty.toFixed(2),
-          walletQuantity: walletBalance.toFixed(2),
-        });
-
-        totalLotsCreated += lotsCreated;
-        totalAssetsMatched++;
       }
 
       const csvOnlySymbols = Object.keys(csvBySymbol).filter(
