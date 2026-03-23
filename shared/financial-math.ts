@@ -179,6 +179,93 @@ export function calculatePortfolioValue(
   return { totalValue: round2(totalValue), totalCostBasis: round2(totalCostBasis), totalGainLoss, totalGainLossPercent, allocation };
 }
 
+export interface HarvestOpportunity {
+  assetSymbol: string;
+  currentPrice: number;
+  quantity: number;
+  totalCostBasis: number;
+  currentValue: number;
+  unrealizedLoss: number;
+  estTaxSavings24: number;
+  estTaxSavings32: number;
+  estTaxSavings37: number;
+  suggestedSwap?: { symbol: string; reason: string };
+  holdingPeriod: "short" | "long" | "mixed";
+}
+
+const SWAP_SUGGESTIONS: Record<string, { symbol: string; reason: string }> = {
+  XRP: { symbol: "XLM", reason: "Both are payment-focused L1 networks" },
+  XLM: { symbol: "XRP", reason: "Both are payment-focused L1 networks" },
+  ETH: { symbol: "SOL", reason: "Both are smart contract platforms" },
+  SOL: { symbol: "ETH", reason: "Both are smart contract platforms" },
+  BTC: { symbol: "ETH", reason: "Alternative large-cap digital asset" },
+  RLUSD: { symbol: "USDC", reason: "Both are USD-backed stablecoins" },
+  USDC: { symbol: "RLUSD", reason: "Both are USD-backed stablecoins" },
+  USDT: { symbol: "USDC", reason: "Both are USD-backed stablecoins" },
+  ADA: { symbol: "DOT", reason: "Both are proof-of-stake L1 networks" },
+  DOT: { symbol: "ADA", reason: "Both are proof-of-stake L1 networks" },
+  AVAX: { symbol: "MATIC", reason: "Both are EVM-compatible L1/L2 networks" },
+  MATIC: { symbol: "AVAX", reason: "Both are EVM-compatible L1/L2 networks" },
+  LINK: { symbol: "BAND", reason: "Both are oracle networks" },
+  FLR: { symbol: "SGB", reason: "Both are Flare ecosystem tokens" },
+  SGB: { symbol: "FLR", reason: "Both are Flare ecosystem tokens" },
+  DOGE: { symbol: "SHIB", reason: "Both are meme/community tokens" },
+  SHIB: { symbol: "DOGE", reason: "Both are meme/community tokens" },
+};
+
+export function scanForHarvestOpportunities(
+  positions: { assetSymbol: string; quantity: string; totalCostBasis: string; isAddressed?: boolean }[],
+  priceLookup: Record<string, number>,
+  lots?: { assetSymbol: string; acquiredDate: string; remainingQuantity: string }[]
+): HarvestOpportunity[] {
+  const opportunities: HarvestOpportunity[] = [];
+
+  for (const pos of positions) {
+    if (pos.isAddressed) continue;
+    const qty = parseFloat(pos.quantity) || 0;
+    if (qty <= 0) continue;
+
+    const price = priceLookup[pos.assetSymbol.toUpperCase()] || 0;
+    if (price <= 0) continue;
+
+    const costBasis = parseFloat(pos.totalCostBasis) || 0;
+    if (costBasis <= 0) continue;
+
+    const currentValue = round2(qty * price);
+    if (currentValue >= costBasis) continue;
+
+    const loss = round2(costBasis - currentValue);
+
+    let holdingPeriod: "short" | "long" | "mixed" = "short";
+    if (lots) {
+      const assetLots = lots.filter(l => l.assetSymbol.toUpperCase() === pos.assetSymbol.toUpperCase() && parseFloat(l.remainingQuantity) > 0);
+      if (assetLots.length > 0) {
+        const oneYear = 365 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        const hasShort = assetLots.some(l => (now - new Date(l.acquiredDate).getTime()) < oneYear);
+        const hasLong = assetLots.some(l => (now - new Date(l.acquiredDate).getTime()) >= oneYear);
+        holdingPeriod = hasShort && hasLong ? "mixed" : hasLong ? "long" : "short";
+      }
+    }
+
+    opportunities.push({
+      assetSymbol: pos.assetSymbol.toUpperCase(),
+      currentPrice: price,
+      quantity: qty,
+      totalCostBasis: costBasis,
+      currentValue,
+      unrealizedLoss: loss,
+      estTaxSavings24: round2(loss * 0.24),
+      estTaxSavings32: round2(loss * 0.32),
+      estTaxSavings37: round2(loss * 0.37),
+      suggestedSwap: SWAP_SUGGESTIONS[pos.assetSymbol.toUpperCase()],
+      holdingPeriod,
+    });
+  }
+
+  return opportunities.sort((a, b) => b.unrealizedLoss - a.unrealizedLoss);
+}
+
 export function calculateGainLossPercent(currentValue: number, costBasis: number): number {
   if (costBasis <= 0) return 0;
   return round2(((currentValue - costBasis) / costBasis) * 100);

@@ -6,6 +6,7 @@ import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./repli
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
+import { scanForHarvestOpportunities } from "@shared/financial-math";
 import multer from "multer";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -3851,6 +3852,38 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     } catch (error) {
       console.error("Export tax report error:", error);
       res.status(500).json({ message: "Failed to export tax report" });
+    }
+  });
+
+  app.get("/api/tax/harvest-scan", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "free") {
+        return res.status(403).json({ message: "Tax Harvest AI requires a Premium or Pro subscription." });
+      }
+
+      const positionsData = await storage.getPositionsByUser(userId);
+      const allAssets = await storage.getAllAssets();
+      const priceLookup: Record<string, number> = {};
+      for (const asset of allAssets) {
+        if (asset.currentPrice) {
+          priceLookup[asset.symbol.toUpperCase()] = parseFloat(asset.currentPrice);
+        }
+      }
+
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const lotsForScan = allLots.map(l => ({
+        assetSymbol: l.assetSymbol,
+        acquiredDate: l.acquiredDate instanceof Date ? l.acquiredDate.toISOString() : String(l.acquiredDate),
+        remainingQuantity: l.remainingQuantity,
+      }));
+
+      const opportunities = scanForHarvestOpportunities(positionsData, priceLookup, lotsForScan);
+      res.json(opportunities);
+    } catch (error) {
+      console.error("Harvest scan error:", error);
+      res.status(500).json({ message: "Failed to scan for harvest opportunities" });
     }
   });
 

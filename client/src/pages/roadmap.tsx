@@ -246,9 +246,9 @@ const roadmapItems: RoadmapItem[] = [
     icon: Eye,
   },
   {
-    phase: "horizon",
-    title: "Automated Tax-Loss Harvesting",
-    description: "One-click suggestions to realize losses and optimize your tax position. Scans your portfolio for unrealized losses, surfaces harvest opportunities with estimated tax savings, and offers two paths: rebuy immediately under current IRS rules, or swap into a similar asset for a conservative approach. You review and execute every trade yourself. Rules can change — always consult a tax professional.",
+    phase: "live",
+    title: "Tax Harvest AI",
+    description: "Scan your portfolio for unrealized losses and see estimated tax savings at your bracket (24%, 32%, or 37%). Two paths: sell and rebuy the same asset immediately under current IRS rules, or swap into a similar asset for a conservative approach. You review and execute every trade yourself. Available on the Tax Reports page for Premium and Pro members.",
     category: "Tax",
     icon: FileText,
   },

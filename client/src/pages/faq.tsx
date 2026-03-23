@@ -366,6 +366,10 @@ const faqGroups = [
         a: "Tax season comes once a year, so the annual plan makes the most sense for tax reporting. At $199/yr (vs $348 if you paid monthly), you save $149 and get full access to capital gains calculations, IRS Form 8949 data, PDF and TurboTax exports, and income tracking for staking and yield — all year round.",
       },
       {
+        q: "What is Tax Harvest AI?",
+        a: "Tax Harvest AI scans your portfolio for positions sitting at an unrealized loss and calculates the estimated tax savings if you were to sell them. It shows savings at three tax brackets (24%, 32%, 37%) and offers two approaches: sell and rebuy the same asset immediately (currently allowed under IRS rules — crypto is classified as property, not securities, so the wash-sale rule does not apply as of 2026), or swap to a similar-but-not-identical asset for a more conservative approach. You always execute the trade yourself — we never trade on your behalf. Tax Harvest AI is available to Premium and Pro members. This is an informational tool, not tax advice — always consult a CPA.",
+      },
+      {
         q: "How does the referral program work?",
         a: "Share your unique referral link with friends. When they sign up and deposit RLUSD, you earn bonus SEED points through Soil Protocol, which can boost your yields over time. If a referred friend upgrades to Premium, you get one free month of Premium.",
       },

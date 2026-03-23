@@ -32,12 +32,20 @@ import {
   TrendingDown,
   Crown,
   Lock,
-  Info
+  Info,
+  Sparkles,
+  ArrowRight,
+  AlertTriangle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import type { GainEvent, UserSettings } from "@shared/schema";
+import type { HarvestOpportunity } from "@shared/financial-math";
 
 interface SubscriptionLimits {
   tier: string;
@@ -143,6 +151,14 @@ export default function TaxReports() {
   };
 
   const isPremium = settings?.subscriptionTier === "premium" || settings?.subscriptionTier === "pro" || settings?.subscriptionTier === "premium_annual";
+
+  const [harvestExpanded, setHarvestExpanded] = useState(false);
+  const [selectedBracket, setSelectedBracket] = useState<"24" | "32" | "37">("32");
+
+  const { data: harvestData, isLoading: harvestLoading, refetch: refetchHarvest } = useQuery<HarvestOpportunity[]>({
+    queryKey: ["/api/tax/harvest-scan"],
+    enabled: !taxReportsLocked && harvestExpanded,
+  });
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -401,6 +417,204 @@ export default function TaxReports() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                Tax Harvest AI
+              </CardTitle>
+              <Badge variant="secondary" className="text-[10px]">
+                <Crown className="h-3 w-3 mr-0.5" />
+                Premium
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setHarvestExpanded(!harvestExpanded)}
+              data-testid="button-toggle-harvest"
+            >
+              {harvestExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </div>
+          <CardDescription>
+            Scan your portfolio for unrealized losses and find tax-saving opportunities
+          </CardDescription>
+        </CardHeader>
+        {harvestExpanded && (
+          <CardContent className="space-y-4">
+            {taxReportsLocked ? (
+              <UpgradePrompt feature="Tax Harvest AI requires a Premium or Pro subscription to scan your portfolio for tax-loss harvesting opportunities." variant={upgradeVariant} />
+            ) : harvestLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16" />
+                ))}
+              </div>
+            ) : !harvestData || harvestData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="h-14 w-14 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mb-3">
+                  <TrendingUp className="h-7 w-7 text-emerald-500" />
+                </div>
+                <h3 className="text-base font-medium" data-testid="text-no-harvest">No harvest opportunities found</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                  All your positions are currently at a gain or break-even. Check back when market conditions change.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="text-sm font-medium">Tax bracket:</span>
+                  {(["24", "32", "37"] as const).map((bracket) => (
+                    <Button
+                      key={bracket}
+                      variant={selectedBracket === bracket ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 px-3 text-xs"
+                      onClick={() => setSelectedBracket(bracket)}
+                      data-testid={`button-bracket-${bracket}`}
+                    >
+                      {bracket}%
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      As of 2026, IRS wash-sale rules do not apply to spot crypto. You can sell at a loss and rebuy the same asset immediately. However, legislation is pending and rules may change. This is not tax advice — consult a CPA.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="p-3 rounded-lg border bg-card">
+                    <div className="text-xs text-muted-foreground">Opportunities Found</div>
+                    <div className="text-xl font-bold mt-1" data-testid="text-harvest-count">{harvestData.length}</div>
+                  </div>
+                  <div className="p-3 rounded-lg border bg-card">
+                    <div className="text-xs text-muted-foreground">Total Unrealized Losses</div>
+                    <div className="text-xl font-bold text-destructive mt-1" data-testid="text-harvest-total-loss">
+                      {formatCurrency(harvestData.reduce((sum, h) => sum + h.unrealizedLoss, 0))}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border bg-card sm:col-span-2 lg:col-span-1">
+                    <div className="text-xs text-muted-foreground">Est. Tax Savings ({selectedBracket}%)</div>
+                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" data-testid="text-harvest-total-savings">
+                      {formatCurrency(harvestData.reduce((sum, h) => {
+                        const key = `estTaxSavings${selectedBracket}` as keyof HarvestOpportunity;
+                        return sum + (h[key] as number);
+                      }, 0))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Asset</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Quantity</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">Cost Basis</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">Current Value</TableHead>
+                        <TableHead className="text-right">Unrealized Loss</TableHead>
+                        <TableHead className="text-right">Est. Savings</TableHead>
+                        <TableHead className="hidden lg:table-cell">Suggested Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {harvestData.map((opp) => {
+                        const savings = opp[`estTaxSavings${selectedBracket}` as keyof HarvestOpportunity] as number;
+                        return (
+                          <TableRow key={opp.assetSymbol} data-testid={`row-harvest-${opp.assetSymbol}`}>
+                            <TableCell>
+                              <div className="font-medium">{opp.assetSymbol}</div>
+                              <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {opp.holdingPeriod === "long" ? "Long-term" : opp.holdingPeriod === "mixed" ? "Mixed" : "Short-term"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm hidden sm:table-cell">
+                              {opp.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm hidden md:table-cell">
+                              {formatCurrency(opp.totalCostBasis)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm hidden md:table-cell">
+                              {formatCurrency(opp.currentValue)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-mono text-sm font-medium text-destructive">
+                                -{formatCurrency(opp.unrealizedLoss)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                +{formatCurrency(savings)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <TooltipProvider>
+                                <div className="space-y-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="text-xs cursor-help">
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sell & Rebuy</span>
+                                        <span className="text-muted-foreground"> (same asset)</span>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" className="max-w-[250px]">
+                                      <p className="text-xs">Sell to realize the loss, then rebuy immediately. Currently allowed under IRS rules for crypto (no wash-sale rule).</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  {opp.suggestedSwap && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="text-xs cursor-help flex items-center gap-1">
+                                          <span className="text-muted-foreground">or swap to</span>
+                                          <span className="font-medium">{opp.suggestedSwap.symbol}</span>
+                                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="left" className="max-w-[250px]">
+                                        <p className="text-xs">{opp.suggestedSwap.reason}. Conservative approach if wash-sale rules change.</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              </TooltipProvider>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchHarvest()}
+                    data-testid="button-refresh-harvest"
+                  >
+                    <Calculator className="h-4 w-4 mr-2" />
+                    Refresh Scan
+                  </Button>
+                </div>
+
+                <p className="text-[10px] text-muted-foreground/60 leading-relaxed italic">
+                  Tax-Loss Harvesting is an informational tool only. We do not execute trades, provide tax advice, or guarantee results. Crypto wash-sale rules currently do not apply in the US, but tax laws change. Always consult a qualified CPA. Calculations are estimates based on current prices.
+                </p>
+              </>
+            )}
+          </CardContent>
+        )}
+      </Card>
 
       {!taxReportsLocked && (
       <Card>

@@ -222,9 +222,9 @@ const features = [
   },
   {
     icon: FileText,
-    title: "Tax Reports (FIFO/LIFO)",
+    title: "Tax Reports & Harvest AI",
     description:
-      "Auto-calculate capital gains across all your holdings. Export IRS-ready CSV, PDF, or TurboTax-compatible reports with one click.",
+      "Auto-calculate capital gains, export IRS-ready reports (CSV, PDF, TurboTax), and use Tax Harvest AI to scan for unrealized losses with estimated tax savings at your bracket.",
     link: "/tax-reports",
     linkLabel: "View Tax Reports",
   },
@@ -561,6 +561,7 @@ const premiumFeatures = [
 
 const annualBonusFeatures = [
   "Complete tax reports (CSV + PDF + TurboTax)",
+  "Tax Harvest AI — scan for loss harvesting opportunities",
   "Capital gains & losses calculation",
   "IRS Form 8949 / Schedule D guidance",
   "Save $149/yr vs monthly billing",
