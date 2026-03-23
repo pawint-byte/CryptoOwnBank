@@ -25,6 +25,7 @@ import {
   FileText,
   Bell,
   Eye,
+  Bot,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -243,6 +244,13 @@ const roadmapItems: RoadmapItem[] = [
     description: "As decentralized identity standards mature, your on-chain history could unlock better rates, higher limits, and trusted counterparty status — all without KYC paperwork. Your wallet becomes your credit score.",
     category: "Identity",
     icon: Eye,
+  },
+  {
+    phase: "horizon",
+    title: "AI-Powered Portfolio Assistant",
+    description: "An on-platform AI assistant that can suggest portfolio rebalancing, flag tax-loss harvesting opportunities, set up DCA schedules, and surface yield strategies — all within our non-custodial framework. You always approve and sign every transaction yourself. Powered by emerging standards like MCP (Model Context Protocol) and hardware wallet signing, so the AI proposes and you decide.",
+    category: "Intelligence",
+    icon: Bot,
   },
   {
     phase: "horizon",

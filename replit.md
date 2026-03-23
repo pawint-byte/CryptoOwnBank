@@ -166,6 +166,9 @@ Preferred communication style: Simple, everyday language.
 - [ ] **40 manual wallet balances still inflated** — Coinbase, Uphold, Crypto.com balances are original manual entries, not lot sums. User will fix manually.
 - [ ] **1,406 original Yahoo import transactions** still in production DB — positions and CSV lots were cleaned up (158 positions deleted, 419 lots deleted), but raw transactions remain.
 
+#### Future Exploration
+- [ ] **AI-Powered Portfolio Assistant** — Added to public roadmap (Horizon). Non-custodial AI that suggests rebalancing, tax-loss harvesting, DCA, yield strategies. User signs everything. Explore MoonPay Agents CLI/MCP integration when on-ramp application is approved. Watch x402 protocol for B2B machine-to-machine payments. Industry trend: Coinbase, Stripe, deBridge all building AI agent infrastructure.
+
 #### Known Limitations
 - [ ] **XDC on MetaMask iOS** — Cannot fetch Chain ID from tested RPCs. Desktop works fine. No fix available yet.
 - [x] **SQUID_INTEGRATOR_ID** — Verified: env var is set. XRPL Bridge (Squid Router/Axelar) is configured.
