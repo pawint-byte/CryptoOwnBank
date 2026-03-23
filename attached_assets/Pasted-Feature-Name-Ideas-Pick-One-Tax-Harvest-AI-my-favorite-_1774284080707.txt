@@ -1,0 +1,103 @@
+Feature Name Ideas (Pick One)
+
+Tax Harvest AI (my favorite — short, modern, Premium/Pro feel)
+Loss Harvest Scanner
+Smart Harvest Opportunities
+Tax Optimizer
+
+Full Feature Spec (What Members Will See)
+
+One-Click Scan Button on the Tax Reports page (and a widget on Dashboard/Portfolio).
+Harvest Opportunities Table:
+Asset | Current Quantity | Unrealized Loss | Est. Tax Savings (at 24%/32%/37% brackets)
+Sortable by savings amount
+
+Recommended Action for each row:
+“Sell & Rebuy Same Asset” (leveraging the current loophole)
+“Swap to Similar Asset” (avoids any future wash-sale risk)
+
+One-Click Execute → Opens your existing XRPL/Stellar DEX trade modal with pre-filled sell/buy orders (user signs via Xaman/WalletConnect).
+After Execution → Auto-updates lots in your DB and logs the harvest for next tax report.
+
+Technical Implementation Plan (Uses 100% of Your Existing Code)
+Your shared/financial-math.ts and tests/financial-math.test.ts already do 80% of the heavy lifting.
+1. New Functions to Add to shared/financial-math.ts
+TypeScriptexport interface HarvestOpportunity {
+  assetSymbol: string;
+  currentPrice: number;
+  quantity: number;
+  totalCostBasis: number;
+  currentValue: number;
+  unrealizedLoss: number;
+  estTaxSavings: number; // at user's chosen bracket
+  suggestedSwap?: { symbol: string; reason: string };
+}
+
+export function scanForHarvestOpportunities(
+  positions: PortfolioPosition[],           // from your storage/portfolio query
+  priceLookup: Record<string, number>,
+  taxBracket: number = 0.32                  // default 32% — let user select
+): HarvestOpportunity[] {
+  return positions
+    .filter(pos => {
+      const qty = parseFloat(pos.quantity);
+      const value = qty * (priceLookup[pos.assetSymbol] || 0);
+      return value < parseFloat(pos.totalCostBasis); // only losses
+    })
+    .map(pos => {
+      const qty = parseFloat(pos.quantity);
+      const cost = parseFloat(pos.totalCostBasis);
+      const value = qty * (priceLookup[pos.assetSymbol] || 0);
+      const loss = cost - value;
+
+      return {
+        assetSymbol: pos.assetSymbol,
+        currentPrice: priceLookup[pos.assetSymbol] || 0,
+        quantity: qty,
+        totalCostBasis: cost,
+        currentValue: value,
+        unrealizedLoss: loss,
+        estTaxSavings: loss * taxBracket,
+        suggestedSwap: getSwapSuggestion(pos.assetSymbol) // simple map you maintain
+      };
+    })
+    .sort((a, b) => b.estTaxSavings - a.estTaxSavings);
+}
+
+// Tiny helper (expand with more pairs later)
+function getSwapSuggestion(symbol: string) {
+  const swaps: Record<string, { symbol: string; reason: string }> = {
+    XRP: { symbol: "USDC", reason: "Stable alternative on XRPL/Stellar" },
+    RLUSD: { symbol: "USDC", reason: "Same yield profile" },
+    // add more as you grow
+  };
+  return swaps[symbol];
+}
+2. Backend Endpoint (add to server/routes.ts)
+TypeScript// POST /api/tax/harvest-scan
+app.post('/api/tax/harvest-scan', isAuthenticated, async (req, res) => {
+  const { taxBracket = 0.32 } = req.body;
+  const positions = await db.getPortfolioPositions(req.user.id);
+  const prices = await getCurrentPrices(); // your existing CoinGecko helper
+  const opportunities = scanForHarvestOpportunities(positions, prices, taxBracket);
+  res.json(opportunities);
+});
+3. Frontend Component (new or inside tax-reports.tsx)
+
+Use your existing TanStack Query + shadcn table
+Add a “Scan for Harvest Opportunities” button
+Display table with “Execute” buttons that open your DEX trade flow (pre-filled sell amount + suggested buy)
+
+4. UI Flow (5-minute user experience)
+
+Dashboard/Tax page → big green “Scan Tax Losses” button
+Modal shows table (Premium/Pro only)
+Click “Harvest” on any row → your existing trade modal opens with:
+Sell: exact quantity at market
+Buy: same amount of suggested asset (or same asset)
+
+User signs with Xaman → transaction confirmed → lots updated automatically
+
+Compliance & Disclaimers (Copy-Paste Ready)
+Add this everywhere the feature appears:
+“Tax-Loss Harvesting is an informational tool only. We do not execute trades, provide tax advice, or guarantee results. Crypto wash-sale rules currently do not apply in the US, but tax laws change. Always consult a qualified CPA. Calculations are estimates based on current prices.”
