@@ -524,7 +524,7 @@ export default function DcaOrders() {
             </div>
             <div>
               <h1 className="text-2xl font-bold" data-testid="text-dca-title">{chainName} DCA Orders</h1>
-              <p className="text-sm text-muted-foreground">Dollar-cost average into any {chainName} DEX pair — non-custodial, approve each buy from {isXrpl ? "Xaman" : "LOBSTR"}</p>
+              <p className="text-sm text-muted-foreground">Dollar-cost average into any {chainName} DEX pair — non-custodial, you approve each buy from {isXrpl ? "Xaman" : "LOBSTR"}</p>
             </div>
           </div>
           <Button onClick={() => setShowCreate(true)} data-testid="button-create-dca" style={{ backgroundColor: chainColor }}>
@@ -641,6 +641,8 @@ export default function DcaOrders() {
             </CollapsibleContent>
           </Card>
         </Collapsible>
+
+        <DcaDisclaimer />
       </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
@@ -951,6 +953,14 @@ function DcaOrderCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DcaDisclaimer() {
+  return (
+    <p className="text-xs text-muted-foreground italic mt-6 px-1">
+      CryptoOwnBank does not execute trades on your behalf. DCA orders create scheduled reminders — you must approve and sign each transaction yourself using your own wallet (Xaman or LOBSTR). Your funds remain in your wallet at all times. This is not automated trading and CryptoOwnBank is not a broker or trading platform. Past performance of any asset does not guarantee future results.
+    </p>
   );
 }
 

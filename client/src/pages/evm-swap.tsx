@@ -837,6 +837,9 @@ export default function EvmSwap() {
               </div>
             </div>
           )}
+          <p className="text-xs text-muted-foreground italic">
+            A 1% platform fee is included in this swap. You are interacting directly with the 1inch DEX aggregator — CryptoOwnBank does not hold or control your funds at any point during this transaction.
+          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmDialog(false)} data-testid="button-cancel-swap">
               Cancel

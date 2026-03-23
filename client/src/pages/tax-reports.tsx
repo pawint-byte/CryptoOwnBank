@@ -549,7 +549,7 @@ export default function TaxReports() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-4 italic" data-testid="text-tax-disclaimer">
-            This information is for educational purposes only and does not constitute tax advice. Tax laws vary by jurisdiction and individual circumstances. Always consult a qualified tax professional for guidance specific to your situation.
+            This tool organizes your transaction data to help you prepare for tax reporting — it does not constitute tax advice. Cost basis calculations are estimates based on the data available and may not reflect your complete tax picture. Tax laws vary by jurisdiction and individual circumstances. Always consult a qualified tax professional before filing. CryptoOwnBank is not a tax preparer, CPA, or financial advisor.
           </p>
         </CardContent>
       </Card>

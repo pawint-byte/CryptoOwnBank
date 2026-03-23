@@ -277,7 +277,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
   return (
     <Card data-testid="recommendations-hub">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-3 sm:px-6">
-        <CardTitle className="text-base sm:text-lg">Recommendations & Insights</CardTitle>
+        <CardTitle className="text-base sm:text-lg">Asset Directory & Insights</CardTitle>
         <Button
           variant="outline"
           size="sm"
@@ -922,6 +922,7 @@ export function RecommendationsHub({ addresses, exchangeBalances }: Recommendati
           </TabsContent>
         </Tabs>
       </CardContent>
+      <DisclaimerFooter />
     </Card>
   );
 }
@@ -1496,6 +1497,14 @@ function RecommendationCard({ rec, onDismiss, onRestore, dismissedId, isPending 
         </div>
       </div>
     </div>
+  );
+}
+
+function DisclaimerFooter() {
+  return (
+    <p className="text-xs text-muted-foreground italic px-3 sm:px-6 pb-4">
+      This directory is for informational and educational purposes only. It is not investment advice, and listing an asset or platform does not constitute an endorsement or recommendation to buy, sell, or hold. Always do your own research. CryptoOwnBank is not a financial advisor, broker, or investment company.
+    </p>
   );
 }
 

@@ -41,6 +41,7 @@ Preferred communication style: Simple, everyday language.
 1. **Update the landing page** — Add the new feature to the appropriate section so visitors can see it.
 2. **Update the FAQ** — Add relevant questions and answers about the new feature.
 3. **Draft an announcement email** — Create a feature announcement email for the user to review and send to members. Use the existing email announcement system (admin composer in the app). Do NOT auto-send — prepare it for the user to review and approve first.
+4. **Review disclaimers** — If the feature involves trading, yields, financial data, tax info, or asset management, add appropriate disclaimers clarifying that CryptoOwnBank is not a financial advisor, broker, exchange, custodian, or tax professional. All content is informational/educational only.
 
 ## System Architecture
 

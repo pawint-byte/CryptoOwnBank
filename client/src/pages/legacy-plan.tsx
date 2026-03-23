@@ -1084,9 +1084,9 @@ export default function LegacyPlanPage() {
           <div className="flex items-start gap-3">
             <Shield className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
             <div className="text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Security Note</p>
-              <p>CryptoOwnBank never stores your seed phrases, private keys, or wallet passwords. We only store YOUR instructions about where those items are located. All beneficiary data is encrypted at rest.</p>
-              <p>Your legacy plan is non-custodial — we help deliver instructions, but we never have access to your funds.</p>
+              <p className="font-medium text-foreground">Security & Legal Note</p>
+              <p>CryptoOwnBank never stores your seed phrases, private keys, or wallet passwords. We only store YOUR encrypted instructions about where those items are located. All beneficiary data is encrypted at rest.</p>
+              <p>Your legacy plan is non-custodial — we help deliver instructions, but we never have access to your funds. CryptoOwnBank is not a fiduciary, estate planner, attorney, or financial advisor. This tool helps you organize and deliver information to your chosen beneficiaries — it does not replace a proper estate plan, will, or trust. Consult a qualified estate planning attorney for your specific legal needs.</p>
             </div>
           </div>
         </CardContent>
