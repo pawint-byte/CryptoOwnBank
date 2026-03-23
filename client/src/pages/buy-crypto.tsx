@@ -30,6 +30,9 @@ import {
   Star,
   Copy,
   Plus,
+  Zap,
+  RefreshCcw,
+  ArrowRightLeft,
 } from "lucide-react";
 
 type Step = "token" | "wallet" | "address" | "instructions";
@@ -41,12 +44,19 @@ interface TokenOption {
   featured?: boolean;
 }
 
+interface OnrampProvider {
+  name: string;
+  buildUrl?: (params: { token: string; address?: string; walletName: string }) => string;
+}
+
 interface WalletOption {
   name: string;
   type: "cold" | "hot";
-  onramps: string[];
+  onramps: OnrampProvider[];
   platforms: ("mobile" | "desktop" | "browser")[];
   deepLink?: string;
+  appStoreUrl?: string;
+  playStoreUrl?: string;
   downloadUrl: string;
   description: string;
   steps: string[];
@@ -69,16 +79,36 @@ const tokens: TokenOption[] = [
   { symbol: "HBAR", name: "Hedera", color: "#000000" },
   { symbol: "ALGO", name: "Algorand", color: "#000000" },
   { symbol: "CRO", name: "Cronos", color: "#002D74" },
+  { symbol: "FLR", name: "Flare", color: "#E42058" },
 ];
+
+function buildMoonPayUrl(params: { token: string; address?: string }) {
+  const coinCode = params.token.toLowerCase();
+  let url = `https://www.moonpay.com/buy/${coinCode}`;
+  if (params.address) url += `?walletAddress=${encodeURIComponent(params.address)}`;
+  return url;
+}
+
+function buildTransakUrl(params: { token: string; address?: string }) {
+  const cryptoCurrency = params.token.toUpperCase();
+  let url = `https://global.transak.com/?cryptoCurrencyCode=${cryptoCurrency}`;
+  if (params.address) url += `&walletAddress=${encodeURIComponent(params.address)}`;
+  return url;
+}
 
 const walletsByToken: Record<string, WalletOption[]> = {
   XRP: [
     {
       name: "Xaman (XUMM)",
       type: "hot",
-      onramps: ["MoonPay", "Topper"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "xrp", address: p.address }) },
+        { name: "Topper" },
+      ],
       platforms: ["mobile"],
       deepLink: "xumm://",
+      appStoreUrl: "https://apps.apple.com/app/xumm/id1492302343",
+      playStoreUrl: "https://play.google.com/store/apps/details?id=com.xrpllabs.xumm",
       downloadUrl: "https://xaman.app",
       description: "The go-to XRP wallet with built-in fiat on-ramps. Buy XRP directly with your card or bank — no exchange needed.",
       steps: [
@@ -94,7 +124,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak", "BTC Direct"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "xrp", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "XRP", address: p.address }) },
+        { name: "BTC Direct" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy XRP directly into cold storage. Your keys never touch the internet.",
@@ -112,8 +147,15 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Trust Wallet",
       type: "hot",
-      onramps: ["MoonPay", "Mercuryo", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "xrp", address: p.address }) },
+        { name: "Mercuryo" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "XRP", address: p.address }) },
+      ],
       platforms: ["mobile", "browser"],
+      deepLink: "trust://",
+      appStoreUrl: "https://apps.apple.com/app/trust-crypto-bitcoin-wallet/id1288339409",
+      playStoreUrl: "https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp",
       downloadUrl: "https://trustwallet.com",
       description: "Multi-chain wallet with multiple built-in buy options.",
       steps: [
@@ -131,8 +173,13 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "LOBSTR",
       type: "hot",
-      onramps: ["MoonPay"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "xlm", address: p.address }) },
+      ],
       platforms: ["mobile", "desktop"],
+      deepLink: "lobstr://",
+      appStoreUrl: "https://apps.apple.com/app/lobstr-stellar-lumens-wallet/id1404357892",
+      playStoreUrl: "https://play.google.com/store/apps/details?id=com.lobstr.client",
       downloadUrl: "https://lobstr.co",
       description: "The most popular Stellar wallet with built-in MoonPay integration. Buy XLM with your card in minutes.",
       steps: [
@@ -147,7 +194,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "xlm", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "XLM", address: p.address }) },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy XLM directly into cold storage via Ledger Live.",
@@ -166,8 +217,13 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "MetaMask",
       type: "hot",
-      onramps: ["MoonPay", "Transak", "Banxa"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "eth", address: p.address }) },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "ETH", address: p.address }) },
+        { name: "Banxa" },
+      ],
       platforms: ["browser", "mobile"],
+      deepLink: "metamask://",
       downloadUrl: "https://metamask.io",
       description: "The most popular EVM wallet. Buy ETH directly in the browser extension or mobile app.",
       steps: [
@@ -182,7 +238,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak", "BTC Direct"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "eth", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "ETH", address: p.address }) },
+        { name: "BTC Direct" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy ETH directly into cold storage. Works with MetaMask too.",
@@ -198,7 +259,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak", "BTC Direct"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "btc", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "BTC", address: p.address }) },
+        { name: "BTC Direct" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "The safest way to buy and hold Bitcoin. Buy directly into cold storage.",
@@ -214,8 +280,13 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Trust Wallet",
       type: "hot",
-      onramps: ["MoonPay", "Mercuryo", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "btc", address: p.address }) },
+        { name: "Mercuryo" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "BTC", address: p.address }) },
+      ],
       platforms: ["mobile"],
+      deepLink: "trust://",
       downloadUrl: "https://trustwallet.com",
       description: "Buy Bitcoin on mobile with multiple on-ramp providers.",
       steps: [
@@ -230,8 +301,14 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Phantom",
       type: "hot",
-      onramps: ["MoonPay", "Coinbase Pay"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "sol", address: p.address }) },
+        { name: "Coinbase Pay" },
+      ],
       platforms: ["browser", "mobile"],
+      deepLink: "phantom://",
+      appStoreUrl: "https://apps.apple.com/app/phantom-crypto-wallet/id1598432977",
+      playStoreUrl: "https://play.google.com/store/apps/details?id=app.phantom",
       downloadUrl: "https://phantom.app",
       description: "The go-to Solana wallet with built-in buying via MoonPay.",
       steps: [
@@ -246,7 +323,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "sol", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "SOL", address: p.address }) },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy SOL into cold storage via Ledger Live.",
@@ -262,7 +343,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "ada", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "ADA", address: p.address }) },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy ADA into cold storage. Stake directly through AdaLite connected to your Ledger.",
@@ -277,8 +362,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Trust Wallet",
       type: "hot",
-      onramps: ["MoonPay", "Mercuryo"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "ada", address: p.address }) },
+        { name: "Mercuryo" },
+      ],
       platforms: ["mobile"],
+      deepLink: "trust://",
       downloadUrl: "https://trustwallet.com",
       description: "Buy ADA on mobile and stake from the app.",
       steps: [
@@ -292,8 +381,13 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Keplr",
       type: "hot",
-      onramps: ["Transak"],
+      onramps: [
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "ATOM", address: p.address }) },
+      ],
       platforms: ["browser", "mobile"],
+      deepLink: "keplrwallet://",
+      appStoreUrl: "https://apps.apple.com/app/keplr-wallet/id1567851089",
+      playStoreUrl: "https://play.google.com/store/apps/details?id=com.chainapsis.keplr",
       downloadUrl: "https://www.keplr.app",
       description: "The standard Cosmos wallet with Transak buy integration and built-in staking.",
       steps: [
@@ -307,7 +401,10 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "atom", address: p.address }) },
+        { name: "Coinify" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy ATOM into cold storage. Stake through Keplr connected to Ledger.",
@@ -323,7 +420,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "dot", address: p.address }) },
+        { name: "Coinify" },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "DOT", address: p.address }) },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy DOT into cold storage. Stake through Nova Wallet connected to Ledger.",
@@ -340,8 +441,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "MetaMask",
       type: "hot",
-      onramps: ["MoonPay", "Transak"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "avax_cchain", address: p.address }) },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "AVAX", address: p.address }) },
+      ],
       platforms: ["browser", "mobile"],
+      deepLink: "metamask://",
       downloadUrl: "https://metamask.io",
       description: "Buy AVAX in MetaMask (add Avalanche C-Chain network).",
       steps: [
@@ -355,7 +460,10 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "avax_cchain", address: p.address }) },
+        { name: "Coinify" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy AVAX into cold storage.",
@@ -370,8 +478,13 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "MetaMask",
       type: "hot",
-      onramps: ["MoonPay", "Transak", "Banxa"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "matic_polygon", address: p.address }) },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "MATIC", address: p.address }) },
+        { name: "Banxa" },
+      ],
       platforms: ["browser", "mobile"],
+      deepLink: "metamask://",
       downloadUrl: "https://metamask.io",
       description: "Buy MATIC/POL in MetaMask on Polygon network.",
       steps: [
@@ -386,7 +499,10 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "trx", address: p.address }) },
+        { name: "Coinify" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy TRX into cold storage via Ledger Live.",
@@ -400,8 +516,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Trust Wallet",
       type: "hot",
-      onramps: ["MoonPay", "Mercuryo"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "trx", address: p.address }) },
+        { name: "Mercuryo" },
+      ],
       platforms: ["mobile"],
+      deepLink: "trust://",
       downloadUrl: "https://trustwallet.com",
       description: "Buy TRX on mobile and stake from the app.",
       steps: [
@@ -415,7 +535,10 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "doge", address: p.address }) },
+        { name: "Coinify" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy DOGE into cold storage.",
@@ -428,8 +551,12 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Trust Wallet",
       type: "hot",
-      onramps: ["MoonPay", "Mercuryo"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "doge", address: p.address }) },
+        { name: "Mercuryo" },
+      ],
       platforms: ["mobile"],
+      deepLink: "trust://",
       downloadUrl: "https://trustwallet.com",
       description: "Buy DOGE on mobile.",
       steps: [
@@ -442,7 +569,10 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "ltc", address: p.address }) },
+        { name: "Coinify" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy LTC into cold storage.",
@@ -457,7 +587,9 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "hbar", address: p.address }) },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy HBAR into cold storage via Ledger Live.",
@@ -472,7 +604,10 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay", "Coinify"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "algo", address: p.address }) },
+        { name: "Coinify" },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy ALGO into cold storage via Ledger Live.",
@@ -487,7 +622,9 @@ const walletsByToken: Record<string, WalletOption[]> = {
     {
       name: "Ledger (via Ledger Live)",
       type: "cold",
-      onramps: ["MoonPay"],
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "cro", address: p.address }) },
+      ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
       description: "Buy CRO into cold storage via Ledger Live.",
@@ -498,7 +635,44 @@ const walletsByToken: Record<string, WalletOption[]> = {
       ],
     },
   ],
+  FLR: [
+    {
+      name: "MetaMask",
+      type: "hot",
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "flr", address: p.address }) },
+      ],
+      platforms: ["browser", "mobile"],
+      deepLink: "metamask://",
+      downloadUrl: "https://metamask.io",
+      description: "Buy FLR via MetaMask, or swap from ETH/AVAX using CryptoOwnBank's EVM Swap.",
+      steps: [
+        "Install MetaMask → add the Flare network (Chain ID 14, RPC: https://flare-api.flare.network/ext/C/rpc)",
+        "Buy FLR through MoonPay, or swap from ETH/AVAX using CryptoOwnBank's EVM Swap or Cross-Chain Swap",
+        "FLR arrives in MetaMask on the Flare network",
+        "Delegate to FTSO providers to earn rewards — see our Flare page for staking guidance",
+      ],
+    },
+    {
+      name: "Ledger (via Ledger Live)",
+      type: "cold",
+      onramps: [
+        { name: "MoonPay" },
+      ],
+      platforms: ["desktop", "mobile"],
+      downloadUrl: "https://www.ledger.com/ledger-live",
+      description: "Hold FLR securely on Ledger. Connect to MetaMask for FTSO delegation.",
+      steps: [
+        "Open Ledger Live → install the Flare app (or use Ethereum app with Flare network)",
+        "Connect Ledger to MetaMask for Flare network access",
+        "Delegate to FTSO providers via the Flare Portal (portal.flare.network)",
+      ],
+    },
+  ],
 };
+
+const evmSwapTokens = new Set(["ETH", "AVAX", "MATIC", "FLR"]);
+const crossChainTokens = new Set(["ETH", "AVAX", "MATIC", "FLR", "BNB"]);
 
 function getNextStepLink(token: string): { label: string; url: string } | null {
   switch (token) {
@@ -510,6 +684,8 @@ function getNextStepLink(token: string): { label: string; url: string } | null {
     case "AVAX":
     case "MATIC":
       return { label: "Open EVM Swap", url: "/ownbank/evm-swap" };
+    case "FLR":
+      return { label: "View Flare Dashboard", url: "/flare" };
     case "ADA":
     case "DOT":
     case "SOL":
@@ -626,12 +802,34 @@ function detectUserChains(walletRecords: any[]): Set<string> {
   return chains;
 }
 
+function getSwapAlternative(token: string, userChains: Set<string>): { message: string; url: string; label: string } | null {
+  if (token === "FLR" && (userChains.has("ETH") || userChains.has("AVAX"))) {
+    return {
+      message: `You already hold ${userChains.has("ETH") ? "ETH" : "AVAX"} — swap it to FLR right here instead of buying through an on-ramp.`,
+      url: "/ownbank/evm-swap",
+      label: "Swap to FLR",
+    };
+  }
+  if (evmSwapTokens.has(token)) {
+    const held = ["ETH", "AVAX", "MATIC"].filter(t => t !== token && userChains.has(t));
+    if (held.length > 0) {
+      return {
+        message: `You already hold ${held.join(", ")} — swap it to ${token} right here using EVM Swap.`,
+        url: "/ownbank/evm-swap",
+        label: `Swap to ${token}`,
+      };
+    }
+  }
+  return null;
+}
+
 export default function BuyCrypto() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("token");
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null);
+  const [selectedOnramp, setSelectedOnramp] = useState<string | null>(null);
   const [showFaq, setShowFaq] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
@@ -682,15 +880,33 @@ export default function BuyCrypto() {
     },
   });
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  function handleRefreshBalances() {
+    setIsRefreshing(true);
+    queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast({ title: "Balances refreshed", description: "Your portfolio data has been updated." });
+    }, 1500);
+  }
+
   function handleTokenSelect(symbol: string) {
     setSelectedToken(symbol);
     setSelectedWallet(null);
+    setSelectedOnramp(null);
     setNewAddress("");
     setNewLabel("");
     const wallets = walletsByToken[symbol];
     if (wallets && wallets.length === 1) {
       setSelectedWallet(wallets[0]);
-      setStep("address");
+      if (savedWallets.find((w: any) => w.chain === tokenToChain[symbol])) {
+        setStep("instructions");
+      } else {
+        setStep("address");
+      }
     } else {
       setStep("wallet");
     }
@@ -698,7 +914,12 @@ export default function BuyCrypto() {
 
   function handleWalletSelect(wallet: WalletOption) {
     setSelectedWallet(wallet);
-    setStep("address");
+    setSelectedOnramp(null);
+    if (selectedToken && savedWallets.find((w: any) => w.chain === tokenToChain[selectedToken])) {
+      setStep("instructions");
+    } else {
+      setStep("address");
+    }
   }
 
   function handleBack() {
@@ -724,6 +945,7 @@ export default function BuyCrypto() {
     setStep("token");
     setSelectedToken(null);
     setSelectedWallet(null);
+    setSelectedOnramp(null);
     setNewAddress("");
     setNewLabel("");
   }
@@ -741,6 +963,7 @@ export default function BuyCrypto() {
 
   const tokenData = tokens.find((t) => t.symbol === selectedToken);
   const nextStep = selectedToken ? getNextStepLink(selectedToken) : null;
+  const swapAlt = selectedToken ? getSwapAlternative(selectedToken, userChains) : null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
@@ -886,6 +1109,25 @@ export default function BuyCrypto() {
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
 
+          {swapAlt && (
+            <Card className="border-yellow-500/20 bg-yellow-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <Zap className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Swap instead of buying</p>
+                    <p className="text-sm text-muted-foreground mb-2">{swapAlt.message}</p>
+                    <Link href={swapAlt.url}>
+                      <Button size="sm" className="gap-2 bg-yellow-600 hover:bg-yellow-700" data-testid="button-swap-alternative">
+                        <ArrowRightLeft className="h-4 w-4" /> {swapAlt.label}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">How do you want to buy {selectedToken}?</CardTitle>
@@ -927,8 +1169,8 @@ export default function BuyCrypto() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">Buy via:</span>
                     {wallet.onramps.map((ramp) => (
-                      <Badge key={ramp} variant="secondary" className="text-[10px]">
-                        {ramp}
+                      <Badge key={ramp.name} variant="secondary" className="text-[10px]">
+                        {ramp.name}
                       </Badge>
                     ))}
                     <span className="text-xs text-muted-foreground ml-2">|</span>
@@ -1033,6 +1275,15 @@ export default function BuyCrypto() {
                   </CardContent>
                 </Card>
 
+                {selectedWallet.deepLink && (
+                  <a href={selectedWallet.deepLink} className="block">
+                    <Button variant="outline" className="w-full gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-wallet-app">
+                      <ExternalLink className="h-4 w-4" />
+                      Open {selectedWallet.name} App
+                    </Button>
+                  </a>
+                )}
+
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm font-medium mb-1 block">Your {selectedToken} Address</label>
@@ -1106,6 +1357,51 @@ export default function BuyCrypto() {
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
 
+          {swapAlt && (
+            <Card className="border-yellow-500/20 bg-yellow-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <Zap className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Quick alternative: Swap instead</p>
+                    <p className="text-sm text-muted-foreground mb-2">{swapAlt.message}</p>
+                    <Link href={swapAlt.url}>
+                      <Button size="sm" className="gap-2 bg-yellow-600 hover:bg-yellow-700" data-testid="button-swap-alt-instructions">
+                        <ArrowRightLeft className="h-4 w-4" /> {swapAlt.label}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {savedAddressForToken && (
+            <Card className="border-green-500/10 bg-green-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Your {selectedToken} address</p>
+                    <p className="text-sm font-mono truncate" data-testid="text-address-reminder">{savedAddressForToken.address}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 gap-1"
+                    onClick={() => {
+                      navigator.clipboard.writeText(savedAddressForToken.address);
+                      toast({ title: "Copied!", description: "Address copied to clipboard." });
+                    }}
+                    data-testid="button-copy-address-instructions"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-green-500/20">
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1120,27 +1416,86 @@ export default function BuyCrypto() {
                   <Badge variant="outline">
                     {selectedWallet.type === "cold" ? "Cold Storage" : "Hot Wallet"}
                   </Badge>
-                  {selectedWallet.onramps.map((ramp) => (
-                    <Badge key={ramp} variant="secondary" className="text-xs">
-                      {ramp}
-                    </Badge>
-                  ))}
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <ol className="space-y-3">
-                {selectedWallet.steps.map((s, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-sm">
-                      {i + 1}
-                    </div>
-                    <p className="text-sm text-muted-foreground pt-1">{s}</p>
-                  </li>
-                ))}
-              </ol>
+              {selectedWallet.onramps.length > 1 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Choose your on-ramp provider</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {selectedWallet.onramps.map((ramp) => (
+                      <Button
+                        key={ramp.name}
+                        variant={selectedOnramp === ramp.name ? "default" : "outline"}
+                        size="sm"
+                        className={`gap-1.5 ${selectedOnramp === ramp.name ? "bg-green-600 hover:bg-green-700" : ""}`}
+                        onClick={() => setSelectedOnramp(ramp.name)}
+                        data-testid={`button-onramp-${ramp.name.toLowerCase().replace(/\s/g, "-")}`}
+                      >
+                        <CreditCard className="h-3.5 w-3.5" />
+                        {ramp.name}
+                        {ramp.buildUrl && <ExternalLink className="h-3 w-3 opacity-50" />}
+                      </Button>
+                    ))}
+                  </div>
+                  {selectedOnramp && (() => {
+                    const ramp = selectedWallet.onramps.find(r => r.name === selectedOnramp);
+                    if (ramp?.buildUrl) {
+                      const url = ramp.buildUrl({ token: selectedToken, address: savedAddressForToken?.address, walletName: selectedWallet.name });
+                      return (
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-via-provider">
+                            <ExternalLink className="h-4 w-4" />
+                            Buy {selectedToken} via {selectedOnramp}
+                            {savedAddressForToken && <span className="text-xs opacity-75">(address pre-filled)</span>}
+                          </Button>
+                        </a>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+
+              {selectedWallet.onramps.length === 1 && selectedWallet.onramps[0].buildUrl && (
+                <a
+                  href={selectedWallet.onramps[0].buildUrl({ token: selectedToken, address: savedAddressForToken?.address, walletName: selectedWallet.name })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-direct">
+                    <ExternalLink className="h-4 w-4" />
+                    Buy {selectedToken} via {selectedWallet.onramps[0].name}
+                    {savedAddressForToken && <span className="text-xs opacity-75">(address pre-filled)</span>}
+                  </Button>
+                </a>
+              )}
+
+              <div className="border-t pt-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Step-by-step guide</p>
+                <ol className="space-y-3">
+                  {selectedWallet.steps.map((s, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-sm">
+                        {i + 1}
+                      </div>
+                      <p className="text-sm text-muted-foreground pt-1">{s}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
 
               <div className="flex items-center gap-3 pt-2 flex-wrap">
+                {selectedWallet.deepLink && (
+                  <a href={selectedWallet.deepLink}>
+                    <Button variant="outline" className="gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-app">
+                      <Smartphone className="h-4 w-4" />
+                      Open {selectedWallet.name}
+                    </Button>
+                  </a>
+                )}
                 <a
                   href={selectedWallet.downloadUrl}
                   target="_blank"
@@ -1163,6 +1518,33 @@ export default function BuyCrypto() {
               </div>
             </CardContent>
           </Card>
+
+          {user && savedAddressForToken && (
+            <Card className="border-blue-500/20 bg-blue-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <RefreshCcw className={`h-5 w-5 text-blue-600 mt-0.5 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Done buying?</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      After your purchase completes, refresh your balances to see the updated amount in your portfolio.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={handleRefreshBalances}
+                      disabled={isRefreshing}
+                      data-testid="button-refresh-balance"
+                    >
+                      <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                      {isRefreshing ? "Refreshing..." : "Refresh My Balances"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {selectedToken === "XRP" && (
             <Card className="border-orange-500/20 bg-orange-500/5">
@@ -1217,6 +1599,33 @@ export default function BuyCrypto() {
                     <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                     Cross-border remittances
                   </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {(selectedToken === "ETH" || selectedToken === "AVAX" || selectedToken === "MATIC" || selectedToken === "FLR") && (
+            <Card className="border-indigo-500/20 bg-indigo-500/5">
+              <CardContent className="pt-4 space-y-2">
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                  After you buy {selectedToken} — put it to work
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                  <Link href="/ownbank/evm-swap" className="flex items-center gap-2 hover:text-foreground transition-colors">
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                    Swap tokens via EVM Swap
+                  </Link>
+                  <Link href="/ownbank/cross-chain" className="flex items-center gap-2 hover:text-foreground transition-colors">
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                    Cross-chain swap to other networks
+                  </Link>
+                  {selectedToken === "FLR" && (
+                    <Link href="/flare" className="flex items-center gap-2 hover:text-foreground transition-colors">
+                      <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                      Delegate to FTSO for rewards
+                    </Link>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1295,6 +1704,16 @@ export default function BuyCrypto() {
                 wallet address to CryptoOwnBank under{" "}
                 <Link href="/wallets" className="text-blue-600 hover:underline">Wallets</Link>.
                 Your balances will appear on your dashboard automatically.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Can I swap tokens I already have instead of buying new ones?</p>
+              <p className="text-sm text-muted-foreground">
+                Yes! If you already hold ETH, AVAX, or MATIC, use our{" "}
+                <Link href="/ownbank/evm-swap" className="text-blue-600 hover:underline">EVM Swap</Link> to convert between tokens on the same chain, or{" "}
+                <Link href="/ownbank/cross-chain" className="text-blue-600 hover:underline">Cross-Chain Swap</Link> to move assets between networks.
+                For XRP holders, use the{" "}
+                <Link href="/ownbank/dex" className="text-blue-600 hover:underline">XRPL DEX</Link> (31 trading pairs).
               </p>
             </div>
           </CardContent>
