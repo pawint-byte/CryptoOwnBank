@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -159,6 +159,31 @@ export default function TaxReports() {
     queryKey: ["/api/tax/harvest-scan"],
     enabled: !taxReportsLocked && harvestExpanded,
   });
+
+  const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
+    queryKey: ["/api/admin/status"],
+  });
+
+  const [syncingPositions, setSyncingPositions] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ created: number; updated: number } | null>(null);
+
+  const handleSyncPositions = useCallback(async () => {
+    setSyncingPositions(true);
+    setSyncResult(null);
+    try {
+      const res = await apiRequest("POST", "/api/admin/recalc-positions-from-lots");
+      const data = await res.json();
+      setSyncResult({ created: data.created || 0, updated: data.updated || 0 });
+      if (data.created > 0 || data.updated > 0) {
+        queryClient.invalidateQueries({ queryKey: ["/api/tax/harvest-scan"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      }
+    } catch {
+      toast({ title: "Sync failed", description: "Could not sync positions from lots.", variant: "destructive" });
+    } finally {
+      setSyncingPositions(false);
+    }
+  }, [toast]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -463,6 +488,24 @@ export default function TaxReports() {
                 <p className="text-sm text-muted-foreground mt-1 max-w-md">
                   All your positions are currently at a gain or break-even. Check back when market conditions change.
                 </p>
+                {adminStatus?.isAdmin && (
+                  <div className="mt-4 space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSyncPositions}
+                      disabled={syncingPositions}
+                      data-testid="button-sync-positions"
+                    >
+                      {syncingPositions ? "Syncing..." : "Sync Positions from Lots"}
+                    </Button>
+                    {syncResult && (
+                      <p className="text-xs text-muted-foreground">
+                        Created {syncResult.created} positions, updated {syncResult.updated}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <>
