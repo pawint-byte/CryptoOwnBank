@@ -15,6 +15,12 @@ Preferred communication style: Simple, everyday language.
 5. **Never ask the user to re-explain** something that's already captured in session logs or the to-do list.
 6. The user (pawint@me.com) has been building this project over many sessions. Treat every session as a continuation, not a fresh start.
 
+## Post-Feature Checklist
+**REQUIRED: After completing any new feature build, do ALL of the following before considering the work done:**
+1. **Update the landing page** — Add the new feature to the appropriate section so visitors can see it.
+2. **Update the FAQ** — Add relevant questions and answers about the new feature.
+3. **Draft an announcement email** — Create a feature announcement email for the user to review and send to members. Use the existing email announcement system (admin composer in the app). Do NOT auto-send — prepare it for the user to review and approve first.
+
 ## System Architecture
 
 ### Frontend
