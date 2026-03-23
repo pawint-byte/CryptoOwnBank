@@ -3874,8 +3874,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const cachedPrices = await db.select().from(priceCacheTable);
       for (const entry of cachedPrices) {
         const sym = entry.symbol.toUpperCase();
-        if (!priceLookup[sym] && entry.price) {
-          priceLookup[sym] = parseFloat(entry.price);
+        if (!priceLookup[sym] && entry.priceUsd) {
+          priceLookup[sym] = parseFloat(entry.priceUsd);
         }
       }
 
