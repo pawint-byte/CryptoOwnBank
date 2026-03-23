@@ -2014,6 +2014,50 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/reconcile/remove-yahoo-csv-lots", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      const allLots = await db.select().from(taxLots).where(eq(taxLots.userId, userId));
+      const yahooCsvLots = allLots.filter(l => l.note && (l.note.startsWith("Yahoo CSV") || l.note.startsWith("Yahoo CSV (")));
+
+      if (yahooCsvLots.length === 0) {
+        return res.json({ message: "No Yahoo CSV reconciliation lots found", deleted: 0 });
+      }
+
+      const affectedWbIds = new Set<string>();
+      for (const lot of yahooCsvLots) {
+        if (lot.walletBalanceId) affectedWbIds.add(lot.walletBalanceId);
+        await db.delete(taxLots).where(eq(taxLots.id, lot.id));
+      }
+
+      let recalculated = 0;
+      for (const wbId of affectedWbIds) {
+        const remainingLots = await db.select().from(taxLots).where(
+          and(eq(taxLots.walletBalanceId, wbId), eq(taxLots.userId, userId))
+        );
+        if (remainingLots.length > 0) {
+          const totalQty = remainingLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+          const totalCost = remainingLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+          const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+          await storage.updateWalletBalanceCostData(wbId, avgCost.toFixed(8), totalCost.toFixed(2));
+        } else {
+          await storage.updateWalletBalanceCostData(wbId, "0", "0");
+        }
+        recalculated++;
+      }
+
+      res.json({
+        message: `Deleted ${yahooCsvLots.length} Yahoo CSV lots, recalculated cost data for ${recalculated} wallet balances`,
+        deleted: yahooCsvLots.length,
+        walletsRecalculated: recalculated,
+      });
+    } catch (error) {
+      console.error("Remove Yahoo CSV lots error:", error);
+      res.status(500).json({ message: "Failed to remove Yahoo CSV lots" });
+    }
+  });
+
   app.post("/api/reconcile/delete-yahoo-positions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
