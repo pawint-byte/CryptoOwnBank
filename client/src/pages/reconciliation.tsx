@@ -1062,6 +1062,26 @@ export default function Reconciliation() {
     },
   });
 
+  const removeYahooCsvLotsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/reconcile/remove-yahoo-csv-lots");
+      return res.json();
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      toast({
+        title: "Yahoo CSV Lots Removed",
+        description: result.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to remove Yahoo CSV lots", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteYahooPositionsMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/reconcile/delete-yahoo-positions");
@@ -1273,6 +1293,25 @@ export default function Reconciliation() {
                   <Trash2 className="h-4 w-4 mr-1.5" />
                 )}
                 {deleteYahooPositionsMutation.isPending ? "Deleting..." : "Delete Yahoo Import Positions"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-orange-500/50 text-orange-600 hover:bg-orange-500/10"
+                onClick={() => {
+                  if (window.confirm("Remove all Yahoo CSV duplicate lots from wallet balances? This keeps your manual lots intact and recalculates cost basis.")) {
+                    removeYahooCsvLotsMutation.mutate();
+                  }
+                }}
+                disabled={removeYahooCsvLotsMutation.isPending}
+                data-testid="button-remove-yahoo-csv-lots"
+              >
+                {removeYahooCsvLotsMutation.isPending ? (
+                  <RefreshCcw className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                )}
+                {removeYahooCsvLotsMutation.isPending ? "Removing..." : "Remove Yahoo CSV Lots"}
               </Button>
             </div>
           </CardContent>
