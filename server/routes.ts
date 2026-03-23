@@ -4566,6 +4566,31 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/admin/cleanup-lot", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const { lotId, positionId } = req.body;
+      const deleted: string[] = [];
+      if (lotId) {
+        await db.delete(taxLots).where(and(eq(taxLots.id, lotId), eq(taxLots.userId, userId)));
+        deleted.push(`lot:${lotId}`);
+      }
+      if (positionId) {
+        await db.execute(sql`DELETE FROM positions WHERE id = ${positionId} AND user_id = ${userId}`);
+        deleted.push(`position:${positionId}`);
+      }
+      console.log(`[admin-cleanup] Deleted: ${deleted.join(", ")}`);
+      res.json({ deleted });
+    } catch (error) {
+      console.error("Admin cleanup error:", error);
+      res.status(500).json({ message: "Failed to cleanup" });
+    }
+  });
+
   app.post("/api/admin/recalc-positions-from-lots", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

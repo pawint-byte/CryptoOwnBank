@@ -213,6 +213,12 @@ const SWAP_SUGGESTIONS: Record<string, { symbol: string; reason: string }> = {
   SHIB: { symbol: "DOGE", reason: "Both are meme/community tokens" },
 };
 
+function normalizeSymbolForPriceLookup(sym: string): string {
+  let s = sym.toUpperCase().replace(/^\$/, '');
+  s = s.replace(/\d{4,}$/, '');
+  return s;
+}
+
 export function scanForHarvestOpportunities(
   positions: { assetSymbol: string; quantity: string; totalCostBasis: string; isAddressed?: boolean }[],
   priceLookup: Record<string, number>,
@@ -225,7 +231,9 @@ export function scanForHarvestOpportunities(
     const qty = parseFloat(pos.quantity) || 0;
     if (qty <= 0) continue;
 
-    const price = priceLookup[pos.assetSymbol.toUpperCase()] || 0;
+    const rawSym = pos.assetSymbol.toUpperCase();
+    const normalizedSym = normalizeSymbolForPriceLookup(rawSym);
+    const price = priceLookup[rawSym] || priceLookup[normalizedSym] || 0;
     if (price <= 0) continue;
 
     const costBasis = parseFloat(pos.totalCostBasis) || 0;
