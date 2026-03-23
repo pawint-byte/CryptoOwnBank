@@ -1,3 +1,11 @@
+export function round8(n: number): number {
+  return Math.round(n * 1e8) / 1e8;
+}
+
+export function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
 export interface TaxLot {
   id: string;
   remainingQuantity: string;
@@ -54,10 +62,10 @@ export function calculateSale(
     const lotRemaining = parseFloat(lot.remainingQuantity);
     if (lotRemaining <= 0) continue;
 
-    const sellFromLot = Math.min(remaining, lotRemaining);
-    const proceeds = sellFromLot * pricePerUnit;
-    const costBasis = sellFromLot * parseFloat(lot.costBasisPerUnit);
-    const gainLoss = proceeds - costBasis;
+    const sellFromLot = round8(Math.min(remaining, lotRemaining));
+    const proceeds = round2(sellFromLot * pricePerUnit);
+    const costBasis = round2(sellFromLot * parseFloat(lot.costBasisPerUnit));
+    const gainLoss = round2(proceeds - costBasis);
     const acquiredDate = new Date(lot.acquiredDate);
     const isLongTerm = (saleDate.getTime() - acquiredDate.getTime()) >= oneYear;
 
@@ -71,9 +79,9 @@ export function calculateSale(
       isLongTerm,
       lotId: lot.id,
       sellFromLot,
-      newLotRemaining: lotRemaining - sellFromLot,
+      newLotRemaining: round8(lotRemaining - sellFromLot),
     });
-    remaining -= sellFromLot;
+    remaining = round8(remaining - sellFromLot);
   }
 
   const remainingQty = sorted.reduce((sum, lot) => {
@@ -84,10 +92,10 @@ export function calculateSale(
 
   return {
     events,
-    totalProceeds,
-    totalCostBasis,
-    totalGainLoss: totalProceeds - totalCostBasis,
-    remainingQty,
+    totalProceeds: round2(totalProceeds),
+    totalCostBasis: round2(totalCostBasis),
+    totalGainLoss: round2(totalProceeds - totalCostBasis),
+    remainingQty: round8(remainingQty),
   };
 }
 
@@ -101,8 +109,8 @@ export function calculateAverageCost(lots: TaxLot[]): { averageCost: number; tot
     (sum, l) => sum + parseFloat(l.remainingQuantity),
     0
   );
-  const averageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
-  return { averageCost, totalCost, totalQuantity };
+  const averageCost = totalQuantity > 0 ? round8(totalCost / totalQuantity) : 0;
+  return { averageCost, totalCost: round2(totalCost), totalQuantity: round8(totalQuantity) };
 }
 
 export interface PortfolioPosition {
@@ -160,20 +168,20 @@ export function calculatePortfolioValue(
     }
   }
 
-  const totalGainLoss = totalValue - totalCostBasis;
-  const totalGainLossPercent = totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
+  const totalGainLoss = round2(totalValue - totalCostBasis);
+  const totalGainLossPercent = totalCostBasis > 0 ? round2((totalGainLoss / totalCostBasis) * 100) : 0;
 
   const allocation = Array.from(allocationMap.entries()).map(([name, value]) => ({
     name,
-    value,
+    value: round2(value),
   }));
 
-  return { totalValue, totalCostBasis, totalGainLoss, totalGainLossPercent, allocation };
+  return { totalValue: round2(totalValue), totalCostBasis: round2(totalCostBasis), totalGainLoss, totalGainLossPercent, allocation };
 }
 
 export function calculateGainLossPercent(currentValue: number, costBasis: number): number {
   if (costBasis <= 0) return 0;
-  return ((currentValue - costBasis) / costBasis) * 100;
+  return round2(((currentValue - costBasis) / costBasis) * 100);
 }
 
 export function isLongTermHolding(acquiredDate: Date, soldDate: Date): boolean {

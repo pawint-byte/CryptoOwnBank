@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  round2,
+  round8,
   sortLotsByMethod,
   calculateSale,
   calculateAverageCost,
@@ -348,5 +350,58 @@ describe("isLongTermHolding", () => {
   it("returns false for same-day sale", () => {
     const date = new Date("2025-03-01");
     expect(isLongTermHolding(date, date)).toBe(false);
+  });
+});
+
+describe("precision rounding", () => {
+  it("round2 rounds to 2 decimal places", () => {
+    expect(round2(1.005)).toBe(1.01);
+    expect(round2(1.004)).toBe(1);
+    expect(round2(99.999)).toBe(100);
+    expect(round2(0.1 + 0.2)).toBe(0.3);
+  });
+
+  it("round8 rounds to 8 decimal places", () => {
+    expect(round8(0.000000001)).toBe(0);
+    expect(round8(0.123456789)).toBe(0.12345679);
+    expect(round8(1.000000005)).toBe(1.00000001);
+  });
+
+  it("sale proceeds avoid floating-point drift", () => {
+    const lots = [
+      makeLot("a", "0.33333333", "100.55", "2024-01-01"),
+      makeLot("b", "0.66666667", "200.77", "2024-06-01"),
+    ];
+    const result = calculateSale(lots, 1, 300, "FIFO", new Date("2025-06-01"));
+    expect(result.totalProceeds).toBe(300);
+    expect(Number.isInteger(result.totalProceeds * 100)).toBe(true);
+    expect(result.remainingQty).toBeCloseTo(0, 7);
+  });
+
+  it("average cost avoids repeating decimals", () => {
+    const lots = [
+      makeLot("a", "3", "10", "2024-01-01"),
+      makeLot("b", "3", "20", "2024-06-01"),
+      makeLot("c", "3", "30", "2024-09-01"),
+    ];
+    const result = calculateAverageCost(lots);
+    expect(result.averageCost).toBe(20);
+    const thirds = [
+      makeLot("x", "1", "10", "2024-01-01"),
+      makeLot("y", "1", "10", "2024-06-01"),
+      makeLot("z", "1", "10", "2024-09-01"),
+    ];
+    const r2 = calculateAverageCost(thirds);
+    expect(r2.averageCost).toBe(10);
+  });
+
+  it("portfolio gain/loss percent rounds cleanly", () => {
+    const positions = [
+      { assetSymbol: "BTC", quantity: "3", totalCostBasis: "7", averageCost: "2.33333333" },
+    ];
+    const result = calculatePortfolioValue(positions, [], { BTC: 10 });
+    expect(typeof result.totalGainLossPercent).toBe("number");
+    const decimalPlaces = result.totalGainLossPercent.toString().split(".")[1]?.length || 0;
+    expect(decimalPlaces).toBeLessThanOrEqual(2);
   });
 });
