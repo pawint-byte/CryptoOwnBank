@@ -3864,11 +3864,18 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const positionsData = await storage.getPositionsByUser(userId);
-      const allAssets = await storage.getAllAssets();
       const priceLookup: Record<string, number> = {};
+      const allAssets = await storage.getAllAssets();
       for (const asset of allAssets) {
         if (asset.currentPrice) {
           priceLookup[asset.symbol.toUpperCase()] = parseFloat(asset.currentPrice);
+        }
+      }
+      const cachedPrices = await db.select().from(priceCacheTable);
+      for (const entry of cachedPrices) {
+        const sym = entry.symbol.toUpperCase();
+        if (!priceLookup[sym] && entry.price) {
+          priceLookup[sym] = parseFloat(entry.price);
         }
       }
 
