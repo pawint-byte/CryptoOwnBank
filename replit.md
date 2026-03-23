@@ -168,6 +168,7 @@ Preferred communication style: Simple, everyday language.
 
 #### Future Exploration
 - [ ] **AI-Powered Portfolio Assistant** — Added to public roadmap (Horizon). Non-custodial AI that suggests rebalancing, tax-loss harvesting, DCA, yield strategies. User signs everything. Explore MoonPay Agents CLI/MCP integration when on-ramp application is approved. Watch x402 protocol for B2B machine-to-machine payments. Industry trend: Coinbase, Stripe, deBridge all building AI agent infrastructure.
+- [ ] **Open Wallet Standard (OWS)** — Launched Mar 23, 2026. CC0 open-source multi-chain signing standard for AI agents. NPM: `@open-wallet-standard/core`. Not a Xaman replacement — potential infrastructure for AI assistant and Legacy Plan policy engine. Experiment in a branch when ready.
 
 #### Known Limitations
 - [ ] **XDC on MetaMask iOS** — Cannot fetch Chain ID from tested RPCs. Desktop works fine. No fix available yet.
