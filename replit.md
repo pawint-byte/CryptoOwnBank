@@ -119,7 +119,7 @@ Preferred communication style: Simple, everyday language.
 
 #### Known Limitations
 - [ ] **XDC on MetaMask iOS** — Cannot fetch Chain ID from tested RPCs. Desktop works fine. No fix available yet.
-- [ ] **SQUID_INTEGRATOR_ID** — Verify this env var is set for XRPL Bridge (Axelar/Squid Router). May be using default/public key.
+- [x] **SQUID_INTEGRATOR_ID** — Verified: env var is set. XRPL Bridge (Squid Router/Axelar) is configured.
 
 #### Features to Verify / Test
 - [ ] **Legacy Plan** — Dead-man switch, beneficiary emails, split delivery, annual review attestation
