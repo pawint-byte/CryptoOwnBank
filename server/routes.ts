@@ -5394,63 +5394,45 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       return amendmentVotingCache;
     }
     try {
-      const { Client } = await import("xrpl");
-      const nodes = ["wss://s2.ripple.com", "wss://xrplcluster.com", "wss://s1.ripple.com"];
-      let featureResponse: any = null;
-      let validatorCount = 35;
-
-      for (const node of nodes) {
-        let c: InstanceType<typeof Client> | null = null;
-        try {
-          c = new Client(node, { connectionTimeout: 8000, timeout: 15000 });
-          await c.connect();
-          featureResponse = await c.request({ command: "feature" as any } as any);
-          try {
-            const serverInfo = await c.request({ command: "server_info" } as any);
-            const quorum = (serverInfo?.result as any)?.info?.validation_quorum;
-            if (quorum) validatorCount = Math.round(quorum / 0.8);
-          } catch {}
-          await c.disconnect();
-          console.log(`[XLS-66] Got amendment data from ${node}`);
-          break;
-        } catch (e) {
-          console.log(`[XLS-66] Node ${node} failed: ${(e as any)?.message?.slice(0, 80)}`);
-          try { await c?.disconnect(); } catch {}
-        }
-      }
-      if (!featureResponse) throw new Error("All XRPL nodes failed to return amendment data");
-      const features = (featureResponse?.result as any)?.features || {};
-      const threshold = Math.ceil(validatorCount * 0.8);
+      const resp = await fetch("https://api.xrpscan.com/api/v1/amendments", {
+        headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!resp.ok) throw new Error(`XRPScan API returned ${resp.status}`);
+      const amendments: any[] = await resp.json();
 
       xls65AmendmentActive = false;
       xls66AmendmentActive = false;
       let xls65Data: AmendmentVoting | null = null;
       let xls66Data: AmendmentVoting | null = null;
 
-      for (const [_hash, info] of Object.entries(features)) {
-        const feat = info as any;
-        if (feat.name === "SingleAssetVault") {
-          if (feat.enabled === true) xls65AmendmentActive = true;
-          const count = typeof feat.count === "number" ? feat.count : 0;
+      for (const a of amendments) {
+        if (a.name === "SingleAssetVault") {
+          if (a.enabled === true) xls65AmendmentActive = true;
+          const count = typeof a.count === "number" ? a.count : 0;
+          const validatorCount = typeof a.validations === "number" ? a.validations : 35;
+          const threshold = typeof a.threshold === "number" ? a.threshold : Math.ceil(validatorCount * 0.8);
           xls65Data = {
             name: "SingleAssetVault",
-            enabled: feat.enabled === true,
-            supported: feat.supported === true,
-            vetoed: feat.vetoed === true,
+            enabled: a.enabled === true,
+            supported: a.supported === true,
+            vetoed: a.vetoed === true,
             count,
             threshold,
             validatorCount,
             percentage: validatorCount > 0 ? Math.round((count / validatorCount) * 100) : 0,
           };
         }
-        if (feat.name === "LendingProtocol") {
-          if (feat.enabled === true) xls66AmendmentActive = true;
-          const count = typeof feat.count === "number" ? feat.count : 0;
+        if (a.name === "LendingProtocol") {
+          if (a.enabled === true) xls66AmendmentActive = true;
+          const count = typeof a.count === "number" ? a.count : 0;
+          const validatorCount = typeof a.validations === "number" ? a.validations : 35;
+          const threshold = typeof a.threshold === "number" ? a.threshold : Math.ceil(validatorCount * 0.8);
           xls66Data = {
             name: "LendingProtocol",
-            enabled: feat.enabled === true,
-            supported: feat.supported === true,
-            vetoed: feat.vetoed === true,
+            enabled: a.enabled === true,
+            supported: a.supported === true,
+            vetoed: a.vetoed === true,
             count,
             threshold,
             validatorCount,
@@ -5459,9 +5441,10 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         }
       }
       lastAmendmentCheck = now;
+      console.log(`[XLS-66] Got amendment data from XRPScan — XLS-65: ${xls65Data?.count}/${xls65Data?.validatorCount} (${xls65Data?.percentage}%), XLS-66: ${xls66Data?.count}/${xls66Data?.validatorCount} (${xls66Data?.percentage}%)`);
       amendmentVotingCache = { xls65: xls65Data, xls66: xls66Data, checkedAt: now, lastSuccessAt: now, stale: false };
     } catch (error) {
-      console.error("[XLS-66] Amendment check failed:", (error as any)?.message);
+      console.error("[XLS-66] XRPScan amendment check failed:", (error as any)?.message);
       if (xls65AmendmentActive === null) xls65AmendmentActive = false;
       if (xls66AmendmentActive === null) xls66AmendmentActive = false;
       amendmentVotingCache.checkedAt = now;
