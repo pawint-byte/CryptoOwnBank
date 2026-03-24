@@ -378,7 +378,7 @@ export default function PayPage() {
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-xs font-semibold">Most flexible: Use gift cards, cash, or mobile money</p>
                   <p className="text-xs text-muted-foreground">
-                    <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> lets you buy crypto with 900+ payment methods including gift cards, cash deposits, M-Pesa, and more — no bank account or exchange needed.
+                    <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> lets you buy crypto with gift cards, cash deposits, M-Pesa, and more — no bank account or exchange needed. Non-custodial with built-in escrow.
                   </p>
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">

@@ -18,7 +18,7 @@
 | MetaMask Card | NO REFERRAL — referral program suspended Feb 2026 | Swap in referral link when program reopens | 2026-03-24 |
 | MoonPay | Generic link — awaiting partner approval | Embed widget once approved | 2026-03-24 |
 | Transak | Generic link — awaiting partner approval | Embed widget once approved | 2026-03-24 |
-| NoOnes | Generic link | Check if affiliate program exists | 2026-03-24 |
+| NoOnes | REMOVED — blocks US users (geo-restricted) | Replaced all references with ByBarter | 2026-03-24 |
 | ByBarter | Generic link | Check if affiliate program exists | 2026-03-24 |
 | Narfex | Generic link | Check if affiliate program exists | 2026-03-24 |
 | Onramp.money | Generic link | Check if affiliate program exists | 2026-03-24 |
