@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import heroVideoUrl from "@assets/CryptoOwnBank__1-Min_Pitch_(Security_&_Control)_1080p_caption_1774019224403.mp4";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SeoHead } from "@/components/seo-head";
+import { SiTiktok, SiX, SiDiscord, SiYoutube } from "react-icons/si";
 import {
   Shield,
   TrendingUp,
@@ -2607,6 +2608,21 @@ export default function Landing() {
               <div className="flex flex-col gap-2 text-sm">
                 <a href="/legal" className="hover:text-[#00A4E4] transition-colors" data-testid="link-legal">Terms &amp; Disclaimers</a>
                 <a href="/privacy" className="hover:text-[#00A4E4] transition-colors" data-testid="link-privacy">Privacy Policy</a>
+              </div>
+              <p className="text-sm font-medium text-gray-200 mt-6 mb-3">Community</p>
+              <div className="flex items-center gap-4">
+                <a href="https://www.tiktok.com/@cryptoownbank" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#00A4E4] transition-colors" data-testid="link-tiktok" aria-label="TikTok">
+                  <SiTiktok className="h-5 w-5" />
+                </a>
+                <a href="https://x.com/cryptoownbank" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#00A4E4] transition-colors" data-testid="link-twitter" aria-label="X (Twitter)">
+                  <SiX className="h-5 w-5" />
+                </a>
+                <a href="https://discord.gg/cryptoownbank" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#00A4E4] transition-colors" data-testid="link-discord" aria-label="Discord">
+                  <SiDiscord className="h-5 w-5" />
+                </a>
+                <a href="https://www.youtube.com/@cryptoownbank" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#00A4E4] transition-colors" data-testid="link-youtube" aria-label="YouTube">
+                  <SiYoutube className="h-5 w-5" />
+                </a>
               </div>
             </div>
           </div>
