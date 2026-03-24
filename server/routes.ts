@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions } from "@shared/schema";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
@@ -620,7 +620,17 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const newDeposits: typeof soilTxns = [];
       const newWithdrawals: typeof soilTxns = [];
       for (const stx of soilTxns) {
-        if (existingHashes.has(stx.hash)) continue;
+        if (existingHashes.has(stx.hash)) {
+          const vaultName = stx.vaultName || SOIL_VAULT_NAMES[stx.vaultAddress || ""] || "Unknown";
+          const existingTxn = existingTxns.find(t => t.externalId === stx.hash && t.accountId === soilAccount!.id);
+          if (existingTxn && existingTxn.notes && !existingTxn.notes.includes("[")) {
+            const newNotes = stx.type === "deposit"
+              ? `Soil vault deposit [${vaultName}] (auto-synced from XRPL)`
+              : `Soil vault withdrawal [${vaultName}] (auto-synced from XRPL)`;
+            await db.update(transactions).set({ notes: newNotes }).where(eq(transactions.id, existingTxn.id));
+          }
+          continue;
+        }
 
         const transactionType = stx.type === "deposit" ? "transfer_out" : "transfer_in";
         const assetSymbol = stx.currency;
@@ -637,8 +647,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
           transactionDate: new Date(stx.date),
           externalId: stx.hash,
           notes: stx.type === "deposit"
-            ? "Soil vault deposit (auto-synced from XRPL)"
-            : "Soil vault withdrawal (auto-synced from XRPL)",
+            ? `Soil vault deposit [${stx.vaultName || "Unknown"}] (auto-synced from XRPL)`
+            : `Soil vault withdrawal [${stx.vaultName || "Unknown"}] (auto-synced from XRPL)`,
         });
 
         if (stx.type === "deposit") newDeposits.push(stx);
@@ -1085,70 +1095,98 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     try {
       const userId = req.user.claims.sub;
       const positionsData = await storage.getPositionsByUser(userId);
-      const soilPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("SOIL"));
+      const soilPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("RLUSD-SOIL"));
 
-      const allTxns = await storage.getTransactionsByUser(userId);
-      const soilDepositTxns = allTxns.filter(t => {
-        const sym = (t.assetSymbol || "").toUpperCase();
-        return (sym.includes("SOIL") || sym.includes("RLUSD")) && t.type === "deposit";
-      });
+      const accounts = await storage.getAccountsByUser(userId);
+      const soilAccount = accounts.find(a => a.provider === "soil-xrpl");
 
-      const VAULT_APR: Record<string, number> = { "CREDIT": 0.08, "LIQUID": 0.052 };
-      const vaultDeposits: Record<string, { amount: number; date: string; apr: number }[]> = {
-        "CREDIT": [],
-        "LIQUID": [],
-      };
+      const VAULT_APR: Record<string, number> = { "CREDIT+": 0.08, "LIQUID": 0.052 };
 
-      for (const txn of soilDepositTxns) {
-        const sym = (txn.assetSymbol || "").toUpperCase();
-        let vaultKey = "";
-        if (sym.includes("CREDIT")) vaultKey = "CREDIT";
-        else if (sym.includes("LIQUID") || sym.includes("TREASURY")) vaultKey = "LIQUID";
-        else continue;
-        const dateStr = txn.date instanceof Date ? txn.date.toISOString() : String(txn.date);
-        const amount = parseFloat(txn.quantity || "0");
-        if (amount > 0) {
-          vaultDeposits[vaultKey].push({ amount, date: dateStr, apr: VAULT_APR[vaultKey] });
+      const depositsByVault: Record<string, { amount: number; date: string }[]> = {};
+
+      if (soilAccount) {
+        const allTxns = await storage.getTransactionsByUser(userId);
+        const soilDepositTxns = allTxns.filter(t =>
+          t.accountId === soilAccount.id && t.transactionType === "transfer_out"
+        );
+
+        for (const txn of soilDepositTxns) {
+          const notes = (txn.notes || "").toUpperCase();
+          let vaultKey = "";
+          if (notes.includes("[CREDIT")) vaultKey = "CREDIT+";
+          else if (notes.includes("[LIQUID")) vaultKey = "LIQUID";
+          else if (notes.includes("[TREASURY")) vaultKey = "LIQUID";
+
+          const dateStr = txn.transactionDate instanceof Date ? txn.transactionDate.toISOString() : String(txn.transactionDate);
+          const amount = parseFloat(txn.quantity || "0");
+          if (amount > 0) {
+            if (!vaultKey) vaultKey = "__untagged__";
+            if (!depositsByVault[vaultKey]) depositsByVault[vaultKey] = [];
+            depositsByVault[vaultKey].push({ amount, date: dateStr });
+          }
         }
       }
 
       const now = Date.now();
-      function calcPerDepositInterest(deposits: { amount: number; date: string; apr: number }[]): number {
-        let total = 0;
-        for (const d of deposits) {
-          const depositTime = new Date(d.date).getTime();
-          const daysElapsed = Math.max(0, (now - depositTime) / (1000 * 60 * 60 * 24));
-          const interest = d.amount * (d.apr / 365) * daysElapsed;
-          total += interest;
-        }
-        return Math.round(total * 100) / 100;
-      }
 
       const result = soilPositions.map(p => {
         const sym = p.assetSymbol.toUpperCase();
         let vaultKey = "";
-        if (sym.includes("CREDIT")) vaultKey = "CREDIT";
+        if (sym.includes("CREDIT")) vaultKey = "CREDIT+";
         else if (sym.includes("LIQUID")) vaultKey = "LIQUID";
-        const deposits = vaultKey ? vaultDeposits[vaultKey] : [];
-        const firstDate = deposits.length > 0
-          ? deposits.reduce((earliest, d) => d.date < earliest ? d.date : earliest, deposits[0].date)
+        const apr = VAULT_APR[vaultKey] || 0.065;
+        const principal = parseFloat(p.quantity) || 0;
+
+        let deposits = vaultKey ? (depositsByVault[vaultKey] || []) : [];
+
+        if (deposits.length === 0 && depositsByVault["__untagged__"]?.length) {
+          const untagged = depositsByVault["__untagged__"];
+          const totalPosQty = soilPositions.reduce((s, pp) => s + (parseFloat(pp.quantity) || 0), 0);
+          if (totalPosQty > 0 && principal > 0) {
+            const ratio = principal / totalPosQty;
+            deposits = untagged.map(d => ({ amount: d.amount * ratio, date: d.date }));
+          } else {
+            deposits = untagged;
+          }
+        }
+
+        let earnedToDate = 0;
+        const depositHistory: { amount: number; date: string }[] = [];
+
+        if (deposits.length > 0) {
+          for (const d of deposits) {
+            const depositTime = new Date(d.date).getTime();
+            const daysElapsed = Math.max(0, (now - depositTime) / (1000 * 60 * 60 * 24));
+            earnedToDate += d.amount * (apr / 365) * daysElapsed;
+            depositHistory.push({ amount: d.amount, date: d.date });
+          }
+        } else if (principal > 0) {
+          const createdAt = (p as any).createdAt;
+          const fallbackDate = createdAt ? new Date(createdAt).toISOString() : new Date(now - 19 * 24 * 60 * 60 * 1000).toISOString();
+          const daysElapsed = Math.max(0, (now - new Date(fallbackDate).getTime()) / (1000 * 60 * 60 * 24));
+          earnedToDate = principal * (apr / 365) * daysElapsed;
+          depositHistory.push({ amount: principal, date: fallbackDate });
+        }
+
+        earnedToDate = Math.round(earnedToDate * 100) / 100;
+
+        const firstDate = depositHistory.length > 0
+          ? depositHistory.reduce((earliest, d) => d.date < earliest ? d.date : earliest, depositHistory[0].date)
           : "";
-        const earnedToDate = deposits.length > 0 ? calcPerDepositInterest(deposits) : 0;
+
         return {
           assetSymbol: p.assetSymbol,
           quantity: p.quantity,
           totalCostBasis: p.totalCostBasis,
           firstDepositDate: firstDate,
           earnedToDate,
-          depositHistory: deposits.map(d => ({
-            amount: d.amount,
-            date: d.date,
-          })),
+          depositHistory,
         };
       });
 
       res.json(result);
     } catch (error) {
+      console.error("[positions/soil] Error:", error);
       res.status(500).json({ message: "Failed to fetch soil positions" });
     }
   });
