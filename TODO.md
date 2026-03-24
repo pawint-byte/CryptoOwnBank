@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-03-24 (evening update) by main agent**
+**Last updated: 2026-03-24 (late evening update) by main agent**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -78,7 +78,7 @@
 
 ## PENDING — Features Needing User Testing
 
-- [2026-03-23] Legacy Plan
+- [2026-03-23] Legacy Plan — UPGRADED (2026-03-24): wallet-specific templates (16 wallet types: Ledger, CypheRock, Trezor, ELLIPAL, Tangem, Coldcard, Keystone, BitBox, Xaman, MetaMask, Trust, Phantom, Exodus, Coinbase Wallet, exchange accounts, other), pre-fill from connected wallets, client-side AES-256-GCM encrypted vault, standalone /decrypt page for survivors. Still needs user testing.
 - [2026-03-23] Earn & Accumulate
 - [2026-03-23] Cross-Chain Swap
 - [2026-03-23] XRPL Bridge
@@ -130,4 +130,5 @@
 - [2026-03-23] "Spend Crypto" sidebar entry added with CreditCard icon
 - [2026-03-23] Cross-links between Buy Crypto and Crypto Debit Cards pages
 - [2026-03-23] All announcement drafts cleaned (no emoji — strictly enforced)
+- [2026-03-24] Legacy Plan upgraded: wallet-specific templates for 16 wallet types (cold: Ledger, CypheRock, Trezor, ELLIPAL, Tangem, Coldcard, Keystone, BitBox; hot: Xaman, MetaMask, Trust, Phantom, Exodus, Coinbase Wallet; exchange: any custodial exchange; other). Pre-fill from connected wallets. Client-side AES-256-GCM encrypted vault. Standalone /decrypt page for survivors. Schema: `hardwareDevice` on wallets, `encryptedVault`+`encryptedVaultHint`+`walletAssetSummary` on legacy_beneficiaries.
 - [pre-2026-03-23] Buy Crypto page with 17 tokens, 11 wallets, 9 on-ramp providers, P2P section (NoOnes, ByBarter, Narfex), emerging market ramps (Onramp.money, Digitap), Telegram Wallet, FAQ

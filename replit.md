@@ -98,7 +98,8 @@ The user has been repeatedly told that things were done when they were not. He h
 
 ### Data Storage
 - PostgreSQL with Drizzle ORM
-- Key tables: users, accounts, transactions, positions, tax_lots, price_cache, wallets, wallet_balances
+- Key tables: users, accounts, transactions, positions, tax_lots, price_cache, wallets, wallet_balances, legacy_plans, legacy_beneficiaries, legacy_check_ins
+- Legacy Plan: `wallets.hardwareDevice` tags which hardware/software holds each address. `legacy_beneficiaries` has `encryptedVault` (AES-256-GCM client-side encrypted), `encryptedVaultHint`, `walletAssetSummary`. Standalone `/decrypt` page (no login required) for survivors.
 
 ### External Dependencies
 - xrpl.js, Xumm SDK, ethers.js v6, 1inch API, LI.FI, Squid Router, CoinGecko, DefiLlama, FRED API, Stripe, Resend email

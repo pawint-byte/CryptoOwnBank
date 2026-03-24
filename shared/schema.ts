@@ -283,6 +283,7 @@ export const wallets = pgTable("wallets", {
   address: varchar("address", { length: 255 }).notNull(),
   label: varchar("label", { length: 100 }),
   notes: text("notes"),
+  hardwareDevice: varchar("hardware_device", { length: 50 }),
   lastSyncAt: timestamp("last_sync_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
@@ -970,6 +971,9 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   seedPhraseInstructions: text("seed_phrase_instructions"),
   additionalNotes: text("additional_notes"),
   splitPieces: text("split_pieces"),
+  encryptedVault: text("encrypted_vault"),
+  encryptedVaultHint: varchar("encrypted_vault_hint", { length: 500 }),
+  walletAssetSummary: text("wallet_asset_summary"),
   deliveredAt: timestamp("delivered_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [

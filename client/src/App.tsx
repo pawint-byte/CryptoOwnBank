@@ -90,6 +90,7 @@ import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
 import BuyCrypto from "@/pages/buy-crypto";
 import CryptoDebitCards from "@/pages/crypto-debit-cards";
+import DecryptPage from "@/pages/decrypt";
 import { OfflineBanner } from "@/components/offline-banner";
 
 const TOS_LAST_UPDATED = new Date("2026-03-21T00:00:00Z");
@@ -323,6 +324,7 @@ function Router() {
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
+        <Route path="/decrypt" component={DecryptPage} />
         <Route path="/snapshot/:token" component={Snapshot} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
@@ -343,6 +345,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/yield-calculator" component={YieldCalculator} />
       <Route path="/pay" component={PayPage} />
+      <Route path="/decrypt" component={DecryptPage} />
       <Route path="/snapshot/:token" component={Snapshot} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />

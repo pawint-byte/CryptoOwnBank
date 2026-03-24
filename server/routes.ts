@@ -6712,6 +6712,26 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.patch("/api/wallets/:id/hardware-device", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(req.params.id);
+      if (!wallet || wallet.userId !== userId) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+      const { hardwareDevice } = req.body;
+      const validDevices = ["ledger", "cypherock", "trezor", "tangem", "coldcard", "ellipal", "keystone", "bitbox", "xaman", "metamask", "trust", "phantom", "exodus", "coinbase-wallet", "exchange", "other", ""];
+      if (hardwareDevice !== undefined && !validDevices.includes(hardwareDevice)) {
+        return res.status(400).json({ message: "Invalid hardware device type" });
+      }
+      await db.update(wallets).set({ hardwareDevice: hardwareDevice || null }).where(eq(wallets.id, req.params.id));
+      res.json({ message: "Hardware device updated" });
+    } catch (error) {
+      console.error("Update wallet hardware device error:", error);
+      res.status(500).json({ message: "Failed to update hardware device" });
+    }
+  });
+
   app.patch("/api/wallets/:id/notes", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -7416,15 +7436,50 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.get("/api/legacy-plan/wallet-assets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const userWallets = await storage.getWalletsByUser(userId);
+      const result: Array<{
+        walletId: string;
+        chain: string;
+        address: string;
+        label: string | null;
+        hardwareDevice: string | null;
+        assets: Array<{ symbol: string; balance: string; usdValue: string | null }>;
+      }> = [];
+      for (const w of userWallets) {
+        const balances = await storage.getWalletBalances(w.id);
+        result.push({
+          walletId: w.id,
+          chain: w.chain,
+          address: w.address,
+          label: w.label,
+          hardwareDevice: (w as any).hardwareDevice || null,
+          assets: balances.map(b => ({
+            symbol: b.assetSymbol,
+            balance: b.balance,
+            usdValue: b.usdValue,
+          })),
+        });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Get legacy wallet assets error:", error);
+      res.status(500).json({ message: "Failed to load wallet assets" });
+    }
+  });
+
   app.post("/api/legacy-beneficiaries", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
-      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces } = req.body;
+      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
-      const validWalletTypes = ["cypherock", "ledger", "trezor", "xaman", "tangem", "coldcard", "other"];
+      const validWalletTypes = ["cypherock", "ledger", "trezor", "xaman", "tangem", "coldcard", "ellipal", "keystone", "bitbox", "metamask", "trust", "phantom", "exodus", "coinbase-wallet", "exchange", "other"];
       const beneficiary = await storage.createLegacyBeneficiary({
         legacyPlanId: plan.id,
         name: String(name).slice(0, 200),
@@ -7433,8 +7488,11 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         walletType: walletType && validWalletTypes.includes(walletType) ? walletType : null,
         deviceInstructions: deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null,
         seedPhraseInstructions: seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null,
-        additionalNotes: additionalNotes ? String(additionalNotes).slice(0, 2000) : null,
+        additionalNotes: additionalNotes ? String(additionalNotes).slice(0, 5000) : null,
         splitPieces: splitPieces ? String(splitPieces).slice(0, 500) : null,
+        encryptedVault: encryptedVault ? String(encryptedVault).slice(0, 50000) : null,
+        encryptedVaultHint: encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null,
+        walletAssetSummary: walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null,
       });
       res.json(beneficiary);
     } catch (error) {
@@ -7451,7 +7509,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       if (!plan) return res.status(403).json({ message: "No legacy plan found" });
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
       if (!beneficiaries.find(b => b.id === req.params.id)) return res.status(403).json({ message: "Not your beneficiary" });
-      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces } = req.body;
+      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
       const safeUpdates: Record<string, unknown> = {};
       if (name !== undefined) safeUpdates.name = String(name).slice(0, 200);
       if (email !== undefined) safeUpdates.email = String(email).slice(0, 320);
@@ -7459,8 +7517,11 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       if (walletType !== undefined) safeUpdates.walletType = walletType;
       if (deviceInstructions !== undefined) safeUpdates.deviceInstructions = deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null;
       if (seedPhraseInstructions !== undefined) safeUpdates.seedPhraseInstructions = seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null;
-      if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 2000) : null;
+      if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 5000) : null;
       if (splitPieces !== undefined) safeUpdates.splitPieces = splitPieces ? String(splitPieces).slice(0, 500) : null;
+      if (encryptedVault !== undefined) safeUpdates.encryptedVault = encryptedVault ? String(encryptedVault).slice(0, 50000) : null;
+      if (encryptedVaultHint !== undefined) safeUpdates.encryptedVaultHint = encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null;
+      if (walletAssetSummary !== undefined) safeUpdates.walletAssetSummary = walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null;
       const result = await storage.updateLegacyBeneficiary(req.params.id, safeUpdates as any);
       if (!result) return res.status(404).json({ message: "Beneficiary not found" });
       res.json(result);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   HeartHandshake,
   Shield,
@@ -25,6 +27,7 @@ import {
   UserPlus,
   Crown,
   Lock,
+  Unlock,
   Info,
   RefreshCw,
   Edit,
@@ -34,6 +37,14 @@ import {
   CalendarCheck,
   ClipboardCheck,
   Mail,
+  Download,
+  Eye,
+  EyeOff,
+  Key,
+  Wallet,
+  Smartphone,
+  HardDrive,
+  Globe,
 } from "lucide-react";
 
 type LegacyPlanData = {
@@ -70,6 +81,9 @@ type LegacyPlanData = {
     seedPhraseInstructions: string | null;
     additionalNotes: string | null;
     splitPieces: string | null;
+    encryptedVault: string | null;
+    encryptedVaultHint: string | null;
+    walletAssetSummary: string | null;
     createdAt: string;
   }>;
   checkIns: Array<{
@@ -341,16 +355,351 @@ function StatusBanner({ plan }: { plan: LegacyPlanData["plan"] }) {
   );
 }
 
+const WALLET_TYPES: Record<string, { label: string; category: "cold" | "hot" | "exchange"; icon: typeof HardDrive; recoveryMethod: string; template: { deviceLabel: string; devicePlaceholder: string; seedLabel: string; seedPlaceholder: string; guidanceTitle: string; guidanceText: string; templateFields: Array<{ label: string; placeholder: string; key: string }>; } }> = {
+  ledger: {
+    label: "Ledger (Nano S/X/Stax)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "24-word BIP39 seed phrase",
+    template: {
+      deviceLabel: "Where is the Ledger device?",
+      devicePlaceholder: "e.g., Home office safe, top shelf behind the books",
+      seedLabel: "Where is the 24-word recovery phrase?",
+      seedPlaceholder: "e.g., Steel plate in bank safe deposit box #42, First National Bank, Main St branch",
+      guidanceTitle: "Ledger Recovery Guide",
+      guidanceText: "A Ledger device uses a 24-word BIP39 seed phrase. The survivor needs the physical device AND the PIN, OR just the 24 words to restore onto a new Ledger. If a 25th word (passphrase) is used, that must also be provided. The device connects via USB or Bluetooth to Ledger Live software.",
+      templateFields: [
+        { label: "Device PIN or where PIN is written", placeholder: "e.g., Written on card in home safe, envelope marked 'L'", key: "pin" },
+        { label: "Is there a 25th word (passphrase)?", placeholder: "e.g., Yes — stored separately in attorney's safe, sealed envelope", key: "passphrase" },
+        { label: "Which apps are installed? (chains)", placeholder: "e.g., Bitcoin, Ethereum, XRP, Stellar, Polygon", key: "apps" },
+        { label: "Ledger Live installed on which computer?", placeholder: "e.g., MacBook Pro in home office, login password in password manager", key: "software" },
+      ],
+    },
+  },
+  cypherock: {
+    label: "CypheRock X1 (2-of-5 Shamir)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "Shamir Secret Sharing — 5 X1 cards, any 2 + device",
+    template: {
+      deviceLabel: "Where is the X1 device (dongle)?",
+      devicePlaceholder: "e.g., Home safe, inside the gray electronics bag",
+      seedLabel: "Where are the X1 cards stored?",
+      seedPlaceholder: "General notes on card distribution",
+      guidanceTitle: "CypheRock 2-of-5 Recovery Guide",
+      guidanceText: "CypheRock uses Shamir Secret Sharing. 5 physical X1 cards are created during setup. To recover, the survivor needs the X1 device (dongle) PLUS any 2 of the 5 cards. No single card holds the full key. Cards can be distributed across locations and people for security.",
+      templateFields: [
+        { label: "Card 1 location", placeholder: "e.g., Home safe, top drawer", key: "card1" },
+        { label: "Card 2 location", placeholder: "e.g., Bank safe deposit box #12", key: "card2" },
+        { label: "Card 3 location", placeholder: "e.g., With attorney — Law Office of Smith & Associates", key: "card3" },
+        { label: "Card 4 location", placeholder: "e.g., Parent's house, fireproof safe in basement", key: "card4" },
+        { label: "Card 5 location", placeholder: "e.g., Office desk, locked drawer", key: "card5" },
+        { label: "Device PIN", placeholder: "e.g., Written on card in attorney's sealed envelope", key: "pin" },
+      ],
+    },
+  },
+  trezor: {
+    label: "Trezor (Model T / Safe 3)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "12 or 24-word BIP39 seed phrase",
+    template: {
+      deviceLabel: "Where is the Trezor device?",
+      devicePlaceholder: "e.g., Home office desk drawer, in the Trezor box",
+      seedLabel: "Where is the recovery seed (12 or 24 words)?",
+      seedPlaceholder: "e.g., Metal seed plate in fireproof safe, master bedroom closet",
+      guidanceTitle: "Trezor Recovery Guide",
+      guidanceText: "Trezor uses a 12 or 24-word BIP39 seed phrase. The survivor needs the device + PIN, or just the seed words to restore on a new Trezor. If a passphrase is set, it must also be provided. Trezor connects via USB to Trezor Suite software.",
+      templateFields: [
+        { label: "Device PIN or where PIN is stored", placeholder: "e.g., Written in sealed envelope in home safe", key: "pin" },
+        { label: "Is there a passphrase (hidden wallet)?", placeholder: "e.g., Yes — passphrase stored with attorney", key: "passphrase" },
+        { label: "Which coins are stored?", placeholder: "e.g., Bitcoin, Ethereum, Cardano", key: "apps" },
+        { label: "Trezor Suite on which computer?", placeholder: "e.g., Desktop PC in home office", key: "software" },
+      ],
+    },
+  },
+  ellipal: {
+    label: "ELLIPAL Titan",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "12/24-word mnemonic, air-gapped (QR only)",
+    template: {
+      deviceLabel: "Where is the ELLIPAL device?",
+      devicePlaceholder: "e.g., Home safe, in the ELLIPAL box with charging cable",
+      seedLabel: "Where is the recovery mnemonic (12 or 24 words)?",
+      seedPlaceholder: "e.g., Written on recovery sheet, sealed envelope in bank safe deposit box",
+      guidanceTitle: "ELLIPAL Recovery Guide",
+      guidanceText: "ELLIPAL is air-gapped — it has NO USB, Bluetooth, or WiFi. All communication uses QR codes between the device and the ELLIPAL mobile app. The survivor needs the device + password, or the mnemonic words to restore on a new device. The ELLIPAL app is needed on a phone to manage transactions.",
+      templateFields: [
+        { label: "Device password", placeholder: "e.g., Written on card in home safe, labeled 'E'", key: "pin" },
+        { label: "ELLIPAL app installed on which phone?", placeholder: "e.g., iPhone 15 Pro, personal phone", key: "software" },
+        { label: "Which accounts are set up?", placeholder: "e.g., Bitcoin, Ethereum, XRP, BNB", key: "apps" },
+      ],
+    },
+  },
+  tangem: {
+    label: "Tangem (NFC card wallet)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "2-of-3 NFC card set — no seed phrase",
+    template: {
+      deviceLabel: "Where are the Tangem cards?",
+      devicePlaceholder: "e.g., Primary card in wallet, backup cards in home safe",
+      seedLabel: "Tangem does not use a seed phrase — backup cards ARE the recovery",
+      seedPlaceholder: "Describe where each card in the set is located",
+      guidanceTitle: "Tangem Recovery Guide",
+      guidanceText: "Tangem is unique — there is NO seed phrase. The wallet is the NFC card itself. A typical Tangem set includes 2 or 3 cards. The survivor needs any one card + the Tangem app on their phone + the access code. Lost all cards = lost funds. There is no other recovery method.",
+      templateFields: [
+        { label: "Card 1 (primary) location", placeholder: "e.g., In my physical wallet, everyday carry", key: "card1" },
+        { label: "Card 2 (backup) location", placeholder: "e.g., Home safe, fireproof box", key: "card2" },
+        { label: "Card 3 (backup) location", placeholder: "e.g., With spouse / trusted family member", key: "card3" },
+        { label: "Access code", placeholder: "e.g., Written on card inside sealed envelope in safe", key: "pin" },
+        { label: "Tangem app on which phone?", placeholder: "e.g., iPhone, download from App Store", key: "software" },
+      ],
+    },
+  },
+  coldcard: {
+    label: "Coldcard (Bitcoin only)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "24-word BIP39 seed + optional passphrase",
+    template: {
+      deviceLabel: "Where is the Coldcard device?",
+      devicePlaceholder: "e.g., Home safe, in anti-static bag",
+      seedLabel: "Where are the 24 seed words?",
+      seedPlaceholder: "e.g., Stamped on steel plate, bank safe deposit box",
+      guidanceTitle: "Coldcard Recovery Guide",
+      guidanceText: "Coldcard is a Bitcoin-only signing device. It uses a 24-word BIP39 seed and optionally a BIP39 passphrase. It connects via microSD card (air-gapped mode) or USB. The survivor needs the seed words and any passphrase to restore, or the device + PIN to sign transactions.",
+      templateFields: [
+        { label: "Device PIN", placeholder: "e.g., Written in sealed envelope with attorney", key: "pin" },
+        { label: "Is there a BIP39 passphrase?", placeholder: "e.g., Yes, stored separately from seed words", key: "passphrase" },
+        { label: "Anti-phishing words set?", placeholder: "e.g., Two words shown on device login — ignore if seen by survivor", key: "antiphish" },
+        { label: "Companion software (Sparrow, Electrum)?", placeholder: "e.g., Sparrow Wallet on desktop PC, home office", key: "software" },
+      ],
+    },
+  },
+  keystone: {
+    label: "Keystone (air-gapped QR)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "24-word BIP39 seed, air-gapped via QR",
+    template: {
+      deviceLabel: "Where is the Keystone device?",
+      devicePlaceholder: "e.g., Home safe, in the Keystone box",
+      seedLabel: "Where is the 24-word seed phrase?",
+      seedPlaceholder: "e.g., Metal seed plate in bank safe deposit box",
+      guidanceTitle: "Keystone Recovery Guide",
+      guidanceText: "Keystone is air-gapped — communication is via QR codes only (no USB/Bluetooth). The survivor needs the 24-word seed to restore on a new device, or the device + unlock password. Keystone works with MetaMask, Keplr, and other QR-compatible wallets.",
+      templateFields: [
+        { label: "Device password", placeholder: "e.g., Written on card in safe", key: "pin" },
+        { label: "Is there a passphrase?", placeholder: "e.g., No passphrase set", key: "passphrase" },
+        { label: "Companion wallets (MetaMask, etc.)", placeholder: "e.g., Paired with MetaMask in Chrome on desktop PC", key: "software" },
+      ],
+    },
+  },
+  bitbox: {
+    label: "BitBox02",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "24-word BIP39 seed + optional passphrase",
+    template: {
+      deviceLabel: "Where is the BitBox02 device?",
+      devicePlaceholder: "e.g., Home safe, in original box",
+      seedLabel: "Where is the 24-word seed backup?",
+      seedPlaceholder: "e.g., On the included microSD backup card in safe, plus steel plate in bank box",
+      guidanceTitle: "BitBox02 Recovery Guide",
+      guidanceText: "BitBox02 stores a backup on microSD card automatically during setup. The survivor needs either the microSD card or the 24 seed words. The device password unlocks the device. BitBox app is needed to interact with it (connects via USB-C).",
+      templateFields: [
+        { label: "Device password", placeholder: "e.g., Written in sealed envelope in home safe", key: "pin" },
+        { label: "Where is the microSD backup card?", placeholder: "e.g., In the BitBox box, home safe", key: "sdcard" },
+        { label: "Optional passphrase set?", placeholder: "e.g., No passphrase", key: "passphrase" },
+        { label: "BitBox app installed where?", placeholder: "e.g., MacBook, desktop app", key: "software" },
+      ],
+    },
+  },
+  xaman: {
+    label: "Xaman (formerly Xumm)",
+    category: "hot",
+    icon: Smartphone,
+    recoveryMethod: "Family seed or secret numbers (XRPL)",
+    template: {
+      deviceLabel: "Which phone has Xaman installed?",
+      devicePlaceholder: "e.g., iPhone 15 Pro, personal phone, Face ID enabled",
+      seedLabel: "Where is the family seed / secret numbers backup?",
+      seedPlaceholder: "e.g., Written on paper in home safe, labeled 'X'",
+      guidanceTitle: "Xaman (XRPL) Recovery Guide",
+      guidanceText: "Xaman is the primary XRPL wallet app. It uses a 'family seed' (starting with 's') or 'secret numbers' (8 rows of 6 digits) for backup. If paired with a Ledger, the Ledger is the signing device and Xaman is just the interface. The survivor needs the seed/numbers to import into a new Xaman install, OR the phone + access code.",
+      templateFields: [
+        { label: "Xaman access code (6-digit or biometric)", placeholder: "e.g., 6-digit code written on card in safe", key: "pin" },
+        { label: "Is this account paired with a Ledger?", placeholder: "e.g., Yes — Ledger Nano X is the signing device, see Ledger instructions", key: "ledgerPaired" },
+        { label: "XRPL address (r...)", placeholder: "e.g., rABC123... — so survivor can verify the right account", key: "address" },
+        { label: "Is there a regular key or multi-sign?", placeholder: "e.g., No regular key set / Yes — secondary signer on address rXYZ...", key: "multisig" },
+      ],
+    },
+  },
+  metamask: {
+    label: "MetaMask (browser/mobile)",
+    category: "hot",
+    icon: Globe,
+    recoveryMethod: "12-word seed phrase",
+    template: {
+      deviceLabel: "Where is MetaMask installed?",
+      devicePlaceholder: "e.g., Chrome extension on home PC + MetaMask mobile on iPhone",
+      seedLabel: "Where is the 12-word Secret Recovery Phrase?",
+      seedPlaceholder: "e.g., Written on card in home safe, sealed envelope",
+      guidanceTitle: "MetaMask Recovery Guide",
+      guidanceText: "MetaMask uses a 12-word Secret Recovery Phrase (SRP). The survivor can restore the wallet on any browser or phone by installing MetaMask and importing the 12 words. If hardware wallet accounts were added (Ledger/Trezor), those require the hardware device separately. The MetaMask password only unlocks the local install — the 12 words are the true backup.",
+      templateFields: [
+        { label: "MetaMask password (for existing install)", placeholder: "e.g., In password manager, or written in safe", key: "pin" },
+        { label: "Any hardware wallet accounts added?", placeholder: "e.g., Yes — Ledger accounts imported, see Ledger instructions", key: "hardware" },
+        { label: "Which networks/chains used?", placeholder: "e.g., Ethereum, Polygon, Arbitrum, BSC", key: "apps" },
+      ],
+    },
+  },
+  trust: {
+    label: "Trust Wallet",
+    category: "hot",
+    icon: Smartphone,
+    recoveryMethod: "12-word recovery phrase",
+    template: {
+      deviceLabel: "Which phone has Trust Wallet installed?",
+      devicePlaceholder: "e.g., Samsung Galaxy S24, personal phone",
+      seedLabel: "Where is the 12-word recovery phrase?",
+      seedPlaceholder: "e.g., Written on recovery card in home safe",
+      guidanceTitle: "Trust Wallet Recovery Guide",
+      guidanceText: "Trust Wallet uses a 12-word recovery phrase. The survivor installs Trust Wallet on any phone and imports the 12 words. Trust Wallet supports many chains — all accounts are derived from the same 12 words. The app passcode only locks the local install.",
+      templateFields: [
+        { label: "App passcode", placeholder: "e.g., 6-digit code, or biometric only", key: "pin" },
+        { label: "Which chains/tokens used?", placeholder: "e.g., BNB, Ethereum, Solana, various tokens", key: "apps" },
+      ],
+    },
+  },
+  phantom: {
+    label: "Phantom (Solana/multi-chain)",
+    category: "hot",
+    icon: Smartphone,
+    recoveryMethod: "12-word recovery phrase",
+    template: {
+      deviceLabel: "Where is Phantom installed?",
+      devicePlaceholder: "e.g., Chrome extension on home PC + Phantom mobile on iPhone",
+      seedLabel: "Where is the 12-word Secret Recovery Phrase?",
+      seedPlaceholder: "e.g., Written on card in home safe",
+      guidanceTitle: "Phantom Recovery Guide",
+      guidanceText: "Phantom uses a 12-word recovery phrase. Primarily used for Solana but also supports Ethereum and Polygon. The survivor imports the 12 words into a new Phantom install. Check for any NFTs or staked SOL.",
+      templateFields: [
+        { label: "App password", placeholder: "e.g., In password manager", key: "pin" },
+        { label: "Staked SOL or NFTs?", placeholder: "e.g., 50 SOL staked with Marinade, various NFTs in wallet", key: "staking" },
+      ],
+    },
+  },
+  exodus: {
+    label: "Exodus (desktop/mobile)",
+    category: "hot",
+    icon: Smartphone,
+    recoveryMethod: "12-word recovery phrase",
+    template: {
+      deviceLabel: "Where is Exodus installed?",
+      devicePlaceholder: "e.g., Desktop app on Mac + mobile app on iPhone, synced",
+      seedLabel: "Where is the 12-word recovery phrase?",
+      seedPlaceholder: "e.g., Exported backup email + phrase written in safe",
+      guidanceTitle: "Exodus Recovery Guide",
+      guidanceText: "Exodus uses a 12-word recovery phrase. The survivor installs Exodus and restores with the 12 words. Exodus also has a backup feature that sends an encrypted backup via email — if this was used, the backup password is also needed. Check for staked assets inside Exodus.",
+      templateFields: [
+        { label: "Exodus password", placeholder: "e.g., In password manager, or written in safe", key: "pin" },
+        { label: "Email backup enabled?", placeholder: "e.g., Yes — backup sent to myemail@gmail.com, backup password in safe", key: "emailBackup" },
+        { label: "Any staked assets?", placeholder: "e.g., SOL staked, ADA staked via Exodus", key: "staking" },
+      ],
+    },
+  },
+  "coinbase-wallet": {
+    label: "Coinbase Wallet (self-custody)",
+    category: "hot",
+    icon: Smartphone,
+    recoveryMethod: "12-word recovery phrase",
+    template: {
+      deviceLabel: "Where is Coinbase Wallet installed?",
+      devicePlaceholder: "e.g., Chrome extension + mobile app on iPhone",
+      seedLabel: "Where is the recovery phrase?",
+      seedPlaceholder: "e.g., Written on card in home safe",
+      guidanceTitle: "Coinbase Wallet Recovery Guide",
+      guidanceText: "Coinbase Wallet (not the Coinbase exchange app) is self-custody. It uses a 12-word recovery phrase. This is SEPARATE from any Coinbase exchange account. The survivor imports the 12 words into a new Coinbase Wallet install. Cloud backup may also be enabled via Google Drive/iCloud with a separate password.",
+      templateFields: [
+        { label: "App passcode", placeholder: "e.g., Biometric or PIN", key: "pin" },
+        { label: "Cloud backup enabled?", placeholder: "e.g., Yes — backed up to iCloud, cloud backup password in safe", key: "cloudBackup" },
+      ],
+    },
+  },
+  exchange: {
+    label: "Exchange Account (custodial)",
+    category: "exchange",
+    icon: Globe,
+    recoveryMethod: "Login credentials + 2FA",
+    template: {
+      deviceLabel: "Which exchange?",
+      devicePlaceholder: "e.g., Coinbase, Kraken, Binance — specify the exchange name",
+      seedLabel: "Where are the login credentials?",
+      seedPlaceholder: "e.g., In password manager (1Password, family vault) or written in safe",
+      guidanceTitle: "Exchange Account Recovery Guide",
+      guidanceText: "Exchange accounts are custodial — the exchange holds the keys. The survivor needs login credentials AND access to the 2FA method (authenticator app, phone number, or security key). Most exchanges have a death/estate process — contact support with a death certificate. Some exchanges allow beneficiary designation directly.",
+      templateFields: [
+        { label: "Email address for the account", placeholder: "e.g., myemail@gmail.com", key: "email" },
+        { label: "Password or password manager location", placeholder: "e.g., 1Password, shared family vault, or written in safe", key: "pin" },
+        { label: "2FA method and device", placeholder: "e.g., Google Authenticator on iPhone / SMS to phone number ending in 1234 / YubiKey in safe", key: "twofa" },
+        { label: "Exchange estate/death process notes", placeholder: "e.g., Coinbase has an estate process — submit death certificate to support", key: "estateProcess" },
+      ],
+    },
+  },
+  other: {
+    label: "Other Wallet",
+    category: "hot",
+    icon: Wallet,
+    recoveryMethod: "Varies — describe in notes",
+    template: {
+      deviceLabel: "Where is the wallet / device?",
+      devicePlaceholder: "e.g., Description of where the wallet or device is located",
+      seedLabel: "Where is the recovery method (seed, key, etc.)?",
+      seedPlaceholder: "e.g., Describe where the backup is stored",
+      guidanceTitle: "Custom Wallet Recovery Guide",
+      guidanceText: "Provide as much detail as possible about how to access and recover this wallet. Include the type of wallet, where it is, what recovery method it uses, and any passwords or PINs needed.",
+      templateFields: [
+        { label: "Password / PIN", placeholder: "e.g., Where the password is stored", key: "pin" },
+        { label: "Type of wallet and recovery method", placeholder: "e.g., Paper wallet, brain wallet, multi-sig, etc.", key: "walletDetails" },
+      ],
+    },
+  },
+};
+
+type WalletAsset = {
+  walletId: string;
+  chain: string;
+  address: string;
+  label: string | null;
+  hardwareDevice: string | null;
+  assets: Array<{ symbol: string; balance: string; usdValue: string | null }>;
+};
+
+async function encryptVault(plaintext: string, passphrase: string): Promise<string> {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 600000, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plaintext));
+  const combined = new Uint8Array(salt.length + iv.length + new Uint8Array(ciphertext).length);
+  combined.set(salt, 0);
+  combined.set(iv, salt.length);
+  combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+
 function BeneficiaryCard({ beneficiary, onDelete }: { beneficiary: LegacyPlanData["beneficiaries"][0]; onDelete: () => void }) {
-  const walletLabels: Record<string, string> = {
-    cypherock: "CypheRock X1 (2-of-5 Shamir)",
-    ledger: "Ledger (24-word seed)",
-    trezor: "Trezor (12/24-word seed)",
-    xaman: "Xaman (Family seed / secret numbers)",
-    tangem: "Tangem (NFC card set)",
-    coldcard: "Coldcard (BIP39 seed)",
-    other: "Other hardware/software wallet",
-  };
+  const walletConfig = beneficiary.walletType ? WALLET_TYPES[beneficiary.walletType] : null;
 
   return (
     <Card data-testid={`card-beneficiary-${beneficiary.id}`}>
@@ -365,24 +714,41 @@ function BeneficiaryCard({ beneficiary, onDelete }: { beneficiary: LegacyPlanDat
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
-        {beneficiary.walletType && (
+        {walletConfig && (
           <div className="text-xs text-muted-foreground space-y-1">
-            <p className="font-medium">Wallet: {walletLabels[beneficiary.walletType] || beneficiary.walletType}</p>
-            {beneficiary.walletType === "cypherock" && (
-              <p className="text-amber-600 dark:text-amber-400">
-                CypheRock uses 2-of-5 Shamir Secret Sharing — beneficiary needs at least 2 of the 5 cards plus the X1 device. Instructions should specify card locations.
-              </p>
-            )}
+            <div className="flex items-center gap-1.5">
+              <walletConfig.icon className="h-3.5 w-3.5" />
+              <span className="font-medium">{walletConfig.label}</span>
+              <Badge variant="outline" className="text-[10px]">{walletConfig.category}</Badge>
+            </div>
+            <p className="text-muted-foreground">Recovery: {walletConfig.recoveryMethod}</p>
+          </div>
+        )}
+        {beneficiary.walletAssetSummary && (
+          <div className="text-xs rounded-md bg-muted/30 p-2">
+            <p className="font-medium mb-1 flex items-center gap-1"><Wallet className="h-3 w-3" /> Assets on this device:</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">{beneficiary.walletAssetSummary}</p>
           </div>
         )}
         {beneficiary.deviceInstructions && (
-          <div className="text-xs"><span className="font-medium">Device location:</span> {beneficiary.deviceInstructions}</div>
+          <div className="text-xs"><span className="font-medium">Device:</span> {beneficiary.deviceInstructions}</div>
         )}
         {beneficiary.seedPhraseInstructions && (
-          <div className="text-xs"><span className="font-medium">Recovery info location:</span> {beneficiary.seedPhraseInstructions}</div>
+          <div className="text-xs"><span className="font-medium">Recovery backup:</span> {beneficiary.seedPhraseInstructions}</div>
         )}
         {beneficiary.additionalNotes && (
-          <div className="text-xs"><span className="font-medium">Notes:</span> {beneficiary.additionalNotes}</div>
+          <div className="text-xs"><span className="font-medium">Details:</span> <span className="whitespace-pre-wrap">{beneficiary.additionalNotes}</span></div>
+        )}
+        {beneficiary.encryptedVault && (
+          <div className="flex items-center gap-1.5">
+            <Badge className="text-xs bg-blue-600 text-white" data-testid={`badge-vault-${beneficiary.id}`}>
+              <Lock className="h-3 w-3 mr-1" />
+              Encrypted Vault Attached
+            </Badge>
+            {beneficiary.encryptedVaultHint && (
+              <span className="text-[10px] text-muted-foreground">Hint: {beneficiary.encryptedVaultHint}</span>
+            )}
+          </div>
         )}
         {beneficiary.splitPieces && (
           <div className="flex items-center gap-1.5">
@@ -427,6 +793,7 @@ function ResendVerificationButton() {
 function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; splitEnabled?: boolean }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [relationship, setRelationship] = useState("");
@@ -435,6 +802,120 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
   const [seedPhraseInstructions, setSeedPhraseInstructions] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [splitPieces, setSplitPieces] = useState("");
+  const [templateFields, setTemplateFields] = useState<Record<string, string>>({});
+  const [walletAssetSummary, setWalletAssetSummary] = useState("");
+  const [selectedWalletIds, setSelectedWalletIds] = useState<string[]>([]);
+
+  const [vaultEnabled, setVaultEnabled] = useState(false);
+  const [vaultContent, setVaultContent] = useState("");
+  const [vaultPassphrase, setVaultPassphrase] = useState("");
+  const [vaultPassphraseConfirm, setVaultPassphraseConfirm] = useState("");
+  const [vaultHint, setVaultHint] = useState("");
+  const [showVaultPassphrase, setShowVaultPassphrase] = useState(false);
+  const [encryptedVaultResult, setEncryptedVaultResult] = useState("");
+  const [testDecryptResult, setTestDecryptResult] = useState<string | null>(null);
+  const [encrypting, setEncrypting] = useState(false);
+
+  const { data: walletAssets } = useQuery<WalletAsset[]>({
+    queryKey: ["/api/legacy-plan/wallet-assets"],
+    enabled: open,
+  });
+
+  const walletConfig = walletType ? WALLET_TYPES[walletType] : null;
+
+  const filteredWallets = useMemo(() => {
+    if (!walletAssets || !walletType) return [];
+    return walletAssets.filter(w => {
+      if (w.hardwareDevice === walletType) return true;
+      if (walletType === "xaman" && w.chain === "xrp") return true;
+      if (walletType === "metamask" && ["eth", "polygon", "arbitrum", "bsc", "avalanche", "optimism", "base"].includes(w.chain)) return true;
+      if (walletType === "phantom" && w.chain === "sol") return true;
+      return false;
+    });
+  }, [walletAssets, walletType]);
+
+  const handleLoadWallets = () => {
+    const selected = filteredWallets.filter(w => selectedWalletIds.includes(w.walletId));
+    if (selected.length === 0) return;
+    const lines: string[] = [];
+    for (const w of selected) {
+      const label = w.label || `${w.chain.toUpperCase()} wallet`;
+      const addrShort = w.address.length > 20 ? w.address.slice(0, 8) + "..." + w.address.slice(-6) : w.address;
+      lines.push(`${label} (${w.chain.toUpperCase()}) — ${addrShort}`);
+      for (const a of w.assets) {
+        const usd = a.usdValue ? ` (~$${Number(a.usdValue).toLocaleString()})` : "";
+        lines.push(`  ${a.symbol}: ${Number(a.balance).toLocaleString(undefined, { maximumFractionDigits: 6 })}${usd}`);
+      }
+    }
+    setWalletAssetSummary(lines.join("\n"));
+    toast({ title: "Wallet data loaded", description: `${selected.length} wallet(s) pre-filled into the asset summary.` });
+  };
+
+  const handleTemplateFieldChange = (key: string, value: string) => {
+    setTemplateFields(prev => ({ ...prev, [key]: value }));
+  };
+
+  const buildAdditionalNotes = (): string => {
+    const parts: string[] = [];
+    if (walletConfig) {
+      const filledFields = walletConfig.template.templateFields
+        .filter(f => templateFields[f.key]?.trim())
+        .map(f => `${f.label}: ${templateFields[f.key].trim()}`);
+      if (filledFields.length > 0) {
+        parts.push(filledFields.join("\n"));
+      }
+    }
+    if (additionalNotes.trim()) parts.push(additionalNotes.trim());
+    return parts.join("\n\n");
+  };
+
+  const handleEncrypt = async () => {
+    if (!vaultContent.trim() || !vaultPassphrase) {
+      toast({ title: "Missing information", description: "Enter the recovery text and a passphrase.", variant: "destructive" });
+      return;
+    }
+    if (vaultPassphrase !== vaultPassphraseConfirm) {
+      toast({ title: "Passphrase mismatch", description: "The passphrase and confirmation don't match.", variant: "destructive" });
+      return;
+    }
+    if (vaultPassphrase.length < 8) {
+      toast({ title: "Passphrase too short", description: "Use at least 8 characters for security.", variant: "destructive" });
+      return;
+    }
+    setEncrypting(true);
+    try {
+      const encrypted = await encryptVault(vaultContent, vaultPassphrase);
+      setEncryptedVaultResult(encrypted);
+      toast({ title: "Encrypted successfully", description: "Your recovery data has been encrypted. Test the decryption before saving." });
+    } catch {
+      toast({ title: "Encryption failed", description: "Something went wrong.", variant: "destructive" });
+    } finally {
+      setEncrypting(false);
+    }
+  };
+
+  const handleTestDecrypt = async () => {
+    if (!encryptedVaultResult) return;
+    try {
+      const raw = Uint8Array.from(atob(encryptedVaultResult), c => c.charCodeAt(0));
+      const salt = raw.slice(0, 16);
+      const iv = raw.slice(16, 28);
+      const ciphertext = raw.slice(28);
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(vaultPassphrase), "PBKDF2", false, ["deriveKey"]);
+      const key = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 600000, hash: "SHA-256" },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"]
+      );
+      const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+      setTestDecryptResult(new TextDecoder().decode(decrypted));
+    } catch {
+      setTestDecryptResult("DECRYPTION FAILED — check your passphrase");
+    }
+  };
 
   const createBeneficiary = useMutation({
     mutationFn: () => apiRequest("POST", "/api/legacy-beneficiaries", {
@@ -442,8 +923,11 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
       walletType: walletType || null,
       deviceInstructions: deviceInstructions || null,
       seedPhraseInstructions: seedPhraseInstructions || null,
-      additionalNotes: additionalNotes || null,
+      additionalNotes: buildAdditionalNotes() || null,
       splitPieces: splitPieces || null,
+      encryptedVault: encryptedVaultResult || null,
+      encryptedVaultHint: vaultHint || null,
+      walletAssetSummary: walletAssetSummary || null,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
@@ -456,138 +940,341 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
   });
 
   const resetForm = () => {
-    setName(""); setEmail(""); setRelationship(""); setWalletType("");
+    setStep(1); setName(""); setEmail(""); setRelationship(""); setWalletType("");
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
+    setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
+    setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
+    setVaultHint(""); setEncryptedVaultResult(""); setTestDecryptResult(null);
   };
 
+  const walletCategories = [
+    { key: "cold", label: "Hardware Wallets (Cold)", icon: HardDrive },
+    { key: "hot", label: "Software Wallets (Hot)", icon: Smartphone },
+    { key: "exchange", label: "Exchange Accounts", icon: Globe },
+  ];
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         <Button data-testid="button-add-beneficiary"><UserPlus className="h-4 w-4 mr-2" /> Add Beneficiary</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Beneficiary</DialogTitle>
-          <DialogDescription>Who should receive your wallet recovery instructions?</DialogDescription>
+          <DialogTitle>Add Beneficiary — Step {step} of 3</DialogTitle>
+          <DialogDescription>
+            {step === 1 && "Who should receive recovery instructions?"}
+            {step === 2 && "Configure wallet-specific recovery template"}
+            {step === 3 && "Optional: Attach encrypted recovery data"}
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" data-testid="input-beneficiary-name" />
-            </div>
-            <div className="space-y-1">
-              <Label>Email *</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" data-testid="input-beneficiary-email" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Relationship</Label>
-              <Select value={relationship} onValueChange={setRelationship}>
-                <SelectTrigger data-testid="select-relationship"><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="spouse">Spouse / Partner</SelectItem>
-                  <SelectItem value="child">Child</SelectItem>
-                  <SelectItem value="sibling">Sibling</SelectItem>
-                  <SelectItem value="parent">Parent</SelectItem>
-                  <SelectItem value="attorney">Attorney</SelectItem>
-                  <SelectItem value="executor">Estate Executor</SelectItem>
-                  <SelectItem value="friend">Trusted Friend</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Wallet Type</Label>
-              <Select value={walletType} onValueChange={setWalletType}>
-                <SelectTrigger data-testid="select-wallet-type"><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cypherock">CypheRock X1</SelectItem>
-                  <SelectItem value="ledger">Ledger</SelectItem>
-                  <SelectItem value="trezor">Trezor</SelectItem>
-                  <SelectItem value="xaman">Xaman</SelectItem>
-                  <SelectItem value="tangem">Tangem</SelectItem>
-                  <SelectItem value="coldcard">Coldcard</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          {walletType === "cypherock" && (
-            <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-              <Info className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-sm text-amber-700 dark:text-amber-400">CypheRock 2-of-5 Shamir</AlertTitle>
-              <AlertDescription className="text-xs text-amber-600 dark:text-amber-300">
-                CypheRock uses Shamir Secret Sharing — 5 cards are created, and any 2 cards + the X1 device can recover the wallet.
-                In your instructions, tell the beneficiary where each card is stored (e.g., "Card 1 in home safe, Card 3 with attorney").
-                They do NOT need all 5 cards — just any 2 and the device.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {walletType === "ledger" && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Ledger uses a standard 24-word BIP39 seed phrase. Explain where the seed phrase backup is stored — never put the seed phrase itself here. Also note if they need a PIN to access the device.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {walletType === "xaman" && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Xaman (formerly Xumm) uses a family seed or secret numbers. Explain where the backup is stored. If they paired with a Ledger, note that the Ledger is the signing device.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-1">
-            <Label>Where is the device?</Label>
-            <Input value={deviceInstructions} onChange={(e) => setDeviceInstructions(e.target.value)} placeholder="e.g., Home office safe, top shelf" data-testid="input-device-location" />
-          </div>
-          <div className="space-y-1">
-            <Label>Where is the recovery phrase / seed backup?</Label>
-            <Input value={seedPhraseInstructions} onChange={(e) => setSeedPhraseInstructions(e.target.value)} placeholder="e.g., Bank safe deposit box #42, steel plate in fireproof safe" data-testid="input-seed-location" />
-            <p className="text-xs text-destructive font-medium">Never enter your actual seed phrase — only describe WHERE it's stored.</p>
-          </div>
-          <div className="space-y-1">
-            <Label>Additional Notes</Label>
-            <Textarea value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} placeholder="PINs, passphrases notes, multi-sig details, attorney contact info..." rows={3} data-testid="input-additional-notes" />
-          </div>
-
-          {splitEnabled && (
-            <div className="space-y-1">
-              <Label className="flex items-center gap-1.5">
-                <Split className="h-3.5 w-3.5 text-purple-500" />
-                Split Delivery — What does this person receive?
-              </Label>
-              <Select value={splitPieces} onValueChange={setSplitPieces}>
-                <SelectTrigger data-testid="select-split-pieces"><SelectValue placeholder="Select info pieces..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="device-location">Device location only</SelectItem>
-                  <SelectItem value="seed-location">Seed/recovery location only</SelectItem>
-                  <SelectItem value="pin-passphrase">PIN / passphrase only</SelectItem>
-                  <SelectItem value="card-locations-1-2">CypheRock Cards 1 & 2 locations</SelectItem>
-                  <SelectItem value="card-locations-3-4">CypheRock Cards 3 & 4 locations</SelectItem>
-                  <SelectItem value="card-location-5-device">CypheRock Card 5 + device location</SelectItem>
-                  <SelectItem value="all-instructions">All instructions (no split)</SelectItem>
-                  <SelectItem value="custom">Custom split (describe in notes)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">When split delivery is enabled, each beneficiary only receives their assigned piece. They must collaborate to recover the wallet.</p>
-            </div>
-          )}
+        <div className="flex justify-center gap-1 my-2">
+          {[1, 2, 3].map(s => (
+            <div key={s} className={`h-1.5 w-12 rounded-full ${s <= step ? "bg-amber-500" : "bg-muted"}`} />
+          ))}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={() => createBeneficiary.mutate()} disabled={!name || !email || createBeneficiary.isPending} data-testid="button-save-beneficiary">
-            {createBeneficiary.isPending ? "Saving..." : "Save Beneficiary"}
-          </Button>
-        </DialogFooter>
+
+        {step === 1 && (
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Name *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" data-testid="input-beneficiary-name" />
+              </div>
+              <div className="space-y-1">
+                <Label>Email *</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" data-testid="input-beneficiary-email" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Relationship</Label>
+                <Select value={relationship} onValueChange={setRelationship}>
+                  <SelectTrigger data-testid="select-relationship"><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="spouse">Spouse / Partner</SelectItem>
+                    <SelectItem value="child">Child</SelectItem>
+                    <SelectItem value="sibling">Sibling</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="attorney">Attorney</SelectItem>
+                    <SelectItem value="executor">Estate Executor</SelectItem>
+                    <SelectItem value="friend">Trusted Friend</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Wallet / Device Type *</Label>
+                <Select value={walletType} onValueChange={(v) => { setWalletType(v); setTemplateFields({}); setSelectedWalletIds([]); setWalletAssetSummary(""); }}>
+                  <SelectTrigger data-testid="select-wallet-type"><SelectValue placeholder="Select wallet..." /></SelectTrigger>
+                  <SelectContent>
+                    {walletCategories.map(cat => {
+                      const items = Object.entries(WALLET_TYPES).filter(([, v]) => v.category === cat.key);
+                      if (items.length === 0) return null;
+                      return (
+                        <div key={cat.key}>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                            <cat.icon className="h-3 w-3" /> {cat.label}
+                          </div>
+                          {items.map(([key, val]) => (
+                            <SelectItem key={key} value={key}>{val.label}</SelectItem>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {splitEnabled && (
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5">
+                  <Split className="h-3.5 w-3.5 text-purple-500" />
+                  Split Delivery — What does this person receive?
+                </Label>
+                <Select value={splitPieces} onValueChange={setSplitPieces}>
+                  <SelectTrigger data-testid="select-split-pieces"><SelectValue placeholder="Select info pieces..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="device-location">Device location only</SelectItem>
+                    <SelectItem value="seed-location">Seed/recovery location only</SelectItem>
+                    <SelectItem value="pin-passphrase">PIN / passphrase only</SelectItem>
+                    <SelectItem value="card-locations-1-2">CypheRock Cards 1 & 2 locations</SelectItem>
+                    <SelectItem value="card-locations-3-4">CypheRock Cards 3 & 4 locations</SelectItem>
+                    <SelectItem value="card-location-5-device">CypheRock Card 5 + device location</SelectItem>
+                    <SelectItem value="encrypted-vault-only">Encrypted vault only (needs passphrase)</SelectItem>
+                    <SelectItem value="asset-summary-only">Asset summary only (what they hold, not how to access)</SelectItem>
+                    <SelectItem value="all-instructions">All instructions (no split)</SelectItem>
+                    <SelectItem value="custom">Custom split (describe in notes)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Each beneficiary only receives their assigned piece. They must collaborate to recover the wallet.</p>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={() => setStep(2)} disabled={!name || !email || !walletType} data-testid="button-next-step-1">
+                Next: Recovery Template
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {step === 2 && walletConfig && (
+          <div className="space-y-4 py-2">
+            <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+              <walletConfig.icon className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-sm text-amber-700 dark:text-amber-400">{walletConfig.template.guidanceTitle}</AlertTitle>
+              <AlertDescription className="text-xs text-amber-600 dark:text-amber-300">
+                {walletConfig.template.guidanceText}
+              </AlertDescription>
+            </Alert>
+
+            {filteredWallets.length > 0 && (
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1.5 text-sm"><Download className="h-3.5 w-3.5 text-blue-500" /> Pre-fill from your connected wallets</Label>
+                  <Button size="sm" variant="outline" onClick={handleLoadWallets} disabled={selectedWalletIds.length === 0} data-testid="button-load-wallets">
+                    Load Selected
+                  </Button>
+                </div>
+                <div className="space-y-1.5">
+                  {filteredWallets.map(w => (
+                    <label key={w.walletId} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                      <Checkbox
+                        checked={selectedWalletIds.includes(w.walletId)}
+                        onCheckedChange={(checked) => {
+                          setSelectedWalletIds(prev => checked ? [...prev, w.walletId] : prev.filter(id => id !== w.walletId));
+                        }}
+                        data-testid={`checkbox-wallet-${w.walletId}`}
+                      />
+                      <span className="font-medium">{w.label || `${w.chain.toUpperCase()} wallet`}</span>
+                      <span className="text-muted-foreground">{w.chain.toUpperCase()} — {w.address.slice(0, 8)}...{w.address.slice(-4)}</span>
+                      <span className="text-muted-foreground ml-auto">{w.assets.length} asset{w.assets.length !== 1 ? "s" : ""}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {walletAssetSummary && (
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> Assets on this device (auto-filled)</Label>
+                <Textarea value={walletAssetSummary} onChange={(e) => setWalletAssetSummary(e.target.value)} rows={4} className="font-mono text-xs" data-testid="input-asset-summary" />
+                <p className="text-xs text-muted-foreground">You can edit this summary. It shows your survivor what's on this device so they know what to look for.</p>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label>{walletConfig.template.deviceLabel}</Label>
+              <Input value={deviceInstructions} onChange={(e) => setDeviceInstructions(e.target.value)} placeholder={walletConfig.template.devicePlaceholder} data-testid="input-device-location" />
+            </div>
+            <div className="space-y-1">
+              <Label>{walletConfig.template.seedLabel}</Label>
+              <Input value={seedPhraseInstructions} onChange={(e) => setSeedPhraseInstructions(e.target.value)} placeholder={walletConfig.template.seedPlaceholder} data-testid="input-seed-location" />
+              <p className="text-xs text-destructive font-medium">Never enter your actual seed phrase here — only describe WHERE it's stored.</p>
+            </div>
+
+            <Separator />
+            <p className="text-xs font-medium text-muted-foreground">{walletConfig.label} — specific details your survivor will need:</p>
+
+            {walletConfig.template.templateFields.map(field => (
+              <div key={field.key} className="space-y-1">
+                <Label className="text-sm">{field.label}</Label>
+                <Input
+                  value={templateFields[field.key] || ""}
+                  onChange={(e) => handleTemplateFieldChange(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  data-testid={`input-template-${field.key}`}
+                />
+              </div>
+            ))}
+
+            <div className="space-y-1">
+              <Label>Additional Notes</Label>
+              <Textarea value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} placeholder="Anything else the survivor should know — multi-sig details, attorney contact, safe combo, password manager access..." rows={3} data-testid="input-additional-notes" />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+              <Button onClick={() => setStep(3)} data-testid="button-next-step-2">
+                Next: Encrypted Vault (Optional)
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium flex items-center gap-2"><Key className="h-4 w-4 text-blue-500" /> Encrypted Recovery Vault</p>
+                <p className="text-xs text-muted-foreground">Optionally encrypt sensitive recovery data (seed words, passwords) with a passphrase only you share separately.</p>
+              </div>
+              <Switch checked={vaultEnabled} onCheckedChange={setVaultEnabled} data-testid="switch-vault-enabled" />
+            </div>
+
+            {vaultEnabled && (
+              <div className="space-y-4">
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle className="text-sm">Understand the risk</AlertTitle>
+                  <AlertDescription className="text-xs space-y-1">
+                    <p>You are about to encrypt sensitive recovery information (seed words, passwords, PINs). This data will be encrypted with AES-256-GCM in your browser before being stored. CryptoOwnBank never sees the plaintext.</p>
+                    <p>The encryption passphrase must be shared separately with your survivor — verbally, in a will, or through an attorney. If they lose the passphrase, the encrypted data is unrecoverable.</p>
+                    <p>This is a BACKUP to your physical seed storage, not a replacement. Your primary backup should always be physical (metal plates, paper in safes).</p>
+                  </AlertDescription>
+                </Alert>
+
+                {!encryptedVaultResult ? (
+                  <>
+                    <div className="space-y-1">
+                      <Label>Recovery data to encrypt</Label>
+                      <Textarea
+                        value={vaultContent}
+                        onChange={(e) => setVaultContent(e.target.value)}
+                        placeholder={"Enter what you want to protect, for example:\n\nSeed words: word1 word2 word3 ... word24\nPassphrase (25th word): mypassphrase\nPIN: 1234\nExchange password: ...\n\nThis text will be encrypted before leaving your browser."}
+                        rows={6}
+                        className="font-mono text-xs"
+                        data-testid="input-vault-content"
+                      />
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">This data is encrypted in your browser. It never leaves your device unencrypted.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Encryption Passphrase</Label>
+                        <div className="relative">
+                          <Input
+                            type={showVaultPassphrase ? "text" : "password"}
+                            value={vaultPassphrase}
+                            onChange={(e) => setVaultPassphrase(e.target.value)}
+                            placeholder="Strong passphrase (min 8 chars)"
+                            data-testid="input-vault-passphrase"
+                          />
+                          <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowVaultPassphrase(!showVaultPassphrase)}>
+                            {showVaultPassphrase ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Confirm Passphrase</Label>
+                        <Input
+                          type="password"
+                          value={vaultPassphraseConfirm}
+                          onChange={(e) => setVaultPassphraseConfirm(e.target.value)}
+                          placeholder="Re-enter passphrase"
+                          data-testid="input-vault-passphrase-confirm"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Passphrase Hint (sent to survivor with encrypted data)</Label>
+                      <Input value={vaultHint} onChange={(e) => setVaultHint(e.target.value)} placeholder="e.g., Ask my attorney for the sealed envelope labeled 'Legacy'" data-testid="input-vault-hint" />
+                    </div>
+                    {vaultPassphrase && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className={`h-2 flex-1 rounded-full ${vaultPassphrase.length >= 16 ? "bg-green-500" : vaultPassphrase.length >= 12 ? "bg-amber-500" : vaultPassphrase.length >= 8 ? "bg-orange-500" : "bg-red-500"}`} />
+                        <span className="text-muted-foreground">
+                          {vaultPassphrase.length >= 16 ? "Strong" : vaultPassphrase.length >= 12 ? "Good" : vaultPassphrase.length >= 8 ? "Acceptable" : "Too short"}
+                        </span>
+                      </div>
+                    )}
+                    <Button className="w-full" onClick={handleEncrypt} disabled={encrypting || !vaultContent.trim() || !vaultPassphrase || vaultPassphrase !== vaultPassphraseConfirm || vaultPassphrase.length < 8} data-testid="button-encrypt-vault">
+                      <Lock className="h-4 w-4 mr-2" />
+                      {encrypting ? "Encrypting..." : "Encrypt Recovery Data"}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <Alert className="border-green-500 bg-green-50 dark:bg-green-950/20">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-sm text-green-700 dark:text-green-400">Encrypted Successfully</AlertTitle>
+                      <AlertDescription className="text-xs text-green-600 dark:text-green-300">
+                        Your recovery data has been encrypted with AES-256-GCM. The ciphertext below will be included in the survivor's email when triggered. They must visit cryptoownbank.com/decrypt and enter your passphrase to read it.
+                      </AlertDescription>
+                    </Alert>
+                    <div className="rounded-md bg-muted/30 border p-2 max-h-20 overflow-y-auto">
+                      <p className="font-mono text-[10px] break-all text-muted-foreground">{encryptedVaultResult.slice(0, 200)}...</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleTestDecrypt} data-testid="button-test-decrypt">
+                      <Unlock className="h-3.5 w-3.5 mr-1.5" />
+                      Test Decrypt
+                    </Button>
+                    {testDecryptResult && (
+                      <div className="rounded-md border p-2 bg-muted/20">
+                        <p className="text-xs font-medium mb-1">Decryption test result:</p>
+                        <pre className="text-xs font-mono whitespace-pre-wrap">{testDecryptResult}</pre>
+                      </div>
+                    )}
+                    <Button variant="outline" size="sm" className="text-destructive" onClick={() => { setEncryptedVaultResult(""); setTestDecryptResult(null); }}>
+                      Re-encrypt (start over)
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!vaultEnabled && (
+              <div className="text-center py-6 text-muted-foreground">
+                <Shield className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No encrypted vault</p>
+                <p className="text-xs">You can save without an encrypted vault. Your beneficiary will only receive the location-based instructions from the previous step.</p>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+              <Button
+                onClick={() => createBeneficiary.mutate()}
+                disabled={!name || !email || createBeneficiary.isPending || (vaultEnabled && !encryptedVaultResult)}
+                data-testid="button-save-beneficiary"
+              >
+                {createBeneficiary.isPending ? "Saving..." : "Save Beneficiary"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -1085,7 +1772,7 @@ export default function LegacyPlanPage() {
             <Shield className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
             <div className="text-xs text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">Security & Legal Note</p>
-              <p>CryptoOwnBank never stores your seed phrases, private keys, or wallet passwords. We only store YOUR encrypted instructions about where those items are located. All beneficiary data is encrypted at rest.</p>
+              <p>CryptoOwnBank never stores your seed phrases, private keys, or wallet passwords in plaintext. Location-based instructions describe WHERE your backups are stored. If you use the Encrypted Vault feature, your sensitive data is encrypted with AES-256-GCM in your browser using a passphrase only you know — CryptoOwnBank never sees the plaintext and cannot decrypt it. All beneficiary data is encrypted at rest.</p>
               <p>Your legacy plan is non-custodial — we help deliver instructions, but we never have access to your funds. CryptoOwnBank is not a fiduciary, estate planner, attorney, or financial advisor. This tool helps you organize and deliver information to your chosen beneficiaries — it does not replace a proper estate plan, will, or trust. Consult a qualified estate planning attorney for your specific legal needs.</p>
             </div>
           </div>
