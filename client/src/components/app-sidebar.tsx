@@ -55,6 +55,7 @@ import {
   Flame,
   Droplets,
   ShoppingCart,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -91,6 +92,7 @@ const allItems: NavItem[] = [
   { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "start" },
   { title: "Overview", url: "/", icon: LayoutDashboard, group: "start" },
   { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "start" },
+  { title: "Spend Crypto", url: "/crypto-debit-cards", icon: CreditCard, color: "#3b82f6", group: "start" },
   { title: "Wallets & Addresses", url: "/wallets", icon: Wallet, group: "start" },
   { title: "Import Data", url: "/integrations", icon: Link2, group: "start" },
 

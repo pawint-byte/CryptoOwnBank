@@ -1996,6 +1996,25 @@ export default function BuyCrypto() {
         )}
       </Card>
 
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="pt-4">
+          <div className="flex items-start gap-3">
+            <CreditCard className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium mb-1">Ready to spend your crypto in the real world?</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Check out non-custodial crypto debit cards — spend directly from your wallet at any Visa or Mastercard terminal, anywhere in the world.
+              </p>
+              <Link href="/crypto-debit-cards">
+                <Button size="sm" variant="outline" className="gap-2 border-blue-500/30 text-blue-700" data-testid="button-spend-crypto-link">
+                  <CreditCard className="h-3.5 w-3.5" /> View Crypto Debit Cards
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-amber-500/20 bg-amber-500/5">
         <CardContent className="pt-4">
           <div className="flex items-start gap-2">
