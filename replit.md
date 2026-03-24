@@ -6,8 +6,23 @@ CryptoOwnBank is a multi-chain crypto platform combining portfolio tracker, non-
 ## User Preferences
 Preferred communication style: Simple, everyday language. No technical jargon.
 
-## CRITICAL CONTEXT FOR EVERY SESSION
-**Read TODO.md AND session-logs/ before starting any work.** The user has expressed frustration about repeating himself across sessions. TODO.md is the official to-do list and decision log — it tracks pending items, referral links, external approvals, future improvements, and decisions made. Update it whenever items are completed or new ones are added. Session-logs/ contain detailed session history.
+## MANDATORY — READ BEFORE DOING ANYTHING
+
+### STOP. Read these files NOW before responding to the user:
+1. **TODO.md** — The official to-do list and decision log. Contains pending items, referral links, external approvals, legislation items, future improvements, and all decisions with dates and reasons.
+2. **session-logs/** — Detailed session history with what was built, discussed, and decided.
+
+### Rules for TODO.md:
+- **Read it at the start of every session. No exceptions.**
+- **Update it whenever you complete something, add something, or make a decision.**
+- **Every new entry must include today's date.**
+- **Completed items must include the date completed.**
+- **Update the "Last updated" timestamp at the top when you make changes.**
+- **Never claim something is in TODO.md without verifying it is actually there.**
+- **Never tell the user you created something without actually creating it.**
+
+### Why this matters:
+The user has been repeatedly told that things were done when they were not. He has had to repeat himself across sessions because information was lost. This is unacceptable. TODO.md exists specifically to prevent this. If you skip reading it, you are wasting the user's time and money.
 
 ### Admin User
 - **User ID**: `3e7353fc-9f2f-4f72-aba9-93c49b629b89` (pawint@me.com)
