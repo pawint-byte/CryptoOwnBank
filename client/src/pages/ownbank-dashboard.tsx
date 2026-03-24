@@ -9,7 +9,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
   CollapsibleContent,
@@ -137,8 +136,6 @@ export default function OwnBankDashboard() {
   const [editName, setEditName] = useState("");
   const [editApr, setEditApr] = useState("");
   const [expandedAddr, setExpandedAddr] = useState<string | null>(null);
-  const [autoCompoundSettings, setAutoCompoundSettings] = useState<Record<string, boolean>>({});
-  const [togglingAutoCompound, setTogglingAutoCompound] = useState<string | null>(null);
 
   const fetchBalances = useCallback(async () => {
     if (!walletAddress) return;
@@ -333,45 +330,8 @@ export default function OwnBankDashboard() {
     }
   }, [isConnected, fetchCustomVaults]);
 
-  const fetchAutoCompound = useCallback(async () => {
-    try {
-      const response = await apiRequest("GET", "/api/auto-compound");
-      const data = await response.json();
-      const map: Record<string, boolean> = {};
-      for (const s of data.settings || []) {
-        map[s.vaultAddress] = s.enabled;
-      }
-      setAutoCompoundSettings(map);
-    } catch {}
-  }, []);
 
-  useEffect(() => {
-    if (isConnected) {
-      fetchAutoCompound();
-    }
-  }, [isConnected, fetchAutoCompound]);
 
-  const toggleAutoCompound = async (vaultAddress: string) => {
-    const current = autoCompoundSettings[vaultAddress] || false;
-    setTogglingAutoCompound(vaultAddress);
-    try {
-      await apiRequest("POST", "/api/auto-compound", {
-        vaultAddress,
-        enabled: !current,
-      });
-      setAutoCompoundSettings(prev => ({ ...prev, [vaultAddress]: !current }));
-      toast({
-        title: !current ? "Auto-Compound Enabled" : "Auto-Compound Disabled",
-        description: !current
-          ? "You'll receive an email with a one-tap re-deposit link when yield arrives."
-          : "Auto-compound notifications turned off for this vault.",
-      });
-    } catch {
-      toast({ title: "Error", description: "Failed to update auto-compound setting", variant: "destructive" });
-    } finally {
-      setTogglingAutoCompound(null);
-    }
-  };
 
   const handleEditVault = async (address: string) => {
     if (!editName.trim()) return;
@@ -936,28 +896,20 @@ export default function OwnBankDashboard() {
                           </div>
                         )}
                         <div className="flex items-center justify-between pt-1.5 border-t">
-                          <div className="flex items-center gap-1.5">
-                            <RefreshCw className="h-3 w-3 text-blue-500" />
-                            <span className="text-[10px] text-muted-foreground">Auto-Compound</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            {togglingAutoCompound === v.address && (
-                              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                            )}
-                            <Switch
-                              checked={autoCompoundSettings[v.address] || false}
-                              onCheckedChange={() => toggleAutoCompound(v.address)}
-                              disabled={togglingAutoCompound === v.address}
-                              className="scale-75"
-                              data-testid={`switch-autocompound-${v.name.toLowerCase()}`}
-                            />
-                          </div>
-                        </div>
-                        {autoCompoundSettings[v.address] && (
-                          <p className="text-[9px] text-blue-600 dark:text-blue-400 italic">
-                            Email notification + one-tap re-deposit when yield arrives
+                          <p className="text-[9px] text-muted-foreground flex-1 mr-2">
+                            Interest accrues daily but is not added to your principal. Withdraw and re-deposit to earn on a larger balance.
                           </p>
-                        )}
+                          <Link href="/ownbank/withdraw">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-5 text-[9px] px-2 gap-0.5 shrink-0"
+                              data-testid={`button-withdraw-${v.name.toLowerCase()}`}
+                            >
+                              Withdraw
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     ))}
                   </div>

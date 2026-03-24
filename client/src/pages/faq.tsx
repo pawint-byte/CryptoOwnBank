@@ -274,7 +274,7 @@ const faqGroups = [
     items: [
       {
         q: "How do I start earning yield on RLUSD?",
-        a: '1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vault</a> (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately — interest compounds daily. 5) When you\'re ready, withdraw your full position (principal + interest together) via <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Vault Positions</a> — then redeposit your principal to keep earning. No KYC on our end, no bank linking required.',
+        a: '1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a <a href="/ownbank/vaults" class="text-[#00A4E4] underline hover:no-underline">Soil vault</a> (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately — interest accrues daily on your deposited principal. 5) When you\'re ready, withdraw your full position (principal + interest together) via <a href="/ownbank/withdraw" class="text-[#00A4E4] underline hover:no-underline">Vault Positions</a>. Tip: Credit+ has a 90-day lock + 10-day cooldown — withdraw and re-deposit every 90 days to earn on a larger balance. No KYC on our end, no bank linking required.',
       },
       {
         q: "Can I transfer RLUSD from Uphold to my cold wallet?",
