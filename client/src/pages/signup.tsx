@@ -30,7 +30,12 @@ export default function Signup() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, firstName, lastName }),
+        body: JSON.stringify({
+          email, password, firstName, lastName,
+          utmSource: localStorage.getItem("utm_source") || undefined,
+          utmMedium: localStorage.getItem("utm_medium") || undefined,
+          utmCampaign: localStorage.getItem("utm_campaign") || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {

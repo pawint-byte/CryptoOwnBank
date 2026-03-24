@@ -58,7 +58,7 @@ export function registerAuthRoutes(app: Express): void {
 
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, firstName, lastName, utmSource, utmMedium, utmCampaign } = req.body;
 
       if (!email || !password || !firstName) {
         return res.status(400).json({ message: "Email, password, and first name are required" });
@@ -99,6 +99,9 @@ export function registerAuthRoutes(app: Express): void {
           authProvider: "email",
           isAdmin: isAdminEmail,
           tosAcceptedAt: new Date(),
+          utmSource: utmSource || null,
+          utmMedium: utmMedium || null,
+          utmCampaign: utmCampaign || null,
         })
         .returning();
 
@@ -376,6 +379,9 @@ export function registerAuthRoutes(app: Express): void {
           isAdmin: users.isAdmin,
           emailVerified: users.emailVerified,
           authProvider: users.authProvider,
+          utmSource: users.utmSource,
+          utmMedium: users.utmMedium,
+          utmCampaign: users.utmCampaign,
         })
         .from(users);
 
@@ -448,8 +454,17 @@ export function registerAuthRoutes(app: Express): void {
             authProvider: u.authProvider,
             subscriptionTier: settings?.subscriptionTier || "free",
             stripeCustomerId: settings?.stripeCustomerId || null,
+            utmSource: u.utmSource || null,
+            utmMedium: u.utmMedium || null,
+            utmCampaign: u.utmCampaign || null,
           };
         });
+
+      const utmSources: Record<string, number> = {};
+      for (const u of allUsers) {
+        const src = u.utmSource || "direct";
+        utmSources[src] = (utmSources[src] || 0) + 1;
+      }
 
       let revenue = {
         mrr: 0,
@@ -540,6 +555,7 @@ export function registerAuthRoutes(app: Express): void {
         },
         revenue,
         signupTrend,
+        utmSources,
         users: userList,
       });
     } catch (error) {

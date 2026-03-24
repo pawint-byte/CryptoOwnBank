@@ -74,6 +74,7 @@ interface MetricsData {
     }[];
   };
   signupTrend: { date: string; count: number }[];
+  utmSources: Record<string, number>;
   users: {
     id: string;
     email: string | null;
@@ -85,6 +86,9 @@ interface MetricsData {
     authProvider: string;
     subscriptionTier: string;
     stripeCustomerId: string | null;
+    utmSource: string | null;
+    utmMedium: string | null;
+    utmCampaign: string | null;
   }[];
 }
 
@@ -237,7 +241,7 @@ export default function AdminMetrics() {
     );
   }
 
-  const { overview, revenue, signupTrend, users } = metrics;
+  const { overview, revenue, signupTrend, utmSources, users } = metrics;
 
   const filteredUsers = userSearch
     ? users.filter(
@@ -370,6 +374,37 @@ export default function AdminMetrics() {
             </div>
           </CardContent>
         </Card>
+
+        {utmSources && Object.keys(utmSources).length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                Signup Sources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {Object.entries(utmSources)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([source, count]) => (
+                    <div key={source} className="flex items-center justify-between" data-testid={`utm-source-${source}`}>
+                      <span className="text-sm capitalize">{source}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ width: `${Math.round((count / overview.totalUsers) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8 text-right">{count}</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-2">

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1027,6 +1027,16 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Landing() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("utm_source");
+    const medium = params.get("utm_medium");
+    const campaign = params.get("utm_campaign");
+    if (source) localStorage.setItem("utm_source", source);
+    if (medium) localStorage.setItem("utm_medium", medium);
+    if (campaign) localStorage.setItem("utm_campaign", campaign);
+  }, []);
+
   const landingJsonLd = useMemo(() => [
     {
       "@context": "https://schema.org",
@@ -1035,7 +1045,9 @@ export default function Landing() {
       url: "https://cryptoownbank.com",
       logo: "https://cryptoownbank.com/favicon.png",
       description: "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR.",
-      sameAs: [],
+      sameAs: [
+        "https://www.tiktok.com/@cryptoownbank",
+      ],
     },
     {
       "@context": "https://schema.org",

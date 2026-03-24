@@ -31,6 +31,9 @@ export const users = pgTable("users", {
   securityPhrase: varchar("security_phrase"),
   unsubscribedFromAnnouncements: boolean("unsubscribed_from_announcements").default(false),
   tosAcceptedAt: timestamp("tos_accepted_at"),
+  utmSource: varchar("utm_source"),
+  utmMedium: varchar("utm_medium"),
+  utmCampaign: varchar("utm_campaign"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
