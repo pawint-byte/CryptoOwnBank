@@ -698,7 +698,7 @@ async function encryptVault(plaintext: string, passphrase: string): Promise<stri
   return btoa(String.fromCharCode(...combined));
 }
 
-function BeneficiaryCard({ beneficiary, onDelete }: { beneficiary: LegacyPlanData["beneficiaries"][0]; onDelete: () => void }) {
+function BeneficiaryCard({ beneficiary, onDelete, onEdit }: { beneficiary: LegacyPlanData["beneficiaries"][0]; onDelete: () => void; onEdit: () => void }) {
   const walletConfig = beneficiary.walletType ? WALLET_TYPES[beneficiary.walletType] : null;
 
   return (
@@ -710,9 +710,14 @@ function BeneficiaryCard({ beneficiary, onDelete }: { beneficiary: LegacyPlanDat
             <p className="text-sm text-muted-foreground">{beneficiary.email}</p>
             {beneficiary.relationship && <Badge variant="outline" className="mt-1">{beneficiary.relationship}</Badge>}
           </div>
-          <Button variant="ghost" size="icon" onClick={onDelete} data-testid={`button-delete-beneficiary-${beneficiary.id}`}>
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={onEdit} data-testid={`button-edit-beneficiary-${beneficiary.id}`}>
+              <Edit className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onDelete} data-testid={`button-delete-beneficiary-${beneficiary.id}`}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
         </div>
         {walletConfig && (
           <div className="text-xs text-muted-foreground space-y-1">
@@ -790,9 +795,21 @@ function ResendVerificationButton() {
   );
 }
 
-function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; splitEnabled?: boolean }) {
+function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOpen, onExternalClose }: {
+  onAdd: () => void;
+  splitEnabled?: boolean;
+  editBeneficiary?: LegacyPlanData["beneficiaries"][0] | null;
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
+}) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = editBeneficiary ? (externalOpen ?? false) : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (editBeneficiary) { if (!v && onExternalClose) onExternalClose(); }
+    else { setInternalOpen(v); }
+  };
+  const isEditing = !!editBeneficiary;
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -805,6 +822,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
   const [templateFields, setTemplateFields] = useState<Record<string, string>>({});
   const [walletAssetSummary, setWalletAssetSummary] = useState("");
   const [selectedWalletIds, setSelectedWalletIds] = useState<string[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
   const [vaultEnabled, setVaultEnabled] = useState(false);
   const [vaultContent, setVaultContent] = useState("");
@@ -815,6 +833,46 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
   const [encryptedVaultResult, setEncryptedVaultResult] = useState("");
   const [testDecryptResult, setTestDecryptResult] = useState<string | null>(null);
   const [encrypting, setEncrypting] = useState(false);
+
+  if (isEditing && open && !initialized) {
+    setName(editBeneficiary.name || "");
+    setEmail(editBeneficiary.email || "");
+    setRelationship(editBeneficiary.relationship || "");
+    setWalletType(editBeneficiary.walletType || "");
+    setDeviceInstructions(editBeneficiary.deviceInstructions || "");
+    setSeedPhraseInstructions(editBeneficiary.seedPhraseInstructions || "");
+    setSplitPieces(editBeneficiary.splitPieces || "");
+    setWalletAssetSummary(editBeneficiary.walletAssetSummary || "");
+
+    const wt = editBeneficiary.walletType ? WALLET_TYPES[editBeneficiary.walletType] : null;
+    const rawNotes = editBeneficiary.additionalNotes || "";
+    if (wt && rawNotes) {
+      const parsed: Record<string, string> = {};
+      let remaining = rawNotes;
+      for (const field of wt.template.templateFields) {
+        const prefix = `${field.label}: `;
+        const idx = remaining.indexOf(prefix);
+        if (idx !== -1) {
+          const afterPrefix = remaining.slice(idx + prefix.length);
+          const lineEnd = afterPrefix.indexOf("\n");
+          const val = lineEnd === -1 ? afterPrefix : afterPrefix.slice(0, lineEnd);
+          parsed[field.key] = val;
+          remaining = remaining.replace(`${prefix}${val}`, "").trim();
+        }
+      }
+      setTemplateFields(parsed);
+      setAdditionalNotes(remaining.replace(/^\n+/, ""));
+    } else {
+      setAdditionalNotes(rawNotes);
+    }
+
+    if (editBeneficiary.encryptedVault) {
+      setVaultEnabled(true);
+      setEncryptedVaultResult(editBeneficiary.encryptedVault);
+      setVaultHint(editBeneficiary.encryptedVaultHint || "");
+    }
+    setInitialized(true);
+  }
 
   const { data: walletAssets } = useQuery<WalletAsset[]>({
     queryKey: ["/api/legacy-plan/wallet-assets"],
@@ -917,26 +975,32 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
     }
   };
 
-  const createBeneficiary = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/legacy-beneficiaries", {
-      name, email, relationship: relationship || null,
-      walletType: walletType || null,
-      deviceInstructions: deviceInstructions || null,
-      seedPhraseInstructions: seedPhraseInstructions || null,
-      additionalNotes: buildAdditionalNotes() || null,
-      splitPieces: splitPieces || null,
-      encryptedVault: encryptedVaultResult || null,
-      encryptedVaultHint: vaultHint || null,
-      walletAssetSummary: walletAssetSummary || null,
-    }),
+  const saveBeneficiary = useMutation({
+    mutationFn: () => {
+      const payload = {
+        name, email, relationship: relationship || null,
+        walletType: walletType || null,
+        deviceInstructions: deviceInstructions || null,
+        seedPhraseInstructions: seedPhraseInstructions || null,
+        additionalNotes: buildAdditionalNotes() || null,
+        splitPieces: splitPieces || null,
+        encryptedVault: encryptedVaultResult || null,
+        encryptedVaultHint: vaultHint || null,
+        walletAssetSummary: walletAssetSummary || null,
+      };
+      if (isEditing && editBeneficiary) {
+        return apiRequest("PATCH", `/api/legacy-beneficiaries/${editBeneficiary.id}`, payload);
+      }
+      return apiRequest("POST", "/api/legacy-beneficiaries", payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
-      toast({ title: "Beneficiary added" });
+      toast({ title: isEditing ? "Beneficiary updated" : "Beneficiary added" });
       setOpen(false);
       resetForm();
       onAdd();
     },
-    onError: () => toast({ title: "Error", description: "Failed to add beneficiary", variant: "destructive" }),
+    onError: () => toast({ title: "Error", description: isEditing ? "Failed to update beneficiary" : "Failed to add beneficiary", variant: "destructive" }),
   });
 
   const resetForm = () => {
@@ -944,7 +1008,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
     setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
     setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
-    setVaultHint(""); setEncryptedVaultResult(""); setTestDecryptResult(null);
+    setVaultHint(""); setEncryptedVaultResult(""); setTestDecryptResult(null); setInitialized(false);
   };
 
   const walletCategories = [
@@ -955,12 +1019,14 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-      <DialogTrigger asChild>
-        <Button data-testid="button-add-beneficiary"><UserPlus className="h-4 w-4 mr-2" /> Add Beneficiary</Button>
-      </DialogTrigger>
+      {!isEditing && (
+        <DialogTrigger asChild>
+          <Button data-testid="button-add-beneficiary"><UserPlus className="h-4 w-4 mr-2" /> Add Beneficiary</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Beneficiary — Step {step} of 3</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit" : "Add"} Beneficiary — Step {step} of 3</DialogTitle>
           <DialogDescription>
             {step === 1 && "Who should receive recovery instructions?"}
             {step === 2 && "Configure wallet-specific recovery template"}
@@ -1266,11 +1332,11 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled }: { onAdd: () => void; spli
             <DialogFooter>
               <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
               <Button
-                onClick={() => createBeneficiary.mutate()}
-                disabled={!name || !email || createBeneficiary.isPending || (vaultEnabled && !encryptedVaultResult)}
+                onClick={() => saveBeneficiary.mutate()}
+                disabled={!name || !email || saveBeneficiary.isPending || (vaultEnabled && !encryptedVaultResult)}
                 data-testid="button-save-beneficiary"
               >
-                {createBeneficiary.isPending ? "Saving..." : "Save Beneficiary"}
+                {saveBeneficiary.isPending ? "Saving..." : isEditing ? "Update Beneficiary" : "Save Beneficiary"}
               </Button>
             </DialogFooter>
           </div>
@@ -1578,6 +1644,8 @@ export default function LegacyPlanPage() {
     onError: () => toast({ title: "Error", description: "Failed to remove beneficiary", variant: "destructive" }),
   });
 
+  const [editingBeneficiary, setEditingBeneficiary] = useState<LegacyPlanData["beneficiaries"][0] | null>(null);
+
   if (isLoading) {
     return (
       <div className="space-y-4 max-w-4xl mx-auto">
@@ -1748,7 +1816,7 @@ export default function LegacyPlanPage() {
             <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-2">
                 {beneficiaries.map((b) => (
-                  <BeneficiaryCard key={b.id} beneficiary={b} onDelete={() => deleteBeneficiary.mutate(b.id)} />
+                  <BeneficiaryCard key={b.id} beneficiary={b} onDelete={() => deleteBeneficiary.mutate(b.id)} onEdit={() => setEditingBeneficiary(b)} />
                 ))}
               </div>
               {beneficiaries.length >= 1 && beneficiaries.length < 5 && (
@@ -1765,6 +1833,14 @@ export default function LegacyPlanPage() {
           )}
         </CardContent>
       </Card>
+
+      <AddBeneficiaryDialog
+        onAdd={() => {}}
+        splitEnabled={plan.splitDeliveryEnabled ?? false}
+        editBeneficiary={editingBeneficiary}
+        externalOpen={!!editingBeneficiary}
+        onExternalClose={() => setEditingBeneficiary(null)}
+      />
 
       <Card className="border-dashed">
         <CardContent className="pt-4">
