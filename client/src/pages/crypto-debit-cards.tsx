@@ -109,7 +109,7 @@ const cards: DebitCard[] = [
       "Very popular in European crypto community",
     ],
     appleGooglePay: true,
-    url: "https://gnosispay.com",
+    url: "https://gnosispay.com/?partner=cmn4r1myk000jxy2lnjzzhtzw",
     description: "Built on Safe (the most trusted smart contract wallet). Your funds stay on-chain until you tap to pay. Extremely popular with European crypto users who want full DeFi access from their spending wallet.",
     hookText: "Add your Gnosis Pay wallet address to CryptoOwnBank to see your spending balance alongside your other wallets — all on one dashboard.",
     bestFor: "European users who want on-chain spending",
