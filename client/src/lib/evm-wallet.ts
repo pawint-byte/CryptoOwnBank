@@ -245,28 +245,38 @@ export const useEvmWallet = create<EvmWalletState>()(
                 state.error = null;
                 state.walletProvider = null;
               } else {
-                const ethereum = (window as any).ethereum;
-                ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
-                  if (!accounts || accounts.length === 0) {
-                    useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
-                  } else {
-                    ethereum.request({ method: "eth_chainId" }).then((chainHex: string) => {
-                      useEvmWallet.setState({ address: accounts[0], chainId: parseInt(chainHex, 16) });
-                    }).catch(() => {});
-                    ethereum.on("accountsChanged", (accs: string[]) => {
-                      if (accs.length === 0) {
-                        useEvmWallet.setState({ address: null, isConnected: false, chainId: null, walletProvider: null });
+                setTimeout(() => {
+                  try {
+                    const ethereum = (window as any).ethereum;
+                    if (!ethereum) {
+                      useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
+                      return;
+                    }
+                    ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
+                      if (!accounts || accounts.length === 0) {
+                        useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
                       } else {
-                        useEvmWallet.setState({ address: accs[0] });
+                        ethereum.request({ method: "eth_chainId" }).then((chainHex: string) => {
+                          useEvmWallet.setState({ address: accounts[0], chainId: parseInt(chainHex, 16) });
+                        }).catch(() => {});
+                        ethereum.on("accountsChanged", (accs: string[]) => {
+                          if (accs.length === 0) {
+                            useEvmWallet.setState({ address: null, isConnected: false, chainId: null, walletProvider: null });
+                          } else {
+                            useEvmWallet.setState({ address: accs[0] });
+                          }
+                        });
+                        ethereum.on("chainChanged", (newChainHex: string) => {
+                          useEvmWallet.setState({ chainId: parseInt(newChainHex, 16) });
+                        });
                       }
+                    }).catch(() => {
+                      useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
                     });
-                    ethereum.on("chainChanged", (newChainHex: string) => {
-                      useEvmWallet.setState({ chainId: parseInt(newChainHex, 16) });
-                    });
+                  } catch {
+                    useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
                   }
-                }).catch(() => {
-                  useEvmWallet.setState({ address: null, chainId: null, isConnected: false, error: null, walletProvider: null });
-                });
+                }, 500);
               }
             }
           }

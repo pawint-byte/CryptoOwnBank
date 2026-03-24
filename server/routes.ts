@@ -9597,17 +9597,23 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
   const LIFI_BASE = "https://li.quest/v1";
 
-  async function lifiFetch(path: string, options?: { method?: string; body?: any }) {
+  async function lifiFetch(path: string, options?: { method?: string; body?: any }, retries = 2): Promise<any> {
+    const lifiApiKey = process.env.LIFI_API_KEY;
     const resp = await fetch(`${LIFI_BASE}${path}`, {
       method: options?.method || "GET",
       headers: {
         "Accept": "application/json",
+        ...(lifiApiKey ? { "x-lifi-api-key": lifiApiKey } : {}),
         ...(options?.body ? { "Content-Type": "application/json" } : {}),
       },
       ...(options?.body ? { body: JSON.stringify(options.body) } : {}),
     });
     if (!resp.ok) {
       const text = await resp.text();
+      if ((resp.status === 401 || resp.status >= 500) && retries > 0) {
+        await new Promise(r => setTimeout(r, 1000));
+        return lifiFetch(path, options, retries - 1);
+      }
       throw new Error(`LI.FI API error ${resp.status}: ${text}`);
     }
     return resp.json();
