@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -834,7 +834,9 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   const [testDecryptResult, setTestDecryptResult] = useState<string | null>(null);
   const [encrypting, setEncrypting] = useState(false);
 
-  if (isEditing && open && !initialized) {
+  useEffect(() => {
+    if (!isEditing || !open || !editBeneficiary) return;
+    if (initialized) return;
     setName(editBeneficiary.name || "");
     setEmail(editBeneficiary.email || "");
     setRelationship(editBeneficiary.relationship || "");
@@ -872,7 +874,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
       setVaultHint(editBeneficiary.encryptedVaultHint || "");
     }
     setInitialized(true);
-  }
+  }, [open, editBeneficiary, isEditing, initialized]);
 
   const { data: walletAssets } = useQuery<WalletAsset[]>({
     queryKey: ["/api/legacy-plan/wallet-assets"],
