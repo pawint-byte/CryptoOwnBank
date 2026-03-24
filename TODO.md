@@ -1,6 +1,8 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added.**
+**Last updated: 2026-03-24 by main agent**
+
+**This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes.**
 
 ---
 
