@@ -12,6 +12,9 @@ import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { XummSdk } from "xumm-sdk";
 import { Client } from "xrpl";
+import https from "https";
+import fs from "fs";
+import path from "path";
 
 function safeServerDate(dateValue: string | Date): Date {
   if (dateValue instanceof Date) return dateValue;
@@ -9882,6 +9885,80 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       console.error("[Squid] Status error:", err.message);
       res.status(500).json({ message: "Failed to check bridge status. Please try again." });
     }
+  });
+
+  const GP_APP_ID = "gp_17049a01fc33eac60a9140bbe4af5236";
+  const GP_CERT_DIR = path.resolve(".gnosis-pay");
+  const GP_PSE_API = "https://pse-api.gnosispay.com";
+
+  app.post("/api/gnosis-pay/ephemeral-token", isAuthenticated, async (req: any, res) => {
+    try {
+      const { safeAddress } = req.body;
+      if (!safeAddress || typeof safeAddress !== "string") {
+        return res.status(400).json({ error: "Safe wallet address is required" });
+      }
+
+      const keyPath = path.join(GP_CERT_DIR, `${GP_APP_ID}.key.pem`);
+      const certPath = path.join(GP_CERT_DIR, `${GP_APP_ID}.cert.pem`);
+
+      if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+        return res.status(500).json({ error: "Gnosis Pay certificates not configured" });
+      }
+
+      const key = fs.readFileSync(keyPath, "utf-8");
+      const cert = fs.readFileSync(certPath, "utf-8");
+
+      const postData = JSON.stringify({ safeAddress });
+
+      const url = new URL(`${GP_PSE_API}/v1/ephemeral-token`);
+
+      const options: https.RequestOptions = {
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: url.pathname,
+        method: "POST",
+        key,
+        cert,
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(postData),
+          "X-App-Id": GP_APP_ID,
+        },
+      };
+
+      const proxyReq = https.request(options, (proxyRes) => {
+        let data = "";
+        proxyRes.on("data", (chunk) => (data += chunk));
+        proxyRes.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (proxyRes.statusCode === 200) {
+              res.json(parsed);
+            } else {
+              console.error("[gnosis-pay] Token error:", proxyRes.statusCode, data);
+              res.status(proxyRes.statusCode || 500).json({ error: parsed.message || "Failed to get token" });
+            }
+          } catch {
+            res.status(500).json({ error: "Invalid response from Gnosis Pay" });
+          }
+        });
+      });
+
+      proxyReq.on("error", (err) => {
+        console.error("[gnosis-pay] Request error:", err.message);
+        res.status(500).json({ error: "Failed to connect to Gnosis Pay" });
+      });
+
+      proxyReq.write(postData);
+      proxyReq.end();
+    } catch (err: any) {
+      console.error("[gnosis-pay] Ephemeral token error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/gnosis-pay/config", (_req, res) => {
+    res.json({ appId: GP_APP_ID });
   });
 
   startPriceAlertChecker();

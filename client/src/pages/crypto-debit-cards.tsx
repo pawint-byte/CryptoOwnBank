@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   CreditCard,
   ExternalLink,
@@ -23,6 +26,8 @@ import {
   Zap,
   Star,
   RefreshCcw,
+  Eye,
+  Loader2,
 } from "lucide-react";
 
 interface DebitCard {
@@ -162,6 +167,112 @@ const cards: DebitCard[] = [
     color: "#059669",
   },
 ];
+
+function GnosisPayPSE() {
+  const { toast } = useToast();
+  const [safeAddress, setSafeAddress] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [pseReady, setPseReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const loadCardData = useCallback(async () => {
+    if (!safeAddress || !/^0x[a-fA-F0-9]{40}$/.test(safeAddress)) {
+      setError("Please enter a valid Ethereum/Gnosis Safe address");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setPseReady(false);
+
+    try {
+      const res = await apiRequest("POST", "/api/gnosis-pay/ephemeral-token", { safeAddress });
+      const data = await res.json();
+
+      if (data.error) {
+        setError(data.error);
+        setLoading(false);
+        return;
+      }
+
+      const configRes = await fetch("/api/gnosis-pay/config");
+      const config = await configRes.json();
+
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+
+        const iframe = document.createElement("iframe");
+        iframe.src = `https://pse.gnosispay.com/card-data?appId=${config.appId}&token=${data.token}`;
+        iframe.style.width = "100%";
+        iframe.style.height = "200px";
+        iframe.style.border = "none";
+        iframe.style.borderRadius = "8px";
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+        iframe.onload = () => {
+          setPseReady(true);
+          setLoading(false);
+        };
+        iframe.onerror = () => {
+          setError("Failed to load card data viewer");
+          setLoading(false);
+        };
+        containerRef.current.appendChild(iframe);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to connect to Gnosis Pay");
+      setLoading(false);
+    }
+  }, [safeAddress]);
+
+  return (
+    <Card className="border-[#3E6957]/20 bg-[#3E6957]/5 mt-3">
+      <CardContent className="pt-4">
+        <div className="flex items-start gap-2 mb-3">
+          <Eye className="h-4 w-4 text-[#3E6957] mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-[#3E6957] dark:text-green-400">View Your Gnosis Pay Card Details</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Already have a Gnosis Pay card? Enter your Safe wallet address to securely view your card details right here.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-2 items-start">
+          <Input
+            placeholder="0x... your Safe wallet address"
+            value={safeAddress}
+            onChange={(e) => setSafeAddress(e.target.value)}
+            className="flex-1 font-mono text-xs"
+            data-testid="input-gnosis-safe-address"
+          />
+          <Button
+            onClick={loadCardData}
+            disabled={loading || !safeAddress}
+            className="gap-2 shrink-0"
+            style={{ backgroundColor: "#3E6957", borderColor: "#2d5242" }}
+            data-testid="button-view-gnosis-card"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+            View Card
+          </Button>
+        </div>
+
+        {error && (
+          <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" /> {error}
+          </p>
+        )}
+
+        <div ref={containerRef} className={`mt-3 ${pseReady ? "" : "hidden"}`} data-testid="gnosis-pse-container" />
+
+        <p className="text-[10px] text-muted-foreground mt-2">
+          Card data is loaded securely via Gnosis Pay's PSE (Partner Secure Elements). Your card details are never stored on CryptoOwnBank servers.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function CryptoDebitCards() {
   const { user } = useAuth();
@@ -321,6 +432,8 @@ export default function CryptoDebitCards() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {card.name === "Gnosis Pay" && user && <GnosisPayPSE />}
 
                   <div className="flex items-center gap-3 flex-wrap">
                     <a href={card.url} target="_blank" rel="noopener noreferrer">
