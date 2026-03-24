@@ -1,0 +1,74 @@
+TON + Telegram Wallet can work as a fiat on-ramp/off-ramp bridge, and it's actually one of the more user-friendly options in 2026 for the exact flow you're describing.
+But it's not a perfect "scan QR → pay fiat → automatically get RLUSD in your non-custodial wallet with zero extra steps" solution. It gets you 70-80% of the way there with very low friction for the customer, but the bridging part adds a couple of extra clicks and some fees/slippage.
+How the flow would actually work right now (March 2026)
+
+Customer buys TON with fiat (this part is excellent)
+Customer scans your MyOwnPOS QR/paylink.
+They open Telegram Wallet (or Wallet in Telegram / @wallet bot).
+They buy TON directly with card, Apple Pay, Google Pay, bank transfer, or local methods (powered by MoonPay, Onramper, Alchemy Pay, Guardarian, etc.).
+This is fully built-in, works in 100+ countries (including US), and is one of the smoothest fiat on-ramps available today.
+
+Bridge TON to your preferred crypto (RLUSD / XRP / XLM)
+Customer now has TON.
+They use a bridge/aggregator inside Telegram or a mini-app (Rubic, STON.fi + cross-chain tools, or TON → EVM bridges that then go to XRPL via Axelar/Squid).
+They send the bridged asset (or swap to RLUSD) directly to the wallet address you provide in the paylink.
+You receive RLUSD (or whatever you set) in your non-custodial XRPL wallet → it auto-registers in the OwnCoin POS dashboard exactly like any other payment.
+
+Customer doesn't keep TON (exactly as you said)
+Most people treat TON as the "temporary on-ramp rail" — buy it, bridge/swap immediately, done. No long-term holding needed.
+
+
+Pros vs Cons for MyOwnPOS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+AspectProsCons / LimitationsUser experienceExtremely easy (billions of Telegram users already have the wallet)Extra step for bridging/sendingFiat methodsCard, Apple Pay, Google Pay, bank, 100+ localsNone — very strongSpeedFiat → TON is instantBridging adds 30 sec – 5 min + possible slippageFeesLow on TON itselfBridge + DEX swap can add 0.5–2% totalNon-custodialYes — everything lands in your walletCustomer must handle the bridge themselvesIntegration effortVery light (just show a "Pay with TON" button + your TON address)Not fully automatic like a dedicated rampCoverageHuge global reachBest for users already in Telegram ecosystem
+Realistic verdict for your site
+
+This is a great additional payment option — especially for freelancers/merchants who want to accept payments from Telegram-heavy users (huge in emerging markets and crypto communities).
+It’s not a full replacement for a dedicated fiat-to-RLUSD ramp (Alchemy Pay / NOWPayments / Transak) because the bridging step isn’t automatic.
+However, it’s much easier to add today than waiting for MoonPay approval — you can literally launch a “Pay with TON (fiat on-ramp)” button in MyOwnPOS in a day or two.
+
+Bonus: The TON Foundation just launched TON Pay SDK (Feb 2026) specifically for merchants and mini-apps. It lets you accept TON/USDT payments directly in Telegram with one-tap checkout. You could combine that with the fiat buy flow for an even smoother experience
