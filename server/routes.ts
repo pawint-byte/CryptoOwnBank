@@ -1081,6 +1081,21 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.get("/api/positions/soil", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const positionsData = await storage.getPositionsByUser(userId);
+      const soilPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("SOIL"));
+      res.json(soilPositions.map(p => ({
+        assetSymbol: p.assetSymbol,
+        quantity: p.quantity,
+        totalCostBasis: p.totalCostBasis,
+      })));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch soil positions" });
+    }
+  });
+
   app.get("/api/positions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

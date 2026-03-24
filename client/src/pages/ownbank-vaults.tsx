@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,6 +86,24 @@ export default function OwnBankVaults() {
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
   const [autoDepositHandled, setAutoDepositHandled] = useState(false);
 
+  const { data: soilPositions } = useQuery<{ assetSymbol: string; quantity: string; totalCostBasis: string }[]>({
+    queryKey: ["/api/positions/soil"],
+  });
+
+  const backendDeposits = useMemo(() => {
+    if (!soilPositions) return {};
+    const map: Record<string, { principal: number; depositDate: string }> = {};
+    for (const pos of soilPositions) {
+      const sym = pos.assetSymbol.toUpperCase();
+      if (sym.includes("CREDIT")) {
+        map["soil-credit-plus"] = { principal: parseFloat(pos.quantity) || 0, depositDate: "" };
+      } else if (sym.includes("LIQUID") || sym === "RLUSD-SOIL-LIQUID") {
+        map["soil-treasury"] = { principal: parseFloat(pos.quantity) || 0, depositDate: "" };
+      }
+    }
+    return map;
+  }, [soilPositions]);
+
   useEffect(() => {
     if (!hasPendingXummPayment()) return;
     const metaStr = sessionStorage.getItem("xumm_pending_deposit_meta");
@@ -157,6 +176,18 @@ export default function OwnBankVaults() {
   }, [isConnected, autoDepositHandled]);
 
   function getUserDeposit(vaultId: string): VaultDeposit | undefined {
+    const backendData = backendDeposits[vaultId];
+    if (backendData && backendData.principal > 0) {
+      const localDeposit = vaultDeposits.find((d) => d.vaultId === vaultId);
+      return {
+        vaultId,
+        vaultName: vaultId === "soil-credit-plus" ? "Soil CREDIT+ Vault" : "Soil Treasury Vault",
+        principal: backendData.principal,
+        depositDate: localDeposit?.depositDate || new Date().toISOString(),
+        apr: vaultId === "soil-credit-plus" ? 8.0 : 5.2,
+        txHash: localDeposit?.txHash,
+      };
+    }
     return vaultDeposits.find((d) => d.vaultId === vaultId);
   }
 
@@ -393,6 +424,42 @@ export default function OwnBankVaults() {
           </AlertDescription>
         </Alert>
       )}
+
+      {(() => {
+        const allDeposits = SOIL_VAULTS.map(v => {
+          const dep = getUserDeposit(v.id);
+          if (!dep) return null;
+          const accrued = calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
+          return { vault: v, principal: dep.principal, accrued };
+        }).filter(Boolean) as { vault: typeof SOIL_VAULTS[0]; principal: number; accrued: number }[];
+        
+        if (allDeposits.length > 0) {
+          const totalDeposited = allDeposits.reduce((s, d) => s + d.principal, 0);
+          const totalInterest = allDeposits.reduce((s, d) => s + d.accrued, 0);
+          const totalBalance = totalDeposited + totalInterest;
+          return (
+            <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5" data-testid="card-total-vault-balance">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Deposited</p>
+                    <p className="text-lg font-bold" data-testid="text-total-deposited">{formatCurrency(totalDeposited)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Accrued Interest</p>
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400" data-testid="text-total-interest">+{formatCurrency(totalInterest)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Balance</p>
+                    <p className="text-lg font-bold text-[#00A4E4]" data-testid="text-total-balance">{formatCurrency(totalBalance)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        return null;
+      })()}
 
       <div className="grid gap-6 md:grid-cols-2">
         {SOIL_VAULTS.map((vault) => {
