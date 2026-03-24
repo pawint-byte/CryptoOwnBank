@@ -99,6 +99,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     ctaUrl: "https://cryptoownbank.com/ownbank/xrpl-bridge",
     audienceTier: "all",
   },
+  {
+    title: "New: 14 Ways to Get Crypto — No Exchange Needed",
+    description: "We just expanded our Buy Crypto page with every way you can get crypto without signing up for an exchange.\n\nHere's what's available now:\n\n💳 Card & Bank On-Ramps — Buy directly inside your wallet (Xaman, LOBSTR, MetaMask, Ledger, Trust Wallet, Phantom, Keplr) via MoonPay, Transak, Coinify, BTC Direct, Mercuryo, Banxa, Topper, and Coinbase Pay.\n\n🤝 P2P Platforms — NoOnes (900+ payment methods: gift cards, cash deposits, M-Pesa, GCash, in-person meetups), ByBarter (non-custodial P2P with escrow), and Narfex (fully decentralized P2P).\n\n🌍 Emerging Market On-Ramps — Onramp.money (India: UPI, IMPS, NEFT) and Digitap (QR-based buying across emerging markets). Built for regions where Western on-ramps don't work well.\n\n📱 Telegram — Buy USDT instantly inside Telegram Wallet with Apple Pay, Google Pay, or your card. Available in 100+ countries.\n\n👥 Local P2P Communities — Guidance on finding active Telegram and WhatsApp crypto trading groups in your country.\n\nEvery path brings you back to CryptoOwnBank: buy crypto however works for you, add your wallet address here, and we'll track your balances automatically. Then use our DEX trading, DCA orders, cross-chain swaps, yield tools, and payment features — all from one dashboard.\n\nIf someone sends you a payment link and you don't have crypto yet, the pay page now includes a \"Don't have crypto yet?\" helper with the quickest paths to get started.",
+    ctaLabel: "See All On-Ramp Options",
+    ctaUrl: "https://cryptoownbank.com/buy-crypto",
+    audienceTier: "all",
+  },
 ];
 
 export default function AdminAnnouncements() {

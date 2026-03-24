@@ -1190,6 +1190,100 @@ export default function BuyCrypto() {
             </CardContent>
           </Card>
 
+          <Card className="border-amber-500/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Globe className="h-5 w-5 text-amber-600" />
+                Emerging Market On-Ramps
+              </CardTitle>
+              <CardDescription>
+                Built for India, Southeast Asia, Africa, and Latin America — local payment methods, light KYC, and fast settlement. Get crypto into your wallet, then manage it all here.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-lg border p-4 hover:border-amber-500 transition-colors space-y-2" data-testid="card-onramp-money">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-amber-600" />
+                      <span className="font-semibold">Onramp.money</span>
+                      <Badge className="bg-amber-600 text-white text-[10px]">India & Southeast Asia</Badge>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Buy crypto with UPI, IMPS, NEFT, local bank transfers, and mobile wallets. Designed for India and Southeast Asia with fast KYC and instant settlement. Supports XRP, ETH, BTC, USDT, and more.
+                  </p>
+                  <p className="text-xs text-amber-600 font-medium">
+                    Buy with UPI or local bank → crypto lands in your wallet → add it to CryptoOwnBank → track balances and use DEX, DCA, swaps
+                  </p>
+                </div>
+              </a>
+
+              <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-lg border p-4 hover:border-amber-500 transition-colors space-y-2" data-testid="card-digitap">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-5 w-5 text-amber-600" />
+                      <span className="font-semibold">Digitap</span>
+                      <Badge variant="outline" className="text-[10px]">QR-Based, Merchant-Friendly</Badge>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    QR-based fiat-to-crypto with minimal KYC. Built for emerging markets — supports local payment rails across India, Brazil, Philippines, Nigeria, and more. Perfect for first-time crypto buyers.
+                  </p>
+                  <p className="text-xs text-amber-600 font-medium">
+                    Scan QR → pay with local method → get crypto in your wallet → come back here to manage everything
+                  </p>
+                </div>
+              </a>
+            </CardContent>
+          </Card>
+
+          <Card className="border-cyan-500/20 bg-cyan-500/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-cyan-600" />
+                Local P2P Communities
+              </CardTitle>
+              <CardDescription>
+                In many countries, the easiest way to buy crypto is through local communities where people trade daily.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Millions of people buy and sell crypto every day in local Telegram groups, WhatsApp groups, and Facebook communities — especially in Nigeria, Brazil, Philippines, India, Kenya, Ghana, and South Africa. Search for groups like "Buy Sell Crypto [your city]" or "P2P Crypto [your country]" on Telegram or Facebook.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="font-semibold text-xs">How it works</p>
+                  <ol className="text-xs text-muted-foreground space-y-1">
+                    <li>1. Find a local P2P group on Telegram or WhatsApp</li>
+                    <li>2. Agree on price with a seller</li>
+                    <li>3. Pay via local method (cash, bank, mobile money)</li>
+                    <li>4. Seller sends crypto to your wallet</li>
+                  </ol>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="font-semibold text-xs">Then come back here</p>
+                  <ol className="text-xs text-muted-foreground space-y-1">
+                    <li>1. Add your wallet address to CryptoOwnBank</li>
+                    <li>2. See your balance update automatically</li>
+                    <li>3. Trade on DEX, set up DCA, swap tokens</li>
+                    <li>4. Track your full portfolio in one place</li>
+                  </ol>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 bg-cyan-500/10 rounded-lg p-3">
+                <AlertTriangle className="h-4 w-4 text-cyan-700 dark:text-cyan-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong>Safety tip:</strong> Use escrow services when available (NoOnes and ByBarter have built-in escrow). For direct P2P trades, start with small amounts, verify the seller's reputation, and never share your private keys or recovery phrase.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {!user && (
             <Card className="border-green-500/30 bg-green-500/5">
               <CardContent className="pt-5 space-y-3">
@@ -1829,8 +1923,21 @@ export default function BuyCrypto() {
                 mobile money (M-Pesa, GCash), prepaid cards, in-person meetups — use P2P platforms like{" "}
                 <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (900+ methods) or{" "}
                 <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a>.
+                In India and Southeast Asia,{" "}
+                <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> supports UPI, IMPS, and local bank transfers.{" "}
+                <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> offers QR-based buying across emerging markets.
                 Telegram users can buy USDT instantly with Apple Pay or Google Pay via{" "}
                 <a href="https://t.me/wallet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Telegram Wallet</a>.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">I'm in India / Africa / Southeast Asia — what's the best option for me?</p>
+              <p className="text-sm text-muted-foreground">
+                <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> is the best for India (UPI, IMPS, NEFT).{" "}
+                <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> is excellent for Nigeria, Kenya, Ghana, and the Philippines — it supports mobile money (M-Pesa, GCash), cash deposits, and local payment methods.{" "}
+                <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> works across all emerging markets with QR-based purchases.
+                You can also find active local P2P communities on Telegram and WhatsApp where people trade daily — search for "P2P Crypto" + your city or country.
+                Whichever method you use, add your wallet to CryptoOwnBank afterward to track your balances and use our trading tools.
               </p>
             </div>
             <div className="space-y-1">

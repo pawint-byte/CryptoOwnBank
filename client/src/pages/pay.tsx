@@ -382,6 +382,12 @@ export default function PayPage() {
                   </p>
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs font-semibold">India & Southeast Asia</p>
+                  <p className="text-xs text-muted-foreground">
+                    <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> — buy with UPI, IMPS, or local bank transfer. <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> — QR-based buying across emerging markets.
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-xs font-semibold">Telegram users</p>
                   <p className="text-xs text-muted-foreground">
                     Open <a href="https://t.me/wallet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">@wallet</a> in Telegram — buy USDT with Apple Pay, Google Pay, or card in seconds. Then send to your wallet and pay.
