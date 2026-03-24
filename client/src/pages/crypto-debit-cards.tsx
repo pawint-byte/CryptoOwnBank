@@ -493,6 +493,52 @@ export default function CryptoDebitCards() {
         </CardContent>
       </Card>
 
+      <Card className="border-orange-500/20 bg-orange-500/5">
+        <CardContent className="pt-5">
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-orange-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold mb-1">Secure Your Spending Wallet with Hardware</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                Loading your debit card from a hardware wallet adds an extra layer of protection. Every reload requires physical approval on your device — no one can drain your funds remotely. These are the hardware wallets we recommend:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <a href="https://cypherock.com/store/?ref=PETER.WINT" target="_blank" rel="noopener noreferrer" className="block" data-testid="link-hw-cypherock">
+                  <Card className="border-muted transition-all cursor-pointer">
+                    <CardContent className="pt-3 pb-3 px-3">
+                      <p className="text-sm font-semibold">CypheRock X1</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Seedless recovery with 5 key cards. No single point of failure. Best for inheritance planning.</p>
+                      <p className="text-xs font-medium text-orange-600 mt-1.5">~$159</p>
+                    </CardContent>
+                  </Card>
+                </a>
+                <a href="https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4" target="_blank" rel="noopener noreferrer" className="block" data-testid="link-hw-ledger">
+                  <Card className="border-muted transition-all cursor-pointer">
+                    <CardContent className="pt-3 pb-3 px-3">
+                      <p className="text-sm font-semibold">Ledger Nano X</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Bluetooth-enabled. Pairs with Xaman and MetaMask for seamless signing. Most popular choice.</p>
+                      <p className="text-xs font-medium text-orange-600 mt-1.5">~$149</p>
+                    </CardContent>
+                  </Card>
+                </a>
+                <a href="https://www.ellipal.com/?rfsn=9012773.864657d" target="_blank" rel="noopener noreferrer" className="block" data-testid="link-hw-ellipal">
+                  <Card className="border-muted transition-all cursor-pointer">
+                    <CardContent className="pt-3 pb-3 px-3">
+                      <p className="text-sm font-semibold">ELLIPAL Titan</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Air-gapped (no Bluetooth/USB). Uses QR codes only. Maximum physical isolation.</p>
+                      <p className="text-xs font-medium text-orange-600 mt-1.5">~$139</p>
+                    </CardContent>
+                  </Card>
+                </a>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Always buy hardware wallets directly from the manufacturer. Never from third-party sellers on Amazon or eBay.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {!user && (
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="pt-5 space-y-3">
