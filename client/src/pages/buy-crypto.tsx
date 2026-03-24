@@ -133,17 +133,19 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "XRP", address: p.address }) },
         { name: "BTC Direct" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy XRP directly into cold storage. Your keys never touch the internet.",
+      description: "Buy XRP directly into cold storage. Your keys never touch the internet. Noah lets you deposit USD/EUR via bank transfer to get USDC/USDT instantly — no credit card needed.",
       steps: [
         "Open Ledger Live on desktop or mobile",
         "Make sure the XRP app is installed on your Ledger device (My Ledger → install XRP app)",
         "Go to Accounts → Add Account → XRP if you haven't already",
         "Click Buy / Sell in the left menu",
-        "Select XRP and choose a provider (MoonPay, Coinify, Transak, or BTC Direct)",
-        "Enter the amount and complete payment with card or bank transfer",
+        "Select XRP and choose a provider (MoonPay, Coinify, Transak, BTC Direct, or Noah for bank transfer)",
+        "Noah option: deposit USD/EUR via bank transfer to get instant USDC/USDT — then swap to XRP inside Ledger Live",
+        "Enter the amount and complete payment",
         "XRP is sent directly to your Ledger-secured address",
         "Add this address to CryptoOwnBank under Wallets to track your balance",
       ],
@@ -202,16 +204,17 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "xlm", address: p.address }) },
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "XLM", address: p.address }) },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy XLM directly into cold storage via Ledger Live.",
+      description: "Buy XLM directly into cold storage via Ledger Live. Noah lets you deposit USD/EUR via bank transfer for instant stablecoins — no credit card needed.",
       steps: [
         "Open Ledger Live on desktop or mobile",
         "Install the Stellar app on your Ledger device (My Ledger → install Stellar app)",
         "Go to Accounts → Add Account → Stellar",
         "Click Buy / Sell → select Stellar (XLM)",
-        "Choose a provider and enter your amount",
+        "Choose a provider and enter your amount — or use Noah for bank transfer to stablecoins, then swap",
         "Complete payment — XLM goes directly to your Ledger",
         "Add this address to CryptoOwnBank to track your balance",
       ],
@@ -247,13 +250,14 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "ETH", address: p.address }) },
         { name: "BTC Direct" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy ETH directly into cold storage. Works with MetaMask too.",
+      description: "Buy ETH directly into cold storage. Works with MetaMask too. Noah lets you deposit USD/EUR via bank transfer for instant stablecoins — no credit card needed.",
       steps: [
         "Open Ledger Live → Buy / Sell → select Ethereum",
-        "Choose a provider and enter your amount",
+        "Choose a provider and enter your amount — or use Noah for fee-free bank transfer to stablecoins",
         "Complete payment — ETH goes to your Ledger address",
         "You can also connect your Ledger to MetaMask for DeFi access while keeping keys on the device",
       ],
@@ -268,15 +272,16 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "BTC", address: p.address }) },
         { name: "BTC Direct" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "The safest way to buy and hold Bitcoin. Buy directly into cold storage.",
+      description: "The safest way to buy and hold Bitcoin. Buy directly into cold storage. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Bitcoin app on your Ledger",
         "Add a Bitcoin account if you haven't already",
         "Click Buy / Sell → select Bitcoin",
-        "Choose a provider and enter your amount",
+        "Choose a provider and enter your amount — or use Noah for bank transfer to stablecoins, then swap to BTC",
         "Complete payment — BTC goes directly to your Ledger",
         "Add your BTC address to CryptoOwnBank to track your balance alongside your other assets",
       ],
@@ -331,10 +336,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "sol", address: p.address }) },
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "SOL", address: p.address }) },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy SOL into cold storage via Ledger Live.",
+      description: "Buy SOL into cold storage via Ledger Live. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Solana app → Add Account → Solana",
         "Click Buy / Sell → select Solana",
@@ -351,10 +357,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "ada", address: p.address }) },
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "ADA", address: p.address }) },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy ADA into cold storage. Stake directly through AdaLite connected to your Ledger.",
+      description: "Buy ADA into cold storage. Stake directly through AdaLite connected to your Ledger. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Cardano app → Add Account → Cardano",
         "Click Buy / Sell → select Cardano (ADA)",
@@ -408,10 +415,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "atom", address: p.address }) },
         { name: "Coinify" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy ATOM into cold storage. Stake through Keplr connected to Ledger.",
+      description: "Buy ATOM into cold storage. Stake through Keplr connected to Ledger. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Cosmos app → Add Account → Cosmos",
         "Click Buy / Sell → select Cosmos (ATOM)",
@@ -428,10 +436,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "dot", address: p.address }) },
         { name: "Coinify" },
         { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "DOT", address: p.address }) },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy DOT into cold storage. Stake through Nova Wallet connected to Ledger.",
+      description: "Buy DOT into cold storage. Stake through Nova Wallet connected to Ledger. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Polkadot app → Add Account → Polkadot",
         "Click Buy / Sell → select Polkadot (DOT)",
@@ -467,10 +476,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "avax_cchain", address: p.address }) },
         { name: "Coinify" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy AVAX into cold storage.",
+      description: "Buy AVAX into cold storage. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Avalanche app → Add Account",
         "Click Buy / Sell → select Avalanche (AVAX)",
@@ -506,10 +516,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "trx", address: p.address }) },
         { name: "Coinify" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy TRX into cold storage via Ledger Live.",
+      description: "Buy TRX into cold storage via Ledger Live. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Tron app → Add Account → Tron",
         "Click Buy / Sell → select Tron (TRX)",
@@ -542,10 +553,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "doge", address: p.address }) },
         { name: "Coinify" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy DOGE into cold storage.",
+      description: "Buy DOGE into cold storage. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Dogecoin app → Add Account → Dogecoin",
         "Click Buy / Sell → select Dogecoin",
@@ -576,10 +588,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "ltc", address: p.address }) },
         { name: "Coinify" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy LTC into cold storage.",
+      description: "Buy LTC into cold storage. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Litecoin app → Add Account → Litecoin",
         "Click Buy / Sell → select Litecoin",
@@ -593,14 +606,15 @@ const walletsByToken: Record<string, WalletOption[]> = {
       type: "cold",
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "hbar", address: p.address }) },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy HBAR into cold storage via Ledger Live.",
+      description: "Buy HBAR into cold storage via Ledger Live. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Hedera app → Add Account → Hedera",
         "Click Buy / Sell → select Hedera (HBAR)",
-        "Choose MoonPay, enter your amount, complete payment",
+        "Choose a provider (MoonPay or Noah for bank transfer), enter your amount, complete payment",
       ],
     },
   ],
@@ -611,10 +625,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "algo", address: p.address }) },
         { name: "Coinify" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy ALGO into cold storage via Ledger Live.",
+      description: "Buy ALGO into cold storage via Ledger Live. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Algorand app → Add Account → Algorand",
         "Click Buy / Sell → select Algorand (ALGO)",
@@ -628,14 +643,15 @@ const walletsByToken: Record<string, WalletOption[]> = {
       type: "cold",
       onramps: [
         { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "cro", address: p.address }) },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Buy CRO into cold storage via Ledger Live.",
+      description: "Buy CRO into cold storage via Ledger Live. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Cronos app → Add Account → Cronos",
         "Click Buy / Sell → select Cronos (CRO)",
-        "Choose MoonPay, enter your amount, complete payment",
+        "Choose a provider (MoonPay or Noah for bank transfer), enter your amount, complete payment",
       ],
     },
   ],
@@ -662,10 +678,11 @@ const walletsByToken: Record<string, WalletOption[]> = {
       type: "cold",
       onramps: [
         { name: "MoonPay" },
+        { name: "Noah (bank transfer)" },
       ],
       platforms: ["desktop", "mobile"],
       downloadUrl: "https://www.ledger.com/ledger-live",
-      description: "Hold FLR securely on Ledger. Connect to MetaMask for FTSO delegation.",
+      description: "Hold FLR securely on Ledger. Connect to MetaMask for FTSO delegation. Noah lets you deposit USD/EUR via bank transfer — no credit card needed.",
       steps: [
         "Open Ledger Live → install the Flare app (or use Ethereum app with Flare network)",
         "Connect Ledger to MetaMask for Flare network access",
@@ -1941,9 +1958,18 @@ export default function BuyCrypto() {
               </p>
             </div>
             <div className="space-y-1">
+              <p className="text-sm font-medium">What is Noah and how does it work?</p>
+              <p className="text-sm text-muted-foreground">
+                Noah is a cash-to-stablecoin on-ramp built into Ledger Live. It lets you deposit USD or EUR via a regular bank transfer
+                and instantly receive USDC or USDT in your Ledger wallet — no credit card needed, no card fees. Once you have stablecoins,
+                you can swap them to any token inside Ledger Live or use CryptoOwnBank's EVM Swap. It's one of the cheapest ways to get
+                crypto if you have a Ledger hardware wallet.
+              </p>
+            </div>
+            <div className="space-y-1">
               <p className="text-sm font-medium">How long does it take?</p>
               <p className="text-sm text-muted-foreground">
-                Card purchases usually arrive in 1–5 minutes. Bank transfers can take 1–3 business days depending on your bank
+                Card purchases usually arrive in 1–5 minutes. Bank transfers (including Noah) can take 1–3 business days depending on your bank
                 and the provider. Crypto-to-crypto swaps are nearly instant.
               </p>
             </div>

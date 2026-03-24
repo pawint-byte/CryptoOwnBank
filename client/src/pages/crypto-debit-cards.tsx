@@ -121,6 +121,31 @@ const cards: DebitCard[] = [
     color: "#3E6957",
   },
   {
+    name: "CL Card (by Ledger)",
+    network: "Visa",
+    custodyModel: "Hardware wallet custody — spend directly from your Ledger device",
+    cashback: "1% cashback in BTC, USDC, or USDT",
+    regions: ["Europe (EU/EEA)", "UK", "Expanding globally"],
+    walletType: "full",
+    walletDescription: "Full Ledger Live wallet — manage 5,500+ tokens, DeFi access via MetaMask/WalletConnect, staking, swaps, and NFTs. Your keys are stored on the Ledger hardware device and never exposed online.",
+    supportedAssets: ["BTC", "ETH", "USDC", "USDT", "ERC-20 tokens", "5,500+ supported"],
+    features: [
+      "Spend directly from your Ledger wallet balance",
+      "1% cashback — choose BTC, USDC, or USDT",
+      "Apple Pay and Google Pay supported",
+      "Hardware wallet security — every transaction approved on-device",
+      "Issued by Baanx — Visa debit card",
+      "Manage card and balance through Ledger Live app",
+    ],
+    appleGooglePay: true,
+    url: "https://shop.ledger.com/pages/referral-program?referral_code=H7DFZEAP8RPK4",
+    description: "The only debit card backed by a hardware wallet. Spend crypto directly from your Ledger — every reload and transaction requires physical approval on your device. 1% cashback paid in your choice of BTC, USDC, or USDT.",
+    hookText: "Already tracking your Ledger wallet on CryptoOwnBank? Your CL Card balance is part of the same wallet. Spend from it and your portfolio dashboard updates automatically.",
+    bestFor: "Ledger hardware wallet owners",
+    color: "#000000",
+    featured: true,
+  },
+  {
     name: "Cypher",
     network: "Visa",
     custodyModel: "Non-custodial — backed by Y Combinator and Coinbase Ventures",
@@ -283,7 +308,7 @@ export default function CryptoDebitCards() {
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
       <SeoHead
         title="Crypto Debit Cards — Spend Crypto Anywhere | CryptoOwnBank"
-        description="Non-custodial crypto debit cards that let you spend directly from your own wallet at any Visa or Mastercard terminal. Compare Bleap, MetaMask Card, Gnosis Pay, Cypher, and COCA."
+        description="Non-custodial crypto debit cards that let you spend directly from your own wallet at any Visa or Mastercard terminal. Compare CL Card (Ledger), Bleap, MetaMask Card, Gnosis Pay, Cypher, and COCA."
         path="/crypto-debit-cards"
       />
 
@@ -597,8 +622,9 @@ export default function CryptoDebitCards() {
             <div className="space-y-1">
               <p className="text-sm font-medium">Can I use my card wallet for DeFi, DEX trading, and swaps?</p>
               <p className="text-sm text-muted-foreground">
-                It depends on the card. <strong>MetaMask Card</strong> and <strong>Gnosis Pay</strong> use full DeFi wallets — you can trade on DEXs,
+                It depends on the card. <strong>MetaMask Card</strong>, <strong>Gnosis Pay</strong>, and <strong>CL Card</strong> use full wallets — you can trade on DEXs,
                 connect to dApps, use CryptoOwnBank's EVM Swap, and do everything a regular crypto wallet can do. The card is just an extra feature.
+                CL Card adds hardware wallet security on top — every transaction requires physical approval on your Ledger device.
                 <strong> Bleap, Cypher, and COCA</strong> have more focused wallets designed primarily for spending — you can send and receive crypto,
                 but they're not full DeFi wallets.
               </p>
@@ -608,6 +634,7 @@ export default function CryptoDebitCards() {
               <p className="text-sm text-muted-foreground">
                 <strong>MetaMask Card</strong> if you already use MetaMask (especially with CryptoOwnBank's EVM tools).{" "}
                 <strong>Bleap</strong> for the best all-around option (2% cashback, zero fees, global).{" "}
+                <strong>CL Card</strong> if you own a Ledger hardware wallet (1% cashback, hardware-grade security).{" "}
                 <strong>Gnosis Pay</strong> if you're in Europe and want on-chain spending.{" "}
                 <strong>Cypher</strong> for simplicity and global acceptance.{" "}
                 <strong>COCA</strong> if you primarily hold stablecoins.

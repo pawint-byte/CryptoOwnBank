@@ -55,8 +55,8 @@
 - [2026-03-24] **Backup domains**: cryptoownbank.com is the production domain. crypto-ledger--pawint.replit.app is the Replit domain (also serves production). Both serve the same deployed app. Buying a backup domain (.xyz, .io) is cheap insurance but not urgent since the Replit domain already works as a fallback.
 - [2026-03-24] **Off-ramp / cash-out guide**: Buy Crypto page covers getting into crypto but doesn't guide users on converting back to fiat. Crypto Debit Cards partially fills this gap.
 - [2026-03-24] **Ledger 4.0 platform update**: Review new features and update Buy Crypto / Crypto Debit Cards pages if new on-ramp providers or capabilities were added.
-- [2026-03-24] **Noah Cash-to-Stablecoin on-ramp (inside Ledger)**: Added late 2025, now prominently pushed by Ledger. Direct bank transfer (USD/EUR) to instant USDC/USDT inside Ledger Wallet — no credit card needed. One of their easiest fiat on-ramps alongside MoonPay, Coinify, Transak, BTC Direct. **Action**: Add to Buy Crypto page as an on-ramp path for Ledger users.
-- [2026-03-24] **CL Card (Ledger Visa debit by Baanx)**: Ledger's promoted crypto debit card. Spend directly from Ledger Wallet balance, 1% cashback in BTC/USDC/USDT, Apple Pay and Google Pay supported. **Action**: Add to Crypto Debit Cards page alongside Gnosis Pay, MetaMask Card, Bleap. Include Ledger referral link (`referral_code=H7DFZEAP8RPK4`).
+- ~~[2026-03-24] **Noah Cash-to-Stablecoin on-ramp (inside Ledger)**~~ — COMPLETED 2026-03-24. Added to all 16 Ledger entries on Buy Crypto page + FAQ entry.
+- ~~[2026-03-24] **CL Card (Ledger Visa debit by Baanx)**~~ — COMPLETED 2026-03-24. Added to Crypto Debit Cards page as featured card with Ledger referral link + FAQ updated.
 - [2026-03-23] **AI Portfolio Assistant**: GPT-4o-mini to start, upgrade to GPT-4o when needed. Pay-as-you-go pricing (~$0.01-$0.03 per conversation). Free = 0 AI chats, Premium = 50/month, Pro = unlimited. Must include "not financial advice" in every response. Need to sign up for OpenAI API key at platform.openai.com when ready.
 - [2026-03-23] **Open Wallet Standard (OWS)**: Research noted — potential fit for future AI assistant (agent proposes, user approves on Ledger), Legacy Plan automated disbursement (policy engine), and adding new chains later. Not a replacement for Xaman or WalletConnect. Clone repo and experiment when ready.
 - [2026-03-23] **Borrow Against Vaults**: Interface-only approach — CryptoOwnBank as dashboard to external lending protocols (Morpho, Aave-style, or XRPL-native via XLS-65/66). We are NOT the lender. Language: "borrow through the protocol via our interface." Blocked until XLS-65/66 activates on XRPL.
@@ -110,6 +110,8 @@
 
 ## COMPLETED
 
+- [2026-03-24] Noah Cash-to-Stablecoin on-ramp added to all 16 Ledger entries on Buy Crypto page (bank transfer USD/EUR to instant USDC/USDT, no credit card needed) + FAQ entry added
+- [2026-03-24] CL Card (Ledger Visa debit by Baanx) added to Crypto Debit Cards page as featured card — 1% cashback in BTC/USDC/USDT, Apple/Google Pay, hardware wallet security — uses Ledger referral link. FAQ updated to mention CL Card.
 - [2026-03-24] Server startup crash fixed ("app is not defined" — Gnosis Pay code was placed inside `startPriceAlertChecker()` which has no `app` in scope; moved to `registerRoutes()`)
 - [2026-03-24] Bleap referral code added to Crypto Debit Cards page (`code=FMWHK7IM`)
 - [2026-03-24] Hardware wallet recommendation section added to Crypto Debit Cards (CypheRock, Ledger, ELLIPAL with affiliate links)
