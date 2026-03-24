@@ -17,6 +17,9 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  ShoppingCart,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 function textToHex(text: string): string {
@@ -30,6 +33,7 @@ export default function PayPage() {
   const [location] = useLocation();
   const { toast } = useToast();
   const [xamanLoading, setXamanLoading] = useState(false);
+  const [showNeedCrypto, setShowNeedCrypto] = useState(false);
 
   const params = new URLSearchParams(window.location.search);
   const to = params.get("to") || "";
@@ -345,6 +349,62 @@ export default function PayPage() {
             <span className="text-[10px] text-muted-foreground leading-tight">Near-zero fees</span>
           </div>
         </div>
+
+        <Card className="border-dashed">
+          <button
+            className="w-full text-left p-4 flex items-center justify-between"
+            onClick={() => setShowNeedCrypto(!showNeedCrypto)}
+            data-testid="button-need-crypto-toggle"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-medium">Don't have crypto yet?</span>
+            </div>
+            {showNeedCrypto ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+          {showNeedCrypto && (
+            <CardContent className="pt-0 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Get a wallet, buy some crypto, and you're ready to pay. It takes about 5 minutes to set up.
+              </p>
+              <div className="space-y-2">
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs font-semibold">Fastest: Buy with your card</p>
+                  <p className="text-xs text-muted-foreground">
+                    Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Xaman</a> (for XRP) or{" "}
+                    <a href="https://lobstr.co" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">LOBSTR</a> (for XLM) — both have a built-in buy button that takes card or Apple/Google Pay. Buy, then come back here to pay.
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs font-semibold">Most flexible: Use gift cards, cash, or mobile money</p>
+                  <p className="text-xs text-muted-foreground">
+                    <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> lets you buy crypto with 900+ payment methods including gift cards, cash deposits, M-Pesa, and more — no bank account or exchange needed.
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs font-semibold">Telegram users</p>
+                  <p className="text-xs text-muted-foreground">
+                    Open <a href="https://t.me/wallet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">@wallet</a> in Telegram — buy USDT with Apple Pay, Google Pay, or card in seconds. Then send to your wallet and pay.
+                  </p>
+                </div>
+              </div>
+              <a href="/buy-crypto" target="_blank" rel="noopener noreferrer" className="block">
+                <Button variant="outline" className="w-full gap-2 text-sm" data-testid="button-go-buy-crypto">
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                  Full Guide: How to Get Crypto
+                  <ExternalLink className="h-3 w-3 opacity-50" />
+                </Button>
+              </a>
+              <div className="rounded-lg bg-green-500/5 border border-green-500/20 p-3">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-green-700 dark:text-green-400">Pro tip:</strong> After you buy, sign up at{" "}
+                  <a href="/" className="text-green-600 hover:underline font-semibold">CryptoOwnBank</a> and add your wallet address.
+                  We'll track your balances automatically and you'll have access to DEX trading, DCA orders, cross-chain swaps, yield tools, and more — all from one dashboard.
+                </p>
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         <div className="text-center space-y-2 pt-2">
           <a href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors" data-testid="link-pay-home">

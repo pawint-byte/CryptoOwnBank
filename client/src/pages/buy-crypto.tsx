@@ -33,6 +33,10 @@ import {
   Zap,
   RefreshCcw,
   ArrowRightLeft,
+  Users,
+  Globe,
+  MessageCircle,
+  Lock,
 } from "lucide-react";
 
 type Step = "token" | "wallet" | "address" | "instructions";
@@ -1100,6 +1104,145 @@ export default function BuyCrypto() {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="border-violet-500/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-violet-600" />
+                P2P On-Ramps — Buy Crypto Your Way
+              </CardTitle>
+              <CardDescription>
+                No exchange account needed. Buy crypto directly from other people using gift cards, cash, mobile money, bank transfers, and 900+ other methods — then add your wallet here to track everything.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-lg border p-4 hover:border-violet-500 transition-colors space-y-2" data-testid="card-p2p-noones">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-violet-600" />
+                      <span className="font-semibold">NoOnes</span>
+                      <Badge className="bg-violet-600 text-white text-[10px]">900+ Payment Methods</Badge>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Gift cards, prepaid cards, cash deposits, mobile money (M-Pesa, GCash), bank transfers, in-person meetups — whatever works for you. Buy XRP, BTC, USDT, and more directly from sellers with built-in escrow protection.
+                  </p>
+                  <p className="text-xs text-violet-600 font-medium">
+                    Buy crypto → send to your wallet → add wallet to CryptoOwnBank → track, trade, and manage everything from one dashboard
+                  </p>
+                </div>
+              </a>
+
+              <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-lg border p-4 hover:border-violet-500 transition-colors space-y-2" data-testid="card-p2p-bybarter">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ArrowRightLeft className="h-5 w-5 text-violet-600" />
+                      <span className="font-semibold">ByBarter</span>
+                      <Badge variant="outline" className="text-[10px]">Non-Custodial P2P</Badge>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Non-custodial P2P with built-in escrow and QR code support. Swap fiat for crypto directly wallet-to-wallet — no middleman holds your funds.
+                  </p>
+                  <p className="text-xs text-violet-600 font-medium">
+                    Crypto goes straight to your wallet → add it here → see your balances update in real time
+                  </p>
+                </div>
+              </a>
+
+              <a href="https://narfex.com" target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-lg border p-4 hover:border-violet-500 transition-colors space-y-2" data-testid="card-p2p-narfex">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-5 w-5 text-violet-600" />
+                      <span className="font-semibold">Narfex</span>
+                      <Badge variant="outline" className="text-[10px]">Decentralized P2P</Badge>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Fully decentralized P2P protocol — no platform holds anything. Pure peer-to-peer fiat-to-crypto swaps for the privacy-conscious.
+                  </p>
+                  <p className="text-xs text-violet-600 font-medium">
+                    Your keys, your crypto → add your wallet address here → use our DEX, DCA, and swap tools
+                  </p>
+                </div>
+              </a>
+
+              <Card className="border-violet-500/10 bg-violet-500/5">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-2">
+                    <MessageCircle className="h-4 w-4 text-violet-600 mt-0.5 shrink-0" />
+                    <div className="text-sm text-muted-foreground">
+                      <strong>Telegram users:</strong> You can also buy USDT instantly inside{" "}
+                      <a href="https://t.me/wallet" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">
+                        Telegram Wallet
+                      </a>{" "}
+                      using Apple Pay, Google Pay, or your card (100+ countries). Then send it to your wallet address and add it to CryptoOwnBank to track alongside all your other assets.
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+
+          {!user && (
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="pt-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold mb-1">New to crypto? Here's the game plan</p>
+                    <ol className="text-sm text-muted-foreground space-y-2">
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">1</span>
+                        <span><strong>Get a wallet</strong> — pick one above (Xaman for XRP, LOBSTR for Stellar, MetaMask for ETH). It takes 2 minutes.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">2</span>
+                        <span><strong>Buy your first crypto</strong> — use the wallet's built-in buy button, or grab some through NoOnes or Telegram.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">3</span>
+                        <span><strong>Sign up here and add your wallet</strong> — we'll automatically track your balances, show your portfolio value, and give you tools to trade, swap, earn yield, send payments, and more.</span>
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+                <Link href="/auth">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 gap-2 mt-2" data-testid="button-signup-cta">
+                    <Wallet className="h-4 w-4" />
+                    Sign Up Free — Start Managing Your Crypto
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {user && !hasAnyWallets && (
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="pt-5">
+                <div className="flex items-start gap-3">
+                  <Wallet className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold mb-1">Already bought crypto? Add your wallet to start tracking</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Once you add your wallet address, we'll automatically pull in your balances. You'll see everything on one dashboard — and unlock DEX trading, DCA orders, swaps, yield tools, and payment features.
+                    </p>
+                    <Link href="/wallets">
+                      <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-add-wallet-cta">
+                        <Plus className="h-4 w-4" /> Add My Wallet
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -1682,8 +1825,12 @@ export default function BuyCrypto() {
             <div className="space-y-1">
               <p className="text-sm font-medium">What payment methods can I use?</p>
               <p className="text-sm text-muted-foreground">
-                Most on-ramp providers accept credit/debit cards (Visa, Mastercard) and bank transfers (ACH, SEPA, wire).
-                Available methods depend on your country and the provider. MoonPay and Transak have the widest coverage.
+                Wallet on-ramps (MoonPay, Transak) accept credit/debit cards and bank transfers. For more options — gift cards, cash deposits,
+                mobile money (M-Pesa, GCash), prepaid cards, in-person meetups — use P2P platforms like{" "}
+                <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (900+ methods) or{" "}
+                <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a>.
+                Telegram users can buy USDT instantly with Apple Pay or Google Pay via{" "}
+                <a href="https://t.me/wallet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Telegram Wallet</a>.
               </p>
             </div>
             <div className="space-y-1">
