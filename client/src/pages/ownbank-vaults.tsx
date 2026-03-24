@@ -86,25 +86,27 @@ export default function OwnBankVaults() {
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
   const [autoDepositHandled, setAutoDepositHandled] = useState(false);
 
-  const { data: soilPositions } = useQuery<{ assetSymbol: string; quantity: string; totalCostBasis: string; firstDepositDate: string }[]>({
+  const { data: soilPositions } = useQuery<{ assetSymbol: string; quantity: string; totalCostBasis: string; firstDepositDate: string; earnedToDate: number; depositHistory: { amount: number; date: string }[] }[]>({
     queryKey: ["/api/positions/soil"],
   });
 
   const backendDeposits = useMemo(() => {
     if (!soilPositions) return {};
-    const map: Record<string, { principal: number; depositDate: string }> = {};
+    const map: Record<string, { principal: number; depositDate: string; earnedToDate: number }> = {};
     for (const pos of soilPositions) {
       const sym = pos.assetSymbol.toUpperCase();
       const qty = parseFloat(pos.quantity) || 0;
       if (sym.includes("CREDIT")) {
-        if (!map["soil-credit-plus"]) map["soil-credit-plus"] = { principal: 0, depositDate: "" };
+        if (!map["soil-credit-plus"]) map["soil-credit-plus"] = { principal: 0, depositDate: "", earnedToDate: 0 };
         map["soil-credit-plus"].principal += qty;
+        map["soil-credit-plus"].earnedToDate += pos.earnedToDate || 0;
         if (pos.firstDepositDate && (!map["soil-credit-plus"].depositDate || pos.firstDepositDate < map["soil-credit-plus"].depositDate)) {
           map["soil-credit-plus"].depositDate = pos.firstDepositDate;
         }
       } else if (sym.includes("LIQUID")) {
-        if (!map["soil-treasury"]) map["soil-treasury"] = { principal: 0, depositDate: "" };
+        if (!map["soil-treasury"]) map["soil-treasury"] = { principal: 0, depositDate: "", earnedToDate: 0 };
         map["soil-treasury"].principal += qty;
+        map["soil-treasury"].earnedToDate += pos.earnedToDate || 0;
         if (pos.firstDepositDate && (!map["soil-treasury"].depositDate || pos.firstDepositDate < map["soil-treasury"].depositDate)) {
           map["soil-treasury"].depositDate = pos.firstDepositDate;
         }
@@ -438,7 +440,8 @@ export default function OwnBankVaults() {
         const allDeposits = SOIL_VAULTS.map(v => {
           const dep = getUserDeposit(v.id);
           if (!dep) return null;
-          const accrued = calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
+          const bd = backendDeposits[v.id];
+          const accrued = bd?.earnedToDate ?? calculateAccruedInterest(dep.principal, dep.apr, dep.depositDate);
           return { vault: v, principal: dep.principal, accrued };
         }).filter(Boolean) as { vault: typeof SOIL_VAULTS[0]; principal: number; accrued: number }[];
         
@@ -477,13 +480,14 @@ export default function OwnBankVaults() {
       <div className="grid gap-6 md:grid-cols-2">
         {SOIL_VAULTS.map((vault) => {
           const userDeposit = getUserDeposit(vault.id);
-          const accrued = userDeposit
+          const backendData = backendDeposits[vault.id];
+          const accrued = backendData?.earnedToDate ?? (userDeposit
             ? calculateAccruedInterest(
                 userDeposit.principal,
                 userDeposit.apr,
                 userDeposit.depositDate
               )
-            : 0;
+            : 0);
 
           return (
             <Card key={vault.id} data-testid={`card-vault-${vault.id}`}>

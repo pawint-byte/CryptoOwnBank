@@ -1088,36 +1088,66 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const soilPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("SOIL"));
 
       const allTxns = await storage.getTransactionsByUser(userId);
-      const soilTxns = allTxns.filter(t => {
+      const soilDepositTxns = allTxns.filter(t => {
         const sym = (t.assetSymbol || "").toUpperCase();
-        return sym.includes("SOIL") || (sym.includes("RLUSD") && t.type === "deposit");
+        return (sym.includes("SOIL") || sym.includes("RLUSD")) && t.type === "deposit";
       });
 
-      const vaultFirstDeposit: Record<string, string> = {};
-      for (const txn of soilTxns) {
+      const VAULT_APR: Record<string, number> = { "CREDIT": 0.08, "LIQUID": 0.052 };
+      const vaultDeposits: Record<string, { amount: number; date: string; apr: number }[]> = {
+        "CREDIT": [],
+        "LIQUID": [],
+      };
+
+      for (const txn of soilDepositTxns) {
         const sym = (txn.assetSymbol || "").toUpperCase();
         let vaultKey = "";
         if (sym.includes("CREDIT")) vaultKey = "CREDIT";
         else if (sym.includes("LIQUID") || sym.includes("TREASURY")) vaultKey = "LIQUID";
         else continue;
         const dateStr = txn.date instanceof Date ? txn.date.toISOString() : String(txn.date);
-        if (!vaultFirstDeposit[vaultKey] || dateStr < vaultFirstDeposit[vaultKey]) {
-          vaultFirstDeposit[vaultKey] = dateStr;
+        const amount = parseFloat(txn.quantity || "0");
+        if (amount > 0) {
+          vaultDeposits[vaultKey].push({ amount, date: dateStr, apr: VAULT_APR[vaultKey] });
         }
       }
 
-      res.json(soilPositions.map(p => {
+      const now = Date.now();
+      function calcPerDepositInterest(deposits: { amount: number; date: string; apr: number }[]): number {
+        let total = 0;
+        for (const d of deposits) {
+          const depositTime = new Date(d.date).getTime();
+          const daysElapsed = Math.max(0, (now - depositTime) / (1000 * 60 * 60 * 24));
+          const interest = d.amount * (d.apr / 365) * daysElapsed;
+          total += interest;
+        }
+        return Math.round(total * 100) / 100;
+      }
+
+      const result = soilPositions.map(p => {
         const sym = p.assetSymbol.toUpperCase();
-        let firstDeposit = "";
-        if (sym.includes("CREDIT")) firstDeposit = vaultFirstDeposit["CREDIT"] || "";
-        else if (sym.includes("LIQUID")) firstDeposit = vaultFirstDeposit["LIQUID"] || "";
+        let vaultKey = "";
+        if (sym.includes("CREDIT")) vaultKey = "CREDIT";
+        else if (sym.includes("LIQUID")) vaultKey = "LIQUID";
+        const deposits = vaultKey ? vaultDeposits[vaultKey] : [];
+        const firstDate = deposits.length > 0
+          ? deposits.reduce((earliest, d) => d.date < earliest ? d.date : earliest, deposits[0].date)
+          : "";
+        const earnedToDate = deposits.length > 0 ? calcPerDepositInterest(deposits) : 0;
         return {
           assetSymbol: p.assetSymbol,
           quantity: p.quantity,
           totalCostBasis: p.totalCostBasis,
-          firstDepositDate: firstDeposit,
+          firstDepositDate: firstDate,
+          earnedToDate,
+          depositHistory: deposits.map(d => ({
+            amount: d.amount,
+            date: d.date,
+          })),
         };
-      }));
+      });
+
+      res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch soil positions" });
     }
