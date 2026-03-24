@@ -95,10 +95,13 @@ export default function OwnBankVaults() {
     const map: Record<string, { principal: number; depositDate: string }> = {};
     for (const pos of soilPositions) {
       const sym = pos.assetSymbol.toUpperCase();
+      const qty = parseFloat(pos.quantity) || 0;
       if (sym.includes("CREDIT")) {
-        map["soil-credit-plus"] = { principal: parseFloat(pos.quantity) || 0, depositDate: "" };
-      } else if (sym.includes("LIQUID") || sym === "RLUSD-SOIL-LIQUID") {
-        map["soil-treasury"] = { principal: parseFloat(pos.quantity) || 0, depositDate: "" };
+        if (!map["soil-credit-plus"]) map["soil-credit-plus"] = { principal: 0, depositDate: "" };
+        map["soil-credit-plus"].principal += qty;
+      } else if (sym.includes("LIQUID")) {
+        if (!map["soil-treasury"]) map["soil-treasury"] = { principal: 0, depositDate: "" };
+        map["soil-treasury"].principal += qty;
       }
     }
     return map;
