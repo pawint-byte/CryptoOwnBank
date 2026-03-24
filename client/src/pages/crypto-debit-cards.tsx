@@ -90,7 +90,7 @@ const cards: DebitCard[] = [
       "Reload anytime by sending more crypto",
     ],
     appleGooglePay: true,
-    url: "https://bleap.com",
+    url: "https://app.bleap.finance/referral?code=FMWHK7IM",
     description: "The cleanest all-around option. 2% cashback in USDC, zero fees, and global coverage. Your crypto stays in your MPC wallet until the moment you tap to pay.",
     hookText: "Add your Bleap wallet to CryptoOwnBank to track your spending balance and cashback rewards alongside your full portfolio.",
     bestFor: "Everyone — best cashback and global coverage",
