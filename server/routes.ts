@@ -3480,6 +3480,12 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         });
       }
       
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "pro" && settings.subscriptionTier !== "pro") {
+        res.json({ ...settings, subscriptionTier: "pro", subscriptionBillingCycle: "yearly" });
+        return;
+      }
+      
       res.json(settings);
     } catch (error) {
       console.error("Settings error:", error);
