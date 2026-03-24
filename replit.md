@@ -7,7 +7,7 @@ CryptoOwnBank is a multi-chain crypto platform combining portfolio tracker, non-
 Preferred communication style: Simple, everyday language. No technical jargon.
 
 ## CRITICAL CONTEXT FOR EVERY SESSION
-**Read session-logs/ before starting any work.** The user has expressed frustration about repeating himself across sessions. All decisions, fixes, known issues, and pending items are documented there.
+**Read TODO.md AND session-logs/ before starting any work.** The user has expressed frustration about repeating himself across sessions. TODO.md is the official to-do list and decision log — it tracks pending items, referral links, external approvals, future improvements, and decisions made. Update it whenever items are completed or new ones are added. Session-logs/ contain detailed session history.
 
 ### Admin User
 - **User ID**: `3e7353fc-9f2f-4f72-aba9-93c49b629b89` (pawint@me.com)
