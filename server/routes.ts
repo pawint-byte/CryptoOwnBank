@@ -1086,11 +1086,38 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const userId = req.user.claims.sub;
       const positionsData = await storage.getPositionsByUser(userId);
       const soilPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("SOIL"));
-      res.json(soilPositions.map(p => ({
-        assetSymbol: p.assetSymbol,
-        quantity: p.quantity,
-        totalCostBasis: p.totalCostBasis,
-      })));
+
+      const allTxns = await storage.getTransactionsByUser(userId);
+      const soilTxns = allTxns.filter(t => {
+        const sym = (t.assetSymbol || "").toUpperCase();
+        return sym.includes("SOIL") || (sym.includes("RLUSD") && t.type === "deposit");
+      });
+
+      const vaultFirstDeposit: Record<string, string> = {};
+      for (const txn of soilTxns) {
+        const sym = (txn.assetSymbol || "").toUpperCase();
+        let vaultKey = "";
+        if (sym.includes("CREDIT")) vaultKey = "CREDIT";
+        else if (sym.includes("LIQUID") || sym.includes("TREASURY")) vaultKey = "LIQUID";
+        else continue;
+        const dateStr = txn.date instanceof Date ? txn.date.toISOString() : String(txn.date);
+        if (!vaultFirstDeposit[vaultKey] || dateStr < vaultFirstDeposit[vaultKey]) {
+          vaultFirstDeposit[vaultKey] = dateStr;
+        }
+      }
+
+      res.json(soilPositions.map(p => {
+        const sym = p.assetSymbol.toUpperCase();
+        let firstDeposit = "";
+        if (sym.includes("CREDIT")) firstDeposit = vaultFirstDeposit["CREDIT"] || "";
+        else if (sym.includes("LIQUID")) firstDeposit = vaultFirstDeposit["LIQUID"] || "";
+        return {
+          assetSymbol: p.assetSymbol,
+          quantity: p.quantity,
+          totalCostBasis: p.totalCostBasis,
+          firstDepositDate: firstDeposit,
+        };
+      }));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch soil positions" });
     }

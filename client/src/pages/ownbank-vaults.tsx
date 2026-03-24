@@ -86,7 +86,7 @@ export default function OwnBankVaults() {
   const { showDepositPrompt, balanceIncrease, dismissPrompt } = useRlusdPolling();
   const [autoDepositHandled, setAutoDepositHandled] = useState(false);
 
-  const { data: soilPositions } = useQuery<{ assetSymbol: string; quantity: string; totalCostBasis: string }[]>({
+  const { data: soilPositions } = useQuery<{ assetSymbol: string; quantity: string; totalCostBasis: string; firstDepositDate: string }[]>({
     queryKey: ["/api/positions/soil"],
   });
 
@@ -99,9 +99,15 @@ export default function OwnBankVaults() {
       if (sym.includes("CREDIT")) {
         if (!map["soil-credit-plus"]) map["soil-credit-plus"] = { principal: 0, depositDate: "" };
         map["soil-credit-plus"].principal += qty;
+        if (pos.firstDepositDate && (!map["soil-credit-plus"].depositDate || pos.firstDepositDate < map["soil-credit-plus"].depositDate)) {
+          map["soil-credit-plus"].depositDate = pos.firstDepositDate;
+        }
       } else if (sym.includes("LIQUID")) {
         if (!map["soil-treasury"]) map["soil-treasury"] = { principal: 0, depositDate: "" };
         map["soil-treasury"].principal += qty;
+        if (pos.firstDepositDate && (!map["soil-treasury"].depositDate || pos.firstDepositDate < map["soil-treasury"].depositDate)) {
+          map["soil-treasury"].depositDate = pos.firstDepositDate;
+        }
       }
     }
     return map;
@@ -186,7 +192,7 @@ export default function OwnBankVaults() {
         vaultId,
         vaultName: vaultId === "soil-credit-plus" ? "Soil CREDIT+ Vault" : "Soil Treasury Vault",
         principal: backendData.principal,
-        depositDate: localDeposit?.depositDate || new Date().toISOString(),
+        depositDate: backendData.depositDate || localDeposit?.depositDate || new Date().toISOString(),
         apr: vaultId === "soil-credit-plus" ? 8.0 : 5.2,
         txHash: localDeposit?.txHash,
       };
@@ -443,18 +449,22 @@ export default function OwnBankVaults() {
           return (
             <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5" data-testid="card-total-vault-balance">
               <CardContent className="pt-6">
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                   <div>
                     <p className="text-xs text-muted-foreground">Total Deposited</p>
                     <p className="text-lg font-bold" data-testid="text-total-deposited">{formatCurrency(totalDeposited)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Accrued Interest</p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400" data-testid="text-total-interest">+{formatCurrency(totalInterest)}</p>
+                    <p className="text-xs text-muted-foreground">Est. Earned to Date</p>
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400" data-testid="text-total-earned">+{formatCurrency(totalInterest)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Total Balance</p>
                     <p className="text-lg font-bold text-[#00A4E4]" data-testid="text-total-balance">{formatCurrency(totalBalance)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Active Vaults</p>
+                    <p className="text-lg font-bold" data-testid="text-active-vaults">{allDeposits.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -560,6 +570,24 @@ export default function OwnBankVaults() {
                         data-testid={`text-interest-${vault.id}`}
                       >
                         +{formatCurrency(accrued)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 border-t border-muted pt-2">
+                      <span className="text-xs text-muted-foreground font-medium">Est. Earned to Date</span>
+                      <span
+                        className="text-sm font-bold text-green-600 dark:text-green-400"
+                        data-testid={`text-earned-${vault.id}`}
+                      >
+                        +{formatCurrency(accrued)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">Current Balance</span>
+                      <span
+                        className="text-sm font-bold text-[#00A4E4]"
+                        data-testid={`text-balance-${vault.id}`}
+                      >
+                        {formatCurrency(userDeposit.principal + accrued)}
                       </span>
                     </div>
                   </div>
