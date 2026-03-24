@@ -36,6 +36,7 @@ import {
   MapPin,
   Loader2,
   Sparkles,
+  FileText,
 } from "lucide-react";
 
 interface YieldOpportunity {
@@ -57,9 +58,11 @@ interface YieldOpportunity {
   tokenReceived: string;
   trackingChain: string;
   steps: string[];
-  category: "yield" | "cashback" | "realestate";
+  category: "yield" | "cashback" | "realestate" | "tokenized-securities";
   propertyType?: string;
   locationType?: string;
+  issuer?: string;
+  comingSoon?: boolean;
 }
 
 const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
@@ -451,6 +454,232 @@ const YIELD_OPPORTUNITIES: YieldOpportunity[] = [
     ],
   },
   {
+    id: "archax-abrdn-lux",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "abrdn US Dollar Liquidity Fund (Lux)",
+    apyRange: "~5.0%",
+    apyMid: 5.0,
+    backingType: "Tokenized Money Market Fund",
+    tvl: "~$3.8B AUM (underlying fund)",
+    riskLevel: "Low",
+    link: "https://archax.com",
+    description: "The first tokenized money market fund on the XRP Ledger. Issued by Archax (FCA-regulated), this token represents shares in abrdn's large US dollar liquidity fund. Yield-bearing, highly liquid, and institutional-grade. Assets are standard XRPL tokens — buy and sell directly on the DEX with your existing wallet.",
+    integrated: false,
+    minInvestment: "Varies (contact Archax)",
+    lockup: "Liquid — standard fund redemption",
+    kycRequired: true,
+    tokenReceived: "abrdn Lux fund token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    steps: [
+      "Visit archax.com and create an account — Archax is regulated by the UK Financial Conduct Authority (FCA)",
+      "Complete identity verification (KYC/AML) on Archax's platform — this is Archax's regulatory requirement, not ours",
+      "Purchase tokenized abrdn US Dollar Liquidity Fund shares through Archax",
+      "The tokens are issued as standard XRPL tokens — they'll appear in your XRP Ledger wallet",
+      "You may need to set a trustline for the Archax issuer address (one-time setup, similar to adding any XRPL token)",
+      "Add your XRPL wallet to CryptoOwnBank (if not already connected) — we'll detect the tokenized fund tokens and track your position automatically",
+    ],
+  },
+  {
+    id: "archax-state-street",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "State Street Money Market Fund",
+    apyRange: "~4.5–5.0%",
+    apyMid: 4.75,
+    backingType: "Tokenized Money Market Fund",
+    tvl: "Institutional",
+    riskLevel: "Low",
+    link: "https://archax.com",
+    description: "Tokenized shares in State Street money market funds, issued on the XRP Ledger by Archax. Users receive beneficial ownership tokens that trade on XRPL. Institutional-grade backing with on-chain settlement.",
+    integrated: false,
+    minInvestment: "Varies (contact Archax)",
+    lockup: "Liquid — standard fund redemption",
+    kycRequired: true,
+    tokenReceived: "State Street fund token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    steps: [
+      "Visit archax.com and create an account",
+      "Complete KYC/AML verification on Archax's platform",
+      "Purchase tokenized State Street money market fund shares",
+      "Tokens are issued on XRPL — set a trustline for the issuer address if prompted",
+      "Track your position automatically in CryptoOwnBank by connecting your XRPL wallet",
+    ],
+  },
+  {
+    id: "archax-fidelity",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "Fidelity International Fund",
+    apyRange: "~4.5–5.0%",
+    apyMid: 4.75,
+    backingType: "Tokenized Money Market Fund",
+    tvl: "Institutional",
+    riskLevel: "Low",
+    link: "https://archax.com",
+    description: "Tokenized shares in Fidelity International money market funds on the XRP Ledger. Issued by Archax with full regulatory compliance. Beneficial ownership tokens tradeable on XRPL.",
+    integrated: false,
+    minInvestment: "Varies (contact Archax)",
+    lockup: "Liquid — standard fund redemption",
+    kycRequired: true,
+    tokenReceived: "Fidelity fund token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    steps: [
+      "Visit archax.com and create an account",
+      "Complete KYC/AML verification on Archax's platform",
+      "Purchase tokenized Fidelity International fund shares",
+      "Tokens are issued on XRPL — set a trustline for the issuer address if prompted",
+      "Track your position automatically in CryptoOwnBank by connecting your XRPL wallet",
+    ],
+  },
+  {
+    id: "archax-lgim",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "Legal & General (LGIM) Fund",
+    apyRange: "~4.5–5.0%",
+    apyMid: 4.75,
+    backingType: "Tokenized Money Market Fund",
+    tvl: "Institutional",
+    riskLevel: "Low",
+    link: "https://archax.com",
+    description: "Tokenized Legal & General Investment Management (LGIM) money market fund shares on the XRP Ledger. Part of Archax's expanding institutional-grade tokenized securities offering.",
+    integrated: false,
+    minInvestment: "Varies (contact Archax)",
+    lockup: "Liquid — standard fund redemption",
+    kycRequired: true,
+    tokenReceived: "LGIM fund token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    steps: [
+      "Visit archax.com and create an account",
+      "Complete KYC/AML verification on Archax's platform",
+      "Purchase tokenized LGIM fund shares",
+      "Tokens are issued on XRPL — set a trustline for the issuer address if prompted",
+      "Track your position automatically in CryptoOwnBank by connecting your XRPL wallet",
+    ],
+  },
+  {
+    id: "archax-federated-hermes",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "Federated Hermes UCITS Fund",
+    apyRange: "~4.5–5.0%",
+    apyMid: 4.75,
+    backingType: "Tokenized UCITS Fund",
+    tvl: "Institutional",
+    riskLevel: "Low",
+    link: "https://archax.com",
+    description: "Tokenized Federated Hermes UCITS fund shares on the XRP Ledger. UCITS funds follow strict EU regulations for investor protection. Issued by Archax with on-chain settlement.",
+    integrated: false,
+    minInvestment: "Varies (contact Archax)",
+    lockup: "Liquid — standard fund redemption",
+    kycRequired: true,
+    tokenReceived: "Federated Hermes fund token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    steps: [
+      "Visit archax.com and create an account",
+      "Complete KYC/AML verification on Archax's platform",
+      "Purchase tokenized Federated Hermes UCITS fund shares",
+      "Tokens are issued on XRPL — set a trustline for the issuer address if prompted",
+      "Track your position automatically in CryptoOwnBank by connecting your XRPL wallet",
+    ],
+  },
+  {
+    id: "archax-uk-gilts",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "UK Government Gilts",
+    apyRange: "~4.0–4.5%",
+    apyMid: 4.25,
+    backingType: "Tokenized Government Bonds",
+    tvl: "Expanding",
+    riskLevel: "Low",
+    link: "https://archax.com",
+    description: "Tokenized UK government bonds (gilts) on the XRP Ledger. Government debt is among the lowest-risk fixed-income instruments available. Part of Archax's 2025 push for government debt on-chain.",
+    integrated: false,
+    minInvestment: "Varies (contact Archax)",
+    lockup: "Standard bond settlement",
+    kycRequired: true,
+    tokenReceived: "UK Gilt token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    comingSoon: false,
+    steps: [
+      "Visit archax.com and create an account",
+      "Complete KYC/AML verification on Archax's platform",
+      "Purchase tokenized UK government gilt tokens",
+      "Tokens are issued on XRPL — set a trustline for the issuer address if prompted",
+      "Track your position automatically in CryptoOwnBank by connecting your XRPL wallet",
+    ],
+  },
+  {
+    id: "archax-uk-equities",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "UK Equities",
+    apyRange: "Varies",
+    apyMid: 0,
+    backingType: "Tokenized Stocks",
+    tvl: "In Development",
+    riskLevel: "Medium",
+    link: "https://archax.com",
+    description: "Tokenized shares in UK-listed companies on the XRP Ledger. Archax has announced plans to tokenize UK equities, with US equity instruments planned to follow. No specific tickers announced yet — this category is actively expanding.",
+    integrated: false,
+    minInvestment: "TBA",
+    lockup: "TBA",
+    kycRequired: true,
+    tokenReceived: "Equity token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    comingSoon: true,
+    steps: [
+      "Coming soon — Archax is actively developing tokenized equity products",
+      "Create an account at archax.com to be notified when they launch",
+      "When available, tokenized equities will trade as standard XRPL tokens on the DEX",
+      "CryptoOwnBank will add tracking support as tokens become available",
+    ],
+  },
+  {
+    id: "archax-us-equities",
+    category: "tokenized-securities",
+    protocol: "Archax",
+    chain: "XRPL",
+    asset: "US Equities",
+    apyRange: "Varies",
+    apyMid: 0,
+    backingType: "Tokenized Stocks",
+    tvl: "Planned",
+    riskLevel: "Medium",
+    link: "https://archax.com",
+    description: "Tokenized US equity instruments on the XRP Ledger. Following UK equities, Archax plans to expand to US-listed stocks. This would allow non-custodial ownership of tokenized US equities tradeable 24/7 on the XRPL DEX.",
+    integrated: false,
+    minInvestment: "TBA",
+    lockup: "TBA",
+    kycRequired: true,
+    tokenReceived: "Equity token on XRPL",
+    trackingChain: "xrpl",
+    issuer: "Archax (FCA-regulated)",
+    comingSoon: true,
+    steps: [
+      "Coming soon — planned after UK equities launch",
+      "Create an account at archax.com to be among the first when they go live",
+      "Tokenized US equities will trade as standard XRPL tokens — same interface, same wallet",
+      "CryptoOwnBank will add tracking support as tokens become available",
+    ],
+  },
+  {
     id: "propy",
     category: "realestate",
     protocol: "Propy",
@@ -501,6 +730,8 @@ const COMPARISON_DATA: ComparisonRow[] = [
   { type: "Tokenized", product: "Centrifuge Pools", apy: "4–10%", apyNum: 7.0, notes: "Real estate, invoices, trade finance pools" },
   { type: "Tokenized", product: "Maple Finance", apy: "6–12%", apyNum: 9.0, notes: "Institutional lending pools, higher yield, credit risk" },
   { type: "Tokenized", product: "Goldfinch", apy: "7–10%", apyNum: 8.5, notes: "Emerging market loans, high yield, high risk" },
+  { type: "Tokenized", product: "Archax abrdn Lux (XRPL)", apy: "~5.0%", apyNum: 5.0, notes: "Tokenized MMF on XRP Ledger, FCA-regulated issuer, ~$3.8B AUM" },
+  { type: "Tokenized", product: "Archax UK Gilts (XRPL)", apy: "~4.0–4.5%", apyNum: 4.25, notes: "UK government bonds on XRPL, lowest-risk fixed income" },
 ];
 
 interface RiskInfo {
@@ -850,6 +1081,111 @@ function ProtocolCard({ opp }: { opp: YieldOpportunity }) {
                 </Link>
               )}
             </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TokenizedSecuritiesCard({ opp }: { opp: YieldOpportunity }) {
+  const [showSteps, setShowSteps] = useState(false);
+  const slug = opp.id;
+
+  return (
+    <Card className={opp.comingSoon ? "opacity-75 border-dashed" : ""} data-testid={`card-tokenized-${slug}`}>
+      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+        <div className="min-w-0">
+          <CardTitle className="text-base flex items-center gap-2 flex-wrap" data-testid={`text-protocol-${slug}`}>
+            <FileText className="h-4 w-4 text-[#00A4E4]" />
+            {opp.asset}
+            {opp.comingSoon && (
+              <Badge variant="outline" className="text-xs border-amber-400 text-amber-600 dark:text-amber-400" data-testid={`badge-coming-soon-${slug}`}>
+                Coming Soon
+              </Badge>
+            )}
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">{opp.chain} &middot; Issued by {opp.issuer || opp.protocol}</p>
+        </div>
+        <Badge className={`shrink-0 ${getRiskBadgeVariant(opp.riskLevel)}`} data-testid={`badge-risk-${slug}`}>
+          {opp.riskLevel} Risk
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">{opp.description}</p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Backing</p>
+            <div className="flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <p className="text-sm font-medium" data-testid={`text-backing-${slug}`}>{opp.backingType}</p>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Yield</p>
+            <p className={`text-sm font-semibold ${opp.comingSoon ? "text-muted-foreground" : "text-green-600 dark:text-green-400"}`} data-testid={`text-apy-${slug}`}>{opp.apyRange}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Coins className="h-3 w-3" /> Min. Investment
+            </p>
+            <p className="text-sm font-medium" data-testid={`text-min-${slug}`}>{opp.minInvestment}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <UserCheck className="h-3 w-3" /> KYC Required
+            </p>
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-400" data-testid={`text-kyc-${slug}`}>Yes (via {opp.issuer || opp.protocol})</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          {!opp.comingSoon && (
+            <a href={opp.link} target="_blank" rel="noopener noreferrer" data-testid={`link-protocol-${slug}`}>
+              <Button variant="outline" size="sm">
+                <ExternalLink className="h-4 w-4 mr-1.5" />
+                Visit Archax
+              </Button>
+            </a>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSteps(!showSteps)}
+            data-testid={`button-steps-${slug}`}
+          >
+            {showSteps ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+            {showSteps ? "Hide Guide" : opp.comingSoon ? "What to Expect" : "Get Started"}
+          </Button>
+        </div>
+
+        {showSteps && (
+          <div className="rounded-lg border bg-muted/20 p-4 space-y-3" data-testid={`steps-${slug}`}>
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <Compass className="h-4 w-4 text-[#00A4E4]" />
+              {opp.comingSoon ? "What to expect" : `How to get started with ${opp.asset}`}
+            </p>
+            <ol className="space-y-2">
+              {opp.steps.map((step, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm">
+                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-xs font-bold shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span className="text-muted-foreground">{step}</span>
+                </li>
+              ))}
+            </ol>
+            {!opp.comingSoon && (
+              <div className="pt-2 border-t">
+                <Link href={`/wallets?chain=${opp.trackingChain}`} data-testid={`link-track-${slug}`}>
+                  <Button size="sm" variant="default">
+                    <Wallet className="h-4 w-4 mr-1.5" />
+                    Track This Investment
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -1903,6 +2239,44 @@ export default function RwaYields() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" data-testid="text-tokenized-securities-heading">
+          <FileText className="h-5 w-5 text-[#00A4E4]" />
+          Tokenized Securities on XRPL
+        </h2>
+        <p className="text-sm text-muted-foreground -mt-2 mb-3">
+          Institutional-grade tokenized funds, bonds, and equities issued directly on the XRP Ledger by Archax (FCA-regulated). These are standard XRPL tokens — buy and sell on the DEX with your existing wallet.
+        </p>
+        <div className="flex items-start gap-2 p-3 rounded-md bg-[#00A4E4]/5 border border-[#00A4E4]/15 mb-4">
+          <Info className="h-4 w-4 text-[#00A4E4] shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Important:</span> All Archax tokenized securities require KYC/AML verification directly with Archax. CryptoOwnBank does not handle KYC for these products — you verify with the issuer, receive tokens in your XRPL wallet, and we track your positions automatically.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {YIELD_OPPORTUNITIES.filter((opp) => opp.category === "tokenized-securities" && !opp.comingSoon).map((opp) => (
+            <div key={opp.id} id={`protocol-${opp.id}`}>
+              <TokenizedSecuritiesCard opp={opp} />
+            </div>
+          ))}
+        </div>
+        {YIELD_OPPORTUNITIES.some((opp) => opp.category === "tokenized-securities" && opp.comingSoon) && (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground" data-testid="text-coming-soon-heading">
+              <Clock className="h-4 w-4" />
+              Coming Soon
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {YIELD_OPPORTUNITIES.filter((opp) => opp.category === "tokenized-securities" && opp.comingSoon).map((opp) => (
+                <div key={opp.id} id={`protocol-${opp.id}`}>
+                  <TokenizedSecuritiesCard opp={opp} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
