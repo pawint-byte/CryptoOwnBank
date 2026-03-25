@@ -7771,6 +7771,314 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  const CURATED_BUCKETS = [
+    {
+      id: "top5-l1",
+      name: "Top 5 Layer 1",
+      description: "The five largest Layer 1 blockchains by market cap",
+      tokens: [
+        { symbol: "BTC", allocationPct: "30", category: "Layer 1" },
+        { symbol: "ETH", allocationPct: "25", category: "Layer 1" },
+        { symbol: "SOL", allocationPct: "20", category: "Layer 1" },
+        { symbol: "ADA", allocationPct: "15", category: "Layer 1" },
+        { symbol: "AVAX", allocationPct: "10", category: "Layer 1" },
+      ],
+    },
+    {
+      id: "top5-defi",
+      name: "Top 5 DeFi",
+      description: "Leading decentralized finance protocols",
+      tokens: [
+        { symbol: "UNI", allocationPct: "25", category: "DeFi" },
+        { symbol: "AAVE", allocationPct: "25", category: "DeFi" },
+        { symbol: "MKR", allocationPct: "20", category: "DeFi" },
+        { symbol: "LDO", allocationPct: "15", category: "DeFi" },
+        { symbol: "CRV", allocationPct: "15", category: "DeFi" },
+      ],
+    },
+    {
+      id: "top5-ai",
+      name: "Top 5 AI",
+      description: "Artificial intelligence and machine learning tokens",
+      tokens: [
+        { symbol: "FET", allocationPct: "25", category: "AI" },
+        { symbol: "RNDR", allocationPct: "25", category: "AI" },
+        { symbol: "TAO", allocationPct: "20", category: "AI" },
+        { symbol: "ATH", allocationPct: "15", category: "AI" },
+        { symbol: "AITECH", allocationPct: "15", category: "AI" },
+      ],
+    },
+    {
+      id: "top5-l2",
+      name: "Top 5 Layer 2",
+      description: "Leading Layer 2 scaling solutions",
+      tokens: [
+        { symbol: "ARB", allocationPct: "25", category: "Layer 2" },
+        { symbol: "OP", allocationPct: "25", category: "Layer 2" },
+        { symbol: "POL", allocationPct: "20", category: "Layer 2" },
+        { symbol: "IMX", allocationPct: "15", category: "Layer 2" },
+        { symbol: "STX", allocationPct: "15", category: "Layer 2" },
+      ],
+    },
+    {
+      id: "top5-gaming",
+      name: "Top 5 Gaming",
+      description: "Blockchain gaming and metaverse tokens",
+      tokens: [
+        { symbol: "AXS", allocationPct: "20", category: "Gaming" },
+        { symbol: "GALA", allocationPct: "20", category: "Gaming" },
+        { symbol: "ENJ", allocationPct: "20", category: "Gaming" },
+        { symbol: "SAND", allocationPct: "20", category: "Metaverse" },
+        { symbol: "MANA", allocationPct: "20", category: "Metaverse" },
+      ],
+    },
+    {
+      id: "blue-chip",
+      name: "Blue Chip Crypto",
+      description: "The most established cryptocurrencies",
+      tokens: [
+        { symbol: "BTC", allocationPct: "35", category: "Layer 1" },
+        { symbol: "ETH", allocationPct: "30", category: "Smart Contracts" },
+        { symbol: "XRP", allocationPct: "15", category: "Finance" },
+        { symbol: "SOL", allocationPct: "10", category: "Layer 1" },
+        { symbol: "ADA", allocationPct: "10", category: "Layer 1" },
+      ],
+    },
+  ];
+
+  app.get("/api/token-buckets/curated", isAuthenticated, async (_req: any, res) => {
+    res.json(CURATED_BUCKETS);
+  });
+
+  app.get("/api/token-buckets/categories", isAuthenticated, async (_req: any, res) => {
+    try {
+      const { ASSET_CATEGORIES, CATEGORY_COLORS } = await import("@shared/asset-categories");
+      const categoryMap: Record<string, string[]> = {};
+      for (const [symbol, category] of Object.entries(ASSET_CATEGORIES)) {
+        if (!categoryMap[category]) categoryMap[category] = [];
+        categoryMap[category].push(symbol);
+      }
+      res.json({ categories: categoryMap, colors: CATEGORY_COLORS });
+    } catch (error) {
+      console.error("Get categories error:", error);
+      res.status(500).json({ message: "Failed to load categories" });
+    }
+  });
+
+  app.get("/api/token-buckets/portfolio-analysis", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const balances = await storage.getWalletBalancesByUser(userId);
+      const { getAssetCategory } = await import("@shared/asset-categories");
+      const categoryBreakdown: Record<string, { totalValue: number; tokens: { symbol: string; value: number }[] }> = {};
+      let totalPortfolioValue = 0;
+
+      for (const bal of balances) {
+        const value = parseFloat(bal.valueUsd || "0");
+        if (value <= 0) continue;
+        const category = getAssetCategory(bal.symbol);
+        if (category === "Stablecoin" || category === "Stock & ETF") continue;
+        if (!categoryBreakdown[category]) categoryBreakdown[category] = { totalValue: 0, tokens: [] };
+        categoryBreakdown[category].totalValue += value;
+        categoryBreakdown[category].tokens.push({ symbol: bal.symbol, value });
+        totalPortfolioValue += value;
+      }
+
+      const analysis = Object.entries(categoryBreakdown).map(([category, data]) => ({
+        category,
+        totalValue: data.totalValue,
+        percentage: totalPortfolioValue > 0 ? (data.totalValue / totalPortfolioValue) * 100 : 0,
+        tokens: data.tokens.sort((a, b) => b.value - a.value),
+      })).sort((a, b) => b.totalValue - a.totalValue);
+
+      res.json({ analysis, totalPortfolioValue });
+    } catch (error) {
+      console.error("Portfolio analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze portfolio" });
+    }
+  });
+
+  app.get("/api/token-buckets/preflight/:bucketId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bucket = await storage.getTokenBucket(req.params.bucketId);
+      if (!bucket || bucket.userId !== userId) {
+        return res.status(404).json({ message: "Bucket not found" });
+      }
+      const items = await storage.getTokenBucketItems(bucket.id);
+      const wallets = await storage.getWalletsByUser(userId);
+      const balances = await storage.getWalletBalancesByUser(userId);
+
+      const xrplWallets = wallets.filter(w => w.chain === "xrpl");
+      const hasXrplWallet = xrplWallets.length > 0;
+
+      const existingTrustlines = new Set<string>();
+      for (const bal of balances) {
+        existingTrustlines.add(bal.symbol.toUpperCase());
+      }
+      existingTrustlines.add("XRP");
+
+      const tokenChecks = items.map(item => {
+        const sym = item.symbol.toUpperCase();
+        const needsTrustline = bucket.chain === "xrpl" && sym !== "XRP";
+        const hasTrustline = existingTrustlines.has(sym);
+        return {
+          symbol: sym,
+          allocationPct: item.allocationPct,
+          needsTrustline,
+          hasTrustline: needsTrustline ? hasTrustline : true,
+          ready: !needsTrustline || hasTrustline,
+        };
+      });
+
+      const missingTrustlines = tokenChecks.filter(t => !t.ready);
+      const reserveNeeded = missingTrustlines.length * 2;
+
+      const xrpBalance = balances
+        .filter(b => b.symbol.toUpperCase() === "XRP")
+        .reduce((sum, b) => sum + parseFloat(b.balance || "0"), 0);
+
+      const hasEnoughReserve = xrpBalance >= (10 + reserveNeeded);
+
+      res.json({
+        ready: missingTrustlines.length === 0 && (bucket.chain !== "xrpl" || hasXrplWallet),
+        hasWallet: hasXrplWallet || bucket.chain !== "xrpl",
+        chain: bucket.chain,
+        tokens: tokenChecks,
+        missingTrustlineCount: missingTrustlines.length,
+        reserveXrpNeeded: reserveNeeded,
+        currentXrpBalance: xrpBalance,
+        hasEnoughReserve,
+        warnings: [
+          ...(!hasXrplWallet && bucket.chain === "xrpl" ? ["No XRPL wallet connected. Connect one via Xaman to proceed."] : []),
+          ...(missingTrustlines.length > 0 ? [`${missingTrustlines.length} trustline(s) needed: ${missingTrustlines.map(t => t.symbol).join(", ")}. Each requires 2 XRP reserve.`] : []),
+          ...(!hasEnoughReserve && reserveNeeded > 0 ? [`Insufficient XRP for reserves. Need ${10 + reserveNeeded} XRP (10 base + ${reserveNeeded} for trustlines), have ${xrpBalance.toFixed(2)} XRP.`] : []),
+        ],
+      });
+    } catch (error) {
+      console.error("Preflight check error:", error);
+      res.status(500).json({ message: "Failed to run preflight check" });
+    }
+  });
+
+  app.get("/api/token-buckets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const buckets = await storage.getTokenBucketsByUser(userId);
+      const bucketsWithItems = await Promise.all(
+        buckets.map(async (bucket) => {
+          const items = await storage.getTokenBucketItems(bucket.id);
+          return { ...bucket, items };
+        })
+      );
+      res.json(bucketsWithItems);
+    } catch (error) {
+      console.error("Get token buckets error:", error);
+      res.status(500).json({ message: "Failed to load token buckets" });
+    }
+  });
+
+  app.post("/api/token-buckets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { items, ...rawBucket } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "At least one token is required" });
+      }
+      const totalPct = items.reduce((sum: number, i: any) => sum + parseFloat(i.allocationPct || "0"), 0);
+      if (Math.abs(totalPct - 100) > 0.01) {
+        return res.status(400).json({ message: "Token allocations must total 100%" });
+      }
+      const bucketData = {
+        userId,
+        name: String(rawBucket.name || "").slice(0, 100),
+        description: rawBucket.description ? String(rawBucket.description) : null,
+        bucketType: String(rawBucket.bucketType || "custom"),
+        spendCurrency: String(rawBucket.spendCurrency || "RLUSD"),
+        spendAmount: rawBucket.spendAmount && String(rawBucket.spendAmount).trim() ? String(rawBucket.spendAmount) : null,
+        frequency: rawBucket.frequency ? String(rawBucket.frequency) : null,
+        chain: String(rawBucket.chain || "xrpl"),
+        nextRunAt: rawBucket.nextRunAt ? new Date(rawBucket.nextRunAt) : null,
+      };
+      if (!bucketData.name) {
+        return res.status(400).json({ message: "Bucket name is required" });
+      }
+      const bucket = await storage.createTokenBucket(bucketData);
+      const createdItems = await Promise.all(
+        items.map((item: any) =>
+          storage.createTokenBucketItem({
+            bucketId: bucket.id,
+            symbol: String(item.symbol || "").toUpperCase().slice(0, 20),
+            allocationPct: String(parseFloat(item.allocationPct) || 0),
+            category: item.category ? String(item.category) : null,
+          })
+        )
+      );
+      res.json({ ...bucket, items: createdItems });
+    } catch (error) {
+      console.error("Create token bucket error:", error);
+      res.status(500).json({ message: "Failed to create token bucket" });
+    }
+  });
+
+  app.patch("/api/token-buckets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bucket = await storage.getTokenBucket(req.params.id);
+      if (!bucket || bucket.userId !== userId) {
+        return res.status(404).json({ message: "Bucket not found" });
+      }
+      const { items, ...raw } = req.body;
+      const safeUpdates: Record<string, any> = {};
+      if (raw.name !== undefined) safeUpdates.name = String(raw.name).slice(0, 100);
+      if (raw.description !== undefined) safeUpdates.description = raw.description ? String(raw.description) : null;
+      if (raw.spendCurrency !== undefined) safeUpdates.spendCurrency = String(raw.spendCurrency);
+      if (raw.spendAmount !== undefined) safeUpdates.spendAmount = raw.spendAmount && String(raw.spendAmount).trim() ? String(raw.spendAmount) : null;
+      if (raw.frequency !== undefined) safeUpdates.frequency = raw.frequency ? String(raw.frequency) : null;
+      if (raw.status !== undefined && ["active", "paused"].includes(raw.status)) safeUpdates.status = raw.status;
+
+      const updated = await storage.updateTokenBucket(req.params.id, safeUpdates);
+      if (items && Array.isArray(items)) {
+        const totalPct = items.reduce((sum: number, i: any) => sum + parseFloat(i.allocationPct || "0"), 0);
+        if (Math.abs(totalPct - 100) > 0.01) {
+          return res.status(400).json({ message: "Token allocations must total 100%" });
+        }
+        await storage.deleteTokenBucketItems(req.params.id);
+        const createdItems = await Promise.all(
+          items.map((item: any) =>
+            storage.createTokenBucketItem({
+              bucketId: req.params.id,
+              symbol: String(item.symbol || "").toUpperCase().slice(0, 20),
+              allocationPct: String(parseFloat(item.allocationPct) || 0),
+              category: item.category ? String(item.category) : null,
+            })
+          )
+        );
+        return res.json({ ...updated, items: createdItems });
+      }
+      const existingItems = await storage.getTokenBucketItems(req.params.id);
+      res.json({ ...updated, items: existingItems });
+    } catch (error) {
+      console.error("Update token bucket error:", error);
+      res.status(500).json({ message: "Failed to update token bucket" });
+    }
+  });
+
+  app.delete("/api/token-buckets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bucket = await storage.getTokenBucket(req.params.id);
+      if (!bucket || bucket.userId !== userId) {
+        return res.status(404).json({ message: "Bucket not found" });
+      }
+      await storage.deleteTokenBucket(req.params.id);
+      res.json({ message: "Bucket deleted" });
+    } catch (error) {
+      console.error("Delete token bucket error:", error);
+      res.status(500).json({ message: "Failed to delete token bucket" });
+    }
+  });
+
   app.post("/api/portfolio-snapshots", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

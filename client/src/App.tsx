@@ -77,6 +77,7 @@ import Insurance from "@/pages/insurance";
 import DeFiBorrowing from "@/pages/defi-borrowing";
 import RecurringPayments from "@/pages/recurring-payments";
 import DcaOrders from "@/pages/dca-orders";
+import TokenBuckets from "@/pages/token-buckets";
 import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
 import PaymentQueue from "@/pages/payment-queue";
@@ -235,6 +236,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
         <Route path="/ownbank/dca" component={DcaOrders} />
+        <Route path="/token-buckets" component={TokenBuckets} />
         <Route path="/ownbank/recurring" component={RecurringPayments} />
         <Route path="/stellar/dca" component={DcaOrders} />
         <Route path="/stellar/recurring" component={RecurringPayments} />

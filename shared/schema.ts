@@ -631,6 +631,52 @@ export type InsertDcaOrder = z.infer<typeof insertDcaOrderSchema>;
 export type DcaExecution = typeof dcaExecutions.$inferSelect;
 export type InsertDcaExecution = z.infer<typeof insertDcaExecutionSchema>;
 
+export const tokenBuckets = pgTable("token_buckets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  bucketType: varchar("bucket_type", { length: 20 }).notNull(),
+  spendCurrency: varchar("spend_currency", { length: 20 }).notNull().default("RLUSD"),
+  spendAmount: decimal("spend_amount", { precision: 18, scale: 8 }),
+  frequency: varchar("frequency", { length: 20 }),
+  chain: varchar("chain", { length: 20 }).notNull().default("xrpl"),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  nextRunAt: timestamp("next_run_at"),
+  lastRunAt: timestamp("last_run_at"),
+  runsCompleted: integer("runs_completed").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_token_buckets_user").on(table.userId),
+  index("idx_token_buckets_status").on(table.status),
+]);
+
+export const tokenBucketItems = pgTable("token_bucket_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bucketId: varchar("bucket_id").notNull(),
+  symbol: varchar("symbol", { length: 20 }).notNull(),
+  allocationPct: decimal("allocation_pct", { precision: 5, scale: 2 }).notNull(),
+  category: varchar("category", { length: 50 }),
+}, (table) => [
+  index("idx_token_bucket_items_bucket").on(table.bucketId),
+]);
+
+export const insertTokenBucketSchema = createInsertSchema(tokenBuckets).omit({
+  id: true,
+  lastRunAt: true,
+  runsCompleted: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertTokenBucketItemSchema = createInsertSchema(tokenBucketItems).omit({
+  id: true,
+});
+export type TokenBucket = typeof tokenBuckets.$inferSelect;
+export type InsertTokenBucket = z.infer<typeof insertTokenBucketSchema>;
+export type TokenBucketItem = typeof tokenBucketItems.$inferSelect;
+export type InsertTokenBucketItem = z.infer<typeof insertTokenBucketItemSchema>;
+
 export const portfolioSnapshots = pgTable("portfolio_snapshots", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),

@@ -113,6 +113,12 @@ import {
   type LegacyBeneficiary,
   type InsertLegacyBeneficiary,
   type LegacyCheckIn,
+  tokenBuckets,
+  tokenBucketItems,
+  type TokenBucket,
+  type InsertTokenBucket,
+  type TokenBucketItem,
+  type InsertTokenBucketItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
@@ -280,6 +286,15 @@ export interface IStorage {
   getDcaExecutionsByOrder(orderId: string): Promise<DcaExecution[]>;
   getDcaExecutionsByUser(userId: string): Promise<DcaExecution[]>;
   updateDcaExecution(id: string, data: Partial<DcaExecution>): Promise<DcaExecution | undefined>;
+
+  createTokenBucket(bucket: InsertTokenBucket): Promise<TokenBucket>;
+  getTokenBucketsByUser(userId: string): Promise<TokenBucket[]>;
+  getTokenBucket(id: string): Promise<TokenBucket | undefined>;
+  updateTokenBucket(id: string, data: Partial<TokenBucket>): Promise<TokenBucket | undefined>;
+  deleteTokenBucket(id: string): Promise<void>;
+  createTokenBucketItem(item: InsertTokenBucketItem): Promise<TokenBucketItem>;
+  getTokenBucketItems(bucketId: string): Promise<TokenBucketItem[]>;
+  deleteTokenBucketItems(bucketId: string): Promise<void>;
 
   createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot>;
   getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined>;
@@ -1168,6 +1183,49 @@ export class DatabaseStorage implements IStorage {
       .where(eq(dcaExecutions.id, id))
       .returning();
     return result;
+  }
+
+  async createTokenBucket(bucket: InsertTokenBucket): Promise<TokenBucket> {
+    const [result] = await db.insert(tokenBuckets).values(bucket).returning();
+    return result;
+  }
+
+  async getTokenBucketsByUser(userId: string): Promise<TokenBucket[]> {
+    return db.select().from(tokenBuckets)
+      .where(eq(tokenBuckets.userId, userId))
+      .orderBy(desc(tokenBuckets.createdAt));
+  }
+
+  async getTokenBucket(id: string): Promise<TokenBucket | undefined> {
+    const [result] = await db.select().from(tokenBuckets).where(eq(tokenBuckets.id, id));
+    return result;
+  }
+
+  async updateTokenBucket(id: string, data: Partial<TokenBucket>): Promise<TokenBucket | undefined> {
+    const [result] = await db.update(tokenBuckets)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tokenBuckets.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTokenBucket(id: string): Promise<void> {
+    await db.delete(tokenBucketItems).where(eq(tokenBucketItems.bucketId, id));
+    await db.delete(tokenBuckets).where(eq(tokenBuckets.id, id));
+  }
+
+  async createTokenBucketItem(item: InsertTokenBucketItem): Promise<TokenBucketItem> {
+    const [result] = await db.insert(tokenBucketItems).values(item).returning();
+    return result;
+  }
+
+  async getTokenBucketItems(bucketId: string): Promise<TokenBucketItem[]> {
+    return db.select().from(tokenBucketItems)
+      .where(eq(tokenBucketItems.bucketId, bucketId));
+  }
+
+  async deleteTokenBucketItems(bucketId: string): Promise<void> {
+    await db.delete(tokenBucketItems).where(eq(tokenBucketItems.bucketId, bucketId));
   }
 
   async createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot> {
