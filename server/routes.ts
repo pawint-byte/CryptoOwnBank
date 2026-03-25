@@ -7703,6 +7703,29 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         return res.status(400).json({ message: "txHash is required — trade must be signed in Xaman first" });
       }
 
+      let txVerified = false;
+      try {
+        const xrpl = await import("xrpl");
+        const client = new xrpl.Client("wss://xrplcluster.com");
+        await client.connect();
+        try {
+          const txResponse = await client.request({ command: "tx", transaction: txHash });
+          const meta = (txResponse.result as any).meta || (txResponse.result as any).metaData;
+          const engineResult = meta?.TransactionResult || (txResponse.result as any).engine_result;
+          if (engineResult === "tesSUCCESS") {
+            txVerified = true;
+          } else {
+            console.log(`[DCA] Order ${order.id.slice(0, 8)} — tx ${txHash} result: ${engineResult} (not tesSUCCESS)`);
+            return res.status(400).json({ message: `Transaction failed on XRPL: ${engineResult}. No execution recorded.` });
+          }
+        } finally {
+          await client.disconnect().catch(() => {});
+        }
+      } catch (verifyErr) {
+        console.warn(`[DCA] Could not verify tx ${txHash} on XRPL — recording execution anyway:`, verifyErr instanceof Error ? verifyErr.message : verifyErr);
+        txVerified = true;
+      }
+
       const execution = await storage.createDcaExecution({
         dcaOrderId: order.id,
         userId: order.userId,
@@ -7733,6 +7756,31 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     } catch (error) {
       console.error("Execute DCA order error:", error);
       res.status(500).json({ message: "Failed to execute DCA order" });
+    }
+  });
+
+  app.post("/api/dca-orders/:id/reset", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const order = await storage.getDcaOrder(req.params.id);
+      if (!order) {
+        return res.status(404).json({ message: "DCA order not found" });
+      }
+      await storage.updateDcaOrder(order.id, {
+        runsCompleted: 0,
+        lastRunAt: null,
+        nextRunAt: new Date(),
+        status: "active",
+      });
+      console.log(`[DCA] Admin reset order ${order.id} — runs_completed set to 0`);
+      res.json({ success: true, message: "Order reset successfully" });
+    } catch (error) {
+      console.error("Reset DCA order error:", error);
+      res.status(500).json({ message: "Failed to reset DCA order" });
     }
   });
 
