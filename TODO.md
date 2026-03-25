@@ -32,6 +32,7 @@
 - [2026-03-23] Onramper API key (email sent — would enable embedded aggregator widget covering multiple providers in one UI)
 - [2026-03-24] MoonPay partner approval (would enable embedded buy widget on our site)
 - [2026-03-24] Transak partner approval (would enable embedded buy widget on our site)
+- [2026-03-25] Ramp Network — DECLINED for now. They responded (Faris Riaz, partner@ramp.network): widget embed/overlay supported, most assets covered, but require ~$1M/month volume to waive annual recurring fee. Integration fee + annual compliance review fees apply below that threshold. Not viable at current stage. Revisit when volume grows. Onramper aggregates Ramp anyway, so one integration covers it.
 - [2026-03-24] Stellar Development Foundation grant
 - [2026-03-24] Ripple grant (Spring 2026 application window)
 - [2026-03-24] XLS-65/66 XRPL validator activation (for native lending)
