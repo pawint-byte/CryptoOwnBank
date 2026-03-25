@@ -23,7 +23,7 @@
 | ByBarter | Generic link | Check if affiliate program exists | 2026-03-24 |
 | Narfex | Generic link | Check if affiliate program exists | 2026-03-24 |
 | Onramp.money | Generic link | Check if affiliate program exists | 2026-03-24 |
-| Digitap | Generic link | Check if affiliate program exists | 2026-03-24 |
+| Digitap | LIVE — `my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec` (up to 40% commission) | None | 2026-03-25 |
 | Onramper | Awaiting API key | Embed aggregator widget once key received (email was sent previously) | 2026-03-23 |
 
 ---

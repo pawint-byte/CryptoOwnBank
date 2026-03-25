@@ -1239,7 +1239,7 @@ export default function BuyCrypto() {
                 </div>
               </a>
 
-              <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="block">
+              <a href="https://my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec" target="_blank" rel="noopener noreferrer" className="block">
                 <div className="rounded-lg border p-4 hover:border-amber-500 transition-colors space-y-2" data-testid="card-digitap">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1945,7 +1945,7 @@ export default function BuyCrypto() {
                 <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a>.
                 In India and Southeast Asia,{" "}
                 <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> supports UPI, IMPS, and local bank transfers.{" "}
-                <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> offers QR-based buying across emerging markets.
+                <a href="https://my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> offers QR-based buying across emerging markets.
                 Telegram users can buy USDT instantly with Apple Pay or Google Pay via{" "}
                 <a href="https://t.me/wallet" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Telegram Wallet</a>.
               </p>
@@ -1956,7 +1956,7 @@ export default function BuyCrypto() {
                 <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> is the best for India (UPI, IMPS, NEFT).{" "}
                 <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) is excellent for Nigeria, Kenya, Ghana, and the Philippines — it supports mobile money (M-Pesa, GCash), cash deposits, and local payment methods.{" "}
                 <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> also supports mobile money, cash deposits, and P2P with escrow.{" "}
-                <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> works across all emerging markets with QR-based purchases.
+                <a href="https://my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> works across all emerging markets with QR-based purchases.
                 You can also find active local P2P communities on Telegram and WhatsApp where people trade daily — search for "P2P Crypto" + your city or country.
                 Whichever method you use, add your wallet to CryptoOwnBank afterward to track your balances and use our trading tools.
               </p>

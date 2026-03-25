@@ -384,7 +384,7 @@ export default function PayPage() {
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-xs font-semibold">India & Southeast Asia</p>
                   <p className="text-xs text-muted-foreground">
-                    <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> — buy with UPI, IMPS, or local bank transfer. <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> — QR-based buying across emerging markets.
+                    <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> — buy with UPI, IMPS, or local bank transfer. <a href="https://my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> — QR-based buying across emerging markets.
                   </p>
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">
