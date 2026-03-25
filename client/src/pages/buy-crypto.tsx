@@ -1133,6 +1133,26 @@ export default function BuyCrypto() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-lg border p-4 hover:border-violet-500 transition-colors space-y-2" data-testid="card-p2p-noones">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-violet-600" />
+                      <span className="font-semibold">NoOnes</span>
+                      <Badge className="bg-violet-600 text-white text-[10px]">900+ Payment Methods</Badge>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Gift cards, prepaid cards, cash deposits, mobile money (M-Pesa, GCash), bank transfers, in-person meetups — whatever works for you. Buy XRP, BTC, USDT, and more directly from sellers with built-in escrow protection.
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Availability: Global (excluding the US)</p>
+                  <p className="text-xs text-violet-600 font-medium">
+                    Buy crypto → send to your wallet → add wallet to CryptoOwnBank → track, trade, and manage everything from one dashboard
+                  </p>
+                </div>
+              </a>
+
               <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="block">
                 <div className="rounded-lg border p-4 hover:border-violet-500 transition-colors space-y-2" data-testid="card-p2p-bybarter">
                   <div className="flex items-center justify-between">
@@ -1205,13 +1225,14 @@ export default function BuyCrypto() {
                     <div className="flex items-center gap-2">
                       <Zap className="h-5 w-5 text-amber-600" />
                       <span className="font-semibold">Onramp.money</span>
-                      <Badge className="bg-amber-600 text-white text-[10px]">India & Southeast Asia</Badge>
+                      <Badge className="bg-amber-600 text-white text-[10px]">India & Southeast Asia Only</Badge>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Buy crypto with UPI, IMPS, NEFT, local bank transfers, and mobile wallets. Designed for India and Southeast Asia with fast KYC and instant settlement. Supports XRP, ETH, BTC, USDT, and more.
                   </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Availability: India & Southeast Asia</p>
                   <p className="text-xs text-amber-600 font-medium">
                     Buy with UPI or local bank → crypto lands in your wallet → add it to CryptoOwnBank → track balances and use DEX, DCA, swaps
                   </p>
@@ -1231,6 +1252,7 @@ export default function BuyCrypto() {
                   <p className="text-sm text-muted-foreground">
                     QR-based fiat-to-crypto with minimal KYC. Built for emerging markets — supports local payment rails across India, Brazil, Philippines, Nigeria, and more. Perfect for first-time crypto buyers.
                   </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Availability: Emerging markets (India, Brazil, Philippines, Nigeria, etc.)</p>
                   <p className="text-xs text-amber-600 font-medium">
                     Scan QR → pay with local method → get crypto in your wallet → come back here to manage everything
                   </p>
@@ -1276,7 +1298,7 @@ export default function BuyCrypto() {
               <div className="flex items-start gap-2 bg-cyan-500/10 rounded-lg p-3">
                 <AlertTriangle className="h-4 w-4 text-cyan-700 dark:text-cyan-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  <strong>Safety tip:</strong> Use escrow services when available (ByBarter has built-in escrow). For direct P2P trades, start with small amounts, verify the seller's reputation, and never share your private keys or recovery phrase.
+                  <strong>Safety tip:</strong> Use escrow services when available (NoOnes and ByBarter have built-in escrow). For direct P2P trades, start with small amounts, verify the seller's reputation, and never share your private keys or recovery phrase.
                 </p>
               </div>
             </CardContent>
@@ -1296,7 +1318,7 @@ export default function BuyCrypto() {
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">2</span>
-                        <span><strong>Buy your first crypto</strong> — use the wallet's built-in buy button, or grab some through ByBarter or Telegram.</span>
+                        <span><strong>Buy your first crypto</strong> — use the wallet's built-in buy button, or grab some through NoOnes, ByBarter, or Telegram.</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">3</span>
@@ -1919,6 +1941,7 @@ export default function BuyCrypto() {
               <p className="text-sm text-muted-foreground">
                 Wallet on-ramps (MoonPay, Transak) accept credit/debit cards and bank transfers. For more options — gift cards, cash deposits,
                 mobile money (M-Pesa, GCash), prepaid cards, in-person meetups — use P2P platforms like{" "}
+                <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) or{" "}
                 <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a>.
                 In India and Southeast Asia,{" "}
                 <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> supports UPI, IMPS, and local bank transfers.{" "}
@@ -1931,7 +1954,8 @@ export default function BuyCrypto() {
               <p className="text-sm font-medium">I'm in India / Africa / Southeast Asia — what's the best option for me?</p>
               <p className="text-sm text-muted-foreground">
                 <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> is the best for India (UPI, IMPS, NEFT).{" "}
-                <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> supports mobile money, cash deposits, and local payment methods across Africa and emerging markets.{" "}
+                <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) is excellent for Nigeria, Kenya, Ghana, and the Philippines — it supports mobile money (M-Pesa, GCash), cash deposits, and local payment methods.{" "}
+                <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> also supports mobile money, cash deposits, and P2P with escrow.{" "}
                 <a href="https://digitap.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> works across all emerging markets with QR-based purchases.
                 You can also find active local P2P communities on Telegram and WhatsApp where people trade daily — search for "P2P Crypto" + your city or country.
                 Whichever method you use, add your wallet to CryptoOwnBank afterward to track your balances and use our trading tools.
