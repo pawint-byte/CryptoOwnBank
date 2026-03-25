@@ -285,6 +285,7 @@ export interface IStorage {
   createDcaExecution(execution: InsertDcaExecution): Promise<DcaExecution>;
   getDcaExecutionsByOrder(orderId: string): Promise<DcaExecution[]>;
   getDcaExecutionsByUser(userId: string): Promise<DcaExecution[]>;
+  getPendingDcaExecutions(): Promise<DcaExecution[]>;
   updateDcaExecution(id: string, data: Partial<DcaExecution>): Promise<DcaExecution | undefined>;
 
   createTokenBucket(bucket: InsertTokenBucket): Promise<TokenBucket>;
@@ -1175,6 +1176,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(dcaExecutions)
       .where(eq(dcaExecutions.userId, userId))
       .orderBy(desc(dcaExecutions.executedAt));
+  }
+
+  async getPendingDcaExecutions(): Promise<DcaExecution[]> {
+    return db.select().from(dcaExecutions)
+      .where(eq(dcaExecutions.status, "pushed"));
   }
 
   async updateDcaExecution(id: string, data: Partial<DcaExecution>): Promise<DcaExecution | undefined> {

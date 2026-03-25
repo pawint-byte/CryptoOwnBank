@@ -46,6 +46,7 @@ import {
   Smartphone,
   Link2,
   Zap,
+  Bell,
 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
@@ -191,10 +192,16 @@ function getExecStatusBadge(status: string) {
   switch (status) {
     case "pending":
       return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30" data-testid="badge-exec-pending"><Clock className="w-3 h-3 mr-1" /> Pending Approval</Badge>;
+    case "pushed":
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30" data-testid="badge-exec-pushed"><Bell className="w-3 h-3 mr-1" /> Sent to Xaman</Badge>;
     case "signed":
       return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30" data-testid="badge-exec-signed"><CheckCircle2 className="w-3 h-3 mr-1" /> Signed</Badge>;
     case "completed":
       return <Badge className="bg-green-500/20 text-green-400 border-green-500/30" data-testid="badge-exec-completed"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
+    case "rejected":
+      return <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30" data-testid="badge-exec-rejected"><AlertCircle className="w-3 h-3 mr-1" /> Rejected</Badge>;
+    case "expired":
+      return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30" data-testid="badge-exec-expired"><Clock className="w-3 h-3 mr-1" /> Expired</Badge>;
     case "failed":
       return <Badge className="bg-red-500/20 text-red-400 border-red-500/30" data-testid="badge-exec-failed"><AlertCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
     default:
@@ -959,7 +966,7 @@ function DcaOrderCard({
 function DcaDisclaimer() {
   return (
     <p className="text-xs text-muted-foreground italic mt-6 px-1">
-      CryptoOwnBank does not execute trades on your behalf. DCA orders create scheduled reminders — you must approve and sign each transaction yourself using your own wallet (Xaman or LOBSTR). Your funds remain in your wallet at all times. This is not automated trading and CryptoOwnBank is not a broker or trading platform. Past performance of any asset does not guarantee future results.
+      CryptoOwnBank does not execute trades on your behalf. When a DCA order is due, a signing request is pushed to your Xaman wallet — you must review and approve each transaction. Your funds remain in your wallet at all times. You can also use the "Execute Now" button to manually trigger at any time. This is not automated trading and CryptoOwnBank is not a broker or trading platform. Past performance of any asset does not guarantee future results.
     </p>
   );
 }

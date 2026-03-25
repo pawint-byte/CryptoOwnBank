@@ -1,6 +1,6 @@
 import { storage } from "../storage";
 import { db } from "../db";
-import { users, walletBalances, userSettings, autoWithdrawLogs, type CustomVault } from "@shared/schema";
+import { users, walletBalances, userSettings, autoWithdrawLogs, dcaOrders, type CustomVault } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { sendLegacyBeneficiaryDelivery } from "../email";
 import { Client } from "xrpl";
@@ -87,15 +87,283 @@ export async function processScheduledPayments(): Promise<void> {
   }
 }
 
+async function getXrplOrderBookPrice(
+  spendCurrency: string,
+  spendIssuer: string | null,
+  buyCurrency: string,
+  buyIssuer: string | null,
+): Promise<number> {
+  const xrplServers = ["wss://xrplcluster.com", "wss://s1.ripple.com", "wss://s2.ripple.com"];
+  let client: Client | null = null;
+  for (const server of xrplServers) {
+    try {
+      const c = new Client(server, { connectionTimeout: 15000 });
+      await c.connect();
+      client = c;
+      break;
+    } catch {}
+  }
+  if (!client) throw new Error("Cannot connect to XRPL");
+
+  try {
+    const takerPays = buyCurrency === "XRP"
+      ? { currency: "XRP" }
+      : { currency: buyCurrency, issuer: buyIssuer! };
+    const takerGets = spendCurrency === "XRP"
+      ? { currency: "XRP" }
+      : { currency: spendCurrency, issuer: spendIssuer! };
+
+    const response = await client.request({
+      command: "book_offers",
+      taker_pays: takerPays as any,
+      taker_gets: takerGets as any,
+      limit: 5,
+    });
+
+    const offers = (response.result as any).offers || [];
+    if (offers.length > 0) {
+      const offer = offers[0];
+      const getVal = typeof offer.TakerGets === "string"
+        ? parseFloat(offer.TakerGets) / 1_000_000
+        : parseFloat(offer.TakerGets.value);
+      const payVal = typeof offer.TakerPays === "string"
+        ? parseFloat(offer.TakerPays) / 1_000_000
+        : parseFloat(offer.TakerPays.value);
+      if (getVal > 0) return payVal / getVal;
+    }
+
+    const reverseResponse = await client.request({
+      command: "book_offers",
+      taker_pays: takerGets as any,
+      taker_gets: takerPays as any,
+      limit: 5,
+    });
+    const reverseOffers = (reverseResponse.result as any).offers || [];
+    if (reverseOffers.length > 0) {
+      const offer = reverseOffers[0];
+      const getVal = typeof offer.TakerGets === "string"
+        ? parseFloat(offer.TakerGets) / 1_000_000
+        : parseFloat(offer.TakerGets.value);
+      const payVal = typeof offer.TakerPays === "string"
+        ? parseFloat(offer.TakerPays) / 1_000_000
+        : parseFloat(offer.TakerPays.value);
+      if (payVal > 0) return getVal / payVal;
+    }
+
+    throw new Error("No order book data available");
+  } finally {
+    await client.disconnect().catch(() => {});
+  }
+}
+
+function buildXrplAmount(currency: string, issuer: string | null, value: string): string | { currency: string; issuer: string; value: string } {
+  if (currency === "XRP") {
+    return (parseFloat(value) * 1_000_000).toFixed(0);
+  }
+  return { currency, issuer: issuer!, value };
+}
+
+function getTokenDisplayName(currency: string): string {
+  if (currency.length <= 3) return currency;
+  if (currency.length === 40) {
+    try {
+      const decoded = Buffer.from(currency, "hex").toString("utf8").replace(/\0/g, "");
+      return decoded || currency.slice(0, 6);
+    } catch {
+      return currency.slice(0, 6);
+    }
+  }
+  return currency;
+}
+
 export async function processDcaOrders(): Promise<void> {
   try {
     const dueOrders = await storage.getDueDcaOrders();
+    if (dueOrders.length === 0) return;
 
-    if (dueOrders.length > 0) {
-      console.log(`[DCA] ${dueOrders.length} DCA order(s) are due — waiting for user to Execute Now (non-custodial, requires Xaman signing)`);
+    const xummApiKey = process.env.VITE_XUMM_API_KEY || process.env.XUMM_API_KEY;
+    const xummApiSecret = process.env.XUMM_API_SECRET;
+    if (!xummApiKey || !xummApiSecret) {
+      console.log(`[DCA] ${dueOrders.length} order(s) due but Xaman SDK not configured`);
+      return;
+    }
+    const xummSdk = new XummSdk(xummApiKey, xummApiSecret);
+
+    console.log(`[DCA] Processing ${dueOrders.length} due order(s)`);
+
+    for (const order of dueOrders) {
+      try {
+        if (order.chain !== "xrpl") {
+          console.log(`[DCA] Skipping order ${order.id.slice(0, 8)} — chain ${order.chain} not supported for auto-push`);
+          continue;
+        }
+
+        const pendingExecutions = await storage.getDcaExecutionsByOrder(order.id);
+        const hasPending = pendingExecutions.some(e => e.status === "pushed");
+        if (hasPending) {
+          console.log(`[DCA] Order ${order.id.slice(0, 8)} already has a pending Xaman payload — skipping`);
+          continue;
+        }
+
+        const [user] = await db.select({
+          xrplWalletAddress: users.xrplWalletAddress,
+        }).from(users).where(eq(users.id, order.userId));
+
+        if (!user?.xrplWalletAddress) {
+          console.log(`[DCA] Order ${order.id.slice(0, 8)} — user has no XRPL wallet connected`);
+          continue;
+        }
+
+        const spendAmount = parseFloat(order.spendAmount);
+        const spendDisplay = getTokenDisplayName(order.spendCurrency);
+        const buyDisplay = getTokenDisplayName(order.buyCurrency);
+
+        let pricePerBuy = 0;
+        try {
+          pricePerBuy = await getXrplOrderBookPrice(
+            order.spendCurrency, order.spendIssuer || null,
+            order.buyCurrency, order.buyIssuer || null,
+          );
+        } catch (priceErr) {
+          console.error(`[DCA] Order ${order.id.slice(0, 8)} — could not fetch order book price:`, priceErr instanceof Error ? priceErr.message : priceErr);
+          continue;
+        }
+
+        if (pricePerBuy <= 0) {
+          console.log(`[DCA] Order ${order.id.slice(0, 8)} — no valid price from order book`);
+          continue;
+        }
+
+        let buyAmount = (spendAmount / pricePerBuy).toFixed(6);
+        const sanityMax = spendAmount * 10;
+        if (parseFloat(buyAmount) > sanityMax) {
+          buyAmount = (spendAmount * pricePerBuy).toFixed(6);
+        }
+        if (parseFloat(buyAmount) <= 0) {
+          console.log(`[DCA] Order ${order.id.slice(0, 8)} — calculated buy amount is zero`);
+          continue;
+        }
+
+        const slippageBuyAmount = (parseFloat(buyAmount) * 0.97).toFixed(6);
+
+        const takerGets = buildXrplAmount(order.spendCurrency, order.spendIssuer || null, spendAmount.toString());
+        const takerPays = buildXrplAmount(order.buyCurrency, order.buyIssuer || null, slippageBuyAmount);
+
+        try {
+          const payload = await xummSdk.payload.create({
+            txjson: {
+              TransactionType: "OfferCreate",
+              Account: user.xrplWalletAddress,
+              TakerGets: takerGets,
+              TakerPays: takerPays,
+              Flags: 0x00040000,
+            },
+            options: {
+              submit: true,
+              expire: 1440,
+              return_url: {
+                app: "https://cryptoownbank.com/ownbank/dca",
+                web: "https://cryptoownbank.com/ownbank/dca",
+              },
+            },
+            custom_meta: {
+              instruction: `CryptoOwnBank DCA: Buy ~${buyAmount} ${buyDisplay} with ${spendAmount} ${spendDisplay}. ${order.label || "Scheduled DCA order"}. Tap Sign to execute on the XRPL DEX.`,
+            },
+          } as never);
+
+          if (payload?.uuid) {
+            await storage.createDcaExecution({
+              dcaOrderId: order.id,
+              userId: order.userId,
+              status: "pushed",
+              spendAmount: order.spendAmount,
+              receivedAmount: slippageBuyAmount,
+              xamanPayloadId: payload.uuid,
+              txHash: null,
+              errorMessage: null,
+            });
+
+            console.log(`[DCA] Pushed Xaman payload ${payload.uuid} for order ${order.id.slice(0, 8)} — ${spendAmount} ${spendDisplay} → ~${buyAmount} ${buyDisplay}`);
+          }
+        } catch (xummErr) {
+          console.error(`[DCA] Xaman push failed for order ${order.id.slice(0, 8)}:`, xummErr instanceof Error ? xummErr.message : xummErr);
+        }
+      } catch (orderErr) {
+        console.error(`[DCA] Error processing order ${order.id.slice(0, 8)}:`, orderErr instanceof Error ? orderErr.message : orderErr);
+      }
     }
   } catch (error) {
-    console.error("[DCA] Error checking DCA orders:", error);
+    console.error("[DCA] Error processing DCA orders:", error);
+  }
+}
+
+export async function processDcaPendingPayloads(): Promise<void> {
+  try {
+    const pendingExecutions = await storage.getPendingDcaExecutions();
+    if (pendingExecutions.length === 0) return;
+
+    const xummApiKey = process.env.VITE_XUMM_API_KEY || process.env.XUMM_API_KEY;
+    const xummApiSecret = process.env.XUMM_API_SECRET;
+    if (!xummApiKey || !xummApiSecret) return;
+    const xummSdk = new XummSdk(xummApiKey, xummApiSecret);
+
+    for (const execution of pendingExecutions) {
+      if (!execution.xamanPayloadId) {
+        await storage.updateDcaExecution(execution.id, { status: "expired" });
+        continue;
+      }
+
+      try {
+        const payloadResult = await xummSdk.payload.get(execution.xamanPayloadId);
+        if (!payloadResult) {
+          await storage.updateDcaExecution(execution.id, { status: "expired", errorMessage: "Payload not found" });
+          continue;
+        }
+
+        const meta = payloadResult.meta;
+        const response = payloadResult.response;
+
+        if (meta.resolved && meta.signed && response?.txid) {
+          await storage.updateDcaExecution(execution.id, {
+            status: "completed",
+            txHash: response.txid,
+          });
+
+          const order = await storage.getDcaOrder(execution.dcaOrderId);
+          if (order) {
+            const newRunsCompleted = (order.runsCompleted || 0) + 1;
+            const isComplete = order.totalRuns && newRunsCompleted >= order.totalRuns;
+
+            await storage.updateDcaOrder(order.id, {
+              lastRunAt: new Date(),
+              nextRunAt: isComplete ? order.nextRunAt : getNextRunDate(order.nextRunAt, order.frequency, order.preferredDay),
+              runsCompleted: newRunsCompleted,
+              status: isComplete ? "completed" : order.status,
+            });
+
+            const buyDisplay = getTokenDisplayName(order.buyCurrency);
+            const spendDisplay = getTokenDisplayName(order.spendCurrency);
+            console.log(`[DCA] Confirmed — order ${order.id.slice(0, 8)} signed (tx: ${response.txid.slice(0, 12)}...) — ${order.spendAmount} ${spendDisplay} → ${buyDisplay}`);
+          }
+        } else if (meta.resolved && !meta.signed) {
+          await storage.updateDcaExecution(execution.id, {
+            status: "rejected",
+            errorMessage: "User rejected the signing request",
+          });
+          console.log(`[DCA] Rejected — execution ${execution.id.slice(0, 8)} was declined by user`);
+        } else if (meta.expired) {
+          await storage.updateDcaExecution(execution.id, {
+            status: "expired",
+            errorMessage: "Xaman payload expired (24h timeout)",
+          });
+          console.log(`[DCA] Expired — execution ${execution.id.slice(0, 8)} timed out`);
+        }
+      } catch (checkErr) {
+        console.error(`[DCA] Error checking payload ${execution.xamanPayloadId}:`, checkErr instanceof Error ? checkErr.message : checkErr);
+      }
+    }
+  } catch (error) {
+    console.error("[DCA] Error checking pending payloads:", error);
   }
 }
 
@@ -533,22 +801,38 @@ async function processAutoWithdrawals(): Promise<void> {
 
 let schedulerInterval: NodeJS.Timeout | null = null;
 let autoWithdrawInterval: NodeJS.Timeout | null = null;
+let dcaInterval: NodeJS.Timeout | null = null;
+let dcaPayloadInterval: NodeJS.Timeout | null = null;
 
 export function startPaymentScheduler(): void {
   if (schedulerInterval) return;
   const paymentOffsetMs = 90 * 60 * 1000;
   const withdrawOffsetMs = 120 * 60 * 1000;
+  const dcaOffsetMs = 5 * 60 * 1000;
+  const dcaPayloadOffsetMs = 10 * 60 * 1000;
 
   setTimeout(() => {
     processScheduledPayments().catch(() => {});
-    processDcaOrders().catch(() => {});
     processLegacyPlans().catch(() => {});
     schedulerInterval = setInterval(async () => {
       await processScheduledPayments();
-      await processDcaOrders();
       await processLegacyPlans();
     }, 4 * 60 * 60 * 1000);
   }, paymentOffsetMs);
+
+  setTimeout(() => {
+    processDcaOrders().catch(() => {});
+    dcaInterval = setInterval(async () => {
+      await processDcaOrders();
+    }, 30 * 60 * 1000);
+  }, dcaOffsetMs);
+
+  setTimeout(() => {
+    processDcaPendingPayloads().catch(() => {});
+    dcaPayloadInterval = setInterval(async () => {
+      await processDcaPendingPayloads();
+    }, 15 * 60 * 1000);
+  }, dcaPayloadOffsetMs);
 
   setTimeout(() => {
     processAutoWithdrawals().catch(() => {});
@@ -557,7 +841,8 @@ export function startPaymentScheduler(): void {
     }, 4 * 60 * 60 * 1000);
   }, withdrawOffsetMs);
 
-  console.log("[PaymentScheduler] Started — checking every 4h, offset 90min (payments + DCA + legacy)");
+  console.log("[PaymentScheduler] Started — payments+legacy every 4h (offset 90min)");
+  console.log("[DCA] Started — checking due orders every 30min (offset 5min), payload results every 15min (offset 10min)");
   console.log("[AutoWithdraw] Started — checking every 4h, offset 120min");
 }
 
@@ -569,6 +854,14 @@ export function stopPaymentScheduler(): void {
   if (autoWithdrawInterval) {
     clearInterval(autoWithdrawInterval);
     autoWithdrawInterval = null;
+  }
+  if (dcaInterval) {
+    clearInterval(dcaInterval);
+    dcaInterval = null;
+  }
+  if (dcaPayloadInterval) {
+    clearInterval(dcaPayloadInterval);
+    dcaPayloadInterval = null;
   }
   console.log("[PaymentScheduler] Stopped (all schedulers)");
 }
