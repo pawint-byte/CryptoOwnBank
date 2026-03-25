@@ -527,7 +527,7 @@ export default function CryptoDebitCards() {
               <p className="text-sm text-muted-foreground mb-3">
                 Loading your debit card from a hardware wallet adds an extra layer of protection. Every reload requires physical approval on your device — no one can drain your funds remotely. These are the hardware wallets we recommend:
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <a href="https://cypherock.com/store/?ref=PETER.WINT" target="_blank" rel="noopener noreferrer" className="block" data-testid="link-hw-cypherock">
                   <Card className="border-muted transition-all cursor-pointer">
                     <CardContent className="pt-3 pb-3 px-3">
@@ -552,6 +552,15 @@ export default function CryptoDebitCards() {
                       <p className="text-sm font-semibold">ELLIPAL Titan</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Air-gapped (no Bluetooth/USB). Uses QR codes only. Maximum physical isolation.</p>
                       <p className="text-xs font-medium text-orange-600 mt-1.5">~$139</p>
+                    </CardContent>
+                  </Card>
+                </a>
+                <a href="https://arculusholdingsllc.pxf.io/9VVWge" target="_blank" rel="noopener noreferrer" className="block" data-testid="link-hw-arculus">
+                  <Card className="border-muted transition-all cursor-pointer">
+                    <CardContent className="pt-3 pb-3 px-3">
+                      <p className="text-sm font-semibold">Arculus Card</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Credit card-sized cold storage. Tap-to-sign via NFC. Fits in your wallet like a debit card.</p>
+                      <p className="text-xs font-medium text-orange-600 mt-1.5">~$99</p>
                     </CardContent>
                   </Card>
                 </a>

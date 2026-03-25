@@ -103,7 +103,7 @@ export const COLD_WALLETS: ColdWallet[] = [
     name: "Arculus Card",
     type: "card",
     price: "~$99",
-    buyUrl: "https://www.getarculus.com",
+    buyUrl: "https://arculusholdingsllc.pxf.io/9VVWge",
     supportedChains: ["XRPL", "Ethereum", "Bitcoin", "Solana", "Stellar", "Polygon", "Avalanche"],
     features: ["Credit card form factor", "NFC tap to sign", "No battery needed", "Pairs with Xaman", "Water/fire resistant"],
     xrplCompatible: true,

@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-03-24 (late evening update) by main agent**
+**Last updated: 2026-03-25 by main agent**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -15,6 +15,7 @@
 | Ledger | LIVE — `referral_code=H7DFZEAP8RPK4` | None | pre-2026-03-23 |
 | ELLIPAL | LIVE — `rfsn=9012773.864657d` | None | pre-2026-03-23 |
 | Bleap | LIVE — `code=FMWHK7IM` | None | 2026-03-24 |
+| Arculus | LIVE — `arculusholdingsllc.pxf.io/9VVWge` (Impact, 15% commission, 30-day cookie) | None | 2026-03-25 |
 | MetaMask Card | NO REFERRAL — referral program suspended Feb 2026 | Swap in referral link when program reopens | 2026-03-24 |
 | MoonPay | Generic link — awaiting partner approval | Embed widget once approved | 2026-03-24 |
 | Transak | Generic link — awaiting partner approval | Embed widget once approved | 2026-03-24 |
