@@ -30,7 +30,7 @@
 
 ## PENDING — External Approvals
 
-- [2026-03-23] Onramper API key — email sent to Rigved Bhatt (rigs@onramper.com) on Mon March 23, 2026. No acknowledgement as of March 25. Would enable embedded aggregator widget covering multiple providers in one UI. Follow up if no response by March 28.
+- [2026-03-23] Onramper API key — email sent to Rigved Bhatt (rigs@onramper.com) on Mon March 23, 2026. No acknowledgement as of March 25. Scheduled call with Rigved on March 27 at 7:45 AM EST. Would enable embedded aggregator widget covering multiple providers in one UI.
 - [2026-03-24] MoonPay partner approval (would enable embedded buy widget on our site)
 - [2026-03-24] Transak partner approval (would enable embedded buy widget on our site)
 - [2026-03-25] Ramp Network — DECLINED for now. They responded (Faris Riaz, partner@ramp.network): widget embed/overlay supported, most assets covered, but require ~$1M/month volume to waive annual recurring fee. Integration fee + annual compliance review fees apply below that threshold. Not viable at current stage. Revisit when volume grows. Onramper aggregates Ramp anyway, so one integration covers it.
