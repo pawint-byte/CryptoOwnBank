@@ -156,11 +156,17 @@ async function getXrplOrderBookPrice(
   }
 }
 
+function toHexCurrency(c: string): string {
+  if (c.length <= 3) return c;
+  if (c.length === 40 && /^[0-9A-Fa-f]+$/.test(c)) return c;
+  return Buffer.from(c.padEnd(20, "\0")).toString("hex").toUpperCase().slice(0, 40);
+}
+
 function buildXrplAmount(currency: string, issuer: string | null, value: string): string | { currency: string; issuer: string; value: string } {
   if (currency === "XRP") {
     return (parseFloat(value) * 1_000_000).toFixed(0);
   }
-  return { currency, issuer: issuer!, value };
+  return { currency: toHexCurrency(currency), issuer: issuer!, value };
 }
 
 function getTokenDisplayName(currency: string): string {

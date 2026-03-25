@@ -334,11 +334,18 @@ export default function DcaOrders() {
     try {
       const spendAmount = parseFloat(order.spendAmount);
 
+      const toHexCurrency = (c: string): string => {
+        if (c.length <= 3) return c;
+        if (c.length === 40 && /^[0-9A-Fa-f]+$/.test(c)) return c;
+        const buf = Buffer.from(c.padEnd(20, "\0"));
+        return buf.toString("hex").toUpperCase().slice(0, 40);
+      };
+
       const buildAmount = (currency: string, issuer: string | null, value: string) => {
         if (currency === "XRP") {
           return (parseFloat(value) * 1_000_000).toFixed(0);
         }
-        return { currency, issuer: issuer!, value };
+        return { currency: toHexCurrency(currency), issuer: issuer!, value };
       };
 
       const spendCur = { currency: order.spendCurrency, issuer: order.spendIssuer || undefined };
