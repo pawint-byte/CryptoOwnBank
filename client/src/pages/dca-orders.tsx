@@ -453,12 +453,13 @@ export default function DcaOrders() {
         return;
       }
 
-      let buyAmount = (spendAmount / pricePerBuy).toFixed(6);
+      const slippageFactor = 0.97;
+      let buyAmount = ((spendAmount / pricePerBuy) * slippageFactor).toFixed(6);
 
       const sanityMax = spendAmount * 10;
       if (parseFloat(buyAmount) > sanityMax) {
         console.warn(`[DCA] Buy amount ${buyAmount} exceeds sanity limit (${sanityMax}), price may be inverted. Using inverse.`);
-        buyAmount = (spendAmount * pricePerBuy).toFixed(6);
+        buyAmount = ((spendAmount * pricePerBuy) * slippageFactor).toFixed(6);
       }
 
       if (parseFloat(buyAmount) <= 0 || parseFloat(buyAmount) > spendAmount * 100) {
@@ -470,7 +471,8 @@ export default function DcaOrders() {
       const takerGets = buildAmount(order.spendCurrency, order.spendIssuer, spendAmount.toString());
       const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, buyAmount);
 
-      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} → ${buyAmount} ${getTokenDisplay(order.buyCurrency)}` });
+      console.log(`[DCA] Price: ${pricePerBuy} ${getTokenDisplay(order.spendCurrency)}/${getTokenDisplay(order.buyCurrency)}, Buy: ${buyAmount} (with 3% slippage), Spend: ${spendAmount}`);
+      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} → ~${buyAmount} ${getTokenDisplay(order.buyCurrency)} (3% slippage)` });
 
       const txJson: Record<string, unknown> = {
         TransactionType: "OfferCreate",
