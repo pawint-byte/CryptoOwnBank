@@ -378,7 +378,7 @@ export default function PayPage() {
                 <div className="rounded-lg border p-3 space-y-1">
                   <p className="text-xs font-semibold">Most flexible: Use gift cards, cash, or mobile money</p>
                   <p className="text-xs text-muted-foreground">
-                    <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) or <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> — buy crypto with gift cards, cash deposits, M-Pesa, and more. No bank account or exchange needed.
+                    <a href="https://noones.com/r/EasyMora369" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) or <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> — buy crypto with gift cards, cash deposits, M-Pesa, and more. No bank account or exchange needed.
                   </p>
                 </div>
                 <div className="rounded-lg border p-3 space-y-1">

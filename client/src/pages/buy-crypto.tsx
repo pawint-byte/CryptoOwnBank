@@ -1133,7 +1133,7 @@ export default function BuyCrypto() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="block">
+              <a href="https://noones.com/r/EasyMora369" target="_blank" rel="noopener noreferrer" className="block">
                 <div className="rounded-lg border p-4 hover:border-violet-500 transition-colors space-y-2" data-testid="card-p2p-noones">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1941,7 +1941,7 @@ export default function BuyCrypto() {
               <p className="text-sm text-muted-foreground">
                 Wallet on-ramps (MoonPay, Transak) accept credit/debit cards and bank transfers. For more options — gift cards, cash deposits,
                 mobile money (M-Pesa, GCash), prepaid cards, in-person meetups — use P2P platforms like{" "}
-                <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) or{" "}
+                <a href="https://noones.com/r/EasyMora369" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) or{" "}
                 <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a>.
                 In India and Southeast Asia,{" "}
                 <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> supports UPI, IMPS, and local bank transfers.{" "}
@@ -1954,7 +1954,7 @@ export default function BuyCrypto() {
               <p className="text-sm font-medium">I'm in India / Africa / Southeast Asia — what's the best option for me?</p>
               <p className="text-sm text-muted-foreground">
                 <a href="https://onramp.money" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Onramp.money</a> is the best for India (UPI, IMPS, NEFT).{" "}
-                <a href="https://noones.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) is excellent for Nigeria, Kenya, Ghana, and the Philippines — it supports mobile money (M-Pesa, GCash), cash deposits, and local payment methods.{" "}
+                <a href="https://noones.com/r/EasyMora369" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">NoOnes</a> (global, excluding US) is excellent for Nigeria, Kenya, Ghana, and the Philippines — it supports mobile money (M-Pesa, GCash), cash deposits, and local payment methods.{" "}
                 <a href="https://bybarter.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ByBarter</a> also supports mobile money, cash deposits, and P2P with escrow.{" "}
                 <a href="https://my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Digitap</a> works across all emerging markets with QR-based purchases.
                 You can also find active local P2P communities on Telegram and WhatsApp where people trade daily — search for "P2P Crypto" + your city or country.
