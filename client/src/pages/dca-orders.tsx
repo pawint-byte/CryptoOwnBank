@@ -273,6 +273,71 @@ export default function DcaOrders() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+      const res = await apiRequest("PATCH", `/api/dca-orders/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+      setEditingOrder(null);
+      toast({ title: "DCA order updated" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/dca-orders/${id}/reset`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+      toast({ title: "Order reset", description: "Runs completed set to 0, status set to active." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const [editingOrder, setEditingOrder] = useState<DcaOrder | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editFrequency, setEditFrequency] = useState("");
+  const [editTotalRuns, setEditTotalRuns] = useState("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editPreferredDay, setEditPreferredDay] = useState("");
+
+  function openEditDialog(order: DcaOrder) {
+    setEditingOrder(order);
+    setEditAmount(order.spendAmount);
+    setEditFrequency(order.frequency);
+    setEditTotalRuns(order.totalRuns ? String(order.totalRuns) : "");
+    setEditLabel(order.label || "");
+    setEditPreferredDay(order.preferredDay != null ? String(order.preferredDay) : "");
+  }
+
+  function handleEditSave() {
+    if (!editingOrder) return;
+    if (!editAmount || parseFloat(editAmount) <= 0) {
+      toast({ title: "Enter a valid amount", variant: "destructive" });
+      return;
+    }
+    editMutation.mutate({
+      id: editingOrder.id,
+      data: {
+        spendAmount: editAmount,
+        frequency: editFrequency,
+        totalRuns: editTotalRuns ? parseInt(editTotalRuns) : null,
+        label: editLabel || null,
+        preferredDay: editPreferredDay !== "" ? parseInt(editPreferredDay) : null,
+      },
+    });
+  }
+
+  const isAdmin = user?.role === "admin";
+
   const [executingOrderId, setExecutingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -585,6 +650,8 @@ export default function DcaOrders() {
                   toggleMutation.mutate({ id: order.id, status: newStatus });
                 }}
                 onDelete={() => deleteMutation.mutate(order.id)}
+                onEdit={() => openEditDialog(order)}
+                onReset={isAdmin ? () => resetMutation.mutate(order.id) : undefined}
                 onExecuteNow={() => executeNow(order)}
                 isExecuting={executingOrderId === order.id}
                 chainColor={chainColor}
@@ -791,6 +858,105 @@ export default function DcaOrders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editingOrder} onOpenChange={(open) => { if (!open) setEditingOrder(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5" style={{ color: chainColor }} />
+              Edit DCA Order
+            </DialogTitle>
+          </DialogHeader>
+          {editingOrder && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" style={{ color: chainColor }} />
+                  <span>{getTokenDisplay(editingOrder.spendCurrency)} → {getTokenDisplay(editingOrder.buyCurrency)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Amount per Buy ({getTokenDisplay(editingOrder.spendCurrency)})</Label>
+                <Input
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  min="0"
+                  step="any"
+                  data-testid="input-edit-amount"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Frequency</Label>
+                <Select value={editFrequency} onValueChange={(v) => { setEditFrequency(v); if (v !== "weekly" && v !== "biweekly") setEditPreferredDay(""); }}>
+                  <SelectTrigger data-testid="select-edit-frequency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FREQUENCIES.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(editFrequency === "weekly" || editFrequency === "biweekly") && (
+                <div className="space-y-2">
+                  <Label>Preferred Day</Label>
+                  <Select value={editPreferredDay} onValueChange={setEditPreferredDay}>
+                    <SelectTrigger data-testid="select-edit-preferred-day">
+                      <SelectValue placeholder="Any day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DAYS_OF_WEEK.map((d) => (
+                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Total Runs (leave empty for unlimited)</Label>
+                <Input
+                  type="number"
+                  placeholder="Unlimited"
+                  value={editTotalRuns}
+                  onChange={(e) => setEditTotalRuns(e.target.value)}
+                  min="1"
+                  data-testid="input-edit-total-runs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Label</Label>
+                <Input
+                  placeholder="e.g. Weekly XRP Buys"
+                  value={editLabel}
+                  onChange={(e) => setEditLabel(e.target.value)}
+                  data-testid="input-edit-label"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingOrder(null)} data-testid="button-cancel-edit">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              disabled={editMutation.isPending || !editAmount}
+              style={{ backgroundColor: chainColor }}
+              data-testid="button-save-edit"
+            >
+              {editMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -801,6 +967,8 @@ function DcaOrderCard({
   onToggleExpand,
   onToggleStatus,
   onDelete,
+  onEdit,
+  onReset,
   onExecuteNow,
   isExecuting,
   chainColor,
@@ -811,6 +979,8 @@ function DcaOrderCard({
   onToggleExpand: () => void;
   onToggleStatus: () => void;
   onDelete: () => void;
+  onEdit: () => void;
+  onReset?: () => void;
   onExecuteNow: () => void;
   isExecuting: boolean;
   chainColor: string;
@@ -921,6 +1091,14 @@ function DcaOrderCard({
           <Button
             size="sm"
             variant="outline"
+            onClick={onEdit}
+            data-testid={`button-edit-${order.id}`}
+          >
+            <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={onToggleExpand}
             data-testid={`button-history-${order.id}`}
           >
@@ -928,6 +1106,17 @@ function DcaOrderCard({
             History
             {expanded ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
           </Button>
+          {onReset && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-orange-500/40 text-orange-400 hover:bg-orange-500/10"
+              onClick={onReset}
+              data-testid={`button-reset-${order.id}`}
+            >
+              <AlertCircle className="w-3.5 h-3.5 mr-1" /> Reset
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"

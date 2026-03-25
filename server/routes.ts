@@ -7596,7 +7596,14 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       if (!order || order.userId !== userId) {
         return res.status(404).json({ message: "DCA order not found" });
       }
-      const updated = await storage.updateDcaOrder(order.id, req.body);
+      const allowedFields = ["status", "spendAmount", "frequency", "preferredDay", "totalRuns", "label"];
+      const updateData: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (req.body[key] !== undefined) {
+          updateData[key] = req.body[key];
+        }
+      }
+      const updated = await storage.updateDcaOrder(order.id, updateData);
       res.json(updated);
     } catch (error) {
       console.error("Update DCA order error:", error);
