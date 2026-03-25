@@ -236,7 +236,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
         <Route path="/ownbank/dca" component={DcaOrders} />
-        <Route path="/token-buckets" component={TokenBuckets} />
+        {/* <Route path="/token-buckets" component={TokenBuckets} /> */}{/* TODO: Hidden until cross-chain bucket execution is built */}
         <Route path="/ownbank/recurring" component={RecurringPayments} />
         <Route path="/stellar/dca" component={DcaOrders} />
         <Route path="/stellar/recurring" component={RecurringPayments} />

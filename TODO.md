@@ -60,6 +60,7 @@
 - ~~[2026-03-24] **CL Card (Ledger Visa debit by Baanx)**~~ — COMPLETED 2026-03-24. Added to Crypto Debit Cards page as featured card with Ledger referral link + FAQ updated.
 - [2026-03-23] **AI Portfolio Assistant**: GPT-4o-mini to start, upgrade to GPT-4o when needed. Pay-as-you-go pricing (~$0.01-$0.03 per conversation). Free = 0 AI chats, Premium = 50/month, Pro = unlimited. Must include "not financial advice" in every response. Need to sign up for OpenAI API key at platform.openai.com when ready.
 - [2026-03-23] **Open Wallet Standard (OWS)**: Research noted — potential fit for future AI assistant (agent proposes, user approves on Ledger), Legacy Plan automated disbursement (policy engine), and adding new chains later. Not a replacement for Xaman or WalletConnect. Clone repo and experiment when ready.
+- [2026-03-25] **Token Buckets — Cross-Chain Execution**: Code and DB tables are built and preserved (schema, storage, API routes, frontend page). Hidden from UI because XRPL-only tokens don't make real diversified buckets. Needs: (1) Multi-chain execution engine that routes each token swap to the right chain (XRPL DEX, 1inch for EVM, Stellar DEX). (2) Multi-wallet orchestration — user may need XRPL wallet + MetaMask + Freighter for a single bucket. (3) Per-chain trustline/approval checks in the pre-flight system. (4) True asset-class bucket definitions spanning all chains. Files: `shared/xrpl-token-registry.ts`, `client/src/pages/token-buckets.tsx`, `server/routes.ts` (token-buckets section), `shared/schema.ts` (token_buckets + token_bucket_items tables).
 - [2026-03-23] **Borrow Against Vaults**: Interface-only approach — CryptoOwnBank as dashboard to external lending protocols (Morpho, Aave-style, or XRPL-native via XLS-65/66). We are NOT the lender. Language: "borrow through the protocol via our interface." Blocked until XLS-65/66 activates on XRPL.
 - [2026-03-23] **MoonPay Agents / x402 protocol**: Worth watching for B2B and AI agent features. When MoonPay approves our on-ramp application, explore whether their CLI/API could power more than buy/sell.
 - [2026-03-23] **GitHub push**: User needs to push from Shell tab manually. Pending.
@@ -85,7 +86,7 @@
 - [2026-03-23] XRPL Bridge
 - [2026-03-23] Recurring Payments
 - [2026-03-23] Invoices
-- [2026-03-25] Token Buckets — create bucket, curated buckets, pre-flight check, edit/delete
+- [2026-03-25] ~~Token Buckets~~ — HIDDEN from UI (2026-03-25). Code and DB tables preserved. Needs cross-chain execution (XRPL + EVM + Stellar) before launch. See PENDING below.
 - [2026-03-23] ~~Flare FTSO~~ — TESTED by user (2026-03-23)
 - [2026-03-23] ~~DCA Orders~~ — TESTED by user (2026-03-23)
 
