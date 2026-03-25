@@ -7771,77 +7771,83 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  const { isXrplTradeable, getXrplToken } = await import("@shared/xrpl-token-registry");
+
   const CURATED_BUCKETS = [
     {
-      id: "top5-l1",
-      name: "Top 5 Layer 1",
-      description: "The five largest Layer 1 blockchains by market cap",
+      id: "blue-chip",
+      name: "Blue Chip",
+      description: "The most established XRPL-tradeable cryptocurrencies",
       tokens: [
         { symbol: "BTC", allocationPct: "30", category: "Layer 1" },
-        { symbol: "ETH", allocationPct: "25", category: "Layer 1" },
+        { symbol: "ETH", allocationPct: "25", category: "Smart Contracts" },
+        { symbol: "XRP", allocationPct: "20", category: "Layer 1" },
+        { symbol: "SOL", allocationPct: "15", category: "Layer 1" },
+        { symbol: "ADA", allocationPct: "10", category: "Layer 1" },
+      ],
+    },
+    {
+      id: "layer1-mix",
+      name: "Layer 1 Mix",
+      description: "Diversified Layer 1 blockchains available on XRPL DEX",
+      tokens: [
+        { symbol: "BTC", allocationPct: "25", category: "Layer 1" },
         { symbol: "SOL", allocationPct: "20", category: "Layer 1" },
         { symbol: "ADA", allocationPct: "15", category: "Layer 1" },
-        { symbol: "AVAX", allocationPct: "10", category: "Layer 1" },
+        { symbol: "AVAX", allocationPct: "15", category: "Layer 1" },
+        { symbol: "DOT", allocationPct: "10", category: "Layer 1" },
+        { symbol: "ATOM", allocationPct: "10", category: "Layer 1" },
+        { symbol: "NEAR", allocationPct: "5", category: "Layer 1" },
       ],
     },
     {
-      id: "top5-defi",
-      name: "Top 5 DeFi",
-      description: "Leading decentralized finance protocols",
+      id: "xrpl-ecosystem",
+      name: "XRPL Ecosystem",
+      description: "Native XRPL and Sologenic ecosystem tokens",
       tokens: [
-        { symbol: "UNI", allocationPct: "25", category: "DeFi" },
-        { symbol: "AAVE", allocationPct: "25", category: "DeFi" },
-        { symbol: "MKR", allocationPct: "20", category: "DeFi" },
-        { symbol: "LDO", allocationPct: "15", category: "DeFi" },
-        { symbol: "CRV", allocationPct: "15", category: "DeFi" },
+        { symbol: "XRP", allocationPct: "30", category: "Layer 1" },
+        { symbol: "SOLO", allocationPct: "20", category: "Finance" },
+        { symbol: "CORE", allocationPct: "15", category: "Layer 1" },
+        { symbol: "ELS", allocationPct: "10", category: "DeFi" },
+        { symbol: "CSC", allocationPct: "10", category: "Gaming" },
+        { symbol: "FLR", allocationPct: "15", category: "Smart Contracts" },
       ],
     },
     {
-      id: "top5-ai",
-      name: "Top 5 AI",
-      description: "Artificial intelligence and machine learning tokens",
+      id: "meme-basket",
+      name: "Meme Basket",
+      description: "Top memecoins available via Sologenic bridge",
       tokens: [
-        { symbol: "FET", allocationPct: "25", category: "AI" },
-        { symbol: "RNDR", allocationPct: "25", category: "AI" },
-        { symbol: "TAO", allocationPct: "20", category: "AI" },
-        { symbol: "ATH", allocationPct: "15", category: "AI" },
-        { symbol: "AITECH", allocationPct: "15", category: "AI" },
+        { symbol: "DOGE", allocationPct: "30", category: "Memecoin" },
+        { symbol: "SHIB", allocationPct: "25", category: "Memecoin" },
+        { symbol: "PEPE", allocationPct: "20", category: "Memecoin" },
+        { symbol: "BONK", allocationPct: "15", category: "Memecoin" },
+        { symbol: "XRP", allocationPct: "10", category: "Layer 1" },
       ],
     },
     {
-      id: "top5-l2",
-      name: "Top 5 Layer 2",
-      description: "Leading Layer 2 scaling solutions",
+      id: "rwa-defi",
+      name: "RWA & DeFi",
+      description: "Real-world assets and DeFi protocols on XRPL DEX",
       tokens: [
-        { symbol: "ARB", allocationPct: "25", category: "Layer 2" },
-        { symbol: "OP", allocationPct: "25", category: "Layer 2" },
-        { symbol: "POL", allocationPct: "20", category: "Layer 2" },
-        { symbol: "IMX", allocationPct: "15", category: "Layer 2" },
-        { symbol: "STX", allocationPct: "15", category: "Layer 2" },
+        { symbol: "ONDO", allocationPct: "25", category: "RWA" },
+        { symbol: "LINK", allocationPct: "25", category: "Oracle" },
+        { symbol: "UNI", allocationPct: "20", category: "DeFi" },
+        { symbol: "AAVE", allocationPct: "15", category: "DeFi" },
+        { symbol: "SOLO", allocationPct: "15", category: "Finance" },
       ],
     },
     {
-      id: "top5-gaming",
-      name: "Top 5 Gaming",
-      description: "Blockchain gaming and metaverse tokens",
+      id: "alt-l1",
+      name: "Alt L1 + Interop",
+      description: "Alternative Layer 1s and cross-chain tokens",
       tokens: [
-        { symbol: "AXS", allocationPct: "20", category: "Gaming" },
-        { symbol: "GALA", allocationPct: "20", category: "Gaming" },
-        { symbol: "ENJ", allocationPct: "20", category: "Gaming" },
-        { symbol: "SAND", allocationPct: "20", category: "Metaverse" },
-        { symbol: "MANA", allocationPct: "20", category: "Metaverse" },
-      ],
-    },
-    {
-      id: "blue-chip",
-      name: "Blue Chip Crypto",
-      description: "The most established cryptocurrencies",
-      tokens: [
-        { symbol: "BTC", allocationPct: "35", category: "Layer 1" },
-        { symbol: "ETH", allocationPct: "30", category: "Smart Contracts" },
-        { symbol: "XRP", allocationPct: "15", category: "Finance" },
-        { symbol: "SOL", allocationPct: "10", category: "Layer 1" },
-        { symbol: "ADA", allocationPct: "10", category: "Layer 1" },
+        { symbol: "HBAR", allocationPct: "20", category: "Layer 1" },
+        { symbol: "SUI", allocationPct: "20", category: "Layer 1" },
+        { symbol: "TON", allocationPct: "20", category: "Layer 1" },
+        { symbol: "APT", allocationPct: "15", category: "Layer 1" },
+        { symbol: "ALGO", allocationPct: "15", category: "Layer 1" },
+        { symbol: "ICP", allocationPct: "10", category: "Internet" },
       ],
     },
   ];
@@ -7984,6 +7990,12 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const { items, ...rawBucket } = req.body;
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: "At least one token is required" });
+      }
+      const untradeable = items
+        .map((i: any) => String(i.symbol || "").toUpperCase())
+        .filter((s: string) => s && !isXrplTradeable(s));
+      if (untradeable.length > 0) {
+        return res.status(400).json({ message: `Not tradeable on XRPL DEX: ${untradeable.join(", ")}. Only tokens with XRPL DEX pairs can be added to buckets.` });
       }
       const totalPct = items.reduce((sum: number, i: any) => sum + parseFloat(i.allocationPct || "0"), 0);
       if (Math.abs(totalPct - 100) > 0.01) {
