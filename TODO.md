@@ -8,7 +8,7 @@
 
 ## ACTION REQUIRED — Complete From Phone
 
-- [ ] **NOWPayments IPN callback URL** — Go to account.nowpayments.io > Payments Settings > Set IPN callback URL to: `https://cryptoownbank.com/api/nowpayments/ipn` (the backend is ready, this just tells NOWPayments where to send confirmations)
+- [x] **NOWPayments IPN callback URL** — DONE (2026-03-26). Webhook URL set to `https://cryptoownbank.com/api/nowpayments/ipn` in NOWPayments dashboard. IPN secret configured. Backend endpoint live.
 - [ ] **LI.FI portal setup** — Go to portal.li.fi, log in, configure "cryptoownbank" integrator with fee % and payout wallet address (portal was erroring on work PC)
 
 ---
