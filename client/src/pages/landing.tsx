@@ -5,7 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import heroVideoUrl from "@assets/CryptoOwnBank__1-Min_Pitch_(Security_&_Control)_1080p_caption_1774019224403.mp4";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SeoHead } from "@/components/seo-head";
+import { useTranslations } from "@/i18n";
 import { SiTiktok, SiX, SiDiscord, SiYoutube } from "react-icons/si";
 import {
   Shield,
@@ -1087,11 +1089,21 @@ const SPOTLIGHTS = [
 ];
 
 function SpotlightSection() {
+  const t = useTranslations();
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const autoIndex = Math.floor(dayOfYear / 2) % SPOTLIGHTS.length;
   const [activeIndex, setActiveIndex] = useState(autoIndex);
   const spot = SPOTLIGHTS[activeIndex];
   const Icon = spot.icon;
+  const spotT = t.spotlight[spot.id as keyof typeof t.spotlight] as {
+    title: string; subtitle: string; problem: string; solution: string; cta: string;
+    stats: { s1: string; l1: string; s2: string; l2: string; s3: string; l3: string };
+  };
+  const stats = [
+    { value: spotT.stats.s1, label: spotT.stats.l1 },
+    { value: spotT.stats.s2, label: spotT.stats.l2 },
+    { value: spotT.stats.s3, label: spotT.stats.l3 },
+  ];
 
   return (
     <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b bg-muted/30" data-testid="section-spotlight">
@@ -1099,13 +1111,13 @@ function SpotlightSection() {
         <div className="text-center mb-10 space-y-2">
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${spot.badgeColor}`} data-testid="badge-spotlight">
             <Eye className="h-3.5 w-3.5" />
-            {spot.badge}
+            {t.spotlight.badge}
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight" data-testid="heading-spotlight">
-            {spot.title}
+            {spotT.title}
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {spot.subtitle}
+            {spotT.subtitle}
           </p>
         </div>
 
@@ -1114,10 +1126,10 @@ function SpotlightSection() {
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-2 text-destructive font-semibold text-sm uppercase tracking-wider">
                 <Ban className="h-4 w-4" />
-                The Problem
+                {t.spotlight.theProblem}
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                {spot.problem}
+                {spotT.problem}
               </p>
             </CardContent>
           </Card>
@@ -1126,10 +1138,10 @@ function SpotlightSection() {
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm uppercase tracking-wider">
                 <CheckCircle2 className="h-4 w-4" />
-                How CryptoOwnBank Solves It
+                {t.spotlight.theSolution}
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                {spot.solution}
+                {spotT.solution}
               </p>
             </CardContent>
           </Card>
@@ -1137,7 +1149,7 @@ function SpotlightSection() {
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex gap-6">
-            {spot.stats.map((stat) => (
+            {stats.map((stat) => (
               <div key={stat.label} className="text-center" data-testid={`stat-spotlight-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
                 <div className="text-2xl font-bold" style={{ color: spot.accentColor }}>{stat.value}</div>
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
@@ -1147,7 +1159,7 @@ function SpotlightSection() {
 
           <a href={spot.ctaLink}>
             <Button size="lg" style={{ backgroundColor: spot.accentColor }} className="text-white hover:opacity-90" data-testid="button-spotlight-cta">
-              {spot.cta}
+              {spotT.cta}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </a>
@@ -1168,7 +1180,7 @@ function SpotlightSection() {
                 data-testid={`button-spotlight-${s.id}`}
               >
                 <NavIcon className="h-3 w-3" />
-                {s.id === "legacy" ? "Legacy Plan" : s.id === "banking" ? "Banking Tools" : "Earn Yield"}
+                {s.id === "legacy" ? t.spotlight.navLegacy : s.id === "banking" ? t.spotlight.navBanking : t.spotlight.navYield}
               </button>
             );
           })}
@@ -1179,6 +1191,7 @@ function SpotlightSection() {
 }
 
 export default function Landing() {
+  const t = useTranslations();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const source = params.get("utm_source");
@@ -1236,7 +1249,7 @@ export default function Landing() {
         jsonLd={landingJsonLd}
       />
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#00A4E4] text-white text-center py-1.5 text-xs font-medium" data-testid="banner-beta">
-        Beta — Early Access &middot; We're actively building. Your feedback shapes the product.
+        {t.beta}
       </div>
 
       <header className="fixed top-[30px] left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
@@ -1247,36 +1260,37 @@ export default function Landing() {
               <div>
                 <div>
                   <span className="text-lg font-semibold" data-testid="text-brand-name">CryptoOwnBank</span>
-                  <span className="hidden sm:inline text-xs text-muted-foreground ml-2">Be Your Own Bank</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground ml-2">{t.tagline}</span>
                 </div>
-                <span className="hidden sm:block text-[10px] italic text-muted-foreground/70">Value Flows Free. You Own the Flow.</span>
+                <span className="hidden sm:block text-[10px] italic text-muted-foreground/70">{t.motto}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <a href="#how-it-works" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
-                How It Works
+                {t.nav.howItWorks}
               </a>
               <a href="#features" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Features
+                {t.nav.features}
               </a>
               <a href="#on-chain" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-on-chain">
-                Why On-Chain
+                {t.nav.whyOnChain}
               </a>
               <a href="#pricing" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
+                {t.nav.pricing}
               </a>
               <a href="#faq" className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">
-                FAQ
+                {t.nav.faq}
               </a>
               <a href="/setup-guide" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-getting-started">
-                Getting Started
+                {t.nav.gettingStarted}
               </a>
               <a href="/yield-calculator" className="hidden lg:inline text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="nav-yield-calculator">
-                Yield Calculator
+                {t.nav.yieldCalculator}
               </a>
+              <LanguageSwitcher />
               <ThemeToggle />
               <a href="/login">
-                <Button data-testid="button-login">Sign In</Button>
+                <Button data-testid="button-login">{t.nav.signIn}</Button>
               </a>
             </div>
           </div>
@@ -1291,31 +1305,30 @@ export default function Landing() {
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-sm font-medium" data-testid="badge-non-custodial">
                     <Shield className="h-3.5 w-3.5" />
-                    Non-Custodial &middot; Your Keys &middot; Your Security Level
+                    {t.hero.badge}
                   </div>
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-                    Be Your Own
-                    <span className="block text-[#00A4E4]">Bank</span>
+                    {t.hero.title1}
+                    <span className="block text-[#00A4E4]">{t.hero.title2}</span>
                   </h1>
                   <p className="text-lg text-muted-foreground max-w-lg">
-                    The migration to on-chain finance is already happening. The only question is whether you're ahead of it or behind it.
-                    Get your money on the blockchain. Get everyone you do business with on the blockchain. Keep the value there.
+                    {t.hero.subtitle}
                   </p>
                   <p className="text-sm text-muted-foreground/80 max-w-lg">
-                    Earn 5–8% fixed yield on RLUSD. Trade on native DEXs. Pay anyone, anywhere, in seconds. Choose your security level. All the work is done for you. And it doesn't end — your Legacy Plan makes sure your crypto passes to your family. Even if you leave, your crypto stays in your wallet.
+                    {t.hero.description}
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <a href="/login">
                     <Button size="lg" className="w-full sm:w-auto bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-get-started">
-                      Connect Wallet — Free
+                      {t.hero.ctaStart}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </a>
                   <a href="#pricing">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-upgrade-hero">
-                      Upgrade to Premium
+                      {t.hero.ctaUpgrade}
                     </Button>
                   </a>
                 </div>
@@ -1323,15 +1336,15 @@ export default function Landing() {
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    Free forever tier
+                    {t.hero.freeTier}
                   </span>
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    Ledger + Xumm supported
+                    {t.hero.walletSupport}
                   </span>
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    No credit card required
+                    {t.hero.noCreditCard}
                   </span>
                 </div>
               </div>
@@ -1364,24 +1377,20 @@ export default function Landing() {
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-sm font-medium" data-testid="badge-break-loop">
               <Repeat className="h-3.5 w-3.5" />
-              Break the Loop
+              {t.breakLoop.badge}
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight" data-testid="heading-break-loop">
-              Stop Being an NPC in Someone Else's Financial System
+              {t.breakLoop.title}
             </h2>
             <div className="space-y-4 text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto">
               <p>
-                NPC — <span className="text-foreground font-medium">Non-Playable Character</span> — the background
-                figure in a video game who walks the same path, repeats the same lines, and never
-                questions the code running underneath.
+                {t.breakLoop.npc1}<span className="text-foreground font-medium">{t.breakLoop.npc1b}</span>{t.breakLoop.npc1c}
               </p>
               <p>
-                Sound familiar? Earn, deposit at 0.01%, pay fees, repeat. The traditional financial
-                system wasn't built for you — it was built <span className="italic">around</span> you.
-                You're the NPC generating value for someone else's game.
+                {t.breakLoop.npc2}<span className="italic">{t.breakLoop.npc2b}</span>{t.breakLoop.npc2c}
               </p>
               <p className="text-foreground font-medium text-lg">
-                CryptoOwnBank is your way out.
+                {t.breakLoop.npc3}
               </p>
               <p>
                 Connect your own wallet. Earn 5–8% real yield. Trade on a decentralized exchange.
