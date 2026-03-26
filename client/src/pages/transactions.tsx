@@ -270,17 +270,19 @@ export default function Transactions() {
   const isHistoryLimited = limits?.transactionHistoryDays === 30;
 
   const fetchXrplTxs = useCallback(async () => {
+    console.log("[Transactions] fetchXrplTxs called, walletAddress=", walletAddress, "isConnected=", isConnected);
     if (!walletAddress || !isConnected) return;
     setXrplLoading(true);
     try {
       const [txs, price] = await Promise.all([
-        getAccountTransactions(walletAddress, 50),
+        getAccountTransactions(walletAddress, 100),
         getXrpPrice(),
       ]);
+      console.log("[Transactions] fetched", txs.length, "XRPL txs, types:", txs.map(t => t.type + ":" + t.currency).join(", "));
       setXrplTransactions(txs);
       setXrpPrice(price);
-    } catch {
-      // silently fail — XRPL data is supplementary
+    } catch (err) {
+      console.error("[Transactions] XRPL fetch error:", err);
     } finally {
       setXrplLoading(false);
     }
