@@ -10142,6 +10142,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         fromAddress: fromAddress as string,
         slippage: (slippage as string) || "0.03",
         integrator: "cryptoownbank",
+        fee: "0.01",
       });
       const data = await lifiFetch(`/quote?${params}`);
       res.json(data);
@@ -10171,6 +10172,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
             slippage: parseFloat(slippage || "0.03"),
             order: "RECOMMENDED",
             integrator: "cryptoownbank",
+            fee: 0.01,
           },
         },
       });

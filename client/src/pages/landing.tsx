@@ -670,7 +670,7 @@ const faqGroups = [
       },
       {
         q: "How does CryptoOwnBank make money?",
-        a: "Three tiers: Free (basic tracking + Soil vault access), Premium ($29/mo or $199/yr — unlimited wallets, DEX trading, EVM Swap, full Recommendations Hub), and Pro ($99/mo or $799/yr — treasury tools, team seats, Legacy Plan). Nine optional add-ons. Affiliate referrals (disclosed transparently). A 1% platform fee on EVM Swap trades. We never take fees from your yields or principal — you keep 100% of what you earn. And because we never hold your assets, if you cancel or leave, your crypto is still in your wallet.",
+        a: "Three tiers: Free (basic tracking + Soil vault access), Premium ($29/mo or $199/yr — unlimited wallets, DEX trading, EVM Swap, full Recommendations Hub), and Pro ($99/mo or $799/yr — treasury tools, team seats, Legacy Plan). Nine optional add-ons. Affiliate referrals (disclosed transparently). A 1% platform fee on EVM Swap and Cross-Chain Swap trades. We never take fees from your yields or principal — you keep 100% of what you earn. And because we never hold your assets, if you cancel or leave, your crypto is still in your wallet.",
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",

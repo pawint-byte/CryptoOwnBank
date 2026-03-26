@@ -39,6 +39,8 @@
 - [2026-03-24] Stellar Development Foundation grant
 - [2026-03-24] Ripple grant (Spring 2026 application window)
 - [2026-03-24] XLS-65/66 XRPL validator activation (for native lending)
+- [2026-03-26] LI.FI portal setup — 1% fee parameter already added to API calls on our side. Need to log into portal.li.fi, register/configure "cryptoownbank" integrator, set fee % and payout wallet. Portal was giving errors from work PC — retry from phone or different browser. LI.FI support contacted and confirmed no approval needed, self-service once portal access works.
+- [2026-03-26] Squid Router fee setup — integrator ID already configured but no fee param in API calls yet. Check Squid partner dashboard to see if fee collection is available. Email Squid partnerships to enable integrator fee if not self-service.
 
 ---
 

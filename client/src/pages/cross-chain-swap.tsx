@@ -969,6 +969,9 @@ export default function CrossChainSwap() {
                 <span>{quote?.toolDetails?.name || quote?.tool || "—"}</span>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground italic">
+              A 1% platform fee is included in this swap. You are interacting directly with the LI.FI bridge aggregator — CryptoOwnBank does not hold or control your funds at any point during this transaction.
+            </p>
             <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <span>
