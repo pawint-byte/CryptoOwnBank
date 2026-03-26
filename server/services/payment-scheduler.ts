@@ -205,9 +205,16 @@ export async function processDcaOrders(): Promise<void> {
         }
 
         const pendingExecutions = await storage.getDcaExecutionsByOrder(order.id);
-        const hasPending = pendingExecutions.some(e => e.status === "pushed");
-        if (hasPending) {
-          console.log(`[DCA] Order ${order.id.slice(0, 8)} already has a pending Xaman payload — skipping`);
+        const staleThreshold = Date.now() - 24 * 60 * 60 * 1000;
+        for (const exec of pendingExecutions) {
+          if (exec.status === "pushed" && exec.executedAt && new Date(exec.executedAt).getTime() < staleThreshold) {
+            await storage.updateDcaExecution(exec.id, { status: "expired", errorMessage: "Auto-expired: no response within 24h" });
+            console.log(`[DCA] Auto-expired stale pushed execution ${exec.id.slice(0, 8)} (created ${exec.executedAt})`);
+          }
+        }
+        const freshPending = pendingExecutions.some(e => e.status === "pushed" && (!e.executedAt || new Date(e.executedAt).getTime() >= staleThreshold));
+        if (freshPending) {
+          console.log(`[DCA] Order ${order.id.slice(0, 8)} already has a recent pending Xaman payload — skipping`);
           continue;
         }
 
