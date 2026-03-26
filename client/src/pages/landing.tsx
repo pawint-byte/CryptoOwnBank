@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SeoHead } from "@/components/seo-head";
 import { useTranslations } from "@/i18n";
+import { useLangStore } from "@/i18n/store";
 import { SiTiktok, SiX, SiDiscord, SiYoutube } from "react-icons/si";
 import {
   Shield,
@@ -1192,6 +1193,7 @@ function SpotlightSection() {
 
 export default function Landing() {
   const t = useTranslations();
+  const { setLang } = useLangStore();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const source = params.get("utm_source");
@@ -1200,6 +1202,10 @@ export default function Landing() {
     if (source) localStorage.setItem("utm_source", source);
     if (medium) localStorage.setItem("utm_medium", medium);
     if (campaign) localStorage.setItem("utm_campaign", campaign);
+    const langParam = params.get("lang");
+    if (langParam && ["en", "es", "pt", "fr", "tr", "hi", "zh"].includes(langParam)) {
+      setLang(langParam as any);
+    }
   }, []);
 
   const landingJsonLd = useMemo(() => [
@@ -2873,6 +2879,15 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      <section className="sr-only" aria-label="Multilingual site description">
+        <h2 lang="es">CryptoOwnBank - Se tu propio banco. Herencia crypto automatizada. Rendimiento de 5-8% en RLUSD. Enviar dinero sin banco. Plataforma crypto de autocustodia. Plan de herencia crypto. Billetera fria. Remesas globales con XRPL y Stellar.</h2>
+        <h2 lang="pt">CryptoOwnBank - Seja seu proprio banco. Heranca de criptomoedas automatizada. Rendimento de 5-8% em RLUSD. Enviar dinheiro sem banco. Plataforma crypto de autocustodia. Plano de heranca crypto. Carteira fria. Remessas globais com XRPL e Stellar.</h2>
+        <h2 lang="fr">CryptoOwnBank - Devenez votre propre banque. Heritage crypto automatise. Rendement de 5-8% sur RLUSD. Envoyer de l'argent sans banque. Plateforme crypto non-depositaire. Plan d'heritage crypto. Portefeuille froid. Transferts internationaux via XRPL et Stellar.</h2>
+        <h2 lang="tr">CryptoOwnBank - Kendi bankaniz olun. Otomatik kripto miras plani. RLUSD uzerinde %5-8 getiri. Banka olmadan para gonderin. Kendi saklama kripto platformu. Kripto miras plani. Soguk cuzdan. XRPL ve Stellar ile kuresel havale.</h2>
+        <h2 lang="hi">CryptoOwnBank - अपना खुद का बैंक बनें। स्वचालित क्रिप्टो विरासत योजना। RLUSD पर 5-8% रिटर्न। बिना बैंक पैसे भेजें। सेल्फ-कस्टडी क्रिप्टो प्लेटफॉर्म। क्रिप्टो लेगेसी प्लान। कोल्ड वॉलेट। XRPL और Stellar के साथ वैश्विक भुगतान।</h2>
+        <h2 lang="zh">CryptoOwnBank - 做自己的银行。自动化加密货币继承计划。RLUSD 5-8%收益。无需银行汇款。自托管加密平台。加密遗产计划。冷钱包。通过XRPL和Stellar进行全球汇款。</h2>
+      </section>
     </div>
   );
 }
