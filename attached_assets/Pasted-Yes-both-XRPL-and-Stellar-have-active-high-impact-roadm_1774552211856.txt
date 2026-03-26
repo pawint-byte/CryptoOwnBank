@@ -1,0 +1,106 @@
+Yes — both XRPL and Stellar have active, high-impact roadmaps in 2026 that align perfectly with cryptoownbank.com’s non-custodial, borderless, “be your own bank” mission.
+You’re already tracking XLS-66 (native lending) on XRPL, which is still in validator voting as of March 26, 2026 (not yet activated — expected to hit supermajority soon based on current momentum). Below is the fresh, deep-dive status on everything else worth watching, pulled from official sources (xrpl.org known-amendments, RippleX updates, stellar.org strategy/roadmap, and Protocol 25 details).
+I focused only on features that are realistic quick wins for your dashboard, yield tracker, recommendations hub, invoicing/POS, or member tools — all while staying 100% wallet-connected and non-custodial.
+XRPL (XRP Ledger) — 2026 Roadmap Highlights
+XRPL is pivoting hard from “payments rail” to full institutional-grade DeFi + compliance layer. Core theme: native primitives (no smart-contract bloat) for lending, privacy, and permissioned finance.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Feature / AmendmentCurrent Status (Mar 26, 2026)What it actually doesWhy it’s a great add for cryptoownbank.com + membersSuggested site enhancement (low/medium effort)XLS-65 Single Asset Vault + XLS-66 Lending ProtocolBoth open for voting (LendingProtocol amendment active in voting)Pooled liquidity vaults + native uncollateralized fixed-term loans with first-loss capital protection. Off-chain underwriting for institutions, on-chain settlement/repayment.Members get native on-ledger yield (fixed rates) without relying on Soil or external protocols. True “earn on idle XRP/RLUSD” directly in wallet.Once live: Add dedicated Native Lending Vault Tracker card in dashboard (pull vault deposits, loan positions, accrued interest via public RPC). Auto-recommend vaults based on held assets.Permissioned Domains + Permissioned DEXes (XLS-81)Some domains already activated (Feb 2026); DEX amendment in votingControlled environments for trading/lending with KYC/credential gating for institutions while keeping retail side open.Gives members optional compliant yield opportunities (e.g., institutional RWA vaults) without forcing KYC on the whole site.Add toggle in Yield Explorer: “Permissioned Opportunities” filter that surfaces these while keeping default non-custodial view.TokenEscrow (XLS-85)Open for votingEscrow now works on IOUs, MPTs, and fungible tokens (not just XRP).Safer DCA/invoicing/POS flows and inheritance (Legacy Plan) — lock funds with time/condition release directly on-chain.Extend your existing escrow tools + add visual “Escrowed Positions” tab in portfolio.Confidential Transfers + ZK for MPTsQ1 2026 rollout (planned for MPT standard)Zero-knowledge privacy on multi-purpose tokens while maintaining auditability.Members can send/receive privately (huge for remittances, tax optimization, or sensitive business invoices).Add Privacy Mode in send/receive and POS tools — one-click confidential transaction builder using upcoming ZK primitives.Sponsored Fees & Reserves (XLS-68)In active development (high priority for 2026)Accounts can sponsor fees/reserves for others (the “God Mode” for onboarding).Dramatically better UX for new users — no need to hold XRP for fees when joining via your site.Integrate sponsored-fee flows in wallet-connect onboarding and merchant invoicing (you pay the fee for the member on first tx).
+Other XRPL notes: Hooks are still in development (great for custom logic on accounts), XChainBridge improvements for better cross-chain, and community governance via XAO DAO (more grants for tools like yours).
+Stellar (XLM) — 2026 Roadmap Highlights
+Stellar’s focus is enterprise scale + DeFi maturity via Soroban smart contracts. Less flashy new amendments, more “make what we have unstoppable and private.”
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Feature / UpgradeCurrent Status (Mar 26, 2026)What it actually doesWhy it’s a great add for cryptoownbank.com + membersSuggested site enhancementProtocol 25 — X-Ray (ZK primitives)Live on mainnet since Jan 22, 2026Native BN254 + Poseidon cryptography (foundation for zero-knowledge proofs and confidential transfers).First real privacy layer on Stellar — members can do private payments/remittances while staying compliant where needed.Add Confidential Payment option in your Stellar send/remittance tools and POS invoicing (leverage new ZK flows).Soroban Smart Contracts — Maturity & ScalingFully live + major 2025 upgrades (Whisk parallel execution, 2.5s blocks, 5k+ TPS target) carrying into 2026Full DeFi/RWA capabilities with lower costs, better oracles, token standards (OpenZeppelin), and developer tools (Lab 3.0/4.0, Contract Copilot).Exploding Soroban DeFi — more yield vaults, lending, RWAs, and dApps. Your members already love Stellar for speed/fees; now they get rich on-chain yield.Expand Yield Explorer and portfolio tracker with Soroban position decoding (use public RPC + new token events). Add “Soroban DeFi Hub” section with auto-discovered protocols.SDF 2026 StrategyActive (published early 2026)$1B+ asset value growth, 15 new enterprise partners, 5 live finance use cases, privacy infrastructure, high-throughput payments (card settlements, treasury).More real-world assets and institutional flows coming to Stellar — perfect for your cross-border and merchant tools.Add enterprise RWA yield tracking + new merchant onboarding flows that leverage institutional ramps/wallets.
+Stellar bonus: Freighter wallet updates (mobile + advanced auth with passkeys) and SDP payment enhancements make UX even smoother for your members.
+Bottom-Line Recommendations for cryptoownbank.com (Prioritized Quick Wins)
+
+Immediate (next 1–2 months):
+Add Soroban DeFi position tracking + X-Ray privacy toggle (Stellar side) — already live, huge member value.
+Monitor XLS-65/66 voting daily (use xrpl.org or your existing RPC setup) and prep the Native Lending dashboard card the day it activates.
+
+Medium-term (Q2–Q3 2026):
+Sponsored Fees integration (onboarding game-changer).
+Confidential transfers across both chains.
+Escrow + Permissioned Domain filters in yield/recommendations.
+
+Longer-term differentiator:
+Build a unified “On-Chain Yield + Privacy Command Center” that surfaces native XRPL lending + Soroban DeFi + ZK options in one place. This keeps you ahead of Zerion/DeBank-style aggregators while staying laser-focused on XRPL + Stellar (your moat).
+
+These upgrades are exactly what turns your site from “great tracker” into the definitive non-custodial borderless banking hub. No new gatekeepers — just more powerful on-chain primitives your members can use directly from their wallets.
