@@ -676,6 +676,10 @@ const faqGroups = [
         a: "Yes. Connect your wallet, set up trustlines for the currencies you want to accept (like RLUSD), and share your payment QR code with customers. Payments settle in 4 seconds for a fraction of a penny — no 2.9% processing fee, no chargebacks, no account freezes. We're the tooling layer (the workbench), not the payment processor. You and your customer transact directly on the XRPL. Consumers, freelancers, and small businesses can compete at scale without giving a cut to Stripe or PayPal.",
       },
       {
+        q: "What payment tools are available?",
+        a: "CryptoOwnBank has a full Payments Hub with six tools that cover every real-world payment scenario: (1) Send Money — instant wallet-to-wallet transfers on XRPL or Stellar. (2) Get Paid — generate QR codes and payment links anyone can scan. (3) Invoice a Client — create professional crypto invoices with shareable links and payment tracking. (4) Auto-Pay & Subscriptions — schedule recurring payments for rent, salaries, subscriptions, or family support. (5) Send Money Home — cross-border remittances at a fraction of what traditional services charge. (6) Pay Your Team — batch-send payroll to multiple recipients in one go. All non-custodial, all chain-agnostic — you pick the task, we route you to the right tool.",
+      },
+      {
         q: "What if I don't have a bank account or got debanked?",
         a: "CryptoOwnBank was built with you in mind. 1.4 billion people worldwide are unbanked — no access to traditional finance at all. Millions more have been debanked — accounts closed, funds frozen, services denied without explanation. The XRPL doesn't require a bank account, credit check, or government ID. You don't even need to 'buy' crypto through an exchange — you can earn it directly by selling goods and services. A farmer sells produce, a buyer scans a QR code, and RLUSD lands in the farmer's wallet in 4 seconds. Then save it in a yield vault earning 5-8%, spend it by paying others who accept it, and send it to family anywhere in the world. No bank touches the money at any point. See our step-by-step guide at /setup-guide.",
       },
@@ -1061,7 +1065,7 @@ const SPOTLIGHTS = [
     solution: "CryptoOwnBank gives you real banking tools on-chain that work globally: instant wallet-to-wallet payments settled in 4 seconds for near-zero fees, QR invoicing, merchant POS for RLUSD, cross-currency remittances via Stellar, and batch payroll. Send value from anywhere to anywhere — no bank, no borders, no middlemen. All non-custodial, all from one dashboard.",
     cta: "Start Sending & Receiving",
     ctaLink: "/login",
-    featureLink: "/ownbank/payments",
+    featureLink: "/payments",
     stats: [
       { label: "Settlement", value: "4 sec" },
       { label: "Fee per tx", value: "~$0.00" },
@@ -1286,6 +1290,14 @@ export default function Landing() {
           acceptedAnswer: {
             "@type": "Answer",
             text: "Yes. CryptoOwnBank provides wallet-to-wallet payments settled in 4 seconds for near-zero fees via XRPL and Stellar. QR invoicing, merchant POS, batch payroll, and cross-currency remittances — all non-custodial, working in 190+ countries.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What payment tools does CryptoOwnBank offer?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "CryptoOwnBank has a Payments Hub with six tools: Send Money (instant wallet-to-wallet), Get Paid (QR codes and payment links), Invoice a Client (professional crypto invoices), Auto-Pay (recurring payments for rent, salaries, subscriptions), Send Money Home (cross-border remittances), and Pay Your Team (batch payroll). All non-custodial, settled in 4 seconds on XRPL and Stellar.",
           },
         },
         {
