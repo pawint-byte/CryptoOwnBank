@@ -1209,9 +1209,20 @@ export default function Landing() {
       name: "CryptoOwnBank",
       url: "https://cryptoownbank.com",
       logo: "https://cryptoownbank.com/favicon.png",
-      description: "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR.",
+      description: "Non-custodial self-custody crypto platform. Automated crypto inheritance (Legacy Plan), RLUSD stablecoin yield vaults (5-8% APR), XRPL & Stellar DEX trading, global remittances, DCA orders, cold wallet portfolio tracking across 24 blockchains. Be your own bank.",
       sameAs: [
         "https://www.tiktok.com/@cryptoownbank",
+      ],
+      knowsAbout: [
+        "cryptocurrency inheritance",
+        "self-custody crypto",
+        "non-custodial yield",
+        "XRPL DeFi",
+        "Stellar payments",
+        "stablecoin remittances",
+        "crypto portfolio tracking",
+        "RLUSD yield vaults",
+        "crypto estate planning",
       ],
     },
     {
@@ -1219,6 +1230,8 @@ export default function Landing() {
       "@type": "WebSite",
       name: "CryptoOwnBank",
       url: "https://cryptoownbank.com",
+      description: "Self-custody crypto platform for inheritance, yield, trading, and global payments",
+      inLanguage: ["en", "es", "pt", "fr", "tr", "hi", "zh"],
       potentialAction: {
         "@type": "SearchAction",
         target: "https://cryptoownbank.com/?q={search_term_string}",
@@ -1231,11 +1244,52 @@ export default function Landing() {
       name: "CryptoOwnBank",
       operatingSystem: "Web",
       applicationCategory: "FinanceApplication",
-      description: "Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR. Connect your cold wallet, track your portfolio across 24 blockchains, and earn real yield.",
+      description: "Non-custodial crypto platform that solves inheritance, earns stablecoin yield, enables global payments, and replaces your bank. Connect your cold wallet, track across 24 blockchains, earn 5-8% APR on RLUSD, trade on XRPL & Stellar DEXs, send remittances globally, and protect your crypto for your family with the Legacy Plan.",
+      featureList: "Crypto Inheritance (Legacy Plan), RLUSD Yield Vaults (5-8% APR), XRPL DEX Trading, Stellar Payments & Remittances, Cold Wallet Portfolio Tracker, DCA Orders, EVM Swaps via 1inch, Cross-Chain Bridging, Whale Alerts, Technical Analysis, Tax Reports",
       offers: [
-        { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free tier" },
+        { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free tier — forever free" },
         { "@type": "Offer", price: "29", priceCurrency: "USD", description: "Premium Monthly" },
         { "@type": "Offer", price: "199", priceCurrency: "USD", description: "Premium Annual" },
+        { "@type": "Offer", price: "99", priceCurrency: "USD", description: "Pro Monthly" },
+        { "@type": "Offer", price: "799", priceCurrency: "USD", description: "Pro Annual" },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "What happens to my crypto when I die?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "CryptoOwnBank's Legacy Plan is an automated dead-man's switch. If you stop responding, your wallets automatically pass to your designated beneficiaries. 100% non-custodial — no lawyers, no probate, no third parties. Works in any country.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How do I earn yield on stablecoins without giving up my keys?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "CryptoOwnBank connects to Soil Protocol vaults on XRPL. You earn 5-8% fixed APR on RLUSD while keeping full custody. You sign every transaction with your own wallet (Xaman or Ledger). Your principal is protected until withdrawal.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I send money internationally without a bank?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. CryptoOwnBank provides wallet-to-wallet payments settled in 4 seconds for near-zero fees via XRPL and Stellar. QR invoicing, merchant POS, batch payroll, and cross-currency remittances — all non-custodial, working in 190+ countries.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is CryptoOwnBank custodial?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "No. CryptoOwnBank is 100% non-custodial. We never hold your keys, tokens, or funds. You connect your own wallet (Ledger, Xaman, MetaMask, etc.) and sign every transaction yourself. If you ever leave, your crypto stays in your wallet.",
+          },
+        },
       ],
     },
   ], []);
@@ -1243,8 +1297,10 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <SeoHead
-        title="CryptoOwnBank — Be Your Own Bank | Track Crypto & Earn Yield"
-        description="Non-custodial crypto portfolio tracker with RLUSD yield vaults earning 5-8% APR. Connect your cold wallet, track your portfolio, and earn real yield — principal always protected."
+        title="CryptoOwnBank — Self-Custody Crypto Platform | Inherit, Earn Yield, Send Globally"
+        description="Non-custodial crypto platform with automated inheritance (Legacy Plan), 5-8% RLUSD yield vaults, XRPL & Stellar DEX trading, global remittances, and cold wallet portfolio tracking. Your keys, your crypto — even after you're gone."
+        ogTitle="CryptoOwnBank — Be Your Own Bank"
+        ogDescription="The only self-custody crypto dashboard that solves inheritance, earns 5-8% stablecoin yield, and replaces your bank. Non-custodial. 190+ countries. Free to start."
         path="/"
         jsonLd={landingJsonLd}
       />

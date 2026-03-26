@@ -2,8 +2,8 @@ import { useEffect } from "react";
 
 const BASE_URL = "https://cryptoownbank.com";
 const SITE_NAME = "CryptoOwnBank";
-const DEFAULT_TITLE = "CryptoOwnBank — Be Your Own Bank | Multi-Chain Crypto Platform";
-const DEFAULT_DESCRIPTION = "Non-custodial multi-chain crypto platform. Portfolio tracker, RLUSD yield vaults (5-8% APR), XRPL & Stellar DEX trading, EVM swaps via 1inch, cross-chain bridging, DCA orders, Legacy Plan, whale alerts, and more. Your keys, your crypto.";
+const DEFAULT_TITLE = "CryptoOwnBank — Self-Custody Crypto Platform | Inheritance, Yield, Global Payments";
+const DEFAULT_DESCRIPTION = "Non-custodial crypto platform with automated inheritance (Legacy Plan), 5-8% RLUSD stablecoin yield vaults, XRPL & Stellar DEX trading, global remittances, cold wallet portfolio tracking, DCA orders, whale alerts, and more. Your keys, your crypto — even after you're gone.";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 interface SeoHeadProps {
