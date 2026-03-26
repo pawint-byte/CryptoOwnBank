@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import heroVideoUrl from "@assets/CryptoOwnBank__1-Min_Pitch_(Security_&_Control)_1080p_caption_1774019224403.mp4";
+import legacyVideoEn from "@assets/CryptoOwnBank__Secure_Your_Legacy_1080p_captionEnglish_1774530497459.mp4";
+import legacyVideoEs from "@assets/Legacy_Plan_-_CryptoOwnBank.com_1080p_caption_Spanish_1774530497458.mp4";
+import legacyVideoPt from "@assets/CryptoOwnBank__Legacy_Plan_1080p_caption_Portuguese_1774530497457.mp4";
+import legacyVideoHi from "@assets/CryptoOwnBank_Legacy_Plan_-_Hindi_1080p_caption_1774530497457.mp4";
+import legacyVideoZh from "@assets/CryptoOwnBank_Legacy_Plan_介绍_1080p_caption_Mandarin_1774530497455.mp4";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SeoHead } from "@/components/seo-head";
@@ -1093,8 +1098,17 @@ const SPOTLIGHTS = [
   },
 ];
 
+const LEGACY_VIDEOS: Record<string, string> = {
+  en: legacyVideoEn,
+  es: legacyVideoEs,
+  pt: legacyVideoPt,
+  hi: legacyVideoHi,
+  zh: legacyVideoZh,
+};
+
 function SpotlightSection() {
   const t = useTranslations();
+  const { lang } = useLangStore();
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const autoIndex = Math.floor(dayOfYear / 2) % SPOTLIGHTS.length;
   const [activeIndex, setActiveIndex] = useState(autoIndex);
@@ -1169,6 +1183,21 @@ function SpotlightSection() {
             </Button>
           </a>
         </div>
+
+        {spot.id === "legacy" && (
+          <div className="mt-10" data-testid="video-legacy-plan">
+            <video
+              key={lang}
+              className="w-full max-w-3xl mx-auto rounded-xl shadow-lg border border-border/50"
+              controls
+              preload="metadata"
+              playsInline
+              poster=""
+            >
+              <source src={LEGACY_VIDEOS[lang] || legacyVideoEn} type="video/mp4" />
+            </video>
+          </div>
+        )}
 
         <div className="mt-8 flex items-center justify-center gap-3" data-testid="spotlight-nav">
           {SPOTLIGHTS.map((s, i) => {
