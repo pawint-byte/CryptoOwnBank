@@ -15,8 +15,8 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [ ] **Portfolio** — Confirm pie chart, allocations, and total value look accurate
 - [ ] **Transactions** — Check transaction history is populated and accurate
 - [ ] **Reconciliation** — Run a reconciliation to make sure balances match
-- [ ] **Import Data (CSV)** — Import a real exchange export (Coinbase, Kraken, etc.)
-- [ ] **Statement Insights** — Upload a real bank statement and check the comparison output
+- [x] **Import Data (CSV)** — DONE (pre-2026-03-26)
+- [x] **Statement Insights** — DONE (pre-2026-03-26)
 
 ### XRPL Features
 - [ ] **Soil RLUSD Vaults** — Verify active positions, earnings tracker, deposit/withdraw flow
@@ -46,15 +46,15 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [ ] **Payment Queue** — Check if any queued payments show correctly
 
 ### Yield & Market Data
-- [ ] **Recommendations Hub** — Verify suggestions match your actual holdings, check all tabs
-- [ ] **Earn & Yield (RWA)** — Browse yields, confirm APYs are current from DeFiLlama
-- [ ] **Native Staking** — Verify staked positions show correctly (ATOM, ADA, SOL, etc.)
-- [ ] **Flare FTSO** — If you have FLR, verify delegation and rewards tracking
-- [ ] **Stablecoin Dashboard** — Verify data is current and accurate
-- [ ] **Yield Calculator** — Run projections on your actual holdings
+- [x] **Recommendations Hub** — DONE (pre-2026-03-26)
+- [x] **Earn & Yield (RWA)** — DONE (pre-2026-03-26)
+- [x] **Native Staking** — DONE (pre-2026-03-26) — HBAR, ADA verified
+- [x] **Flare FTSO** — DONE (pre-2026-03-26) — staking and tracking verified
+- [x] **Stablecoin Dashboard** — DONE (pre-2026-03-26)
+- [x] **Yield Calculator** — DONE (pre-2026-03-26)
 
 ### Market Intelligence
-- [ ] **Crypto News** — Check daily, verify articles match your portfolio assets
+- [x] **Crypto News** — DONE (pre-2026-03-26)
 - [ ] **Price Alerts** — Set a real alert, wait for it to trigger, verify email notification
 - [ ] **Whale Alerts** — Verify recent whale transactions are showing
 - [ ] **Technical Analysis** — Run analysis on XRP, check patterns make sense
