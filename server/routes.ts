@@ -4589,6 +4589,72 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  function sortObjectKeys(obj: any): any {
+    if (typeof obj !== "object" || obj === null) return obj;
+    if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+    return Object.keys(obj).sort().reduce((sorted: any, key) => {
+      sorted[key] = sortObjectKeys(obj[key]);
+      return sorted;
+    }, {});
+  }
+
+  app.post("/api/nowpayments/ipn", async (req, res) => {
+    try {
+      const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET;
+      if (!ipnSecret) {
+        console.error("[NOWPayments IPN] IPN secret not configured");
+        return res.status(500).json({ message: "IPN not configured" });
+      }
+
+      const signature = req.headers["x-nowpayments-sig"] as string;
+      if (!signature) {
+        console.warn("[NOWPayments IPN] Missing signature header");
+        return res.status(400).json({ message: "Missing signature" });
+      }
+
+      const sortedBody = JSON.stringify(sortObjectKeys(req.body));
+      const hmac = crypto.createHmac("sha512", ipnSecret).update(sortedBody).digest("hex");
+
+      if (hmac !== signature) {
+        console.warn("[NOWPayments IPN] Invalid signature");
+        return res.status(401).json({ message: "Invalid signature" });
+      }
+
+      const { payment_status, order_id, pay_amount, pay_currency, actually_paid, payment_id, order_description } = req.body;
+      console.log(`[NOWPayments IPN] Received: status=${payment_status}, order=${order_id}, paid=${actually_paid} ${pay_currency}, payment_id=${payment_id}`);
+
+      if (payment_status === "finished" || payment_status === "confirmed") {
+        if (order_id) {
+          const payment = await storage.getCryptoPayment(order_id);
+          if (payment && payment.status === "pending") {
+            const txRef = `nowpayments:${payment_id}`;
+            await storage.updateCryptoPaymentStatus(payment.id, "confirmed", txRef);
+            const { activateSubscription } = await import("./services/crypto-payment-verifier");
+            await activateSubscription(payment);
+            console.log(`[NOWPayments IPN] Payment ${order_id} confirmed and subscription activated`);
+          } else if (payment && payment.status === "confirmed") {
+            console.log(`[NOWPayments IPN] Payment ${order_id} already confirmed, skipping`);
+          } else if (!payment) {
+            console.warn(`[NOWPayments IPN] No matching payment record for order_id=${order_id}`);
+          }
+        }
+      } else if (payment_status === "expired" || payment_status === "failed") {
+        if (order_id) {
+          const payment = await storage.getCryptoPayment(order_id);
+          if (payment && payment.status === "pending") {
+            await storage.updateCryptoPaymentStatus(payment.id, "expired");
+            console.log(`[NOWPayments IPN] Payment ${order_id} marked as ${payment_status}`);
+          }
+        }
+      }
+
+      res.status(200).json({ ok: true });
+    } catch (error) {
+      console.error("[NOWPayments IPN] Error:", error);
+      res.status(500).json({ message: "IPN processing error" });
+    }
+  });
+
   app.get("/api/crypto-payment/history", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

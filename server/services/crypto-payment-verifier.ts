@@ -763,7 +763,7 @@ const CHAIN_CHECKERS: Record<string, (p: CryptoPayment) => Promise<CheckResult>>
   nervos: checkNervosPayment,
 };
 
-async function activateSubscription(payment: CryptoPayment) {
+export async function activateSubscription(payment: CryptoPayment) {
   if (payment.plan.startsWith("addon:")) {
     const addonKey = payment.plan.replace("addon:", "");
     const { ADDONS } = await import("../stripe");
