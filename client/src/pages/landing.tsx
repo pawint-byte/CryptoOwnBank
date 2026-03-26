@@ -1192,10 +1192,14 @@ function SpotlightSection() {
               controls
               preload="metadata"
               playsInline
-              poster=""
+              title="CryptoOwnBank Legacy Plan — What Happens to Your Crypto When You Die?"
+              aria-label="Legacy Plan explainer video — available in English, Spanish, Portuguese, Hindi, and Mandarin"
             >
               <source src={LEGACY_VIDEOS[lang] || legacyVideoEn} type="video/mp4" />
             </video>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              {lang !== "en" && LEGACY_VIDEOS[lang] ? "Video in your selected language" : "Watch: How the Legacy Plan protects your family"}
+            </p>
           </div>
         )}
 
@@ -1292,6 +1296,26 @@ export default function Landing() {
         { "@type": "Offer", price: "99", priceCurrency: "USD", description: "Pro Monthly" },
         { "@type": "Offer", price: "799", priceCurrency: "USD", description: "Pro Annual" },
       ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: "CryptoOwnBank Legacy Plan — What Happens to Your Crypto When You Die?",
+      description: "Your crypto shouldn't disappear if something happens to you. CryptoOwnBank's Legacy Plan is an automated dead-man's switch that passes your wallets to your family — non-custodial, no lawyers, no probate, works in any country. Available in English, Spanish, Portuguese, Hindi, and Mandarin.",
+      thumbnailUrl: "https://cryptoownbank.com/og-image.png",
+      uploadDate: "2026-03-26",
+      contentUrl: "https://cryptoownbank.com/assets/legacy-plan-video-en.mp4",
+      embedUrl: "https://cryptoownbank.com/",
+      duration: "PT1M",
+      inLanguage: ["en", "es", "pt", "hi", "zh"],
+      publisher: {
+        "@type": "Organization",
+        name: "CryptoOwnBank",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://cryptoownbank.com/favicon.png",
+        },
+      },
     },
     {
       "@context": "https://schema.org",
