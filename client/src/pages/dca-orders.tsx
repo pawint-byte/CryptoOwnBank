@@ -400,18 +400,11 @@ export default function DcaOrders() {
     try {
       const spendAmount = parseFloat(order.spendAmount);
 
-      const toHexCurrency = (c: string): string => {
-        if (c.length <= 3) return c;
-        if (c.length === 40 && /^[0-9A-Fa-f]+$/.test(c)) return c;
-        const buf = Buffer.from(c.padEnd(20, "\0"));
-        return buf.toString("hex").toUpperCase().slice(0, 40);
-      };
-
-      const buildAmount = (currency: string, issuer: string | null, value: string) => {
+      const buildAmountField = (currency: string, issuer: string | null, value: string) => {
         if (currency === "XRP") {
           return (parseFloat(value) * 1_000_000).toFixed(0);
         }
-        return { currency: toHexCurrency(currency), issuer: issuer!, value };
+        return { currency, issuer: issuer!, value };
       };
 
       const spendCur = { currency: order.spendCurrency, issuer: order.spendIssuer || undefined };
@@ -425,60 +418,52 @@ export default function DcaOrders() {
           new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
         ]);
 
-      let pricePerBuy = 0;
+      let bestPrice = 0;
       try {
-        const book = await withTimeout(getOrderBook(buyCur, spendCur, 5), 15000);
+        const book = await withTimeout(getOrderBook(buyCur, spendCur, 10), 15000);
         if (book.asks && book.asks.length > 0) {
-          pricePerBuy = parseFloat(book.asks[0].price);
+          bestPrice = parseFloat(book.asks[0].price);
         }
       } catch (bookErr) {
         console.error("[DCA] Order book fetch failed:", bookErr);
       }
 
-      if (pricePerBuy <= 0) {
+      if (bestPrice <= 0) {
         try {
-          const book = await withTimeout(getOrderBook(spendCur, buyCur, 5), 10000);
+          const book = await withTimeout(getOrderBook(spendCur, buyCur, 10), 10000);
           if (book.bids && book.bids.length > 0) {
             const bidPrice = parseFloat(book.bids[0].price);
-            if (bidPrice > 0) pricePerBuy = 1 / bidPrice;
+            if (bidPrice > 0) bestPrice = 1 / bidPrice;
           }
-        } catch {
-          // ignore reverse lookup failure
-        }
+        } catch {}
       }
 
-      if (pricePerBuy <= 0) {
+      if (bestPrice <= 0) {
         toast({ title: "No market price available", description: "Could not fetch current price from the XRPL order book. Try the DEX page instead.", variant: "destructive" });
         setExecutingOrderId(null);
         return;
       }
 
-      const slippageFactor = 0.97;
-      let buyAmount = ((spendAmount / pricePerBuy) * slippageFactor).toFixed(6);
+      const buyAmount = (spendAmount / bestPrice).toFixed(6);
 
-      const sanityMax = spendAmount * 10;
-      if (parseFloat(buyAmount) > sanityMax) {
-        console.warn(`[DCA] Buy amount ${buyAmount} exceeds sanity limit (${sanityMax}), price may be inverted. Using inverse.`);
-        buyAmount = ((spendAmount * pricePerBuy) * slippageFactor).toFixed(6);
-      }
-
-      if (parseFloat(buyAmount) <= 0 || parseFloat(buyAmount) > spendAmount * 100) {
+      if (parseFloat(buyAmount) <= 0) {
         toast({ title: "Price error", description: "Market price seems unreliable. Try again or use the DEX page.", variant: "destructive" });
         setExecutingOrderId(null);
         return;
       }
 
-      const takerGets = buildAmount(order.spendCurrency, order.spendIssuer, spendAmount.toString());
-      const takerPays = buildAmount(order.buyCurrency, order.buyIssuer, buyAmount);
+      const takerGets = buildAmountField(order.spendCurrency, order.spendIssuer, spendAmount.toFixed(6));
+      const takerPays = buildAmountField(order.buyCurrency, order.buyIssuer, buyAmount);
 
-      console.log(`[DCA] Price: ${pricePerBuy} ${getTokenDisplay(order.spendCurrency)}/${getTokenDisplay(order.buyCurrency)}, Buy: ${buyAmount} (with 3% slippage), Spend: ${spendAmount}`);
-      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} → ~${buyAmount} ${getTokenDisplay(order.buyCurrency)} (3% slippage)` });
+      console.log(`[DCA] bestPrice=${bestPrice}, TakerGets=`, JSON.stringify(takerGets), `TakerPays=`, JSON.stringify(takerPays));
+      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} for ~${parseFloat(buyAmount).toFixed(2)} ${getTokenDisplay(order.buyCurrency)}` });
 
       const txJson: Record<string, unknown> = {
         TransactionType: "OfferCreate",
         Account: walletAddress,
         TakerGets: takerGets,
         TakerPays: takerPays,
+        Flags: 0x00040000,
       };
 
       sessionStorage.setItem("dca_execute_order_id", order.id);
