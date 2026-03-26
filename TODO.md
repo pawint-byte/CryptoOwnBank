@@ -6,6 +6,75 @@
 
 ---
 
+## DOG FOOD CHECKLIST — Test Every Section With Real Data (Added 2026-03-26)
+
+Use your real account (pawint@me.com) to go through every feature. Goal: have real data in every section so you can demo confidently and catch bugs before members do. Check off as you complete each one.
+
+### Portfolio & Tracking
+- [ ] **Wallets & Addresses** — Verify all your chain addresses are added and balances show correctly
+- [ ] **Portfolio** — Confirm pie chart, allocations, and total value look accurate
+- [ ] **Transactions** — Check transaction history is populated and accurate
+- [ ] **Reconciliation** — Run a reconciliation to make sure balances match
+- [ ] **Import Data (CSV)** — Import a real exchange export (Coinbase, Kraken, etc.)
+- [ ] **Statement Insights** — Upload a real bank statement and check the comparison output
+
+### XRPL Features
+- [ ] **Soil RLUSD Vaults** — Verify active positions, earnings tracker, deposit/withdraw flow
+- [ ] **XRPL DEX** — Place a real small trade, confirm order book and history
+- [ ] **DCA Orders** — Verify active orders are running correctly, check run history
+- [ ] **Trustline Management** — Add/remove a trustline, verify it works
+- [ ] **AMM Pools** — If you have LP positions, verify they show correctly
+- [ ] **XRPL Bridge** — Do a small real bridge transaction (EVM to XRPL or XRPL to EVM)
+
+### Stellar Features
+- [ ] **Stellar Wallet** — Connect your Stellar address, verify balances
+- [ ] **Stellar DEX** — Place a real small trade
+- [ ] **Stellar Send/Receive** — Send a real payment to someone (even yourself on another address)
+- [ ] **Stellar Invoicing** — Create and send a real invoice
+- [ ] **Stellar Recurring Payments** — Set up a small recurring payment
+- [ ] **Stellar Remittances** — Test the remittance flow
+
+### EVM / Cross-Chain
+- [ ] **EVM Swap** — Do a real small swap on Ethereum, Polygon, or Arbitrum
+- [ ] **Cross-Chain Swap** — Do a real small cross-chain transfer via LI.FI
+
+### Payments & Commerce
+- [ ] **Payments Hub** — Review all six tools, make sure links/flows work
+- [ ] **XRPL Invoicing** — Create and send a real XRPL invoice
+- [ ] **XRPL Recurring Payments** — Set up a small recurring XRPL payment
+- [ ] **POS / OwnCoin** — Generate a QR code, scan it, complete a payment
+- [ ] **Payment Queue** — Check if any queued payments show correctly
+
+### Yield & Market Data
+- [ ] **Recommendations Hub** — Verify suggestions match your actual holdings, check all tabs
+- [ ] **Earn & Yield (RWA)** — Browse yields, confirm APYs are current from DeFiLlama
+- [ ] **Native Staking** — Verify staked positions show correctly (ATOM, ADA, SOL, etc.)
+- [ ] **Flare FTSO** — If you have FLR, verify delegation and rewards tracking
+- [ ] **Stablecoin Dashboard** — Verify data is current and accurate
+- [ ] **Yield Calculator** — Run projections on your actual holdings
+
+### Market Intelligence
+- [ ] **Crypto News** — Check daily, verify articles match your portfolio assets
+- [ ] **Price Alerts** — Set a real alert, wait for it to trigger, verify email notification
+- [ ] **Whale Alerts** — Verify recent whale transactions are showing
+- [ ] **Technical Analysis** — Run analysis on XRP, check patterns make sense
+
+### Planning & Protection
+- [ ] **Legacy Plan** — Verify your plan is configured and check-in flow works
+- [ ] **Tax Reports** — Generate a real report for your transactions, check accuracy
+- [ ] **Insurance** — Review the page, confirm info is current
+- [ ] **DeFi Borrowing Hub** — Browse, confirm data is current
+- [ ] **Chain Guide** — Read through, verify accuracy
+
+### Account & Misc
+- [ ] **Quick Start** — Walk through as if you're a new member
+- [ ] **Buy Crypto** — Check on-ramp links work
+- [ ] **Spend Crypto** — Check debit card info is current
+- [ ] **Roadmap** — Verify it reflects current status
+- [ ] **Contact & Feedback** — Submit a test feedback item
+
+---
+
 ## ACTION REQUIRED — Complete From Phone
 
 - [x] **NOWPayments IPN callback URL** — DONE (2026-03-26). Webhook URL set to `https://cryptoownbank.com/api/nowpayments/ipn` in NOWPayments dashboard. IPN secret configured. Backend endpoint live.
