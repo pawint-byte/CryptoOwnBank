@@ -1,0 +1,71 @@
+Quick confirmation on funding ask
+$100,000 is still the ideal target.
+
+You’ve already built ~80% of the platform → reviewers love de-risked projects.
+The remaining work (XLS-65/66 lending dashboard + TokenEscrow/Permissioned Domain enhancements + POS v2 + impact reporting) is scoped and realistic.
+$100k is the sweet spot past winners in the DeFi/dashboard/payments category actually received.
+
+I’ve now fully updated the draft using your exact feature list (completed + roadmap).
+I also adjusted Milestone 2 because TokenEscrow (XLS-85) is now live (activated Feb 12, 2026) — so we’re pitching “advanced integration and new features” instead of basic rollout. XLS-65/66 remain upcoming, which is fine.
+
+XRPL Grants & Accelerator Unified Application – Spring 2026 (Final Polished Version)
+1. Project Title
+CryptoOwnBank: The Non-Custodial Multi-Chain “Be Your Own Bank” Dashboard Powered by XRPL
+2. Project Website
+https://cryptoownbank.com
+3. Applicant / Team Information
+
+Lead Applicant: [YOUR FULL NAME]
+Role: Founder / Lead Developer
+Email: [YOUR EMAIL]
+Location: Reston, Virginia, USA
+Team Size: [e.g. solo founder + occasional contractors]
+Relevant Experience: [Your 1–2 sentence bio]
+
+4. Project Overview
+CryptoOwnBank is a 100% non-custodial, wallet-connected dashboard that lets everyday users and small businesses truly “be their own bank.” Users connect cold/hot wallets (Xaman, Ledger, MetaMask, WalletConnect) with zero KYC and instantly access:
+
+Real-time portfolio tracking with XRPL balance detection
+Soil Protocol RLUSD yield vaults (deposit, withdraw, real-time tracking)
+Native XRPL DEX trading with full order book and AMM LP position tracking
+DCA orders, trustline management, whale alerts (real-time WebSocket), and technical analysis on XRP
+Payment tools (invoicing, POS, send/receive)
+Tax lot tracking for XRPL transactions
+Legacy Plan using XRPL escrow concepts
+XRPL Bridge (bidirectional via Axelar/Squid)
+
+The platform is already live and driving real XRPL adoption through Soil vaults, RLUSD yield, native DEX liquidity, and payments — all while keeping users fully self-sovereign.
+5. How the Project Leverages the XRP Ledger (XRPL Impact)
+XRPL powers the core of CryptoOwnBank: native DEX/AMM, RLUSD + Soil fixed-yield vaults, low-cost 4-second settlements for payments/invoicing/remittances, and escrow-based tools. The grant will accelerate the remaining XRPL-native roadmap (detailed below) to further increase on-ledger activity and RLUSD/XRP utility.
+6. Technical Approach
+
+100% read-only on-chain data via public XRPL RPCs + direct Soil Protocol integration
+WalletConnect + Xaman for all user actions (no custody ever)
+React frontend (Vite) with lightweight Express backend — critical logic stays on-ledger
+Already decoding XRPL AMM positions, escrow, trustlines, and WebSocket events
+
+7. Milestones & Deliverables (12-month timeline – requested funding: $100,000)
+Milestone 1 (Months 1–3) – $30,000
+Native XLS-65/66 Lending Vault dashboard + enhanced Yield Explorer with real-time native lending APYs (live the day amendments activate).
+Milestone 2 (Months 4–6) – $30,000
+Advanced integration and new features using the now-live TokenEscrow (XLS-85) + Permissioned Domain filters in yield & payments tools + Legacy Plan enhancements using XRPL escrow.
+Milestone 3 (Months 7–9) – $25,000
+Merchant POS v2 with on-ledger escrow, auto-invoicing, and multi-currency XRPL payment acceptance.
+Milestone 4 (Months 10–12) – $15,000
+Public XRPL impact dashboard showing transaction volume driven by the platform + full feature documentation + community governance features for user-voted roadmap input.
+8. Budget Breakdown (Total: $100,000)
+
+Development & Engineering: $50,000 (core XRPL feature builds)
+Design / UX / Testing: $10,000 (new UI/UX for lending, POS v2, impact dashboard)
+Marketing & User Acquisition: $25,000 (XRPL community campaigns, content series, video tutorials, events, multilingual outreach)
+Infrastructure & Operations: $10,000 (RPC nodes, hosting, analytics, ongoing maintenance)
+Legal / Compliance / Reporting: $5,000 (grant reporting, compliance)
+
+9. Additional Information
+
+Platform is already live and generating real XRPL activity (no “idea stage” risk).
+All user funds remain in their own wallets — maximum alignment with XRPL’s decentralized ethos.
+Happy to provide live demo, current on-chain metrics, or short video walkthrough.
+
+10. Why CryptoOwnBank is a perfect XRPL Grants fit
+We have already delivered a production-grade non-custodial banking layer on XRPL. This grant funds the final high-impact enhancements that will drive measurable on-chain growth in exactly the areas XRPL is prioritizing in 2026: DeFi yield/lending, payments, and RWA utility.
