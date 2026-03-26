@@ -1026,6 +1026,158 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+const SPOTLIGHTS = [
+  {
+    id: "legacy",
+    badge: "In the Spotlight",
+    badgeColor: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+    icon: Users,
+    accentColor: "#8B5CF6",
+    title: "What Happens to Your Crypto When You're Gone?",
+    subtitle: "The #1 reason people hesitate on self-custody — finally solved.",
+    problem: "Self-custody is powerful until the unexpected happens. Keys are lost, heirs have zero access, and assets vanish forever. Multisig workarounds are complex. Written seed phrases are risky. There's no simple, trustless solution — until now.",
+    solution: "CryptoOwnBank's Legacy Plan is a built-in dead man's switch. If you stop responding, your wallets automatically pass to your designated beneficiaries. Non-custodial. No third parties. No lawyers. Just peace of mind that your crypto survives you.",
+    cta: "Set Up Your Legacy Plan",
+    ctaLink: "/login",
+    featureLink: "/ownbank/legacy",
+    stats: [
+      { label: "Non-custodial", value: "100%" },
+      { label: "Setup time", value: "< 5 min" },
+      { label: "Cost", value: "Free" },
+    ],
+  },
+  {
+    id: "banking",
+    badge: "In the Spotlight",
+    badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    icon: Landmark,
+    accentColor: "#10B981",
+    title: "Can Crypto Actually Replace Your Bank?",
+    subtitle: "People are tired of hearing 'be your own bank' with no real tools to do it.",
+    problem: "Crypto neobanks are just stablecoin wallets with cards. They can't pay rent, handle bills, or provide proof of funds. You're forced to keep a traditional bank account. The promise of financial sovereignty feels incomplete.",
+    solution: "CryptoOwnBank gives you real banking tools on-chain: instant wallet-to-wallet payments settled in 4 seconds, QR invoicing, merchant POS for RLUSD, cross-currency remittances via Stellar, and batch payroll. All non-custodial, all from one dashboard. This is what 'be your own bank' actually looks like.",
+    cta: "Start Using Payment Tools",
+    ctaLink: "/login",
+    featureLink: "/ownbank/payments",
+    stats: [
+      { label: "Settlement", value: "4 sec" },
+      { label: "Fee per tx", value: "~$0.00" },
+      { label: "Currencies", value: "Multi" },
+    ],
+  },
+  {
+    id: "yield",
+    badge: "In the Spotlight",
+    badgeColor: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    icon: TrendingUp,
+    accentColor: "#F59E0B",
+    title: "Earn Real Yield Without Giving Up Your Keys",
+    subtitle: "After Celsius and FTX, people want passive income without the platform risk.",
+    problem: "Bank savings pay next to nothing. DeFi yield farming is stressful — liquidation thresholds, confusing dashboards, smart contract hacks. People want simple, safe yield on stable assets but hate giving up custody. Current tools make earning too hard.",
+    solution: "CryptoOwnBank offers 5-8% fixed APR on RLUSD through Soil Protocol vaults — Treasury-backed, institutional borrowers, fully non-custodial. You sign every transaction with your own wallet. Principal protected until withdrawal. One dashboard tracks everything. No jumping between apps. No custody risk.",
+    cta: "Start Earning 5-8% APR",
+    ctaLink: "/login",
+    featureLink: "/ownbank/earn",
+    stats: [
+      { label: "APR", value: "5-8%" },
+      { label: "Backed by", value: "T-Bills" },
+      { label: "Custody", value: "Yours" },
+    ],
+  },
+];
+
+function SpotlightSection() {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const autoIndex = Math.floor(dayOfYear / 2) % SPOTLIGHTS.length;
+  const [activeIndex, setActiveIndex] = useState(autoIndex);
+  const spot = SPOTLIGHTS[activeIndex];
+  const Icon = spot.icon;
+
+  return (
+    <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b bg-muted/30" data-testid="section-spotlight">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-10 space-y-2">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${spot.badgeColor}`} data-testid="badge-spotlight">
+            <Eye className="h-3.5 w-3.5" />
+            {spot.badge}
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight" data-testid="heading-spotlight">
+            {spot.title}
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            {spot.subtitle}
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 items-start">
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center gap-2 text-destructive font-semibold text-sm uppercase tracking-wider">
+                <Ban className="h-4 w-4" />
+                The Problem
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                {spot.problem}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-emerald-500/30 bg-emerald-500/5">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm uppercase tracking-wider">
+                <CheckCircle2 className="h-4 w-4" />
+                How CryptoOwnBank Solves It
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                {spot.solution}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex gap-6">
+            {spot.stats.map((stat) => (
+              <div key={stat.label} className="text-center" data-testid={`stat-spotlight-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
+                <div className="text-2xl font-bold" style={{ color: spot.accentColor }}>{stat.value}</div>
+                <div className="text-xs text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <a href={spot.ctaLink}>
+            <Button size="lg" style={{ backgroundColor: spot.accentColor }} className="text-white hover:opacity-90" data-testid="button-spotlight-cta">
+              {spot.cta}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </a>
+        </div>
+
+        <div className="mt-8 flex items-center justify-center gap-3" data-testid="spotlight-nav">
+          {SPOTLIGHTS.map((s, i) => {
+            const NavIcon = s.icon;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setActiveIndex(i)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  i === activeIndex
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+                data-testid={`button-spotlight-${s.id}`}
+              >
+                <NavIcon className="h-3 w-3" />
+                {s.id === "legacy" ? "Legacy Plan" : s.id === "banking" ? "Banking Tools" : "Earn Yield"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Landing() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1205,6 +1357,8 @@ export default function Landing() {
             </div>
           </div>
         </section>
+
+        <SpotlightSection />
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-b">
           <div className="max-w-3xl mx-auto text-center space-y-8">
