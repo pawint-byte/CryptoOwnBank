@@ -23,7 +23,11 @@ const faqGroups = [
       },
       {
         q: "What blockchains does CryptoOwnBank support for portfolio tracking?",
-        a: "We support 24 blockchains for portfolio tracking: XRP Ledger, Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, Polygon, Tron, Algorand, Hedera (HBAR), VeChain, Stellar, Sui, Aptos, Near, Fantom, Cronos, Arbitrum, Optimism, Base, Tezos, and Litecoin. Add your public wallet address for any of these chains and we automatically pull your balances. Your private keys are never shared — we only read public on-chain data.",
+        a: "We support 24 blockchains for portfolio tracking: XRP Ledger, Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, Polygon, Tron, Algorand, Hedera (HBAR), VeChain, Stellar, Sui, Aptos, Near, Fantom, Cronos, Arbitrum, Optimism, Base, Tezos, and Litecoin. Add your public wallet address for any of these chains and we automatically pull your balances — including staked positions and pending rewards. Your private keys are never shared — we only read public on-chain data.",
+      },
+      {
+        q: "What does 'Bring Your Own Wallet' mean?",
+        a: "It means you keep using whatever wallets you already have — Phantom for Solana, Keplr for Cosmos, Yoroi for Cardano, MetaMask for Ethereum, Xaman for XRP, or any other wallet on any chain. We don't replace those wallets. You just add your public wallet addresses to CryptoOwnBank, and we automatically detect your balances, staked positions, pending rewards, and idle assets across all of them. Already staking ATOM in Keplr? We see it. Already delegated ADA in Yoroi? We track those rewards. SOL staked in Phantom? It shows up automatically. Instead of opening five different apps to check what you own and what you're earning, you see everything in one dashboard — with the Legacy Plan covering all of it, the Recommendations Hub surfacing opportunities you might be missing, and Tax Reports handling the gains. Your wallets do the work on each blockchain. We bring it all together.",
       },
       {
         q: "How does CryptoOwnBank compare to traditional banks and crypto exchanges?",

@@ -162,7 +162,7 @@ const whyPoints = [
   },
   {
     icon: PieChart,
-    text: "One interface for everything — cold wallets, hot wallets, yield vaults, DEX trading, 24 blockchains, all in one dashboard",
+    text: "Bring Your Own Wallet — already staking in Phantom, Keplr, or Yoroi? Add your address and we track it all. One dashboard for every wallet, every chain, every earning",
   },
   {
     icon: Lock,
@@ -215,9 +215,9 @@ const howItWorks = [
 const features = [
   {
     icon: PieChart,
-    title: "One Cockpit for Everything",
+    title: "Bring Your Own Wallet",
     description:
-      "Import exchange data, connect cold wallets, and track yield vaults across 24 blockchains — Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, DigiByte, Casper, Cronos, and more. See your entire crypto footprint in one real-time dashboard instead of logging into five different apps.",
+      "Already staking SOL in Phantom? ADA in Yoroi? ATOM in Keplr? Just add your wallet address — we detect your staked positions, pending rewards, and idle balances automatically. Track everything across 24 blockchains in one real-time dashboard: Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, DigiByte, Casper, Cronos, and more. Stop logging into five different apps — see every wallet, every chain, every earning in one place.",
     link: "/portfolio",
     linkLabel: "Open Portfolio",
   },
@@ -317,7 +317,7 @@ const features = [
     icon: Pickaxe,
     title: "Native Staking Guide",
     description:
-      "Earn yield directly from the blockchain — no intermediaries, no smart contract risk. Track your staked vs unstaked positions across Cardano (3-4% APR), Cosmos (15-20%), Polkadot (12-15%), and Solana (6-8%). See exactly what's earning and what's sitting idle, with step-by-step staking guides using AdaLite, Keplr, Nova Wallet, and Phantom.",
+      "Already staking on-chain? We detect it automatically. Not staking yet? We show you exactly how. Track your staked vs unstaked positions across Cardano (3-4% APR), Cosmos (15-20%), Polkadot (12-15%), Solana (6-8%), Tron, Hedera, Cronos, Zilliqa, and more. Step-by-step hardware wallet guides for AdaLite, Keplr, Nova Wallet, and Phantom — keep your keys, earn yield directly from the blockchain with no intermediaries and no smart contract risk.",
     link: "/native-staking",
     linkLabel: "Native Staking",
   },
@@ -402,7 +402,7 @@ const memberStories = [
     accent: "from-amber-500/10 to-orange-500/10",
     story:
       "Most people leave money on the table because they don't know what's available. CryptoOwnBank does the work for you: the Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities. Statement Insights compares your bank rates against what you could earn on-chain. Whale Alerts show you large XRP and RLUSD movements in real time. Technical Analysis identifies chart patterns and explains them in plain English. You don't go looking for information — the information comes to you. This is where everything starts: one interface, all your crypto, all your opportunities, all your tools.",
-    benefit: "One dashboard, 24 blockchains, all the research done for you — the information finds you.",
+    benefit: "Bring your own wallet. One dashboard, 24 blockchains, staked balances detected automatically — the information finds you.",
   },
   {
     title: "Think in Value, Not USD Price",
@@ -443,10 +443,10 @@ const whyNow = [
 
 const testimonials = [
   {
-    quote: "I had crypto on Coinbase, Kraken, a Ledger, and two blockchain wallets. After FTX, I moved everything to self-custody. CryptoOwnBank lets me see all of it in one place — and if I ever leave, my crypto is still in my own wallets. I'm not locked into anything.",
+    quote: "I had crypto on Coinbase, Kraken, a Ledger, and two blockchain wallets. After FTX, I moved everything to self-custody. I stake ATOM in Keplr, ADA in Yoroi, and SOL in Phantom — CryptoOwnBank detects all of it from the wallet addresses alone. One dashboard shows me everything I own and everything I'm earning. If I ever leave, my crypto and my staking positions are still there. I'm not locked into anything.",
     author: "Marcus T.",
     role: "Long-term HODLer",
-    persona: "Multi-Exchange Investor",
+    persona: "Multi-Chain Staker",
   },
   {
     quote: "Tax season used to be a nightmare. I'd spend days pulling CSVs from five different exchanges. Now I just click export and hand it to my accountant. The annual plan paid for itself in one filing.",
@@ -658,7 +658,7 @@ const faqGroups = [
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a non-custodial crypto platform: own your crypto, manage it from one interface, keep all your earnings. Track your portfolio across 24 blockchains, earn 5–8% yield on RLUSD through Soil Protocol, trade on native DEXs, and send payments globally — your keys stay in your hands. Choose your security: cold wallet, hot wallet, hardware or phone signing. If you ever leave, your crypto is still in your wallet. Whether you're unbanked, debanked, or simply want real ownership — CryptoOwnBank gives you the tools to be your own bank.",
+        a: "CryptoOwnBank is a non-custodial crypto platform: bring your own wallet, manage it from one interface, keep all your earnings. Already staking in Phantom, Keplr, or Yoroi? Just add your wallet address — we detect staked positions, pending rewards, and idle balances automatically across 24 blockchains. Earn 5–8% yield on RLUSD through Soil Protocol, trade on native DEXs, send payments globally — your keys stay in your hands. Choose your security: cold wallet, hot wallet, hardware or phone signing. If you ever leave, your crypto is still in your wallet. Whether you're unbanked, debanked, or simply want real ownership — CryptoOwnBank gives you the tools to be your own bank.",
       },
       {
         q: "Why does CryptoOwnBank focus on XRPL and Stellar instead of Ethereum or Solana?",
@@ -1355,6 +1355,14 @@ export default function Landing() {
           acceptedAnswer: {
             "@type": "Answer",
             text: "CryptoOwnBank has a Payments Hub with six tools: Send Money (instant wallet-to-wallet), Get Paid (QR codes and payment links), Invoice a Client (professional crypto invoices), Auto-Pay (recurring payments for rent, salaries, subscriptions), Send Money Home (cross-border remittances), and Pay Your Team (batch payroll). All non-custodial, settled in 4 seconds on XRPL and Stellar.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What does Bring Your Own Wallet mean?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "It means you keep using whatever wallets you already have — Phantom for Solana, Keplr for Cosmos, Yoroi for Cardano, MetaMask for Ethereum, Xaman for XRP. We don't replace those wallets. You add your public wallet addresses and we automatically detect your balances, staked positions, pending rewards, and idle assets across all of them. One dashboard for every wallet, every chain, every earning.",
           },
         },
         {
