@@ -479,7 +479,6 @@ export default function DcaOrders() {
         Account: walletAddress,
         TakerGets: takerGets,
         TakerPays: takerPays,
-        Flags: 0x00040000,
       };
 
       sessionStorage.setItem("dca_execute_order_id", order.id);
