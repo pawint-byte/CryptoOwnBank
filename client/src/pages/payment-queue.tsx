@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -294,6 +295,11 @@ export default function PaymentQueuePage() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Batch Crypto Payments — CryptoOwnBank | Payroll, Bulk Transfers, Offline Queue"
+        description="Queue and batch-send crypto payments on XRPL and Stellar. Perfect for payroll, supplier payments, and bulk transfers. Works offline — sync when ready. Non-custodial."
+        path={loc}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-queue-title">Payment Queue</h1>

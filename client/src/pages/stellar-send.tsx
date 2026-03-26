@@ -242,8 +242,8 @@ export default function StellarSend() {
   return (
     <div className="space-y-6">
       <SeoHead
-        title="Stellar Send & Receive — CryptoOwnBank | Send Payments via Stellar Network"
-        description="Send and receive payments via Stellar network with automatic currency conversion. Fast, low-cost cross-border transfers using XLM, USDC, and more."
+        title="Send Money Without a Bank — CryptoOwnBank | Stellar Payments in Seconds"
+        description="Send money to anyone worldwide without a bank account. Wallet-to-wallet Stellar payments in seconds for near-zero fees. USDC, XLM, and stablecoin transfers. Perfect for remittances, freelancer payments, and family support across borders."
         path="/stellar/send"
       />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

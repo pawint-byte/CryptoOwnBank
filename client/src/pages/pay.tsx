@@ -169,8 +169,8 @@ export default function PayPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
       <SeoHead
-        title="Pay — CryptoOwnBank | Send Crypto Payments"
-        description="Send and receive crypto payments on XRPL. Fast, low-cost wallet-to-wallet transfers with QR codes and payment links."
+        title="Accept Crypto Payments — CryptoOwnBank | QR Pay, POS, No Bank Needed"
+        description="Accept crypto payments without a bank account. Generate QR payment links for RLUSD and XRP on XRPL. 4-second settlement, near-zero fees. Perfect for freelancers, merchants, and businesses in 190+ countries."
         path="/pay"
       />
       <div className="max-w-md w-full space-y-4">

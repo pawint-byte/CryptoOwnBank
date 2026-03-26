@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { SeoHead } from "@/components/seo-head";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -359,6 +360,11 @@ export default function RecurringPayments() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      <SeoHead
+        title="Recurring Crypto Payments — CryptoOwnBank | Auto-Pay Rent, Subscriptions, Payroll"
+        description="Schedule automatic recurring crypto payments on XRPL and Stellar. Auto-pay rent, subscriptions, salaries, and family support. Non-custodial — you approve each payment via your wallet."
+        path={location}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="heading-recurring">Recurring Payments</h1>

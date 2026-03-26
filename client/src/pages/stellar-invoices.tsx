@@ -186,7 +186,7 @@ export default function StellarInvoices() {
   if (!isConnected) {
     return (
       <div className="space-y-6">
-        <SeoHead title="Stellar Invoices — CryptoOwnBank" description="Create payment invoices on the Stellar network." path="/stellar/invoices" />
+        <SeoHead title="Stellar Invoice Generator — CryptoOwnBank | Get Paid in USDC & XLM" description="Create professional crypto invoices on Stellar. Get paid in USDC or XLM with shareable payment links. Perfect for freelancers and businesses accepting stablecoin payments worldwide." path="/stellar/invoices" />
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-stellar-invoices-title">Stellar Invoices</h1>
           <p className="text-muted-foreground">Create and manage payment invoices on Stellar</p>
@@ -203,7 +203,7 @@ export default function StellarInvoices() {
 
   return (
     <div className="space-y-6">
-      <SeoHead title="Stellar Invoices — CryptoOwnBank" description="Create payment invoices on the Stellar network." path="/stellar/invoices" />
+      <SeoHead title="Stellar Invoice Generator — CryptoOwnBank | Get Paid in USDC & XLM" description="Create professional crypto invoices on Stellar. Get paid in USDC or XLM with shareable payment links. Perfect for freelancers and businesses accepting stablecoin payments worldwide." path="/stellar/invoices" />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

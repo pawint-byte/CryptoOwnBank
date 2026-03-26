@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { SeoHead } from "@/components/seo-head";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UserWallet, UserSettings } from "@shared/schema";
@@ -260,6 +261,11 @@ export default function OwnBankInvoices() {
   if (!isConnected) {
     return (
       <div className="space-y-6">
+        <SeoHead
+          title="Crypto Invoice Generator — CryptoOwnBank | Get Paid in RLUSD & XRP"
+          description="Create professional crypto invoices on XRPL. Get paid in RLUSD or XRP with shareable payment links and QR codes. Perfect for freelancers, contractors, and businesses accepting crypto payments."
+          path="/ownbank/invoices"
+        />
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-invoices-title">Invoices</h1>
           <p className="text-muted-foreground">Create and manage payment invoices on XRPL</p>
@@ -277,6 +283,11 @@ export default function OwnBankInvoices() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Crypto Invoice Generator — CryptoOwnBank | Get Paid in RLUSD & XRP"
+        description="Create professional crypto invoices on XRPL. Get paid in RLUSD or XRP with shareable payment links and QR codes. Perfect for freelancers, contractors, and businesses accepting crypto payments."
+        path="/ownbank/invoices"
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-invoices-title">Invoices</h1>

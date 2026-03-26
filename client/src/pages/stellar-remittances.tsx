@@ -238,8 +238,8 @@ export default function StellarRemittances() {
   return (
     <div className="space-y-6">
       <SeoHead
-        title="Stellar Remittance Calculator — CryptoOwnBank | Compare Transfer Fees"
-        description="Compare remittance fees across providers. See how Stellar saves money on cross-border transfers vs Western Union, Wise, and PayPal."
+        title="Cheap Remittances — CryptoOwnBank | Send Money Home for Near-Zero Fees"
+        description="Stop paying 5-8% remittance fees. Send money home via Stellar for near-zero cost in seconds. Compare savings vs Western Union, Wise, PayPal. Perfect for sending money to family in Latin America, Africa, India, Philippines, and more."
         path="/stellar/remittances"
       />
       <div>

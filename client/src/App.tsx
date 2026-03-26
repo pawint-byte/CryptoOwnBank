@@ -81,6 +81,7 @@ import TokenBuckets from "@/pages/token-buckets";
 import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
 import PaymentQueue from "@/pages/payment-queue";
+import PaymentsHub from "@/pages/payments-hub";
 import WhaleAlerts from "@/pages/whale-alerts";
 import CryptoNews from "@/pages/crypto-news";
 import TechnicalAnalysis from "@/pages/technical-analysis";
@@ -243,6 +244,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/my-card" component={MyCard} />
         <Route path="/ownbank/payment-queue" component={PaymentQueue} />
         <Route path="/stellar/payment-queue" component={PaymentQueue} />
+        <Route path="/payments" component={PaymentsHub} />
         <Route path="/stellar/wallet" component={StellarWallet} />
         <Route path="/stellar/dex" component={StellarDex} />
         <Route path="/stellar/send" component={StellarSend} />

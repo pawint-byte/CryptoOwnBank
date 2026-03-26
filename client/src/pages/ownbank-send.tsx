@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { SeoHead } from "@/components/seo-head";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -326,6 +327,11 @@ export default function OwnBankSend() {
   if (!isConnected) {
     return (
       <div className="space-y-6">
+        <SeoHead
+          title="Send & Receive RLUSD/XRP — CryptoOwnBank | Instant Crypto Payments"
+          description="Send RLUSD and XRP instantly to any wallet. Non-custodial wallet-to-wallet payments on XRPL in 4 seconds. QR codes, payment links, contact book. No bank needed."
+          path="/ownbank/send"
+        />
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-send-title">
             Send & Receive
@@ -349,6 +355,11 @@ export default function OwnBankSend() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        title="Send & Receive RLUSD/XRP — CryptoOwnBank | Instant Crypto Payments"
+        description="Send RLUSD and XRP instantly to any wallet. Non-custodial wallet-to-wallet payments on XRPL in 4 seconds. QR codes, payment links, contact book. No bank needed."
+        path="/ownbank/send"
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-send-title">
