@@ -107,6 +107,7 @@ interface UnifiedTransaction {
   total: number;
   fee: number;
   source: string;
+  accountName?: string;
   direction: "sent" | "received" | "swap" | "trust" | "cancel" | "buy" | "sell" | "income" | "transfer";
   hash?: string;
   usdValue?: number;
@@ -114,7 +115,7 @@ interface UnifiedTransaction {
   currency2?: string;
 }
 
-type ColumnKey = "date" | "type" | "direction" | "asset" | "quantity" | "price" | "total" | "usdValue" | "fee" | "source" | "hash";
+type ColumnKey = "date" | "type" | "direction" | "asset" | "quantity" | "price" | "total" | "usdValue" | "fee" | "source" | "account" | "hash";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "date", label: "Date" },
@@ -126,11 +127,12 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "total", label: "Total" },
   { key: "usdValue", label: "USD Value" },
   { key: "fee", label: "Fee" },
+  { key: "account", label: "Account" },
   { key: "source", label: "Source" },
   { key: "hash", label: "Tx Link" },
 ];
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["date", "type", "direction", "asset", "quantity", "price", "total", "fee", "source"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["date", "type", "direction", "asset", "quantity", "price", "total", "fee", "account", "source"];
 
 
 function formatUsd(value: number): string {
@@ -188,6 +190,7 @@ function xrplTxToUnified(tx: XrplTransaction, walletAddress: string, xrpPrice: n
       total: toUsd(amount, currency),
       fee: tx.fee ? Number(tx.fee) : 0,
       source: "xrpl",
+      accountName: "XRPL On-Ledger",
       direction: "swap",
       hash: tx.hash,
       usdValue: toUsd(amount2Num, tx.currency2 || ""),
@@ -206,6 +209,7 @@ function xrplTxToUnified(tx: XrplTransaction, walletAddress: string, xrpPrice: n
     total: toUsd(amount, currency),
     fee: tx.fee ? Number(tx.fee) : 0,
     source: "xrpl",
+    accountName: "XRPL On-Ledger",
     direction: isSent ? "sent" : "received",
     hash: tx.hash,
     usdValue: toUsd(amount, currency),
@@ -232,6 +236,7 @@ function dbTxToUnified(tx: Transaction, accounts: Account[]): UnifiedTransaction
     total: parseFloat(tx.totalValue),
     fee: parseFloat(tx.fee || "0"),
     source,
+    accountName: account?.accountName || undefined,
     direction: directionMap[tx.transactionType] || "buy",
     hash: tx.externalId || undefined,
   };
@@ -728,6 +733,7 @@ export default function Transactions() {
                     {isCol("total") && <TableHead className="hidden sm:table-cell text-right">Total</TableHead>}
                     {isCol("usdValue") && <TableHead className="text-right">USD Value</TableHead>}
                     {isCol("fee") && <TableHead className="hidden sm:table-cell text-right">Fee</TableHead>}
+                    {isCol("account") && <TableHead className="hidden sm:table-cell">Account</TableHead>}
                     {isCol("source") && <TableHead className="hidden sm:table-cell">Source</TableHead>}
                     {isCol("hash") && <TableHead>Tx Link</TableHead>}
                   </TableRow>
@@ -793,6 +799,13 @@ export default function Transactions() {
                                 ? `${tx.fee.toFixed(6)} XRP`
                                 : formatUsd(tx.fee)
                               : "—"}
+                          </span>
+                        </TableCell>
+                      )}
+                      {isCol("account") && (
+                        <TableCell className="hidden sm:table-cell">
+                          <span className="text-sm text-muted-foreground" data-testid={`account-name-${tx.id}`}>
+                            {tx.accountName || "—"}
                           </span>
                         </TableCell>
                       )}
