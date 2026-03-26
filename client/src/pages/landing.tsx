@@ -807,6 +807,10 @@ const faqGroups = [
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
         a: "Absolutely — CryptoOwnBank is a full multi-chain portfolio tracker across 24 blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Import exchange data via CSV to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
       },
+      {
+        q: "What about tokenized real-world assets — stocks, bonds, real estate on-chain?",
+        a: "CryptoOwnBank is already built for this. As financial products move on-chain — tokenized Treasury bills (like BlackRock's BUIDL), money market funds (like Franklin Templeton on Stellar), tokenized bonds, real estate tokens, and commodity-backed tokens — they arrive as standard tokens on blockchains you already track. An ERC-20 on Ethereum, a trustline token on XRPL, an asset on Stellar — the portfolio tracker picks them up automatically once they have a price feed. The Recommendations Hub surfaces yield opportunities from these products. The Legacy Plan ensures your beneficiaries inherit them. Tax Reports calculate gains when you sell. You don't need a separate app or a new account. The same dashboard that tracks your XRP and RLUSD today will track your tokenized Treasury shares tomorrow. The infrastructure is chain-agnostic and token-agnostic by design — we built it that way from the start.",
+      },
     ],
   },
   {
@@ -1351,6 +1355,14 @@ export default function Landing() {
           acceptedAnswer: {
             "@type": "Answer",
             text: "CryptoOwnBank has a Payments Hub with six tools: Send Money (instant wallet-to-wallet), Get Paid (QR codes and payment links), Invoice a Client (professional crypto invoices), Auto-Pay (recurring payments for rent, salaries, subscriptions), Send Money Home (cross-border remittances), and Pay Your Team (batch payroll). All non-custodial, settled in 4 seconds on XRPL and Stellar.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can CryptoOwnBank track tokenized real-world assets like stocks and bonds on-chain?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. CryptoOwnBank's multi-chain portfolio tracker is token-agnostic by design. As tokenized Treasury bills, money market funds, bonds, and real estate tokens launch on Ethereum, XRPL, Stellar, and other supported chains, the tracker picks them up automatically. The Recommendations Hub surfaces yield opportunities, the Legacy Plan covers inheritance, and Tax Reports handle gains — all from the same dashboard.",
           },
         },
         {
