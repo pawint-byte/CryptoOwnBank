@@ -710,55 +710,19 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
           if (stakeEntry && stakeEntry.delegated_pool) {
             isDelegated = true;
 
-            let walletAda = singleAddrAda;
-            try {
-              const addrListResp = await fetch(`https://api.koios.rest/api/v1/account_addresses`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                body: JSON.stringify({ _stake_addresses: [entry.stake_address] }),
-              });
-              if (addrListResp.ok) {
-                const addrList = await addrListResp.json();
-                let allAddrs: string[] = [];
-                if (Array.isArray(addrList)) {
-                  for (const item of addrList) {
-                    if (Array.isArray(item.addresses)) {
-                      allAddrs.push(...item.addresses);
-                    } else if (item.address) {
-                      allAddrs.push(item.address);
-                    }
-                  }
-                }
-                allAddrs = allAddrs.filter(Boolean);
-                console.log(`Cardano stake ${entry.stake_address?.slice(0, 20)}... has ${allAddrs.length} addresses`);
-                if (allAddrs.length > 1) {
-                  const batchResp = await fetch(`https://api.koios.rest/api/v1/address_info`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                    body: JSON.stringify({ _addresses: allAddrs }),
-                  });
-                  if (batchResp.ok) {
-                    const batchData = await batchResp.json();
-                    if (Array.isArray(batchData) && batchData.length > 0) {
-                      const totalLovelace = batchData.reduce((sum: number, a: any) => sum + parseInt(a.balance || "0"), 0);
-                      walletAda = totalLovelace / 1e6;
-                    }
-                  }
-                }
-              }
-            } catch {}
-
             balances.push({
               symbol: "ADA (staked)",
-              balance: walletAda,
-              usdValue: walletAda * (prices.ADA || 0),
+              balance: singleAddrAda,
+              usdValue: singleAddrAda * (prices.ADA || 0),
             });
-            const rewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
-            if (rewards > 0.01) {
+            const totalRewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
+            const totalUtxo = parseInt(stakeEntry.utxo || "0") / 1e6;
+            const rewardShare = totalUtxo > 0 ? (singleAddrAda / totalUtxo) * totalRewards : totalRewards;
+            if (rewardShare > 0.01) {
               balances.push({
                 symbol: "ADA (rewards)",
-                balance: rewards,
-                usdValue: rewards * (prices.ADA || 0),
+                balance: parseFloat(rewardShare.toFixed(6)),
+                usdValue: rewardShare * (prices.ADA || 0),
               });
             }
           }
