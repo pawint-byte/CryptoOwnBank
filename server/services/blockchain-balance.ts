@@ -710,10 +710,12 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
           if (stakeEntry && stakeEntry.delegated_pool) {
             isDelegated = true;
 
+            const utxoAda = parseInt(stakeEntry.utxo || "0") / 1e6;
+            const walletAda = utxoAda > 0 ? utxoAda : singleAddrAda;
             balances.push({
               symbol: "ADA (staked)",
-              balance: singleAddrAda,
-              usdValue: singleAddrAda * (prices.ADA || 0),
+              balance: walletAda,
+              usdValue: walletAda * (prices.ADA || 0),
             });
             const totalRewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
             if (totalRewards > 0.01) {
