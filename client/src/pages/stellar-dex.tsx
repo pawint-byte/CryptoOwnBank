@@ -48,10 +48,18 @@ import {
   Wallet,
   Star,
   Info,
+  CheckCircle,
+  Plug,
 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
+import { useStellarStore } from "@/lib/stellar-store";
+import {
+  isFreighterInstalled,
+  connectFreighter,
+  buildAndSignOffer,
+} from "@/lib/freighter-connector";
 
 interface StellarAsset {
   code: string;
@@ -172,6 +180,7 @@ function buildStellarTradeUrl(pair: StellarPair, wallet: "lobstr" | "stellarterm
 export default function StellarDex() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { stellarAddress } = useStellarStore();
   const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
     queryKey: ["/api/subscription"],
     enabled: !!user,
@@ -186,6 +195,81 @@ export default function StellarDex() {
   const [swapAmount, setSwapAmount] = useState("");
   const [swapDirection, setSwapDirection] = useState<"buy" | "sell">("buy");
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+
+  const [freighterAvailable, setFreighterAvailable] = useState(false);
+  const [freighterAddress, setFreighterAddress] = useState<string | null>(null);
+  const [freighterConnecting, setFreighterConnecting] = useState(false);
+  const [signingInProgress, setSigningInProgress] = useState(false);
+  const [tradeSuccess, setTradeSuccess] = useState<{ txHash: string } | null>(null);
+
+  useEffect(() => {
+    isFreighterInstalled().then(setFreighterAvailable);
+  }, []);
+
+  const handleConnectFreighter = async () => {
+    setFreighterConnecting(true);
+    try {
+      const result = await connectFreighter();
+      if (result.error) {
+        toast({ title: "Freighter Connection Failed", description: result.error, variant: "destructive" });
+      } else if (result.address) {
+        setFreighterAddress(result.address);
+        toast({ title: "Freighter Connected", description: `Address: ${result.address.slice(0, 8)}...${result.address.slice(-4)}` });
+      }
+    } catch {
+      toast({ title: "Freighter error", variant: "destructive" });
+    } finally {
+      setFreighterConnecting(false);
+    }
+  };
+
+  const handleFreighterTrade = async () => {
+    const connectResult = await connectFreighter();
+    if (!connectResult.address) {
+      toast({ title: "Connect Freighter first", description: connectResult.error, variant: "destructive" });
+      return;
+    }
+    const sourceAddr = connectResult.address;
+    setFreighterAddress(sourceAddr);
+    setSigningInProgress(true);
+    try {
+      const sellingAsset = swapDirection === "buy" ? pair.quote : pair.base;
+      const buyingAsset = swapDirection === "buy" ? pair.base : pair.quote;
+      const usePrice = swapDirection === "buy" ? bestAsk : bestBid;
+      if (usePrice <= 0) {
+        toast({ title: "No price available", variant: "destructive" });
+        return;
+      }
+
+      const sellAmount = swapDirection === "buy"
+        ? swapAmountNum.toFixed(7)
+        : swapAmountNum.toFixed(7);
+
+      const priceVal = swapDirection === "buy"
+        ? (1 / usePrice).toFixed(7)
+        : usePrice.toFixed(7);
+
+      const result = await buildAndSignOffer({
+        sourceAddress: sourceAddr,
+        selling: sellingAsset,
+        buying: buyingAsset,
+        amount: sellAmount,
+        price: priceVal,
+      });
+
+      if (result.success) {
+        setTradeSuccess({ txHash: result.txHash! });
+        sendStellarTradeNotification("Freighter (in-site)");
+        toast({ title: "Trade Executed", description: `Transaction confirmed on Stellar network` });
+      } else {
+        toast({ title: "Trade Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Trade Error", description: err?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setSigningInProgress(false);
+    }
+  };
 
   const pair = STELLAR_PAIRS[selectedPairIndex];
 
@@ -306,6 +390,46 @@ export default function StellarDex() {
       </div>
 
       <StellarWalletPicker label="Active Wallet" />
+
+      {freighterAvailable && (
+        <Card className="border-[#7B61FF]/30 bg-[#7B61FF]/5">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Plug className="h-4 w-4 text-[#7B61FF]" />
+                {freighterAddress ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Freighter Connected</span>
+                    <Badge variant="outline" className="font-mono text-xs border-[#7B61FF]/40">
+                      {freighterAddress.slice(0, 6)}...{freighterAddress.slice(-4)}
+                    </Badge>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Freighter extension detected — connect to sign trades in-browser</span>
+                )}
+              </div>
+              {!freighterAddress && (
+                <Button
+                  size="sm"
+                  className="bg-[#7B61FF] hover:bg-[#6B51EF] text-white"
+                  onClick={handleConnectFreighter}
+                  disabled={freighterConnecting}
+                  data-testid="button-connect-freighter"
+                >
+                  {freighterConnecting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plug className="h-3 w-3 mr-1" />}
+                  Connect
+                </Button>
+              )}
+              {freighterAddress && (
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/30">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Ready
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Collapsible open={educationOpen} onOpenChange={setEducationOpen}>
         <Card>
@@ -467,15 +591,36 @@ export default function StellarDex() {
               <Button
                 className={`w-full ${swapDirection === "buy" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}
                 onClick={handleSwapClick}
+                disabled={signingInProgress}
                 data-testid="button-stellar-swap-execute"
               >
-                <Wallet className="h-4 w-4 mr-2" />
-                Trade in Stellar Wallet
+                {signingInProgress ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Signing...
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="h-4 w-4 mr-2" />
+                    {freighterAddress ? "Sign & Trade" : "Trade in Stellar Wallet"}
+                  </>
+                )}
               </Button>
 
-              <p className="text-[11px] text-muted-foreground text-center">
-                Opens your preferred Stellar wallet to sign the trade. Non-custodial — you control your keys.
-              </p>
+              {freighterAddress && (
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-green-600 dark:text-green-400">
+                  <CheckCircle className="h-3 w-3" />
+                  <span>Freighter connected — trade will be signed in-browser</span>
+                </div>
+              )}
+
+              {!freighterAddress && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  {freighterAvailable
+                    ? "Freighter detected — connect it to sign trades without leaving the site"
+                    : "Opens your preferred Stellar wallet to sign the trade. Non-custodial — you control your keys."}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -602,71 +747,171 @@ export default function StellarDex() {
         </p>
       </div>
 
-      <Dialog open={tradeDialogOpen} onOpenChange={setTradeDialogOpen}>
+      <Dialog open={tradeDialogOpen} onOpenChange={(open) => { setTradeDialogOpen(open); if (!open) setTradeSuccess(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle data-testid="text-stellar-trade-title">
-              Open Trade in Stellar Wallet
+              {tradeSuccess ? "Trade Confirmed" : "Confirm Stellar Trade"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="rounded-md border p-4 space-y-2 text-sm">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Pair</span>
-                <span className="font-medium">{pair.label}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Direction</span>
-                <Badge className={swapDirection === "buy" ? "bg-green-500/10 text-green-600 border-green-500/30" : "bg-red-500/10 text-red-600 border-red-500/30"}>
-                  {swapDirection === "buy" ? "Buy" : "Sell"} {pair.base.display}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">You pay</span>
-                <span className="font-mono font-medium">{formatAmount(swapAmountNum, 4)} {payAsset}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">You receive (est.)</span>
-                <span className="font-mono font-medium">~{formatAmount(estimatedReceive, 4)} {receiveAsset}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Rate</span>
-                <span className="font-mono text-xs">1 {pair.base.display} = {formatAmount(midPrice)} {pair.quote.display}</span>
-              </div>
-            </div>
 
-            <div className="rounded-md bg-[#7B61FF]/5 border border-[#7B61FF]/20 p-3">
-              <p className="text-xs text-[#7B61FF] dark:text-[#9D8AFF]">
-                Choose your Stellar wallet below. The trade opens pre-filled in your wallet — you just confirm and sign. Non-custodial: your keys, your trade.
-              </p>
+          {tradeSuccess ? (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 py-4">
+                <CheckCircle className="h-12 w-12 text-green-500" />
+                <p className="text-sm font-medium">Trade executed successfully on Stellar</p>
+              </div>
+              <div className="rounded-md border p-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Pair</span>
+                  <span className="font-medium">{pair.label}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Direction</span>
+                  <Badge className={swapDirection === "buy" ? "bg-green-500/10 text-green-600 border-green-500/30" : "bg-red-500/10 text-red-600 border-red-500/30"}>
+                    {swapDirection === "buy" ? "Buy" : "Sell"} {pair.base.display}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Tx Hash</span>
+                  <a
+                    href={`https://stellar.expert/explorer/public/tx/${tradeSuccess.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#7B61FF] hover:underline font-mono text-xs flex items-center gap-1"
+                    data-testid="link-stellar-tx"
+                  >
+                    {tradeSuccess.txHash.slice(0, 12)}...
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => { setTradeDialogOpen(false); setTradeSuccess(null); setSwapAmount(""); }} data-testid="button-done-stellar-trade">
+                  Done
+                </Button>
+              </DialogFooter>
             </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-md border p-4 space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Pair</span>
+                  <span className="font-medium">{pair.label}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Direction</span>
+                  <Badge className={swapDirection === "buy" ? "bg-green-500/10 text-green-600 border-green-500/30" : "bg-red-500/10 text-red-600 border-red-500/30"}>
+                    {swapDirection === "buy" ? "Buy" : "Sell"} {pair.base.display}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">You pay</span>
+                  <span className="font-mono font-medium">{formatAmount(swapAmountNum, 4)} {payAsset}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">You receive (est.)</span>
+                  <span className="font-mono font-medium">~{formatAmount(estimatedReceive, 4)} {receiveAsset}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Rate</span>
+                  <span className="font-mono text-xs">1 {pair.base.display} = {formatAmount(midPrice)} {pair.quote.display}</span>
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <a href={buildStellarTradeUrl(pair, "lobstr")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); }}>
-                <Button className="w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white" data-testid="button-trade-lobstr">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Trade on LOBSTR
-                </Button>
-              </a>
-              <a href={buildStellarTradeUrl(pair, "stellarterm")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarTerm"); setTradeDialogOpen(false); }}>
-                <Button variant="outline" className="w-full" data-testid="button-trade-stellarterm">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Trade on StellarTerm
-                </Button>
-              </a>
-              <a href={buildStellarTradeUrl(pair, "stellarx")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarX"); setTradeDialogOpen(false); }}>
-                <Button variant="outline" className="w-full" data-testid="button-trade-stellarx">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Trade on StellarX
-                </Button>
-              </a>
+              {(freighterAvailable || freighterAddress) && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold">Sign in browser (recommended)</p>
+                  {freighterAddress ? (
+                    <Button
+                      className="w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white"
+                      onClick={handleFreighterTrade}
+                      disabled={signingInProgress}
+                      data-testid="button-trade-freighter"
+                    >
+                      {signingInProgress ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Signing in Freighter...
+                        </>
+                      ) : (
+                        <>
+                          <Plug className="h-4 w-4 mr-2" />
+                          Sign with Freighter
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white"
+                      onClick={handleConnectFreighter}
+                      disabled={freighterConnecting}
+                      data-testid="button-connect-freighter-trade"
+                    >
+                      {freighterConnecting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Connecting Freighter...
+                        </>
+                      ) : (
+                        <>
+                          <Plug className="h-4 w-4 mr-2" />
+                          Connect Freighter to Sign
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Transaction is built and signed right here — you never leave the site
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {(freighterAvailable || freighterAddress) && (
+                  <p className="text-xs font-semibold text-muted-foreground pt-1">Or open in an external wallet</p>
+                )}
+                <a href={buildStellarTradeUrl(pair, "lobstr")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); }}>
+                  <Button variant="outline" className="w-full" data-testid="button-trade-lobstr">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Trade on LOBSTR
+                  </Button>
+                </a>
+                <a href={buildStellarTradeUrl(pair, "stellarterm")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarTerm"); setTradeDialogOpen(false); }}>
+                  <Button variant="outline" className="w-full" data-testid="button-trade-stellarterm">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Trade on StellarTerm
+                  </Button>
+                </a>
+                <a href={buildStellarTradeUrl(pair, "stellarx")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarX"); setTradeDialogOpen(false); }}>
+                  <Button variant="outline" className="w-full" data-testid="button-trade-stellarx">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Trade on StellarX
+                  </Button>
+                </a>
+              </div>
+
+              {!freighterAvailable && !freighterAddress && (
+                <div className="rounded-md bg-[#7B61FF]/5 border border-[#7B61FF]/20 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Desktop tip:</strong> Install the{" "}
+                    <a href="https://freighter.app" target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                      Freighter browser extension
+                    </a>{" "}
+                    to sign trades directly on this page without leaving the site.
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTradeDialogOpen(false)} data-testid="button-cancel-stellar-trade">
-              Cancel
-            </Button>
-          </DialogFooter>
+          )}
+
+          {!tradeSuccess && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTradeDialogOpen(false)} data-testid="button-cancel-stellar-trade">
+                Cancel
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

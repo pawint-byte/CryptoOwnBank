@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-03-26 by main agent**
+**Last updated: 2026-03-27 by main agent**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -134,16 +134,14 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ## PENDING — Future Improvements
 
-- [2026-03-27] **Freighter Integration — In-Site Stellar DEX Trading (HIGH PRIORITY)**:
-  - **Goal**: Users stay on CryptoOwnBank for the entire Stellar DEX trade. No redirect to LOBSTR or StellarTerm. Same seamless experience as Xaman on XRPL.
-  - **What**: Integrate the Freighter browser extension API (`@stellar/freighter-api`) into the Stellar DEX page.
-  - **Flow**: (1) "Connect Freighter" button on Stellar DEX page (like "Connect Xaman" on XRPL). (2) When user clicks "Trade," we build the transaction server-side, Freighter pops up a signing window inside the browser. (3) User approves, transaction submits to Stellar network, we capture the tx hash and record it on the site. (4) User never leaves CryptoOwnBank.
-  - **Desktop**: Freighter browser extension handles signing. User installs once, stays connected.
-  - **Mobile**: Freighter doesn't work on mobile browsers (no extensions). LOBSTR app deep link remains the mobile fallback — opens the LOBSTR app (where user is already logged in), user approves, switches back.
-  - **Also integrate into**: Stellar Send/Receive, Stellar Token Manager (trustline signing), Stellar DCA "Execute Now," Payment Queue (Stellar payments).
-  - **Compliance**: Fully non-custodial. We build the transaction, user signs with their own keys via Freighter. We never hold keys or funds. No regulatory issues — same model as Xaman/XRPL.
-  - **Package**: `@stellar/freighter-api` — install via packager.
-  - **Reference**: https://docs.freighter.app/docs/guide/usingFreighterBrowser
+- ~~[2026-03-27] **Freighter Integration — In-Site Stellar Signing**~~ — COMPLETED 2026-03-27.
+  - **Done**: `@stellar/freighter-api` + `@stellar/stellar-sdk` installed. `client/src/lib/freighter-connector.ts` built with `isFreighterInstalled`, `connectFreighter`, `buildAndSignOffer`, `buildAndSignPayment`, `buildAndSignChangeTrust`.
+  - **Stellar DEX** (`stellar-dex.tsx`): Freighter connect banner. Trade dialog shows "Sign with Freighter" as primary option (signs in-browser). Success state shows tx hash with Stellar Explorer link. LOBSTR/StellarTerm/StellarX remain as fallback.
+  - **Stellar Send** (`stellar-send.tsx`): "Sign & Send with Freighter" button as primary flow when connected. Success dialog shows tx hash. Manual/external wallet path preserved.
+  - **Stellar DCA Execute Now** (`dca-orders.tsx`): Attempts Freighter signing when extension detected. Falls back to LOBSTR redirect if Freighter not installed.
+  - **Stellar Token Manager** (`stellar-tokens.tsx`): "Sign with Freighter" as primary for add/remove trustline. External wallet links (LOBSTR, StellarTerm, Stellar URI) remain as fallback. Install Freighter tip shown when extension not detected.
+  - **Coverage summary**: EVM (MetaMask/WalletConnect), XRPL (Xaman QR/deep link), Stellar (Freighter in-browser) — all three chains now sign in-site on desktop. Mobile fallback remains app deep links.
+  - **Remaining**: Payment Queue (Stellar payments) — minor, can be done when queue is actively used.
 - [2026-03-24] **Embedded on-ramp widget**: Currently all buy-crypto paths are outbound links. Once MoonPay or Transak approves, embed their widget so members can buy crypto without leaving CryptoOwnBank.
 - [2026-03-24] **Telegram Mini-App**: A simplified version of the dashboard inside Telegram. Good for emerging markets (Nigeria, Philippines, Kenya). Available to ALL members, not restricted to any group. Worth exploring as a growth channel.
 - [2026-03-24] **Backup domains**: cryptoownbank.com is the production domain. crypto-ledger--pawint.replit.app is the Replit domain (also serves production). Both serve the same deployed app. Buying a backup domain (.xyz, .io) is cheap insurance but not urgent since the Replit domain already works as a fallback.

@@ -53,9 +53,11 @@ import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
+import { useStellarStore } from "@/lib/stellar-store";
 import { WalletPicker } from "@/components/wallet-picker";
 import { signTransaction, hasPendingXummPayment, completePendingXummPayment } from "@/lib/xumm-connector";
 import { getOrderBook } from "@/lib/xrpl-client";
+import { isFreighterInstalled, connectFreighter, buildAndSignOffer } from "@/lib/freighter-connector";
 import type { DcaOrder, DcaExecution } from "@shared/schema";
 
 import { RLUSD } from "@/lib/constants";
@@ -390,7 +392,70 @@ export default function DcaOrders() {
 
   async function executeNow(order: DcaOrder) {
     if (order.chain === "stellar") {
-      toast({ title: "Stellar DCA — open LOBSTR to execute", description: "Stellar DCA orders create a pending swap on the Stellar DEX. Open LOBSTR or StellarTerm to review and approve the trade.", variant: "destructive" });
+      const freighterReady = await isFreighterInstalled();
+      if (freighterReady) {
+        setExecutingOrderId(order.id);
+        try {
+          const connectResult = await connectFreighter();
+          if (!connectResult.address) {
+            toast({ title: "Could not connect Freighter", description: connectResult.error, variant: "destructive" });
+            setExecutingOrderId(null);
+            return;
+          }
+          const freighterAddr = connectResult.address;
+
+          const spendAmount = parseFloat(order.spendAmount);
+          const sellingAsset = {
+            code: order.spendCurrency,
+            issuer: order.spendIssuer || null,
+            type: order.spendCurrency === "XLM" ? "native" : "credit_alphanum4",
+          };
+          const buyingAsset = {
+            code: order.buyCurrency,
+            issuer: order.buyIssuer || null,
+            type: order.buyCurrency === "XLM" ? "native" : "credit_alphanum4",
+          };
+
+          const obRes = await fetch(
+            `https://horizon.stellar.org/order_book?selling_asset_type=${sellingAsset.type === "native" ? "native" : sellingAsset.type}&${sellingAsset.type !== "native" ? `selling_asset_code=${sellingAsset.code}&selling_asset_issuer=${sellingAsset.issuer}&` : ""}buying_asset_type=${buyingAsset.type === "native" ? "native" : buyingAsset.type}&${buyingAsset.type !== "native" ? `buying_asset_code=${buyingAsset.code}&buying_asset_issuer=${buyingAsset.issuer}&` : ""}limit=1`
+          );
+          let price = "1";
+          if (obRes.ok) {
+            const obData = await obRes.json();
+            if (obData.asks?.length > 0) {
+              price = obData.asks[0].price;
+            }
+          }
+
+          const result = await buildAndSignOffer({
+            sourceAddress: freighterAddr,
+            selling: sellingAsset,
+            buying: buyingAsset,
+            amount: spendAmount.toFixed(7),
+            price,
+          });
+
+          if (result.success) {
+            toast({ title: "DCA Trade Executed", description: `Stellar trade confirmed: ${result.txHash?.slice(0, 12)}...` });
+            try {
+              await apiRequest("POST", `/api/dca/${order.id}/execution`, {
+                status: "completed",
+                executedPrice: price,
+                txHash: result.txHash,
+              });
+              queryClient.invalidateQueries({ queryKey: ["/api/dca"] });
+            } catch {}
+          } else {
+            toast({ title: "DCA Trade Failed", description: result.error, variant: "destructive" });
+          }
+        } catch (err: any) {
+          toast({ title: "Execute Error", description: err?.message || "Failed to execute Stellar DCA", variant: "destructive" });
+        } finally {
+          setExecutingOrderId(null);
+        }
+        return;
+      }
+      toast({ title: "Stellar DCA — install Freighter or open LOBSTR to execute", description: "Install the Freighter browser extension (freighter.app) to execute Stellar DCA trades in-browser, or open LOBSTR/StellarTerm to sign manually.", variant: "destructive" });
       return;
     }
     const walletAddress = activeWallet || useXrplStore.getState().walletAddress;

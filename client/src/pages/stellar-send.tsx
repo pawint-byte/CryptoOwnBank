@@ -62,9 +62,17 @@ import {
   Plus,
   Trash2,
   Star,
+  Plug,
+  Loader2,
+  CheckCircle,
 } from "lucide-react";
 import { useStellarStore, type StellarBalance } from "@/lib/stellar-store";
 import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
+import {
+  isFreighterInstalled,
+  connectFreighter,
+  buildAndSignPayment,
+} from "@/lib/freighter-connector";
 
 import { CHAIN_COLORS } from "@/lib/constants";
 const STELLAR_PURPLE = CHAIN_COLORS.stellar;
@@ -135,6 +143,90 @@ export default function StellarSend() {
   const [memoType, setMemoType] = useState("text");
   const [showTxDetails, setShowTxDetails] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+
+  const [freighterAvailable, setFreighterAvailable] = useState(false);
+  const [freighterAddress, setFreighterAddress] = useState<string | null>(null);
+  const [freighterConnecting, setFreighterConnecting] = useState(false);
+  const [signingInProgress, setSigningInProgress] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState<{ txHash: string } | null>(null);
+
+  useEffect(() => {
+    isFreighterInstalled().then(setFreighterAvailable);
+  }, []);
+
+  const handleConnectFreighter = async () => {
+    setFreighterConnecting(true);
+    try {
+      const result = await connectFreighter();
+      if (result.error) {
+        toast({ title: "Freighter Connection Failed", description: result.error, variant: "destructive" });
+      } else if (result.address) {
+        setFreighterAddress(result.address);
+        toast({ title: "Freighter Connected", description: `Address: ${result.address.slice(0, 8)}...${result.address.slice(-4)}` });
+      }
+    } catch {
+      toast({ title: "Freighter error", variant: "destructive" });
+    } finally {
+      setFreighterConnecting(false);
+    }
+  };
+
+  const handleFreighterSend = async () => {
+    const connectResult = await connectFreighter();
+    if (!connectResult.address) {
+      toast({ title: "Connect Freighter first", description: connectResult.error, variant: "destructive" });
+      return;
+    }
+    const sourceAddr = connectResult.address;
+    setFreighterAddress(sourceAddr);
+    if (!recipient.trim() || !recipient.startsWith("G") || recipient.length !== 56) {
+      toast({ title: "Invalid recipient address", variant: "destructive" });
+      return;
+    }
+    const numAmount = parseFloat(amount);
+    if (!numAmount || numAmount <= 0) {
+      toast({ title: "Enter a valid amount", variant: "destructive" });
+      return;
+    }
+
+    setSigningInProgress(true);
+    try {
+      const result = await buildAndSignPayment({
+        sourceAddress: sourceAddr,
+        destination: recipient.trim(),
+        asset: {
+          code: selectedCurrency.code,
+          issuer: selectedCurrency.issuer,
+          type: selectedCurrency.issuer ? "credit_alphanum4" : "native",
+        },
+        amount: numAmount.toFixed(7),
+        memo: memo.trim() || undefined,
+        memoType,
+      });
+
+      if (result.success) {
+        setSendSuccess({ txHash: result.txHash! });
+        addRecentRecipient(recipient.trim());
+        try {
+          await apiRequest("POST", "/api/send/disposal-notification", {
+            chain: "Stellar",
+            assetSymbol: currency,
+            quantity: amount,
+            walletAddress: sourceAddr,
+            recipient: recipient.trim(),
+            memo: memo.trim() || undefined,
+          });
+        } catch {}
+        toast({ title: "Payment Sent", description: `${amount} ${currency} sent successfully on Stellar` });
+      } else {
+        toast({ title: "Payment Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Send Error", description: err?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setSigningInProgress(false);
+    }
+  };
 
   const [receiveAmount, setReceiveAmount] = useState("");
   const [receiveCurrencyValue, setReceiveCurrencyValue] = useState("XLM");
@@ -469,14 +561,64 @@ export default function StellarSend() {
                     </div>
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
+                    {(freighterAvailable || freighterAddress) && (
+                      <>
+                        {freighterAddress ? (
+                          <Button
+                            className="w-full bg-[#7B61FF] text-white border-[#7B61FF]"
+                            onClick={handleFreighterSend}
+                            disabled={signingInProgress}
+                            data-testid="button-freighter-send"
+                          >
+                            {signingInProgress ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Signing in Freighter...
+                              </>
+                            ) : (
+                              <>
+                                <Plug className="h-4 w-4 mr-2" />
+                                Sign & Send with Freighter
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            className="w-full bg-[#7B61FF] text-white border-[#7B61FF]"
+                            onClick={handleConnectFreighter}
+                            disabled={freighterConnecting}
+                            data-testid="button-connect-freighter-send"
+                          >
+                            {freighterConnecting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Connecting...
+                              </>
+                            ) : (
+                              <>
+                                <Plug className="h-4 w-4 mr-2" />
+                                Connect Freighter to Send
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {freighterAddress && (
+                          <p className="text-[11px] text-center text-green-600 dark:text-green-400 flex items-center justify-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            Freighter connected — payment will be signed and sent in-browser
+                          </p>
+                        )}
+                      </>
+                    )}
                     <Button
                       onClick={handleGenerateTransaction}
-                      className="bg-[#7B61FF] text-white border-[#7B61FF]"
+                      variant={freighterAddress ? "outline" : "default"}
+                      className={freighterAddress ? "w-full" : "w-full bg-[#7B61FF] text-white border-[#7B61FF]"}
                       data-testid="button-generate-stellar-tx"
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      Generate Transaction
+                      {freighterAddress ? "Or: Manual / External Wallet" : "Generate Transaction"}
                     </Button>
                   </div>
                 </CardContent>
@@ -908,6 +1050,48 @@ export default function StellarSend() {
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Open in Wallet
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!sendSuccess} onOpenChange={(open) => { if (!open) setSendSuccess(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment Confirmed</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex flex-col items-center gap-3 py-4">
+              <CheckCircle className="h-12 w-12 text-green-500" />
+              <p className="text-sm font-medium">Payment sent successfully on Stellar</p>
+            </div>
+            <div className="rounded-md border p-3 space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-mono font-medium">{amount} {currency}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">To</span>
+                <span className="font-mono text-xs">{recipient ? truncateAddress(recipient) : ""}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Tx Hash</span>
+                <a
+                  href={`https://stellar.expert/explorer/public/tx/${sendSuccess?.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#7B61FF] hover:underline font-mono text-xs flex items-center gap-1"
+                  data-testid="link-stellar-send-tx"
+                >
+                  {sendSuccess?.txHash?.slice(0, 12)}...
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => { setSendSuccess(null); setRecipient(""); setAmount(""); setMemo(""); }} data-testid="button-done-stellar-send">
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

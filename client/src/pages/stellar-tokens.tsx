@@ -28,6 +28,8 @@ import {
   Trash2,
   Loader2,
   ChevronDown,
+  Plug,
+  CheckCircle,
   ChevronUp,
   ExternalLink,
   HelpCircle,
@@ -49,6 +51,11 @@ import {
   type StellarBalance,
 } from "@/lib/stellar-store";
 import { StellarWalletPicker } from "@/components/stellar-wallet-picker";
+import {
+  isFreighterInstalled,
+  connectFreighter,
+  buildAndSignChangeTrust,
+} from "@/lib/freighter-connector";
 
 import { CHAIN_COLORS } from "@/lib/constants";
 const STELLAR_PURPLE = CHAIN_COLORS.stellar;
@@ -142,6 +149,46 @@ export default function StellarTokens() {
   const [copiedIssuer, setCopiedIssuer] = useState<string | null>(null);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ code: string; issuer: string; action: "add" | "remove" } | null>(null);
+
+  const [freighterAvailable, setFreighterAvailable] = useState(false);
+  const [freighterAddress, setFreighterAddress] = useState<string | null>(null);
+  const [freighterSigning, setFreighterSigning] = useState(false);
+
+  useEffect(() => {
+    isFreighterInstalled().then(setFreighterAvailable);
+  }, []);
+
+  const handleFreighterTrustline = async () => {
+    if (!pendingAction) return;
+    const connectResult = await connectFreighter();
+    if (!connectResult.address) {
+      toast({ title: "Connect Freighter first", description: connectResult.error, variant: "destructive" });
+      return;
+    }
+    const sourceAddr = connectResult.address;
+    setFreighterAddress(sourceAddr);
+    setFreighterSigning(true);
+    try {
+      const result = await buildAndSignChangeTrust({
+        sourceAddress: sourceAddr,
+        assetCode: pendingAction.code,
+        assetIssuer: pendingAction.issuer,
+        limit: pendingAction.action === "remove" ? "0" : undefined,
+      });
+      if (result.success) {
+        toast({ title: pendingAction.action === "add" ? "Trustline Added" : "Trustline Removed", description: `${pendingAction.code} trustline ${pendingAction.action === "add" ? "added" : "removed"} successfully` });
+        setWalletDialogOpen(false);
+        setPendingAction(null);
+        fetchTrustlines();
+      } else {
+        toast({ title: "Trustline Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to sign trustline", variant: "destructive" });
+    } finally {
+      setFreighterSigning(false);
+    }
+  };
 
   const fetchTrustlines = useCallback(async () => {
     if (!stellarAddress) return;
@@ -494,15 +541,45 @@ export default function StellarTokens() {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               {pendingAction?.action === "add"
-                ? "Open your Stellar wallet to sign a ChangeTrust transaction. This authorizes your account to hold this token."
-                : "Open your Stellar wallet to remove this trustline. Your balance must be zero."}
+                ? "Sign a ChangeTrust transaction to authorize your account to hold this token."
+                : "Sign a ChangeTrust transaction to remove this trustline. Your balance must be zero."}
             </p>
             <p className="text-xs text-muted-foreground">
               Asset: <span className="font-mono">{pendingAction?.code}</span><br />
               Issuer: <span className="font-mono">{pendingAction?.issuer ? truncateAddress(pendingAction.issuer) : ""}</span>
             </p>
+
+            {freighterAvailable && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold">Sign in browser (recommended)</p>
+                <Button
+                  className="w-full bg-[#7B61FF] hover:bg-[#6B51EF] text-white"
+                  onClick={handleFreighterTrustline}
+                  disabled={freighterSigning}
+                  data-testid="button-trust-freighter"
+                >
+                  {freighterSigning ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Signing in Freighter...
+                    </>
+                  ) : (
+                    <>
+                      <Plug className="h-4 w-4 mr-2" />
+                      Sign with Freighter
+                    </>
+                  )}
+                </Button>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Signs directly in your browser — you never leave the site
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <p className="text-xs font-semibold">Open in your wallet:</p>
+              {freighterAvailable && (
+                <p className="text-xs font-semibold text-muted-foreground">Or open in an external wallet</p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {pendingAction && (
                   <>
@@ -535,9 +612,18 @@ export default function StellarTokens() {
                 )}
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              After signing in your wallet, refresh this page to see the updated trustlines.
-            </p>
+
+            {!freighterAvailable && (
+              <div className="rounded-md bg-[#7B61FF]/5 border border-[#7B61FF]/20 p-3">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Desktop tip:</strong> Install{" "}
+                  <a href="https://freighter.app" target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                    Freighter
+                  </a>{" "}
+                  to sign trustline changes directly on this page.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setWalletDialogOpen(false); setPendingAction(null); }}>Close</Button>
