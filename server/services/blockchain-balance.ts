@@ -709,6 +709,13 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
           const stakeEntry = Array.isArray(stakeData) ? stakeData[0] : null;
           if (stakeEntry && stakeEntry.delegated_pool) {
             isDelegated = true;
+            console.log(`Koios account_info fields:`, JSON.stringify({
+              total_balance: stakeEntry.total_balance,
+              controlled_amount: stakeEntry.controlled_amount,
+              utxo: stakeEntry.utxo,
+              rewards_available: stakeEntry.rewards_available,
+              keys: Object.keys(stakeEntry),
+            }));
             const totalStakeLovelace = parseInt(stakeEntry.total_balance || stakeEntry.controlled_amount || "0");
             const totalAda = totalStakeLovelace > 0 ? totalStakeLovelace / 1e6 : singleAddrAda;
             balances.push({
