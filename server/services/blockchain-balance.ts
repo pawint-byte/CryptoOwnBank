@@ -716,13 +716,11 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
               usdValue: singleAddrAda * (prices.ADA || 0),
             });
             const totalRewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
-            const totalUtxo = parseInt(stakeEntry.utxo || "0") / 1e6;
-            const rewardShare = totalUtxo > 0 ? (singleAddrAda / totalUtxo) * totalRewards : totalRewards;
-            if (rewardShare > 0.01) {
+            if (totalRewards > 0.01) {
               balances.push({
                 symbol: "ADA (rewards)",
-                balance: parseFloat(rewardShare.toFixed(6)),
-                usdValue: rewardShare * (prices.ADA || 0),
+                balance: totalRewards,
+                usdValue: totalRewards * (prices.ADA || 0),
               });
             }
           }
