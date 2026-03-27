@@ -48,7 +48,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 ### Yield & Market Data
 - [x] **Recommendations Hub** — DONE (pre-2026-03-26)
 - [x] **Earn & Yield (RWA)** — DONE (pre-2026-03-26)
-- [x] **Native Staking** — DONE (pre-2026-03-26) — HBAR, ADA verified
+- [x] **Native Staking** — DONE (pre-2026-03-26) — HBAR, ADA verified; Cardano HD wallet fix deployed 2026-03-27 (uses stake account UTxO for full balance)
 - [x] **Flare FTSO** — DONE (pre-2026-03-26) — staking and tracking verified
 - [x] **Stablecoin Dashboard** — DONE (pre-2026-03-26)
 - [x] **Yield Calculator** — DONE (pre-2026-03-26)
