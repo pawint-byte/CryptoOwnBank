@@ -1017,13 +1017,17 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         storage.getAllAssets(),
       ]);
       const dashPriceLookup: Record<string, number> = {};
+      const dashChangeLookup: Record<string, number> = {};
       for (const row of dashPriceCacheRows) {
         dashPriceLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+        if (row.change24h) dashChangeLookup[row.symbol.toUpperCase()] = parseFloat(row.change24h);
       }
       const assetPriceLookup: Record<string, number> = {};
       for (const a of allAssets) {
         if (a.currentPrice) assetPriceLookup[a.symbol.toUpperCase()] = parseFloat(a.currentPrice);
       }
+
+      let totalPrevValue = 0;
 
       for (const pos of positionsData) {
         if (pos.isAddressed) continue;
@@ -1043,6 +1047,14 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         totalValue += value;
         totalCostBasis += costBasis;
         allocationMap.set(pos.assetSymbol, (allocationMap.get(pos.assetSymbol) || 0) + value);
+
+        const change24h = dashChangeLookup[pos.assetSymbol.toUpperCase()];
+        if (change24h !== undefined && Number.isFinite(change24h)) {
+          const prevPrice = currentPrice / (1 + change24h / 100);
+          totalPrevValue += qty * prevPrice;
+        } else {
+          totalPrevValue += value;
+        }
       }
 
       const rawWalletBals = await storage.getWalletBalancesByUser(userId);
@@ -1051,6 +1063,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         const usdVal = parseFloat(wb.usdValue || "0");
         if (Number.isFinite(usdVal) && usdVal > 0) {
           totalValue += usdVal;
+          totalPrevValue += usdVal;
           allocationMap.set(wb.assetSymbol, (allocationMap.get(wb.assetSymbol) || 0) + usdVal);
         }
       }
@@ -1063,6 +1076,9 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
       const totalGainLoss = totalValue - totalCostBasis;
       const totalGainLossPercent = totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
+
+      const dayChange = totalValue - totalPrevValue;
+      const dayChangePercent = totalPrevValue > 0 ? (dayChange / totalPrevValue) * 100 : 0;
 
       const now = new Date();
       const portfolioHistory = Array.from({ length: 30 }, (_, i) => {
@@ -1078,8 +1094,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
       res.json({
         totalValue,
-        dayChange: totalValue * 0.02,
-        dayChangePercent: 2.0,
+        dayChange,
+        dayChangePercent,
         totalGainLoss,
         totalGainLossPercent,
         roi: totalGainLossPercent,
@@ -10467,6 +10483,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
   startPriceAlertChecker();
   seedPriceCache();
+  startPriceCacheScheduler(4);
 
   const { startMarketDataScheduler } = await import("./services/market-data");
   startMarketDataScheduler(4);
@@ -10487,24 +10504,76 @@ async function seedPriceCache() {
       console.log(`Price cache already seeded with ${existing.length} entries`);
       return;
     }
-    console.log("Seeding price cache from CoinGecko...");
-    const allSymbols = Object.keys(COINGECKO_ASSET_MAP);
-    const batchSize = 50;
-    for (let i = 0; i < allSymbols.length; i += batchSize) {
-      const batch = allSymbols.slice(i, i + batchSize);
-      const prices = await fetchCurrentPrices(batch);
-      if (Object.keys(prices).length > 0) {
-        await savePricesToDb(prices);
-      }
-      if (i + batchSize < allSymbols.length) {
-        await new Promise(r => setTimeout(r, 2000));
-      }
-    }
-    const count = (await db.select().from(priceCacheTable)).length;
-    console.log(`Price cache seeded with ${count} entries`);
+    await refreshPriceCache();
   } catch (err) {
     console.error("Price cache seeding error:", err);
   }
+}
+
+async function refreshPriceCache() {
+  try {
+    const allSymbols = [...new Set(Object.keys(COINGECKO_ASSET_MAP))];
+    const allIds = [...new Set(allSymbols.map(s => COINGECKO_ASSET_MAP[s]).filter(Boolean))];
+    
+    let data: Record<string, any> | null = null;
+    const maxRetries = 3;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${allIds.join(",")}&vs_currencies=usd&include_24hr_change=true`;
+        const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+        if (response.status === 429 && attempt < maxRetries) {
+          const backoff = (attempt + 1) * 15000;
+          console.log(`[price-cache] Rate limited (429), retrying in ${backoff / 1000}s...`);
+          await new Promise(r => setTimeout(r, backoff));
+          continue;
+        }
+        if (!response.ok) {
+          console.warn(`[price-cache] CoinGecko API error: ${response.status}`);
+          return;
+        }
+        data = await response.json();
+        break;
+      } catch (err: any) {
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 10000));
+          continue;
+        }
+        console.error("[price-cache] Fetch failed after retries:", err?.message);
+        return;
+      }
+    }
+
+    if (!data) return;
+
+    let totalUpdated = 0;
+    const prices: Record<string, { usd: number; change24h?: number | null }> = {};
+    for (const [symbol, cgId] of Object.entries(COINGECKO_ASSET_MAP)) {
+      if (data[cgId]?.usd !== undefined) {
+        prices[symbol] = {
+          usd: data[cgId].usd,
+          change24h: data[cgId].usd_24h_change ?? null,
+        };
+      }
+    }
+    if (Object.keys(prices).length > 0) {
+      await savePricesToDb(prices);
+      totalUpdated = Object.keys(prices).length;
+    }
+    console.log(`[price-cache] Refreshed ${totalUpdated} prices from CoinGecko`);
+  } catch (err) {
+    console.error("[price-cache] Refresh error:", err);
+  }
+}
+
+function startPriceCacheScheduler(hours: number): void {
+  const offsetMs = 60 * 1000;
+  console.log(`[price-cache] Scheduler started — refreshing every ${hours}h, offset 1min`);
+  setTimeout(async () => {
+    await refreshPriceCache();
+    setInterval(() => {
+      refreshPriceCache();
+    }, hours * 60 * 60 * 1000);
+  }, offsetMs);
 }
 
 const COINGECKO_ASSET_MAP: Record<string, string> = {
@@ -10682,15 +10751,24 @@ const COINGECKO_ASSET_MAP: Record<string, string> = {
   PRO: "propy",
 };
 
-async function savePricesToDb(prices: Record<string, number>): Promise<void> {
+async function savePricesToDb(prices: Record<string, { usd: number; change24h?: number | null }>): Promise<void> {
   try {
-    const entries = Object.entries(prices).filter(([, v]) => v > 0);
-    for (const [symbol, price] of entries) {
+    const entries = Object.entries(prices).filter(([, v]) => v.usd > 0);
+    for (const [symbol, data] of entries) {
+      const change24hStr = (data.change24h != null && Number.isFinite(data.change24h)) ? data.change24h.toString() : null;
       await db.insert(priceCacheTable)
-        .values({ symbol: symbol.toUpperCase(), priceUsd: price.toString() })
+        .values({
+          symbol: symbol.toUpperCase(),
+          priceUsd: data.usd.toString(),
+          change24h: change24hStr,
+        })
         .onConflictDoUpdate({
           target: priceCacheTable.symbol,
-          set: { priceUsd: price.toString(), updatedAt: new Date() },
+          set: {
+            priceUsd: data.usd.toString(),
+            change24h: change24hStr,
+            updatedAt: new Date(),
+          },
         });
     }
   } catch (err) {
@@ -10713,34 +10791,63 @@ async function loadPricesFromDb(symbols: string[]): Promise<Record<string, numbe
 }
 
 async function fetchCurrentPrices(assets: string[]): Promise<Record<string, number>> {
+  const enriched = await fetchCurrentPricesWithChange(assets);
+  const simple: Record<string, number> = {};
+  for (const [sym, data] of Object.entries(enriched)) {
+    simple[sym] = data.usd;
+  }
+  return simple;
+}
+
+async function fetchCurrentPricesWithChange(assets: string[]): Promise<Record<string, { usd: number; change24h?: number }>> {
   const coingeckoIds = assets
     .map((a) => COINGECKO_ASSET_MAP[a.toUpperCase()])
     .filter(Boolean);
 
   if (coingeckoIds.length === 0) return {};
 
-  try {
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error("CoinGecko API error:", response.status, "- falling back to cached prices");
-      return await loadPricesFromDb(assets);
-    }
-    const data = await response.json();
-    const prices: Record<string, number> = {};
-    for (const [symbol, cgId] of Object.entries(COINGECKO_ASSET_MAP)) {
-      if (data[cgId]?.usd !== undefined) {
-        prices[symbol] = data[cgId].usd;
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd&include_24hr_change=true`;
+      const response = await fetch(url);
+      if (response.status === 429 && attempt < maxRetries) {
+        const backoff = (attempt + 1) * 10000;
+        console.log(`[price-cache] Rate limited (429), retrying in ${backoff / 1000}s...`);
+        await new Promise(r => setTimeout(r, backoff));
+        continue;
       }
+      if (!response.ok) {
+        console.error("CoinGecko API error:", response.status, "- falling back to cached prices");
+        const cached = await loadPricesFromDb(assets);
+        const result: Record<string, { usd: number; change24h?: number }> = {};
+        for (const [sym, price] of Object.entries(cached)) result[sym] = { usd: price };
+        return result;
+      }
+      const data = await response.json();
+      const prices: Record<string, { usd: number; change24h?: number }> = {};
+      for (const [symbol, cgId] of Object.entries(COINGECKO_ASSET_MAP)) {
+        if (assets.includes(symbol) && data[cgId]?.usd !== undefined) {
+          prices[symbol] = {
+            usd: data[cgId].usd,
+            change24h: data[cgId].usd_24h_change,
+          };
+        }
+      }
+      if (Object.keys(prices).length > 0) {
+        await savePricesToDb(prices);
+      }
+      return prices;
+    } catch (error) {
+      if (attempt < maxRetries) continue;
+      console.error("Failed to fetch prices from CoinGecko, falling back to cached:", error);
+      const cached = await loadPricesFromDb(assets);
+      const result: Record<string, { usd: number; change24h?: number }> = {};
+      for (const [sym, price] of Object.entries(cached)) result[sym] = { usd: price };
+      return result;
     }
-    if (Object.keys(prices).length > 0) {
-      savePricesToDb(prices);
-    }
-    return prices;
-  } catch (error) {
-    console.error("Failed to fetch prices from CoinGecko, falling back to cached:", error);
-    return await loadPricesFromDb(assets);
   }
+  return {};
 }
 
 async function runPriceAlertCheck() {

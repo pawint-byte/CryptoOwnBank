@@ -332,6 +332,7 @@ export type InsertWalletBalance = z.infer<typeof insertWalletBalanceSchema>;
 export const priceCache = pgTable("price_cache", {
   symbol: varchar("symbol", { length: 20 }).primaryKey(),
   priceUsd: decimal("price_usd", { precision: 24, scale: 12 }).notNull(),
+  change24h: decimal("change_24h", { precision: 12, scale: 4 }),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
