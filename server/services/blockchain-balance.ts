@@ -709,19 +709,38 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
           const stakeEntry = Array.isArray(stakeData) ? stakeData[0] : null;
           if (stakeEntry && stakeEntry.delegated_pool) {
             isDelegated = true;
-            console.log(`Koios account_info fields:`, JSON.stringify({
-              total_balance: stakeEntry.total_balance,
-              controlled_amount: stakeEntry.controlled_amount,
-              utxo: stakeEntry.utxo,
-              rewards_available: stakeEntry.rewards_available,
-              keys: Object.keys(stakeEntry),
-            }));
-            const totalStakeLovelace = parseInt(stakeEntry.total_balance || stakeEntry.controlled_amount || "0");
-            const totalAda = totalStakeLovelace > 0 ? totalStakeLovelace / 1e6 : singleAddrAda;
+
+            let walletAda = singleAddrAda;
+            try {
+              const addrListResp = await fetch(`https://api.koios.rest/api/v1/account_addresses`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({ _addresses: [entry.stake_address] }),
+              });
+              if (addrListResp.ok) {
+                const addrList = await addrListResp.json();
+                const allAddrs = Array.isArray(addrList) ? addrList.map((a: any) => a.address).filter(Boolean) : [];
+                if (allAddrs.length > 1) {
+                  const batchResp = await fetch(`https://api.koios.rest/api/v1/address_info`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ _addresses: allAddrs }),
+                  });
+                  if (batchResp.ok) {
+                    const batchData = await batchResp.json();
+                    if (Array.isArray(batchData) && batchData.length > 0) {
+                      const totalLovelace = batchData.reduce((sum: number, a: any) => sum + parseInt(a.balance || "0"), 0);
+                      walletAda = totalLovelace / 1e6;
+                    }
+                  }
+                }
+              }
+            } catch {}
+
             balances.push({
               symbol: "ADA (staked)",
-              balance: totalAda,
-              usdValue: totalAda * (prices.ADA || 0),
+              balance: walletAda,
+              usdValue: walletAda * (prices.ADA || 0),
             });
             const rewards = parseInt(stakeEntry.rewards_available || "0") / 1e6;
             if (rewards > 0.01) {
