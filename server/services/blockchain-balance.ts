@@ -719,7 +719,17 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
               });
               if (addrListResp.ok) {
                 const addrList = await addrListResp.json();
-                const allAddrs = Array.isArray(addrList) ? addrList.map((a: any) => a.address).filter(Boolean) : [];
+                let allAddrs: string[] = [];
+                if (Array.isArray(addrList)) {
+                  for (const item of addrList) {
+                    if (Array.isArray(item.addresses)) {
+                      allAddrs.push(...item.addresses);
+                    } else if (item.address) {
+                      allAddrs.push(item.address);
+                    }
+                  }
+                }
+                allAddrs = allAddrs.filter(Boolean);
                 console.log(`Cardano stake ${entry.stake_address?.slice(0, 20)}... has ${allAddrs.length} addresses`);
                 if (allAddrs.length > 1) {
                   const batchResp = await fetch(`https://api.koios.rest/api/v1/address_info`, {
