@@ -389,6 +389,10 @@ export default function DcaOrders() {
   }, []);
 
   async function executeNow(order: DcaOrder) {
+    if (order.chain === "stellar") {
+      toast({ title: "Stellar DCA — open LOBSTR to execute", description: "Stellar DCA orders create a pending swap on the Stellar DEX. Open LOBSTR or StellarTerm to review and approve the trade.", variant: "destructive" });
+      return;
+    }
     const walletAddress = activeWallet || useXrplStore.getState().walletAddress;
     if (!walletAddress) {
       toast({ title: "No wallet connected", description: "Connect your XRPL wallet first.", variant: "destructive" });
