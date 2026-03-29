@@ -158,16 +158,40 @@ async function fetchStellarOrderBook(base: StellarAsset, quote: StellarAsset, li
   return { bids, asks };
 }
 
-function buildStellarTradeUrl(pair: StellarPair, wallet: "lobstr" | "stellarterm" | "stellarx"): string {
+const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+function buildLobstrTradeUrl(pair: StellarPair): string {
+  const baseCode = pair.base.code;
+  const quoteCode = pair.quote.code;
+  const assetParam = pair.base.type === "native"
+    ? `${quoteCode}:${pair.quote.issuer}`
+    : `${baseCode}:${pair.base.issuer}`;
+  return `https://lobstr.co/trade/${assetParam}`;
+}
+
+function handleLobstrClick(e: React.MouseEvent, pair: StellarPair, onSuccess: () => void) {
+  const webUrl = buildLobstrTradeUrl(pair);
+  if (isMobile()) {
+    e.preventDefault();
+    onSuccess();
+    window.location.href = webUrl;
+    setTimeout(() => {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const storeUrl = isIOS
+        ? "https://apps.apple.com/app/lobstr-stellar-wallet/id1429103572"
+        : "https://play.google.com/store/apps/details?id=com.lobstr.client";
+      window.location.href = storeUrl;
+    }, 2500);
+  } else {
+    onSuccess();
+    window.open(webUrl, "_blank");
+  }
+}
+
+function buildStellarTradeUrl(pair: StellarPair, wallet: "stellarterm" | "stellarx"): string {
   const baseCode = pair.base.code;
   const quoteCode = pair.quote.code;
 
-  if (wallet === "lobstr") {
-    if (pair.base.type === "native") {
-      return `https://lobstr.co/trade/${quoteCode}:${pair.quote.issuer}`;
-    }
-    return `https://lobstr.co/trade/${baseCode}:${pair.base.issuer}`;
-  }
   if (wallet === "stellarterm") {
     if (pair.base.type === "native") {
       return `https://stellarterm.com/exchange/${quoteCode}-${pair.quote.issuer}/${baseCode}-native`;
@@ -871,12 +895,14 @@ export default function StellarDex() {
                 {(freighterAvailable || freighterAddress) && (
                   <p className="text-xs font-semibold text-muted-foreground pt-1">Or open in an external wallet</p>
                 )}
-                <a href={buildStellarTradeUrl(pair, "lobstr")} rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); }}>
-                  <Button variant="outline" className="w-full" data-testid="button-trade-lobstr">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Trade on LOBSTR
+                <button className="block w-full" onClick={(e) => handleLobstrClick(e, pair, () => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); })}>
+                  <Button variant="outline" className="w-full" data-testid="button-trade-lobstr" asChild>
+                    <span>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Trade on LOBSTR
+                    </span>
                   </Button>
-                </a>
+                </button>
                 <a href={buildStellarTradeUrl(pair, "stellarterm")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("StellarTerm"); setTradeDialogOpen(false); }}>
                   <Button variant="outline" className="w-full" data-testid="button-trade-stellarterm">
                     <ExternalLink className="h-4 w-4 mr-2" />

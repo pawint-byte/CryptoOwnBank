@@ -111,6 +111,8 @@ function isTokenActive(token: PopularToken, balances: StellarBalance[]): boolean
   );
 }
 
+const isMobileDevice = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 function buildChangeTrustLink(code: string, issuer: string, wallet: string): string {
   if (wallet === "lobstr") {
     return `https://lobstr.co/trade/${code}:${issuer}`;
@@ -135,6 +137,23 @@ function buildRemoveTrustLink(code: string, issuer: string, wallet: string): str
     return `https://www.stellarx.com/markets/${code}:${issuer}/native`;
   }
   return `https://laboratory.stellar.org/#txbuilder?params=changeTrust&asset_code=${code}&asset_issuer=${issuer}&limit=0`;
+}
+
+function handleLobstrTokenClick(e: React.MouseEvent, code: string, issuer: string, linkFn: (c: string, i: string, w: string) => string) {
+  const webUrl = linkFn(code, issuer, "lobstr");
+  if (isMobileDevice()) {
+    e.preventDefault();
+    window.location.href = webUrl;
+    setTimeout(() => {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const storeUrl = isIOS
+        ? "https://apps.apple.com/app/lobstr-stellar-wallet/id1429103572"
+        : "https://play.google.com/store/apps/details?id=com.lobstr.client";
+      window.location.href = storeUrl;
+    }, 2500);
+  } else {
+    window.open(webUrl, "_blank");
+  }
 }
 
 export default function StellarTokens() {
@@ -587,12 +606,14 @@ export default function StellarTokens() {
                       const linkFn = pendingAction.action === "remove" ? buildRemoveTrustLink : buildChangeTrustLink;
                       return (
                         <>
-                          <a href={linkFn(pendingAction.code, pendingAction.issuer, "lobstr")} rel="noopener noreferrer">
-                            <Button variant="outline" size="sm" data-testid="button-trust-lobstr">
-                              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                              LOBSTR
+                          <button onClick={(e) => handleLobstrTokenClick(e, pendingAction.code, pendingAction.issuer, linkFn)}>
+                            <Button variant="outline" size="sm" data-testid="button-trust-lobstr" asChild>
+                              <span>
+                                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                                LOBSTR
+                              </span>
                             </Button>
-                          </a>
+                          </button>
                           <a href={linkFn(pendingAction.code, pendingAction.issuer, "stellarterm")} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline" size="sm" data-testid="button-trust-stellarterm">
                               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />

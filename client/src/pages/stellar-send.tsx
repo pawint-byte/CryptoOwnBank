@@ -127,6 +127,24 @@ function truncateAddress(addr: string): string {
   return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
 }
 
+const isMobileSend = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+function handleLobstrSendClick(e: React.MouseEvent, url: string) {
+  if (isMobileSend()) {
+    e.preventDefault();
+    window.location.href = url;
+    setTimeout(() => {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const storeUrl = isIOS
+        ? "https://apps.apple.com/app/lobstr-stellar-wallet/id1429103572"
+        : "https://play.google.com/store/apps/details?id=com.lobstr.client";
+      window.location.href = storeUrl;
+    }, 2500);
+  } else {
+    window.open(url, "_blank");
+  }
+}
+
 export default function StellarSend() {
   const { toast } = useToast();
   const { stellarAddress, isConnected, balances, recentRecipients, addRecentRecipient } = useStellarStore();
@@ -979,12 +997,14 @@ export default function StellarSend() {
                   Stellar URI
                 </Button>
               </a>
-              <a href={`https://lobstr.co/trade/native/offer?amount=${amount}&destination=${recipient}${memo ? `&memo=${encodeURIComponent(memo)}` : ""}`} rel="noopener noreferrer">
-                <Button variant="outline" size="sm" data-testid="button-open-lobstr">
-                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                  LOBSTR
+              <button onClick={(e) => handleLobstrSendClick(e, `https://lobstr.co/trade/native/offer?amount=${amount}&destination=${recipient}${memo ? `&memo=${encodeURIComponent(memo)}` : ""}`)}>
+                <Button variant="outline" size="sm" data-testid="button-open-lobstr" asChild>
+                  <span>
+                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                    LOBSTR
+                  </span>
                 </Button>
-              </a>
+              </button>
               <a href="https://freighter.app" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm" data-testid="button-open-freighter">
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
