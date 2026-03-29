@@ -32,22 +32,28 @@ export async function completePendingXummPayment(): Promise<XummSignResult> {
   }
 
   const maxAttempts = 30;
+  let pollErrors = 0;
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const status = await checkXummStatus(uuid);
+      pollErrors = 0;
       if (status.resolved) {
         sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
         if (status.signed) {
-          if (status.dispatchedResult && status.dispatchedResult !== "tesSUCCESS") {
-            return { success: false, error: `Transaction rejected: ${status.dispatchedResult}` };
+          console.log("[Xumm] Payment dispatched result:", status.dispatchedResult, "txid:", status.txid);
+          if (status.dispatchedResult && !status.dispatchedResult.startsWith("tes")) {
+            return { success: false, error: `Transaction failed: ${status.dispatchedResult}` };
           }
           return { success: true, txHash: status.txid || uuid };
         }
         return { success: false, error: "Payment was declined" };
       }
     } catch {
-      sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
-      return { success: false, error: "Failed to check payment status" };
+      pollErrors++;
+      if (pollErrors >= 3) {
+        sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
+        return { success: false, error: "Failed to check payment status" };
+      }
     }
     await new Promise(r => setTimeout(r, 2000));
   }
