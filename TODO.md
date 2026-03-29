@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-03-27 by main agent**
+**Last updated: 2026-03-29 by main agent**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -208,6 +208,22 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 | 2026-03-23 | Borrow Against Vaults = interface only | CryptoOwnBank is NOT the lender — dashboard to external protocols only. Avoids money transmission / securities issues |
 | 2026-03-23 | AI model: GPT-4o-mini to start | ~1/10th cost of GPT-4o, good enough for simple queries, upgrade with one line of code when needed |
 | 2026-03-23 | Onramper is preferred on-ramp solution | Aggregates multiple providers in one embedded UI — better than individual MoonPay/Transak widgets |
+
+---
+
+## DO NOT CHANGE — Critical Code That Works (Added 2026-03-29)
+
+**XRPL OfferCreate flags — DO NOT modify these values. They were tested and confirmed working.**
+
+| File | Line | Flag | Meaning | Notes |
+|------|------|------|---------|-------|
+| `dca-orders.tsx` | OfferCreate in executeNow | `0x00040000` | tfFillOrKill | Original working code. Includes sanity check for inverted prices. |
+| `ownbank-dex.tsx` | Quick swap | `0x00040000` | tfFillOrKill | Market swap on DEX page. |
+| `ownbank-dex.tsx` | Limit order GTC | `0` (no flag) | Good Till Cancel | Sits on order book until filled. |
+| `ownbank-dex.tsx` | Limit order FOK | `0x00040000` | tfFillOrKill | Fill entire order at once or cancel. |
+| `ownbank-dex.tsx` | Limit order IOC | `0x00080000` | tfImmediateOrCancel | Fill what's available, cancel rest. |
+
+**If a `tecKILLED` error occurs, the issue is price calculation or order book fetch — NOT the flags. Do not change flags.**
 
 ---
 

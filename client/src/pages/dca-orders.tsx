@@ -536,27 +536,32 @@ export default function DcaOrders() {
         return;
       }
 
-      const priceWithSlippage = bestPrice * 1.03;
-      const buyAmount = (spendAmount / priceWithSlippage).toFixed(6);
+      let buyAmount = (spendAmount / bestPrice).toFixed(6);
 
-      if (parseFloat(buyAmount) <= 0) {
+      const sanityMax = spendAmount * 10;
+      if (parseFloat(buyAmount) > sanityMax) {
+        console.warn(`[DCA] Buy amount ${buyAmount} exceeds sanity limit (${sanityMax}), price may be inverted. Using inverse.`);
+        buyAmount = (spendAmount * bestPrice).toFixed(6);
+      }
+
+      if (parseFloat(buyAmount) <= 0 || parseFloat(buyAmount) > spendAmount * 100) {
         toast({ title: "Price error", description: "Market price seems unreliable. Try again or use the DEX page.", variant: "destructive" });
         setExecutingOrderId(null);
         return;
       }
 
-      const takerGets = buildAmountField(order.spendCurrency, order.spendIssuer, spendAmount.toFixed(6));
+      const takerGets = buildAmountField(order.spendCurrency, order.spendIssuer, spendAmount.toString());
       const takerPays = buildAmountField(order.buyCurrency, order.buyIssuer, buyAmount);
 
       console.log(`[DCA] bestPrice=${bestPrice}, TakerGets=`, JSON.stringify(takerGets), `TakerPays=`, JSON.stringify(takerPays));
-      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} for ~${parseFloat(buyAmount).toFixed(2)} ${getTokenDisplay(order.buyCurrency)}` });
+      toast({ title: "Opening Xaman...", description: `Swapping ${spendAmount} ${getTokenDisplay(order.spendCurrency)} → ${buyAmount} ${getTokenDisplay(order.buyCurrency)}` });
 
       const txJson: Record<string, unknown> = {
         TransactionType: "OfferCreate",
         Account: walletAddress,
         TakerGets: takerGets,
         TakerPays: takerPays,
-        Flags: 0x00080000,
+        Flags: 0x00040000,
       };
 
       sessionStorage.setItem("dca_execute_order_id", order.id);
