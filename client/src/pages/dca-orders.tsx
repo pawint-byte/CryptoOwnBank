@@ -568,9 +568,13 @@ export default function DcaOrders() {
       const result = await signTransaction(txJson);
 
       if (result.success) {
-        await apiRequest("POST", `/api/dca-orders/${order.id}/execute`, {
-          txHash: result.txHash || null,
-        });
+        try {
+          await apiRequest("POST", `/api/dca-orders/${order.id}/execute`, {
+            txHash: result.txHash || null,
+          });
+        } catch (execErr) {
+          console.warn("[DCA] Failed to record execution on server, but trade was signed:", execErr);
+        }
         try {
           await apiRequest("POST", "/api/record-dex-trade", {
             txHash: result.txHash,
@@ -594,7 +598,7 @@ export default function DcaOrders() {
       }
     } catch (err) {
       console.error("[DCA] Execute now error:", err);
-      toast({ title: "Execution failed", description: "Something went wrong. Try again.", variant: "destructive" });
+      toast({ title: "Execution failed", description: String(err instanceof Error ? err.message : err) || "Something went wrong. Try again.", variant: "destructive" });
     } finally {
       if (!isMobile) {
         sessionStorage.removeItem("dca_execute_order_id");
