@@ -213,17 +213,19 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ## DO NOT CHANGE — Critical Code That Works (Added 2026-03-29)
 
-**XRPL OfferCreate flags — DO NOT modify these values. They were tested and confirmed working.**
+**XRPL OfferCreate flags — verified against live order book 2026-03-29. Do NOT change without running the test simulation first.**
 
-| File | Line | Flag | Meaning | Notes |
-|------|------|------|---------|-------|
-| `dca-orders.tsx` | OfferCreate in executeNow | `0x00040000` | tfFillOrKill | Original working code. Includes sanity check for inverted prices. |
-| `ownbank-dex.tsx` | Quick swap | `0x00040000` | tfFillOrKill | Market swap on DEX page. |
-| `ownbank-dex.tsx` | Limit order GTC | `0` (no flag) | Good Till Cancel | Sits on order book until filled. |
-| `ownbank-dex.tsx` | Limit order FOK | `0x00040000` | tfFillOrKill | Fill entire order at once or cancel. |
-| `ownbank-dex.tsx` | Limit order IOC | `0x00080000` | tfImmediateOrCancel | Fill what's available, cancel rest. |
+XRPL flag reference: `tfPassive`=0x00010000, `tfImmediateOrCancel`=0x00020000, `tfFillOrKill`=0x00040000, `tfSell`=0x00080000
 
-**If a `tecKILLED` error occurs, the issue is price calculation or order book fetch — NOT the flags. Do not change flags.**
+| File | Context | Flag | Actual XRPL Meaning | Notes |
+|------|---------|------|---------------------|-------|
+| `dca-orders.tsx` | DCA Execute Now | `0x00080000` | tfSell | Sells all TakerGets, gets as much as possible. Correct for DCA — maximizes fill. |
+| `ownbank-dex.tsx` | Quick swap | `0x00040000` | tfFillOrKill | Market swap. Works because bid depth is typically deep enough. |
+| `ownbank-dex.tsx` | Limit GTC | `0` (no flag) | Standard offer | Sits on book until filled. |
+| `ownbank-dex.tsx` | Limit FOK | `0x00040000` | tfFillOrKill | Correct. |
+| `ownbank-dex.tsx` | Limit IOC | `0x00080000` | tfSell (NOT tfImmediateOrCancel) | Known mismatch — labeled IOC but behaves as tfSell. Has not caused user issues. Real IOC would be 0x00020000. |
+
+**Debugging `tecKILLED`**: Usually means tfFillOrKill couldn't fill the full amount. Check order book depth on BOTH sides. The XRPL matches your offer against the OPPOSITE side of the book. Test with the simulation script before changing any flags.
 
 ---
 
