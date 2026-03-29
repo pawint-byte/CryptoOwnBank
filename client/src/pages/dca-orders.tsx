@@ -478,7 +478,7 @@ export default function DcaOrders() {
         }
         return;
       }
-      toast({ title: "Stellar DCA — install Freighter to execute", description: "Install the Freighter browser extension (freighter.app) to execute Stellar DCA trades in-browser on desktop.", variant: "destructive" });
+      toast({ title: "Stellar DCA — Freighter required on desktop", description: "Install the Freighter browser extension (freighter.app) to execute Stellar DCA trades. On mobile, use LOBSTR instead.", variant: "destructive" });
       return;
     }
     const walletAddress = activeWallet || useXrplStore.getState().walletAddress;
