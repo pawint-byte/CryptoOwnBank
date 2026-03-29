@@ -147,15 +147,15 @@ export async function getAccountTransactions(
         const gets = parseXrplAmount(txData.TakerGets);
         const pays = parseXrplAmount(txData.TakerPays);
         if (txData.Account === address) {
-          amount = pays.amount;
-          currency = pays.currency;
-          amount2 = gets.amount;
-          currency2 = gets.currency;
-        } else {
           amount = gets.amount;
           currency = gets.currency;
           amount2 = pays.amount;
           currency2 = pays.currency;
+        } else {
+          amount = pays.amount;
+          currency = pays.currency;
+          amount2 = gets.amount;
+          currency2 = gets.currency;
         }
       } else if (txType === "TrustSet") {
         const limitAmount = txData.LimitAmount;

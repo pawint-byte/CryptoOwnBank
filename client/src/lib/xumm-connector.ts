@@ -416,15 +416,18 @@ export async function signTransaction(txJson: Record<string, any>): Promise<Xumm
         `);
       }
 
+      let txPollErrors = 0;
       const pollInterval = setInterval(async () => {
         try {
           const status = await checkXummStatus(payload.uuid);
+          txPollErrors = 0;
           if (status.resolved) {
             clearInterval(pollInterval);
             if (popup && !popup.closed) popup.close();
             if (status.signed) {
-              if (status.dispatchedResult && status.dispatchedResult !== "tesSUCCESS") {
-                resolve({ success: false, error: `Transaction rejected: ${status.dispatchedResult}` });
+              console.log("[Xumm] signTransaction dispatched:", status.dispatchedResult, "txid:", status.txid);
+              if (status.dispatchedResult && !status.dispatchedResult.startsWith("tes")) {
+                resolve({ success: false, error: `Transaction failed: ${status.dispatchedResult}` });
               } else {
                 resolve({ success: true, txHash: status.txid || payload.uuid });
               }
@@ -432,10 +435,14 @@ export async function signTransaction(txJson: Record<string, any>): Promise<Xumm
               resolve({ success: false, error: "Transaction was declined" });
             }
           }
-        } catch {
-          clearInterval(pollInterval);
-          if (popup && !popup.closed) popup.close();
-          resolve({ success: false, error: "Failed to check transaction status" });
+        } catch (e) {
+          txPollErrors++;
+          console.warn("[Xumm] signTransaction poll error", txPollErrors, e);
+          if (txPollErrors >= 3) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            resolve({ success: false, error: "Failed to check transaction status" });
+          }
         }
       }, 2000);
 
@@ -502,15 +509,18 @@ export async function signPayment(
         `);
       }
 
+      let payPollErrors = 0;
       const pollInterval = setInterval(async () => {
         try {
           const status = await checkXummStatus(payload.uuid);
+          payPollErrors = 0;
           if (status.resolved) {
             clearInterval(pollInterval);
             if (popup && !popup.closed) popup.close();
             if (status.signed) {
-              if (status.dispatchedResult && status.dispatchedResult !== "tesSUCCESS") {
-                resolve({ success: false, error: `Transaction rejected: ${status.dispatchedResult}` });
+              console.log("[Xumm] signPayment dispatched:", status.dispatchedResult, "txid:", status.txid);
+              if (status.dispatchedResult && !status.dispatchedResult.startsWith("tes")) {
+                resolve({ success: false, error: `Transaction failed: ${status.dispatchedResult}` });
               } else {
                 resolve({ success: true, txHash: status.txid || payload.uuid });
               }
@@ -518,10 +528,14 @@ export async function signPayment(
               resolve({ success: false, error: "Transaction was declined" });
             }
           }
-        } catch {
-          clearInterval(pollInterval);
-          if (popup && !popup.closed) popup.close();
-          resolve({ success: false, error: "Failed to check transaction status" });
+        } catch (e) {
+          payPollErrors++;
+          console.warn("[Xumm] signPayment poll error", payPollErrors, e);
+          if (payPollErrors >= 3) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            resolve({ success: false, error: "Failed to check transaction status" });
+          }
         }
       }, 2000);
 
@@ -574,22 +588,29 @@ export async function signTrustSet(
         `);
       }
 
+      let trustPollErrors = 0;
       const pollInterval = setInterval(async () => {
         try {
           const status = await checkXummStatus(payload.uuid);
+          trustPollErrors = 0;
           if (status.resolved) {
             clearInterval(pollInterval);
             if (popup && !popup.closed) popup.close();
             if (status.signed) {
-              resolve({ success: true, txHash: payload.uuid });
+              console.log("[Xumm] signTrustSet dispatched:", status.dispatchedResult, "txid:", status.txid);
+              resolve({ success: true, txHash: status.txid || payload.uuid });
             } else {
               resolve({ success: false, error: "Trust line was declined" });
             }
           }
-        } catch {
-          clearInterval(pollInterval);
-          if (popup && !popup.closed) popup.close();
-          resolve({ success: false, error: "Failed to check trust line status" });
+        } catch (e) {
+          trustPollErrors++;
+          console.warn("[Xumm] signTrustSet poll error", trustPollErrors, e);
+          if (trustPollErrors >= 3) {
+            clearInterval(pollInterval);
+            if (popup && !popup.closed) popup.close();
+            resolve({ success: false, error: "Failed to check trust line status" });
+          }
         }
       }, 2000);
 
