@@ -390,8 +390,31 @@ export default function DcaOrders() {
     }
   }, []);
 
+  const isMobileDca = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  function openLobstrForDca(order: DcaOrder) {
+    const buyCode = order.buyCurrency;
+    const buyIssuer = order.buyIssuer;
+    const assetParam = buyCode === "XLM" ? "native" : `${buyCode}:${buyIssuer}`;
+    const lobstrUrl = `https://lobstr.co/trade/${assetParam}`;
+    window.location.href = lobstrUrl;
+    setTimeout(() => {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const storeUrl = isIOS
+        ? "https://apps.apple.com/app/lobstr-stellar-wallet/id1429103572"
+        : "https://play.google.com/store/apps/details?id=com.lobstr.client";
+      window.location.href = storeUrl;
+    }, 2500);
+  }
+
   async function executeNow(order: DcaOrder) {
     if (order.chain === "stellar") {
+      if (isMobileDca) {
+        toast({ title: "Opening LOBSTR", description: `Open the trade in LOBSTR to execute your ${order.buyCurrency} DCA buy manually.` });
+        openLobstrForDca(order);
+        return;
+      }
+
       const freighterReady = await isFreighterInstalled();
       if (freighterReady) {
         setExecutingOrderId(order.id);
@@ -455,7 +478,7 @@ export default function DcaOrders() {
         }
         return;
       }
-      toast({ title: "Stellar DCA — install Freighter or open LOBSTR to execute", description: "Install the Freighter browser extension (freighter.app) to execute Stellar DCA trades in-browser, or open LOBSTR/StellarTerm to sign manually.", variant: "destructive" });
+      toast({ title: "Stellar DCA — install Freighter to execute", description: "Install the Freighter browser extension (freighter.app) to execute Stellar DCA trades in-browser on desktop.", variant: "destructive" });
       return;
     }
     const walletAddress = activeWallet || useXrplStore.getState().walletAddress;
