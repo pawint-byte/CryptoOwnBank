@@ -536,7 +536,8 @@ export default function DcaOrders() {
         return;
       }
 
-      const buyAmount = (spendAmount / bestPrice).toFixed(6);
+      const priceWithSlippage = bestPrice * 1.03;
+      const buyAmount = (spendAmount / priceWithSlippage).toFixed(6);
 
       if (parseFloat(buyAmount) <= 0) {
         toast({ title: "Price error", description: "Market price seems unreliable. Try again or use the DEX page.", variant: "destructive" });
@@ -555,7 +556,7 @@ export default function DcaOrders() {
         Account: walletAddress,
         TakerGets: takerGets,
         TakerPays: takerPays,
-        Flags: 0x00040000,
+        Flags: 0x00080000,
       };
 
       sessionStorage.setItem("dca_execute_order_id", order.id);
