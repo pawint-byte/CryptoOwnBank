@@ -587,7 +587,7 @@ export default function StellarTokens() {
                       const linkFn = pendingAction.action === "remove" ? buildRemoveTrustLink : buildChangeTrustLink;
                       return (
                         <>
-                          <a href={linkFn(pendingAction.code, pendingAction.issuer, "lobstr")} target="_blank" rel="noopener noreferrer">
+                          <a href={linkFn(pendingAction.code, pendingAction.issuer, "lobstr")} rel="noopener noreferrer">
                             <Button variant="outline" size="sm" data-testid="button-trust-lobstr">
                               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                               LOBSTR

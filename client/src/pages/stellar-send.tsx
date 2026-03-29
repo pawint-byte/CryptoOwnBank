@@ -979,7 +979,7 @@ export default function StellarSend() {
                   Stellar URI
                 </Button>
               </a>
-              <a href={`https://lobstr.co/trade/native/offer?amount=${amount}&destination=${recipient}${memo ? `&memo=${encodeURIComponent(memo)}` : ""}`} target="_blank" rel="noopener noreferrer">
+              <a href={`https://lobstr.co/trade/native/offer?amount=${amount}&destination=${recipient}${memo ? `&memo=${encodeURIComponent(memo)}` : ""}`} rel="noopener noreferrer">
                 <Button variant="outline" size="sm" data-testid="button-open-lobstr">
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                   LOBSTR

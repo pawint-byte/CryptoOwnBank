@@ -871,7 +871,7 @@ export default function StellarDex() {
                 {(freighterAvailable || freighterAddress) && (
                   <p className="text-xs font-semibold text-muted-foreground pt-1">Or open in an external wallet</p>
                 )}
-                <a href={buildStellarTradeUrl(pair, "lobstr")} target="_blank" rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); }}>
+                <a href={buildStellarTradeUrl(pair, "lobstr")} rel="noopener noreferrer" className="block" onClick={() => { sendStellarTradeNotification("LOBSTR"); setTradeDialogOpen(false); }}>
                   <Button variant="outline" className="w-full" data-testid="button-trade-lobstr">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Trade on LOBSTR
