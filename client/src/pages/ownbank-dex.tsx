@@ -554,7 +554,7 @@ export default function OwnBankDex() {
       if (fillType === "fok") {
         flags = 0x00040000;
       } else if (fillType === "ioc") {
-        flags = 0x00080000;
+        flags = 0x00020000;
       }
 
       const txJson: Record<string, any> = {
@@ -857,7 +857,7 @@ export default function OwnBankDex() {
               Account: activeWallet,
               TakerGets: takerGets,
               TakerPays: takerPays,
-              Flags: 0x00040000,
+              Flags: 0x00020000,
             };
             const result = await signTransaction(txJson);
             if (result.success) {
