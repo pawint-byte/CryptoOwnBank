@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-03-29 by main agent**
+**Last updated: 2026-03-29 by main agent (on-ramp provider updates)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -106,11 +106,13 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ## PENDING — External Approvals
 
-- [2026-03-23] Onramper API key — email sent to Rigved Bhatt (rigs@onramper.com) on Mon March 23, 2026. No acknowledgement as of March 25. Scheduled call with Rigved on March 27 at 7:45 AM EST. Would enable embedded aggregator widget covering multiple providers in one UI.
-- [2026-03-24] MoonPay partner approval (would enable embedded buy widget on our site)
-- [2026-03-24] Transak partner approval (would enable embedded buy widget on our site)
-- [2026-03-25] Ramp Network — DECLINED for now. They responded (Faris Riaz, partner@ramp.network): widget embed/overlay supported, most assets covered, but require ~$1M/month volume to waive annual recurring fee. Integration fee + annual compliance review fees apply below that threshold. Not viable at current stage. Revisit when volume grows. Onramper aggregates Ramp anyway, so one integration covers it.
-- [2026-03-25] Alchemy Pay — EVALUATE. Full on-ramp (fiat to crypto) and off-ramp (crypto to fiat). 173 countries, 300+ payment methods, direct wallet deposits/withdrawals. Widget embed supported. Volume-friendly pricing (0.5-2% per transaction, varies by method). No $1M volume requirement like Ramp Network. Ramp page: https://ramp.alchemypay.org/
+- [2026-03-23] Onramper — Rigved Bhatt (rigs@onramper.com) scheduled call March 27, was a no-show. Then sent onboarding steps requiring $199/mo minimum subscription + KYB documents without prior discussion. Not pursuing at this stage — pricing too high for current volume. Revisit when membership grows.
+- [2026-03-24] MoonPay — Partner application submitted. Declined without reason provided. Follow-up email sent requesting reconsideration (platform is non-custodial, no licensing requirements). No response received.
+- [2026-03-24] Transak — Partner application submitted. Status unknown (may have been the one that declined). Follow-up sent, no response.
+- [2026-03-25] Ramp Network — DECLINED for now. They responded (Faris Riaz, partner@ramp.network): require ~$1M/month volume to waive annual recurring fee. Not viable at current stage.
+- [2026-03-25] Alchemy Pay — EVALUATE. Full on-ramp/off-ramp. 173 countries, 300+ payment methods. Widget embed supported. Volume-friendly pricing (0.5-2% per transaction). No $1M volume requirement. Ramp page: https://ramp.alchemypay.org/
+- [2026-03-29] Guardarian — Application submitted (Widget integration, On-ramp + Off-ramp, Crypto industry). Awaiting response. No monthly fee expected — transaction-based pricing. guardarian.com
+- [2026-03-29] Changelly — Requested a conversation with their business team. Awaiting response. changelly.com/for-business
 - [2026-03-25] NOWPayments — IPN webhook LIVE (`/api/nowpayments/ipn`). IPN secret configured. Callback URL needs to be set in NOWPayments dashboard to `https://cryptoownbank.com/api/nowpayments/ipn`. On-ramp/off-ramp widget embed still pending evaluation. Pricing: 0.5% (no conversion) or 1% (with conversion). On-ramp: https://nowpayments.io/fiat-on-ramp | Off-ramp: https://nowpayments.io/off-ramp
 - [2026-03-24] Stellar Development Foundation grant
 - [2026-03-24] Ripple grant (Spring 2026 application window)
