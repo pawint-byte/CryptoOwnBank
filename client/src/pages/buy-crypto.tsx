@@ -1058,6 +1058,36 @@ export default function BuyCrypto() {
         </CardContent>
       </Card>
 
+      <Card className="border-green-500/30 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-changelly-swap-widget">
+            <ArrowRightLeft className="h-5 w-5 text-green-600" />
+            Exchange Crypto
+          </CardTitle>
+          <CardDescription>
+            Swap between 500+ cryptocurrencies instantly. No account needed — just select your pair and swap.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg overflow-hidden border" style={{ height: "450px" }} data-testid="changelly-swap-widget-container">
+            <iframe
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allow="camera"
+              src="https://widget.changelly.com?from=btc&to=eth&amount=0.1&address=&fromDefault=btc&toDefault=eth&merchant_id=17hPNKintbYkms_z&payment_id=&v=3"
+              title="Changelly Exchange Crypto Widget"
+              data-testid="changelly-swap-widget-iframe"
+            >
+              Can't load widget
+            </iframe>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Swap any crypto to any crypto. Powered by Changelly — best rates aggregated from multiple exchanges.
+          </p>
+        </CardContent>
+      </Card>
+
       {step === "token" && (
         <div className="space-y-4">
           {hasAnyWallets && (
