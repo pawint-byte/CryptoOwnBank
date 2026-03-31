@@ -78,7 +78,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 ## ACTION REQUIRED — Complete From Phone
 
 - [x] **NOWPayments IPN callback URL** — DONE (2026-03-26). Webhook URL set to `https://cryptoownbank.com/api/nowpayments/ipn` in NOWPayments dashboard. IPN secret configured. Backend endpoint live.
-- [ ] **LI.FI portal setup** — Go to portal.li.fi, log in, configure "cryptoownbank" integrator with fee % and payout wallet address (portal was erroring on work PC)
+- [x] **LI.FI portal setup** — DONE (2026-03-30). Registered "CryptoOwnBank" integrator at portal.li.fi. EVM payout wallet added. API key generated and saved as LIFI_API_KEY env var. Backend already sends x-lifi-api-key header + 1% fee param with all cross-chain swap requests.
 
 ---
 
@@ -119,7 +119,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-24] XLS-65/66 XRPL validator activation (for native lending)
 - [2026-03-26] Stellar Sponsored Fees — Stellar allows an account to pay transaction fees on behalf of another account. This could eliminate the onboarding friction where new members need XLM before they can do anything on Stellar. We could sponsor the tiny base fees (fractions of a cent) for new members so they can send their first RLUSD or USDC payment without owning any XLM. Low cost at scale, significant UX improvement for first-time Stellar users. Revisit when member volume on Stellar payments grows.
 - [2026-03-26] Stellar Soroban DeFi — Soroban smart contracts are live on Stellar mainnet. DeFi protocols are starting to deploy (lending, AMMs, yield vaults). As the ecosystem matures, the portfolio tracker could read Soroban contract positions and show members their Stellar DeFi holdings alongside their XRPL vaults and other chain balances. Not urgent today (ecosystem is still small), but worth monitoring quarterly. If a major Stellar DeFi protocol gains traction, adding position tracking would reinforce the BYOW "one dashboard for everything" story.
-- [2026-03-26] LI.FI portal setup — 1% fee parameter already added to API calls on our side. Need to log into portal.li.fi, register/configure "cryptoownbank" integrator, set fee % and payout wallet. Portal was giving errors from work PC — retry from phone or different browser. LI.FI support contacted and confirmed no approval needed, self-service once portal access works.
+- [2026-03-26] ~~LI.FI portal setup~~ — COMPLETED 2026-03-30. "CryptoOwnBank" integrator registered at portal.li.fi. EVM payout wallet configured. API key generated and stored as LIFI_API_KEY. Backend sends x-lifi-api-key header with all cross-chain swap requests. 1% fee parameter already in code. Fee collection is live.
 - [2026-03-26] Squid Router fee setup — integrator ID already configured but no fee param in API calls yet. Check Squid partner dashboard to see if fee collection is available. Email Squid partnerships to enable integrator fee if not self-service.
 
 ---
