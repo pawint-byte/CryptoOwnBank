@@ -100,6 +100,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 | Narfex | Generic link | Check if affiliate program exists | 2026-03-24 |
 | Onramp.money | Generic link — NO REFERRAL (blocks US citizens from affiliate signup) | None available | 2026-03-25 |
 | Digitap | LIVE — `my.digitap.app/en/sign-up/a5ddfe70-5c63-4aea-94de-1ff0741c56ec` (up to 40% commission) | None | 2026-03-25 |
+| Changelly | LIVE — ref_id `10R13NwGw_eGfrd_`, on-ramp widget (merchant_id `U-FDw3yOEYkT06Im`), exchange widget (merchant_id `17hPNKintbYkms_z`) | Ask Ana for off-ramp F2C API keys | 2026-03-30 |
 | Onramper | Awaiting API key | Embed aggregator widget once key received (email was sent previously) | 2026-03-23 |
 
 ---
@@ -112,7 +113,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-25] Ramp Network — DECLINED for now. They responded (Faris Riaz, partner@ramp.network): require ~$1M/month volume to waive annual recurring fee. Not viable at current stage.
 - [2026-03-25] Alchemy Pay — EVALUATE. Full on-ramp/off-ramp. 173 countries, 300+ payment methods. Widget embed supported. Volume-friendly pricing (0.5-2% per transaction). No $1M volume requirement. Ramp page: https://ramp.alchemypay.org/
 - [2026-03-29] Guardarian — Application submitted (Widget integration, On-ramp + Off-ramp, Crypto industry). Awaiting response. No monthly fee expected — transaction-based pricing. guardarian.com
-- [2026-03-29] Changelly — LIVE (2026-03-30). Affiliate account registered. Referral ID: m3ht8dcdorn4xrdg. Fiat on-ramp widget embedded on Buy Crypto page (merchant_id: U-FDw3yOEYkT06Im). Crypto-to-crypto API available. Fiat off-ramp API — need to ask Ana (mschweizburg@changelly.com) for F2C API keys. changelly.com
+- [2026-03-29] Changelly — LIVE (2026-03-30). Affiliate account registered. Referral ID: m3ht8dcdorn4xrdg. Fiat on-ramp widget embedded on Buy Crypto page (merchant_id: U-FDw3yOEYkT06Im). Crypto-to-crypto exchange widget also embedded (merchant_id: 17hPNKintbYkms_z). Referral link: https://changelly.com/?from=btc&to=eth&amount=0.1&ref_id=10R13NwGw_eGfrd_ . Fiat off-ramp API — need to ask Ana (mschweizburg@changelly.com) for F2C API keys. changelly.com
 - [2026-03-25] NOWPayments — IPN webhook LIVE (`/api/nowpayments/ipn`). IPN secret configured. Callback URL needs to be set in NOWPayments dashboard to `https://cryptoownbank.com/api/nowpayments/ipn`. On-ramp/off-ramp widget embed still pending evaluation. Pricing: 0.5% (no conversion) or 1% (with conversion). On-ramp: https://nowpayments.io/fiat-on-ramp | Off-ramp: https://nowpayments.io/off-ramp
 - [2026-03-24] Stellar Development Foundation grant
 - [2026-03-24] Ripple grant (Spring 2026 application window)
