@@ -112,7 +112,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-25] Ramp Network — DECLINED for now. They responded (Faris Riaz, partner@ramp.network): require ~$1M/month volume to waive annual recurring fee. Not viable at current stage.
 - [2026-03-25] Alchemy Pay — EVALUATE. Full on-ramp/off-ramp. 173 countries, 300+ payment methods. Widget embed supported. Volume-friendly pricing (0.5-2% per transaction). No $1M volume requirement. Ramp page: https://ramp.alchemypay.org/
 - [2026-03-29] Guardarian — Application submitted (Widget integration, On-ramp + Off-ramp, Crypto industry). Awaiting response. No monthly fee expected — transaction-based pricing. guardarian.com
-- [2026-03-29] Changelly — Requested a conversation with their business team. Awaiting response. changelly.com/for-business
+- [2026-03-29] Changelly — LIVE (2026-03-30). Affiliate account registered. Referral ID: m3ht8dcdorn4xrdg. Fiat on-ramp widget embedded on Buy Crypto page (merchant_id: U-FDw3yOEYkT06Im). Crypto-to-crypto API available. Fiat off-ramp API — need to ask Ana (mschweizburg@changelly.com) for F2C API keys. changelly.com
 - [2026-03-25] NOWPayments — IPN webhook LIVE (`/api/nowpayments/ipn`). IPN secret configured. Callback URL needs to be set in NOWPayments dashboard to `https://cryptoownbank.com/api/nowpayments/ipn`. On-ramp/off-ramp widget embed still pending evaluation. Pricing: 0.5% (no conversion) or 1% (with conversion). On-ramp: https://nowpayments.io/fiat-on-ramp | Off-ramp: https://nowpayments.io/off-ramp
 - [2026-03-24] Stellar Development Foundation grant
 - [2026-03-24] Ripple grant (Spring 2026 application window)

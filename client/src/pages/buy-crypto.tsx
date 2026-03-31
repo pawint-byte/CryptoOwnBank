@@ -1028,6 +1028,36 @@ export default function BuyCrypto() {
         </Badge>
       </div>
 
+      <Card className="border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-blue-500/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-changelly-widget">
+            <CreditCard className="h-5 w-5 text-violet-600" />
+            Buy Crypto Instantly
+          </CardTitle>
+          <CardDescription>
+            Buy crypto directly with your card or bank account. Powered by Changelly — fast, secure, and available worldwide.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg overflow-hidden border" style={{ height: "450px" }} data-testid="changelly-widget-container">
+            <iframe
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allow="camera"
+              src="https://widget.changelly.com?from=usd&to=btc&amount=500&address=&fromDefault=usd&toDefault=btc&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1"
+              title="Changelly Buy Crypto Widget"
+              data-testid="changelly-widget-iframe"
+            >
+              Can't load widget
+            </iframe>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Changelly supports 100+ cryptocurrencies. Transactions are processed by Changelly — CryptoOwnBank never touches your funds.
+          </p>
+        </CardContent>
+      </Card>
+
       {step === "token" && (
         <div className="space-y-4">
           {hasAnyWallets && (
