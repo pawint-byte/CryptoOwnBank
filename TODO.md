@@ -183,7 +183,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 ## PENDING — Features Needing User Testing
 
 - [2026-03-23] Legacy Plan — UPGRADED (2026-03-24): wallet-specific templates (16 wallet types: Ledger, CypheRock, Trezor, ELLIPAL, Tangem, Coldcard, Keystone, BitBox, Xaman, MetaMask, Trust, Phantom, Exodus, Coinbase Wallet, exchange accounts, other), pre-fill from connected wallets, client-side AES-256-GCM encrypted vault, standalone /decrypt page for survivors. Still needs user testing.
-- [2026-03-23] Earn & Accumulate
+- ~~[2026-03-23] Earn & Accumulate~~ — TESTED by user (Soil RLUSD vaults verified)
 - [2026-03-23] Cross-Chain Swap
 - [2026-03-23] XRPL Bridge
 - [2026-03-23] Recurring Payments
