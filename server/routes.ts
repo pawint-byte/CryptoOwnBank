@@ -3348,44 +3348,92 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         gainLossPct: r.costBasis > 0 ? ((r.marketValue - r.costBasis) / r.costBasis) * 100 : 0,
       }));
 
-      const DUST_THRESHOLD = 100;
-      const significantRows = consolidatedRows.filter(r => r.marketValue >= DUST_THRESHOLD);
-      const dustRows = consolidatedRows.filter(r => r.marketValue < DUST_THRESHOLD);
-      if (dustRows.length > 0) {
-        const dustTotal = dustRows.reduce((s, r) => s + r.marketValue, 0);
-        const dustCost = dustRows.reduce((s, r) => s + r.costBasis, 0);
-        const dustGL = dustCost > 0 ? dustTotal - dustCost : 0;
-        significantRows.push({
-          asset: `Other (${dustRows.length} assets)`,
-          quantity: 0,
-          price: 0,
-          marketValue: dustTotal,
-          costBasis: dustCost,
-          gainLoss: dustGL,
-          gainLossPct: dustCost > 0 ? (dustGL / dustCost) * 100 : 0,
-        });
-      }
+      const detailedMode = req.query.detail === "true";
 
-      if (significantRows.length > 0) {
-        curY += 8;
-        if (curY > 250) { doc.addPage(); curY = 14; }
-        doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.text("Crypto Holdings", 14, curY);
-        autoTable(doc, {
-          startY: curY + 4,
-          head: [["Asset", "Total Qty", "Avg Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
-          body: significantRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
-            r.asset, r.quantity > 0 ? fmtQty(r.quantity) : "--", r.price > 0 ? fmtCur(r.price) : "--",
-            fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
-          ]),
-          theme: "striped",
-          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
-          styles: { fontSize: 7.5, cellPadding: 1.5 },
-          columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
-          margin: { left: 14, right: 14 },
-        });
-        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      if (detailedMode) {
+        if (exchangeRows.length > 0) {
+          curY += 8;
+          if (curY > 250) { doc.addPage(); curY = 14; }
+          doc.setFontSize(12);
+          doc.setTextColor(0);
+          doc.text("Exchange Holdings", 14, curY);
+          autoTable(doc, {
+            startY: curY + 4,
+            head: [["Asset", "Source", "Qty", "Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
+            body: exchangeRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+              r.asset, r.source, fmtQty(r.quantity), fmtCur(r.price),
+              fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
+            ]),
+            theme: "striped",
+            headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+            styles: { fontSize: 7.5, cellPadding: 1.5 },
+            columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+            margin: { left: 14, right: 14 },
+          });
+          curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+        }
+
+        if (walletRows.length > 0) {
+          curY += 8;
+          if (curY > 250) { doc.addPage(); curY = 14; }
+          doc.setFontSize(12);
+          doc.setTextColor(0);
+          doc.text("Wallet Holdings", 14, curY);
+          autoTable(doc, {
+            startY: curY + 4,
+            head: [["Asset", "Wallet", "Chain", "Qty", "Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
+            body: walletRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+              r.asset, r.source, r.chain, fmtQty(r.quantity), fmtCur(r.price),
+              fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
+            ]),
+            theme: "striped",
+            headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+            styles: { fontSize: 7.5, cellPadding: 1.5 },
+            columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" } },
+            margin: { left: 14, right: 14 },
+          });
+          curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+        }
+      } else {
+        const DUST_THRESHOLD = 100;
+        const significantRows = consolidatedRows.filter(r => r.marketValue >= DUST_THRESHOLD);
+        const dustRows = consolidatedRows.filter(r => r.marketValue < DUST_THRESHOLD);
+        if (dustRows.length > 0) {
+          const dustTotal = dustRows.reduce((s, r) => s + r.marketValue, 0);
+          const dustCost = dustRows.reduce((s, r) => s + r.costBasis, 0);
+          const dustGL = dustCost > 0 ? dustTotal - dustCost : 0;
+          significantRows.push({
+            asset: `Other (${dustRows.length} assets)`,
+            quantity: 0,
+            price: 0,
+            marketValue: dustTotal,
+            costBasis: dustCost,
+            gainLoss: dustGL,
+            gainLossPct: dustCost > 0 ? (dustGL / dustCost) * 100 : 0,
+          });
+        }
+
+        if (significantRows.length > 0) {
+          curY += 8;
+          if (curY > 250) { doc.addPage(); curY = 14; }
+          doc.setFontSize(12);
+          doc.setTextColor(0);
+          doc.text("Crypto Holdings", 14, curY);
+          autoTable(doc, {
+            startY: curY + 4,
+            head: [["Asset", "Total Qty", "Avg Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
+            body: significantRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+              r.asset, r.quantity > 0 ? fmtQty(r.quantity) : "--", r.price > 0 ? fmtCur(r.price) : "--",
+              fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
+            ]),
+            theme: "striped",
+            headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+            styles: { fontSize: 7.5, cellPadding: 1.5 },
+            columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
+            margin: { left: 14, right: 14 },
+          });
+          curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+        }
       }
 
       if (propertyRows.length > 0) {
