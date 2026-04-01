@@ -301,6 +301,10 @@ const faqGroups = [
         a: "We deliberately stay on-chain only to keep things simple, secure, and non-custodial. Bank integrations would require us to handle fiat, trigger money transmitter rules (federal MSB registration + state licenses), and force KYC/AML on users — adding delays, fees, and risks. By skipping banks, we avoid all that: no middleman, no data collection, no compliance overhead. You buy RLUSD on exchanges, deposit on-chain, and manage everything from your wallet — faster, cheaper, and truly in your control.",
       },
       {
+        q: "Can I buy crypto directly on CryptoOwnBank without leaving the site?",
+        a: 'Yes. Our <a href="/buy-crypto" class="text-[#00A4E4] underline hover:no-underline">Buy Crypto</a> page lets you purchase crypto instantly using your credit card, debit card, Apple Pay, Google Pay, or bank transfer — powered by Changelly. You never leave CryptoOwnBank. Just select the currency you want to buy, enter the amount, and complete the purchase. Crypto is sent directly to your wallet. We also have a built-in crypto-to-crypto exchange on the same page if you want to swap between assets (BTC to ETH, XRP to SOL, etc.). KYC is handled by Changelly, not by us — we never see or store your identity documents. Fiat off-ramp (selling crypto back to fiat) is coming soon.',
+      },
+      {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
         a: "Absolutely — CryptoOwnBank now tracks 24 blockchains. Add your Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, HBAR, VeChain, and many more wallet addresses to see all your holdings in one dashboard. Connect exchange accounts (Coinbase, Kraken, Binance, etc.) to track exchange-held crypto too. Our Recommendations Hub analyzes every asset and shows you the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels. XRPL yield vaults (Soil) are the active earning feature; portfolio tracking and recommendations work across all supported chains.",
       },
