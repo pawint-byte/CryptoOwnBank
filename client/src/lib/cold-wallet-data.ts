@@ -288,7 +288,7 @@ export function getWalletRecommendations(heldAssets: string[]): WalletRecommenda
 export function getQuickPicks(): { label: string; walletId: string; reason: string }[] {
   return [
     { label: "Best for XRPL", walletId: "ledger-nano-x", reason: "Bluetooth pairs directly with Xaman for seamless vault deposits" },
-    { label: "Best Multi-Chain", walletId: "ledger-nano-x", reason: "Covers 24+ chains and the most earning opportunities" },
+    { label: "Best Multi-Chain", walletId: "ledger-nano-x", reason: "Covers 32+ chains and the most earning opportunities" },
     { label: "Best Air-Gapped", walletId: "ellipal-titan", reason: "Never connects to any network — maximum isolation" },
     { label: "Best Card Form", walletId: "arculus-card", reason: "Fits in your wallet, tap to sign via NFC" },
     { label: "Most Affordable", walletId: "safepal-s1", reason: "Air-gapped security at the lowest price ($49)" },

@@ -83,8 +83,8 @@ const roadmapItems: RoadmapItem[] = [
   },
   {
     phase: "live",
-    title: "Portfolio Tracking (24 Blockchains)",
-    description: "Track every asset across Bitcoin, Ethereum, Solana, XRP, Stellar, Cardano, and 18+ more chains. Automatic ERC-20/SPL/TRC-20 token detection. Import exchange data via CSV.",
+    title: "Portfolio Tracking (32+ Blockchains)",
+    description: "Track every asset across Bitcoin, Ethereum, Solana, XRP, Stellar, Cardano, and 26+ more chains. Automatic ERC-20/SPL/TRC-20 token detection. Import exchange data via CSV.",
     category: "Track",
     icon: BarChart3,
     link: "/wallets",
