@@ -1,0 +1,42 @@
+Yes, Oobit has a public API/SDK/widget (called Plug & Pay) specifically designed for third-party wallet/exchange integrators. This lets you embed their crypto payment functionality directly into your app or site (e.g., cryptoownbank.com) with just a few lines of code. It's white-labeled, handles all compliance/KYC/AML/card issuing/settlement, and turns a self-custody wallet into a full spending tool (pay anywhere Visa is accepted, including in-store tap-to-pay via Apple/Google Pay).
+
+Setup: Contact wallets@oobit.com or submit the form on their Plug & Pay page → get API keys + sandbox access → integrate the React Native/Expo widget. KYB is required for production keys (available in the developer dashboard). It's lightweight and they provide engineering support.
+How it helps cryptoownbank.com: This is not a full off-ramp to arbitrary bank accounts, but it solves the “spend crypto like fiat” side immediately. Users could connect their cryptoownbank wallet and spend USDT/BTC/etc. anywhere without selling to bank first.
+
+The specific wallet-to-bank off-ramp (the feature highlighted in the DailyCoin article) is currently app-first. Users send crypto directly from any self-custodial wallet (MetaMask, Phantom, etc.) → Oobit routes it via local rails (Instant SEPA, ACH, PIX, Faster Payments, etc.) → recipient gets local fiat in their bank/e-wallet in seconds to 1 business day, in 180+ countries.
+
+No public widget/API is documented for this exact off-ramp yet (docs focus on Plug & Pay spending). However, Oobit actively targets wallet providers and has B2B solutions. Contact them via wallets@oobit.com — they can likely enable a custom integration or white-labeled off-ramp for your platform (they already power wallet-native features for partners). This could fill your Changelly F2C wait gap faster than building your own rails.
+
+Supported coins
+
+XRP and XLM: ✅ Both are supported (along with BTC, ETH, SOL, USDT, USDC, BNB, LTC, DOGE, TRX, ADA, SHIB, TON, etc.). Not limited to EVM tokens — native XRP (Ripple) and XLM (Stellar) work for payments, transfers, and bank sends in the app. Plug & Pay widget currently emphasizes stables + major chains (ERC-20, Solana, TRC-20, BNB Chain) but app-level off-ramp handles the full list.
+Full list is region-dependent but very broad (20+ assets).
+
+Fees (crypto-to-bank off-ramp)
+Oobit shows exact fees upfront. Typical structure (as of recent reports):
+
+Oobit fee: greater of $1 fixed or 1%
+
+~0.5% spread
+
+
+local partner/rail fees (some routes are zero or near-zero additional, e.g., certain PIX/SPEI/Instant SEPA)
+
+
+Total is usually ~1–2% (varies by corridor, amount, and route). Minimum transfer ~$10–100 equivalent depending on country. Delivery is seconds for instant rails, 1–3 days for ACH/wire.
+Comparison (approximate, based on public data for similar off-ramps):
+
+Oobit: ~1% or $1 min + low spread → very competitive. Some routes effectively near-zero extra.
+MoonPay off-ramp: 0–2% ecosystem fee (US/EU/UK bank) but up to 4–5% total with card/spread on other methods; limited regions.
+Changelly (or similar aggregators): Often 3–5%+ total (higher spreads, especially non-bank).
+Others (Transak, etc.): Similar 1–4% range.
+
+Oobit is generally cheaper/faster for bank rails than MoonPay/Changelly in most corridors, especially with their localized networks (no correspondent banking delays). Fees are transparent and often lower than legacy ramps.
+Bottom line for cryptoownbank.com
+
+Quick win: Integrate Plug & Pay widget today for instant spending utility (Visa everywhere).
+Off-ramp gap: Reach out to wallets@oobit.com right now about embedding the wallet-to-bank feature. They’re built for exactly this (Tether-backed, wallet-native, global rails) and already support XRP/XLM natively. It’s a strong non-custodial alternative while you wait on Changelly.
+
+Their docs: https://docs.oobit.com (quickstart + supported currencies)
+Plug & Pay page: https://www.oobit.com/plug-and-pay
+Send-to-bank page: https://www.oobit.com/send-crypto
