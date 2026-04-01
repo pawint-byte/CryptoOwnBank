@@ -3147,7 +3147,16 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const settings = await storage.getUserSettings(userId);
-      const memberName = settings?.fullName || req.user?.claims?.email || "Member";
+
+      const fullName = (settings?.fullName || "").trim();
+      if (!fullName || fullName.length < 2) {
+        return res.status(400).json({
+          message: "Please add your full name in Settings before generating a statement.",
+          code: "PROFILE_INCOMPLETE",
+        });
+      }
+
+      const memberName = fullName;
       const memberAddress = [
         settings?.addressLine1,
         settings?.addressLine2,

@@ -267,6 +267,12 @@ export default function Portfolio() {
       const res = await fetch("/api/portfolio/statement", { credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "Failed to generate statement" }));
+        if (err.code === "PROFILE_INCOMPLETE") {
+          if (confirm(err.message + "\n\nGo to Settings now?")) {
+            window.location.href = "/settings";
+          }
+          return;
+        }
         throw new Error(err.message);
       }
       const blob = await res.blob();
