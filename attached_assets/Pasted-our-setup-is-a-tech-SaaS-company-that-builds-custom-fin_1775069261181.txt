@@ -1,0 +1,66 @@
+our setup is a tech/SaaS company that builds custom financial/legacy tools (e-commerce integrations, marketing, etc.) plus a non-custodial crypto dashboard (XRPL/Stellar-focused, self-custody wallets, RLUSD yield vaults, on-chain payments, portfolio tracking, inheritance planning). Because it's fully non-custodial and you don't hold customer funds or act as a money transmitter/exchange/custodian, this is much lower-risk for banks than most crypto businesses.
+1. Quick prep (do this first – takes 1–2 days)
+You’ll need:
+
+Your EIN (from IRS).
+Articles/Certificate of Incorporation for Wint Enterprises Inc.
+Driver’s license or passport of the authorized signer(s) (you).
+Business address (Reston, VA is fine).
+A short business description: “Technology company providing enterprise-grade digital legacy and financial control tools, including a non-custodial crypto portfolio and yield platform on XRPL/Stellar.”
+
+Tip: Be honest but frame it as “non-custodial SaaS fintech” — banks love that wording because it avoids MSB (money services business) flags.
+2. Best banking choice right now → Mercury (my #1 recommendation)
+
+Specifically supports Web3/crypto and fintech startups like yours.
+100% online, free checking (no monthly fees, no minimums, free wires/ACH).
+Fast approval (often same day or next).
+Built-in tools for invoicing, expense cards, bookkeeping integrations — perfect for a small tech company doing custom client work.
+They have experience with non-custodial crypto projects and don’t freak out if you mention XRPL, stablecoin yield tools, or on-chain payments (as long as you’re not holding customer fiat).
+
+How to open it:
+
+Go to mercury.com → “Open an account” → select C-Corp.
+Upload the docs above.
+In the business description field, use the wording I gave you.
+Link your personal ID and verify.
+
+Most founders in your exact situation (small crypto-adjacent SaaS) use Mercury as their primary operating account.
+3. Strong runner-up options (if Mercury doesn’t work for some reason)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Bank/PlatformBest forNotesSignup timeRelayCrypto/Web3 friendly, unlimited sub-accountsGreat for separating client projects1–2 daysRhoHigh-yield business checking + crypto toleranceGood rates on cash balances1–3 daysBluevineFree checking + higher interestSolid if you want some yield on USD cash1–2 daysCapital One Spark Business (local VA option)Physical branches near Reston/McLeanHQ is literally down the road; good if you ever want in-person support3–7 days
+Avoid big traditional banks (Chase, Bank of America, Wells) at first — they’ve been known to close crypto-related accounts even when the business is non-custodial.
+4. Extra smart moves
