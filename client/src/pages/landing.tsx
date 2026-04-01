@@ -1267,22 +1267,12 @@ export default function Landing() {
     { id: "faq", label: "FAQ" },
   ];
 
-  const [activeSection, setActiveSection] = useState("");
+  const [activeTab, setActiveTab] = useState("why");
   const [showNav, setShowNav] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowNav(window.scrollY > 600);
-      const sections = sectionNav.map(s => ({
-        id: s.id,
-        el: document.getElementById(s.id),
-      })).filter(s => s.el);
-      let current = "";
-      for (const s of sections) {
-        const rect = s.el!.getBoundingClientRect();
-        if (rect.top <= 200) current = s.id;
-      }
-      setActiveSection(current);
+      setShowNav(window.scrollY > 400);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -1444,20 +1434,19 @@ export default function Landing() {
       >
         <div className="bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-1.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <div className="flex items-center gap-1 overflow-x-auto py-1.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {sectionNav.map((s) => (
-                <a
+                <button
                   key={s.id}
-                  href={`#${s.id}`}
-                  className={`whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full transition-all flex-shrink-0 ${activeSection === s.id ? "bg-[#00A4E4] text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" });
+                  className={`whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full transition-all flex-shrink-0 ${activeTab === s.id ? "bg-[#00A4E4] text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  onClick={() => {
+                    setActiveTab(s.id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   data-testid={`nav-tab-${s.id}`}
                 >
                   {s.label}
-                </a>
+                </button>
               ))}
             </div>
           </div>
@@ -1692,6 +1681,7 @@ export default function Landing() {
           </div>
         </section>
 
+        {activeTab === "why" && (<>
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
@@ -1746,7 +1736,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        </>)}
 
+        {activeTab === "how-it-works" && (
         <section id="how-it-works" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -1779,7 +1771,9 @@ export default function Landing() {
             </p>
           </div>
         </section>
+        )}
 
+        {activeTab === "features" && (
         <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -1812,7 +1806,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "xrpl-tools" && (
         <section id="xrpl-tools" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -1897,7 +1893,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "payment-corridor" && (
         <section id="payment-corridor" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -2023,7 +2021,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "multi-chain" && (
         <section id="multi-chain" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-t border-b border-border/50">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
@@ -2100,7 +2100,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "financial-access" && (<>
         <section id="own-nothing-control-everything" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
@@ -2503,7 +2505,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        </>)}
 
+        {activeTab === "pricing" && (<>
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-6">
@@ -2642,7 +2646,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        </>)}
 
+        {activeTab === "compare" && (
         <section id="compare" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30" data-testid="section-compare">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
@@ -2706,7 +2712,9 @@ export default function Landing() {
             </p>
           </div>
         </section>
+        )}
 
+        {activeTab === "security" && (<>
         <section id="security" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -2759,7 +2767,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        </>)}
 
+        {activeTab === "on-chain" && (
         <section id="on-chain" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -2854,7 +2864,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "signing" && (
         <section id="signing" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
@@ -2971,7 +2983,9 @@ export default function Landing() {
             </p>
           </div>
         </section>
+        )}
 
+        {activeTab === "faq" && (<>
         <section id="faq" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
@@ -3002,6 +3016,7 @@ export default function Landing() {
         </section>
 
         <AmendmentTracker />
+        </>)}
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#00A4E4] text-white">
           <div className="max-w-3xl mx-auto text-center">
