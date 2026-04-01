@@ -291,7 +291,7 @@ function buildSteps(
       title: "Add Your Wallet Addresses",
       subtitle: "See all your holdings in one place",
       description:
-        "Paste your cold wallet addresses across 24+ blockchains. We pull balances and history — read-only, no keys needed. This is how we show you everything you own.",
+        "Paste your cold wallet addresses across 32+ blockchains. We pull balances and history — read-only, no keys needed. This is how we show you everything you own.",
       cta: "Add Wallet Addresses",
       href: "/wallets",
       icon: Wallet,
@@ -327,7 +327,7 @@ function buildSteps(
       title: "Add a Wallet Address",
       subtitle: "Once you get crypto, add your address here",
       description:
-        "After you acquire your first crypto and set up a wallet, paste the address here. We'll track your balances and transactions automatically across 24+ blockchains.",
+        "After you acquire your first crypto and set up a wallet, paste the address here. We'll track your balances and transactions automatically across 32+ blockchains.",
       cta: "Add Wallet Address",
       href: "/wallets",
       icon: Wallet,

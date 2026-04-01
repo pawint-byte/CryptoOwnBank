@@ -98,7 +98,7 @@ const migrationSteps: MigrationStep[] = [
       "Click \"Add Address\" and paste your wallet's public address",
       "Select the blockchain network (Bitcoin, Ethereum, XRP, Solana, etc.)",
       "The site reads your balance directly from the blockchain — no API key needed",
-      "Supports 24 blockchains including BTC, ETH, XRP, SOL, ADA, MATIC, AVAX, TON, XLM, and more",
+      "Supports 32+ blockchains including BTC, ETH, XRP, SOL, ADA, MATIC, AVAX, TON, XLM, and more",
       "If you have multiple Ledgers or moved assets between wallets, add each address",
     ],
     action: { label: "Go to Blockchain Addresses", href: "/wallets" },

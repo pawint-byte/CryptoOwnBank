@@ -17,7 +17,7 @@ const PREMIUM_BENEFITS = [
   "Recommendations Hub surfaces yields and DeFi you'd otherwise miss",
   "Statement Insights compares your bank rates vs. on-chain yields",
   "XRPL & Stellar DEX trading — your keys, your trades",
-  "Unlimited wallets across 24 chains with full history",
+  "Unlimited wallets across 32+ chains with full history",
   "CSV import, unlimited price alerts & recurring payments",
   "AI Portfolio Assistant — 50 conversations/month",
 ];

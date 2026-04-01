@@ -279,7 +279,7 @@ const toolkits: Toolkit[] = [
         number: 3,
         icon: Wallet,
         title: "Add Your Blockchain Wallet Addresses",
-        description: "Track cold wallets, hot wallets, and any on-chain addresses across 24 blockchains.",
+        description: "Track cold wallets, hot wallets, and any on-chain addresses across 32+ blockchains.",
         details: [
           "Go to Wallets in the sidebar → click 'Add Wallet'",
           "Select the blockchain (BTC, ETH, SOL, XRP, ADA, AVAX, DOT, ATOM, TRX, HBAR, VET, TON, and more)",

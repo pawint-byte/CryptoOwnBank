@@ -2289,7 +2289,7 @@ export default function Wallets() {
       {walletAtLimit && (
         <UpgradePrompt
           compact
-          feature="Free users can track 1 blockchain address. Upgrade to Premium for unlimited addresses across all 24 blockchains."
+          feature="Free users can track 1 blockchain address. Upgrade to Premium for unlimited addresses across all 32+ blockchains."
         />
       )}
 

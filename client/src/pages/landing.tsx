@@ -217,7 +217,7 @@ const features = [
     icon: PieChart,
     title: "Bring Your Own Wallet",
     description:
-      "Already staking SOL in Phantom? ADA in Yoroi? ATOM in Keplr? Just add your wallet address — we detect your staked positions, pending rewards, and idle balances automatically. Track everything across 24 blockchains in one real-time dashboard: Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, DigiByte, Casper, Cronos, and more. Stop logging into five different apps — see every wallet, every chain, every earning in one place.",
+      "Already staking SOL in Phantom? ADA in Yoroi? ATOM in Keplr? Just add your wallet address — we detect your staked positions, pending rewards, and idle balances automatically. Track everything across 32+ blockchains in one real-time dashboard: Bitcoin, Ethereum (with full ERC-20 token detection), Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Dogecoin, Litecoin, Stellar, TON, Polygon, Arbitrum, Base, Optimism, BNB Chain, Sui, Sonic, Flare, XDC, Zilliqa, Nervos, Fetch.ai, DigiByte, Casper, Cronos, and more. Stop logging into five different apps — see every wallet, every chain, every earning in one place.",
     link: "/portfolio",
     linkLabel: "Open Portfolio",
   },
@@ -333,7 +333,7 @@ const features = [
     icon: LinkIcon,
     title: "Real-Time Market Data",
     description:
-      "Real-time pricing from CoinGecko across 24+ blockchains. We track Chainlink oracle feed availability for major assets so you know which prices have decentralized verification on-chain.",
+      "Real-time pricing from CoinGecko across 32+ blockchains. We track Chainlink oracle feed availability for major assets so you know which prices have decentralized verification on-chain.",
     link: "/portfolio",
     linkLabel: "View Market Data",
   },
@@ -402,7 +402,7 @@ const memberStories = [
     accent: "from-amber-500/10 to-orange-500/10",
     story:
       "Most people leave money on the table because they don't know what's available. CryptoOwnBank does the work for you: the Recommendations Hub analyzes every asset you hold and surfaces the best staking, DeFi, and yield opportunities. Statement Insights compares your bank rates against what you could earn on-chain. Whale Alerts show you large XRP and RLUSD movements in real time. Technical Analysis identifies chart patterns and explains them in plain English. You don't go looking for information — the information comes to you. This is where everything starts: one interface, all your crypto, all your opportunities, all your tools.",
-    benefit: "Bring your own wallet. One dashboard, 24 blockchains, staked balances detected automatically — the information finds you.",
+    benefit: "Bring your own wallet. One dashboard, 32+ blockchains, staked balances detected automatically — the information finds you.",
   },
   {
     title: "Think in Value, Not USD Price",
@@ -536,7 +536,7 @@ const testimonials = [
 
 const freeTierFeatures = [
   "Import exchange data via CSV (Coinbase, Kraken, Crypto.com, etc.)",
-  "Track 1 blockchain address across 24 blockchains",
+  "Track 1 blockchain address across 32+ blockchains",
   "Soil vault access (deposit + manual withdraw)",
   "Basic Recommendations Hub (see yield opportunities for your assets)",
   "Yield calculator for projected earnings",
@@ -554,7 +554,7 @@ const premiumFeatures = [
   "DCA Orders — automated recurring buys on XRPL (31 pairs) and Stellar (18 pairs) DEX",
   "Earn & Accumulate XRP — withdraw full Soil vault position + DCA a portion into XRP on the DEX (you approve each step in Xaman)",
   "Unlimited CSV imports",
-  "Unlimited blockchain addresses across 24 chains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, TON, XLM, MATIC, and more)",
+  "Unlimited blockchain addresses across 32+ chains (BTC, ETH, SOL, XRP, ADA, AVAX, ALGO, ATOM, TRX, HBAR, DOT, VET, TON, XLM, MATIC, SUI, FLR, and more)",
   "Full ERC-20, SPL, TRC-20, VIP-180 & CRC-20 token auto-detection",
   "Full Recommendations Hub — Best in Class rankings, staking guides, DeFi comparisons, 'You Hold This' badges",
   "Wallet-specific staking guides (Ledger, ELLIPAL, SafePal, CypheRock, Arculus)",
@@ -658,7 +658,7 @@ const faqGroups = [
       },
       {
         q: "What is CryptoOwnBank?",
-        a: "CryptoOwnBank is a non-custodial crypto platform: bring your own wallet, manage it from one interface, keep all your earnings. Already staking in Phantom, Keplr, or Yoroi? Just add your wallet address — we detect staked positions, pending rewards, and idle balances automatically across 24 blockchains. Earn 5–8% yield on RLUSD through Soil Protocol, trade on native DEXs, send payments globally — your keys stay in your hands. Choose your security: cold wallet, hot wallet, hardware or phone signing. If you ever leave, your crypto is still in your wallet. Whether you're unbanked, debanked, or simply want real ownership — CryptoOwnBank gives you the tools to be your own bank.",
+        a: "CryptoOwnBank is a non-custodial crypto platform: bring your own wallet, manage it from one interface, keep all your earnings. Already staking in Phantom, Keplr, or Yoroi? Just add your wallet address — we detect staked positions, pending rewards, and idle balances automatically across 32+ blockchains. Earn 5–8% yield on RLUSD through Soil Protocol, trade on native DEXs, send payments globally — your keys stay in your hands. Choose your security: cold wallet, hot wallet, hardware or phone signing. If you ever leave, your crypto is still in your wallet. Whether you're unbanked, debanked, or simply want real ownership — CryptoOwnBank gives you the tools to be your own bank.",
       },
       {
         q: "Why does CryptoOwnBank focus on XRPL and Stellar instead of Ethereum or Solana?",
@@ -674,7 +674,7 @@ const faqGroups = [
       },
       {
         q: "Which blockchains and protocols does CryptoOwnBank support?",
-        a: "CryptoOwnBank supports 24 blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. Import transaction history from any exchange via CSV (Coinbase, Kraken, Crypto.com, Binance, etc.). Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities — clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5–8% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
+        a: "CryptoOwnBank supports 32+ blockchains for portfolio tracking: Bitcoin, Ethereum (with automatic ERC-20 token detection), Solana (with SPL tokens), XRP Ledger (with trust line tokens like RLUSD), Avalanche, Cardano, Algorand, Cosmos Hub (with staking), Tron (with TRC-20 tokens), Hedera (staked HBAR included), Polkadot, VeChain (auto-detects VET + VTHO), Stellar, TON, Polygon, Arbitrum, Base, Optimism, BNB Chain, Sui, Sonic, Flare, XDC, Zilliqa, Nervos, Fetch.ai, Dogecoin, Litecoin, DigiByte, Casper, Cronos (with CRC-20 tokens), and more. Import transaction history from any exchange via CSV (Coinbase, Kraken, Crypto.com, Binance, etc.). Over 150 tokens are mapped to live CoinGecko prices. Our Recommendations Hub analyzes every asset and shows the best on-chain staking, DeFi, and yield opportunities — clearly tagged as on-chain (you keep your keys) or custodial. For yield, we integrate with Soil Protocol on XRPL for 5–8% fixed APR on RLUSD. All non-custodial, all from one dashboard.",
       },
       {
         q: "Can my business accept crypto payments through CryptoOwnBank?",
@@ -707,7 +707,7 @@ const faqGroups = [
       },
       {
         q: "What wallets and hardware devices are supported?",
-        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking: paste any wallet address from Ledger, CypheRock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet — we support 24 blockchains. We provide wallet-specific staking guides for each hardware wallet, so you get step-by-step instructions tailored to your exact device. Ethereum addresses automatically detect all ERC-20 tokens. Hedera pulls your full HBAR balance including staked amounts. VeChain auto-detects VET + VTHO. Cosmos includes staking delegations. You can also import transaction history from any exchange via CSV files (Ledger Live, Yahoo Finance, CoinTracker, or generic CSV format).",
+        a: "For XRPL yield vaults: Xumm/Xaman (mobile, QR code connection) and Ledger hardware wallets (Nano S/X via Bluetooth through Xaman). For portfolio tracking: paste any wallet address from Ledger, CypheRock, ELLIPAL, Arculus, SafePal, Trezor, or any hardware wallet — we support 32+ blockchains. We provide wallet-specific staking guides for each hardware wallet, so you get step-by-step instructions tailored to your exact device. Ethereum addresses automatically detect all ERC-20 tokens. Hedera pulls your full HBAR balance including staked amounts. VeChain auto-detects VET + VTHO. Cosmos includes staking delegations. You can also import transaction history from any exchange via CSV files (Ledger Live, Yahoo Finance, CoinTracker, or generic CSV format).",
       },
       {
         q: "Do Ledger Nano X and Xaman show the same address for RLUSD?",
@@ -805,7 +805,7 @@ const faqGroups = [
       },
       {
         q: "Can I use this for other cryptos besides XRP/RLUSD?",
-        a: "Absolutely — CryptoOwnBank is a full multi-chain portfolio tracker across 24 blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Import exchange data via CSV to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
+        a: "Absolutely — CryptoOwnBank is a full multi-chain portfolio tracker across 32+ blockchains. Add wallet addresses for Bitcoin, Ethereum, Solana, XRP, Avalanche, Cardano, Algorand, Cosmos, Tron, Hedera, Polkadot, VeChain, Stellar, TON, Polygon, and more. Import exchange data via CSV to track everything in one place. Our Recommendations Hub analyzes every asset and surfaces the best staking, DeFi, and yield opportunities — with clear on-chain vs custodial labels and wallet-specific staking guides for your exact hardware wallet. All with real-time prices (150+ supported assets). The XRPL yield vaults (Soil Protocol) are a bonus on top of comprehensive portfolio tracking.",
       },
       {
         q: "What about tokenized real-world assets — stocks, bonds, real estate on-chain?",
@@ -818,7 +818,7 @@ const faqGroups = [
     items: [
       {
         q: "What's the difference between Free, Premium, and Pro?",
-        a: "Free: 1 blockchain address, 1 price alert, CSV import, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history — enough to see the value. Premium ($29/mo or $199/yr): unlimited wallets across 24 chains, full Recommendations Hub that surfaces opportunities you'd miss, Statement Insights, DEX trading, staking guides, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus treasury dashboard, DeFi Borrowing Hub, Real Estate Tokenization, batch/payroll payments, up to 5 team seats, Legacy Plan, and XLS-66 Lending. All tiers: your crypto stays in your wallet, you choose your security level, and you keep all your earnings.",
+        a: "Free: 1 blockchain address, 1 price alert, CSV import, Soil vault access, basic Recommendations Hub, yield calculator, and 7-day history — enough to see the value. Premium ($29/mo or $199/yr): unlimited wallets across 32+ chains, full Recommendations Hub that surfaces opportunities you'd miss, Statement Insights, DEX trading, staking guides, recurring payments, full history. Annual bonus: tax reports. Pro ($99/mo or $799/yr): everything in Premium plus treasury dashboard, DeFi Borrowing Hub, Real Estate Tokenization, batch/payroll payments, up to 5 team seats, Legacy Plan, and XLS-66 Lending. All tiers: your crypto stays in your wallet, you choose your security level, and you keep all your earnings.",
       },
       {
         q: "How do I pay for Premium?",
@@ -1256,7 +1256,7 @@ export default function Landing() {
       name: "CryptoOwnBank",
       url: "https://cryptoownbank.com",
       logo: "https://cryptoownbank.com/favicon.png",
-      description: "Non-custodial self-custody crypto platform. Automated crypto inheritance (Legacy Plan), RLUSD stablecoin yield vaults (5-8% APR), XRPL & Stellar DEX trading, global remittances, DCA orders, cold wallet portfolio tracking across 24 blockchains. Be your own bank.",
+      description: "Non-custodial self-custody crypto platform. Automated crypto inheritance (Legacy Plan), RLUSD stablecoin yield vaults (5-8% APR), XRPL & Stellar DEX trading, global remittances, DCA orders, cold wallet portfolio tracking across 32+ blockchains. Be your own bank.",
       sameAs: [
         "https://www.tiktok.com/@cryptoownbank",
       ],
@@ -1291,7 +1291,7 @@ export default function Landing() {
       name: "CryptoOwnBank",
       operatingSystem: "Web",
       applicationCategory: "FinanceApplication",
-      description: "Non-custodial crypto platform that solves inheritance, earns stablecoin yield, enables global payments, and replaces your bank. Connect your cold wallet, track across 24 blockchains, earn 5-8% APR on RLUSD, trade on XRPL & Stellar DEXs, send remittances globally, and protect your crypto for your family with the Legacy Plan.",
+      description: "Non-custodial crypto platform that solves inheritance, earns stablecoin yield, enables global payments, and replaces your bank. Connect your cold wallet, track across 32+ blockchains, earn 5-8% APR on RLUSD, trade on XRPL & Stellar DEXs, send remittances globally, and protect your crypto for your family with the Legacy Plan.",
       featureList: "Crypto Inheritance (Legacy Plan), RLUSD Yield Vaults (5-8% APR), XRPL DEX Trading, Stellar Payments & Remittances, Cold Wallet Portfolio Tracker, DCA Orders, EVM Swaps via 1inch, Cross-Chain Bridging, Whale Alerts, Technical Analysis, Tax Reports",
       offers: [
         { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free tier — forever free" },

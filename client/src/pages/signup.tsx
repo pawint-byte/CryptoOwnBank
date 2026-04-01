@@ -103,7 +103,7 @@ export default function Signup() {
     <div className="min-h-screen bg-background flex flex-col">
       <SeoHead
         title="Sign Up — CryptoOwnBank | Create Your Free Account"
-        description="Create a free CryptoOwnBank account. Track your crypto portfolio across 24 blockchains, earn yield on RLUSD, and manage everything from one dashboard."
+        description="Create a free CryptoOwnBank account. Track your crypto portfolio across 32+ blockchains, earn yield on RLUSD, and manage everything from one dashboard."
         path="/signup"
       />
       <header className="border-b border-border/50 backdrop-blur-lg bg-background/80">
