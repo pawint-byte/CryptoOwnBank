@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-03-29 by main agent (on-ramp provider updates)**
+**Last updated: 2026-04-01 by main agent (Buy Crypto on-ramp tested and verified working)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -68,7 +68,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ### Account & Misc
 - [ ] **Quick Start** — Walk through as if you're a new member
-- [ ] **Buy Crypto** — Check on-ramp links work
+- [x] **Buy Crypto** — DONE (2026-04-01). Changelly fiat on-ramp tested end-to-end: selected XRP, entered $500, Changelly routed through MoonPay, paid with USAA Visa, 100.319 XRP received in Xaman wallet. Notes: Uphold prepaid Visa was rejected (use a bank-issued card); MoonPay blocks some regions on the web but works through partner integrations (Xaman, Ledger Live, Changelly widget). Wallet address pre-fill feature added. FAQ updated with Changelly entry.
 - [ ] **Spend Crypto** — Check debit card info is current
 - [ ] **Roadmap** — Verify it reflects current status
 - [ ] **Contact & Feedback** — Submit a test feedback item
