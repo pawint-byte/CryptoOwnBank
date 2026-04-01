@@ -854,6 +854,7 @@ export default function BuyCrypto() {
   const [showFaq, setShowFaq] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
+  const [changellyBuyCrypto, setChangellyBuyCrypto] = useState("xrp");
 
   const { data: savedWallets = [] } = useQuery<any[]>({
     queryKey: ["/api/wallets"],
@@ -870,6 +871,20 @@ export default function BuyCrypto() {
     if (!chain) return null;
     return savedWallets.find((w: any) => w.chain === chain) || null;
   }, [selectedToken, savedWallets]);
+
+  const changellyWalletAddress = useMemo(() => {
+    const symbol = changellyBuyCrypto.toUpperCase();
+    const chain = tokenToChain[symbol];
+    if (!chain) return "";
+    const wallet = savedWallets.find((w: any) => w.chain === chain);
+    return wallet?.address || "";
+  }, [changellyBuyCrypto, savedWallets]);
+
+  const changellyBuyUrl = useMemo(() => {
+    const addr = encodeURIComponent(changellyWalletAddress);
+    const to = changellyBuyCrypto.toLowerCase();
+    return `https://widget.changelly.com?from=*&to=*&amount=500&address=${addr}&fromDefault=usd&toDefault=${to}&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1`;
+  }, [changellyBuyCrypto, changellyWalletAddress]);
 
   const availableWallets = useMemo(() => {
     if (!selectedToken) return [];
@@ -1038,14 +1053,49 @@ export default function BuyCrypto() {
             Buy crypto directly with your card or bank account. Powered by Changelly — fast, secure, and available worldwide.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">I want to buy</label>
+              <select
+                value={changellyBuyCrypto}
+                onChange={(e) => setChangellyBuyCrypto(e.target.value)}
+                className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+                data-testid="select-changelly-buy-crypto"
+              >
+                {tokens.map((t) => (
+                  <option key={t.symbol} value={t.symbol.toLowerCase()}>{t.symbol} — {t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Receiving wallet</label>
+              {changellyWalletAddress ? (
+                <div className="flex items-center gap-2 h-9 rounded-md border bg-green-500/10 border-green-500/30 px-3" data-testid="changelly-wallet-prefilled">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm truncate font-mono">{changellyWalletAddress.slice(0, 8)}...{changellyWalletAddress.slice(-6)}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 h-9 rounded-md border bg-yellow-500/10 border-yellow-500/30 px-3" data-testid="changelly-wallet-missing">
+                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">No {changellyBuyCrypto.toUpperCase()} wallet saved — you'll enter it in the widget</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {changellyWalletAddress && (
+            <p className="text-xs text-green-600 dark:text-green-400" data-testid="text-changelly-prefill-note">
+              Your saved {changellyBuyCrypto.toUpperCase()} wallet address will be pre-filled in the widget below.
+            </p>
+          )}
           <div className="rounded-lg overflow-hidden border" style={{ height: "450px" }} data-testid="changelly-widget-container">
             <iframe
+              key={changellyBuyUrl}
               width="100%"
               height="100%"
               frameBorder="0"
               allow="camera"
-              src="https://widget.changelly.com?from=*&to=*&amount=500&address=&fromDefault=usd&toDefault=xrp&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1"
+              src={changellyBuyUrl}
               title="Changelly Buy Crypto Widget"
               data-testid="changelly-widget-iframe"
             >
