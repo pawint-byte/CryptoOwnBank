@@ -6125,6 +6125,240 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
   let priceCache: { prices: Record<string, number>; fetchedAt: number } = { prices: {}, fetchedAt: 0 };
   const PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
 
+  const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+  const userLastAutoSync = new Map<string, number>();
+  const userSyncInProgress = new Set<string>();
+  const EXCHANGE_LABELS_SET = new Set(["CRYPTO.COM", "COINBASE", "BINANCE", "KRAKEN", "GEMINI", "KUCOIN", "BITSTAMP", "BITFINEX", "UPHOLD", "GATE.IO", "OKX", "BYBIT", "HUOBI", "BITGET", "MEXC"]);
+  const SYNCABLE_CHAINS = new Set(["ethereum", "bitcoin", "xrp"]);
+
+  async function backgroundWalletSync(userId: string) {
+    if (userSyncInProgress.has(userId)) return;
+    userSyncInProgress.add(userId);
+    try {
+      const userWallets = await storage.getWalletsByUser(userId);
+      const syncableWallets = userWallets.filter(w => {
+        if (w.chain === "manual") return false;
+        if (EXCHANGE_LABELS_SET.has((w.label || "").toUpperCase().trim())) return false;
+        const lastSync = w.lastSyncAt ? new Date(w.lastSyncAt).getTime() : 0;
+        return (Date.now() - lastSync) > AUTO_SYNC_INTERVAL_MS;
+      });
+
+      if (syncableWallets.length === 0) {
+        userLastAutoSync.set(userId, Date.now());
+        return;
+      }
+
+      console.log(`[auto-sync] Syncing ${syncableWallets.length} wallet(s) for user ${userId.slice(0, 8)}...`);
+
+      for (const wallet of syncableWallets) {
+        try {
+          const { detectCorrectChain } = await import("./services/blockchain-balance");
+          let chain = wallet.chain;
+          let balances: any[] = [];
+
+          const detectedChain = detectCorrectChain(chain, wallet.address);
+          if (detectedChain) {
+            try {
+              balances = await fetchChainBalances(detectedChain, wallet.address);
+              if (balances.length > 0) chain = detectedChain;
+            } catch {}
+          }
+          if (balances.length === 0) {
+            try {
+              balances = await fetchChainBalances(wallet.chain as any, wallet.address);
+            } catch {
+              continue;
+            }
+          }
+
+          const existingBalances = await storage.getWalletBalances(wallet.id);
+          const existingMap = new Map(existingBalances.map(b => [b.assetSymbol, b]));
+
+          for (const bal of balances) {
+            const existing = existingMap.get(bal.symbol);
+            if (existing) {
+              await db.update(walletBalances)
+                .set({ balance: bal.balance.toString(), usdValue: bal.usdValue.toString(), updatedAt: new Date() })
+                .where(eq(walletBalances.id, existing.id));
+            } else {
+              await storage.createWalletBalance({
+                walletId: wallet.id,
+                assetSymbol: bal.symbol,
+                balance: bal.balance.toString(),
+                usdValue: bal.usdValue.toString(),
+              });
+            }
+          }
+
+          await storage.updateWalletSyncTime(wallet.id);
+
+          if (SYNCABLE_CHAINS.has(chain)) {
+            try {
+              const { getEthTransactions, getBtcTransactions, getXrpTransactions } = await import("./services/blockchain-transactions");
+              const { getHistoricalPrice } = await import("./services/historical-prices");
+
+              const blockchainTxs = chain === "ethereum"
+                ? await getEthTransactions(wallet.address)
+                : chain === "xrp"
+                ? await getXrpTransactions(wallet.address)
+                : await getBtcTransactions(wallet.address);
+
+              if (blockchainTxs.length > 0) {
+                const existingAccounts = await storage.getAccountsByUser(userId);
+                let walletAccount = existingAccounts.find(a => a.accountName === `${wallet.label || chain} Wallet` && a.accountType === "wallet");
+                if (!walletAccount) {
+                  walletAccount = await storage.createAccount({
+                    userId,
+                    provider: chain,
+                    accountName: `${wallet.label || chain} Wallet`,
+                    accountType: "wallet",
+                  });
+                }
+
+                const caseSensitiveChains = new Set(["xrp", "solana", "cardano", "cosmos", "stellar"]);
+                const isCaseSensitive = caseSensitiveChains.has(chain);
+                const ownAddresses = new Set(
+                  userWallets.map(w => isCaseSensitive ? w.address : w.address.toLowerCase())
+                );
+
+                const existingTxns = await storage.getTransactionsByUser(userId);
+                const existingExternalIds = new Set(
+                  existingTxns.filter(t => t.externalId && t.accountId === walletAccount!.id).map(t => t.externalId)
+                );
+
+                const uniqueDates = new Map<string, Date>();
+                for (const tx of blockchainTxs) {
+                  if (!existingExternalIds.has(tx.hash)) {
+                    const dayKey = tx.timestamp.toISOString().split("T")[0];
+                    if (!uniqueDates.has(dayKey)) uniqueDates.set(dayKey, tx.timestamp);
+                  }
+                }
+
+                const STABLECOINS_AUTO = new Set(["RLUSD", "USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD"]);
+                const MAX_PRICE_LOOKUPS = 60;
+                const nativeAssetAuto = chain === "ethereum" ? "ETH" : chain === "xrp" ? "XRP" : "BTC";
+                const priceMapSync = new Map<string, number>();
+
+                const uniqueAssetDatesAuto = new Map<string, { asset: string; date: Date }>();
+                for (const tx of blockchainTxs) {
+                  if (!existingExternalIds.has(tx.hash) && !STABLECOINS_AUTO.has(tx.asset.toUpperCase())) {
+                    const key = `${tx.asset}:${tx.timestamp.toISOString().split("T")[0]}`;
+                    if (!uniqueAssetDatesAuto.has(key)) uniqueAssetDatesAuto.set(key, { asset: tx.asset, date: tx.timestamp });
+                  }
+                }
+
+                let lookupCount = 0;
+                for (const [key, { asset: txAsset, date }] of uniqueAssetDatesAuto) {
+                  if (lookupCount >= MAX_PRICE_LOOKUPS) break;
+                  const lookupSymbol = txAsset === nativeAssetAuto || txAsset === "XRP" || txAsset === "ETH" || txAsset === "BTC" ? txAsset : nativeAssetAuto;
+                  const price = await getHistoricalPrice(lookupSymbol, date);
+                  priceMapSync.set(key, price);
+                  lookupCount++;
+                  if (lookupCount < uniqueAssetDatesAuto.size) await new Promise(r => setTimeout(r, 2500));
+                }
+
+                const walletBals = await storage.getWalletBalances(wallet.id);
+                const assetBalanceMap = new Map<string, string>();
+                for (const wb of walletBals) assetBalanceMap.set(wb.assetSymbol, wb.id);
+
+                let newTxCount = 0;
+                let totalCostBasis = 0;
+                let totalQuantityBought = 0;
+
+                for (const tx of blockchainTxs) {
+                  if (existingExternalIds.has(tx.hash)) continue;
+                  const normalizeAddr = (addr: string) => isCaseSensitive ? addr : addr.toLowerCase();
+                  const isOwnTransfer = tx.type === "receive"
+                    ? tx.senderAddress && ownAddresses.has(normalizeAddr(tx.senderAddress))
+                    : tx.recipientAddress && ownAddresses.has(normalizeAddr(tx.recipientAddress));
+
+                  const dayKey = tx.timestamp.toISOString().split("T")[0];
+                  const isStableAuto = STABLECOINS_AUTO.has(tx.asset.toUpperCase());
+                  const pricePerUnit = isStableAuto ? 1.0 : (priceMapSync.get(`${tx.asset}:${dayKey}`) || 0);
+                  const totalValue = tx.quantity * pricePerUnit;
+                  const txType = isOwnTransfer ? "transfer" : (tx.type === "receive" ? "buy" : "sell");
+
+                  const transaction = await storage.createTransaction({
+                    userId,
+                    accountId: walletAccount!.id,
+                    assetSymbol: tx.asset,
+                    transactionType: txType,
+                    quantity: tx.quantity.toString(),
+                    pricePerUnit: pricePerUnit.toFixed(2),
+                    totalValue: totalValue.toFixed(2),
+                    fee: tx.fee.toString(),
+                    transactionDate: tx.timestamp,
+                    externalId: tx.hash,
+                    notes: isOwnTransfer
+                      ? `Transfer between own wallets (auto-synced)`
+                      : `Imported from blockchain (auto-synced)`,
+                  });
+
+                  if (txType === "buy" && pricePerUnit > 0) {
+                    const wbId = assetBalanceMap.get(tx.asset);
+                    await storage.createTaxLot({
+                      userId,
+                      transactionId: transaction.id,
+                      walletBalanceId: wbId || null,
+                      assetSymbol: tx.asset,
+                      acquiredDate: tx.timestamp,
+                      originalQuantity: tx.quantity.toString(),
+                      remainingQuantity: tx.quantity.toString(),
+                      costBasisPerUnit: pricePerUnit.toFixed(2),
+                    });
+                    totalCostBasis += totalValue;
+                    totalQuantityBought += tx.quantity;
+                  }
+                  newTxCount++;
+                }
+
+                if (totalQuantityBought > 0) {
+                  const assetBal = walletBals.find(b => b.assetSymbol === asset);
+                  if (assetBal) {
+                    const allLots = await storage.getTaxLotsByWalletBalance(userId, assetBal.id);
+                    const aggregateCost = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+                    const aggregateQty = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity), 0);
+                    const avgCost = aggregateQty > 0 ? aggregateCost / aggregateQty : 0;
+                    await storage.updateWalletBalanceCostData(assetBal.id, avgCost.toFixed(8), aggregateCost.toFixed(2));
+                  }
+                }
+
+                if (newTxCount > 0) {
+                  console.log(`[auto-sync] Imported ${newTxCount} new ${chain} transaction(s) for wallet ${wallet.id}`);
+                }
+              }
+            } catch (txErr: any) {
+              console.error(`[auto-sync] Transaction import error for ${chain} wallet ${wallet.id}:`, txErr.message);
+            }
+          }
+        } catch (err: any) {
+          console.error(`[auto-sync] Error syncing wallet ${wallet.id}:`, err.message);
+        }
+      }
+
+      userLastAutoSync.set(userId, Date.now());
+      console.log(`[auto-sync] Completed for user ${userId.slice(0, 8)}...`);
+    } catch (err: any) {
+      console.error(`[auto-sync] Fatal error for user ${userId.slice(0, 8)}:`, err.message);
+    } finally {
+      userSyncInProgress.delete(userId);
+    }
+  }
+
+  app.use("/api", (req: any, _res, next) => {
+    if (req.user?.claims?.sub) {
+      const userId = req.user.claims.sub;
+      const lastSync = userLastAutoSync.get(userId) || 0;
+      if (Date.now() - lastSync > AUTO_SYNC_INTERVAL_MS) {
+        userLastAutoSync.set(userId, Date.now());
+        backgroundWalletSync(userId).catch(err => {
+          console.error(`[auto-sync] Background sync failed:`, err.message);
+        });
+      }
+    }
+    next();
+  });
+
   app.get("/api/wallets", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -6608,19 +6842,30 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
               }
             }
 
+            const STABLECOINS_SET = new Set(["RLUSD", "USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD"]);
             const MAX_PRICE_LOOKUPS = 60;
-            const priceMap = new Map<string, number>();
-            const asset = chain === "ethereum" ? "ETH" : chain === "xrp" ? "XRP" : "BTC";
+            const priceMapByAssetDay = new Map<string, number>();
+            const nativeAsset = chain === "ethereum" ? "ETH" : chain === "xrp" ? "XRP" : "BTC";
+
+            const uniqueAssetDates = new Map<string, { asset: string; date: Date }>();
+            for (const tx of blockchainTxs) {
+              if (!existingExternalIds.has(tx.hash) && !STABLECOINS_SET.has(tx.asset.toUpperCase())) {
+                const key = `${tx.asset}:${tx.timestamp.toISOString().split("T")[0]}`;
+                if (!uniqueAssetDates.has(key)) uniqueAssetDates.set(key, { asset: tx.asset, date: tx.timestamp });
+              }
+            }
+
             let lookupCount = 0;
-            for (const [dayKey, date] of uniqueDates) {
+            for (const [key, { asset: txAsset, date }] of uniqueAssetDates) {
               if (lookupCount >= MAX_PRICE_LOOKUPS) {
                 console.warn(`Capping price lookups at ${MAX_PRICE_LOOKUPS} for wallet ${wallet.id}`);
                 break;
               }
-              const price = await getHistoricalPrice(asset, date);
-              priceMap.set(dayKey, price);
+              const lookupSymbol = txAsset === nativeAsset || txAsset === "XRP" || txAsset === "ETH" || txAsset === "BTC" ? txAsset : nativeAsset;
+              const price = await getHistoricalPrice(lookupSymbol, date);
+              priceMapByAssetDay.set(key, price);
               lookupCount++;
-              if (lookupCount < uniqueDates.size) await new Promise(r => setTimeout(r, 2500));
+              if (lookupCount < uniqueAssetDates.size) await new Promise(r => setTimeout(r, 2500));
             }
 
             let totalCostBasis = 0;
@@ -6641,7 +6886,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
                 : tx.recipientAddress && ownAddresses.has(normalizeAddr(tx.recipientAddress));
 
               const dayKey = tx.timestamp.toISOString().split("T")[0];
-              const pricePerUnit = priceMap.get(dayKey) || 0;
+              const isStable = STABLECOINS_SET.has(tx.asset.toUpperCase());
+              const pricePerUnit = isStable ? 1.0 : (priceMapByAssetDay.get(`${tx.asset}:${dayKey}`) || 0);
               const totalValue = tx.quantity * pricePerUnit;
               const txType = isOwnTransfer ? "transfer" : (tx.type === "receive" ? "buy" : "sell");
 

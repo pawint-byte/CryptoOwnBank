@@ -135,11 +135,27 @@ export async function getXrpTransactions(address: string): Promise<BlockchainTra
 
         const delivered = meta.delivered_amount || meta.DeliveredAmount;
         if (!delivered) continue;
-        if (typeof delivered === "object") continue;
 
-        const drops = Number(delivered);
-        if (isNaN(drops) || drops <= 0) continue;
-        const xrpAmount = drops / 1e6;
+        let asset: string;
+        let quantity: number;
+
+        if (typeof delivered === "object" && delivered !== null) {
+          if (!delivered.currency || !delivered.value) continue;
+          asset = delivered.currency;
+          if (asset.length === 40) {
+            try {
+              const decoded = Buffer.from(asset, "hex").toString("utf8").replace(/\0/g, "").trim();
+              if (decoded.length > 0 && decoded.length <= 12) asset = decoded;
+            } catch {}
+          }
+          quantity = Number(delivered.value);
+          if (isNaN(quantity) || quantity <= 0) continue;
+        } else {
+          const drops = Number(delivered);
+          if (isNaN(drops) || drops <= 0) continue;
+          quantity = drops / 1e6;
+          asset = "XRP";
+        }
 
         const feeDrop = Number(tx.Fee || 0);
         const feeXrp = feeDrop / 1e6;
@@ -169,8 +185,8 @@ export async function getXrpTransactions(address: string): Promise<BlockchainTra
         results.push({
           hash: tx.hash || entry.hash || "",
           type,
-          asset: "XRP",
-          quantity: xrpAmount,
+          asset,
+          quantity,
           fee: type === "send" ? feeXrp : 0,
           timestamp,
           ...(type === "receive" ? { senderAddress: source } : { recipientAddress: dest }),
