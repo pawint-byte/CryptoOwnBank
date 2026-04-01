@@ -3348,7 +3348,25 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         gainLossPct: r.costBasis > 0 ? ((r.marketValue - r.costBasis) / r.costBasis) * 100 : 0,
       }));
 
-      if (consolidatedRows.length > 0) {
+      const DUST_THRESHOLD = 100;
+      const significantRows = consolidatedRows.filter(r => r.marketValue >= DUST_THRESHOLD);
+      const dustRows = consolidatedRows.filter(r => r.marketValue < DUST_THRESHOLD);
+      if (dustRows.length > 0) {
+        const dustTotal = dustRows.reduce((s, r) => s + r.marketValue, 0);
+        const dustCost = dustRows.reduce((s, r) => s + r.costBasis, 0);
+        const dustGL = dustCost > 0 ? dustTotal - dustCost : 0;
+        significantRows.push({
+          asset: `Other (${dustRows.length} assets)`,
+          quantity: 0,
+          price: 0,
+          marketValue: dustTotal,
+          costBasis: dustCost,
+          gainLoss: dustGL,
+          gainLossPct: dustCost > 0 ? (dustGL / dustCost) * 100 : 0,
+        });
+      }
+
+      if (significantRows.length > 0) {
         curY += 8;
         if (curY > 250) { doc.addPage(); curY = 14; }
         doc.setFontSize(12);
@@ -3357,8 +3375,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         autoTable(doc, {
           startY: curY + 4,
           head: [["Asset", "Total Qty", "Avg Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
-          body: consolidatedRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
-            r.asset, fmtQty(r.quantity), fmtCur(r.price),
+          body: significantRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+            r.asset, r.quantity > 0 ? fmtQty(r.quantity) : "--", r.price > 0 ? fmtCur(r.price) : "--",
             fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
           ]),
           theme: "striped",
