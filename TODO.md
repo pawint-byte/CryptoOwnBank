@@ -137,6 +137,17 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ## PENDING — Future Improvements
 
+- [2026-04-01] **Tokenized Private Equity & Pre-IPO Vault (Pro Tier)**: Vision — a self-custody cockpit for accredited investors holding tokenized private shares, pre-IPO equity, and RWA securities on-chain.
+  - **Auto-detection**: Scan XRPL trustlines (and other chains) for tokenized pre-IPO/private shares — Forge Trust interests (if/when on-chain), Archax securities, Zoniqx tokens, future Ripple-partnered equity tokens.
+  - **Live valuation**: On-chain balance + estimated NAV from issuer metadata or manual override. Upcoming liquidity events (IPO dates, secondary sale windows, dividend schedules).
+  - **Tax-basis carryover**: Import cost basis from restructurings (e.g., Linqto/Forge → tokenized trust interests). Track holding periods for long-term capital gains.
+  - **Secondary-market simulator**: One-click "what if I sell X shares at $Y" with tax impact preview. Pair with RLUSD yields or XLS-66 lending collateral (when live).
+  - **Legacy Plan integration**: Tokenized private equity included in crypto inheritance protection — beneficiaries see the full picture.
+  - **Tier gating**: Free = basic visibility (asset name + balance). Premium = valuation + alerts. Pro = full cockpit (tax basis, simulator, liquidity events, dividend tracking).
+  - **Why now (partially)**: XRPL RWA wave is $2.3B+ and growing (Archax, Zoniqx, OpenEden, Aviva). The portfolio tracker already reads trustlines and token balances. When issuers tokenize, we pick it up automatically.
+  - **What's missing**: No issuer has tokenized Ripple equity yet. Forge Trust interests are off-chain. No standardized metadata API for private token valuations. Build the manual tracker first (private asset entries with cost basis), then auto-detect when on-chain data becomes available.
+  - **"Eat your own dog food" thesis**: The first crypto company to tokenize their own pre-IPO equity on their own ledger wins massive credibility. CryptoOwnBank should be the dashboard ready when that happens.
+
 - ~~[2026-03-27] **Freighter Integration — In-Site Stellar Signing**~~ — COMPLETED 2026-03-27.
   - **Done**: `@stellar/freighter-api` + `@stellar/stellar-sdk` installed. `client/src/lib/freighter-connector.ts` built with `isFreighterInstalled`, `connectFreighter`, `buildAndSignOffer`, `buildAndSignPayment`, `buildAndSignChangeTrust`.
   - **Stellar DEX** (`stellar-dex.tsx`): Freighter connect banner. Trade dialog shows "Sign with Freighter" as primary option (signs in-browser). Success state shows tx hash with Stellar Explorer link. LOBSTR/StellarTerm/StellarX remain as fallback.
