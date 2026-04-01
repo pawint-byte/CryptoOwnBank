@@ -116,6 +116,16 @@ export default function SettingsPage() {
   const [pendingPayment, setPendingPayment] = useState<any>(null);
   const [cryptoLoading, setCryptoLoading] = useState(false);
   const [xamanPayLoading, setXamanPayLoading] = useState(false);
+  const [memberProfile, setMemberProfile] = useState({
+    fullName: "",
+    addressLine1: "",
+    addressLine2: "",
+    profileCity: "",
+    profileStateProvince: "",
+    postalCode: "",
+    profileCountry: "",
+  });
+  const [memberProfileSaving, setMemberProfileSaving] = useState(false);
   const [businessProfile, setBusinessProfile] = useState({
     businessName: "",
     businessLogo: "",
@@ -314,6 +324,15 @@ export default function SettingsPage() {
         defaultCurrency: settings.defaultCurrency || "USD",
         taxYear: settings.taxYear || undefined,
       });
+      setMemberProfile({
+        fullName: (settings as any).fullName || "",
+        addressLine1: (settings as any).addressLine1 || "",
+        addressLine2: (settings as any).addressLine2 || "",
+        profileCity: (settings as any).profileCity || "",
+        profileStateProvince: (settings as any).profileStateProvince || "",
+        postalCode: (settings as any).postalCode || "",
+        profileCountry: (settings as any).profileCountry || "",
+      });
       setBusinessProfile({
         businessName: (settings as any).businessName || "",
         businessLogo: (settings as any).businessLogo || "",
@@ -355,6 +374,19 @@ export default function SettingsPage() {
 
   const onSubmit = (values: SettingsFormValues) => {
     updateMutation.mutate(values);
+  };
+
+  const handleSaveMemberProfile = async () => {
+    setMemberProfileSaving(true);
+    try {
+      await apiRequest("PUT", "/api/settings", memberProfile);
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Profile information saved" });
+    } catch {
+      toast({ title: "Failed to save profile", variant: "destructive" });
+    } finally {
+      setMemberProfileSaving(false);
+    }
   };
 
   const handleSaveBusinessProfile = async () => {
@@ -667,6 +699,96 @@ export default function SettingsPage() {
                       })
                     : "Unknown"}
                 </p>
+              </div>
+            </div>
+            <Separator />
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Statement Information</p>
+              <p className="text-xs text-muted-foreground">Used on your downloadable portfolio statement PDF.</p>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  placeholder="John Doe"
+                  value={memberProfile.fullName}
+                  onChange={(e) => setMemberProfile(p => ({ ...p, fullName: e.target.value }))}
+                  data-testid="input-full-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine1">Address Line 1</Label>
+                <Input
+                  id="addressLine1"
+                  placeholder="123 Main St"
+                  value={memberProfile.addressLine1}
+                  onChange={(e) => setMemberProfile(p => ({ ...p, addressLine1: e.target.value }))}
+                  data-testid="input-address-line1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine2">Address Line 2</Label>
+                <Input
+                  id="addressLine2"
+                  placeholder="Suite 100 (optional)"
+                  value={memberProfile.addressLine2}
+                  onChange={(e) => setMemberProfile(p => ({ ...p, addressLine2: e.target.value }))}
+                  data-testid="input-address-line2"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="profileCity">City</Label>
+                  <Input
+                    id="profileCity"
+                    placeholder="San Francisco"
+                    value={memberProfile.profileCity}
+                    onChange={(e) => setMemberProfile(p => ({ ...p, profileCity: e.target.value }))}
+                    data-testid="input-profile-city"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profileStateProvince">State / Province</Label>
+                  <Input
+                    id="profileStateProvince"
+                    placeholder="CA"
+                    value={memberProfile.profileStateProvince}
+                    onChange={(e) => setMemberProfile(p => ({ ...p, profileStateProvince: e.target.value }))}
+                    data-testid="input-profile-state"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Input
+                    id="postalCode"
+                    placeholder="94102"
+                    value={memberProfile.postalCode}
+                    onChange={(e) => setMemberProfile(p => ({ ...p, postalCode: e.target.value }))}
+                    data-testid="input-postal-code"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profileCountry">Country</Label>
+                  <Input
+                    id="profileCountry"
+                    placeholder="United States"
+                    value={memberProfile.profileCountry}
+                    onChange={(e) => setMemberProfile(p => ({ ...p, profileCountry: e.target.value }))}
+                    data-testid="input-profile-country"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleSaveMemberProfile}
+                  disabled={memberProfileSaving}
+                  data-testid="button-save-member-profile"
+                >
+                  {memberProfileSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                  Save Profile
+                </Button>
               </div>
             </div>
           </CardContent>

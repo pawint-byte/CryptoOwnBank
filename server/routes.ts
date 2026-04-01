@@ -3147,7 +3147,13 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const settings = await storage.getUserSettings(userId);
-      const memberName = settings?.displayName || req.user?.claims?.email || "Member";
+      const memberName = settings?.fullName || req.user?.claims?.email || "Member";
+      const memberAddress = [
+        settings?.addressLine1,
+        settings?.addressLine2,
+        [settings?.profileCity, settings?.profileStateProvince, settings?.postalCode].filter(Boolean).join(", "),
+        settings?.profileCountry,
+      ].filter(Boolean);
 
       const positionsData = await storage.getActivePositionsByUser(userId);
       const [priceCacheRows, allAssetsStmt] = await Promise.all([
@@ -3272,16 +3278,26 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       doc.setFontSize(9);
       doc.setTextColor(60);
       doc.text(`Prepared for: ${memberName}`, 14, 38);
-      doc.text(`Statement Date: ${statementDate}`, 14, 43);
-      doc.text(`Membership: ${tier.charAt(0).toUpperCase() + tier.slice(1)}`, 14, 48);
+      let infoY = 43;
+      if (memberAddress.length > 0) {
+        for (const line of memberAddress) {
+          doc.text(line, 14, infoY);
+          infoY += 4;
+        }
+      }
+      doc.text(`Statement Date: ${statementDate}`, 14, infoY);
+      infoY += 5;
+      doc.text(`Membership: ${tier.charAt(0).toUpperCase() + tier.slice(1)}`, 14, infoY);
+      infoY += 6;
 
       doc.setDrawColor(0, 164, 228);
       doc.setLineWidth(0.5);
-      doc.line(14, 52, 196, 52);
+      doc.line(14, infoY, 196, infoY);
+      infoY += 8;
 
       doc.setFontSize(13);
       doc.setTextColor(0);
-      doc.text("Account Summary", 14, 60);
+      doc.text("Account Summary", 14, infoY);
 
       const summaryData = [
         ["Total Portfolio Value", fmtCur(grandTotal)],
@@ -3293,7 +3309,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       if (stmtTotal > 0) summaryData.push(["Bank & Brokerage", fmtCur(stmtTotal)]);
 
       autoTable(doc, {
-        startY: 64,
+        startY: infoY + 4,
         body: summaryData,
         theme: "plain",
         styles: { fontSize: 9, cellPadding: 2 },
