@@ -2037,7 +2037,7 @@ export default function Wallets() {
               <DialogHeader>
                 <DialogTitle>Track a Blockchain Address</DialogTitle>
                 <DialogDescription>
-                  Paste a public address from any blockchain below. We'll pull the current balance and, for Bitcoin and Ethereum, your full transaction history with cost basis. We never need your private keys.
+                  Paste a public address from any blockchain below. We'll pull the current balance and, for Bitcoin and Ethereum, your full transaction history with cost basis. We never need your private keys. This also works for AI agent wallets (Coinbase AgentKit, x402) — just paste the agent's public address.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>

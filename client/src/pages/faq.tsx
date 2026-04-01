@@ -23,7 +23,7 @@ const faqGroups = [
       },
       {
         q: "What blockchains does CryptoOwnBank support for portfolio tracking?",
-        a: "We support 32+ blockchains for portfolio tracking: XRP Ledger, Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, Polygon, Tron, Algorand, Hedera (HBAR), VeChain, Stellar, TON, Sui, Flare, BNB Chain, Sonic, XDC, Zilliqa, Nervos, Fetch.ai, Cronos, Arbitrum, Optimism, Base, Dogecoin, Litecoin, DigiByte, Casper, Verge, and more. Add your public wallet address for any of these chains and we automatically pull your balances — including staked positions and pending rewards. Your private keys are never shared — we only read public on-chain data.",
+        a: "We support 32+ blockchains for portfolio tracking: XRP Ledger, Bitcoin, Ethereum, Solana, Cardano, Polkadot, Cosmos, Avalanche, Polygon, Tron, Algorand, Hedera (HBAR), VeChain, Stellar, TON, Sui, Flare, BNB Chain, Sonic, XDC, Zilliqa, Nervos, Fetch.ai, Cronos, Arbitrum, Optimism, Base, Dogecoin, Litecoin, DigiByte, Casper, Verge, and more. Add your public wallet address for any of these chains and we automatically pull your balances — including staked positions and pending rewards. This includes AI agent wallets — if you're running agents via Coinbase AgentKit, x402, or any other framework, just paste the agent's public address and track what it holds and earns alongside your personal wallets. Your private keys are never shared — we only read public on-chain data.",
       },
       {
         q: "What does 'Bring Your Own Wallet' mean?",

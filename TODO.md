@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-01 by main agent (AI Portfolio Assistant built and deployed)**
+**Last updated: 2026-04-01 by main agent (AI agent wallet tracking mention added, comparison matrix added to landing page)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 

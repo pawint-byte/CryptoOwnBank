@@ -243,7 +243,7 @@ const toolkits: Toolkit[] = [
     timeEstimate: "15-20 minutes",
     requirements: [
       "Existing exchange accounts (Coinbase, Kraken, Crypto.com, Binance, etc.)",
-      "Wallet addresses you want to track (any of 24 supported blockchains)",
+      "Wallet addresses you want to track (any of 32+ supported blockchains)",
       "CSV transaction exports from your exchanges (most exchanges offer this in Settings or Reports)",
       "Optional: Xaman wallet app if you want to use XRPL tools",
     ],
@@ -288,6 +288,7 @@ const toolkits: Toolkit[] = [
           "Solana addresses automatically detect SPL tokens; VeChain detects VET + VTHO",
           "XRP addresses detect trust line tokens like RLUSD",
           "Each wallet's balance is mapped to live CoinGecko prices for portfolio valuation",
+          "Running AI agents? Paste your agent's public address (Coinbase AgentKit, x402, or any agent wallet) to track what your agents hold and earn",
         ],
         tip: "If you've been using Ledger Live or Yahoo Finance, you can also import transaction history via CSV upload to build your complete cost basis.",
       },
