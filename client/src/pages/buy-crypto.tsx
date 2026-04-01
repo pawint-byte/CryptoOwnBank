@@ -1045,7 +1045,7 @@ export default function BuyCrypto() {
               height="100%"
               frameBorder="0"
               allow="camera"
-              src="https://widget.changelly.com?from=usd&to=btc&amount=500&address=&fromDefault=usd&toDefault=btc&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1"
+              src="https://widget.changelly.com?from=*&to=*&amount=500&address=&fromDefault=usd&toDefault=xrp&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1"
               title="Changelly Buy Crypto Widget"
               data-testid="changelly-widget-iframe"
             >
