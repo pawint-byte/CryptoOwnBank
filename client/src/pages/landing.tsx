@@ -1251,6 +1251,43 @@ export default function Landing() {
     }
   }, []);
 
+  const sectionNav = [
+    { id: "why", label: "Why" },
+    { id: "how-it-works", label: "How It Works" },
+    { id: "features", label: "Features" },
+    { id: "xrpl-tools", label: "XRPL Tools" },
+    { id: "payment-corridor", label: "Payments" },
+    { id: "multi-chain", label: "Multi-Chain" },
+    { id: "financial-access", label: "Access" },
+    { id: "pricing", label: "Pricing" },
+    { id: "compare", label: "Compare" },
+    { id: "security", label: "Security" },
+    { id: "on-chain", label: "Why On-Chain" },
+    { id: "signing", label: "Signing" },
+    { id: "faq", label: "FAQ" },
+  ];
+
+  const [activeSection, setActiveSection] = useState("");
+  const [showNav, setShowNav] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowNav(window.scrollY > 600);
+      const sections = sectionNav.map(s => ({
+        id: s.id,
+        el: document.getElementById(s.id),
+      })).filter(s => s.el);
+      let current = "";
+      for (const s of sections) {
+        const rect = s.el!.getBoundingClientRect();
+        if (rect.top <= 200) current = s.id;
+      }
+      setActiveSection(current);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const landingJsonLd = useMemo(() => [
     {
       "@context": "https://schema.org",
@@ -1400,6 +1437,31 @@ export default function Landing() {
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#00A4E4] text-white text-center py-1.5 text-xs font-medium" data-testid="banner-beta">
         {t.beta}
       </div>
+
+      <nav
+        className={`fixed right-3 top-1/2 -translate-y-1/2 z-[55] hidden lg:flex flex-col gap-1 transition-all duration-300 ${showNav ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"}`}
+        data-testid="nav-section-sidebar"
+      >
+        <div className="bg-background/90 backdrop-blur-md border rounded-full py-2 px-1.5 shadow-lg">
+          {sectionNav.map((s) => (
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className="group flex items-center gap-2 justify-end"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" });
+              }}
+              data-testid={`nav-dot-${s.id}`}
+            >
+              <span className={`text-[10px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pr-1 ${activeSection === s.id ? "text-[#00A4E4]" : "text-muted-foreground"}`}>
+                {s.label}
+              </span>
+              <span className={`block w-2 h-2 rounded-full my-1 transition-all ${activeSection === s.id ? "bg-[#00A4E4] scale-125" : "bg-muted-foreground/30 group-hover:bg-muted-foreground/60"}`} />
+            </a>
+          ))}
+        </div>
+      </nav>
 
       <header className="fixed top-[30px] left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2580,7 +2642,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30" data-testid="section-compare">
+        <section id="compare" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30" data-testid="section-compare">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <p className="text-[#00A4E4] font-medium mb-2">See the difference</p>
@@ -2644,7 +2706,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+        <section id="security" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
