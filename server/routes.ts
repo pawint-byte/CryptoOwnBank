@@ -3947,7 +3947,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
   app.put("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone, stellarAddress } = req.body;
+      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone, stellarAddress, fullName, addressLine1, addressLine2, profileCity, profileStateProvince, postalCode, profileCountry } = req.body;
       
       const updateData: any = { userId };
       if (taxMethod !== undefined) updateData.taxMethod = taxMethod;
@@ -3960,6 +3960,13 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       if (businessWebsite !== undefined) updateData.businessWebsite = businessWebsite;
       if (businessPhone !== undefined) updateData.businessPhone = businessPhone;
       if (stellarAddress !== undefined) updateData.stellarAddress = stellarAddress;
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (addressLine1 !== undefined) updateData.addressLine1 = addressLine1;
+      if (addressLine2 !== undefined) updateData.addressLine2 = addressLine2;
+      if (profileCity !== undefined) updateData.profileCity = profileCity;
+      if (profileStateProvince !== undefined) updateData.profileStateProvince = profileStateProvince;
+      if (postalCode !== undefined) updateData.postalCode = postalCode;
+      if (profileCountry !== undefined) updateData.profileCountry = profileCountry;
       
       const settings = await storage.upsertUserSettings(updateData);
       
