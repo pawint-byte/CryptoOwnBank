@@ -1439,25 +1439,22 @@ export default function Landing() {
       </div>
 
       <nav
-        className={`fixed right-3 top-1/2 -translate-y-1/2 z-[55] hidden lg:flex flex-col gap-1 transition-all duration-300 ${showNav ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"}`}
+        className={`fixed right-4 top-1/2 -translate-y-1/2 z-[55] hidden md:flex flex-col transition-all duration-300 ${showNav ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8 pointer-events-none"}`}
         data-testid="nav-section-sidebar"
       >
-        <div className="bg-background/90 backdrop-blur-md border rounded-full py-2 px-1.5 shadow-lg">
+        <div className="bg-background/95 backdrop-blur-md border border-border/80 rounded-xl py-3 px-3 shadow-xl space-y-0.5">
           {sectionNav.map((s) => (
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="group flex items-center gap-2 justify-end"
+              className={`block text-[11px] font-medium py-1 px-2 rounded-md transition-all ${activeSection === s.id ? "bg-[#00A4E4]/10 text-[#00A4E4]" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
               onClick={(e) => {
                 e.preventDefault();
                 document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" });
               }}
               data-testid={`nav-dot-${s.id}`}
             >
-              <span className={`text-[10px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pr-1 ${activeSection === s.id ? "text-[#00A4E4]" : "text-muted-foreground"}`}>
-                {s.label}
-              </span>
-              <span className={`block w-2 h-2 rounded-full my-1 transition-all ${activeSection === s.id ? "bg-[#00A4E4] scale-125" : "bg-muted-foreground/30 group-hover:bg-muted-foreground/60"}`} />
+              {s.label}
             </a>
           ))}
         </div>
