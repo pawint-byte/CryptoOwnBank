@@ -369,8 +369,8 @@ const memberStories = [
     icon: Landmark,
     accent: "from-emerald-500/10 to-green-500/10",
     story:
-      "Banks earn billions lending your deposits and pay you 0.01–4.5%. Exchanges take a cut of your staking rewards. CryptoOwnBank flips that model: Soil Protocol lends your RLUSD to institutional borrowers at 5–8% APR, and the yield goes directly to your wallet — not to shareholders, not to a platform fee, not to a middleman. You keep all your earnings because no one else handles your money.",
-    benefit: "5–8% fixed APR on RLUSD. No platform fees. Every cent of yield is yours.",
+      "Banks earn billions lending your deposits and pay you 0.01–4.5%. Exchanges take a cut of your staking rewards. CryptoOwnBank flips that model: Soil Protocol lends your RLUSD to institutional borrowers at 5–8% APR, and the yield goes directly to your wallet — not to shareholders, not to a platform fee, not to a middleman. You keep all your earnings because no one else handles your money. The same XRPL yield infrastructure now powers Ripple Treasury for Fortune 500 companies — CryptoOwnBank brings it to you, fully self-custodial.",
+    benefit: "5–8% fixed APR on RLUSD. No platform fees. Every cent of yield is yours. Same XRPL rails trusted by enterprise treasury teams.",
   },
   {
     title: "Bridge Both Ways — EVM ↔ XRP in Minutes",

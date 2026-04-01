@@ -2186,6 +2186,12 @@ export default function RwaYields() {
               <p className="text-sm text-muted-foreground">
                 This means more predictable, sustainable returns compared to volatile DeFi farming — often with institutional-grade backing and transparent collateral.
               </p>
+              <div className="mt-3 p-3 rounded-lg bg-[#00A4E4]/5 border border-[#00A4E4]/20">
+                <p className="text-sm text-muted-foreground" data-testid="text-ripple-treasury-validation">
+                  <span className="font-medium text-foreground">Institutional validation:</span>{" "}
+                  Ripple Treasury (powered by GTreasury) now offers Fortune 500 companies the ability to earn yield on RLUSD through tokenized money market funds and overnight repos on the XRP Ledger — including access to BlackRock's BUIDL fund. CryptoOwnBank brings the same XRPL yield ecosystem to individual users through Soil Protocol, with full self-custody.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
