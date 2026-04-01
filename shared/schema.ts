@@ -1131,3 +1131,17 @@ export const dismissedRecommendations = pgTable("dismissed_recommendations", {
 ]);
 
 export type DismissedRecommendation = typeof dismissedRecommendations.$inferSelect;
+
+export const aiChatMessages = pgTable("ai_chat_messages", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  sessionId: varchar("session_id").notNull(),
+  role: varchar("role", { length: 20 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_ai_chat_user").on(table.userId),
+  index("idx_ai_chat_session").on(table.sessionId),
+]);
+
+export type AiChatMessage = typeof aiChatMessages.$inferSelect;

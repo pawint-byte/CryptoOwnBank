@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-01 by main agent (Buy Crypto on-ramp tested and verified working)**
+**Last updated: 2026-04-01 by main agent (AI Portfolio Assistant built and deployed)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -153,7 +153,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-24] **Archax tokenized securities section added to RWA Yields page**: Live assets: abrdn Lux MMF, State Street, Fidelity International, LGIM, Federated Hermes UCITS, UK Gilts. Coming Soon: UK Equities, US Equities. All on XRPL via Archax (FCA-regulated). Comparison table updated. Next step: integrate when Archax issuer addresses are available (trustline setup + DEX trading).
 - ~~[2026-03-24] **Noah Cash-to-Stablecoin on-ramp (inside Ledger)**~~ — COMPLETED 2026-03-24. Added to all 16 Ledger entries on Buy Crypto page + FAQ entry.
 - ~~[2026-03-24] **CL Card (Ledger Visa debit by Baanx)**~~ — COMPLETED 2026-03-24. Added to Crypto Debit Cards page as featured card with Ledger referral link + FAQ updated.
-- [2026-03-23] **AI Portfolio Assistant**: GPT-4o-mini to start, upgrade to GPT-4o when needed. Pay-as-you-go pricing (~$0.01-$0.03 per conversation). Free = 0 AI chats, Premium = 50/month, Pro = unlimited. Must include "not financial advice" in every response. Need to sign up for OpenAI API key at platform.openai.com when ready.
+- ~~[2026-03-23] **AI Portfolio Assistant**~~ — COMPLETED 2026-04-01. GPT-4o-mini model, OPENAI_API_KEY configured. Free = 0 chats, Premium = 50/month, Pro = unlimited. "Not financial advice" disclaimer in every response. Portfolio context (holdings, wallet count, chains) auto-injected into conversations. Chat history with session management. Page: `/ai-assistant`, sidebar under Planning & Tools. DB table: `ai_chat_messages`. Upgrade prompts updated with AI benefits.
 - [2026-03-23] **Open Wallet Standard (OWS)**: Research noted — potential fit for future AI assistant (agent proposes, user approves on Ledger), Legacy Plan automated disbursement (policy engine), and adding new chains later. Not a replacement for Xaman or WalletConnect. Clone repo and experiment when ready.
 - [2026-03-25] **Token Buckets — Requires Architecture Decision Before Building**:
   - **Status**: Code and DB tables preserved but hidden from UI. Not ready for users.

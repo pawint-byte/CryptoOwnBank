@@ -19,6 +19,7 @@ const PREMIUM_BENEFITS = [
   "XRPL & Stellar DEX trading — your keys, your trades",
   "Unlimited wallets across 24 chains with full history",
   "CSV import, unlimited price alerts & recurring payments",
+  "AI Portfolio Assistant — 50 conversations/month",
 ];
 
 const ANNUAL_BENEFITS = [
@@ -38,6 +39,7 @@ const PRO_BENEFITS = [
   "Real Estate Tokenization — RealT, Lofty, Propy",
   "Up to 5 team member seats",
   "XLS-66 on-ledger lending protocol",
+  "Unlimited AI Portfolio Assistant conversations",
   "Legacy Plan included — crypto inheritance protection",
 ];
 

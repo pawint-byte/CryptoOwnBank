@@ -70,6 +70,7 @@ The user has been repeatedly told that things were done when they were not. He h
 ### Environment Secrets Available
 - `FRED_API_KEY` — for real estate housing data (S&P/Case-Shiller)
 - `ONEINCH_API_KEY` — for EVM DEX swaps
+- `OPENAI_API_KEY` — for AI Portfolio Assistant (GPT-4o-mini)
 - `SESSION_SECRET` — for Express sessions
 - `STRIPE_SECRET_KEY` — for payment processing
 - `XUMM_API_SECRET` — for XRPL wallet signing
@@ -98,8 +99,8 @@ The user has been repeatedly told that things were done when they were not. He h
 
 ### Data Storage
 - PostgreSQL with Drizzle ORM
-- Key tables: users, accounts, transactions, positions, tax_lots, price_cache, wallets, wallet_balances, legacy_plans, legacy_beneficiaries, legacy_check_ins
+- Key tables: users, accounts, transactions, positions, tax_lots, price_cache, wallets, wallet_balances, legacy_plans, legacy_beneficiaries, legacy_check_ins, ai_chat_messages
 - Legacy Plan: `wallets.hardwareDevice` tags which hardware/software holds each address. `legacy_beneficiaries` has `encryptedVault` (AES-256-GCM client-side encrypted), `encryptedVaultHint`, `walletAssetSummary`. Standalone `/decrypt` page (no login required) for survivors.
 
 ### External Dependencies
-- xrpl.js, Xumm SDK, ethers.js v6, 1inch API, LI.FI, Squid Router, CoinGecko, DefiLlama, FRED API, Stripe, Resend email
+- xrpl.js, Xumm SDK, ethers.js v6, 1inch API, LI.FI, Squid Router, CoinGecko, DefiLlama, FRED API, Stripe, Resend email, OpenAI (GPT-4o-mini)

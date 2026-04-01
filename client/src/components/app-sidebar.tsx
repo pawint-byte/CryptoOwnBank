@@ -57,6 +57,7 @@ import {
   ShoppingCart,
   CreditCard,
   Layers,
+  BrainCircuit,
 } from "lucide-react";
 import {
   Sidebar,
@@ -145,6 +146,7 @@ const allItems: NavItem[] = [
   { title: "Cross-Chain", url: "/ownbank/cross-chain", icon: Route, group: "bridges" },
   { title: "XRPL Bridge", url: "/ownbank/xrpl-bridge", icon: GitCompareArrows, group: "bridges" },
 
+  { title: "AI Assistant", url: "/ai-assistant", icon: BrainCircuit, color: "#8b5cf6", group: "planning" },
   { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "planning" },
   { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "planning" },
   { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "planning" },

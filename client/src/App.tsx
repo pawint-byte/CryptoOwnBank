@@ -93,6 +93,7 @@ import FlareFtso from "@/pages/flare-ftso";
 import BuyCrypto from "@/pages/buy-crypto";
 import CryptoDebitCards from "@/pages/crypto-debit-cards";
 import DecryptPage from "@/pages/decrypt";
+import AiAssistant from "@/pages/ai-assistant";
 import { OfflineBanner } from "@/components/offline-banner";
 
 const TOS_LAST_UPDATED = new Date("2026-03-21T00:00:00Z");
@@ -269,6 +270,7 @@ function AuthenticatedRoutes() {
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
         <Route path="/native-staking" component={NativeStaking} />
+        <Route path="/ai-assistant" component={AiAssistant} />
         <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/migration-guide" component={MigrationGuide} />

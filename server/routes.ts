@@ -3,7 +3,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages } from "@shared/schema";
+import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
@@ -5017,6 +5018,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     realEstateTokens: boolean;
     maxTeamMembers: number;
     treasuryDashboard: boolean;
+    aiChatsPerMonth: number | null;
   }> = {
     free: {
       exchanges: 1,
@@ -5036,6 +5038,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       realEstateTokens: false,
       maxTeamMembers: 0,
       treasuryDashboard: false,
+      aiChatsPerMonth: 0,
     },
     premium: {
       exchanges: null,
@@ -5055,6 +5058,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       realEstateTokens: false,
       maxTeamMembers: 0,
       treasuryDashboard: false,
+      aiChatsPerMonth: 50,
     },
     pro: {
       exchanges: null,
@@ -5074,6 +5078,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       realEstateTokens: true,
       maxTeamMembers: 5,
       treasuryDashboard: true,
+      aiChatsPerMonth: null,
     },
   };
 
@@ -5133,12 +5138,201 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         treasuryDashboard: limits.treasuryDashboard,
         technicalAnalysis: hasTechnicalAnalysis,
         paymentsAddon: hasPayments,
+        aiChatsPerMonth: limits.aiChatsPerMonth,
         unlockedChains,
         activeAddons: activeAddons.map(a => ({ id: a.id, addonKey: a.addonKey, addonType: a.addonType, status: a.status })),
       });
     } catch (error) {
       console.error("Subscription limits error:", error);
       res.status(500).json({ message: "Failed to load subscription limits" });
+    }
+  });
+
+  const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+  const aiRateLimit = new Map<string, number[]>();
+
+  const AI_SYSTEM_PROMPT = `You are CryptoOwnBank's AI Portfolio Assistant. You help members understand their crypto portfolio, market conditions, and platform features.
+
+Key facts about CryptoOwnBank:
+- Non-custodial platform: members always hold their own keys. We never hold funds.
+- Supports XRPL, Stellar, Ethereum, Bitcoin, Solana, Cardano, Polygon, and 17+ other chains.
+- Features: portfolio tracking, RLUSD yield vaults (Soil Protocol), DEX trading, DCA orders, cross-chain swaps, tax reports, legacy planning, price alerts, whale alerts, and more.
+- Three tiers: Free (limited), Premium ($29/mo or $199/yr), Pro ($99/mo or $799/yr).
+- RLUSD is Ripple's USD-pegged stablecoin on XRPL.
+
+Rules you MUST follow:
+1. NEVER provide financial advice. Always include a brief disclaimer when discussing investment decisions: "This is not financial advice."
+2. NEVER suggest specific buy/sell actions. You can explain what metrics mean and how features work.
+3. Be concise and helpful. Use plain language.
+4. If asked about portfolio data, reference the data provided in the context. If no data is provided, say you can see their portfolio when they ask from the Portfolio Assistant page.
+5. You can explain crypto concepts, platform features, tax implications (generally), and market mechanics.
+6. Never mention internal implementation details, API keys, or system architecture.
+7. Do not use emojis.`;
+
+  app.post("/api/ai/chat", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!openai) {
+        return res.status(503).json({ message: "AI assistant is not configured" });
+      }
+
+      const userId = req.user.claims.sub;
+      const { messages, sessionId, portfolioContext } = req.body;
+
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ message: "Messages are required" });
+      }
+      if (!sessionId || typeof sessionId !== "string") {
+        return res.status(400).json({ message: "Session ID is required" });
+      }
+
+      const now = Date.now();
+      const userCalls = aiRateLimit.get(userId) || [];
+      const recentCalls = userCalls.filter(t => now - t < 60000);
+      if (recentCalls.length >= 10) {
+        return res.status(429).json({ message: "Too many requests. Please wait a moment before sending another message." });
+      }
+      recentCalls.push(now);
+      aiRateLimit.set(userId, recentCalls);
+
+      const { tier } = await getEffectiveTier(userId);
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+      if (limits.aiChatsPerMonth !== null) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const [countResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(aiChatMessages)
+          .where(and(
+            eq(aiChatMessages.userId, userId),
+            eq(aiChatMessages.role, "user"),
+            sql`${aiChatMessages.createdAt} >= ${monthStart}`
+          ));
+        const used = Number(countResult?.count || 0);
+        if (used >= limits.aiChatsPerMonth) {
+          return res.status(429).json({
+            message: `You've used all ${limits.aiChatsPerMonth} AI chats this month. Upgrade your plan for more.`,
+            limit: limits.aiChatsPerMonth,
+            used,
+          });
+        }
+      }
+
+      const lastUserMsg = messages[messages.length - 1];
+      if (!lastUserMsg || lastUserMsg.role !== "user") {
+        return res.status(400).json({ message: "Last message must be from the user" });
+      }
+
+      const validRoles = new Set(["user", "assistant"]);
+      const sanitized = messages.slice(-20)
+        .filter((m: any) => m && validRoles.has(m.role) && typeof m.content === "string" && m.content.trim().length > 0)
+        .map((m: any) => ({
+          role: m.role as "user" | "assistant",
+          content: String(m.content).slice(0, 2000),
+        }));
+
+      if (sanitized.length === 0) {
+        return res.status(400).json({ message: "No valid messages provided" });
+      }
+
+      let systemContent = AI_SYSTEM_PROMPT;
+      if (portfolioContext && typeof portfolioContext === "string") {
+        systemContent += `\n\nMember's portfolio context (auto-generated, not user-provided):\n${String(portfolioContext).slice(0, 1000)}`;
+      }
+
+      const apiMessages = [
+        { role: "system" as const, content: systemContent },
+        ...sanitized,
+      ];
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: apiMessages,
+        max_tokens: 1000,
+        temperature: 0.7,
+      });
+
+      const reply = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again.";
+
+      await db.insert(aiChatMessages).values([
+        { userId, sessionId, role: "user", content: String(lastUserMsg.content).slice(0, 2000) },
+        { userId, sessionId, role: "assistant", content: reply },
+      ]);
+
+      res.json({ reply, model: completion.model });
+    } catch (error: any) {
+      console.error("AI chat error:", error?.message || error);
+      if (error?.status === 429) {
+        return res.status(429).json({ message: "AI service rate limited. Please try again in a moment." });
+      }
+      res.status(500).json({ message: "Failed to get AI response" });
+    }
+  });
+
+  app.get("/api/ai/usage", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const [countResult] = await db.select({ count: sql<number>`count(*)` })
+        .from(aiChatMessages)
+        .where(and(
+          eq(aiChatMessages.userId, userId),
+          eq(aiChatMessages.role, "user"),
+          sql`${aiChatMessages.createdAt} >= ${monthStart}`
+        ));
+      const used = Number(countResult?.count || 0);
+
+      res.json({
+        limit: limits.aiChatsPerMonth,
+        used,
+        tier,
+      });
+    } catch (error) {
+      console.error("AI usage error:", error);
+      res.status(500).json({ message: "Failed to get AI usage" });
+    }
+  });
+
+  app.get("/api/ai/history", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sessions = await db.select({
+        sessionId: aiChatMessages.sessionId,
+        lastMessage: sql<string>`MAX(${aiChatMessages.content})`,
+        lastAt: sql<Date>`MAX(${aiChatMessages.createdAt})`,
+        messageCount: sql<number>`count(*)`,
+      })
+        .from(aiChatMessages)
+        .where(eq(aiChatMessages.userId, userId))
+        .groupBy(aiChatMessages.sessionId)
+        .orderBy(sql`MAX(${aiChatMessages.createdAt}) DESC`)
+        .limit(20);
+
+      res.json(sessions);
+    } catch (error) {
+      console.error("AI history error:", error);
+      res.status(500).json({ message: "Failed to load chat history" });
+    }
+  });
+
+  app.get("/api/ai/session/:sessionId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const msgs = await db.select()
+        .from(aiChatMessages)
+        .where(and(
+          eq(aiChatMessages.userId, userId),
+          eq(aiChatMessages.sessionId, req.params.sessionId)
+        ))
+        .orderBy(aiChatMessages.createdAt);
+
+      res.json(msgs);
+    } catch (error) {
+      console.error("AI session error:", error);
+      res.status(500).json({ message: "Failed to load session" });
     }
   });
 
