@@ -3138,6 +3138,368 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.get("/api/portfolio/statement", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      if (tier === "free") {
+        return res.status(403).json({ message: "Portfolio statements require a Premium or Pro membership." });
+      }
+
+      const settings = await storage.getUserSettings(userId);
+      const memberName = settings?.displayName || req.user?.claims?.email || "Member";
+
+      const positionsData = await storage.getActivePositionsByUser(userId);
+      const [priceCacheRows, allAssetsStmt] = await Promise.all([
+        db.select().from(priceCacheTable),
+        storage.getAllAssets(),
+      ]);
+      const priceLookup: Record<string, number> = {};
+      for (const row of priceCacheRows) {
+        priceLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
+      const assetPrices: Record<string, number> = {};
+      for (const a of allAssetsStmt) {
+        if (a.currentPrice) assetPrices[a.symbol.toUpperCase()] = parseFloat(a.currentPrice);
+      }
+
+      const accounts = await storage.getAccountsByUser(userId);
+      const accountMap = new Map(accounts.map(a => [a.id, a]));
+
+      let cryptoTotal = 0;
+      let cryptoCostBasis = 0;
+      const exchangeRows: any[] = [];
+
+      for (const pos of positionsData) {
+        const qty = parseFloat(pos.quantity) || 0;
+        if (qty <= 0) continue;
+        const sym = pos.assetSymbol.toUpperCase();
+        let price = assetPrices[sym] || priceLookup[sym] || parseFloat(pos.averageCost) || 0;
+        const costBasis = parseFloat(pos.totalCostBasis) || 0;
+        if (price <= 0 && qty > 0 && costBasis > 0) price = costBasis / qty;
+        const mktVal = qty * price;
+        const gl = costBasis > 0 ? mktVal - costBasis : 0;
+        cryptoTotal += mktVal;
+        cryptoCostBasis += costBasis;
+        const account = accountMap.get(pos.accountId);
+        exchangeRows.push({
+          asset: pos.assetSymbol,
+          source: account?.accountName || "Exchange",
+          quantity: qty,
+          price,
+          marketValue: mktVal,
+          costBasis,
+          gainLoss: gl,
+          gainLossPct: costBasis > 0 ? (gl / costBasis) * 100 : 0,
+        });
+      }
+
+      const rawWalletBals = await storage.getWalletBalancesByUser(userId);
+      const enrichedBals = await enrichWalletBalances(rawWalletBals);
+      const userWalletsStmt = await storage.getWalletsByUser(userId);
+      const walletRows: any[] = [];
+
+      for (const wb of enrichedBals) {
+        const bal = parseFloat(wb.balance) || 0;
+        if (bal <= 0) continue;
+        const sym = wb.assetSymbol.toUpperCase();
+        const wallet = userWalletsStmt.find((w: any) => w.id === wb.walletId);
+        let usdVal = parseFloat(wb.usdValue || "0") || 0;
+        const avgCost = parseFloat(wb.averageCost || "0") || 0;
+        const costBasis = parseFloat(wb.totalCostBasis || "0") || 0;
+        if (usdVal === 0 && bal > 0) {
+          const resolvedPrice = assetPrices[sym] || priceLookup[sym] || avgCost || (costBasis > 0 ? costBasis / bal : 0);
+          if (resolvedPrice > 0) usdVal = bal * resolvedPrice;
+        }
+        const price = bal > 0 ? usdVal / bal : 0;
+        const gl = costBasis > 0 ? usdVal - costBasis : 0;
+        cryptoTotal += usdVal;
+        if (costBasis > 0) cryptoCostBasis += costBasis;
+        walletRows.push({
+          asset: wb.assetSymbol,
+          source: wallet?.label || wallet?.chain || "Wallet",
+          chain: wallet?.chain || "",
+          quantity: bal,
+          price,
+          marketValue: usdVal,
+          costBasis,
+          gainLoss: gl,
+          gainLossPct: costBasis > 0 ? (gl / costBasis) * 100 : 0,
+        });
+      }
+
+      const userPropsStmt = await db.select().from(properties).where(eq(properties.userId, userId));
+      let propTotal = 0;
+      let propCostBasis = 0;
+      const propertyRows = userPropsStmt.map(p => {
+        const cv = parseFloat(p.currentValue || "0") || parseFloat(p.purchasePrice);
+        const pp = parseFloat(p.purchasePrice);
+        propTotal += cv;
+        propCostBasis += pp;
+        return { address: p.address, city: p.city, purchasePrice: pp, currentValue: cv, gainLoss: cv - pp };
+      });
+
+      const stmtHoldings = await storage.getStatementHoldingsByUser(userId);
+      let stmtTotal = 0;
+      const bankRows = stmtHoldings.filter(h => parseFloat(h.balance || "0") > 0).map(h => {
+        const bal = parseFloat(h.balance || "0");
+        stmtTotal += bal;
+        return { label: h.label || h.productType, balance: bal, apy: h.apy ? parseFloat(h.apy) : null };
+      });
+
+      const grandTotal = cryptoTotal + propTotal + stmtTotal;
+      const grandCostBasis = cryptoCostBasis + propCostBasis + stmtTotal;
+      const totalGL = grandTotal - grandCostBasis;
+
+      const { jsPDF } = await import("jspdf");
+      const autoTableModule = await import("jspdf-autotable");
+      const autoTable = autoTableModule.default;
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const fmtCur = (v: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(v);
+      const fmtQty = (v: number) => v >= 1 ? v.toLocaleString("en-US", { maximumFractionDigits: 4 }) : v.toFixed(8);
+      const fmtPct = (v: number) => (v >= 0 ? "+" : "") + v.toFixed(2) + "%";
+      const now = new Date();
+      const statementDate = now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+      doc.setFontSize(20);
+      doc.setTextColor(0, 164, 228);
+      doc.text("CryptoOwnBank", 14, 20);
+      doc.setFontSize(14);
+      doc.setTextColor(40);
+      doc.text("Portfolio Statement", 14, 28);
+
+      doc.setFontSize(9);
+      doc.setTextColor(60);
+      doc.text(`Prepared for: ${memberName}`, 14, 38);
+      doc.text(`Statement Date: ${statementDate}`, 14, 43);
+      doc.text(`Membership: ${tier.charAt(0).toUpperCase() + tier.slice(1)}`, 14, 48);
+
+      doc.setDrawColor(0, 164, 228);
+      doc.setLineWidth(0.5);
+      doc.line(14, 52, 196, 52);
+
+      doc.setFontSize(13);
+      doc.setTextColor(0);
+      doc.text("Account Summary", 14, 60);
+
+      const summaryData = [
+        ["Total Portfolio Value", fmtCur(grandTotal)],
+        ["Total Cost Basis", fmtCur(grandCostBasis)],
+        ["Unrealized Gain/Loss", `${fmtCur(totalGL)} (${fmtPct(grandCostBasis > 0 ? (totalGL / grandCostBasis) * 100 : 0)})`],
+      ];
+      if (cryptoTotal > 0) summaryData.push(["Crypto Holdings", fmtCur(cryptoTotal)]);
+      if (propTotal > 0) summaryData.push(["Real Estate", fmtCur(propTotal)]);
+      if (stmtTotal > 0) summaryData.push(["Bank & Brokerage", fmtCur(stmtTotal)]);
+
+      autoTable(doc, {
+        startY: 64,
+        body: summaryData,
+        theme: "plain",
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 60 }, 1: { halign: "right" } },
+        margin: { left: 14 },
+      });
+
+      let curY = (doc as any).lastAutoTable?.finalY || 90;
+
+      if (exchangeRows.length > 0) {
+        curY += 8;
+        if (curY > 250) { doc.addPage(); curY = 14; }
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text("Exchange Holdings", 14, curY);
+        autoTable(doc, {
+          startY: curY + 4,
+          head: [["Asset", "Source", "Qty", "Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
+          body: exchangeRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+            r.asset, r.source, fmtQty(r.quantity), fmtCur(r.price),
+            fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+          styles: { fontSize: 7.5, cellPadding: 1.5 },
+          columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+          margin: { left: 14, right: 14 },
+        });
+        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      }
+
+      if (walletRows.length > 0) {
+        curY += 8;
+        if (curY > 250) { doc.addPage(); curY = 14; }
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text("Wallet Holdings", 14, curY);
+        autoTable(doc, {
+          startY: curY + 4,
+          head: [["Asset", "Wallet", "Chain", "Qty", "Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
+          body: walletRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+            r.asset, r.source, r.chain, fmtQty(r.quantity), fmtCur(r.price),
+            fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+          styles: { fontSize: 7.5, cellPadding: 1.5 },
+          columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 7: { halign: "right" } },
+          margin: { left: 14, right: 14 },
+        });
+        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      }
+
+      if (propertyRows.length > 0) {
+        curY += 8;
+        if (curY > 250) { doc.addPage(); curY = 14; }
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text("Real Estate Holdings", 14, curY);
+        autoTable(doc, {
+          startY: curY + 4,
+          head: [["Property", "City", "Purchase Price", "Current Value", "Gain/Loss"]],
+          body: propertyRows.map(r => [
+            r.address, r.city, fmtCur(r.purchasePrice), fmtCur(r.currentValue), fmtCur(r.gainLoss),
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+          margin: { left: 14, right: 14 },
+        });
+        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      }
+
+      if (bankRows.length > 0) {
+        curY += 8;
+        if (curY > 250) { doc.addPage(); curY = 14; }
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text("Bank & Brokerage Holdings", 14, curY);
+        autoTable(doc, {
+          startY: curY + 4,
+          head: [["Account", "Balance", "APY"]],
+          body: bankRows.map(r => [r.label, fmtCur(r.balance), r.apy ? r.apy.toFixed(2) + "%" : "--"]),
+          theme: "striped",
+          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+          margin: { left: 14, right: 14 },
+        });
+        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      }
+
+      doc.addPage();
+      const discY = 20;
+      doc.setFontSize(13);
+      doc.setTextColor(0);
+      doc.text("Important Disclosures & Legal Notices", 14, discY);
+      doc.setDrawColor(0, 164, 228);
+      doc.setLineWidth(0.3);
+      doc.line(14, discY + 3, 196, discY + 3);
+
+      doc.setFontSize(7.5);
+      doc.setTextColor(60);
+      const disclaimers = [
+        "GENERAL DISCLAIMER",
+        "This Portfolio Statement is generated by CryptoOwnBank (operated by Wint Enterprises) and is provided for informational purposes only. It does not constitute financial, investment, tax, or legal advice. You should consult with qualified professionals before making any financial decisions.",
+        "",
+        "NOT A FINANCIAL INSTITUTION",
+        "CryptoOwnBank is not a bank, broker-dealer, investment adviser, money transmitter, or any other type of licensed financial institution. We do not hold, custody, or control your assets at any time. All transactions are executed on-chain through non-custodial protocols.",
+        "",
+        "NO CUSTODIAL RELATIONSHIP",
+        "CryptoOwnBank does not take custody of, hold, or control any user funds, tokens, private keys, or digital assets. All wallet addresses and blockchain interactions shown in this statement are user-directed and non-custodial.",
+        "",
+        "ACCURACY OF DATA",
+        "Portfolio values, prices, and balances shown are based on data from third-party sources including blockchain networks, CoinGecko, and user-provided information. Prices are approximate market rates at the time of generation and may differ from actual execution prices. CryptoOwnBank makes no warranty regarding the accuracy, completeness, or timeliness of any data presented.",
+        "",
+        "GAIN/LOSS CALCULATIONS",
+        "Unrealized gain/loss figures are estimates based on reported cost basis and current market prices. These figures are not audited and should not be used as the sole basis for tax reporting. Consult a qualified tax professional for official tax calculations.",
+        "",
+        "MARKET RISK",
+        "Digital assets are highly volatile and speculative. Past performance is not indicative of future results. You may lose some or all of your investment. The values shown in this statement can fluctuate significantly within short time periods.",
+        "",
+        "REGULATORY NOTICE",
+        "This statement is not a substitute for official account statements from regulated financial institutions. Digital asset regulations vary by jurisdiction. It is your responsibility to comply with applicable laws and regulations in your jurisdiction.",
+        "",
+        "CONFIDENTIALITY",
+        "This document contains confidential financial information prepared exclusively for the named recipient. Do not share, distribute, or reproduce this statement without proper authorization. CryptoOwnBank is not responsible for unauthorized disclosure.",
+        "",
+        "NO FDIC OR SIPC COVERAGE",
+        "Digital assets and cryptocurrency holdings are not insured by the Federal Deposit Insurance Corporation (FDIC), the Securities Investor Protection Corporation (SIPC), or any government agency. There is no guarantee of recovery in the event of loss.",
+        "",
+        "THIRD-PARTY SERVICES",
+        "References to third-party exchanges, wallets, protocols, or services do not constitute endorsement. CryptoOwnBank is not responsible for the actions, security, or performance of any third-party service.",
+      ];
+
+      let dY = discY + 8;
+      for (const line of disclaimers) {
+        if (dY > 278) { doc.addPage(); dY = 20; }
+        if (line === "") {
+          dY += 2;
+        } else if (line === line.toUpperCase() && line.length > 0) {
+          doc.setFontSize(8);
+          doc.setTextColor(0);
+          doc.setFont("helvetica", "bold");
+          doc.text(line, 14, dY);
+          doc.setFont("helvetica", "normal");
+          dY += 4;
+        } else {
+          doc.setFontSize(7);
+          doc.setTextColor(80);
+          const lines = doc.splitTextToSize(line, 178);
+          doc.text(lines, 14, dY);
+          dY += lines.length * 3.2;
+        }
+      }
+
+      dY += 6;
+      if (dY > 270) { doc.addPage(); dY = 20; }
+      doc.setDrawColor(180);
+      doc.setLineWidth(0.2);
+      doc.line(14, dY, 196, dY);
+      dY += 5;
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      doc.text("CryptoOwnBank | cryptoownbank.com | Wint Enterprises", 14, dY);
+      dY += 3.5;
+      doc.text(`Statement generated: ${statementDate} UTC`, 14, dY);
+      dY += 3.5;
+      doc.text("Questions? Contact support@cryptoownbank.com", 14, dY);
+
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+
+        doc.setDrawColor(0, 164, 228);
+        doc.setLineWidth(0.3);
+        doc.line(14, 8, 196, 8);
+        doc.setFontSize(6.5);
+        doc.setTextColor(0, 164, 228);
+        doc.text("CryptoOwnBank", 14, 7);
+        doc.setTextColor(140);
+        doc.text("PORTFOLIO STATEMENT | CONFIDENTIAL", 196, 7, { align: "right" });
+
+        doc.setDrawColor(200);
+        doc.setLineWidth(0.2);
+        doc.line(14, 283, 196, 283);
+
+        doc.setFontSize(6);
+        doc.setTextColor(140);
+        doc.text("This document is for informational purposes only and does not constitute financial, investment, tax, or legal advice.", 14, 286);
+        doc.text("CryptoOwnBank does not hold, custody, or control your assets. Not FDIC insured. Not a bank. No guarantee of value.", 14, 289);
+        doc.text(`Generated ${statementDate} | Page ${i} of ${pageCount}`, 196, 292, { align: "right" });
+        doc.text("cryptoownbank.com | Wint Enterprises", 14, 292);
+      }
+
+      const pdfBuffer = doc.output("arraybuffer");
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename=CryptoOwnBank-Statement-${now.toISOString().slice(0, 10)}.pdf`);
+      res.send(Buffer.from(pdfBuffer));
+    } catch (error) {
+      console.error("Statement generation error:", error);
+      res.status(500).json({ message: "Failed to generate portfolio statement" });
+    }
+  });
+
   app.get("/api/properties", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

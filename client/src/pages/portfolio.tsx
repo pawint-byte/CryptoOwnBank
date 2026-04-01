@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -168,6 +168,7 @@ export default function Portfolio() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [editingPosition, setEditingPosition] = useState<PositionWithMarket | null>(null);
+  const [downloadingStatement, setDownloadingStatement] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
     assetSymbol: "",
@@ -258,6 +259,31 @@ export default function Portfolio() {
     queryKey: ["/api/subscription/limits"],
   });
   const canSearch = subLimits?.portfolioSearch !== false;
+  const isPaidTier = subLimits?.tier === "premium" || subLimits?.tier === "pro";
+
+  const downloadStatement = async () => {
+    setDownloadingStatement(true);
+    try {
+      const res = await fetch("/api/portfolio/statement", { credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to generate statement" }));
+        throw new Error(err.message);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CryptoOwnBank-Statement-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast({ title: "Statement Error", description: err.message || "Failed to generate statement", variant: "destructive" });
+    } finally {
+      setDownloadingStatement(false);
+    }
+  };
 
   const allPositions = useMemo(() => {
     return data?.positions || dbPositions;
@@ -553,6 +579,19 @@ export default function Portfolio() {
             >
               <Trash2 className="h-3.5 w-3.5 mr-1.5" />
               Remove Non-Crypto
+            </Button>
+          )}
+          {isPaidTier && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadStatement}
+              disabled={downloadingStatement}
+              className="text-xs"
+              data-testid="button-download-statement-portfolio"
+            >
+              <FileText className={`h-3.5 w-3.5 mr-1.5 ${downloadingStatement ? "animate-pulse" : ""}`} />
+              {downloadingStatement ? "Generating..." : "Statement"}
             </Button>
           )}
           <Dialog open={manualOpen} onOpenChange={setManualOpen}>

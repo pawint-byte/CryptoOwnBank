@@ -23,6 +23,7 @@ import {
   Crown,
   Landmark,
   ArrowRight,
+  FileText,
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Transaction } from "@shared/schema";
@@ -121,6 +122,31 @@ export default function Dashboard() {
     }
   }, [xrplWallet?.address, soilSynced, syncSoilForDashboard]);
 
+  const [downloadingStatement, setDownloadingStatement] = useState(false);
+  const downloadStatement = async () => {
+    setDownloadingStatement(true);
+    try {
+      const res = await fetch("/api/portfolio/statement", { credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to generate statement" }));
+        throw new Error(err.message);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CryptoOwnBank-Statement-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message || "Failed to generate statement");
+    } finally {
+      setDownloadingStatement(false);
+    }
+  };
+
   const hasData = walletAddresses.length > 0 || exchangeBalances.length > 0;
 
   const RWA_TOKENS = ["USDY", "OUSG", "DROP", "TIN", "MPL", "SOIL"];
@@ -157,6 +183,18 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          {subStatus && subStatus.tier !== "free" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadStatement}
+              disabled={downloadingStatement}
+              data-testid="button-download-statement-dashboard"
+            >
+              <FileText className={`h-4 w-4 mr-2 ${downloadingStatement ? "animate-pulse" : ""}`} />
+              {downloadingStatement ? "Generating..." : "Statement"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
