@@ -137,6 +137,14 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ## PENDING — Future Improvements (Ordered by Priority / Dependencies)
 
+### Platform Philosophy — How to Evaluate New Information (Decided 2026-04-01)
+- **CryptoOwnBank is an information and access layer, not a product vendor.** The site detects what's on-chain, displays it clearly, and surfaces relevant opportunities to members based on what they hold.
+- **When reviewing articles or industry news, the filter is:** "Does this create on-chain data our site can detect, display, or use to inform members?" If yes, find the nugget — even if the whole article isn't relevant, one small actionable insight is worth it.
+- **What we DO:** Show members what's happening in their ecosystem. Surface yields, new tokenized assets, market movements, and opportunities that match their holdings. Provide context and access so they can make informed decisions.
+- **What we DON'T DO:** Become a vendor, broker, or service provider for things outside our lane (mortgages, real estate sales, insurance products, etc.). We point to these opportunities and let members act on them through the right channels.
+- **The power is in context:** "Based on what you hold, here's what's happening that might matter to you." The AI Assistant, Recommendations Hub, RWA Yields, personalized Crypto News, and Statement Insights already do this. Every new feature should strengthen this loop.
+- **When something gets tokenized on XRPL/Stellar/EVM:** The portfolio tracker picks it up automatically via trustlines and token balances. No custom integration needed per asset — the infrastructure is already built for this.
+
 ### Wallet & Provider Integration Strategy (Decided 2026-04-01)
 - **EVM wallets**: DONE. WalletConnect v2 covers hundreds of wallets automatically. Set once, works forever.
 - **XRPL wallets**: DONE. Xaman deep link signing is primary. Adding a new XRPL wallet = just add its deep link pattern (minimal effort).
