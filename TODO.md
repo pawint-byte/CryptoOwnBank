@@ -137,10 +137,20 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ## PENDING — Future Improvements (Ordered by Priority / Dependencies)
 
+### Wallet & Provider Integration Strategy (Decided 2026-04-01)
+- **EVM wallets**: DONE. WalletConnect v2 covers hundreds of wallets automatically. Set once, works forever.
+- **XRPL wallets**: DONE. Xaman deep link signing is primary. Adding a new XRPL wallet = just add its deep link pattern (minimal effort).
+- **Stellar wallets**: DONE. Freighter in-browser signing is primary. LOBSTR/StellarTerm as fallback deep links.
+- **On-ramp / Off-ramp providers**: Target 2-3 providers max for broadest coverage:
+  1. **Changelly** — On-ramp LIVE (merchant_id `U-FDw3yOEYkT06Im`). Off-ramp pending F2C API keys from Ana (mschweizburg@changelly.com).
+  2. **Oobit** — Email sent 2026-04-01 to wallets@oobit.com. Plug & Pay widget (spending) + wallet-to-bank off-ramp. Supports XRP + XLM natively. MiCA licensed. ~1% fees. 180+ countries.
+  3. **Third slot open** — Evaluate Transak, Guardarian, or Bitget Wallet Payments based on which responds with best API access + coverage.
+- **Bitget Wallet (Watch)**: 90M+ users, XRPL native integration announced 2026-03-31. Wallet connection works via WalletConnect (already supported). Wallet Pay + swap APIs available but overlap with existing 1inch/LI.FI. Better as a user acquisition partner ("yield home for Bitget XRPL users") than a technical integration. Reach out to partnerships when ready.
+- **Core principle**: Capture chain + wallet address before launching any signing app. Poll the blockchain for confirmation. The wallet app is just a signing tool — our site doesn't care which one was used.
+
 ### Tier 1 — Can Build Now (no external blockers)
-- [2026-03-24] **Changelly off-ramp (F2C API)**: Ask Ana (mschweizburg@changelly.com) for F2C API keys. On-ramp is live, off-ramp completes the fiat loop. No code blocker — just needs the keys.
-- [2026-03-24] **Off-ramp / cash-out guide**: Buy Crypto page covers getting into crypto but doesn't guide users on converting back to fiat. Crypto Debit Cards partially fills this gap. Can be built alongside off-ramp integration.
-- [2026-03-24] **Squid Router fee setup**: Integrator ID already configured but no fee param in API calls yet. Check Squid partner dashboard or email partnerships to enable integrator fee. Easy revenue left on the table.
+- [2026-03-24] **Off-ramp / cash-out guide**: Build when at least one off-ramp provider (Oobit or Changelly F2C) is integrated. Until then, no point building a guide page with no working flow.
+- [2026-03-24] **Squid Router fee setup**: Integrator ID configured, fees set on Squid's side (no public API param). Low-priority — bridge volume is small vs 1inch/LI.FI revenue. Park unless Squid contacts us.
 - ~~[2026-03-23] **GitHub push**~~ — DONE. User pushes regularly from Shell tab via Git credentials.
 
 ### Tier 2 — Build Soon (no blockers, medium effort)
