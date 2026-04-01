@@ -1438,27 +1438,31 @@ export default function Landing() {
         {t.beta}
       </div>
 
-      <nav
-        className={`fixed right-4 top-1/2 -translate-y-1/2 z-[55] hidden md:flex flex-col transition-all duration-300 ${showNav ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8 pointer-events-none"}`}
-        data-testid="nav-section-sidebar"
+      <div
+        className={`fixed top-[78px] left-0 right-0 z-[49] transition-all duration-300 ${showNav ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"}`}
+        data-testid="nav-section-bar"
       >
-        <div className="bg-background/95 backdrop-blur-md border border-border/80 rounded-xl py-3 px-3 shadow-xl space-y-0.5">
-          {sectionNav.map((s) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className={`block text-[11px] font-medium py-1 px-2 rounded-md transition-all ${activeSection === s.id ? "bg-[#00A4E4]/10 text-[#00A4E4]" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" });
-              }}
-              data-testid={`nav-dot-${s.id}`}
-            >
-              {s.label}
-            </a>
-          ))}
+        <div className="bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide py-1.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {sectionNav.map((s) => (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  className={`whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full transition-all flex-shrink-0 ${activeSection === s.id ? "bg-[#00A4E4] text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  data-testid={`nav-tab-${s.id}`}
+                >
+                  {s.label}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
-      </nav>
+      </div>
 
       <header className="fixed top-[30px] left-0 right-0 z-50 border-b border-border/50 backdrop-blur-lg bg-background/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
