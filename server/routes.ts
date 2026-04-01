@@ -1069,6 +1069,53 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         }
       }
 
+      const dashAccounts = await storage.getAccountsByUser(userId);
+      const dashSoilAccount = dashAccounts.find(a => a.provider === "soil-xrpl");
+      if (dashSoilAccount) {
+        const soilPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("RLUSD-SOIL"));
+        const soilAlreadyCounted = soilPositions.some(p => {
+          const qty = parseFloat(p.quantity) || 0;
+          return qty > 0;
+        });
+        if (!soilAlreadyCounted) {
+          const soilAllPositions = await storage.getPositionsByUser(userId);
+          const soilVaultPositions = soilAllPositions.filter(p =>
+            p.assetSymbol.toUpperCase().includes("RLUSD-SOIL") && p.accountId === dashSoilAccount.id
+          );
+          for (const sp of soilVaultPositions) {
+            const qty = parseFloat(sp.quantity) || 0;
+            if (qty > 0) {
+              totalValue += qty;
+              totalCostBasis += qty;
+              totalPrevValue += qty;
+              allocationMap.set(sp.assetSymbol, (allocationMap.get(sp.assetSymbol) || 0) + qty);
+            }
+          }
+        }
+      }
+
+      const userPropertiesDash = await db.select().from(properties).where(eq(properties.userId, userId));
+      for (const prop of userPropertiesDash) {
+        const cv = parseFloat(prop.currentValue || "0");
+        const pp = parseFloat(prop.purchasePrice);
+        const propVal = cv > 0 ? cv : pp;
+        totalValue += propVal;
+        totalCostBasis += pp;
+        totalPrevValue += propVal;
+        allocationMap.set(prop.propertyName || "Real Estate", (allocationMap.get(prop.propertyName || "Real Estate") || 0) + propVal);
+      }
+
+      const dashStatementHoldings = await storage.getStatementHoldingsByUser(userId);
+      for (const h of dashStatementHoldings) {
+        const bal = parseFloat(h.balance || "0");
+        if (bal > 0) {
+          totalValue += bal;
+          totalCostBasis += bal;
+          totalPrevValue += bal;
+          allocationMap.set(h.accountName || "Bank", (allocationMap.get(h.accountName || "Bank") || 0) + bal);
+        }
+      }
+
       const allocation = Array.from(allocationMap.entries()).map(([name, value], index) => ({
         name,
         value,
