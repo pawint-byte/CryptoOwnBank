@@ -135,49 +135,47 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ---
 
-## PENDING — Future Improvements
+## PENDING — Future Improvements (Ordered by Priority / Dependencies)
 
-- [2026-04-01] **Tokenized Private Equity & Pre-IPO Vault (Pro Tier)**: Vision — a self-custody cockpit for accredited investors holding tokenized private shares, pre-IPO equity, and RWA securities on-chain.
-  - **Auto-detection**: Scan XRPL trustlines (and other chains) for tokenized pre-IPO/private shares — Forge Trust interests (if/when on-chain), Archax securities, Zoniqx tokens, future Ripple-partnered equity tokens.
-  - **Live valuation**: On-chain balance + estimated NAV from issuer metadata or manual override. Upcoming liquidity events (IPO dates, secondary sale windows, dividend schedules).
-  - **Tax-basis carryover**: Import cost basis from restructurings (e.g., Linqto/Forge → tokenized trust interests). Track holding periods for long-term capital gains.
-  - **Secondary-market simulator**: One-click "what if I sell X shares at $Y" with tax impact preview. Pair with RLUSD yields or XLS-66 lending collateral (when live).
-  - **Legacy Plan integration**: Tokenized private equity included in crypto inheritance protection — beneficiaries see the full picture.
-  - **Tier gating**: Free = basic visibility (asset name + balance). Premium = valuation + alerts. Pro = full cockpit (tax basis, simulator, liquidity events, dividend tracking).
-  - **Why now (partially)**: XRPL RWA wave is $2.3B+ and growing (Archax, Zoniqx, OpenEden, Aviva). The portfolio tracker already reads trustlines and token balances. When issuers tokenize, we pick it up automatically.
-  - **What's missing**: No issuer has tokenized Ripple equity yet. Forge Trust interests are off-chain. No standardized metadata API for private token valuations. Build the manual tracker first (private asset entries with cost basis), then auto-detect when on-chain data becomes available.
-  - **"Eat your own dog food" thesis**: The first crypto company to tokenize their own pre-IPO equity on their own ledger wins massive credibility. CryptoOwnBank should be the dashboard ready when that happens.
+### Tier 1 — Can Build Now (no external blockers)
+- [2026-03-24] **Changelly off-ramp (F2C API)**: Ask Ana (mschweizburg@changelly.com) for F2C API keys. On-ramp is live, off-ramp completes the fiat loop. No code blocker — just needs the keys.
+- [2026-03-24] **Off-ramp / cash-out guide**: Buy Crypto page covers getting into crypto but doesn't guide users on converting back to fiat. Crypto Debit Cards partially fills this gap. Can be built alongside off-ramp integration.
+- [2026-03-24] **Squid Router fee setup**: Integrator ID already configured but no fee param in API calls yet. Check Squid partner dashboard or email partnerships to enable integrator fee. Easy revenue left on the table.
+- [2026-03-23] **GitHub push**: User needs to push from Shell tab manually. Pending.
 
-- ~~[2026-03-27] **Freighter Integration — In-Site Stellar Signing**~~ — COMPLETED 2026-03-27.
-  - **Done**: `@stellar/freighter-api` + `@stellar/stellar-sdk` installed. `client/src/lib/freighter-connector.ts` built with `isFreighterInstalled`, `connectFreighter`, `buildAndSignOffer`, `buildAndSignPayment`, `buildAndSignChangeTrust`.
-  - **Stellar DEX** (`stellar-dex.tsx`): Freighter connect banner. Trade dialog shows "Sign with Freighter" as primary option (signs in-browser). Success state shows tx hash with Stellar Explorer link. LOBSTR/StellarTerm/StellarX remain as fallback.
-  - **Stellar Send** (`stellar-send.tsx`): "Sign & Send with Freighter" button as primary flow when connected. Success dialog shows tx hash. Manual/external wallet path preserved.
-  - **Stellar DCA Execute Now** (`dca-orders.tsx`): Attempts Freighter signing when extension detected. Falls back to LOBSTR redirect if Freighter not installed.
-  - **Stellar Token Manager** (`stellar-tokens.tsx`): "Sign with Freighter" as primary for add/remove trustline. External wallet links (LOBSTR, StellarTerm, Stellar URI) remain as fallback. Install Freighter tip shown when extension not detected.
-  - **Coverage summary**: EVM (MetaMask/WalletConnect), XRPL (Xaman QR/deep link), Stellar (Freighter in-browser) — all three chains now sign in-site on desktop. Mobile fallback remains app deep links.
-  - **Remaining**: Payment Queue (Stellar payments) — minor, can be done when queue is actively used.
-- [2026-03-24] **Embedded on-ramp widget**: Currently all buy-crypto paths are outbound links. Once MoonPay or Transak approves, embed their widget so members can buy crypto without leaving CryptoOwnBank.
-- [2026-03-24] **Telegram Mini-App**: A simplified version of the dashboard inside Telegram. Good for emerging markets (Nigeria, Philippines, Kenya). Available to ALL members, not restricted to any group. Worth exploring as a growth channel.
-- [2026-03-24] **Backup domains**: cryptoownbank.com is the production domain. crypto-ledger--pawint.replit.app is the Replit domain (also serves production). Both serve the same deployed app. Buying a backup domain (.xyz, .io) is cheap insurance but not urgent since the Replit domain already works as a fallback.
-- [2026-03-24] **Off-ramp / cash-out guide**: Buy Crypto page covers getting into crypto but doesn't guide users on converting back to fiat. Crypto Debit Cards partially fills this gap.
+### Tier 2 — Build Soon (no blockers, medium effort)
+- [2026-04-01] **Manual Private Asset Tracker (Phase 1 of Tokenized Equity Vault)**: Add manual private asset entries to the portfolio — name, quantity, cost basis, estimated value, liquidity event date, notes. Shows in portfolio total and Legacy Plan. Immediately useful for Forge/Ripple position and any other pre-IPO holdings. **This is the foundation that Phase 2 and 3 below build on.**
+- [2026-03-24] **Embedded on-ramp widget**: Once MoonPay, Transak, or Guardarian approves, embed their widget so members can buy crypto without leaving CryptoOwnBank. Changelly widget already live.
 - [2026-03-24] **Ledger 4.0 platform update**: Review new features and update Buy Crypto / Crypto Debit Cards pages if new on-ramp providers or capabilities were added.
-- [2026-03-24] **Archax tokenized securities section added to RWA Yields page**: Live assets: abrdn Lux MMF, State Street, Fidelity International, LGIM, Federated Hermes UCITS, UK Gilts. Coming Soon: UK Equities, US Equities. All on XRPL via Archax (FCA-regulated). Comparison table updated. Next step: integrate when Archax issuer addresses are available (trustline setup + DEX trading).
-- ~~[2026-03-24] **Noah Cash-to-Stablecoin on-ramp (inside Ledger)**~~ — COMPLETED 2026-03-24. Added to all 16 Ledger entries on Buy Crypto page + FAQ entry.
-- ~~[2026-03-24] **CL Card (Ledger Visa debit by Baanx)**~~ — COMPLETED 2026-03-24. Added to Crypto Debit Cards page as featured card with Ledger referral link + FAQ updated.
-- ~~[2026-03-23] **AI Portfolio Assistant**~~ — COMPLETED 2026-04-01. GPT-4o-mini model, OPENAI_API_KEY configured. Free = 0 chats, Premium = 50/month, Pro = unlimited. "Not financial advice" disclaimer in every response. Portfolio context (holdings, wallet count, chains) auto-injected into conversations. Chat history with session management. Page: `/ai-assistant`, sidebar under Planning & Tools. DB table: `ai_chat_messages`. Upgrade prompts updated with AI benefits.
-- [2026-03-23] **Open Wallet Standard (OWS)**: Research noted — potential fit for future AI assistant (agent proposes, user approves on Ledger), Legacy Plan automated disbursement (policy engine), and adding new chains later. Not a replacement for Xaman or WalletConnect. Clone repo and experiment when ready.
+- [2026-03-24] **Backup domains**: cryptoownbank.com + crypto-ledger--pawint.replit.app both serve production. Buying a backup domain (.xyz, .io) is cheap insurance but not urgent.
+
+### Tier 3 — Blocked by External Events (monitor, build when unblocked)
+- [2026-04-01] **Auto-Detect Tokenized RWA Securities (Phase 2 of Tokenized Equity Vault)**: Scan XRPL trustlines for known RWA security tokens (Archax, Zoniqx, OpenEden). We already scan trustlines for the token manager — extend to flag recognized security tokens with issuer metadata. **Depends on**: Phase 1 (manual tracker) built first. **Blocked by**: Archax issuer addresses becoming publicly available for trustline setup + DEX trading.
+- [2026-04-01] **Full Tokenized Private Equity Vault (Phase 3 — Pro Tier)**: Full cockpit with live NAV, dividend tracking, secondary-sale simulator, XLS-66 collateral pairing, Legacy Plan integration. **Depends on**: Phase 1 + Phase 2 built. **Blocked by**: Issuers actually tokenizing private equity on-chain (Forge/Ripple, or others). No standardized metadata API exists yet.
+  - **"Eat your own dog food" thesis**: The first crypto company to tokenize their own pre-IPO equity on their own ledger wins massive credibility. CryptoOwnBank should be the dashboard ready when that happens.
+  - **Tier gating**: Free = basic visibility. Premium = valuation + alerts. Pro = full cockpit (tax basis, simulator, liquidity events, dividend tracking).
+- [2026-03-24] **Archax tokenized securities on RWA Yields page**: Live assets listed (abrdn Lux MMF, State Street, etc.). Next step: integrate when Archax issuer addresses are available (trustline setup + DEX trading). **Feeds into Phase 2 above.**
+- [2026-03-23] **Borrow Against Vaults**: Interface-only dashboard to external lending protocols. NOT the lender. **Blocked by**: XLS-65/66 activation on XRPL.
 - [2026-03-25] **Token Buckets — Requires Architecture Decision Before Building**:
   - **Status**: Code and DB tables preserved but hidden from UI. Not ready for users.
-  - **Why hidden**: XRPL-only token selection doesn't deliver true diversified baskets. The feature name promises cross-asset-class diversification but the execution only works within ~40 XRPL DEX tokens.
-  - **Smart contract approach (EVM)**: A Solidity contract on Polygon or Arbitrum could batch multiple swaps into one transaction (one signature instead of five). Thousands of tokens available. Gas is cheap on L2s. BUT: (1) We'd be deploying our own contract — users send funds to it, even as a pass-through. For a non-custodial platform, this creates a trust/messaging problem. (2) Requires professional security audit before launch — the contract handles real money. (3) Still doesn't solve automated recurring execution.
-  - **Recurring DCA problem**: "Set and forget" DCA requires either: (a) Pre-approved ERC-20 spending allowance + keeper bot that triggers the contract on schedule — user must trust the keeper and contract, or (b) User shows up manually each run and clicks "Execute Now" then signs — defeats the purpose of automation. Neither option matches user expectations for what "DCA" means. On XRPL today, DCA is already a reminder system with manual execute — extending that to multi-token buckets means 5+ separate Xaman signatures per run (bad UX).
-  - **Multi-chain orchestration problem**: A true bucket spanning XRPL + EVM + Stellar needs three different wallets, three different signing flows, three different swap engines in one "purchase." User would sign via Xaman, then MetaMask, then Freighter, all in sequence. If one fails mid-way, partial execution with no rollback.
-  - **Conclusion**: Best version is a professionally audited batch-swap contract on a cheap EVM L2 (Polygon/Arbitrum), with manual "Execute Now" per run (one signature, all swaps). Cross-chain buckets are not practical without a unified wallet standard. This is an architecture + contract development project, not a frontend task.
-  - **Files preserved**: `shared/xrpl-token-registry.ts`, `client/src/pages/token-buckets.tsx`, `server/routes.ts` (token-buckets section), `server/storage.ts` (CRUD methods), `shared/schema.ts` (token_buckets + token_bucket_items tables).
-- [2026-03-25] **AI Agent + Smart Contract Execution (Watch List)**: Could an embedded AI autonomously execute token bucket purchases via smart contracts? Analysis: (1) The custody dealbreaker — AI needs to sign transactions, but non-custodial means user holds keys. AI can build/prepare transactions but user still signs via Xaman/MetaMask/hardware wallet. Doesn't eliminate the signing bottleneck. (2) Session keys / ERC-4337 account abstraction — closest real solution. User creates a smart contract wallet, grants AI a "session key" with spending limits. AI executes within those limits without per-trade approval. Exists on EVM chains today but adoption is early, requires users to migrate from regular wallets. (3) XRPL has no account abstraction — every transaction needs direct signature. Until XRPL adds hooks or equivalent, autonomous execution on XRPL isn't possible. (4) Trust/liability — AI autonomously spending user funds contradicts "non-custodial, not financial advice." Who's liable for bad execution? Timeline: Now = not viable. 6-12 months = possible on EVM with smart contract wallets. 1-2 years = possible cross-chain if XRPL adds hooks + Open Wallet Standard matures. Watch: Coinbase AgentKit, Circle agent framework, MoonPay Agents, ERC-4337 adoption, XRPL Hooks amendment progress.
-- [2026-03-23] **Borrow Against Vaults**: Interface-only approach — CryptoOwnBank as dashboard to external lending protocols (Morpho, Aave-style, or XRPL-native via XLS-65/66). We are NOT the lender. Language: "borrow through the protocol via our interface." Blocked until XLS-65/66 activates on XRPL.
-- [2026-03-23] **MoonPay Agents / x402 protocol**: Worth watching for B2B and AI agent features. When MoonPay approves our on-ramp application, explore whether their CLI/API could power more than buy/sell.
-- [2026-03-23] **GitHub push**: User needs to push from Shell tab manually. Pending.
+  - **Why hidden**: XRPL-only token selection doesn't deliver true diversified baskets.
+  - **Best path**: Professionally audited batch-swap contract on a cheap EVM L2 (Polygon/Arbitrum), with manual "Execute Now" per run (one signature, all swaps). Cross-chain buckets not practical without unified wallet standard.
+  - **Blocked by**: Smart contract development + security audit. Architecture + contract project, not a frontend task.
+  - **Files preserved**: `shared/xrpl-token-registry.ts`, `client/src/pages/token-buckets.tsx`, `server/routes.ts` (token-buckets section), `server/storage.ts` (CRUD methods), `shared/schema.ts` (tables).
+
+### Tier 4 — Watch List (not viable yet, monitor quarterly)
+- [2026-03-25] **AI Agent + Smart Contract Execution**: Autonomous AI executing token bucket purchases. Not viable now — non-custodial means user holds keys, XRPL has no account abstraction. Possible on EVM with session keys (ERC-4337) in 6-12 months. Watch: Coinbase AgentKit, Circle agent framework, MoonPay Agents, XRPL Hooks amendment.
+- [2026-03-23] **Open Wallet Standard (OWS)**: Potential fit for AI assistant (agent proposes, user approves on Ledger), Legacy Plan automated disbursement, adding new chains. Not a replacement for Xaman/WalletConnect. Experiment when ready.
+- [2026-03-24] **Telegram Mini-App**: Simplified dashboard inside Telegram for emerging markets. Good growth channel but significant build effort. Worth exploring when membership grows.
+- [2026-03-23] **MoonPay Agents / x402 protocol**: Watch for B2B and AI agent features. Explore when MoonPay approves our application.
+- [2026-03-26] **Stellar Sponsored Fees**: Sponsor tiny base fees for new Stellar members so they can send RLUSD/USDC without owning XLM. Low cost at scale. Revisit when Stellar payment volume grows.
+- [2026-03-26] **Stellar Soroban DeFi**: Soroban smart contracts live but ecosystem is small. Monitor quarterly. If a major Stellar DeFi protocol gains traction, add position tracking.
+
+### Completed
+- ~~[2026-03-27] **Freighter Integration — In-Site Stellar Signing**~~ — COMPLETED 2026-03-27. EVM (MetaMask/WalletConnect), XRPL (Xaman QR/deep link), Stellar (Freighter in-browser) — all three chains now sign in-site on desktop.
+- ~~[2026-03-24] **Noah Cash-to-Stablecoin on-ramp (inside Ledger)**~~ — COMPLETED 2026-03-24.
+- ~~[2026-03-24] **CL Card (Ledger Visa debit by Baanx)**~~ — COMPLETED 2026-03-24.
+- ~~[2026-03-23] **AI Portfolio Assistant**~~ — COMPLETED 2026-04-01. GPT-4o-mini, Free=0/Premium=50/Pro=unlimited chats per month. Page: `/ai-assistant`.
 
 ---
 
