@@ -1128,7 +1128,7 @@ export default function BuyCrypto() {
               height="100%"
               frameBorder="0"
               allow="camera"
-              src="https://widget.changelly.com?from=*&to=*&amount=0.1&address=&fromDefault=btc&toDefault=eth&merchant_id=17hPNKintbYkms_z&payment_id=&v=3"
+              src="https://widget.changelly.com?from=btc&to=eth&amount=0.1&address=&fromDefault=btc&toDefault=eth&merchant_id=17hPNKintbYkms_z&payment_id=&v=3"
               title="Changelly Exchange Crypto Widget"
               data-testid="changelly-swap-widget-iframe"
             >
