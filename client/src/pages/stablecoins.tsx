@@ -53,9 +53,9 @@ const STABLECOINS: StablecoinEntry[] = [
       { protocol: "Soil Protocol", apy: "5-8%", chain: "XRPL" },
     ],
     bestUseCase: "Yield earning on XRPL, cross-border payments",
-    marketCap: "$300M+",
+    marketCap: "$1.5B+",
     description:
-      "Ripple-issued stablecoin with regulatory approval from the New York Department of Financial Services. Native to XRPL with deep integration into Soil Protocol vaults for yield generation.",
+      "Ripple-issued stablecoin with regulatory approval from the New York Department of Financial Services. Native to XRPL with deep integration into Soil Protocol vaults for yield generation. Listed on Binance (Jan 2026), with market cap surpassing $1.5B. Also used by Ripple Treasury for enterprise treasury management.",
     whereToBuy: [
       { name: "Binance", url: AFFILIATE_LINKS.binance },
       { name: "Kraken", url: AFFILIATE_LINKS.kraken },
@@ -141,9 +141,10 @@ const STABLECOINS: StablecoinEntry[] = [
     bestUseCase: "Euro-denominated payments, EU compliance",
     marketCap: "$50M+",
     description:
-      "MiCA-compliant euro stablecoin issued by Societe Generale. One of the first institutional-grade euro stablecoins available across multiple chains.",
+      "MiCA-compliant euro stablecoin issued by Societe Generale-FORGE. One of the first institutional-grade euro stablecoins available across multiple chains including XRPL. Ideal for European users who want euro-denominated on-chain holdings without USD conversion.",
     whereToBuy: [
       { name: "SG-FORGE", url: "https://www.sgforge.com" },
+      { name: "Bitstamp", url: "https://www.bitstamp.net" },
     ],
   },
   {

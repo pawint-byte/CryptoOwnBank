@@ -188,6 +188,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-23] **MoonPay Agents / x402 protocol**: Watch for B2B and AI agent features. Explore when MoonPay approves our application.
 - [2026-03-26] **Stellar Sponsored Fees**: Sponsor tiny base fees for new Stellar members so they can send RLUSD/USDC without owning XLM. Low cost at scale. Revisit when Stellar payment volume grows.
 - [2026-03-26] **Stellar Soroban DeFi**: Soroban smart contracts live but ecosystem is small. Monitor quarterly. If a major Stellar DeFi protocol gains traction, add position tracking.
+- [2026-04-01] **XRPL Token Escrow for Legacy Plan**: XRPL now supports time-based escrow for all issued tokens (not just XRP). Potential Legacy Plan enhancement — tokenized assets could be escrowed for beneficiaries with time-release conditions. Watch for mature tooling/libraries before building.
 
 ### Completed
 - ~~[2026-03-27] **Freighter Integration — In-Site Stellar Signing**~~ — COMPLETED 2026-03-27. EVM (MetaMask/WalletConnect), XRPL (Xaman QR/deep link), Stellar (Freighter in-browser) — all three chains now sign in-site on desktop.

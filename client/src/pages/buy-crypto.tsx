@@ -1007,8 +1007,8 @@ export default function BuyCrypto() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
       <SeoHead
-        title="Buy Crypto | CryptoOwnBank"
-        description="Step-by-step guide to buying crypto with your card or bank account. Buy XRP, XLM, ETH, BTC, SOL, and more through trusted wallets with built-in on-ramps."
+        title="Buy Crypto — XRP, RLUSD, XLM, ETH, BTC & More | CryptoOwnBank"
+        description="Step-by-step guide to buying crypto with your card or bank account. Buy XRP, RLUSD, XLM, ETH, BTC, SOL, and more through trusted wallets with built-in on-ramps. Buy RLUSD on Binance or Kraken and earn 5-8% APR in Soil Protocol vaults."
       />
 
       <div className="flex items-center justify-between">
@@ -2088,6 +2088,18 @@ export default function BuyCrypto() {
               <p className="text-sm text-muted-foreground">
                 Card purchases usually arrive in 1–5 minutes. Bank transfers (including Noah) can take 1–3 business days depending on your bank
                 and the provider. Crypto-to-crypto swaps are nearly instant.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">How do I buy RLUSD to earn yield?</p>
+              <p className="text-sm text-muted-foreground">
+                RLUSD is Ripple's regulated USD stablecoin (market cap over $1.5B). Buy it on{" "}
+                <a href="https://binance.us/universal_JHHGDSKDJ/auth/registration?ref=53969196" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Binance</a>,{" "}
+                <a href="https://proinvite.kraken.com/9f1e/oya30ft6" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Kraken</a>, or{" "}
+                <a href="https://coinbase.com/join/TT3HJ4K?src=ios-link" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Coinbase</a>{" "}
+                and withdraw it to your XRPL wallet. Then deposit into a{" "}
+                <Link href="/ownbank/vaults" className="text-blue-600 hover:underline">Soil Protocol vault</Link>{" "}
+                to earn 5-8% fixed APR. Your keys stay in your hands the entire time.
               </p>
             </div>
             <div className="space-y-1">
