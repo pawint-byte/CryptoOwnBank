@@ -3328,38 +3328,36 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
       let curY = (doc as any).lastAutoTable?.finalY || 90;
 
-      if (exchangeRows.length > 0) {
-        curY += 8;
-        if (curY > 250) { doc.addPage(); curY = 14; }
-        doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.text("Exchange Holdings", 14, curY);
-        autoTable(doc, {
-          startY: curY + 4,
-          head: [["Asset", "Qty", "Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
-          body: exchangeRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
-            r.asset, fmtQty(r.quantity), fmtCur(r.price),
-            fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
-          ]),
-          theme: "striped",
-          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
-          styles: { fontSize: 7.5, cellPadding: 1.5 },
-          columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
-          margin: { left: 14, right: 14 },
-        });
-        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      const allCryptoRows = [...exchangeRows, ...walletRows];
+      const consolidatedMap = new Map<string, { asset: string; quantity: number; marketValue: number; costBasis: number }>();
+      for (const r of allCryptoRows) {
+        const key = r.asset.toUpperCase();
+        const existing = consolidatedMap.get(key);
+        if (existing) {
+          existing.quantity += r.quantity;
+          existing.marketValue += r.marketValue;
+          existing.costBasis += r.costBasis;
+        } else {
+          consolidatedMap.set(key, { asset: r.asset, quantity: r.quantity, marketValue: r.marketValue, costBasis: r.costBasis });
+        }
       }
+      const consolidatedRows = Array.from(consolidatedMap.values()).map(r => ({
+        ...r,
+        price: r.quantity > 0 ? r.marketValue / r.quantity : 0,
+        gainLoss: r.costBasis > 0 ? r.marketValue - r.costBasis : 0,
+        gainLossPct: r.costBasis > 0 ? ((r.marketValue - r.costBasis) / r.costBasis) * 100 : 0,
+      }));
 
-      if (walletRows.length > 0) {
+      if (consolidatedRows.length > 0) {
         curY += 8;
         if (curY > 250) { doc.addPage(); curY = 14; }
         doc.setFontSize(12);
         doc.setTextColor(0);
-        doc.text("Wallet Holdings", 14, curY);
+        doc.text("Crypto Holdings", 14, curY);
         autoTable(doc, {
           startY: curY + 4,
-          head: [["Asset", "Qty", "Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
-          body: walletRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
+          head: [["Asset", "Total Qty", "Avg Price", "Mkt Value", "Cost Basis", "Gain/Loss"]],
+          body: consolidatedRows.sort((a, b) => b.marketValue - a.marketValue).map(r => [
             r.asset, fmtQty(r.quantity), fmtCur(r.price),
             fmtCur(r.marketValue), r.costBasis > 0 ? fmtCur(r.costBasis) : "--", r.costBasis > 0 ? `${fmtCur(r.gainLoss)} (${fmtPct(r.gainLossPct)})` : "--",
           ]),
