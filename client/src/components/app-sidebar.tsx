@@ -194,13 +194,31 @@ function useGroupState(defaults: Record<string, boolean>) {
 
   const toggleGroup = useCallback((key: string) => {
     setOpen((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
+      const isCurrentlyOpen = prev[key];
+      const next: Record<string, boolean> = {};
+      for (const k of Object.keys(prev)) {
+        next[k] = false;
+      }
+      if (!isCurrentlyOpen) {
+        next[key] = true;
+      }
       saveGroups(next);
       return next;
     });
   }, [saveGroups]);
 
-  return { open, toggleGroup };
+  const openGroup = useCallback((key: string) => {
+    setOpen((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const k of Object.keys(prev)) {
+        next[k] = false;
+      }
+      next[key] = true;
+      return next;
+    });
+  }, []);
+
+  return { open, toggleGroup, openGroup };
 }
 
 function useChainFilter() {
@@ -329,16 +347,27 @@ export function AppSidebar() {
   });
 
   const { favorites, toggle, isFav } = useFavorites();
-  const { open, toggleGroup } = useGroupState({
-    start: true,
-    portfolio: false,
-    market: false,
-    ownbank: false,
-    bridges: false,
-    planning: false,
-    learn: false,
-  });
+
+  const activeGroup = allItems.find((i) => i.url === location)?.group || "start";
+  const defaultOpen: Record<string, boolean> = {
+    start: activeGroup === "start",
+    portfolio: activeGroup === "portfolio",
+    market: activeGroup === "market",
+    ownbank: activeGroup === "ownbank",
+    bridges: activeGroup === "bridges",
+    planning: activeGroup === "planning",
+    learn: activeGroup === "learn",
+  };
+
+  const { open, toggleGroup, openGroup } = useGroupState(defaultOpen);
   const { chain, setChain } = useChainFilter();
+
+  useEffect(() => {
+    const group = allItems.find((i) => i.url === location)?.group;
+    if (group && !open[group]) {
+      openGroup(group);
+    }
+  }, [location]);
 
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
