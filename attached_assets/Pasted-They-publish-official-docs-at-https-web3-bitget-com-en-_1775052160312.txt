@@ -1,0 +1,100 @@
+They publish official docs at https://web3.bitget.com/en/docs with APIs, SDKs, and integration guides aimed at wallets, DApps, merchants, and platforms. No single “Plug & Pay”-style white-labeled iframe widget for full spending + wallet-to-bank off-ramp yet, but they do offer:
+1. Wallet Connection (Easiest & Most Immediate Win)
+
+Full support for WalletConnect v2 + direct provider (window.bitget.ethereum / window.bitget.xrp).
+New XRPL native support (announced March 31, 2026) means your users can connect their Bitget Wallet and interact with XRPL assets directly in cryptoownbank.com (sign transactions, view RLUSD balances, etc.).
+Quick to implement (Wagmi/RainbowKit compatible).
+Value for COB: One-click “Connect Bitget Wallet” button → instant access to their 90M+ users + seamless XRPL experience. Perfect complement to your non-custodial cold-wallet focus.
+
+2. Bitget Wallet Pay (Merchant Payment Integration)
+
+API + lightweight SDK for accepting crypto payments (USDT, etc.) from Bitget Wallet users.
+How it works (2–3 steps):
+Apply for appId + apiSecret (enterprise/merchant access).
+Call their /createPayment endpoint (REST API with SHA256 signature).
+Get a bitkeep:// deeplink → open checkout in Bitget Wallet (or use @bitget-wallet/utils npm package for seamless in-app flow).
+
+Supports checkout, QR payments, order status callbacks.
+Value for COB: Let users pay for Pro tier, Soil vault deposits, or services directly with crypto from Bitget Wallet. Not a full off-ramp, but a clean “pay with Bitget” flow.
+
+3. Enterprise Crypto Swap & DEX Aggregator API
+
+High-performance on-chain swap engine (aggregates liquidity across 7+ chains: ETH, Base, Arbitrum, Polygon, BNB, SOL, etc.).
+94–98 % success rate, <97 ms response, $1.88 B+ volume processed.
+Test keys available in docs; production keys via contact form.
+Cross-chain transfers “coming soon.”
+Note on XRPL: Not yet listed in the swap API (XRPL integration is brand new), but their Onchain Payments Matrix (Ripple, Mastercard, Visa, banks) now includes XRPL/RLUSD — worth asking about custom access.
+
+4. On-Ramp / Off-Ramp & Card Features
+
+Strong inside Bitget Wallet (TransFi, Alchemy Pay, local methods in 100+ countries, Apple Pay, crypto cards, bank rails).
+No public embeddable widget found for third parties (unlike Oobit or MoonPay). Their ramps are optimized for users already in the Bitget ecosystem.
+The new XRPL + RLUSD integration feeds directly into their payments matrix (cards, QR merchants, bank transfers), but this is currently wallet-native.
+
+Fees (public info — exacts via API keys)
+
+Swap API: Competitive aggregator pricing (best-route execution, usually 0.1–0.5 % total slippage + gas).
+Wallet Pay: Not publicly listed; typically merchant-side fee (similar to other gateways).
+On/off-ramps inside their wallet: 0–3.5 % depending on method (bank lower, card higher) — very competitive.
+
+Comparison to Oobit / MoonPay / Changelly
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FeatureBitget WalletOobit (Plug & Pay)MoonPay / ChangellyWallet ConnectExcellent (XRPL native)BasicLimitedEmbeddable Payment FlowAPI + deeplink SDKFull white-label widgetWidget availableOff-ramp WidgetNo public oneYes (wallet-to-bank)YesSwap / DEX AggregatorYes (enterprise API)NoYes (via partners)XRPL / RLUSD SupportFull (new)YesLimitedIntegration EffortMedium (API + contact)LowLow
+Bottom line for cryptoownbank.com
+
+Quick wins: Add Wallet Connect + Bitget Wallet Pay (low code, high user acquisition).
+Bigger opportunity: The Swap API + XRPL Payments Matrix could fill swap and real-world utility gaps while you wait on Changelly.
+Off-ramp gap: Still best solved by Oobit or direct enterprise outreach to Bitget for custom white-label access (they’re actively partnering with wallets and are very developer-friendly).
+
+Next step?
+I can draft a professional outreach email to their enterprise/dev team (using the same tone as the Oobit one) asking specifically for:
+
+AppId/apiSecret for Wallet Pay
+Swap API production keys
+Any XRPL-specific embed options or Onchain Payments Matrix access
