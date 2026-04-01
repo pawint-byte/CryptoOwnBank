@@ -702,11 +702,15 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         const posSymbol = `RLUSD-SOIL-${vaultName.toUpperCase()}`;
         const existingPos = await storage.getPositionByUserAndAsset(userId, soilAccount.id, posSymbol);
         if (existingPos) {
-          await storage.updatePosition(existingPos.id, {
+          const posUpdate: any = {
             quantity: total.toFixed(8),
             averageCost: "1",
             totalCostBasis: total.toFixed(2),
-          });
+          };
+          if (existingPos.isAddressed) {
+            await storage.markPositionAddressed(existingPos.id, false);
+          }
+          await storage.updatePosition(existingPos.id, posUpdate);
         } else {
           await storage.createPosition({
             userId,
@@ -1267,9 +1271,20 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const allAssetsForPos = await storage.getAllAssets();
       const assetPriceMap = new Map(allAssetsForPos.map(a => [a.symbol.toUpperCase(), a.currentPrice ? parseFloat(a.currentPrice) : 0]));
       const enriched = [];
+      const [posPriceCacheRows] = await Promise.all([db.select().from(priceCacheTable)]);
+      const posPriceCacheLookup: Record<string, number> = {};
+      for (const row of posPriceCacheRows) {
+        posPriceCacheLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
       for (const pos of positionsData) {
-        const currentPrice = assetPriceMap.get(pos.assetSymbol.toUpperCase()) || 0;
+        let currentPrice = assetPriceMap.get(pos.assetSymbol.toUpperCase()) || 0;
+        if (currentPrice <= 0) currentPrice = posPriceCacheLookup[pos.assetSymbol.toUpperCase()] || 0;
+        if (currentPrice <= 0) currentPrice = parseFloat(pos.averageCost) || 0;
         const qty = parseFloat(pos.quantity);
+        if (currentPrice <= 0 && qty > 0) {
+          const cb = parseFloat(pos.totalCostBasis) || 0;
+          if (cb > 0) currentPrice = cb / qty;
+        }
         const value = qty * currentPrice;
         const costBasis = parseFloat(pos.totalCostBasis);
         const gainLoss = value - costBasis;
@@ -3105,6 +3120,44 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
       const accounts = await storage.getAccountsByUser(userId);
       const accountMap = new Map(accounts.map(a => [a.id, a]));
+
+      const portfolioSoilAccount = accounts.find(a => a.provider === "soil-xrpl");
+      const soilVaultPositions: typeof walletPositions = [];
+      if (portfolioSoilAccount) {
+        const allUserPositions = await storage.getPositionsByUser(userId);
+        const soilPos = allUserPositions.filter(p =>
+          p.assetSymbol.toUpperCase().includes("RLUSD-SOIL") &&
+          p.accountId === portfolioSoilAccount.id &&
+          !positionsData.some(ap => ap.id === p.id)
+        );
+        for (const sp of soilPos) {
+          const qty = parseFloat(sp.quantity) || 0;
+          if (qty > 0) {
+            const spValue = qty;
+            totalValue += spValue;
+            totalCostBasis += qty;
+            soilVaultPositions.push({
+              id: sp.id,
+              userId: sp.userId,
+              accountId: sp.accountId,
+              assetSymbol: sp.assetSymbol,
+              quantity: sp.quantity,
+              averageCost: "1",
+              totalCostBasis: qty.toFixed(2),
+              updatedAt: sp.updatedAt,
+              currentPrice: 1,
+              currentValue: spValue,
+              gainLoss: 0,
+              gainLossPercent: 0,
+              source: "Soil Protocol (XRPL)",
+              isImport: false,
+              isAddressed: false,
+              isWallet: false,
+            });
+          }
+        }
+      }
+
       const allPositions = [...positionsWithMarket.map(p => {
         const account = accountMap.get(p.accountId);
         const isImport = account?.accountType === "import" || account?.provider === "manual";
@@ -3118,7 +3171,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
           isAddressed: p.isAddressed || false,
           isWallet: false,
         };
-      }), ...walletPositions];
+      }), ...walletPositions, ...soilVaultPositions];
 
       const allocationMap = new Map<string, number>();
       allPositions.forEach((pos) => {
