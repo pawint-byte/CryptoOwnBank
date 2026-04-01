@@ -141,7 +141,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-24] **Changelly off-ramp (F2C API)**: Ask Ana (mschweizburg@changelly.com) for F2C API keys. On-ramp is live, off-ramp completes the fiat loop. No code blocker — just needs the keys.
 - [2026-03-24] **Off-ramp / cash-out guide**: Buy Crypto page covers getting into crypto but doesn't guide users on converting back to fiat. Crypto Debit Cards partially fills this gap. Can be built alongside off-ramp integration.
 - [2026-03-24] **Squid Router fee setup**: Integrator ID already configured but no fee param in API calls yet. Check Squid partner dashboard or email partnerships to enable integrator fee. Easy revenue left on the table.
-- [2026-03-23] **GitHub push**: User needs to push from Shell tab manually. Pending.
+- ~~[2026-03-23] **GitHub push**~~ — DONE. User pushes regularly from Shell tab via Git credentials.
 
 ### Tier 2 — Build Soon (no blockers, medium effort)
 - [2026-04-01] **Manual Private Asset Tracker (Phase 1 of Tokenized Equity Vault)**: Add manual private asset entries to the portfolio — name, quantity, cost basis, estimated value, liquidity event date, notes. Shows in portfolio total and Legacy Plan. Immediately useful for Forge/Ripple position and any other pre-IPO holdings. **This is the foundation that Phase 2 and 3 below build on.**
