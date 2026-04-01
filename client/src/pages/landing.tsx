@@ -65,6 +65,8 @@ import {
   GitCompareArrows,
   Smartphone,
   Pickaxe,
+  X,
+  Minus,
 } from "lucide-react";
 
 const xrplToolsComparison = [
@@ -2575,6 +2577,70 @@ export default function Landing() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </section>
+
+        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-muted/30" data-testid="section-compare">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <p className="text-[#00A4E4] font-medium mb-2">See the difference</p>
+              <h2 className="text-3xl font-bold mb-4" data-testid="heading-compare">How CryptoOwnBank Compares</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Most platforms track your portfolio. CryptoOwnBank tracks it AND lets you act on it — yield, trading, payments, and inheritance, all non-custodial.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse" data-testid="table-comparison">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground">Feature</th>
+                    <th className="py-3 px-3 font-bold text-[#00A4E4] text-center bg-[#00A4E4]/5 rounded-t-lg">CryptoOwnBank</th>
+                    <th className="py-3 px-3 font-medium text-muted-foreground text-center">CoinStats</th>
+                    <th className="py-3 px-3 font-medium text-muted-foreground text-center">Zerion</th>
+                    <th className="py-3 px-3 font-medium text-muted-foreground text-center hidden sm:table-cell">DeBank</th>
+                    <th className="py-3 px-3 font-medium text-muted-foreground text-center hidden md:table-cell">Koinly</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: "Portfolio tracking", cob: true, cs: true, z: true, db: true, k: true },
+                    { feature: "Blockchains supported", cob: "32+", cs: "120+", z: "50+", db: "70+", k: "50+" },
+                    { feature: "Non-custodial yield vaults", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "Native DEX trading (XRPL + Stellar)", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "EVM swaps (1inch / aggregator)", cob: true, cs: "limited", z: true, db: false, k: false },
+                    { feature: "Cross-chain bridging", cob: true, cs: false, z: true, db: false, k: false },
+                    { feature: "DCA orders", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "Legacy Plan (crypto inheritance)", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "AI portfolio assistant", cob: true, cs: true, z: false, db: false, k: false },
+                    { feature: "Payment tools (invoices, POS)", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "Tax reports", cob: true, cs: true, z: false, db: false, k: true },
+                    { feature: "Statement Insights (bank vs. on-chain)", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "Whale alerts", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "Technical analysis", cob: true, cs: false, z: false, db: false, k: false },
+                    { feature: "Staking detection", cob: true, cs: true, z: true, db: true, k: true },
+                    { feature: "Pricing", cob: "$29/mo", cs: "$8–10/mo", z: "Free", db: "Free", k: "$49–279/yr" },
+                  ].map((row, i) => (
+                    <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors" data-testid={`row-compare-${i}`}>
+                      <td className="py-3 px-3 font-medium">{row.feature}</td>
+                      {[row.cob, row.cs, row.z, row.db, row.k].map((val, j) => (
+                        <td key={j} className={`py-3 px-3 text-center ${j === 0 ? "bg-[#00A4E4]/5" : ""} ${j === 3 ? "hidden sm:table-cell" : ""} ${j === 4 ? "hidden md:table-cell" : ""}`}>
+                          {val === true ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mx-auto" />
+                          ) : val === false ? (
+                            <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                          ) : (
+                            <span className={`text-xs font-medium ${j === 0 ? "text-[#00A4E4]" : "text-muted-foreground"}`}>{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-6">
+              Based on publicly available feature lists as of April 2026. Feature availability may change. CryptoOwnBank is not affiliated with any listed competitor.
+            </p>
           </div>
         </section>
 
