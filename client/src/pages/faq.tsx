@@ -682,8 +682,12 @@ const faqGroups = [
         a: "No. Token Research is a technical analysis tool that reads smart contract code and on-chain data. It tells you what the contract can do — not whether the token is a good investment. A token can pass every security check and still lose 100% of its value due to market conditions, team abandonment, regulatory action, or simply lack of demand. Always do your own research beyond the contract analysis, never invest more than you can afford to lose, and understand that most new tokens fail.",
       },
       {
+        q: "How do I choose which chain to buy a token on?",
+        a: "When a token is available on multiple chains (for example, Ethereum and BNB Chain), consider four factors: <strong>Liquidity & Volume</strong> — the chain with more trading volume gives you a better price with less slippage; check DEXScreener to compare. <strong>Gas Fees</strong> — Ethereum gas can be $2-50+ per swap, while BNB Chain, Polygon, Arbitrum, and Base are typically under $1; for smaller purchases, high gas eats a big percentage of your investment. <strong>Contract Security</strong> — the same project can have different contract code on different chains, so run Token Research on both and compare risk scores. <strong>Bridge Risk</strong> — if a token originated on one chain and was bridged to another, the bridged version depends on the bridge contract's security. <strong>Rule of thumb:</strong> for larger amounts, prioritize the chain with the most liquidity; for smaller amounts, prioritize lower gas fees. If you already hold ETH or BNB in your wallet, buying on that chain avoids the extra cost and risk of bridging funds.",
+      },
+      {
         q: "Does Token Research work for XRPL or Stellar tokens?",
-        a: "No — Token Research is for EVM-compatible chains only (Ethereum, BSC, Polygon, Arbitrum, Base, Avalanche, Optimism, Fantom). XRPL and Stellar tokens work differently — they don't have smart contracts with hidden functions, so the same types of honeypot and mint risks don't apply. On the XRPL, token safety is more about issuer trustworthiness and trustline settings, which you can evaluate through the Token Manager.",
+        a: "No — Token Research is for EVM-compatible chains only (Ethereum, BNB Chain, Polygon, Arbitrum, Base, Avalanche, and Optimism). XRPL and Stellar tokens work differently — they don't have smart contracts with hidden functions, so the same types of honeypot and mint risks don't apply. On the XRPL, token safety is more about issuer trustworthiness and trustline settings, which you can evaluate through the Token Manager.",
       },
     ],
   },

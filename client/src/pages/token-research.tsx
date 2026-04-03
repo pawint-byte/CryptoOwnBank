@@ -47,6 +47,10 @@ import {
   FileCode,
   Eye,
   Wallet,
+  Scale,
+  Fuel,
+  Droplets,
+  Link2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -319,6 +323,50 @@ export default function TokenResearch() {
                     <li className="flex items-start gap-2"><span className="text-primary font-bold">4.</span> If comfortable, click "Trade on EVM Swap" to buy via 1inch</li>
                     <li className="flex items-start gap-2"><span className="text-primary font-bold">5.</span> After buying, add the token to your wallet (see FAQ below)</li>
                   </ul>
+                </div>
+              </div>
+              <div className="rounded-md border p-4 space-y-3" data-testid="card-choosing-chain">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Scale className="h-4 w-4 text-primary" />
+                  Choosing a Chain (When a Token is on Multiple Chains)
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Many tokens are deployed on more than one chain. For example, a token might be available on both Ethereum and BNB Chain. Here's what to consider when deciding which version to buy:
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs font-semibold flex items-center gap-1.5">
+                      <Droplets className="h-3.5 w-3.5 text-blue-500" />
+                      Liquidity & Volume
+                    </p>
+                    <p className="text-xs text-muted-foreground">The chain with more trading volume usually gives you a better price. More liquidity means less slippage -- you get closer to the listed price. Check DEXScreener to compare volume across chains.</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs font-semibold flex items-center gap-1.5">
+                      <Fuel className="h-3.5 w-3.5 text-orange-500" />
+                      Gas Fees
+                    </p>
+                    <p className="text-xs text-muted-foreground">Ethereum gas fees can range from $2-50+ per swap. BNB Chain, Polygon, Arbitrum, and Base typically cost under $1. For smaller purchases, high gas fees can eat a significant percentage of your investment.</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs font-semibold flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-green-500" />
+                      Contract Security
+                    </p>
+                    <p className="text-xs text-muted-foreground">The same project can have different contract code on different chains. Run Token Research on both and compare the risk scores. One chain's contract might be verified while another isn't.</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs font-semibold flex items-center gap-1.5">
+                      <Link2 className="h-3.5 w-3.5 text-purple-500" />
+                      Bridge Risk
+                    </p>
+                    <p className="text-xs text-muted-foreground">If a token originated on Ethereum and was bridged to another chain, the bridged version depends on the bridge contract's security. If the bridge is exploited, the bridged version could lose its value.</p>
+                  </div>
+                </div>
+                <div className="rounded-md bg-primary/5 border border-primary/20 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">Rule of thumb:</span> For larger amounts, prioritize the chain with the most liquidity (usually Ethereum for established tokens). For smaller amounts, prioritize the chain with lower gas fees (BNB Chain, Polygon, Arbitrum, or Base). Also consider what you already hold in your wallet -- buying on a chain where you already have funds avoids the extra cost and risk of bridging.
+                  </p>
                 </div>
               </div>
               <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 p-4 space-y-1">
