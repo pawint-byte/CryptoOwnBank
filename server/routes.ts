@@ -11328,12 +11328,23 @@ Rules you MUST follow:
       const totalSupplyData = await callRpc("eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]).catch(() => null);
 
       const decodeString = (hex: string | null): string => {
-        if (!hex || hex === "0x" || hex.length < 130) return "";
+        if (!hex || hex === "0x" || hex.length <= 2) return "";
         try {
-          const offset = parseInt(hex.slice(2, 66), 16) * 2;
-          const length = parseInt(hex.slice(2 + offset, 2 + offset + 64), 16);
-          const strHex = hex.slice(2 + offset + 64, 2 + offset + 64 + length * 2);
-          return Buffer.from(strHex, "hex").toString("utf8").replace(/\0/g, "");
+          const stripped = hex.startsWith("0x") ? hex.slice(2) : hex;
+          if (stripped.length >= 128) {
+            const offset = parseInt(stripped.slice(0, 64), 16) * 2;
+            if (offset + 64 <= stripped.length) {
+              const length = parseInt(stripped.slice(offset, offset + 64), 16);
+              if (length > 0 && length < 256 && offset + 64 + length * 2 <= stripped.length) {
+                const strHex = stripped.slice(offset + 64, offset + 64 + length * 2);
+                const decoded = Buffer.from(strHex, "hex").toString("utf8").replace(/\0/g, "").trim();
+                if (decoded) return decoded;
+              }
+            }
+          }
+          const raw = Buffer.from(stripped, "hex").toString("utf8").replace(/\0/g, "").trim();
+          if (raw && /^[\x20-\x7E]+$/.test(raw)) return raw;
+          return "";
         } catch {
           return "";
         }
@@ -11365,6 +11376,19 @@ Rules you MUST follow:
         const goplusData = await goplusResp.json();
         const tokenData = goplusData?.result?.[address] || goplusData?.result?.[address.toLowerCase()];
         if (tokenData) {
+          if ((!result.name || result.name === "Unknown") && tokenData.token_name) {
+            result.name = tokenData.token_name;
+          }
+          if ((!result.symbol || result.symbol === "???") && tokenData.token_symbol) {
+            result.symbol = tokenData.token_symbol;
+          }
+          if (tokenData.holder_count) {
+            result.holderCount = parseInt(tokenData.holder_count);
+          }
+          if (tokenData.total_supply && !result.totalSupply) {
+            result.totalSupply = parseFloat(tokenData.total_supply).toLocaleString(undefined, { maximumFractionDigits: 0 });
+          }
+
           result.goplus = {
             isOpenSource: tokenData.is_open_source === "1",
             isProxy: tokenData.is_proxy === "1",
