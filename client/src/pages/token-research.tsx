@@ -833,18 +833,29 @@ export default function TokenResearch() {
                     New tokens may not appear in your wallet automatically. To see them:
                   </p>
                   <div className="rounded-md border p-3 space-y-2">
-                    <p className="font-medium text-foreground">Add to MetaMask:</p>
+                    <p className="font-medium text-foreground">Add to MetaMask (Mobile):</p>
                     <ol className="space-y-1 text-xs">
-                      <li>1. Open MetaMask and go to "Tokens"</li>
-                      <li>2. Click "Import tokens"</li>
-                      <li>3. Paste the contract address:</li>
-                      <li className="font-mono text-[11px] break-all bg-muted p-1.5 rounded">{result.address}</li>
-                      <li>4. Symbol and decimals fill automatically</li>
-                      <li>5. Click "Next" then "Import"</li>
+                      <li>1. Open MetaMask and tap the <strong>Tokens &gt;</strong> header on your home screen</li>
+                      <li>2. Scroll to the bottom and tap <strong>+ Add a token</strong></li>
+                      <li>3. Switch to the <strong>Custom token</strong> tab</li>
+                      <li>4. Paste the contract address:</li>
+                      <li className="font-mono text-[11px] break-all bg-muted p-1.5 rounded select-all">{result.address}</li>
+                      <li>5. Symbol and decimals fill automatically</li>
+                      <li>6. Tap <strong>Import</strong></li>
+                    </ol>
+                  </div>
+                  <div className="rounded-md border p-3 space-y-2">
+                    <p className="font-medium text-foreground">Add to MetaMask (Desktop/Browser Extension):</p>
+                    <ol className="space-y-1 text-xs">
+                      <li>1. Open MetaMask and click <strong>Import tokens</strong> at the bottom of the token list</li>
+                      <li>2. Paste the contract address:</li>
+                      <li className="font-mono text-[11px] break-all bg-muted p-1.5 rounded select-all">{result.address}</li>
+                      <li>3. Symbol and decimals fill automatically</li>
+                      <li>4. Click <strong>Next</strong> then <strong>Import</strong></li>
                     </ol>
                   </div>
                   <p className="text-xs">
-                    The same process works for Coinbase Wallet, Trust Wallet, and other EVM wallets.
+                    Similar steps work for Coinbase Wallet, Trust Wallet, and other EVM wallets. Look for "Add/Import token" in your wallet's token list.
                   </p>
                 </CardContent>
               </Card>
