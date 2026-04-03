@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { SeoHead } from "@/components/seo-head";
@@ -135,20 +135,77 @@ export default function EvmSwap() {
   const [srcTokenBalance, setSrcTokenBalance] = useState<string | null>(null);
   const [isFetchingBalance, setIsFetchingBalance] = useState(false);
 
+  const [customDstToken, setCustomDstToken] = useState<{ address: string; symbol: string; name: string; decimals: number } | null>(null);
+  const [customDstInput, setCustomDstInput] = useState("");
+  const [isLoadingCustomToken, setIsLoadingCustomToken] = useState(false);
+  const urlParamsProcessed = useRef(false);
+
   const tier = (user as any)?.subscriptionTier || "free";
   const isAdmin = (user as any)?.isAdmin === true;
   const hasPremium = isAdmin || tier === "premium" || tier === "pro" || tier === "premium_annual";
 
-  const tokens = POPULAR_TOKENS[selectedChainId] || [];
+  const baseTokens = POPULAR_TOKENS[selectedChainId] || [];
+  const tokens = customDstToken ? [...baseTokens, customDstToken] : baseTokens;
   const srcTokenInfo = tokens.find(t => t.address === srcToken);
   const dstTokenInfo = tokens.find(t => t.address === dstToken);
 
+  const loadCustomToken = useCallback(async (address: string, chain: number) => {
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
+    const existing = (POPULAR_TOKENS[chain] || []).find(t => t.address.toLowerCase() === address.toLowerCase());
+    if (existing) return existing;
+
+    setIsLoadingCustomToken(true);
+    try {
+      const res = await apiRequest("GET", `/api/token-research/${chain}/${address.toLowerCase()}`);
+      const data = await res.json();
+      if (data.name && data.symbol) {
+        const token = { address: address.toLowerCase(), symbol: data.symbol, name: data.name, decimals: data.decimals || 18 };
+        setCustomDstToken(token);
+        return token;
+      }
+    } catch (err: any) {
+      console.error("[evm-swap] Failed to load custom token:", err.message);
+    } finally {
+      setIsLoadingCustomToken(false);
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
+    if (urlParamsProcessed.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get("token");
+    const chainParam = params.get("chain");
+
+    if (tokenParam && /^0x[a-fA-F0-9]{40}$/.test(tokenParam)) {
+      urlParamsProcessed.current = true;
+      const chain = chainParam ? parseInt(chainParam) : 1;
+      if (POPULAR_TOKENS[chain]) {
+        setSelectedChainId(chain);
+        setSrcToken(POPULAR_TOKENS[chain][0].address);
+
+        const known = POPULAR_TOKENS[chain].find(t => t.address.toLowerCase() === tokenParam.toLowerCase());
+        if (known) {
+          setDstToken(known.address);
+        } else {
+          loadCustomToken(tokenParam, chain).then(token => {
+            if (token) setDstToken(token.address);
+          });
+        }
+      }
+      return;
+    }
+  }, [loadCustomToken]);
+
+  useEffect(() => {
+    if (urlParamsProcessed.current) return;
     const chainTokens = POPULAR_TOKENS[selectedChainId];
     if (chainTokens && chainTokens.length > 0) {
       setSrcToken(chainTokens[0].address);
       setDstToken(chainTokens.length > 1 ? chainTokens[1].address : "");
     }
+    setCustomDstToken(null);
+    setCustomDstInput("");
     setQuote(null);
     setQuoteError(null);
   }, [selectedChainId]);
@@ -602,7 +659,7 @@ export default function EvmSwap() {
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">You Receive</label>
                 <div className="flex gap-2">
-                  <Select value={dstToken} onValueChange={(v) => { setDstToken(v); setQuote(null); }}>
+                  <Select value={dstToken} onValueChange={(v) => { if (v === "__custom__") return; setDstToken(v); setQuote(null); }}>
                     <SelectTrigger className="w-[160px]" data-testid="select-dst-token">
                       <SelectValue placeholder="Select token" />
                     </SelectTrigger>
@@ -612,6 +669,59 @@ export default function EvmSwap() {
                           {t.symbol}
                         </SelectItem>
                       ))}
+                      <div className="border-t mt-1 pt-1 px-2 pb-1">
+                        <p className="text-xs text-muted-foreground mb-1.5 font-medium">Custom token address:</p>
+                        <div className="flex gap-1">
+                          <Input
+                            placeholder="0x..."
+                            value={customDstInput}
+                            onChange={(e) => setCustomDstInput(e.target.value)}
+                            className="h-7 text-xs font-mono flex-1"
+                            data-testid="input-custom-dst-token"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const addr = customDstInput.trim();
+                                if (/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                                  loadCustomToken(addr, selectedChainId).then(token => {
+                                    if (token) {
+                                      setDstToken(token.address);
+                                      setCustomDstInput("");
+                                      setQuote(null);
+                                    } else {
+                                      toast({ title: "Token not found", description: "Could not load token info for this address.", variant: "destructive" });
+                                    }
+                                  });
+                                }
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            disabled={isLoadingCustomToken || !/^0x[a-fA-F0-9]{40}$/.test(customDstInput.trim())}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              const addr = customDstInput.trim();
+                              loadCustomToken(addr, selectedChainId).then(token => {
+                                if (token) {
+                                  setDstToken(token.address);
+                                  setCustomDstInput("");
+                                  setQuote(null);
+                                } else {
+                                  toast({ title: "Token not found", description: "Could not load token info for this address.", variant: "destructive" });
+                                }
+                              });
+                            }}
+                            data-testid="button-load-custom-token"
+                          >
+                            {isLoadingCustomToken ? <Loader2 className="h-3 w-3 animate-spin" /> : "Load"}
+                          </Button>
+                        </div>
+                      </div>
                     </SelectContent>
                   </Select>
                   <div className="flex-1 bg-muted/50 rounded-md px-3 flex items-center" data-testid="text-receive-amount">
