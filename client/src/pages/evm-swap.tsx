@@ -100,6 +100,16 @@ interface QuoteResult {
   dstToken: { symbol: string; decimals: number };
 }
 
+interface DexQuoteResult {
+  dstAmount: string;
+  path: string[];
+  router: string;
+  dexName: string;
+  isNativeSrc: boolean;
+  isNativeDst: boolean;
+  srcAmount: string;
+}
+
 interface SwapResult {
   tx: {
     from: string;
@@ -125,6 +135,7 @@ export default function EvmSwap() {
   const [showSettings, setShowSettings] = useState(false);
 
   const [quote, setQuote] = useState<QuoteResult | null>(null);
+  const [dexQuote, setDexQuote] = useState<DexQuoteResult | null>(null);
   const [isQuoting, setIsQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
@@ -208,6 +219,7 @@ export default function EvmSwap() {
     setCustomDstToken(null);
     setCustomDstInput("");
     setQuote(null);
+    setDexQuote(null);
     setQuoteError(null);
   }, [selectedChainId]);
 
@@ -311,6 +323,7 @@ export default function EvmSwap() {
     lastQuoteParamsRef.current = paramsKey;
 
     setQuote(null);
+    setDexQuote(null);
     setQuoteError(null);
     setIsQuoting(false);
 
@@ -335,6 +348,21 @@ export default function EvmSwap() {
         if (version !== quoteVersionRef.current) return;
         if (!res.ok || data.message) {
           const msg = data.message || `Error ${res.status}`;
+          const isLiquidity = msg.toLowerCase().includes("liquidity") || msg.toLowerCase().includes("cannot be swapped");
+          if (isLiquidity) {
+            try {
+              const dexRes = await fetch(`/api/evm/dex-quote?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}`, {
+                credentials: "include",
+              });
+              if (version !== quoteVersionRef.current) return;
+              const dexData = await dexRes.json();
+              if (version !== quoteVersionRef.current) return;
+              if (dexRes.ok && dexData.dstAmount && BigInt(dexData.dstAmount) > 0n) {
+                setDexQuote(dexData as DexQuoteResult);
+                return;
+              }
+            } catch {}
+          }
           setQuoteError(msg.includes("429") ? "Rate limited — please wait a few seconds and try again" : msg);
         } else {
           setQuote(data);
@@ -359,6 +387,7 @@ export default function EvmSwap() {
     setSrcToken(dstToken);
     setDstToken(tmpSrc);
     setQuote(null);
+    setDexQuote(null);
   };
 
   const formatTokenAmount = (raw: string, decimals: number) => {
@@ -374,6 +403,8 @@ export default function EvmSwap() {
     const srcInfo = tokens.find(t => t.address === srcToken);
     if (!srcInfo) return;
 
+    const isDex = !!dexQuote;
+
     setIsSwapping(true);
     setSwapTxHash(null);
     try {
@@ -381,52 +412,110 @@ export default function EvmSwap() {
 
       if (srcToken !== NATIVE_TOKEN) {
         setIsApproving(true);
-        const allowanceRes = await apiRequest("GET",
-          `/api/evm/allowance?chainId=${selectedChainId}&tokenAddress=${srcToken}&walletAddress=${address}`
-        );
-        const allowanceData = await allowanceRes.json();
-        const currentAllowance = BigInt(allowanceData.allowance || "0");
+        const spender = isDex ? dexQuote!.router : null;
 
-        if (currentAllowance < BigInt(rawAmount)) {
-          const approveRes = await apiRequest("GET",
-            `/api/evm/approve?chainId=${selectedChainId}&tokenAddress=${srcToken}&amount=${rawAmount}`
+        if (!isDex) {
+          const allowanceRes = await apiRequest("GET",
+            `/api/evm/allowance?chainId=${selectedChainId}&tokenAddress=${srcToken}&walletAddress=${address}`
           );
-          const approveTxData = await approveRes.json();
+          const allowanceData = await allowanceRes.json();
+          const currentAllowance = BigInt(allowanceData.allowance || "0");
 
-          await sendEvmTransaction({
-            from: address,
-            to: approveTxData.to,
-            data: approveTxData.data,
-            value: approveTxData.value || "0x0",
-          });
+          if (currentAllowance < BigInt(rawAmount)) {
+            const approveRes = await apiRequest("GET",
+              `/api/evm/approve?chainId=${selectedChainId}&tokenAddress=${srcToken}&amount=${rawAmount}`
+            );
+            const approveTxData = await approveRes.json();
 
-          toast({ title: "Approval confirmed", description: "Token spend approved. Executing swap..." });
-          await new Promise(r => setTimeout(r, 2000));
+            await sendEvmTransaction({
+              from: address,
+              to: approveTxData.to,
+              data: approveTxData.data,
+              value: approveTxData.value || "0x0",
+            });
+
+            toast({ title: "Approval confirmed", description: "Token spend approved. Executing swap..." });
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        } else {
+          const erc20AllowanceSig = "0xdd62ed3e";
+          const chainInfo = EVM_CHAINS[selectedChainId];
+          if (chainInfo && spender) {
+            const ownerPadded = address.slice(2).toLowerCase().padStart(64, "0");
+            const spenderPadded = spender.slice(2).toLowerCase().padStart(64, "0");
+            const callData = erc20AllowanceSig + ownerPadded + spenderPadded;
+            try {
+              const resp = await fetch(chainInfo.rpcUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: srcToken, data: callData }, "latest"] }),
+              });
+              const json = await resp.json();
+              const currentAllowance = json.result && json.result !== "0x" ? BigInt(json.result) : 0n;
+              if (currentAllowance < BigInt(rawAmount)) {
+                const approveSig = "0x095ea7b3";
+                const spenderPad = spender.slice(2).toLowerCase().padStart(64, "0");
+                const maxApproval = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+                const approveData = approveSig + spenderPad + maxApproval;
+                await sendEvmTransaction({ from: address, to: srcToken, data: approveData, value: "0x0" });
+                toast({ title: "Approval confirmed", description: "Token spend approved. Executing swap..." });
+                await new Promise(r => setTimeout(r, 2000));
+              }
+            } catch (approveErr: any) {
+              throw new Error(approveErr.message || "Token approval failed");
+            }
+          }
         }
         setIsApproving(false);
       }
 
-      const swapRes = await apiRequest("GET",
-        `/api/evm/swap?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}&from=${address}&slippage=${slippage}`
-      );
-      const swapData: SwapResult = await swapRes.json();
+      if (isDex) {
+        const dexSwapRes = await apiRequest("GET",
+          `/api/evm/dex-swap?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}&from=${address}&slippage=${slippage}&path=${encodeURIComponent(JSON.stringify(dexQuote!.path))}`
+        );
+        const dexSwapData = await dexSwapRes.json();
 
-      if (swapData.tx) {
-        const txHash = await sendEvmTransaction({
-          from: swapData.tx.from,
-          to: swapData.tx.to,
-          data: swapData.tx.data,
-          value: swapData.tx.value,
-        });
+        if (dexSwapData.tx) {
+          const txHash = await sendEvmTransaction({
+            from: dexSwapData.tx.from,
+            to: dexSwapData.tx.to,
+            data: dexSwapData.tx.data,
+            value: dexSwapData.tx.value,
+          });
 
-        setSwapTxHash(txHash);
-        setShowConfirmDialog(false);
-        toast({
-          title: "Swap submitted!",
-          description: `Transaction sent. Check your wallet for the updated balance.`,
-        });
-        setAmount("");
-        setQuote(null);
+          setSwapTxHash(txHash);
+          setShowConfirmDialog(false);
+          toast({
+            title: "Swap submitted!",
+            description: `Transaction sent via ${dexQuote!.dexName}. Check your wallet for the updated balance.`,
+          });
+          setAmount("");
+          setQuote(null);
+          setDexQuote(null);
+        }
+      } else {
+        const swapRes = await apiRequest("GET",
+          `/api/evm/swap?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}&from=${address}&slippage=${slippage}`
+        );
+        const swapData: SwapResult = await swapRes.json();
+
+        if (swapData.tx) {
+          const txHash = await sendEvmTransaction({
+            from: swapData.tx.from,
+            to: swapData.tx.to,
+            data: swapData.tx.data,
+            value: swapData.tx.value,
+          });
+
+          setSwapTxHash(txHash);
+          setShowConfirmDialog(false);
+          toast({
+            title: "Swap submitted!",
+            description: `Transaction sent. Check your wallet for the updated balance.`,
+          });
+          setAmount("");
+          setQuote(null);
+        }
       }
     } catch (err: any) {
       const rawMsg = err.message || "Swap failed";
@@ -450,7 +539,7 @@ export default function EvmSwap() {
   if (!hasPremium) {
     return (
       <div className="space-y-6">
-        <SeoHead title="EVM Swap | CryptoOwnBank" description="Swap any ERC-20 token across Ethereum, Polygon, Arbitrum, and more — powered by 1inch." />
+        <SeoHead title="EVM Swap | CryptoOwnBank" description="Swap any ERC-20 token across Ethereum, Polygon, Arbitrum, and more — multi-DEX routing for the best prices." />
         <UpgradePrompt feature="EVM Swap lets you trade thousands of tokens across Ethereum, Polygon, Arbitrum, Base, and more — best prices aggregated from every DEX, signed securely with your Ledger." />
       </div>
     );
@@ -676,7 +765,7 @@ export default function EvmSwap() {
               <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">You Receive</label>
                 <div className="flex gap-2">
-                  <Select value={dstToken} onValueChange={(v) => { setDstToken(v); setQuote(null); }}>
+                  <Select value={dstToken} onValueChange={(v) => { setDstToken(v); setQuote(null); setDexQuote(null); }}>
                     <SelectTrigger className="w-[160px]" data-testid="select-dst-token">
                       <SelectValue placeholder="Select token" />
                     </SelectTrigger>
@@ -691,15 +780,19 @@ export default function EvmSwap() {
                   <div className="flex-1 bg-muted/50 rounded-md px-3 flex items-center" data-testid="text-receive-amount">
                     {isQuoting ? (
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : dexQuote && dstTokenInfo ? (
+                      <span className="text-lg font-medium">
+                        {formatTokenAmount(dexQuote.dstAmount, dstTokenInfo.decimals)}
+                      </span>
                     ) : quote && dstTokenInfo ? (
                       <span className="text-lg font-medium">
                         {formatTokenAmount(quote.dstAmount, dstTokenInfo.decimals)}
                       </span>
-                    ) : quoteError && !quoteError.includes("liquidity") ? (
+                    ) : quoteError ? (
                       <span className="text-sm text-destructive">{quoteError}</span>
-                    ) : !quoteError ? (
+                    ) : (
                       <span className="text-muted-foreground text-sm">Enter amount to see quote</span>
-                    ) : null}
+                    )}
                   </div>
                 </div>
                 <div className="rounded-md border bg-muted/30 p-3 space-y-2">
@@ -763,59 +856,30 @@ export default function EvmSwap() {
                 </div>
               </div>
 
-              {quoteError && quoteError.includes("liquidity") && dstToken && (
-                <div className="rounded-lg border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-3" data-testid="no-liquidity-help">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">No liquidity on 1inch for this token</p>
-                      <p className="text-xs text-muted-foreground">
-                        This token doesn't have enough trading pairs on the DEXes that 1inch aggregates.
-                        This is common for very new or low-cap tokens. You can try these alternatives:
-                      </p>
-                    </div>
+              {dexQuote && srcTokenInfo && dstTokenInfo && amount && (
+                <div className="bg-muted/30 rounded-lg p-3 space-y-1.5 text-xs" data-testid="quote-details">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rate</span>
+                    <span>
+                      1 {srcTokenInfo.symbol} ≈ {(Number(BigInt(dexQuote.dstAmount)) / (10 ** dstTokenInfo.decimals) / parseFloat(amount)).toFixed(6)} {dstTokenInfo.symbol}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <a
-                      href={`https://dexscreener.com/search?q=${dstToken}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-md border bg-background p-2.5 hover:bg-accent transition-colors"
-                      data-testid="link-dexscreener-swap"
-                    >
-                      <Search className="h-4 w-4 text-primary" />
-                      <div>
-                        <p className="text-xs font-medium">DEXScreener</p>
-                        <p className="text-[10px] text-muted-foreground">Find trading pairs and liquidity pools</p>
-                      </div>
-                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-                    </a>
-                    <a
-                      href={selectedChainId === 56
-                        ? `https://pancakeswap.finance/swap?outputCurrency=${dstToken}`
-                        : `https://app.uniswap.org/swap?outputCurrency=${dstToken}&chain=${
-                          selectedChainId === 1 ? "ethereum" : selectedChainId === 137 ? "polygon" : selectedChainId === 42161 ? "arbitrum" : selectedChainId === 10 ? "optimism" : selectedChainId === 8453 ? "base" : "ethereum"
-                        }`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-md border bg-background p-2.5 hover:bg-accent transition-colors"
-                      data-testid="link-uniswap-swap"
-                    >
-                      <ArrowDownUp className="h-4 w-4 text-primary" />
-                      <div>
-                        <p className="text-xs font-medium">{selectedChainId === 56 ? "PancakeSwap" : "Uniswap"}</p>
-                        <p className="text-[10px] text-muted-foreground">Swap directly on the DEX</p>
-                      </div>
-                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
-                    </a>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">You Receive</span>
+                    <span className="text-green-600 font-medium">{formatTokenAmount(dexQuote.dstAmount, dstTokenInfo.decimals)} {dstTokenInfo.symbol}</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    These links open the DEX directly with your token pre-filled. Your MetaMask wallet works the same way on those sites.
-                  </p>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Slippage</span>
+                    <span>{slippage}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Route</span>
+                    <span className="text-muted-foreground">via {dexQuote.dexName}</span>
+                  </div>
                 </div>
               )}
 
-              {quote && srcTokenInfo && dstTokenInfo && amount && (
+              {quote && !dexQuote && srcTokenInfo && dstTokenInfo && amount && (
                 <div className="bg-muted/30 rounded-lg p-3 space-y-1.5 text-xs" data-testid="quote-details">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Rate</span>
@@ -847,7 +911,7 @@ export default function EvmSwap() {
                 <Button className="w-full" size="lg" onClick={() => switchChain(selectedChainId)} data-testid="button-switch-chain">
                   Switch to {EVM_CHAINS[selectedChainId]?.name}
                 </Button>
-              ) : !quote || !amount || parseFloat(amount) <= 0 ? (
+              ) : (!quote && !dexQuote) || !amount || parseFloat(amount) <= 0 ? (
                 <Button className="w-full" size="lg" disabled data-testid="button-swap-disabled">
                   {isQuoting ? (
                     <>
@@ -931,12 +995,12 @@ export default function EvmSwap() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Zap className="h-4 w-4 text-[#00A4E4]" />
-                Powered by 1inch
+                Multi-DEX Routing
               </CardTitle>
             </CardHeader>
             <CardContent className="text-xs text-muted-foreground space-y-2">
-              <p>1inch aggregates prices from Uniswap, SushiSwap, Curve, Balancer, and dozens more DEXs to find the best swap rate.</p>
-              <p>Your swap is routed through multiple pools to minimize slippage and maximize the tokens you receive.</p>
+              <p>Swaps are routed through 1inch for the best aggregated price across dozens of DEXes.</p>
+              <p>For tokens not available on 1inch, we automatically fall back to the chain's native DEX — Uniswap, PancakeSwap, QuickSwap, SushiSwap, or TraderJoe — so you can trade any token with a liquidity pool.</p>
             </CardContent>
           </Card>
 
@@ -979,7 +1043,7 @@ export default function EvmSwap() {
           <DialogHeader>
             <DialogTitle>Confirm Swap</DialogTitle>
           </DialogHeader>
-          {quote && srcTokenInfo && dstTokenInfo && (
+          {(quote || dexQuote) && srcTokenInfo && dstTokenInfo && (
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-center">
@@ -994,7 +1058,7 @@ export default function EvmSwap() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">You Receive</span>
                   <span className="text-lg font-semibold text-green-600" data-testid="text-confirm-receive">
-                    {formatTokenAmount(quote.dstAmount, dstTokenInfo.decimals)} {dstTokenInfo.symbol}
+                    {formatTokenAmount(dexQuote ? dexQuote.dstAmount : quote!.dstAmount, dstTokenInfo.decimals)} {dstTokenInfo.symbol}
                   </span>
                 </div>
               </div>
@@ -1008,10 +1072,18 @@ export default function EvmSwap() {
                   <span>Slippage Tolerance</span>
                   <span className="text-foreground">{slippage}%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Estimated Gas</span>
-                  <span className="text-foreground">{quote.gas?.toLocaleString()}</span>
-                </div>
+                {quote && !dexQuote && (
+                  <div className="flex justify-between">
+                    <span>Estimated Gas</span>
+                    <span className="text-foreground">{quote.gas?.toLocaleString()}</span>
+                  </div>
+                )}
+                {dexQuote && (
+                  <div className="flex justify-between">
+                    <span>Route</span>
+                    <span className="text-foreground">via {dexQuote.dexName}</span>
+                  </div>
+                )}
               </div>
 
               <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5 flex items-start gap-2">
@@ -1023,7 +1095,10 @@ export default function EvmSwap() {
             </div>
           )}
           <p className="text-xs text-muted-foreground italic">
-            A 1% platform fee is included in this swap. You are interacting directly with the 1inch DEX aggregator — CryptoOwnBank does not hold or control your funds at any point during this transaction.
+            {dexQuote
+              ? `You are swapping directly through ${dexQuote.dexName}'s smart contract — CryptoOwnBank does not hold or control your funds at any point during this transaction.`
+              : "A 1% platform fee is included in this swap. You are interacting directly with the 1inch DEX aggregator — CryptoOwnBank does not hold or control your funds at any point during this transaction."
+            }
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmDialog(false)} data-testid="button-cancel-swap">

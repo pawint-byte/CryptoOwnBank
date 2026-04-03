@@ -11160,6 +11160,212 @@ Rules you MUST follow:
     }
   });
 
+  const NATIVE_TOKEN = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+  const DEX_ROUTERS: Record<number, { router: string; weth: string; name: string }> = {
+    1:     { router: "0x7a250d5C4E6cF7284C4c5fF71d7f6AeB31F8F0B3", weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", name: "Uniswap" },
+    56:    { router: "0x10ED43C718714eb63d5aA57B78B54704E256024E", weth: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", name: "PancakeSwap" },
+    137:   { router: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff", weth: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", name: "QuickSwap" },
+    42161: { router: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506", weth: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", name: "SushiSwap" },
+    10:    { router: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506", weth: "0x4200000000000000000000000000000000000006", name: "SushiSwap" },
+    8453:  { router: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24", weth: "0x4200000000000000000000000000000000000006", name: "Uniswap" },
+    43114: { router: "0x60aE616a2155Ee3d9A68541Ba4544862310933d4", weth: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", name: "TraderJoe" },
+  };
+
+  function abiEncode(types: string[], values: any[]): string {
+    const parts: string[] = [];
+    let dynamicOffset = types.length * 32;
+    const dynamicParts: string[] = [];
+
+    for (let i = 0; i < types.length; i++) {
+      if (types[i] === "uint256") {
+        parts.push(BigInt(values[i]).toString(16).padStart(64, "0"));
+      } else if (types[i] === "address") {
+        parts.push(values[i].slice(2).toLowerCase().padStart(64, "0"));
+      } else if (types[i] === "address[]") {
+        parts.push(dynamicOffset.toString(16).padStart(64, "0"));
+        const arr = values[i] as string[];
+        const arrEncoded = arr.length.toString(16).padStart(64, "0") +
+          arr.map((a: string) => a.slice(2).toLowerCase().padStart(64, "0")).join("");
+        dynamicParts.push(arrEncoded);
+        dynamicOffset += (1 + arr.length) * 32;
+      }
+    }
+    return parts.join("") + dynamicParts.join("");
+  }
+
+  app.get("/api/evm/dex-quote", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chainId, src, dst, amount } = req.query;
+      if (!chainId || !src || !dst || !amount) {
+        return res.status(400).json({ message: "Missing required params: chainId, src, dst, amount" });
+      }
+      const chain = parseInt(chainId as string);
+      const dex = DEX_ROUTERS[chain];
+      const rpcUrl = CHAIN_RPC_URLS[chain];
+      if (!dex || !rpcUrl) {
+        return res.status(400).json({ message: "Unsupported chain for DEX swap" });
+      }
+
+      const srcAddr = (src as string).toLowerCase() === NATIVE_TOKEN ? dex.weth : (src as string).toLowerCase();
+      const dstAddr = (dst as string).toLowerCase() === NATIVE_TOKEN ? dex.weth : (dst as string).toLowerCase();
+      const isNativeSrc = (src as string).toLowerCase() === NATIVE_TOKEN;
+      const isNativeDst = (dst as string).toLowerCase() === NATIVE_TOKEN;
+
+      const paths = [
+        [srcAddr, dstAddr],
+        [srcAddr, dex.weth, dstAddr],
+      ];
+      if (srcAddr.toLowerCase() === dex.weth.toLowerCase() || dstAddr.toLowerCase() === dex.weth.toLowerCase()) {
+        paths.splice(1, 1);
+      }
+
+      let bestOutput: bigint = 0n;
+      let bestPath: string[] = [];
+
+      for (const path of paths) {
+        try {
+          const calldata = "0xd06ca61f" + abiEncode(["uint256", "address[]"], [amount, path]);
+          const rpcResp = await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0", id: 1, method: "eth_call",
+              params: [{ to: dex.router, data: calldata }, "latest"],
+            }),
+          });
+          const rpcData = await rpcResp.json();
+          if (rpcData.result && rpcData.result !== "0x" && rpcData.result.length > 2) {
+            const hex = rpcData.result.slice(2);
+            const lastAmountHex = hex.slice(-64);
+            const output = BigInt("0x" + lastAmountHex);
+            if (output > bestOutput) {
+              bestOutput = output;
+              bestPath = path;
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      if (bestOutput === 0n || bestPath.length === 0) {
+        return res.status(400).json({ message: "No liquidity pool found for this token pair on " + dex.name });
+      }
+
+      res.json({
+        dstAmount: bestOutput.toString(),
+        path: bestPath,
+        router: dex.router,
+        dexName: dex.name,
+        isNativeSrc,
+        isNativeDst,
+        srcAmount: amount,
+      });
+    } catch (err: any) {
+      console.error("[dex-quote] Error:", err.message);
+      res.status(500).json({ message: "DEX quote failed" });
+    }
+  });
+
+  app.get("/api/evm/dex-swap", isAuthenticated, async (req: any, res) => {
+    try {
+      const { chainId, src, dst, amount, from, slippage, path: pathJson } = req.query;
+      if (!chainId || !src || !dst || !amount || !from || !pathJson) {
+        return res.status(400).json({ message: "Missing required params" });
+      }
+      const chain = parseInt(chainId as string);
+      const dex = DEX_ROUTERS[chain];
+      if (!dex) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+
+      const slip = parseFloat((slippage as string) || "1") / 100;
+      if (isNaN(slip) || slip < 0 || slip > 0.5) {
+        return res.status(400).json({ message: "Invalid slippage value" });
+      }
+
+      let path: string[];
+      try {
+        path = JSON.parse(pathJson as string);
+      } catch {
+        return res.status(400).json({ message: "Invalid path format" });
+      }
+      if (!Array.isArray(path) || path.length < 2 || path.length > 3) {
+        return res.status(400).json({ message: "Path must have 2 or 3 addresses" });
+      }
+      const hexRe = /^0x[a-fA-F0-9]{40}$/;
+      if (!path.every(a => hexRe.test(a))) {
+        return res.status(400).json({ message: "Invalid address in path" });
+      }
+
+      const isNativeSrc = (src as string).toLowerCase() === NATIVE_TOKEN;
+      const isNativeDst = (dst as string).toLowerCase() === NATIVE_TOKEN;
+      const expectedStart = isNativeSrc ? dex.weth.toLowerCase() : (src as string).toLowerCase();
+      const expectedEnd = isNativeDst ? dex.weth.toLowerCase() : (dst as string).toLowerCase();
+      if (path[0].toLowerCase() !== expectedStart || path[path.length - 1].toLowerCase() !== expectedEnd) {
+        return res.status(400).json({ message: "Path does not match src/dst tokens" });
+      }
+
+      let amountIn: bigint;
+      try {
+        amountIn = BigInt(amount as string);
+      } catch {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+      const deadline = Math.floor(Date.now() / 1000) + 1200;
+
+      const rpcUrl = CHAIN_RPC_URLS[chain];
+      const quoteCalldata = "0xd06ca61f" + abiEncode(["uint256", "address[]"], [amountIn.toString(), path]);
+      const quoteResp = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", id: 1, method: "eth_call",
+          params: [{ to: dex.router, data: quoteCalldata }, "latest"],
+        }),
+      });
+      const quoteData = await quoteResp.json();
+      if (!quoteData.result || quoteData.result === "0x") {
+        return res.status(400).json({ message: "Cannot get quote for swap" });
+      }
+      const expectedOut = BigInt("0x" + quoteData.result.slice(2).slice(-64));
+      const minOut = expectedOut * BigInt(Math.floor((1 - slip) * 10000)) / 10000n;
+
+      let fnSelector: string;
+      let encoded: string;
+      let value = "0x0";
+
+      if (isNativeSrc) {
+        fnSelector = "0xb6f9de95";
+        encoded = abiEncode(["uint256", "address[]", "address", "uint256"], [minOut.toString(), path, from, deadline]);
+        value = "0x" + amountIn.toString(16);
+      } else if (isNativeDst) {
+        fnSelector = "0x791ac947";
+        encoded = abiEncode(["uint256", "uint256", "address[]", "address", "uint256"], [amountIn.toString(), minOut.toString(), path, from, deadline]);
+      } else {
+        fnSelector = "0x5c11d795";
+        encoded = abiEncode(["uint256", "uint256", "address[]", "address", "uint256"], [amountIn.toString(), minOut.toString(), path, from, deadline]);
+      }
+
+      res.json({
+        tx: {
+          to: dex.router,
+          data: fnSelector + encoded,
+          value,
+          from: from as string,
+        },
+        dexName: dex.name,
+        router: dex.router,
+        expectedOutput: expectedOut.toString(),
+        minOutput: minOut.toString(),
+      });
+    } catch (err: any) {
+      console.error("[dex-swap] Error:", err.message);
+      res.status(500).json({ message: "Failed to build swap transaction" });
+    }
+  });
+
   const EXPLORER_API_URLS: Record<number, { api: string; key?: string }> = {
     1: { api: "https://api.etherscan.io/api" },
     137: { api: "https://api.polygonscan.com/api" },

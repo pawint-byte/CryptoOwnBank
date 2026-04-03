@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-01 by main agent (AI agent wallet tracking mention added, comparison matrix added to landing page)**
+**Last updated: 2026-04-03 by main agent (DEX fallback added to EVM Swap — Uniswap/PancakeSwap/QuickSwap/SushiSwap/TraderJoe direct routing for tokens without 1inch liquidity)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -191,6 +191,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-04-01] **XRPL Token Escrow for Legacy Plan**: XRPL now supports time-based escrow for all issued tokens (not just XRP). Potential Legacy Plan enhancement — tokenized assets could be escrowed for beneficiaries with time-release conditions. Watch for mature tooling/libraries before building.
 
 ### Completed
+- ~~[2026-04-03] **DEX Direct Swap Fallback for EVM Swap**~~ — COMPLETED 2026-04-03. When 1inch has no liquidity (micro-cap tokens), EVM Swap now automatically falls back to Uniswap V2 (Ethereum/Base), PancakeSwap V2 (BSC), QuickSwap (Polygon), SushiSwap (Arbitrum/Optimism), or TraderJoe (Avalanche). Seamless experience — member never leaves the site. Backend: `/api/evm/dex-quote`, `/api/evm/dex-swap`. Frontend auto-fallback with approval + swap via DEX router contracts.
 - ~~[2026-03-27] **Freighter Integration — In-Site Stellar Signing**~~ — COMPLETED 2026-03-27. EVM (MetaMask/WalletConnect), XRPL (Xaman QR/deep link), Stellar (Freighter in-browser) — all three chains now sign in-site on desktop.
 - ~~[2026-03-24] **Noah Cash-to-Stablecoin on-ramp (inside Ledger)**~~ — COMPLETED 2026-03-24.
 - ~~[2026-03-24] **CL Card (Ledger Visa debit by Baanx)**~~ — COMPLETED 2026-03-24.
