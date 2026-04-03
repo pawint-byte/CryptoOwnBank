@@ -569,25 +569,11 @@ export async function signTrustSet(
       return new Promise(() => {});
     }
 
-    return new Promise((resolve) => {
-      const popup = window.open("", "XummTrustSet", "width=460,height=520,toolbar=no,menubar=no,scrollbars=no,resizable=no");
-      if (popup) {
-        popup.document.write(`
-          <!DOCTYPE html>
-          <html><head><title>Set Trust Line</title>
-          <style>
-            body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#fff; font-family:system-ui,sans-serif; }
-            img { width:280px; height:280px; border-radius:12px; margin-bottom:16px; }
-            h3 { margin:0 0 8px; font-size:18px; }
-            p { margin:0; font-size:14px; color:#999; }
-          </style></head><body>
-            <h3>Approve Trust Line</h3>
-            <img src="${payload.qrUrl}" alt="QR Code" />
-            <p>Scan to approve this trust line</p>
-          </body></html>
-        `);
-      }
+    window.dispatchEvent(new CustomEvent("xumm-qr", {
+      detail: { qrUrl: payload.qrUrl, uuid: payload.uuid, type: "TrustSet" },
+    }));
 
+    return new Promise((resolve) => {
       let trustPollErrors = 0;
       const pollInterval = setInterval(async () => {
         try {
@@ -595,7 +581,7 @@ export async function signTrustSet(
           trustPollErrors = 0;
           if (status.resolved) {
             clearInterval(pollInterval);
-            if (popup && !popup.closed) popup.close();
+            window.dispatchEvent(new CustomEvent("xumm-qr-done"));
             if (status.signed) {
               console.log("[Xumm] signTrustSet dispatched:", status.dispatchedResult, "txid:", status.txid);
               resolve({ success: true, txHash: status.txid || payload.uuid });
@@ -608,7 +594,7 @@ export async function signTrustSet(
           console.warn("[Xumm] signTrustSet poll error", trustPollErrors, e);
           if (trustPollErrors >= 3) {
             clearInterval(pollInterval);
-            if (popup && !popup.closed) popup.close();
+            window.dispatchEvent(new CustomEvent("xumm-qr-done"));
             resolve({ success: false, error: "Failed to check trust line status" });
           }
         }
@@ -616,7 +602,7 @@ export async function signTrustSet(
 
       setTimeout(() => {
         clearInterval(pollInterval);
-        if (popup && !popup.closed) popup.close();
+        window.dispatchEvent(new CustomEvent("xumm-qr-done"));
         resolve({ success: false, error: "Trust line timed out" });
       }, 120000);
     });

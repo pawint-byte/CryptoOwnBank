@@ -147,6 +147,21 @@ export default function OwnBankTokens() {
   const [currencyInput, setCurrencyInput] = useState("");
   const [issuerInput, setIssuerInput] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [qrData, setQrData] = useState<{ qrUrl: string; uuid: string; type: string } | null>(null);
+
+  useEffect(() => {
+    const handleQr = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.qrUrl) setQrData(detail);
+    };
+    const handleQrDone = () => setQrData(null);
+    window.addEventListener("xumm-qr", handleQr);
+    window.addEventListener("xumm-qr-done", handleQrDone);
+    return () => {
+      window.removeEventListener("xumm-qr", handleQr);
+      window.removeEventListener("xumm-qr-done", handleQrDone);
+    };
+  }, []);
   const [isRemoving, setIsRemoving] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedIssuer, setCopiedIssuer] = useState<string | null>(null);
@@ -737,6 +752,33 @@ export default function OwnBankTokens() {
                 )}
               </Button>
             </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!qrData} onOpenChange={() => setQrData(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">Scan with Xaman</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrData && (
+              <>
+                <img
+                  src={qrData.qrUrl}
+                  alt="QR Code"
+                  className="w-64 h-64 rounded-xl"
+                  data-testid="img-xumm-qr"
+                />
+                <p className="text-sm text-muted-foreground text-center">
+                  Open your Xaman app and scan this QR code to approve the trust line.
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Waiting for approval...
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
