@@ -302,36 +302,33 @@ export default function EvmSwap() {
 
   const walletLabel = walletProvider === "metamask" ? "MetaMask" : walletProvider === "walletconnect" ? "WalletConnect" : "Wallet";
 
-  const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const quoteAbortRef = useRef<AbortController | null>(null);
-  const lastQuoteKeyRef = useRef("");
+  const quoteVersionRef = useRef(0);
 
-  const requestQuote = useCallback((src: string, dst: string, amt: string, chain: number, tkns: typeof tokens) => {
-    if (quoteTimerRef.current) clearTimeout(quoteTimerRef.current);
-    if (quoteAbortRef.current) quoteAbortRef.current.abort();
+  useEffect(() => {
+    setQuote(null);
+    setQuoteError(null);
+    setIsQuoting(false);
 
-    if (!src || !dst || !amt || parseFloat(amt) <= 0 || src === dst) return;
-    const srcInfo = tkns.find(t => t.address === src);
+    if (!srcToken || !dstToken || !amount || parseFloat(amount) <= 0 || srcToken === dstToken) return;
+
+    const allTokens = customDstToken ? [...(POPULAR_TOKENS[selectedChainId] || []), customDstToken] : (POPULAR_TOKENS[selectedChainId] || []);
+    const srcInfo = allTokens.find(t => t.address === srcToken);
     if (!srcInfo) return;
 
-    const key = `${chain}:${src}:${dst}:${amt}`;
-    if (key === lastQuoteKeyRef.current) return;
+    const version = ++quoteVersionRef.current;
 
-    quoteTimerRef.current = setTimeout(async () => {
-      const controller = new AbortController();
-      quoteAbortRef.current = controller;
-      lastQuoteKeyRef.current = key;
-
+    const timer = setTimeout(async () => {
+      if (version !== quoteVersionRef.current) return;
       setIsQuoting(true);
       setQuoteError(null);
       try {
-        const rawAmount = BigInt(Math.floor(parseFloat(amt) * (10 ** srcInfo.decimals))).toString();
-        const res = await fetch(`/api/evm/quote?chainId=${chain}&src=${src}&dst=${dst}&amount=${rawAmount}`, {
+        const rawAmount = BigInt(Math.floor(parseFloat(amount) * (10 ** srcInfo.decimals))).toString();
+        const res = await fetch(`/api/evm/quote?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}`, {
           credentials: "include",
-          signal: controller.signal,
         });
+        if (version !== quoteVersionRef.current) return;
         const data = await res.json();
-        if (controller.signal.aborted) return;
+        if (version !== quoteVersionRef.current) return;
         if (!res.ok || data.message) {
           const msg = data.message || `Error ${res.status}`;
           setQuoteError(msg.includes("429") ? "Rate limited — please wait a few seconds and try again" : msg);
@@ -341,17 +338,18 @@ export default function EvmSwap() {
           setQuoteError(null);
         }
       } catch (err: any) {
-        if (err.name === "AbortError") return;
+        if (version !== quoteVersionRef.current) return;
         setQuoteError(err.message || "Failed to fetch quote");
         setQuote(null);
       } finally {
-        if (!controller.signal.aborted) setIsQuoting(false);
+        if (version === quoteVersionRef.current) setIsQuoting(false);
       }
-    }, 600);
-  }, []);
+    }, 800);
 
-  useEffect(() => {
-    requestQuote(srcToken, dstToken, amount, selectedChainId, tokens);
+    return () => {
+      clearTimeout(timer);
+      quoteVersionRef.current++;
+    };
   }, [amount, srcToken, dstToken, selectedChainId]);
 
   const handleFlipTokens = () => {
