@@ -330,14 +330,17 @@ export default function EvmSwap() {
     }
   }, [srcToken, dstToken, amount, selectedChainId, tokens]);
 
+  const fetchQuoteRef = useRef(fetchQuote);
+  fetchQuoteRef.current = fetchQuote;
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (amount && parseFloat(amount) > 0 && srcToken && dstToken && srcToken !== dstToken) {
-        fetchQuote();
+        fetchQuoteRef.current();
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [amount, srcToken, dstToken, fetchQuote]);
+  }, [amount, srcToken, dstToken, selectedChainId]);
 
   const handleFlipTokens = () => {
     const tmpSrc = srcToken;
