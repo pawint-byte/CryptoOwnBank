@@ -303,8 +303,13 @@ export default function EvmSwap() {
   const walletLabel = walletProvider === "metamask" ? "MetaMask" : walletProvider === "walletconnect" ? "WalletConnect" : "Wallet";
 
   const quoteVersionRef = useRef(0);
+  const lastQuoteParamsRef = useRef("");
 
   useEffect(() => {
+    const paramsKey = `${selectedChainId}|${srcToken}|${dstToken}|${amount}`;
+    if (paramsKey === lastQuoteParamsRef.current) return;
+    lastQuoteParamsRef.current = paramsKey;
+
     setQuote(null);
     setQuoteError(null);
     setIsQuoting(false);
@@ -320,7 +325,6 @@ export default function EvmSwap() {
     const timer = setTimeout(async () => {
       if (version !== quoteVersionRef.current) return;
       setIsQuoting(true);
-      setQuoteError(null);
       try {
         const rawAmount = BigInt(Math.floor(parseFloat(amount) * (10 ** srcInfo.decimals))).toString();
         const res = await fetch(`/api/evm/quote?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}`, {
@@ -332,15 +336,12 @@ export default function EvmSwap() {
         if (!res.ok || data.message) {
           const msg = data.message || `Error ${res.status}`;
           setQuoteError(msg.includes("429") ? "Rate limited — please wait a few seconds and try again" : msg);
-          setQuote(null);
         } else {
           setQuote(data);
-          setQuoteError(null);
         }
       } catch (err: any) {
         if (version !== quoteVersionRef.current) return;
         setQuoteError(err.message || "Failed to fetch quote");
-        setQuote(null);
       } finally {
         if (version === quoteVersionRef.current) setIsQuoting(false);
       }
@@ -350,6 +351,7 @@ export default function EvmSwap() {
       clearTimeout(timer);
       quoteVersionRef.current++;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, srcToken, dstToken, selectedChainId]);
 
   const handleFlipTokens = () => {
