@@ -6002,9 +6002,18 @@ Rules you MUST follow:
         if (extraFields[key] !== undefined) txJson[key] = extraFields[key];
       }
 
-      const payload = await xummSdk.payload.create({ txjson: txJson } as any, true);
+      let payload: any = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          payload = await xummSdk.payload.create({ txjson: txJson } as any, true);
+          if (payload) break;
+        } catch (retryErr: any) {
+          console.error(`Xumm payload create attempt ${attempt + 1} failed:`, retryErr?.message);
+          if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+        }
+      }
       if (!payload) {
-        return res.status(500).json({ message: "Failed to create payload" });
+        return res.status(500).json({ message: "Failed to create Xaman signing request. Please try again." });
       }
       res.json({
         uuid: payload.uuid,
@@ -6012,7 +6021,7 @@ Rules you MUST follow:
         deepLink: payload.next.always,
       });
     } catch (error: any) {
-      console.error("Xumm payload error:", error?.message);
+      console.error("Xumm payload error:", error?.message, error?.stack?.slice(0, 300));
       res.status(500).json({ message: error.message || "Failed to create payload" });
     }
   });
