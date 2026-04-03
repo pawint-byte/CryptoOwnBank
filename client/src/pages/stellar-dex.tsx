@@ -39,7 +39,6 @@ import {
   ExternalLink,
   Loader2,
   ArrowRightLeft,
-  ArrowUpDown,
   BookOpen,
   HelpCircle,
   RefreshCw,
@@ -215,10 +214,16 @@ export default function StellarDex() {
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
   const [asks, setAsks] = useState<OrderBookEntry[]>([]);
   const [loadingBook, setLoadingBook] = useState(false);
-  const [swapMode, setSwapMode] = useState(true);
+  const [viewMode, setViewMode] = useState<"swap" | "advanced">("advanced");
   const [swapAmount, setSwapAmount] = useState("");
   const [swapDirection, setSwapDirection] = useState<"buy" | "sell">("buy");
   const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
+
+  const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
+  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
+  const [orderAmount, setOrderAmount] = useState("");
+  const [orderPrice, setOrderPrice] = useState("");
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   const [freighterAvailable, setFreighterAvailable] = useState(false);
   const [freighterAddress, setFreighterAddress] = useState<string | null>(null);
@@ -335,8 +340,12 @@ export default function StellarDex() {
     1
   );
 
-  const sendStellarTradeNotification = (wallet: string) => {
-    const usePrice = swapDirection === "buy" ? bestAsk : bestBid;
+  const sendStellarTradeNotification = (wallet: string, overrides?: { side?: string; orderType?: string; amount?: string; price?: number }) => {
+    const side = overrides?.side || (swapDirection === "buy" ? "Buy" : "Sell");
+    const oType = overrides?.orderType || "Market";
+    const amt = overrides?.amount || swapAmount;
+    const usePrice = overrides?.price ?? (swapDirection === "buy" ? bestAsk : bestBid);
+    const amtNum = parseFloat(amt) || 0;
     try {
       window.fetch("/api/dex/trade-notification", {
         method: "POST",
@@ -344,13 +353,13 @@ export default function StellarDex() {
         credentials: "include",
         body: JSON.stringify({
           dex: "Stellar",
-          side: swapDirection === "buy" ? "Buy" : "Sell",
-          orderType: "Market",
+          side,
+          orderType: oType,
           baseAsset: pair.base.display,
           counterAsset: pair.quote.display,
-          amount: swapAmount,
+          amount: amt,
           price: usePrice.toFixed(6),
-          total: (swapAmountNum * usePrice).toFixed(6),
+          total: (amtNum * usePrice).toFixed(6),
           walletAddress: `${wallet} (external wallet)`,
           pair: `${pair.base.display}/${pair.quote.display}`,
         }),
@@ -364,6 +373,89 @@ export default function StellarDex() {
       return;
     }
     setTradeDialogOpen(true);
+  };
+
+  const computeOrderTotal = () => {
+    const a = parseFloat(orderAmount) || 0;
+    const p = parseFloat(orderPrice) || 0;
+    return a * p;
+  };
+
+  const handlePlaceAdvancedOrder = async () => {
+    const a = parseFloat(orderAmount);
+    if (!a || a <= 0) {
+      toast({ title: "Invalid amount", description: "Enter a valid amount.", variant: "destructive" });
+      return;
+    }
+
+    let sourceAddr = freighterAddress;
+    if (!sourceAddr) {
+      const connectResult = await connectFreighter();
+      if (!connectResult.address) {
+        toast({ title: "Connect Freighter first", description: connectResult.error || "Install the Freighter browser extension to place orders.", variant: "destructive" });
+        return;
+      }
+      sourceAddr = connectResult.address;
+      setFreighterAddress(sourceAddr);
+    }
+
+    let usePrice: number;
+    if (orderType === "limit") {
+      usePrice = parseFloat(orderPrice) || 0;
+      if (usePrice <= 0) {
+        toast({ title: "Invalid price", description: "Enter a valid limit price.", variant: "destructive" });
+        return;
+      }
+    } else {
+      const marketPrice = orderSide === "buy" ? bestAsk : bestBid;
+      if (marketPrice <= 0) {
+        toast({ title: "No liquidity", description: "No orders on the book right now. Try a limit order instead.", variant: "destructive" });
+        return;
+      }
+      usePrice = marketPrice;
+    }
+
+    setPlacingOrder(true);
+    try {
+      const sellingAsset = orderSide === "buy" ? pair.quote : pair.base;
+      const buyingAsset = orderSide === "buy" ? pair.base : pair.quote;
+
+      const sellAmount = orderSide === "buy"
+        ? (a * usePrice).toFixed(7)
+        : a.toFixed(7);
+
+      const priceVal = orderSide === "buy"
+        ? (1 / usePrice).toFixed(7)
+        : usePrice.toFixed(7);
+
+      const result = await buildAndSignOffer({
+        sourceAddress: sourceAddr,
+        selling: sellingAsset,
+        buying: buyingAsset,
+        amount: sellAmount,
+        price: priceVal,
+      });
+
+      if (result.success) {
+        const typeLabel = orderType === "limit" ? "Limit" : "Market";
+        sendStellarTradeNotification("Freighter (Advanced)", {
+          side: orderSide === "buy" ? "Buy" : "Sell",
+          orderType: typeLabel,
+          amount: orderAmount,
+          price: usePrice,
+        });
+        toast({ title: `${typeLabel} Order Submitted`, description: `${orderSide === "buy" ? "Buy" : "Sell"} ${formatAmount(a)} ${pair.base.display} submitted to Stellar DEX` });
+        setOrderAmount("");
+        setOrderPrice("");
+        fetchOrderBook();
+      } else {
+        toast({ title: "Order Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Order Error", description: err?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   if (!isPremiumOrAbove) {
@@ -504,22 +596,22 @@ export default function StellarDex() {
         </Badge>
         <div className="flex gap-1 ml-auto">
           <Button
-            variant={swapMode ? "default" : "outline"}
+            variant={viewMode === "swap" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSwapMode(true)}
+            onClick={() => setViewMode("swap")}
             data-testid="button-swap-mode"
           >
-            <ArrowUpDown className="h-3 w-3 mr-1" />
+            <ArrowRightLeft className="h-3 w-3 mr-1" />
             Quick Swap
           </Button>
           <Button
-            variant={!swapMode ? "default" : "outline"}
+            variant={viewMode === "advanced" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSwapMode(false)}
-            data-testid="button-book-mode"
+            onClick={() => setViewMode("advanced")}
+            data-testid="button-advanced-mode"
           >
             <BookOpen className="h-3 w-3 mr-1" />
-            Order Book
+            Advanced
           </Button>
         </div>
       </div>
@@ -538,7 +630,7 @@ export default function StellarDex() {
         </div>
       )}
 
-      {swapMode ? (
+      {viewMode === "swap" ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <Card data-testid="card-stellar-swap">
             <CardHeader>
@@ -669,99 +761,231 @@ export default function StellarDex() {
           </Card>
         </div>
       ) : (
-        <Card data-testid="card-stellar-full-book">
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-            <CardTitle className="text-base flex items-center gap-2">
-              Order Book
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
-                  <p>Green = buyers willing to pay this price. Red = sellers asking this price. The gap is the "spread."</p>
-                </TooltipContent>
-              </Tooltip>
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchOrderBook} disabled={loadingBook} data-testid="button-refresh-stellar-full-book">
-              <RefreshCw className={`h-4 w-4 ${loadingBook ? "animate-spin" : ""}`} />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {loadingBook ? (
-              <div className="space-y-2">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-6 w-full" />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Bids (Buyers)</p>
-                  <div className="space-y-0.5">
-                    {bids.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">No bids</p>}
-                    {bids.slice(0, 15).map((bid, i) => {
-                      const depthPct = ((parseFloat(bid.amount) || 0) / maxAmount) * 100;
-                      return (
-                        <div key={i} className="relative flex items-center justify-between gap-2 px-2 py-0.5 text-xs font-mono rounded-sm" data-testid={`row-stellar-bid-${i}`}>
-                          <div className="absolute inset-y-0 left-0 bg-green-500/10 rounded-sm" style={{ width: `${Math.min(depthPct, 100)}%` }} />
-                          <span className="relative text-green-600 dark:text-green-400">{formatAmount(bid.price, 6)}</span>
-                          <span className="relative text-muted-foreground">{formatAmount(bid.amount, 2)}</span>
-                        </div>
-                      );
-                    })}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2" data-testid="card-stellar-full-book">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                Order Book
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs">
+                    <p>Green = buyers willing to pay this price. Red = sellers asking this price. Click a row to fill the price.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={fetchOrderBook} disabled={loadingBook} data-testid="button-refresh-stellar-full-book">
+                <RefreshCw className={`h-4 w-4 ${loadingBook ? "animate-spin" : ""}`} />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loadingBook ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-6 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Bids (Buyers)</p>
+                    <div className="space-y-0.5">
+                      {bids.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">No bids</p>}
+                      {bids.slice(0, 12).map((bid, i) => {
+                        const depthPct = ((parseFloat(bid.amount) || 0) / maxAmount) * 100;
+                        return (
+                          <div
+                            key={i}
+                            className="relative flex items-center justify-between gap-2 px-2 py-0.5 text-xs font-mono rounded-sm cursor-pointer"
+                            onClick={() => { setOrderPrice(parseFloat(bid.price).toFixed(6)); setOrderSide("sell"); }}
+                            data-testid={`row-stellar-bid-${i}`}
+                          >
+                            <div className="absolute inset-y-0 left-0 bg-green-500/10 rounded-sm" style={{ width: `${Math.min(depthPct, 100)}%` }} />
+                            <span className="relative text-green-600 dark:text-green-400">{formatAmount(bid.price, 6)}</span>
+                            <span className="relative text-muted-foreground">{formatAmount(bid.amount, 2)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Asks (Sellers)</p>
+                    <div className="space-y-0.5">
+                      {asks.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">No asks</p>}
+                      {asks.slice(0, 12).map((ask, i) => {
+                        const depthPct = ((parseFloat(ask.amount) || 0) / maxAmount) * 100;
+                        return (
+                          <div
+                            key={i}
+                            className="relative flex items-center justify-between gap-2 px-2 py-0.5 text-xs font-mono rounded-sm cursor-pointer"
+                            onClick={() => { setOrderPrice(parseFloat(ask.price).toFixed(6)); setOrderSide("buy"); }}
+                            data-testid={`row-stellar-ask-${i}`}
+                          >
+                            <div className="absolute inset-y-0 right-0 bg-red-500/10 rounded-sm" style={{ width: `${Math.min(depthPct, 100)}%` }} />
+                            <span className="relative text-red-600 dark:text-red-400">{formatAmount(ask.price, 6)}</span>
+                            <span className="relative text-muted-foreground">{formatAmount(ask.amount, 2)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Asks (Sellers)</p>
-                  <div className="space-y-0.5">
-                    {asks.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">No asks</p>}
-                    {asks.slice(0, 15).map((ask, i) => {
-                      const depthPct = ((parseFloat(ask.amount) || 0) / maxAmount) * 100;
-                      return (
-                        <div key={i} className="relative flex items-center justify-between gap-2 px-2 py-0.5 text-xs font-mono rounded-sm" data-testid={`row-stellar-ask-${i}`}>
-                          <div className="absolute inset-y-0 right-0 bg-red-500/10 rounded-sm" style={{ width: `${Math.min(depthPct, 100)}%` }} />
-                          <span className="relative text-red-600 dark:text-red-400">{formatAmount(ask.price, 6)}</span>
-                          <span className="relative text-muted-foreground">{formatAmount(ask.amount, 2)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+              )}
+              {bids.length > 0 && asks.length > 0 && (
+                <div className="mt-3 pt-3 border-t flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <span>Best Bid: <span className="font-mono text-green-600 dark:text-green-400">{formatAmount(bids[0].price, 6)}</span></span>
+                  <span>Best Ask: <span className="font-mono text-red-600 dark:text-red-400">{formatAmount(asks[0].price, 6)}</span></span>
+                  <span>Spread: <span className="font-mono">{formatAmount(spread, 6)}</span></span>
                 </div>
-              </div>
-            )}
-            {bids.length > 0 && asks.length > 0 && (
-              <div className="mt-3 pt-3 border-t flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <span>Best Bid: <span className="font-mono text-green-600 dark:text-green-400">{formatAmount(bids[0].price, 6)}</span></span>
-                <span>Best Ask: <span className="font-mono text-red-600 dark:text-red-400">{formatAmount(asks[0].price, 6)}</span></span>
-                <span>Spread: <span className="font-mono">{formatAmount(spread, 6)}</span></span>
-              </div>
-            )}
+              )}
+            </CardContent>
+          </Card>
 
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm font-medium mb-3">Trade this pair</p>
-              <div className="flex flex-wrap gap-2">
-                <a href={buildStellarTradeUrl(pair, "lobstr")} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" data-testid="button-trade-lobstr-full">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Open in LOBSTR
-                  </Button>
-                </a>
-                <a href={buildStellarTradeUrl(pair, "stellarterm")} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" data-testid="button-trade-stellarterm-full">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Open in StellarTerm
-                  </Button>
-                </a>
-                <a href={buildStellarTradeUrl(pair, "stellarx")} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" data-testid="button-trade-stellarx-full">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Open in StellarX
-                  </Button>
-                </a>
+          <Card data-testid="card-stellar-place-order">
+            <CardHeader className="space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                Place Order
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <p>Create an offer on the Stellar DEX. If matched, the trade executes instantly. Limit orders stay on the book until filled. Signed with Freighter.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-1">
+                <Button
+                  variant={orderSide === "buy" ? "default" : "outline"}
+                  className={orderSide === "buy" ? "flex-1 bg-green-600 border-green-600 text-white" : "flex-1"}
+                  onClick={() => setOrderSide("buy")}
+                  data-testid="button-stellar-adv-buy"
+                >
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  Buy
+                </Button>
+                <Button
+                  variant={orderSide === "sell" ? "default" : "outline"}
+                  className={orderSide === "sell" ? "flex-1 bg-red-600 border-red-600 text-white" : "flex-1"}
+                  onClick={() => setOrderSide("sell")}
+                  data-testid="button-stellar-adv-sell"
+                >
+                  <TrendingDown className="h-4 w-4 mr-1" />
+                  Sell
+                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+              <div className="flex gap-1">
+                <Button
+                  variant={orderType === "limit" ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setOrderType("limit")}
+                  data-testid="button-stellar-limit"
+                >
+                  Limit
+                </Button>
+                <Button
+                  variant={orderType === "market" ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setOrderType("market")}
+                  data-testid="button-stellar-market"
+                >
+                  Market
+                </Button>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                  Amount ({pair.base.display})
+                </label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={orderAmount}
+                  onChange={(e) => setOrderAmount(e.target.value)}
+                  step="any"
+                  data-testid="input-stellar-order-amount"
+                />
+              </div>
+
+              {orderType === "limit" && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                    Price ({pair.quote.display} per {pair.base.display})
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={orderPrice}
+                    onChange={(e) => setOrderPrice(e.target.value)}
+                    step="any"
+                    data-testid="input-stellar-order-price"
+                  />
+                </div>
+              )}
+
+              {orderType === "market" && orderAmount && (
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-muted-foreground">Est. Price</span>
+                  <span className="font-mono text-muted-foreground" data-testid="text-stellar-market-price">
+                    {orderSide === "buy"
+                      ? (bestAsk > 0 ? `~${formatAmount(bestAsk, 6)} ${pair.quote.display}` : "No asks")
+                      : (bestBid > 0 ? `~${formatAmount(bestBid, 6)} ${pair.quote.display}` : "No bids")
+                    }
+                  </span>
+                </div>
+              )}
+
+              {orderType === "limit" && orderAmount && orderPrice && (
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-mono font-medium" data-testid="text-stellar-order-total">
+                    {formatAmount(computeOrderTotal(), 4)} {pair.quote.display}
+                  </span>
+                </div>
+              )}
+
+              <Button
+                className={`w-full ${orderSide === "buy" ? "bg-green-600 border-green-600 text-white" : "bg-red-600 border-red-600 text-white"}`}
+                onClick={handlePlaceAdvancedOrder}
+                disabled={placingOrder}
+                data-testid="button-stellar-place-order"
+              >
+                {placingOrder ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Signing...
+                  </>
+                ) : (
+                  <>
+                    {orderSide === "buy" ? "Buy" : "Sell"} {pair.base.display}
+                  </>
+                )}
+              </Button>
+
+              <p className="text-[11px] text-muted-foreground text-center">
+                Network fee: ~0.00001 XLM (fraction of a penny)
+              </p>
+
+              {!freighterAvailable && !freighterAddress && (
+                <div className="rounded-md bg-[#7B61FF]/5 border border-[#7B61FF]/20 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Install the{" "}
+                    <a href="https://freighter.app" target="_blank" rel="noopener noreferrer" className="text-[#7B61FF] hover:underline">
+                      Freighter browser extension
+                    </a>{" "}
+                    to sign trades directly on this page.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       <div className="flex items-start gap-3 rounded-lg border border-[#7B61FF]/30 bg-[#7B61FF]/5 p-4 text-sm" data-testid="stellar-dex-disclaimer">
