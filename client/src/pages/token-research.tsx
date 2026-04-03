@@ -73,6 +73,20 @@ const DEXSCREENER_CHAINS: Record<number, string> = {
   56: "bsc",
 };
 
+interface TokenSearchResult {
+  id: string;
+  name: string;
+  symbol: string;
+  thumb: string;
+  large: string;
+  marketCapRank: number | null;
+  currentPrice: number | null;
+  marketCap: number | null;
+  volume24h: number | null;
+  priceChange24h: number | null;
+  platforms: { chainId: number; address: string; platform: string }[];
+}
+
 interface TokenResearchResult {
   chainId: number;
   address: string;
@@ -171,6 +185,53 @@ export default function TokenResearch() {
   const [result, setResult] = useState<TokenResearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [educationOpen, setEducationOpen] = useState(false);
+  const [lookupMode, setLookupMode] = useState<"address" | "search">("search");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<TokenSearchResult[]>([]);
+
+  const handleSearch = useCallback(async () => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      toast({ title: "Enter at least 2 characters", variant: "destructive" });
+      return;
+    }
+    setSearching(true);
+    setSearchResults([]);
+    try {
+      const data = await apiRequest("GET", `/api/token-research/search?q=${encodeURIComponent(q)}`);
+      const json = await data.json();
+      setSearchResults(json.results || []);
+      if ((json.results || []).length === 0) {
+        toast({ title: "No tokens found", description: `No results for "${q}". Try a different name or symbol.` });
+      }
+    } catch (err: any) {
+      toast({ title: "Search failed", description: err?.message, variant: "destructive" });
+    } finally {
+      setSearching(false);
+    }
+  }, [searchQuery, toast]);
+
+  const selectSearchToken = useCallback(async (token: TokenSearchResult, platform: { chainId: number; address: string }) => {
+    setChainId(platform.chainId);
+    setContractAddress(platform.address);
+    setSearchResults([]);
+    setSearchQuery("");
+    setLookupMode("address");
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const r = await apiRequest("GET", `/api/token-research/${platform.chainId}/${platform.address}`);
+      const json = await r.json();
+      setResult(json);
+    } catch (err: any) {
+      setError(err?.message || "Failed to research token");
+      toast({ title: "Research failed", description: err?.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   const handleResearch = useCallback(async () => {
     const addr = contractAddress.trim();
@@ -282,56 +343,168 @@ export default function TokenResearch() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Select
-              value={chainId.toString()}
-              onValueChange={(val) => { setChainId(parseInt(val)); setResult(null); setError(null); }}
-            >
-              <SelectTrigger className="w-full sm:w-48" data-testid="select-research-chain">
-                <SelectValue placeholder="Select chain" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(EVM_CHAINS).map(([id, chain]) => (
-                  <SelectItem key={id} value={id} data-testid={`select-chain-${id}`}>
-                    {chain.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex-1 flex gap-2">
-              <Input
-                placeholder="0x... (paste contract address)"
-                value={contractAddress}
-                onChange={(e) => setContractAddress(e.target.value)}
-                className="flex-1 font-mono text-sm"
-                data-testid="input-contract-address"
-                onKeyDown={(e) => { if (e.key === "Enter") handleResearch(); }}
-              />
-              {contractAddress && (
-                <Button variant="ghost" size="icon" onClick={copyAddress} data-testid="button-copy-address">
-                  <Copy className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+          <div className="flex gap-2 mb-2">
             <Button
-              onClick={handleResearch}
-              disabled={loading || !contractAddress.trim()}
-              className="sm:w-auto"
-              data-testid="button-research"
+              variant={lookupMode === "search" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setLookupMode("search")}
+              data-testid="button-mode-search"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Research
-                </>
-              )}
+              <Search className="h-3.5 w-3.5 mr-1.5" />
+              Search by Name
+            </Button>
+            <Button
+              variant={lookupMode === "address" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setLookupMode("address")}
+              data-testid="button-mode-address"
+            >
+              <FileCode className="h-3.5 w-3.5 mr-1.5" />
+              By Contract Address
             </Button>
           </div>
+
+          {lookupMode === "search" ? (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input
+                  placeholder="Search by name or symbol (e.g. PEPE, Uniswap, Chainlink)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1"
+                  data-testid="input-token-search"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                />
+                <Button
+                  onClick={handleSearch}
+                  disabled={searching || searchQuery.trim().length < 2}
+                  className="sm:w-auto"
+                  data-testid="button-search"
+                >
+                  {searching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Search
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""} found. Select a token and chain to analyze.</p>
+                  <div className="max-h-[480px] overflow-y-auto space-y-2 rounded-md border p-2">
+                    {searchResults.map((token) => (
+                      <div key={token.id} className="rounded-md border p-3 space-y-2 hover:bg-accent/50 transition-colors" data-testid={`search-result-${token.id}`}>
+                        <div className="flex items-center gap-3">
+                          {token.thumb && (
+                            <img src={token.thumb} alt="" className="h-8 w-8 rounded-full" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm truncate">{token.name}</p>
+                              <Badge variant="secondary" className="font-mono text-xs shrink-0">{token.symbol}</Badge>
+                              {token.marketCapRank && (
+                                <span className="text-xs text-muted-foreground shrink-0">#{token.marketCapRank}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                              {token.currentPrice !== null && (
+                                <span>${token.currentPrice < 0.01 ? token.currentPrice.toFixed(8) : token.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
+                              )}
+                              {token.priceChange24h !== null && (
+                                <span className={token.priceChange24h >= 0 ? "text-green-600" : "text-red-600"}>
+                                  {token.priceChange24h >= 0 ? "+" : ""}{token.priceChange24h.toFixed(2)}%
+                                </span>
+                              )}
+                              {token.marketCap !== null && token.marketCap > 0 && (
+                                <span>MCap: ${token.marketCap >= 1e9 ? (token.marketCap / 1e9).toFixed(2) + "B" : token.marketCap >= 1e6 ? (token.marketCap / 1e6).toFixed(2) + "M" : token.marketCap.toLocaleString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {token.platforms.length > 0 ? (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {token.platforms.map((p) => (
+                              <Button
+                                key={`${token.id}-${p.chainId}`}
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7"
+                                onClick={() => selectSearchToken(token, p)}
+                                data-testid={`button-analyze-${token.id}-${p.chainId}`}
+                              >
+                                <Shield className="h-3 w-3 mr-1" />
+                                Analyze on {EVM_CHAINS[p.chainId]?.name || `Chain ${p.chainId}`}
+                              </Button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">No supported EVM contract found for this token</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Select
+                value={chainId.toString()}
+                onValueChange={(val) => { setChainId(parseInt(val)); setResult(null); setError(null); }}
+              >
+                <SelectTrigger className="w-full sm:w-48" data-testid="select-research-chain">
+                  <SelectValue placeholder="Select chain" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(EVM_CHAINS).map(([id, chain]) => (
+                    <SelectItem key={id} value={id} data-testid={`select-chain-${id}`}>
+                      {chain.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex-1 flex gap-2">
+                <Input
+                  placeholder="0x... (paste contract address)"
+                  value={contractAddress}
+                  onChange={(e) => setContractAddress(e.target.value)}
+                  className="flex-1 font-mono text-sm"
+                  data-testid="input-contract-address"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleResearch(); }}
+                />
+                {contractAddress && (
+                  <Button variant="ghost" size="icon" onClick={copyAddress} data-testid="button-copy-address">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <Button
+                onClick={handleResearch}
+                disabled={loading || !contractAddress.trim()}
+                className="sm:w-auto"
+                data-testid="button-research"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Research
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-md bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-600 dark:text-red-400" data-testid="text-research-error">

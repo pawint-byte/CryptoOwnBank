@@ -11170,6 +11170,109 @@ Rules you MUST follow:
     56: "https://bsc-dataseed.binance.org",
   };
 
+  const COINGECKO_PLATFORM_MAP: Record<string, number> = {
+    "ethereum": 1,
+    "polygon-pos": 137,
+    "arbitrum-one": 42161,
+    "optimistic-ethereum": 10,
+    "base": 8453,
+    "avalanche": 43114,
+    "binance-smart-chain": 56,
+  };
+
+  app.get("/api/token-research/search", isAuthenticated, async (req: any, res) => {
+    const query = (req.query.q as string || "").trim();
+    if (!query || query.length < 2) {
+      return res.status(400).json({ message: "Search query must be at least 2 characters" });
+    }
+
+    try {
+      const cgRes = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`);
+      if (!cgRes.ok) {
+        console.error("[token-search] CoinGecko search failed:", cgRes.status);
+        return res.status(502).json({ message: "Search service temporarily unavailable" });
+      }
+      const cgData = await cgRes.json();
+      const coins = (cgData.coins || []).slice(0, 15);
+
+      if (coins.length === 0) {
+        return res.json({ results: [] });
+      }
+
+      const coinIds = coins.map((c: any) => c.id);
+      const marketRes = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds.join(",")}&per_page=15&page=1&sparkline=false`);
+      const marketData: any[] = marketRes.ok ? await marketRes.json() : [];
+      const marketMap = new Map(marketData.map((m: any) => [m.id, m]));
+
+      const platformResults: { id: string; platforms: any[] }[] = [];
+      for (const coin of coins.slice(0, 8)) {
+        try {
+          const r = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`);
+          if (!r.ok) {
+            platformResults.push({ id: coin.id, platforms: [] });
+            if (r.status === 429) break;
+            continue;
+          }
+          const d = await r.json();
+          const plats: any[] = [];
+          const detailPlatforms = d.detail_platforms || {};
+          for (const [platform, info] of Object.entries(detailPlatforms as Record<string, any>)) {
+            const chainId = COINGECKO_PLATFORM_MAP[platform];
+            const addr = typeof info === "object" ? info?.contract_address : info;
+            if (chainId && addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
+              plats.push({ chainId, address: addr.toLowerCase(), platform });
+            }
+          }
+          if (plats.length === 0 && d.platforms) {
+            for (const [platform, addr] of Object.entries(d.platforms as Record<string, string>)) {
+              const chainId = COINGECKO_PLATFORM_MAP[platform];
+              if (chainId && addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                plats.push({ chainId, address: addr.toLowerCase(), platform });
+              }
+            }
+          }
+          platformResults.push({ id: coin.id, platforms: plats });
+        } catch {
+          platformResults.push({ id: coin.id, platforms: [] });
+        }
+      }
+      const platformMap = new Map(platformResults.map(p => [p.id, p.platforms]));
+
+      const results: any[] = [];
+
+      for (const coin of coins) {
+        const market = marketMap.get(coin.id);
+        const platforms = platformMap.get(coin.id) || [];
+
+        results.push({
+          id: coin.id,
+          name: coin.name,
+          symbol: coin.symbol?.toUpperCase(),
+          thumb: coin.thumb,
+          large: coin.large,
+          marketCapRank: coin.market_cap_rank || market?.market_cap_rank || null,
+          currentPrice: market?.current_price || null,
+          marketCap: market?.market_cap || null,
+          volume24h: market?.total_volume || null,
+          priceChange24h: market?.price_change_percentage_24h || null,
+          platforms,
+        });
+      }
+
+      results.sort((a, b) => {
+        if (a.marketCapRank && b.marketCapRank) return a.marketCapRank - b.marketCapRank;
+        if (a.marketCapRank) return -1;
+        if (b.marketCapRank) return 1;
+        return 0;
+      });
+
+      return res.json({ results });
+    } catch (err: any) {
+      console.error("[token-search] Error:", err.message);
+      return res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   app.get("/api/token-research/:chainId/:address", isAuthenticated, async (req: any, res) => {
     const chainId = parseInt(req.params.chainId);
     const address = req.params.address?.trim().toLowerCase();
