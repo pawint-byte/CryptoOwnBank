@@ -58,6 +58,7 @@ import {
   CreditCard,
   Layers,
   BrainCircuit,
+  Search,
 } from "lucide-react";
 import {
   Sidebar,
@@ -142,6 +143,7 @@ const allItems: NavItem[] = [
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, group: "ownbank", chain: "xrpl" },
   { title: "Remittances", url: "/stellar/remittances", icon: Star, group: "ownbank", chain: "stellar" },
 
+  { title: "Token Research", url: "/token-research", icon: Search, group: "bridges" },
   { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, group: "bridges" },
   { title: "Cross-Chain", url: "/ownbank/cross-chain", icon: Route, group: "bridges" },
   { title: "XRPL Bridge", url: "/ownbank/xrpl-bridge", icon: GitCompareArrows, group: "bridges" },

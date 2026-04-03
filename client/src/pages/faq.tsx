@@ -647,6 +647,47 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Token Research",
+    items: [
+      {
+        q: "What is Token Research?",
+        a: '<a href="/token-research" class="text-[#00A4E4] underline hover:no-underline">Token Research</a> is a free tool that lets you look up any EVM token by its contract address and get an instant safety report before you buy. It checks for honeypot traps (tokens you can buy but never sell), hidden mint functions (the creator can print unlimited tokens and dump on you), ownership risks (the creator can pause trading or blacklist your wallet), buy/sell tax (some tokens take 50%+ of every transaction as a hidden fee), and holder concentration (if one wallet holds 90% of supply, they can crash the price in one transaction). It returns a 0-100 risk score and plain-English warnings so you can make an informed decision. It supports Ethereum, BNB Chain, Polygon, Arbitrum, Base, Avalanche, and Optimism.',
+      },
+      {
+        q: "How do I find a token's contract address?",
+        a: 'Go to <a href="https://dexscreener.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:no-underline">DEXScreener</a>, <a href="https://www.dextools.io" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:no-underline">DEXTools</a>, or <a href="https://www.geckoterminal.com" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:no-underline">GeckoTerminal</a>. Search for the token by name or ticker, select the correct trading pair, and copy the contract address from the token info section. Always verify the contract address matches what the project officially published — scammers create copycat tokens with the same name to trick people.',
+      },
+      {
+        q: "What does the risk score mean?",
+        a: "The risk score ranges from 0 (lowest risk) to 100 (highest risk). It's calculated from multiple security signals: honeypot detection, hidden mint functions, ownership privileges, buy/sell taxes, proxy contract risks, and holder concentration. A score of 0-19 is considered lower risk (green), 20-49 is medium risk (yellow), and 50-100 is high risk (red). A low score doesn't mean a token is a good investment — it means the contract doesn't have obvious technical red flags. Price can still go to zero for reasons that have nothing to do with the contract code.",
+      },
+      {
+        q: "What is a honeypot token?",
+        a: "A honeypot is a token where you can buy but cannot sell. The contract code contains hidden logic that blocks sell transactions for everyone except the creator. You watch the price go up, try to sell, and your transaction fails — meanwhile the creator sells their share and disappears with the liquidity. This is one of the most common crypto scams. Token Research checks for this automatically and flags it as the highest-severity warning.",
+      },
+      {
+        q: "What does 'hidden mint function' mean?",
+        a: "A hidden mint function means the contract owner can create new tokens out of thin air at any time. They deploy the token with a fixed supply, let people buy in, then mint millions of new tokens and dump them on the market — crashing the price. If Token Research flags 'Mintable,' it means the contract has this capability. It doesn't mean they will use it, but it means they can.",
+      },
+      {
+        q: "What are buy/sell taxes?",
+        a: "Some tokens have a built-in tax on every buy or sell transaction. A 5% buy tax means if you buy $100 worth, you only receive $95 worth of tokens. A 10% sell tax means if you sell $100 worth, you only get $90. Some scam tokens start with low taxes and then the owner changes them to 99% — making the token effectively unsellable. Token Research shows you the current buy and sell tax percentages so you know what you're getting into before you trade.",
+      },
+      {
+        q: "Can I swap a token directly from the research page?",
+        a: 'Yes. After researching a token, click the "Trade on EVM Swap" button and it takes you to the EVM Swap page with the token\'s contract address and chain pre-filled. You still need to review the swap details, connect your wallet, and approve the transaction — Token Research just saves you from having to copy-paste the address manually.',
+      },
+      {
+        q: "Is Token Research financial advice?",
+        a: "No. Token Research is a technical analysis tool that reads smart contract code and on-chain data. It tells you what the contract can do — not whether the token is a good investment. A token can pass every security check and still lose 100% of its value due to market conditions, team abandonment, regulatory action, or simply lack of demand. Always do your own research beyond the contract analysis, never invest more than you can afford to lose, and understand that most new tokens fail.",
+      },
+      {
+        q: "Does Token Research work for XRPL or Stellar tokens?",
+        a: "No — Token Research is for EVM-compatible chains only (Ethereum, BSC, Polygon, Arbitrum, Base, Avalanche, Optimism, Fantom). XRPL and Stellar tokens work differently — they don't have smart contracts with hidden functions, so the same types of honeypot and mint risks don't apply. On the XRPL, token safety is more about issuer trustworthiness and trustline settings, which you can evaluate through the Token Manager.",
+      },
+    ],
+  },
+  {
     heading: "Payments & Business",
     items: [
       {

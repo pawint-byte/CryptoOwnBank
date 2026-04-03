@@ -45,6 +45,7 @@ import SigningOptions from "@/pages/signing-options";
 import OwnBankTokens from "@/pages/ownbank-tokens";
 import OwnBankDex from "@/pages/ownbank-dex";
 import EvmSwap from "@/pages/evm-swap";
+import TokenResearch from "@/pages/token-research";
 import CrossChainSwap from "@/pages/cross-chain-swap";
 import XrplBridge from "@/pages/xrpl-bridge";
 import OwnBankSend from "@/pages/ownbank-send";
@@ -232,6 +233,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/tokens" component={OwnBankTokens} />
         <Route path="/ownbank/dex" component={OwnBankDex} />
         <Route path="/ownbank/evm-swap" component={EvmSwap} />
+        <Route path="/token-research" component={TokenResearch} />
         <Route path="/ownbank/cross-chain" component={CrossChainSwap} />
         <Route path="/ownbank/xrpl-bridge" component={XrplBridge} />
         <Route path="/ownbank/send" component={OwnBankSend} />

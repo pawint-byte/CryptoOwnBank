@@ -11150,6 +11150,190 @@ Rules you MUST follow:
     }
   });
 
+  const EXPLORER_API_URLS: Record<number, { api: string; key?: string }> = {
+    1: { api: "https://api.etherscan.io/api" },
+    137: { api: "https://api.polygonscan.com/api" },
+    42161: { api: "https://api.arbiscan.io/api" },
+    10: { api: "https://api-optimistic.etherscan.io/api" },
+    8453: { api: "https://api.basescan.org/api" },
+    43114: { api: "https://api.snowtrace.io/api" },
+    56: { api: "https://api.bscscan.com/api" },
+  };
+
+  const CHAIN_RPC_URLS: Record<number, string> = {
+    1: "https://eth.llamarpc.com",
+    137: "https://polygon-rpc.com",
+    42161: "https://arb1.arbitrum.io/rpc",
+    10: "https://mainnet.optimism.io",
+    8453: "https://mainnet.base.org",
+    43114: "https://api.avax.network/ext/bc/C/rpc",
+    56: "https://bsc-dataseed.binance.org",
+  };
+
+  app.get("/api/token-research/:chainId/:address", isAuthenticated, async (req: any, res) => {
+    const chainId = parseInt(req.params.chainId);
+    const address = req.params.address?.trim().toLowerCase();
+
+    if (!EVM_SUPPORTED_CHAINS.includes(chainId)) {
+      return res.status(400).json({ message: "Unsupported chain" });
+    }
+    if (!address || !/^0x[a-f0-9]{40}$/.test(address)) {
+      return res.status(400).json({ message: "Invalid contract address" });
+    }
+
+    const result: any = { chainId, address, warnings: [], signals: [] };
+
+    try {
+      const rpcUrl = CHAIN_RPC_URLS[chainId];
+      const callRpc = async (method: string, params: any[]) => {
+        const resp = await fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        });
+        const data = await resp.json();
+        return data.result;
+      };
+
+      const nameData = await callRpc("eth_call", [{ to: address, data: "0x06fdde03" }, "latest"]).catch(() => null);
+      const symbolData = await callRpc("eth_call", [{ to: address, data: "0x95d89b41" }, "latest"]).catch(() => null);
+      const decimalsData = await callRpc("eth_call", [{ to: address, data: "0x313ce567" }, "latest"]).catch(() => null);
+      const totalSupplyData = await callRpc("eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]).catch(() => null);
+
+      const decodeString = (hex: string | null): string => {
+        if (!hex || hex === "0x" || hex.length < 130) return "";
+        try {
+          const offset = parseInt(hex.slice(2, 66), 16) * 2;
+          const length = parseInt(hex.slice(2 + offset, 2 + offset + 64), 16);
+          const strHex = hex.slice(2 + offset + 64, 2 + offset + 64 + length * 2);
+          return Buffer.from(strHex, "hex").toString("utf8").replace(/\0/g, "");
+        } catch {
+          return "";
+        }
+      };
+
+      result.name = decodeString(nameData) || "Unknown";
+      result.symbol = decodeString(symbolData) || "???";
+      result.decimals = decimalsData ? parseInt(decimalsData, 16) : 18;
+      if (totalSupplyData && totalSupplyData !== "0x") {
+        const rawSupply = BigInt(totalSupplyData);
+        result.totalSupply = (Number(rawSupply) / Math.pow(10, result.decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 });
+        result.totalSupplyRaw = rawSupply.toString();
+      }
+
+      const codeResult = await callRpc("eth_getCode", [address, "latest"]).catch(() => "0x");
+      if (!codeResult || codeResult === "0x") {
+        result.warnings.push("No contract code found at this address - this may not be a token");
+        result.isContract = false;
+      } else {
+        result.isContract = true;
+      }
+    } catch (err: any) {
+      console.error("[token-research] RPC error:", err.message);
+    }
+
+    try {
+      const goplusResp = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${chainId}?contract_addresses=${address}`);
+      if (goplusResp.ok) {
+        const goplusData = await goplusResp.json();
+        const tokenData = goplusData?.result?.[address] || goplusData?.result?.[address.toLowerCase()];
+        if (tokenData) {
+          result.goplus = {
+            isOpenSource: tokenData.is_open_source === "1",
+            isProxy: tokenData.is_proxy === "1",
+            isMintable: tokenData.is_mintable === "1",
+            canTakeBackOwnership: tokenData.can_take_back_ownership === "1",
+            ownerChangeBalance: tokenData.owner_change_balance === "1",
+            hiddenOwner: tokenData.hidden_owner === "1",
+            isHoneypot: tokenData.is_honeypot === "1",
+            buyTax: tokenData.buy_tax ? parseFloat(tokenData.buy_tax) : 0,
+            sellTax: tokenData.sell_tax ? parseFloat(tokenData.sell_tax) : 0,
+            holderCount: tokenData.holder_count ? parseInt(tokenData.holder_count) : null,
+            lpHolderCount: tokenData.lp_holder_count ? parseInt(tokenData.lp_holder_count) : null,
+            totalSupply: tokenData.total_supply,
+            ownerAddress: tokenData.owner_address || null,
+            creatorAddress: tokenData.creator_address || null,
+            lpTotalSupply: tokenData.lp_total_supply || null,
+            isAntiWhale: tokenData.is_anti_whale === "1",
+            tradingCooldown: tokenData.trading_cooldown === "1",
+            isBlacklisted: tokenData.is_blacklisted === "1",
+            transferPausable: tokenData.transfer_pausable === "1",
+            cannotSellAll: tokenData.cannot_sell_all === "1",
+            externalCall: tokenData.external_call === "1",
+          };
+
+          if (tokenData.is_honeypot === "1") {
+            result.warnings.push("HONEYPOT DETECTED - You may not be able to sell this token");
+          }
+          if (tokenData.is_mintable === "1") {
+            result.warnings.push("Token supply can be increased by the owner (mintable)");
+          }
+          if (tokenData.owner_change_balance === "1") {
+            result.warnings.push("Owner can modify token balances");
+          }
+          if (tokenData.hidden_owner === "1") {
+            result.warnings.push("Contract has hidden ownership functions");
+          }
+          if (tokenData.can_take_back_ownership === "1") {
+            result.warnings.push("Previous owner can reclaim ownership");
+          }
+          if (tokenData.transfer_pausable === "1") {
+            result.warnings.push("Token transfers can be paused by the owner");
+          }
+          if (tokenData.cannot_sell_all === "1") {
+            result.warnings.push("You may not be able to sell your full balance");
+          }
+          if (tokenData.is_blacklisted === "1") {
+            result.warnings.push("Contract includes a blacklist function");
+          }
+          if (parseFloat(tokenData.buy_tax || "0") > 0.05) {
+            result.warnings.push(`High buy tax: ${(parseFloat(tokenData.buy_tax) * 100).toFixed(1)}%`);
+          }
+          if (parseFloat(tokenData.sell_tax || "0") > 0.05) {
+            result.warnings.push(`High sell tax: ${(parseFloat(tokenData.sell_tax) * 100).toFixed(1)}%`);
+          }
+
+          if (tokenData.is_open_source === "1") result.signals.push("Contract source code is verified");
+          if (tokenData.is_open_source !== "1") result.warnings.push("Contract source code is NOT verified");
+          if (!tokenData.is_proxy || tokenData.is_proxy === "0") result.signals.push("Not a proxy contract");
+          if (!tokenData.is_mintable || tokenData.is_mintable === "0") result.signals.push("Supply is not mintable");
+          if (!tokenData.owner_change_balance || tokenData.owner_change_balance === "0") result.signals.push("Owner cannot modify balances");
+          if (tokenData.holder_count && parseInt(tokenData.holder_count) > 100) {
+            result.signals.push(`${parseInt(tokenData.holder_count).toLocaleString()} holders`);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error("[token-research] GoPlus error:", err.message);
+    }
+
+    let riskScore = 0;
+    let riskMax = 0;
+    if (result.goplus) {
+      const g = result.goplus;
+      const checks = [
+        { bad: g.isHoneypot, weight: 30 },
+        { bad: g.ownerChangeBalance, weight: 20 },
+        { bad: g.hiddenOwner, weight: 15 },
+        { bad: g.canTakeBackOwnership, weight: 15 },
+        { bad: g.isMintable, weight: 10 },
+        { bad: !g.isOpenSource, weight: 10 },
+        { bad: g.transferPausable, weight: 10 },
+        { bad: g.cannotSellAll, weight: 15 },
+        { bad: g.isBlacklisted, weight: 5 },
+        { bad: g.externalCall, weight: 5 },
+        { bad: g.buyTax > 0.05, weight: 10 },
+        { bad: g.sellTax > 0.05, weight: 10 },
+        { bad: g.holderCount !== null && g.holderCount < 50, weight: 10 },
+      ];
+      checks.forEach(c => { riskMax += c.weight; if (c.bad) riskScore += c.weight; });
+    }
+    result.riskScore = riskMax > 0 ? Math.round((riskScore / riskMax) * 100) : null;
+    result.riskLevel = result.riskScore === null ? "unknown" : result.riskScore >= 50 ? "high" : result.riskScore >= 20 ? "medium" : "low";
+
+    res.json(result);
+  });
+
   const LIFI_BASE = "https://li.quest/v1";
 
   async function lifiFetch(path: string, options?: { method?: string; body?: any }, retries = 2): Promise<any> {
