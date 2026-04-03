@@ -33,6 +33,7 @@ import {
   Settings2,
   Info,
   Zap,
+  Search,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -694,11 +695,11 @@ export default function EvmSwap() {
                       <span className="text-lg font-medium">
                         {formatTokenAmount(quote.dstAmount, dstTokenInfo.decimals)}
                       </span>
-                    ) : quoteError ? (
+                    ) : quoteError && !quoteError.includes("liquidity") ? (
                       <span className="text-sm text-destructive">{quoteError}</span>
-                    ) : (
+                    ) : !quoteError ? (
                       <span className="text-muted-foreground text-sm">Enter amount to see quote</span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
                 <div className="rounded-md border bg-muted/30 p-3 space-y-2">
@@ -761,6 +762,58 @@ export default function EvmSwap() {
                   )}
                 </div>
               </div>
+
+              {quoteError && quoteError.includes("liquidity") && dstToken && (
+                <div className="rounded-lg border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-3" data-testid="no-liquidity-help">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">No liquidity on 1inch for this token</p>
+                      <p className="text-xs text-muted-foreground">
+                        This token doesn't have enough trading pairs on the DEXes that 1inch aggregates.
+                        This is common for very new or low-cap tokens. You can try these alternatives:
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a
+                      href={`https://dexscreener.com/search?q=${dstToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-md border bg-background p-2.5 hover:bg-accent transition-colors"
+                      data-testid="link-dexscreener-swap"
+                    >
+                      <Search className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-xs font-medium">DEXScreener</p>
+                        <p className="text-[10px] text-muted-foreground">Find trading pairs and liquidity pools</p>
+                      </div>
+                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                    </a>
+                    <a
+                      href={selectedChainId === 56
+                        ? `https://pancakeswap.finance/swap?outputCurrency=${dstToken}`
+                        : `https://app.uniswap.org/swap?outputCurrency=${dstToken}&chain=${
+                          selectedChainId === 1 ? "ethereum" : selectedChainId === 137 ? "polygon" : selectedChainId === 42161 ? "arbitrum" : selectedChainId === 10 ? "optimism" : selectedChainId === 8453 ? "base" : "ethereum"
+                        }`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-md border bg-background p-2.5 hover:bg-accent transition-colors"
+                      data-testid="link-uniswap-swap"
+                    >
+                      <ArrowDownUp className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-xs font-medium">{selectedChainId === 56 ? "PancakeSwap" : "Uniswap"}</p>
+                        <p className="text-[10px] text-muted-foreground">Swap directly on the DEX</p>
+                      </div>
+                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                    </a>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    These links open the DEX directly with your token pre-filled. Your MetaMask wallet works the same way on those sites.
+                  </p>
+                </div>
+              )}
 
               {quote && srcTokenInfo && dstTokenInfo && amount && (
                 <div className="bg-muted/30 rounded-lg p-3 space-y-1.5 text-xs" data-testid="quote-details">
