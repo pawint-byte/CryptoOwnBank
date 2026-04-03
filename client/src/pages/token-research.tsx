@@ -478,25 +478,56 @@ export default function TokenResearch() {
                           </div>
                         </div>
                         {token.platforms.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-1">
+                          <div className="space-y-2 mt-1">
                             {token.platforms.map((p) => (
-                              <Button
-                                key={`${token.id}-${p.chainId}`}
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7"
-                                onClick={() => selectSearchToken(token, p)}
-                                data-testid={`button-analyze-${token.id}-${p.chainId}`}
-                              >
-                                <Shield className="h-3 w-3 mr-1" />
-                                Analyze on {EVM_CHAINS[p.chainId]?.name || `Chain ${p.chainId}`}
-                              </Button>
+                              <div key={`${token.id}-${p.chainId}`} className="rounded border bg-muted/30 p-2 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <Badge variant="secondary" className="text-xs">{EVM_CHAINS[p.chainId]?.name || `Chain ${p.chainId}`}</Badge>
+                                  <div className="flex gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-7"
+                                      onClick={() => selectSearchToken(token, p)}
+                                      data-testid={`button-analyze-${token.id}-${p.chainId}`}
+                                    >
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      Analyze
+                                    </Button>
+                                    <Link href={`/evm-swap?chain=${p.chainId}&token=${p.address}`}>
+                                      <Button
+                                        size="sm"
+                                        className="text-xs h-7 bg-primary"
+                                        data-testid={`button-trade-${token.id}-${p.chainId}`}
+                                      >
+                                        <ArrowRight className="h-3 w-3 mr-1" />
+                                        Trade on EVM Swap
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-muted-foreground font-mono break-all select-all">{p.address}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-5 p-0 shrink-0"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(p.address);
+                                      toast({ title: "Copied", description: "Contract address copied to clipboard" });
+                                    }}
+                                    data-testid={`button-copy-${token.id}-${p.chainId}`}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
                             ))}
                           </div>
                         )}
                         {token.platforms.length === 0 && token.allPlatforms && token.allPlatforms.length > 0 && (
                           <div className="space-y-1.5 mt-1">
-                            <p className="text-xs text-muted-foreground">Available on non-EVM chains:</p>
+                            <p className="text-xs text-muted-foreground">Available on non-EVM chains (not tradeable via EVM Swap):</p>
                             <div className="flex flex-wrap gap-1.5">
                               {token.allPlatforms.slice(0, 5).map((p) => (
                                 <Badge key={p.platform} variant="secondary" className="text-[10px] font-mono">
@@ -505,8 +536,21 @@ export default function TokenResearch() {
                               ))}
                             </div>
                             {token.allPlatforms.some(p => p.address) && (
-                              <div className="text-xs text-muted-foreground font-mono bg-muted/50 rounded px-2 py-1 break-all">
-                                {token.allPlatforms[0].address}
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 rounded px-2 py-1 break-all select-all">
+                                  {token.allPlatforms[0].address}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0 shrink-0"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(token.allPlatforms[0].address);
+                                    toast({ title: "Copied", description: "Contract address copied to clipboard" });
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
                               </div>
                             )}
                           </div>
@@ -514,12 +558,12 @@ export default function TokenResearch() {
                         {token.platforms.length === 0 && (!token.allPlatforms || token.allPlatforms.length === 0) && (
                           <p className="text-xs text-muted-foreground italic">Contract data not available yet</p>
                         )}
-                        <div className="flex gap-2 mt-1.5">
+                        <div className="flex gap-3 mt-1.5 pt-1.5 border-t">
                           <a
                             href={`https://www.coingecko.com/en/coins/${token.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1"
                             data-testid={`link-coingecko-${token.id}`}
                           >
                             <ExternalLink className="h-3 w-3" /> CoinGecko
@@ -528,7 +572,7 @@ export default function TokenResearch() {
                             href={`https://dexscreener.com/search?q=${token.symbol}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1"
                             data-testid={`link-dexscreener-${token.id}`}
                           >
                             <ExternalLink className="h-3 w-3" /> DEXScreener
