@@ -6422,7 +6422,7 @@ Rules you MUST follow:
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
@@ -6450,7 +6450,7 @@ Rules you MUST follow:
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
@@ -6466,7 +6466,7 @@ Rules you MUST follow:
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
@@ -6529,7 +6529,7 @@ Rules you MUST follow:
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
@@ -6545,7 +6545,7 @@ Rules you MUST follow:
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
@@ -6662,7 +6662,7 @@ Rules you MUST follow:
       }
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }
@@ -6702,7 +6702,7 @@ Rules you MUST follow:
       }
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      const limits = tierLimits[tier];
+      const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
       if (!limits.xls66Lending) {
         return res.status(403).json({ message: "XLS-66 Lending requires Pro tier", requiredTier: "pro" });
       }

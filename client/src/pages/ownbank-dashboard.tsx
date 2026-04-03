@@ -276,7 +276,7 @@ export default function OwnBankDashboard() {
         walletType: walletType || "xumm",
       });
       const data = await response.json();
-      if (data.success) {
+      if (data.success && data.summary) {
         setSoilSummary(data.summary);
         setSoilSynced(true);
         if (data.discoveredAddresses && data.discoveredAddresses.length > 0) {
@@ -284,6 +284,14 @@ export default function OwnBankDashboard() {
         } else {
           setDiscoveredAddresses([]);
         }
+        try {
+          await fetch("/api/user-data/soil_summary_cache", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ value: JSON.stringify(data.summary) }),
+          });
+        } catch {}
         if (data.newlyImported > 0) {
           toast({
             title: "Soil Activity Synced",
@@ -315,6 +323,24 @@ export default function OwnBankDashboard() {
       handleSyncSoil();
     }
   }, [isConnected, walletAddress, soilSynced, handleSyncSoil]);
+
+  useEffect(() => {
+    if (!soilSummary && isConnected) {
+      fetch("/api/user-data/soil_summary_cache", { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.value) {
+            try {
+              const cached = JSON.parse(data.value);
+              if (cached && cached.deposits > 0 && !soilSummary) {
+                setSoilSummary(cached);
+              }
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isConnected]);
 
   const fetchCustomVaults = useCallback(async () => {
     try {
