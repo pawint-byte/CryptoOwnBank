@@ -656,10 +656,10 @@ export default function EvmSwap() {
                 </Button>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <label className="text-xs font-medium text-muted-foreground">You Receive</label>
                 <div className="flex gap-2">
-                  <Select value={dstToken} onValueChange={(v) => { if (v === "__custom__") return; setDstToken(v); setQuote(null); }}>
+                  <Select value={dstToken} onValueChange={(v) => { setDstToken(v); setQuote(null); }}>
                     <SelectTrigger className="w-[160px]" data-testid="select-dst-token">
                       <SelectValue placeholder="Select token" />
                     </SelectTrigger>
@@ -669,59 +669,6 @@ export default function EvmSwap() {
                           {t.symbol}
                         </SelectItem>
                       ))}
-                      <div className="border-t mt-1 pt-1 px-2 pb-1">
-                        <p className="text-xs text-muted-foreground mb-1.5 font-medium">Custom token address:</p>
-                        <div className="flex gap-1">
-                          <Input
-                            placeholder="0x..."
-                            value={customDstInput}
-                            onChange={(e) => setCustomDstInput(e.target.value)}
-                            className="h-7 text-xs font-mono flex-1"
-                            data-testid="input-custom-dst-token"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              e.stopPropagation();
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                const addr = customDstInput.trim();
-                                if (/^0x[a-fA-F0-9]{40}$/.test(addr)) {
-                                  loadCustomToken(addr, selectedChainId).then(token => {
-                                    if (token) {
-                                      setDstToken(token.address);
-                                      setCustomDstInput("");
-                                      setQuote(null);
-                                    } else {
-                                      toast({ title: "Token not found", description: "Could not load token info for this address.", variant: "destructive" });
-                                    }
-                                  });
-                                }
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs px-2"
-                            disabled={isLoadingCustomToken || !/^0x[a-fA-F0-9]{40}$/.test(customDstInput.trim())}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              const addr = customDstInput.trim();
-                              loadCustomToken(addr, selectedChainId).then(token => {
-                                if (token) {
-                                  setDstToken(token.address);
-                                  setCustomDstInput("");
-                                  setQuote(null);
-                                } else {
-                                  toast({ title: "Token not found", description: "Could not load token info for this address.", variant: "destructive" });
-                                }
-                              });
-                            }}
-                            data-testid="button-load-custom-token"
-                          >
-                            {isLoadingCustomToken ? <Loader2 className="h-3 w-3 animate-spin" /> : "Load"}
-                          </Button>
-                        </div>
-                      </div>
                     </SelectContent>
                   </Select>
                   <div className="flex-1 bg-muted/50 rounded-md px-3 flex items-center" data-testid="text-receive-amount">
@@ -737,6 +684,65 @@ export default function EvmSwap() {
                       <span className="text-muted-foreground text-sm">Enter amount to see quote</span>
                     )}
                   </div>
+                </div>
+                <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                  <p className="text-xs font-medium">Don't see your token? Paste any contract address:</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="0x... (paste contract address)"
+                      value={customDstInput}
+                      onChange={(e) => setCustomDstInput(e.target.value)}
+                      className="h-8 text-xs font-mono flex-1"
+                      data-testid="input-custom-dst-token"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const addr = customDstInput.trim();
+                          if (/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                            loadCustomToken(addr, selectedChainId).then(token => {
+                              if (token) {
+                                setDstToken(token.address);
+                                setCustomDstInput("");
+                                setQuote(null);
+                                toast({ title: `${token.symbol} loaded`, description: `${token.name} on ${EVM_CHAINS[selectedChainId]?.name || "this chain"}` });
+                              } else {
+                                toast({ title: "Token not found", description: "Could not load token info for this address. Check the address and chain.", variant: "destructive" });
+                              }
+                            });
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs px-3"
+                      disabled={isLoadingCustomToken || !/^0x[a-fA-F0-9]{40}$/.test(customDstInput.trim())}
+                      onClick={() => {
+                        const addr = customDstInput.trim();
+                        loadCustomToken(addr, selectedChainId).then(token => {
+                          if (token) {
+                            setDstToken(token.address);
+                            setCustomDstInput("");
+                            setQuote(null);
+                            toast({ title: `${token.symbol} loaded`, description: `${token.name} on ${EVM_CHAINS[selectedChainId]?.name || "this chain"}` });
+                          } else {
+                            toast({ title: "Token not found", description: "Could not load token info for this address. Check the address and chain.", variant: "destructive" });
+                          }
+                        });
+                      }}
+                      data-testid="button-load-custom-token"
+                    >
+                      {isLoadingCustomToken ? <Loader2 className="h-3 w-3 animate-spin" /> : "Load Token"}
+                    </Button>
+                  </div>
+                  {customDstToken && dstToken === customDstToken.address && (
+                    <div className="flex items-center gap-2 text-xs bg-primary/10 rounded px-2 py-1.5">
+                      <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                      <span className="font-medium">{customDstToken.symbol}</span>
+                      <span className="text-muted-foreground">({customDstToken.name})</span>
+                      <span className="text-muted-foreground font-mono text-[10px] ml-auto">{customDstToken.address.slice(0, 6)}...{customDstToken.address.slice(-4)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
