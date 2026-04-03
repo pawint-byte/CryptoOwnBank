@@ -11072,14 +11072,17 @@ Rules you MUST follow:
       res.json(data);
     } catch (err: any) {
       console.error("[1inch] Quote error:", err.message);
-      const msg = err.message || "";
-      if (msg.includes("400") || msg.includes("insufficient liquidity") || msg.includes("Not enough")) {
+      const msg = (err.message || "").toLowerCase();
+      if (msg.includes("insufficient liquidity") || msg.includes("not enough") || msg.includes("bad request")) {
         return res.status(400).json({ message: "No liquidity available for this token pair on this chain. The token may not be actively traded on supported DEXes yet." });
       }
-      if (msg.includes("422") || msg.includes("cannot estimate")) {
+      if (msg.includes("cannot estimate") || msg.includes("cannot swap")) {
         return res.status(400).json({ message: "Cannot estimate swap for this token. It may have transfer restrictions or no trading pairs." });
       }
-      res.status(500).json({ message: "Quote temporarily unavailable. Please try again in a moment." });
+      if (msg.includes("429") || msg.includes("rate limit")) {
+        return res.status(429).json({ message: "Rate limited — please wait a few seconds and try again." });
+      }
+      res.status(400).json({ message: "Quote unavailable for this token pair. Try a different token or chain." });
     }
   });
 
