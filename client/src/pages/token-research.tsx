@@ -89,6 +89,7 @@ interface TokenSearchResult {
   volume24h: number | null;
   priceChange24h: number | null;
   platforms: { chainId: number; address: string; platform: string }[];
+  allPlatforms: { platform: string; address: string; chainId: number | null }[];
 }
 
 interface TokenResearchResult {
@@ -476,7 +477,7 @@ export default function TokenResearch() {
                             </div>
                           </div>
                         </div>
-                        {token.platforms.length > 0 ? (
+                        {token.platforms.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-1">
                             {token.platforms.map((p) => (
                               <Button
@@ -492,9 +493,47 @@ export default function TokenResearch() {
                               </Button>
                             ))}
                           </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground italic">No supported EVM contract found for this token</p>
                         )}
+                        {token.platforms.length === 0 && token.allPlatforms && token.allPlatforms.length > 0 && (
+                          <div className="space-y-1.5 mt-1">
+                            <p className="text-xs text-muted-foreground">Available on non-EVM chains:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {token.allPlatforms.slice(0, 5).map((p) => (
+                                <Badge key={p.platform} variant="secondary" className="text-[10px] font-mono">
+                                  {p.platform.replace(/-/g, " ")}
+                                </Badge>
+                              ))}
+                            </div>
+                            {token.allPlatforms.some(p => p.address) && (
+                              <div className="text-xs text-muted-foreground font-mono bg-muted/50 rounded px-2 py-1 break-all">
+                                {token.allPlatforms[0].address}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {token.platforms.length === 0 && (!token.allPlatforms || token.allPlatforms.length === 0) && (
+                          <p className="text-xs text-muted-foreground italic">Contract data not available yet</p>
+                        )}
+                        <div className="flex gap-2 mt-1.5">
+                          <a
+                            href={`https://www.coingecko.com/en/coins/${token.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            data-testid={`link-coingecko-${token.id}`}
+                          >
+                            <ExternalLink className="h-3 w-3" /> CoinGecko
+                          </a>
+                          <a
+                            href={`https://dexscreener.com/search?q=${token.symbol}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            data-testid={`link-dexscreener-${token.id}`}
+                          >
+                            <ExternalLink className="h-3 w-3" /> DEXScreener
+                          </a>
+                        </div>
                       </div>
                     ))}
                   </div>

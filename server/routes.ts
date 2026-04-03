@@ -11204,39 +11204,52 @@ Rules you MUST follow:
       const marketData: any[] = marketRes.ok ? await marketRes.json() : [];
       const marketMap = new Map(marketData.map((m: any) => [m.id, m]));
 
-      const platformResults: { id: string; platforms: any[] }[] = [];
-      for (const coin of coins.slice(0, 8)) {
+      const platformResults: { id: string; platforms: any[]; allPlatforms: any[] }[] = [];
+      for (let i = 0; i < Math.min(coins.length, 8); i++) {
+        const coin = coins[i];
+        if (i > 0) await new Promise(r => setTimeout(r, 250));
         try {
           const r = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false`);
           if (!r.ok) {
-            platformResults.push({ id: coin.id, platforms: [] });
-            if (r.status === 429) break;
+            platformResults.push({ id: coin.id, platforms: [], allPlatforms: [] });
+            if (r.status === 429) {
+              console.log(`[token-search] Rate limited at coin ${i}, waiting 2s`);
+              await new Promise(r => setTimeout(r, 2000));
+            }
             continue;
           }
           const d = await r.json();
-          const plats: any[] = [];
+          const evmPlats: any[] = [];
+          const allPlats: any[] = [];
           const detailPlatforms = d.detail_platforms || {};
           for (const [platform, info] of Object.entries(detailPlatforms as Record<string, any>)) {
-            const chainId = COINGECKO_PLATFORM_MAP[platform];
             const addr = typeof info === "object" ? info?.contract_address : info;
+            const chainId = COINGECKO_PLATFORM_MAP[platform];
             if (chainId && addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
-              plats.push({ chainId, address: addr.toLowerCase(), platform });
+              evmPlats.push({ chainId, address: addr.toLowerCase(), platform });
+            }
+            if (addr && addr.length > 0) {
+              allPlats.push({ platform, address: addr, chainId: chainId || null });
             }
           }
-          if (plats.length === 0 && d.platforms) {
+          if (evmPlats.length === 0 && d.platforms) {
             for (const [platform, addr] of Object.entries(d.platforms as Record<string, string>)) {
               const chainId = COINGECKO_PLATFORM_MAP[platform];
               if (chainId && addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
-                plats.push({ chainId, address: addr.toLowerCase(), platform });
+                evmPlats.push({ chainId, address: addr.toLowerCase(), platform });
+              }
+              if (addr && addr.length > 0 && !allPlats.some(p => p.platform === platform)) {
+                allPlats.push({ platform, address: addr, chainId: chainId || null });
               }
             }
           }
-          platformResults.push({ id: coin.id, platforms: plats });
+          platformResults.push({ id: coin.id, platforms: evmPlats, allPlatforms: allPlats });
         } catch {
-          platformResults.push({ id: coin.id, platforms: [] });
+          platformResults.push({ id: coin.id, platforms: [], allPlatforms: [] });
         }
       }
       const platformMap = new Map(platformResults.map(p => [p.id, p.platforms]));
+      const allPlatformMap = new Map(platformResults.map(p => [p.id, p.allPlatforms]));
 
       const results: any[] = [];
 
@@ -11256,6 +11269,7 @@ Rules you MUST follow:
           volume24h: market?.total_volume || null,
           priceChange24h: market?.price_change_percentage_24h || null,
           platforms,
+          allPlatforms: allPlatformMap.get(coin.id) || [],
         });
       }
 
