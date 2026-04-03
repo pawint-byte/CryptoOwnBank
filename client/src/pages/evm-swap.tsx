@@ -310,11 +310,13 @@ export default function EvmSwap() {
     setQuoteError(null);
     try {
       const rawAmount = BigInt(Math.floor(parseFloat(amount) * (10 ** srcInfo.decimals))).toString();
-      const res = await apiRequest("GET", `/api/evm/quote?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}`);
+      const res = await fetch(`/api/evm/quote?chainId=${selectedChainId}&src=${srcToken}&dst=${dstToken}&amount=${rawAmount}`, {
+        credentials: "include",
+      });
       const data = await res.json();
-      if (data.message) {
-        const msg = data.message.includes("429") ? "Rate limited — please wait a few seconds and try again" : data.message;
-        setQuoteError(msg);
+      if (!res.ok || data.message) {
+        const msg = data.message || `Error ${res.status}`;
+        setQuoteError(msg.includes("429") ? "Rate limited — please wait a few seconds and try again" : msg);
         setQuote(null);
       } else {
         setQuote(data);
