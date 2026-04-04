@@ -547,7 +547,7 @@ export default function EvmSwap() {
 
   return (
     <div className="space-y-6" data-testid="evm-swap-page">
-      <SeoHead title="EVM Swap | CryptoOwnBank" description="Swap any ERC-20 token across Ethereum, Polygon, Arbitrum, and more." />
+      <SeoHead title="EVM Swap | CryptoOwnBank" description="Swap any ERC-20 token across 7 chains with multi-DEX routing. 1inch aggregation plus automatic fallback to Uniswap, PancakeSwap, QuickSwap, SushiSwap, and TraderJoe for micro-cap tokens." />
 
       <div className="flex items-center justify-between">
         <div>
