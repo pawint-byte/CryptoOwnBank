@@ -127,6 +127,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     ctaUrl: "https://cryptoownbank.com/crypto-debit-cards",
     audienceTier: "all",
   },
+  {
+    title: "EVM Swap Now Supports Every Token With a Liquidity Pool",
+    description: "We upgraded EVM Swap with multi-DEX routing.\n\nPreviously, tokens that weren't indexed by 1inch showed a \"no liquidity\" error and sent you to Uniswap or PancakeSwap to complete the trade on their site. That's gone now.\n\nWhen 1inch doesn't cover a token, EVM Swap automatically routes through the chain's native DEX:\n\nEthereum & Base -- Uniswap\nBNB Chain -- PancakeSwap\nPolygon -- QuickSwap\nArbitrum & Optimism -- SushiSwap\nAvalanche -- TraderJoe\n\nSame experience as before: pick your tokens, see a quote, connect your wallet, sign, done. The routing happens behind the scenes -- you don't need to know or care which DEX is being used.\n\nThis means the full flow -- Token Research to purchase to portfolio tracking -- now happens entirely on CryptoOwnBank. No more copy-pasting contract addresses to external DEXes. No more leaving the site to buy micro-cap tokens.\n\nWorks across all 7 supported chains. Your wallet signs every transaction. Non-custodial throughout.",
+    ctaLabel: "Open EVM Swap",
+    ctaUrl: "https://cryptoownbank.com/ownbank/evm-swap",
+    audienceTier: "premium",
+  },
 ];
 
 export default function AdminAnnouncements() {
