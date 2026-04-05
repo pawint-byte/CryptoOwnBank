@@ -85,6 +85,73 @@ export async function getEthTransactions(address: string): Promise<BlockchainTra
     console.error("Failed to fetch ETH transactions:", error);
   }
 
+  try {
+    let tokenPage = 1;
+    const seenHashes = new Set(results.map(r => r.hash));
+    while (results.length < MAX_TRANSACTIONS) {
+      const apiKey = process.env.ETHERSCAN_API_KEY || "";
+      const keyParam = apiKey ? `&apikey=${apiKey}` : "";
+      const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokentx&address=${addr}&startblock=0&endblock=99999999&page=${tokenPage}&offset=${pageSize}&sort=asc${keyParam}`;
+
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!res.ok) break;
+      const data = await res.json();
+      if (data.status !== "1" || !Array.isArray(data.result)) {
+        if (data.message === "No transactions found") break;
+        break;
+      }
+
+      for (const tx of data.result) {
+        if (results.length >= MAX_TRANSACTIONS) break;
+        const txHash = tx.hash;
+        if (seenHashes.has(txHash)) continue;
+
+        const from = (tx.from || "").toLowerCase();
+        const to = (tx.to || "").toLowerCase();
+        if (from === addr && to === addr) continue;
+
+        const decimals = parseInt(tx.tokenDecimal || "18");
+        const rawValue = BigInt(tx.value || "0");
+        if (rawValue === 0n) continue;
+
+        const tokenValue = Number(rawValue) / Math.pow(10, decimals);
+        if (tokenValue <= 0 || !isFinite(tokenValue)) continue;
+
+        const symbol = (tx.tokenSymbol || "").toUpperCase();
+        if (!symbol || symbol.length > 12) continue;
+
+        let type: "receive" | "send";
+        if (to === addr && from !== addr) {
+          type = "receive";
+        } else if (from === addr && to !== addr) {
+          type = "send";
+        } else {
+          continue;
+        }
+
+        seenHashes.add(txHash);
+        results.push({
+          hash: txHash,
+          type,
+          asset: symbol,
+          quantity: tokenValue,
+          fee: 0,
+          timestamp: new Date(parseInt(tx.timeStamp) * 1000),
+          senderAddress: tx.from,
+          recipientAddress: tx.to,
+        });
+      }
+
+      if (data.result.length < pageSize) break;
+      tokenPage++;
+      await sleep(250);
+    }
+  } catch (error) {
+    console.error("Failed to fetch ERC-20 token transactions:", error);
+  }
+
+  results.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
   return results;
 }
 

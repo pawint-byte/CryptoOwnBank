@@ -7622,8 +7622,10 @@ Rules you MUST follow:
                 console.warn(`Capping price lookups at ${MAX_PRICE_LOOKUPS} for wallet ${wallet.id}`);
                 break;
               }
-              const lookupSymbol = txAsset === nativeAsset || txAsset === "XRP" || txAsset === "ETH" || txAsset === "BTC" ? txAsset : nativeAsset;
-              const price = await getHistoricalPrice(lookupSymbol, date);
+              let price = await getHistoricalPrice(txAsset, date);
+              if (price === 0 && txAsset !== nativeAsset) {
+                price = await getHistoricalPrice(nativeAsset, date);
+              }
               priceMapByAssetDay.set(key, price);
               lookupCount++;
               if (lookupCount < uniqueAssetDates.size) await new Promise(r => setTimeout(r, 2500));
