@@ -1429,7 +1429,7 @@ export default function Landing() {
       </div>
 
       <div
-        className={`fixed top-[78px] left-0 right-0 z-[49] transition-all duration-300 ${showNav ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"}`}
+        className={`fixed top-[94px] left-0 right-0 z-[49] transition-all duration-300 ${showNav ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"}`}
         data-testid="nav-section-bar"
       >
         <div className="bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm">
