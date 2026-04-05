@@ -901,10 +901,19 @@ export default function TokenResearch() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {(result as any).isPresale && (
+                    <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 p-3 text-sm text-yellow-700 dark:text-yellow-400" data-testid="presale-warning">
+                      <div className="flex items-center gap-2 font-medium mb-1">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        Presale / No DEX Liquidity
+                      </div>
+                      <p className="text-xs">This token has no detected liquidity pools on supported DEXes. It may only be purchasable through the project's official presale site. Trading via EVM Swap will likely fail.</p>
+                    </div>
+                  )}
                   <Link href={`/ownbank/evm-swap?chain=${result.chainId}&token=${result.address}`}>
-                    <Button className="w-full" data-testid="button-trade-evm-swap">
+                    <Button className={`w-full ${(result as any).isPresale ? "opacity-60" : ""}`} data-testid="button-trade-evm-swap">
                       <Wallet className="h-4 w-4 mr-2" />
-                      Trade on EVM Swap
+                      {(result as any).isPresale ? "Try EVM Swap (may fail — no DEX liquidity)" : "Trade on EVM Swap"}
                     </Button>
                   </Link>
 

@@ -11777,6 +11777,18 @@ Rules you MUST follow:
           if (tokenData.holder_count && parseInt(tokenData.holder_count) > 100) {
             result.signals.push(`${parseInt(tokenData.holder_count).toLocaleString()} holders`);
           }
+          if (tokenData.holder_count && parseInt(tokenData.holder_count) < 50) {
+            result.warnings.push(`Very few holders (${tokenData.holder_count}) — token may be in presale or very new`);
+          }
+
+          const lpCount = tokenData.lp_holder_count ? parseInt(tokenData.lp_holder_count) : 0;
+          const lpSupply = tokenData.lp_total_supply ? parseFloat(tokenData.lp_total_supply) : 0;
+          if (lpCount === 0 || lpSupply === 0) {
+            result.warnings.push("No DEX liquidity pools detected — token may only be available via presale or the project's official site");
+            result.isPresale = true;
+          } else if (lpCount < 3) {
+            result.warnings.push(`Very low DEX liquidity (${lpCount} LP holder${lpCount > 1 ? "s" : ""}) — trading may have high slippage or fail`);
+          }
         }
       }
     } catch (err: any) {

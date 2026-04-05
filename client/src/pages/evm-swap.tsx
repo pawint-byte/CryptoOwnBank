@@ -363,7 +363,13 @@ export default function EvmSwap() {
               }
             } catch {}
           }
-          setQuoteError(msg.includes("429") ? "Rate limited — please wait a few seconds and try again" : msg);
+          if (msg.includes("429")) {
+            setQuoteError("Rate limited — please wait a few seconds and try again");
+          } else if (isLiquidity) {
+            setQuoteError("No liquidity available for this token pair on this chain. The token may not be actively traded on supported DEXes yet. If it is in presale, it can only be purchased through the project's official site.");
+          } else {
+            setQuoteError(msg);
+          }
         } else {
           setQuote(data);
         }
