@@ -11528,6 +11528,13 @@ Rules you MUST follow:
         return data.result;
       };
 
+      const codeResult = await callRpc("eth_getCode", [address, "latest"]).catch(() => "0x");
+      if (!codeResult || codeResult === "0x") {
+        const chainName = chainId === 1 ? "Ethereum" : chainId === 56 ? "BNB Chain" : chainId === 137 ? "Polygon" : chainId === 42161 ? "Arbitrum" : chainId === 10 ? "Optimism" : chainId === 8453 ? "Base" : chainId === 43114 ? "Avalanche" : `chain ${chainId}`;
+        return res.status(404).json({ message: `No contract found at this address on ${chainName}. This token may exist on a different chain (e.g., HyperLiquid, Solana, or another network we don't support yet). Try the "Search by Name" tab to see which chains it's available on.` });
+      }
+      result.isContract = true;
+
       const nameData = await callRpc("eth_call", [{ to: address, data: "0x06fdde03" }, "latest"]).catch(() => null);
       const symbolData = await callRpc("eth_call", [{ to: address, data: "0x95d89b41" }, "latest"]).catch(() => null);
       const decimalsData = await callRpc("eth_call", [{ to: address, data: "0x313ce567" }, "latest"]).catch(() => null);
@@ -11563,14 +11570,6 @@ Rules you MUST follow:
         const rawSupply = BigInt(totalSupplyData);
         result.totalSupply = (Number(rawSupply) / Math.pow(10, result.decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 });
         result.totalSupplyRaw = rawSupply.toString();
-      }
-
-      const codeResult = await callRpc("eth_getCode", [address, "latest"]).catch(() => "0x");
-      if (!codeResult || codeResult === "0x") {
-        result.warnings.push("No contract code found at this address - this may not be a token");
-        result.isContract = false;
-      } else {
-        result.isContract = true;
       }
     } catch (err: any) {
       console.error("[token-research] RPC error:", err.message);

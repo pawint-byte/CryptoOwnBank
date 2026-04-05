@@ -257,8 +257,9 @@ export default function TokenResearch() {
       const json = await data.json();
       setResult(json);
     } catch (err: any) {
-      setError(err?.message || "Failed to research token");
-      toast({ title: "Research failed", description: err?.message, variant: "destructive" });
+      const msg = err?.message || "Failed to research token";
+      setError(msg);
+      toast({ title: msg.includes("No contract found") ? "Token not found on this chain" : "Research failed", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
