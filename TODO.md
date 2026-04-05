@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-03 by main agent (DEX fallback added to EVM Swap — Uniswap/PancakeSwap/QuickSwap/SushiSwap/TraderJoe direct routing for tokens without 1inch liquidity)**
+**Last updated: 2026-04-05 by main agent (Token Research smart search: results ranked by tradeability+market cap, inline GoPlus safety signals, "Tradeable"/"Best Match" badges, non-EVM tokens dimmed, DYOR disclaimer)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 

@@ -77,6 +77,15 @@ const DEXSCREENER_CHAINS: Record<number, string> = {
   56: "bsc",
 };
 
+interface TokenSafety {
+  riskScore: number;
+  riskLevel: "low" | "medium" | "high";
+  greenFlags: string[];
+  redFlags: string[];
+  holderCount: number;
+  isHoneypot: boolean;
+}
+
 interface TokenSearchResult {
   id: string;
   name: string;
@@ -90,6 +99,8 @@ interface TokenSearchResult {
   priceChange24h: number | null;
   platforms: { chainId: number; address: string; platform: string }[];
   allPlatforms: { platform: string; address: string; chainId: number | null }[];
+  safety: TokenSafety | null;
+  platformSafety?: Record<string, TokenSafety>;
 }
 
 interface TokenResearchResult {
@@ -447,20 +458,64 @@ export default function TokenResearch() {
 
               {searchResults.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""} found. Select a token and chain to analyze.</p>
-                  <div className="max-h-[480px] overflow-y-auto space-y-2 rounded-md border p-2">
-                    {searchResults.map((token) => (
-                      <div key={token.id} className="rounded-md border p-3 space-y-2 hover:bg-accent/50 transition-colors" data-testid={`search-result-${token.id}`}>
+                  {(() => {
+                    const tradeableCount = searchResults.filter(t => t.platforms.length > 0).length;
+                    const safeCount = searchResults.filter(t => t.safety?.riskLevel === "low").length;
+                    return (
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} found.
+                          {tradeableCount > 0 && <span className="text-primary font-medium"> {tradeableCount} tradeable on EVM Swap.</span>}
+                          {safeCount > 0 && <span className="text-green-600 font-medium"> {safeCount} passed safety checks.</span>}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Results sorted by tradeability and market cap. Safety checked for top EVM matches via GoPlus. Always DYOR before trading.</p>
+                      </div>
+                    );
+                  })()}
+                  <div className="max-h-[600px] overflow-y-auto space-y-2 rounded-md border p-2">
+                    {searchResults.map((token, idx) => {
+                      const isTradeable = token.platforms.length > 0;
+                      const safety = token.safety;
+                      const isTopMatch = idx === 0 && isTradeable && safety?.riskLevel === "low";
+                      return (
+                      <div
+                        key={token.id}
+                        className={`rounded-md border p-3 space-y-2 transition-colors ${
+                          isTopMatch
+                            ? "border-green-500/40 bg-green-500/5 hover:bg-green-500/10"
+                            : isTradeable
+                              ? "hover:bg-accent/50"
+                              : "opacity-60 hover:opacity-80 hover:bg-accent/30"
+                        }`}
+                        data-testid={`search-result-${token.id}`}
+                      >
                         <div className="flex items-center gap-3">
                           {token.thumb && (
                             <img src={token.thumb} alt="" className="h-8 w-8 rounded-full" />
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-medium text-sm truncate">{token.name}</p>
                               <Badge variant="secondary" className="font-mono text-xs shrink-0">{token.symbol}</Badge>
                               {token.marketCapRank && (
                                 <span className="text-xs text-muted-foreground shrink-0">#{token.marketCapRank}</span>
+                              )}
+                              {isTopMatch && (
+                                <Badge className="bg-green-500/15 text-green-600 border-green-500/30 text-[10px]" data-testid={`badge-best-match-${token.id}`}>
+                                  <CheckCircle className="h-3 w-3 mr-0.5" />
+                                  Best Match
+                                </Badge>
+                              )}
+                              {isTradeable && (
+                                <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px]" data-testid={`badge-tradeable-${token.id}`}>
+                                  <Wallet className="h-3 w-3 mr-0.5" />
+                                  Tradeable
+                                </Badge>
+                              )}
+                              {!isTradeable && (
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground" data-testid={`badge-not-tradeable-${token.id}`}>
+                                  Not Tradeable
+                                </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
@@ -478,12 +533,80 @@ export default function TokenResearch() {
                             </div>
                           </div>
                         </div>
+
+                        {safety && (
+                          <div className={`rounded-md px-3 py-2 text-xs ${
+                            safety.riskLevel === "low"
+                              ? "bg-green-500/10 border border-green-500/20"
+                              : safety.riskLevel === "medium"
+                                ? "bg-yellow-500/10 border border-yellow-500/20"
+                                : "bg-red-500/10 border border-red-500/20"
+                          }`} data-testid={`safety-summary-${token.id}`}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              {safety.riskLevel === "low" ? (
+                                <ShieldCheck className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                              ) : safety.riskLevel === "medium" ? (
+                                <ShieldAlert className="h-3.5 w-3.5 text-yellow-600 shrink-0" />
+                              ) : (
+                                <ShieldX className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                              )}
+                              <span className={`font-medium ${
+                                safety.riskLevel === "low" ? "text-green-600" : safety.riskLevel === "medium" ? "text-yellow-600" : "text-red-600"
+                              }`}>
+                                {safety.riskLevel === "low" ? "Lower Risk" : safety.riskLevel === "medium" ? "Medium Risk" : "High Risk"} ({safety.riskScore}%)
+                              </span>
+                              {safety.holderCount > 0 && (
+                                <span className="text-muted-foreground ml-auto">{safety.holderCount.toLocaleString()} holders</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                              {safety.greenFlags.slice(0, 4).map((flag) => (
+                                <span key={flag} className="inline-flex items-center gap-0.5 text-green-600">
+                                  <CheckCircle className="h-3 w-3" /> {flag}
+                                </span>
+                              ))}
+                              {safety.redFlags.map((flag) => (
+                                <span key={flag} className="inline-flex items-center gap-0.5 text-red-600">
+                                  <XCircle className="h-3 w-3" /> {flag}
+                                </span>
+                              ))}
+                            </div>
+                            {safety.isHoneypot && (
+                              <div className="mt-1.5 flex items-center gap-1.5 text-red-600 font-medium">
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                                WARNING: Honeypot detected - you may not be able to sell this token
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {token.platforms.length > 0 && (
                           <div className="space-y-2 mt-1">
-                            {token.platforms.map((p) => (
+                            {token.platforms.map((p) => {
+                              const pKey = `${p.chainId}:${p.address.toLowerCase()}`;
+                              const pSafety = token.platformSafety?.[pKey] || null;
+                              return (
                               <div key={`${token.id}-${p.chainId}`} className="rounded border bg-muted/30 p-2 space-y-1.5">
                                 <div className="flex items-center justify-between">
-                                  <Badge variant="secondary" className="text-xs">{EVM_CHAINS[p.chainId]?.name || `Chain ${p.chainId}`}</Badge>
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge variant="secondary" className="text-xs">{EVM_CHAINS[p.chainId]?.name || `Chain ${p.chainId}`}</Badge>
+                                    {pSafety && (
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          {pSafety.riskLevel === "low" ? (
+                                            <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
+                                          ) : pSafety.riskLevel === "medium" ? (
+                                            <ShieldAlert className="h-3.5 w-3.5 text-yellow-600" />
+                                          ) : (
+                                            <ShieldX className="h-3.5 w-3.5 text-red-600" />
+                                          )}
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{pSafety.riskLevel === "low" ? "Lower" : pSafety.riskLevel === "medium" ? "Medium" : "High"} risk ({pSafety.riskScore}%) on {EVM_CHAINS[p.chainId]?.name}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </div>
                                   <div className="flex gap-1.5">
                                     <Button
                                       size="sm"
@@ -493,12 +616,12 @@ export default function TokenResearch() {
                                       data-testid={`button-analyze-${token.id}-${p.chainId}`}
                                     >
                                       <Shield className="h-3 w-3 mr-1" />
-                                      Analyze
+                                      Full Analysis
                                     </Button>
                                     <Link href={`/evm-swap?chain=${p.chainId}&token=${p.address}`}>
                                       <Button
                                         size="sm"
-                                        className="text-xs h-7 bg-primary"
+                                        className={`text-xs h-7 ${pSafety?.riskLevel === "high" ? "bg-red-600 hover:bg-red-700" : "bg-primary"}`}
                                         data-testid={`button-trade-${token.id}-${p.chainId}`}
                                       >
                                         <ArrowRight className="h-3 w-3 mr-1" />
@@ -523,7 +646,8 @@ export default function TokenResearch() {
                                   </Button>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                         {token.platforms.length === 0 && token.allPlatforms && token.allPlatforms.length > 0 && (
@@ -580,7 +704,8 @@ export default function TokenResearch() {
                           </a>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

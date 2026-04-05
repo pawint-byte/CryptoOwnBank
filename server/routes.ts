@@ -11421,7 +11421,7 @@ Rules you MUST follow:
       const marketMap = new Map(marketData.map((m: any) => [m.id, m]));
 
       const platformResults: { id: string; platforms: any[]; allPlatforms: any[] }[] = [];
-      for (let i = 0; i < Math.min(coins.length, 8); i++) {
+      for (let i = 0; i < Math.min(coins.length, 15); i++) {
         const coin = coins[i];
         if (i > 0) await new Promise(r => setTimeout(r, 250));
         try {
@@ -11490,11 +11490,112 @@ Rules you MUST follow:
       }
 
       results.sort((a, b) => {
+        const aEvm = a.platforms.length > 0 ? 1 : 0;
+        const bEvm = b.platforms.length > 0 ? 1 : 0;
+        if (aEvm !== bEvm) return bEvm - aEvm;
         if (a.marketCapRank && b.marketCapRank) return a.marketCapRank - b.marketCapRank;
         if (a.marketCapRank) return -1;
         if (b.marketCapRank) return 1;
         return 0;
       });
+
+      const safetyByChainAddr: Record<string, any> = {};
+      const allPlatformEntries: { id: string; chainId: number; address: string }[] = [];
+      for (const token of results) {
+        for (const p of token.platforms) {
+          allPlatformEntries.push({ id: token.id, chainId: p.chainId, address: p.address });
+        }
+      }
+      const entriesToCheck = allPlatformEntries.slice(0, 10);
+
+      const chainGroups = new Map<number, { id: string; address: string }[]>();
+      for (const entry of entriesToCheck) {
+        if (!chainGroups.has(entry.chainId)) chainGroups.set(entry.chainId, []);
+        chainGroups.get(entry.chainId)!.push({ id: entry.id, address: entry.address });
+      }
+
+      const safetyPromises: Promise<void>[] = [];
+      for (const [cId, tokens] of chainGroups) {
+        const addresses = tokens.map(t => t.address).join(",");
+        safetyPromises.push((async () => {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            const gpRes = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${cId}?contract_addresses=${addresses}`, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!gpRes.ok) return;
+            const gpData = await gpRes.json();
+            const gpResults = gpData.result || {};
+            for (const token of tokens) {
+              const addrKey = Object.keys(gpResults).find(k => k.toLowerCase() === token.address.toLowerCase());
+              if (!addrKey || !gpResults[addrKey]) continue;
+              const gp = gpResults[addrKey];
+              const isHoneypot = gp.is_honeypot === "1";
+              const isMintable = gp.is_mintable === "1";
+              const isOpenSource = gp.is_open_source === "1";
+              const buyTax = parseFloat(gp.buy_tax || "0") * 100;
+              const sellTax = parseFloat(gp.sell_tax || "0") * 100;
+              const hiddenOwner = gp.hidden_owner === "1";
+              const canTakeBack = gp.can_take_back_ownership === "1";
+              const ownerChangeBalance = gp.owner_change_balance === "1";
+              const transferPausable = gp.transfer_pausable === "1";
+              const holderCount = parseInt(gp.holder_count || "0");
+
+              let riskScore = 0;
+              if (isHoneypot) riskScore += 50;
+              if (isMintable) riskScore += 15;
+              if (!isOpenSource) riskScore += 10;
+              if (hiddenOwner) riskScore += 10;
+              if (canTakeBack) riskScore += 10;
+              if (ownerChangeBalance) riskScore += 15;
+              if (transferPausable) riskScore += 5;
+              if (buyTax > 5) riskScore += 10;
+              if (sellTax > 5) riskScore += 10;
+              riskScore = Math.min(riskScore, 100);
+
+              const riskLevel = riskScore >= 50 ? "high" : riskScore >= 20 ? "medium" : "low";
+
+              const greenFlags: string[] = [];
+              const redFlags: string[] = [];
+              if (!isHoneypot) greenFlags.push("Not a honeypot"); else redFlags.push("Honeypot detected");
+              if (isOpenSource) greenFlags.push("Open source"); else redFlags.push("Not open source");
+              if (!isMintable) greenFlags.push("Not mintable"); else redFlags.push("Mintable");
+              if (!hiddenOwner) greenFlags.push("No hidden owner"); else redFlags.push("Hidden owner");
+              if (!ownerChangeBalance) greenFlags.push("Owner can't change balances"); else redFlags.push("Owner can change balances");
+              if (buyTax <= 5 && sellTax <= 5) greenFlags.push("Low tax"); else redFlags.push(`Tax: ${buyTax.toFixed(1)}% buy / ${sellTax.toFixed(1)}% sell`);
+
+              const safetyKey = `${cId}:${token.address.toLowerCase()}`;
+              safetyByChainAddr[safetyKey] = { riskScore, riskLevel, greenFlags, redFlags, holderCount, isHoneypot };
+            }
+          } catch (err: any) {
+            if (err.name !== "AbortError") {
+              console.error("[token-search] GoPlus safety check failed for chain", cId, err.message);
+            }
+          }
+        })());
+      }
+
+      await Promise.all(safetyPromises);
+
+      for (const r of results) {
+        const platformSafety: Record<string, any> = {};
+        for (const p of r.platforms) {
+          const key = `${p.chainId}:${p.address.toLowerCase()}`;
+          if (safetyByChainAddr[key]) {
+            platformSafety[key] = safetyByChainAddr[key];
+          }
+        }
+        const keys = Object.keys(platformSafety);
+        if (keys.length === 1) {
+          r.safety = platformSafety[keys[0]];
+        } else if (keys.length > 1) {
+          const best = keys.reduce((a, b) => platformSafety[a].riskScore <= platformSafety[b].riskScore ? a : b);
+          r.safety = platformSafety[best];
+        } else {
+          r.safety = null;
+        }
+        r.platformSafety = platformSafety;
+      }
 
       return res.json({ results });
     } catch (err: any) {
