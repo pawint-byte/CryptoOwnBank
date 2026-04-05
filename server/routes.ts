@@ -11202,10 +11202,11 @@ Rules you MUST follow:
       }
       const chain = parseInt(chainId as string);
       const dex = DEX_ROUTERS[chain];
-      const rpcUrl = CHAIN_RPC_URLS[chain];
-      if (!dex || !rpcUrl) {
+      const rpcUrls = CHAIN_RPC_URLS[chain];
+      if (!dex || !rpcUrls) {
         return res.status(400).json({ message: "Unsupported chain for DEX swap" });
       }
+      const rpcUrl = rpcUrls[0];
 
       const srcAddr = (src as string).toLowerCase() === NATIVE_TOKEN ? dex.weth : (src as string).toLowerCase();
       const dstAddr = (dst as string).toLowerCase() === NATIVE_TOKEN ? dex.weth : (dst as string).toLowerCase();
@@ -11315,7 +11316,7 @@ Rules you MUST follow:
       }
       const deadline = Math.floor(Date.now() / 1000) + 1200;
 
-      const rpcUrl = CHAIN_RPC_URLS[chain];
+      const rpcUrl = CHAIN_RPC_URLS[chain]?.[0];
       const quoteCalldata = "0xd06ca61f" + abiEncode(["uint256", "address[]"], [amountIn.toString(), path]);
       const quoteResp = await fetch(rpcUrl, {
         method: "POST",
@@ -11376,15 +11377,44 @@ Rules you MUST follow:
     56: { api: "https://api.bscscan.com/api" },
   };
 
-  const CHAIN_RPC_URLS: Record<number, string> = {
-    1: "https://eth.llamarpc.com",
-    137: "https://polygon-rpc.com",
-    42161: "https://arb1.arbitrum.io/rpc",
-    10: "https://mainnet.optimism.io",
-    8453: "https://mainnet.base.org",
-    43114: "https://api.avax.network/ext/bc/C/rpc",
-    56: "https://bsc-dataseed.binance.org",
+  const CHAIN_RPC_URLS: Record<number, string[]> = {
+    1: ["https://ethereum-rpc.publicnode.com", "https://eth.llamarpc.com", "https://1rpc.io/eth"],
+    137: ["https://polygon-rpc.com", "https://polygon-bor-rpc.publicnode.com"],
+    42161: ["https://arb1.arbitrum.io/rpc", "https://arbitrum-one-rpc.publicnode.com"],
+    10: ["https://mainnet.optimism.io", "https://optimism-rpc.publicnode.com"],
+    8453: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"],
+    43114: ["https://api.avax.network/ext/bc/C/rpc", "https://avalanche-c-chain-rpc.publicnode.com"],
+    56: ["https://bsc-dataseed.binance.org", "https://bsc-rpc.publicnode.com"],
   };
+
+  async function rpcCallWithFallback(chainId: number, method: string, params: any[]): Promise<any> {
+    const urls = CHAIN_RPC_URLS[chainId];
+    if (!urls || urls.length === 0) throw new Error("No RPC URLs for chain " + chainId);
+    let lastErr: any = null;
+    for (const url of urls) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        const data = await resp.json();
+        if (data.error) {
+          lastErr = new Error(data.error.message || "RPC error");
+          continue;
+        }
+        return data.result;
+      } catch (err: any) {
+        lastErr = err;
+        continue;
+      }
+    }
+    throw lastErr || new Error("All RPCs failed for chain " + chainId);
+  }
 
   const COINGECKO_PLATFORM_MAP: Record<string, number> = {
     "ethereum": 1,
@@ -11618,28 +11648,17 @@ Rules you MUST follow:
     const result: any = { chainId, address, warnings: [], signals: [] };
 
     try {
-      const rpcUrl = CHAIN_RPC_URLS[chainId];
-      const callRpc = async (method: string, params: any[]) => {
-        const resp = await fetch(rpcUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-        });
-        const data = await resp.json();
-        return data.result;
-      };
-
-      const codeResult = await callRpc("eth_getCode", [address, "latest"]).catch(() => "0x");
+      const codeResult = await rpcCallWithFallback(chainId, "eth_getCode", [address, "latest"]).catch(() => "0x");
       if (!codeResult || codeResult === "0x") {
         const chainName = chainId === 1 ? "Ethereum" : chainId === 56 ? "BNB Chain" : chainId === 137 ? "Polygon" : chainId === 42161 ? "Arbitrum" : chainId === 10 ? "Optimism" : chainId === 8453 ? "Base" : chainId === 43114 ? "Avalanche" : `chain ${chainId}`;
         return res.status(404).json({ message: `No contract found at this address on ${chainName}. This token may exist on a different chain (e.g., HyperLiquid, Solana, or another network we don't support yet). Try the "Search by Name" tab to see which chains it's available on.` });
       }
       result.isContract = true;
 
-      const nameData = await callRpc("eth_call", [{ to: address, data: "0x06fdde03" }, "latest"]).catch(() => null);
-      const symbolData = await callRpc("eth_call", [{ to: address, data: "0x95d89b41" }, "latest"]).catch(() => null);
-      const decimalsData = await callRpc("eth_call", [{ to: address, data: "0x313ce567" }, "latest"]).catch(() => null);
-      const totalSupplyData = await callRpc("eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]).catch(() => null);
+      const nameData = await rpcCallWithFallback(chainId, "eth_call", [{ to: address, data: "0x06fdde03" }, "latest"]).catch(() => null);
+      const symbolData = await rpcCallWithFallback(chainId, "eth_call", [{ to: address, data: "0x95d89b41" }, "latest"]).catch(() => null);
+      const decimalsData = await rpcCallWithFallback(chainId, "eth_call", [{ to: address, data: "0x313ce567" }, "latest"]).catch(() => null);
+      const totalSupplyData = await rpcCallWithFallback(chainId, "eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]).catch(() => null);
 
       const decodeString = (hex: string | null): string => {
         if (!hex || hex === "0x" || hex.length <= 2) return "";
