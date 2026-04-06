@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-05 by main agent (Token Research smart search: results ranked by tradeability+market cap, inline GoPlus safety signals, "Tradeable"/"Best Match" badges, non-EVM tokens dimmed, DYOR disclaimer)**
+**Last updated: 2026-04-06 by main agent (SCF grant declined, ERC-20 tx import added, presale token detection, RPC fallbacks, Token Research smart search)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -115,7 +115,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [2026-03-29] Guardarian — Application submitted (Widget integration, On-ramp + Off-ramp, Crypto industry). Awaiting response. No monthly fee expected — transaction-based pricing. guardarian.com
 - [2026-03-29] Changelly — LIVE (2026-03-30). Affiliate account registered. Referral ID: m3ht8dcdorn4xrdg. Fiat on-ramp widget embedded on Buy Crypto page (merchant_id: U-FDw3yOEYkT06Im). Crypto-to-crypto exchange widget also embedded (merchant_id: 17hPNKintbYkms_z). Referral link: https://changelly.com/?from=btc&to=eth&amount=0.1&ref_id=10R13NwGw_eGfrd_ . Fiat off-ramp API — need to ask Ana (mschweizburg@changelly.com) for F2C API keys. changelly.com
 - [2026-03-25] NOWPayments — IPN webhook LIVE (`/api/nowpayments/ipn`). IPN secret configured. Callback URL needs to be set in NOWPayments dashboard to `https://cryptoownbank.com/api/nowpayments/ipn`. On-ramp/off-ramp widget embed still pending evaluation. Pricing: 0.5% (no conversion) or 1% (with conversion). On-ramp: https://nowpayments.io/fiat-on-ramp | Off-ramp: https://nowpayments.io/off-ramp
-- [2026-03-24] Stellar Development Foundation grant
+- [2026-03-24] ~~Stellar Development Foundation grant~~ — DECLINED (2026-04-06). Stellar Community Fund responded: "your project proposal does not meet the requirements for the Stellar Community Fund Build Award." No project-specific feedback provided. Suggested reviewing SCF Handbook and Ambassador Program. Not pursuing further at this time.
 - [2026-03-24] Ripple grant (Spring 2026 application window)
 - [2026-03-24] XLS-65/66 XRPL validator activation (for native lending)
 - [2026-03-26] Stellar Sponsored Fees — Stellar allows an account to pay transaction fees on behalf of another account. This could eliminate the onboarding friction where new members need XLM before they can do anything on Stellar. We could sponsor the tiny base fees (fractions of a cent) for new members so they can send their first RLUSD or USDC payment without owning any XLM. Low cost at scale, significant UX improvement for first-time Stellar users. Revisit when member volume on Stellar payments grows.
