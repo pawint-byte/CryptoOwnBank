@@ -12,3 +12,9 @@ id = "54wLVQmy-7g8Tw02B6Lup"
 uri = "file://attached_assets/cryptoownbank-logo-v2.png"
 type = "image"
 title = "Option 2 — Vault + Blockchain Logo"
+
+[[outputs]]
+id = "BlofMdCehfou5KKHdTmsO"
+uri = "file://INTEGRATIONS_REFERENCE.md"
+type = "text"
+title = "CryptoOwnBank Integration Reference Guide"
