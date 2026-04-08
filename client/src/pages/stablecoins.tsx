@@ -400,9 +400,13 @@ export default function Stablecoins() {
     USDS: "DAI",
   };
 
+  const seenAddresses = new Set<string>();
   const userHoldings: { symbol: string; balance: number; usdValue: number; location: string }[] = [];
   if (walletsData) {
     for (const w of walletsData) {
+      const addrKey = `${w.chain}:${w.address}`.toLowerCase();
+      if (seenAddresses.has(addrKey)) continue;
+      seenAddresses.add(addrKey);
       for (const b of w.balances || []) {
         const sym = b.assetSymbol.toUpperCase().replace(/\s*\(STAKED\)/i, "");
         const mapped = altSymbols[sym];
@@ -419,7 +423,7 @@ export default function Stablecoins() {
   }
 
   if (xrplConnected && rlusdBalance > 0) {
-    const alreadyHasXrplRlusd = userHoldings.some(h => h.symbol === "RLUSD" && h.location.toLowerCase().includes("xrpl"));
+    const alreadyHasXrplRlusd = userHoldings.some(h => h.symbol === "RLUSD" && (h.location.toLowerCase().includes("xrpl") || h.location.toLowerCase().includes("xrp") || h.location.toLowerCase().includes("xaman")));
     if (!alreadyHasXrplRlusd) {
       userHoldings.push({
         symbol: "RLUSD",
