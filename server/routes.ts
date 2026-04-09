@@ -12956,4 +12956,79 @@ function startPriceAlertChecker() {
     }
   }, 15000);
 
+  setTimeout(async () => {
+    try {
+      const highValueStocks = new Set([
+        "BTC", "ETH", "SOL", "TAO", "TAO22974", "ABBV", "VTI", "FDN", "PLTR",
+        "IVV", "NVDA", "AAPL", "NFLX", "VGT", "HD", "QS", "KSM", "LINK",
+        "MKR", "AAVE", "COMP", "YFI", "BNB", "AVAX", "DOT",
+      ]);
+      const ethThreshold = 500;
+
+      const priceCacheRows = await db.select().from(priceCacheTable);
+      const priceLookup: Record<string, number> = {};
+      for (const row of priceCacheRows) {
+        priceLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
+      const assetsAll = await storage.getAllAssets();
+      for (const a of assetsAll) {
+        if (a.currentPrice) priceLookup[a.symbol.toUpperCase()] = parseFloat(a.currentPrice);
+      }
+
+      const allCorruptedLots = await db.execute(
+        sql`SELECT id, asset_symbol, cost_basis_per_unit, remaining_quantity FROM tax_lots WHERE CAST(cost_basis_per_unit AS numeric) > ${ethThreshold}`
+      );
+
+      let fixCount = 0;
+      for (const lot of allCorruptedLots.rows) {
+        const sym = (lot.asset_symbol as string).toUpperCase();
+        if (highValueStocks.has(sym)) continue;
+
+        const currentPrice = priceLookup[sym] || 0;
+        await db.execute(
+          sql`UPDATE tax_lots SET cost_basis_per_unit = ${currentPrice.toFixed(8)} WHERE id = ${lot.id}`
+        );
+        console.log(`[startup-fix-erc20] Fixed ${lot.asset_symbol}: ${lot.cost_basis_per_unit} -> ${currentPrice.toFixed(8)}`);
+        fixCount++;
+      }
+
+      if (fixCount > 0) {
+        console.log(`[startup-fix-erc20] Fixed ${fixCount} corrupted tax lots. Recalculating positions...`);
+        const allUsers = await db.execute(sql`SELECT DISTINCT user_id FROM tax_lots`);
+        for (const row of allUsers.rows) {
+          const uid = row.user_id as string;
+          const lots = await storage.getTaxLotsByUser(uid);
+          const positionsData = await storage.getPositionsByUser(uid);
+
+          const lotTotals: Record<string, { qty: number; costBasis: number }> = {};
+          for (const lot of lots) {
+            const sym = lot.assetSymbol;
+            if (!lotTotals[sym]) lotTotals[sym] = { qty: 0, costBasis: 0 };
+            const qty = parseFloat(lot.remainingQuantity);
+            const price = parseFloat(lot.costBasisPerUnit);
+            lotTotals[sym].qty += qty;
+            lotTotals[sym].costBasis += qty * price;
+          }
+
+          for (const pos of positionsData) {
+            const lotData = lotTotals[pos.assetSymbol];
+            if (lotData) {
+              const newCostBasis = lotData.costBasis.toFixed(2);
+              const newAvgCost = lotData.qty > 0 ? (lotData.costBasis / lotData.qty).toFixed(8) : "0";
+              await storage.updatePosition(pos.id, {
+                totalCostBasis: newCostBasis,
+                averageCost: newAvgCost,
+              });
+            }
+          }
+          console.log(`[startup-fix-erc20] Recalculated positions for user ${uid}`);
+        }
+      } else {
+        console.log("[startup-fix-erc20] No corrupted tax lots found.");
+      }
+    } catch (err) {
+      console.error("[startup-fix-erc20] Error:", err);
+    }
+  }, 20000);
+
 }
