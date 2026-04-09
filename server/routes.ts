@@ -1064,7 +1064,9 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
       const rawWalletBals = await storage.getWalletBalancesByUser(userId);
       const walletBals = await enrichWalletBalances(rawWalletBals);
+      const dashPositionAssets = new Set(positionsData.filter(p => !p.isAddressed).map(p => p.assetSymbol.toUpperCase()));
       for (const wb of walletBals) {
+        if (dashPositionAssets.has(wb.assetSymbol.toUpperCase())) continue;
         const usdVal = parseFloat(wb.usdValue || "0");
         if (Number.isFinite(usdVal) && usdVal > 0) {
           totalValue += usdVal;
@@ -3068,6 +3070,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const enrichedWalletBals = await enrichWalletBalances(rawWalletBalsForPortfolio);
       const userWalletsForPortfolio = await storage.getWalletsByUser(userId);
 
+      const positionAssets = new Set(positionsData.filter(p => !p.isAddressed).map(p => p.assetSymbol.toUpperCase()));
+
       const walletPositions = await Promise.all(enrichedWalletBals.map(async (wb) => {
         const wallet = userWalletsForPortfolio.find((w: any) => w.id === wb.walletId);
         let usdVal = parseFloat(wb.usdValue || "0") || 0;
@@ -3094,10 +3098,13 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
         const safeUsdVal = Number.isFinite(usdVal) ? usdVal : 0;
         const price = bal > 0 ? safeUsdVal / bal : 0;
-        const gainLoss = costBasis > 0 ? safeUsdVal - costBasis : 0;
-        const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0;
-        totalValue += safeUsdVal;
-        if (costBasis > 0) totalCostBasis += costBasis;
+        const alreadyInPositions = positionAssets.has(wb.assetSymbol.toUpperCase());
+        const usableCostBasis = alreadyInPositions ? 0 : costBasis;
+        const usableValue = alreadyInPositions ? 0 : safeUsdVal;
+        const gainLoss = usableCostBasis > 0 ? usableValue - usableCostBasis : 0;
+        const gainLossPercent = usableCostBasis > 0 ? (gainLoss / usableCostBasis) * 100 : 0;
+        totalValue += usableValue;
+        if (usableCostBasis > 0) totalCostBasis += usableCostBasis;
         return {
           id: wb.id,
           userId: wb.userId,
@@ -3105,7 +3112,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
           assetSymbol: wb.assetSymbol,
           quantity: wb.balance,
           averageCost: avgCost.toString(),
-          totalCostBasis: costBasis.toFixed(2),
+          totalCostBasis: usableCostBasis.toFixed(2),
           updatedAt: wb.updatedAt,
           currentPrice: price,
           currentValue: usdVal,
