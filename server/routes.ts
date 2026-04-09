@@ -5457,6 +5457,62 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/admin/fix-erc20-cost-basis", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user?.isAdmin && !ADMIN_EMAILS.includes(user?.email?.toLowerCase())) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+
+      const highValueStocks = new Set([
+        "BTC", "ETH", "SOL", "TAO", "TAO22974", "ABBV", "VTI", "FDN", "PLTR",
+        "IVV", "NVDA", "AAPL", "NFLX", "VGT", "HD", "QS", "KSM", "LINK",
+        "MKR", "AAVE", "COMP", "YFI", "BNB", "AVAX", "DOT",
+      ]);
+
+      const allLots = await storage.getTaxLotsByUser(userId);
+      const priceCacheRows = await db.select().from(priceCacheTable);
+      const priceLookup: Record<string, number> = {};
+      for (const row of priceCacheRows) {
+        priceLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+      }
+      const assetsAll = await storage.getAllAssets();
+      for (const a of assetsAll) {
+        if (a.currentPrice) priceLookup[a.symbol.toUpperCase()] = parseFloat(a.currentPrice);
+      }
+
+      const ethThreshold = 500;
+      const fixes: { id: string; symbol: string; oldCost: string; newCost: string; qty: string }[] = [];
+
+      for (const lot of allLots) {
+        const costPerUnit = parseFloat(lot.costBasisPerUnit);
+        if (costPerUnit <= ethThreshold) continue;
+        if (highValueStocks.has(lot.assetSymbol.toUpperCase())) continue;
+
+        const currentPrice = priceLookup[lot.assetSymbol.toUpperCase()] || 0;
+        const correctedCost = currentPrice > 0 ? currentPrice : 0;
+
+        await db.execute(
+          sql`UPDATE tax_lots SET cost_basis_per_unit = ${correctedCost.toFixed(8)} WHERE id = ${lot.id}`
+        );
+        fixes.push({
+          id: lot.id,
+          symbol: lot.assetSymbol,
+          oldCost: costPerUnit.toFixed(8),
+          newCost: correctedCost.toFixed(8),
+          qty: lot.remainingQuantity,
+        });
+      }
+
+      console.log(`[admin-fix-erc20] Fixed ${fixes.length} corrupted tax lots for user ${userId}`);
+      res.json({ fixed: fixes.length, details: fixes });
+    } catch (error) {
+      console.error("Fix ERC-20 cost basis error:", error);
+      res.status(500).json({ message: "Failed to fix ERC-20 cost basis" });
+    }
+  });
+
   app.get("/api/duplicate-lots", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
