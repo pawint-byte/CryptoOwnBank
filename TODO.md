@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-09 by main agent (ERC-20 cost basis fix, Uphold API integration added to backlog)**
+**Last updated: 2026-04-14 by main agent (Doppler Finance/XRP yield added to backlog)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -162,6 +162,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - ~~[2026-03-23] **GitHub push**~~ — DONE. User pushes regularly from Shell tab via Git credentials.
 
 ### Tier 2 — Build Soon (no blockers, medium effort)
+- [2026-04-14] **Doppler Finance / XRP Yield**: Bybit launched "XRPfi" with Doppler Finance — 90-day fixed-term XRP yield, up to 5% APR (promo through July 12, 2026, includes 2.5% bonus from 30K XRP incentive pool). Market-neutral strategies. Currently custodial through Bybit only. **Action items:** (1) Add to Earn & Yield / RWA Yields section as a yield opportunity for XRP holders (link to Bybit). (2) Monitor Doppler Finance for direct non-custodial vault access — if they launch vaults where the user's wallet interacts with their contract directly (not through Bybit custody), that could be integrated like Soil Protocol. (3) If Doppler goes on-chain on XRPL, the portfolio tracker would pick up positions automatically via trustlines.
 - [2026-04-09] **Uphold API Integration (read-only)**: Connect Uphold accounts via OAuth2 to pull balances into portfolio tracker. Users could view Uphold holdings alongside cold wallet and exchange balances in one dashboard. Uphold API: `GET /v0/me/cards` returns all asset balances. **Prerequisite:** Register at Uphold developer portal, get client ID + secret, wait for approval. Once credentials are available, coding is ~2-3 hours. Future phase: write access for initiating transfers from Uphold to cold wallets (bidirectional flow).
 - [2026-04-01] **Manual Private Asset Tracker (Phase 1 of Tokenized Equity Vault)**: Add manual private asset entries to the portfolio — name, quantity, cost basis, estimated value, liquidity event date, notes. Shows in portfolio total and Legacy Plan. Immediately useful for Forge/Ripple position and any other pre-IPO holdings. **This is the foundation that Phase 2 and 3 below build on.**
 - [2026-03-24] **Embedded on-ramp widget**: Once MoonPay, Transak, or Guardarian approves, embed their widget so members can buy crypto without leaving CryptoOwnBank. Changelly widget already live.
