@@ -41,6 +41,7 @@ import {
   SOIL_REFERRAL_CODE,
   AFFILIATE_LINKS,
   calculateAccruedInterest,
+  DOPPLER_VAULTS,
 } from "@/lib/xrpl-client";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
 import { signPayment, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
@@ -345,15 +346,140 @@ export default function OwnBankVaults() {
     }
   }
 
+  function renderDopplerSection() {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pt-2">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Doppler Finance</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {DOPPLER_VAULTS.map((vault) => (
+            <Card key={vault.id} className="border-purple-500/20" data-testid={`card-vault-${vault.id}`}>
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <TrendingUp className="h-5 w-5 text-purple-500" />
+                  <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg" data-testid={`text-vault-name-${vault.id}`}>
+                      {vault.name}
+                    </CardTitle>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {vault.description}
+                    </p>
+                  </div>
+                </div>
+                <Badge
+                  className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30 shrink-0"
+                  data-testid={`badge-apr-${vault.id}`}
+                >
+                  ~{vault.apr}% APR
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Strategy</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium" data-testid={`text-backing-${vault.id}`}>
+                        {vault.backing}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Risk Level</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-sm font-medium" data-testid={`text-risk-${vault.id}`}>
+                        {vault.riskLevel}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Withdrawal</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium" data-testid={`text-withdrawal-${vault.id}`}>
+                        {vault.withdrawalTerms}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Asset</p>
+                    <span className="text-sm font-medium">{vault.asset}</span>
+                  </div>
+                </div>
+
+                <div className="rounded-md bg-muted/30 border border-muted px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <Target className="h-3.5 w-3.5 mt-0.5 shrink-0 text-purple-500" />
+                    <p className="text-xs text-muted-foreground" data-testid={`text-bestfor-${vault.id}`}>
+                      <span className="font-medium text-foreground">Best for:</span> {vault.bestFor}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-md bg-purple-500/5 border border-purple-500/20 px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0 text-purple-500" />
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Custody:</span> {vault.custodyNote}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={vault.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                      data-testid={`link-doppler-docs-${vault.id}`}
+                    >
+                      Docs
+                    </a>
+                    <span className="text-muted-foreground">|</span>
+                    <a
+                      href={vault.xamanBlogUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                      data-testid={`link-doppler-xaman-${vault.id}`}
+                    >
+                      Xaman Guide
+                    </a>
+                  </div>
+                  <Button
+                    onClick={() => window.open(vault.depositUrl, "_blank")}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    size="sm"
+                    data-testid={`button-deposit-${vault.id}`}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Deposit via Doppler</span>
+                    <span className="sm:hidden">Deposit</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (!isConnected) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-vaults-title">
-            RLUSD Vaults
+            Yield Vaults
           </h1>
           <p className="text-muted-foreground">
-            Earn yield on your RLUSD through Soil Protocol vaults
+            Access RLUSD and XRP yield vault opportunities from one dashboard
           </p>
         </div>
 
@@ -363,6 +489,8 @@ export default function OwnBankVaults() {
             <InlineXrplConnect />
           </CardContent>
         </Card>
+
+        {renderDopplerSection()}
 
         <XrplDisclaimer />
       </div>
@@ -374,10 +502,10 @@ export default function OwnBankVaults() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" data-testid="text-vaults-title">
-            RLUSD Vaults
+            Yield Vaults
           </h1>
           <p className="text-muted-foreground">
-            Earn yield on your RLUSD through Soil Protocol vaults
+            Access RLUSD and XRP yield vault opportunities from one dashboard
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -617,6 +745,8 @@ export default function OwnBankVaults() {
           );
         })}
       </div>
+
+      {renderDopplerSection()}
 
       <XrplDisclaimer />
 

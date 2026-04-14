@@ -225,9 +225,9 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: "RLUSD Yield Vaults",
+    title: "Yield Vaults",
     description:
-      "Earn 5–8% fixed APR on Ripple's regulated stablecoin through Soil Protocol's RWA-backed institutional lending.",
+      "Earn 5-8% APR on RLUSD through Soil Protocol. Access ~3.2% APR on XRP through Doppler Finance. Discover and manage yield opportunities in one place.",
     link: "/ownbank/vaults",
     linkLabel: "Explore Vaults",
   },

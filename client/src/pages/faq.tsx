@@ -158,7 +158,7 @@ const faqGroups = [
     ],
   },
   {
-    heading: "Yield & Soil Mechanics",
+    heading: "Yield Vaults (Soil & Doppler)",
     items: [
       {
         q: "What is RLUSD and how do the yield vaults work?",
@@ -207,6 +207,14 @@ const faqGroups = [
       {
         q: "What happens if Soil or XRPL has issues?",
         a: "Soil is a compliant RWA protocol on XRPL — funds are loaned to Soil Ltd. (backed by real assets), not algorithmic or high-risk DeFi. If issues arise (rare), withdrawals follow vault rules (notice periods). XRPL itself is battle-tested and decentralized. Your assets stay on-chain in your wallet — we can't access or lose them.",
+      },
+      {
+        q: "What is Doppler Finance and the XRP Vault?",
+        a: "Doppler Finance is an XRPL-centric yield platform that lets you earn yield on your XRP through market-neutral strategies. Their XRP Vault currently offers approximately 3.2% APR. You deposit XRP through the Doppler app (app.doppler.finance) or directly via the Xaman xApp — your wallet signs the transaction, keeping you in control. Withdrawals have a 7-day processing period. Doppler uses Fireblocks for institutional-grade custody and Ceffu (MirrorX) for off-exchange settlements, with on-chain proof-of-reserve so you can verify your XRP is always accounted for. Bybit also offers a custodial version called XRPfi (up to 5% APR during promotional periods) that uses Doppler's strategies. On CryptoOwnBank, you can access the Doppler vault directly from the Yield Vaults page — click 'Deposit via Doppler' to open their app, connect your Xaman wallet, and start earning.",
+      },
+      {
+        q: "How does Doppler Finance compare to Soil Protocol?",
+        a: "They serve different purposes and different assets. Soil Protocol: earn 5.2-8.0% APR on RLUSD (Ripple's stablecoin), backed by US Treasuries and private credit. Your RLUSD generates predictable, fixed yield from real-world lending. Doppler Finance: earn ~3.2% APR on XRP itself, using market-neutral trading strategies across exchanges. Your yield is in XRP, not stablecoins. The key difference: Soil earns stablecoin yield (predictable, low volatility), while Doppler earns XRP yield (your stack grows in XRP terms). Many users use both — deposit RLUSD in Soil for stable yield, and deposit XRP in Doppler to accumulate more XRP. Both are accessible from the Yield Vaults page on CryptoOwnBank.",
       },
       {
         q: "Where does CryptoOwnBank get its price data?",

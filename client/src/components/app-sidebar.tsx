@@ -116,7 +116,7 @@ const allItems: NavItem[] = [
   { title: "Flare FTSO", url: "/flare", icon: Flame, group: "market" },
 
   { title: "Dashboard", url: "/ownbank", icon: Landmark, group: "ownbank", chain: "xrpl" },
-  { title: "RLUSD Vaults", url: "/ownbank/vaults", icon: Vault, group: "ownbank", chain: "xrpl" },
+  { title: "Yield Vaults", url: "/ownbank/vaults", icon: Vault, group: "ownbank", chain: "xrpl" },
   { title: "Wallet", url: "/stellar/wallet", icon: Wallet, group: "ownbank", chain: "stellar" },
   { title: "XRPL Tokens", url: "/ownbank/tokens", icon: Coins, group: "ownbank", chain: "xrpl" },
   { title: "Stellar Tokens", url: "/stellar/tokens", icon: Coins, group: "ownbank", chain: "stellar" },

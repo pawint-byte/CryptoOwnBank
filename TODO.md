@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-14 by main agent (Doppler Finance/XRP yield added to backlog)**
+**Last updated: 2026-04-14 by main agent (Doppler Finance integration completed — vault cards, FAQ, landing page)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -20,6 +20,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 
 ### XRPL Features
 - [ ] **Soil RLUSD Vaults** — Verify active positions, earnings tracker, deposit/withdraw flow
+- [ ] **Doppler XRP Vault** — Verify vault card displays correctly, "Deposit via Doppler" button opens external app, docs/Xaman links work
 - [ ] **XRPL DEX** — Place a real small trade, confirm order book and history
 - [ ] **DCA Orders** — Verify active orders are running correctly, check run history
 - [ ] **Trustline Management** — Add/remove a trustline, verify it works
@@ -162,7 +163,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - ~~[2026-03-23] **GitHub push**~~ — DONE. User pushes regularly from Shell tab via Git credentials.
 
 ### Tier 2 — Build Soon (no blockers, medium effort)
-- [2026-04-14] **Doppler Finance XRP Vault Integration**: Doppler Finance already supports non-custodial XRPL vaults with Xaman signing — same pattern as Soil Protocol. Official sources: https://xaman.app/blog/doppler and https://docs.doppler.finance/user-guide/doppler-vaults. Bybit also offers a custodial "XRPfi" product via Doppler (5% APR promo through July 12, 2026). **Integration plan:** Mirror the Soil Protocol pattern — (1) Get Doppler vault XRPL addresses, (2) Add deposit/withdraw flow using existing Xaman signing (signPayment from xumm-connector.ts), (3) Sync vault positions via account_tx scanning like `/api/soil/sync`, (4) Display on Earn & Yield page alongside Soil vaults, (5) Track positions in portfolio. **Effort: Medium** — most infrastructure already exists from Soil integration. Main work is getting vault addresses, APR rates, and building the UI card.
+- ~~[2026-04-14] **Doppler Finance XRP Vault Integration**~~ — DONE 2026-04-14. Vault cards on Yield Vaults page (purple theme, ~3.2% APR, 7-day withdrawal, custody note), 2 FAQ entries added, landing page feature card updated, sidebar/page title changed to "Yield Vaults". Deposits via external Doppler app (no in-app deposit flow — Doppler doesn't expose vault XRPL addresses). Position tracking deferred until Doppler provides API or vault addresses for on-chain scanning.
 - [2026-04-09] **Uphold API Integration (read-only)**: Connect Uphold accounts via OAuth2 to pull balances into portfolio tracker. Users could view Uphold holdings alongside cold wallet and exchange balances in one dashboard. Uphold API: `GET /v0/me/cards` returns all asset balances. **Prerequisite:** Register at Uphold developer portal, get client ID + secret, wait for approval. Once credentials are available, coding is ~2-3 hours. Future phase: write access for initiating transfers from Uphold to cold wallets (bidirectional flow).
 - [2026-04-01] **Manual Private Asset Tracker (Phase 1 of Tokenized Equity Vault)**: Add manual private asset entries to the portfolio — name, quantity, cost basis, estimated value, liquidity event date, notes. Shows in portfolio total and Legacy Plan. Immediately useful for Forge/Ripple position and any other pre-IPO holdings. **This is the foundation that Phase 2 and 3 below build on.**
 - [2026-03-24] **Embedded on-ramp widget**: Once MoonPay, Transak, or Guardarian approves, embed their widget so members can buy crypto without leaving CryptoOwnBank. Changelly widget already live.

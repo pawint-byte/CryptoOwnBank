@@ -254,6 +254,27 @@ export const SOIL_VAULTS = [
   },
 ];
 
+export const DOPPLER_VAULTS = [
+  {
+    id: "doppler-xrp",
+    name: "Doppler XRP Vault",
+    description: "Market-neutral XRP yield strategy via Doppler Finance",
+    apr: 3.2,
+    backing: "Market-Neutral Strategies",
+    riskLevel: "Medium risk",
+    withdrawalTerms: "7-day withdrawal period",
+    bestFor: "XRP holders who want to earn yield without selling",
+    asset: "XRP",
+    provider: "Doppler Finance",
+    custodyNote: "Fireblocks + Ceffu (MirrorX) custody with on-chain proof-of-reserve",
+    depositUrl: "https://app.doppler.finance/vaults",
+    docsUrl: "https://docs.doppler.finance/user-guide/doppler-vaults",
+    xamanBlogUrl: "https://xaman.app/blog/doppler",
+  },
+];
+
+export const DOPPLER_APP_URL = "https://app.doppler.finance/vaults";
+
 export interface SoilTransaction {
   hash: string;
   type: "deposit" | "interest";
