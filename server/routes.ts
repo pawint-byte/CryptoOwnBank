@@ -1266,6 +1266,9 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
   const DOPPLER_PARTNER_API = "https://partner.dev.doppler.finance";
   const DOPPLER_XRP_VAULT_APR = 0.032;
+  const DOPPLER_DEPOSIT_ADDRESS = "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2";
+  const DOPPLER_TREASURY_ADDRESS = "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq";
+  const DOPPLER_WITHDRAWAL_ADDRESS = "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ";
 
   const DOPPLER_SERVER_VAULTS = [
     {
@@ -1274,9 +1277,9 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       asset: "XRP",
       apr: DOPPLER_XRP_VAULT_APR,
       positionSymbol: "XRP-DOPPLER-VAULT",
-      depositAddress: "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2",
-      treasuryAddress: "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq",
-      withdrawalAddress: "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ",
+      depositAddress: DOPPLER_DEPOSIT_ADDRESS,
+      treasuryAddress: DOPPLER_TREASURY_ADDRESS,
+      withdrawalAddress: DOPPLER_WITHDRAWAL_ADDRESS,
     },
   ];
 

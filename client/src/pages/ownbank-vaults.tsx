@@ -134,6 +134,7 @@ export default function OwnBankVaults() {
   }, [dopplerPositions]);
 
   const [isSyncingDoppler, setIsSyncingDoppler] = useState(false);
+  const [dopplerSyncError, setDopplerSyncError] = useState<string | null>(null);
 
   const dopplerSyncMutation = useMutation({
     mutationFn: async () => {
@@ -146,6 +147,7 @@ export default function OwnBankVaults() {
     },
     onSuccess: (data: any) => {
       setIsSyncingDoppler(false);
+      setDopplerSyncError(null);
       queryClient.invalidateQueries({ queryKey: ["/api/positions/doppler"] });
       queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
       if (data.position?.quantity > 0) {
@@ -175,6 +177,7 @@ export default function OwnBankVaults() {
           }
         }
       } catch { /* use default msg */ }
+      setDopplerSyncError(msg);
       toast({ title: "Sync Failed", description: msg, variant: "destructive" });
     },
   });
@@ -582,6 +585,11 @@ export default function OwnBankVaults() {
                       <span className="sm:hidden">Deposit</span>
                     </Button>
                   </div>
+                  {dopplerSyncError && !dopplerPosition && (
+                    <p className="text-xs text-purple-400 mt-2" data-testid="text-doppler-sync-fallback">
+                      {dopplerSyncError}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
