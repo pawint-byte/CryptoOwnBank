@@ -1264,11 +1264,21 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
-  const DOPPLER_DEPOSIT_ADDRESS = "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2";
-  const DOPPLER_TREASURY_ADDRESS = "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq";
-  const DOPPLER_WITHDRAWAL_ADDRESS = "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ";
   const DOPPLER_PARTNER_API = "https://partner.dev.doppler.finance";
   const DOPPLER_XRP_VAULT_APR = 0.032;
+
+  const DOPPLER_SERVER_VAULTS = [
+    {
+      vaultId: "xrp-vault",
+      name: "Doppler XRP Vault",
+      asset: "XRP",
+      apr: DOPPLER_XRP_VAULT_APR,
+      positionSymbol: "XRP-DOPPLER-VAULT",
+      depositAddress: "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2",
+      treasuryAddress: "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq",
+      withdrawalAddress: "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ",
+    },
+  ];
 
   app.post("/api/doppler/sync", isAuthenticated, async (req: any, res) => {
     try {
@@ -1312,9 +1322,10 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         });
       }
 
+      const vault = DOPPLER_SERVER_VAULTS[0];
       let apiData: any = null;
       try {
-        const apiUrl = `${DOPPLER_PARTNER_API}/v1/vaults/xrp-vault/staking/xrpl/${walletAddress}`;
+        const apiUrl = `${DOPPLER_PARTNER_API}/v1/vaults/${vault.vaultId}/staking/xrpl/${walletAddress}`;
         const apiRes = await fetch(apiUrl, {
           headers: {
             "Authorization": `Bearer ${dopplerApiKey}`,
@@ -1344,7 +1355,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const depositDate = apiData.depositDate || apiData.deposit_date || apiData.created_at || null;
       const pendingRewards = parseFloat(apiData.pendingRewards || apiData.pending_rewards || apiData.rewards || "0");
 
-      const posSymbol = "XRP-DOPPLER-VAULT";
+      const posSymbol = vault.positionSymbol;
       const existingPos = await storage.getPositionByUserAndAsset(userId, dopplerAccount.id, posSymbol);
 
       if (stakedAmount > 0) {

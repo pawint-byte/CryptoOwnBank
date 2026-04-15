@@ -162,7 +162,19 @@ export default function OwnBankVaults() {
     },
     onError: (error: any) => {
       setIsSyncingDoppler(false);
-      const msg = error?.message || "Failed to sync Doppler position";
+      let msg = "Failed to sync Doppler position. Try again later.";
+      try {
+        const raw = error?.message || "";
+        const jsonStart = raw.indexOf("{");
+        if (jsonStart >= 0) {
+          const parsed = JSON.parse(raw.slice(jsonStart));
+          if (parsed.noApiKey) {
+            msg = "Position sync is not yet available. Check your position directly on app.doppler.finance.";
+          } else if (parsed.message) {
+            msg = parsed.message;
+          }
+        }
+      } catch { /* use default msg */ }
       toast({ title: "Sync Failed", description: msg, variant: "destructive" });
     },
   });
