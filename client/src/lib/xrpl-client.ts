@@ -254,6 +254,12 @@ export const SOIL_VAULTS = [
   },
 ];
 
+export const DOPPLER_ADDRESSES = {
+  deposit: "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2",
+  treasury: "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq",
+  withdrawal: "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ",
+};
+
 export const DOPPLER_VAULTS = [
   {
     id: "doppler-xrp",
@@ -270,6 +276,9 @@ export const DOPPLER_VAULTS = [
     depositUrl: "https://app.doppler.finance/vaults",
     docsUrl: "https://docs.doppler.finance/user-guide/doppler-vaults",
     xamanBlogUrl: "https://xaman.app/blog/doppler",
+    depositAddress: "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2",
+    treasuryAddress: "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq",
+    withdrawalAddress: "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ",
   },
 ];
 

@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-14 by main agent (Doppler Finance integration completed — vault cards, FAQ, landing page)**
+**Last updated: 2026-04-15 by main agent (Doppler Finance position sync via Partner API added)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -163,7 +163,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - ~~[2026-03-23] **GitHub push**~~ — DONE. User pushes regularly from Shell tab via Git credentials.
 
 ### Tier 2 — Build Soon (no blockers, medium effort)
-- ~~[2026-04-14] **Doppler Finance XRP Vault Integration**~~ — DONE 2026-04-14. Vault cards on Yield Vaults page (purple theme, ~3.2% APR, 7-day withdrawal, custody note), 2 FAQ entries added, landing page feature card updated, sidebar/page title changed to "Yield Vaults". Deposits via external Doppler app (no in-app deposit flow — Doppler doesn't expose vault XRPL addresses). Position tracking deferred until Doppler provides API or vault addresses for on-chain scanning.
+- ~~[2026-04-14] **Doppler Finance XRP Vault Integration**~~ — DONE 2026-04-15. Full integration: vault cards (purple theme, ~3.2% APR, 7-day withdrawal, custody note), 2 FAQ entries, landing page updated, sidebar/page title "Yield Vaults". Position sync via Doppler Partner API (`POST /api/doppler/sync`, `GET /api/positions/doppler`). Sync persists deposit date + earnings in userDataStore. Requires `DOPPLER_API_KEY` secret. Known vault addresses: Deposit `rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2`, Treasury `rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq`, Withdrawal `rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ`.
 - [2026-04-09] **Uphold API Integration (read-only)**: Connect Uphold accounts via OAuth2 to pull balances into portfolio tracker. Users could view Uphold holdings alongside cold wallet and exchange balances in one dashboard. Uphold API: `GET /v0/me/cards` returns all asset balances. **Prerequisite:** Register at Uphold developer portal, get client ID + secret, wait for approval. Once credentials are available, coding is ~2-3 hours. Future phase: write access for initiating transfers from Uphold to cold wallets (bidirectional flow).
 - [2026-04-01] **Manual Private Asset Tracker (Phase 1 of Tokenized Equity Vault)**: Add manual private asset entries to the portfolio — name, quantity, cost basis, estimated value, liquidity event date, notes. Shows in portfolio total and Legacy Plan. Immediately useful for Forge/Ripple position and any other pre-IPO holdings. **This is the foundation that Phase 2 and 3 below build on.**
 - [2026-03-24] **Embedded on-ramp widget**: Once MoonPay, Transak, or Guardarian approves, embed their widget so members can buy crypto without leaving CryptoOwnBank. Changelly widget already live.

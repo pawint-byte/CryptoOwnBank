@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { apiRequest } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -115,6 +115,57 @@ export default function OwnBankVaults() {
     }
     return map;
   }, [soilPositions]);
+
+  const { data: dopplerPositions } = useQuery<{ assetSymbol: string; quantity: string; totalCostBasis: string; depositDate: string; earnedToDate: number; apr: number }[]>({
+    queryKey: ["/api/positions/doppler"],
+  });
+
+  const dopplerPosition = useMemo(() => {
+    if (!dopplerPositions || dopplerPositions.length === 0) return null;
+    const pos = dopplerPositions[0];
+    const qty = parseFloat(pos.quantity) || 0;
+    if (qty <= 0) return null;
+    return {
+      principal: qty,
+      depositDate: pos.depositDate || "",
+      earnedToDate: pos.earnedToDate || 0,
+      apr: pos.apr || 3.2,
+    };
+  }, [dopplerPositions]);
+
+  const [isSyncingDoppler, setIsSyncingDoppler] = useState(false);
+
+  const dopplerSyncMutation = useMutation({
+    mutationFn: async () => {
+      setIsSyncingDoppler(true);
+      const res = await apiRequest("POST", "/api/doppler/sync", {
+        walletAddress,
+        walletType,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setIsSyncingDoppler(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/positions/doppler"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      if (data.position?.quantity > 0) {
+        toast({
+          title: "Doppler Position Synced",
+          description: `${data.position.quantity.toFixed(2)} XRP staked (~${data.position.earnedToDate.toFixed(4)} XRP earned)`,
+        });
+      } else {
+        toast({
+          title: "No Doppler Position Found",
+          description: "No active stake was found for your wallet on Doppler Finance.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      setIsSyncingDoppler(false);
+      const msg = error?.message || "Failed to sync Doppler position";
+      toast({ title: "Sync Failed", description: msg, variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
     if (!hasPendingXummPayment()) return;
@@ -378,6 +429,43 @@ export default function OwnBankVaults() {
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4">
+                {dopplerPosition && (
+                  <div className="rounded-lg bg-purple-500/5 border border-purple-500/20 p-3 space-y-2" data-testid="doppler-position-display">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">Your Position</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700"
+                        onClick={() => dopplerSyncMutation.mutate()}
+                        disabled={isSyncingDoppler}
+                        data-testid="button-doppler-refresh"
+                      >
+                        {isSyncingDoppler ? <Loader2 className="h-3 w-3 animate-spin" /> : "Refresh"}
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Staked</p>
+                        <p className="text-sm font-semibold" data-testid="text-doppler-staked">
+                          {dopplerPosition.principal.toLocaleString(undefined, { maximumFractionDigits: 2 })} XRP
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Est. Earned</p>
+                        <p className="text-sm font-semibold text-green-600 dark:text-green-400" data-testid="text-doppler-earned">
+                          +{dopplerPosition.earnedToDate.toLocaleString(undefined, { maximumFractionDigits: 4 })} XRP
+                        </p>
+                      </div>
+                    </div>
+                    {dopplerPosition.depositDate && (
+                      <p className="text-xs text-muted-foreground">
+                        Since {new Date(dopplerPosition.depositDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Strategy</p>
@@ -452,16 +540,36 @@ export default function OwnBankVaults() {
                       Xaman Guide
                     </a>
                   </div>
-                  <Button
-                    onClick={() => window.open(vault.depositUrl, "_blank")}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                    size="sm"
-                    data-testid={`button-deposit-${vault.id}`}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Deposit via Doppler</span>
-                    <span className="sm:hidden">Deposit</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {isConnected && !dopplerPosition && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => dopplerSyncMutation.mutate()}
+                        disabled={isSyncingDoppler}
+                        className="border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                        data-testid="button-doppler-sync"
+                      >
+                        {isSyncingDoppler ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4 mr-1" />
+                        )}
+                        <span className="hidden sm:inline">Sync Position</span>
+                        <span className="sm:hidden">Sync</span>
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => window.open(vault.depositUrl, "_blank")}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      size="sm"
+                      data-testid={`button-deposit-${vault.id}`}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Deposit via Doppler</span>
+                      <span className="sm:hidden">Deposit</span>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

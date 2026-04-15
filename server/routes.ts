@@ -1264,6 +1264,206 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  const DOPPLER_DEPOSIT_ADDRESS = "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2";
+  const DOPPLER_TREASURY_ADDRESS = "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq";
+  const DOPPLER_WITHDRAWAL_ADDRESS = "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ";
+  const DOPPLER_PARTNER_API = "https://partner.dev.doppler.finance";
+  const DOPPLER_XRP_VAULT_APR = 0.032;
+
+  app.post("/api/doppler/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      const [user] = await db.select({
+        xrplWalletAddress: users.xrplWalletAddress,
+      }).from(users).where(eq(users.id, userId));
+
+      let walletAddress = user?.xrplWalletAddress;
+
+      if (!walletAddress && req.body.walletAddress) {
+        walletAddress = req.body.walletAddress;
+        await db.update(users).set({
+          xrplWalletAddress: walletAddress,
+          xrplWalletType: req.body.walletType || "xumm",
+        }).where(eq(users.id, userId));
+      }
+
+      if (!walletAddress) {
+        return res.status(400).json({ message: "No wallet connected. Connect your XRPL wallet first." });
+      }
+
+      const dopplerApiKey = process.env.DOPPLER_API_KEY;
+      if (!dopplerApiKey) {
+        return res.status(503).json({
+          message: "Doppler Partner API key not configured. Check your position directly on app.doppler.finance.",
+          noApiKey: true,
+        });
+      }
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let dopplerAccount = existingAccounts.find(a => a.provider === "doppler-xrpl");
+      if (!dopplerAccount) {
+        dopplerAccount = await storage.createAccount({
+          userId,
+          credentialId: null,
+          provider: "doppler-xrpl",
+          accountName: "Doppler Finance (XRPL)",
+          accountType: "defi",
+        });
+      }
+
+      let apiData: any = null;
+      try {
+        const apiUrl = `${DOPPLER_PARTNER_API}/v1/vaults/xrp-vault/staking/xrpl/${walletAddress}`;
+        const apiRes = await fetch(apiUrl, {
+          headers: {
+            "Authorization": `Bearer ${dopplerApiKey}`,
+            "Content-Type": "application/json",
+          },
+          signal: AbortSignal.timeout(10000),
+        });
+
+        if (apiRes.ok) {
+          apiData = await apiRes.json();
+        } else if (apiRes.status === 404) {
+          apiData = { stakedAmount: 0, status: "not_found" };
+        } else {
+          console.error(`[doppler/sync] Partner API returned ${apiRes.status}: ${await apiRes.text()}`);
+          return res.status(502).json({
+            message: "Doppler Partner API returned an error. Try again later or check app.doppler.finance.",
+          });
+        }
+      } catch (apiErr: any) {
+        console.error("[doppler/sync] Partner API request failed:", apiErr.message);
+        return res.status(502).json({
+          message: "Could not reach Doppler Partner API. Try again later or check your position on app.doppler.finance.",
+        });
+      }
+
+      const stakedAmount = parseFloat(apiData.stakedAmount || apiData.staked_amount || apiData.balance || "0");
+      const depositDate = apiData.depositDate || apiData.deposit_date || apiData.created_at || null;
+      const pendingRewards = parseFloat(apiData.pendingRewards || apiData.pending_rewards || apiData.rewards || "0");
+
+      const posSymbol = "XRP-DOPPLER-VAULT";
+      const existingPos = await storage.getPositionByUserAndAsset(userId, dopplerAccount.id, posSymbol);
+
+      if (stakedAmount > 0) {
+        const priceRow = await db.select({ priceUsd: priceCacheTable.priceUsd }).from(priceCacheTable).where(eq(priceCacheTable.symbol, "XRP")).limit(1);
+        const xrpPrice = priceRow.length > 0 ? parseFloat(priceRow[0].priceUsd) : 0;
+        const costBasis = stakedAmount * xrpPrice;
+
+        if (existingPos) {
+          await storage.updatePosition(existingPos.id, {
+            quantity: stakedAmount.toFixed(8),
+            averageCost: xrpPrice.toFixed(8),
+            totalCostBasis: costBasis.toFixed(2),
+          });
+          if (existingPos.isAddressed) {
+            await storage.markPositionAddressed(existingPos.id, false);
+          }
+        } else {
+          await storage.createPosition({
+            userId,
+            accountId: dopplerAccount.id,
+            assetSymbol: posSymbol,
+            quantity: stakedAmount.toFixed(8),
+            averageCost: xrpPrice.toFixed(8),
+            totalCostBasis: costBasis.toFixed(2),
+          });
+        }
+      } else if (existingPos) {
+        await storage.updatePosition(existingPos.id, {
+          quantity: "0",
+          totalCostBasis: "0",
+        });
+        await storage.markPositionAddressed(existingPos.id, true);
+      }
+
+      let earnedToDate = pendingRewards;
+      if (earnedToDate === 0 && stakedAmount > 0 && depositDate) {
+        const daysElapsed = Math.max(0, (Date.now() - new Date(depositDate).getTime()) / (1000 * 60 * 60 * 24));
+        earnedToDate = stakedAmount * (DOPPLER_XRP_VAULT_APR / 365) * daysElapsed;
+      }
+      earnedToDate = Math.round(earnedToDate * 1e6) / 1e6;
+
+      const settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      store.dopplerSync = {
+        depositDate: depositDate || new Date().toISOString(),
+        pendingRewards: earnedToDate,
+        stakedAmount,
+        lastSyncedAt: new Date().toISOString(),
+      };
+      await storage.upsertUserSettings({ userId, userDataStore: store });
+
+      res.json({
+        synced: true,
+        position: {
+          assetSymbol: posSymbol,
+          quantity: stakedAmount,
+          depositDate: depositDate || null,
+          earnedToDate,
+          pendingRewards,
+          apr: DOPPLER_XRP_VAULT_APR * 100,
+        },
+      });
+    } catch (error: any) {
+      console.error("[doppler/sync] Error:", error);
+      res.status(500).json({ message: "Failed to sync Doppler position" });
+    }
+  });
+
+  app.get("/api/positions/doppler", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const positionsData = await storage.getPositionsByUser(userId);
+      const dopplerPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("XRP-DOPPLER"));
+
+      if (dopplerPositions.length === 0) {
+        return res.json([]);
+      }
+
+      const settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      const syncData = store.dopplerSync || {};
+
+      const now = Date.now();
+
+      const result = dopplerPositions.map(p => {
+        const principal = parseFloat(p.quantity) || 0;
+        let earnedToDate = 0;
+
+        const depositDate = syncData.depositDate || p.updatedAt?.toISOString?.() || new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        if (syncData.pendingRewards && syncData.pendingRewards > 0) {
+          const syncTime = new Date(syncData.lastSyncedAt || now).getTime();
+          const additionalDays = Math.max(0, (now - syncTime) / (1000 * 60 * 60 * 24));
+          earnedToDate = syncData.pendingRewards + (principal * (DOPPLER_XRP_VAULT_APR / 365) * additionalDays);
+        } else if (principal > 0) {
+          const daysElapsed = Math.max(0, (now - new Date(depositDate).getTime()) / (1000 * 60 * 60 * 24));
+          earnedToDate = principal * (DOPPLER_XRP_VAULT_APR / 365) * daysElapsed;
+        }
+
+        earnedToDate = Math.round(earnedToDate * 1e6) / 1e6;
+
+        return {
+          assetSymbol: p.assetSymbol,
+          quantity: p.quantity,
+          totalCostBasis: p.totalCostBasis,
+          depositDate,
+          earnedToDate,
+          apr: DOPPLER_XRP_VAULT_APR * 100,
+          lastSyncedAt: syncData.lastSyncedAt || null,
+        };
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("[positions/doppler] Error:", error);
+      res.status(500).json({ message: "Failed to fetch Doppler positions" });
+    }
+  });
+
   app.get("/api/positions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
