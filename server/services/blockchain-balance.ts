@@ -77,6 +77,12 @@ const COINGECKO_IDS: Record<string, string> = {
   "1INCH": "1inch",
   BAT: "basic-attention-token",
   ZRX: "0x",
+  ICE: "ice-open-network",
+  CAKE: "pancakeswap-token",
+  TWT: "trust-wallet-token",
+  XVS: "venus",
+  BTCB: "bitcoin-bep2",
+  BCH: "bitcoin-cash",
   ANKR: "ankr",
   CHZ: "chiliz",
   GALA: "gala",
@@ -1662,8 +1668,37 @@ export async function getPolygonBalance(address: string): Promise<ChainBalance[]
   return balances;
 }
 
+const BSC_BEP20_TOKENS: Array<{ contract: string; symbol: string; decimals: number }> = [
+  { contract: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", decimals: 18 },
+  { contract: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", decimals: 18 },
+  { contract: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", symbol: "BUSD", decimals: 18 },
+  { contract: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3", symbol: "DAI", decimals: 18 },
+  { contract: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", symbol: "ETH", decimals: 18 },
+  { contract: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c", symbol: "BTCB", decimals: 18 },
+  { contract: "0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE", symbol: "XRP", decimals: 18 },
+  { contract: "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47", symbol: "ADA", decimals: 18 },
+  { contract: "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402", symbol: "DOT", decimals: 18 },
+  { contract: "0x4338665CBB7B2485A8855A139b75D5e34AB0DB94", symbol: "LTC", decimals: 18 },
+  { contract: "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD", symbol: "LINK", decimals: 18 },
+  { contract: "0xBf5140A22578168FD562DCcF235E5D43A02ce9B1", symbol: "UNI", decimals: 18 },
+  { contract: "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82", symbol: "CAKE", decimals: 18 },
+  { contract: "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63", symbol: "XVS", decimals: 18 },
+  { contract: "0x1CE0c2827e2eF14D5C4f29a091d735A204794041", symbol: "AVAX", decimals: 18 },
+  { contract: "0xc335Df7C25b72eEC661d5Aa32a7c2B7b2a1D1874", symbol: "ICE", decimals: 18 },
+  { contract: "0xba2ae424d960c26247dd6c32edC70B295c744C43", symbol: "DOGE", decimals: 8 },
+  { contract: "0x4B0F1812e5Df2A09796481Ff14017e6005508003", symbol: "TWT", decimals: 18 },
+  { contract: "0x14016E85a25aeb13065688cAFB43044C2ef86784", symbol: "TUSD", decimals: 18 },
+  { contract: "0x947950BcC74888a40Ffa2593C5798F11Fc9124C4", symbol: "SUSHI", decimals: 18 },
+  { contract: "0x101d82428437127bF1608F699CD651e6Abf9766E", symbol: "BAT", decimals: 18 },
+  { contract: "0xfb6115445Bff7b52FeB98650C87f44907E58f802", symbol: "AAVE", decimals: 18 },
+  { contract: "0x8fF795a6F4D97E7887C79beA79aba5cc76444aDf", symbol: "BCH", decimals: 18 },
+];
+
+const BALANCE_OF_SELECTOR = "0x70a08231000000000000000000000000";
+
 export async function getBscBalance(address: string): Promise<ChainBalance[]> {
   const balances: ChainBalance[] = [];
+  const addrNoPad = address.replace("0x", "").toLowerCase();
 
   try {
     const data = await fetchJson(
@@ -1697,65 +1732,60 @@ export async function getBscBalance(address: string): Promise<ChainBalance[]> {
   }
 
   try {
-    const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD"]);
+    const batchCalls = BSC_BEP20_TOKENS.map((token, idx) => ({
+      jsonrpc: "2.0",
+      id: idx + 10,
+      method: "eth_call",
+      params: [
+        { to: token.contract, data: BALANCE_OF_SELECTOR + addrNoPad },
+        "latest",
+      ],
+    }));
+
+    const batchSize = 20;
     const tokenEntries: Array<{ symbol: string; balance: number }> = [];
-    const blockscoutUrl = `https://bsc.blockscout.com/api/v2/addresses/${address}/tokens?type=ERC-20`;
 
-    let nextPageParams: any = null;
-    let pageCount = 0;
+    for (let i = 0; i < batchCalls.length; i += batchSize) {
+      const batch = batchCalls.slice(i, i + batchSize);
+      const results = await fetchJson(`https://bsc-rpc.publicnode.com`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batch),
+      });
 
-    do {
-      let url = blockscoutUrl;
-      if (nextPageParams) {
-        const params = new URLSearchParams();
-        for (const [k, v] of Object.entries(nextPageParams)) {
-          params.set(k, String(v));
-        }
-        url += `&${params.toString()}`;
-      }
-
-      const tokenData = await fetchJson(url);
-      const items = tokenData.items || [];
-
-      for (const item of items) {
-        const token = item.token || {};
-        const symbol = (token.symbol || "").toUpperCase();
-        const decimals = parseInt(token.decimals || "18");
-        const rawBalance = item.value || "0";
-        if (!symbol || rawBalance === "0") continue;
-        const rawBal = BigInt(rawBalance);
+      const resultArray = Array.isArray(results) ? results : [results];
+      for (const res of resultArray) {
+        const idx = res.id - 10;
+        if (idx < 0 || idx >= BSC_BEP20_TOKENS.length) continue;
+        const token = BSC_BEP20_TOKENS[idx];
+        const hexVal = res.result;
+        if (!hexVal || hexVal === "0x" || hexVal === "0x0" || BigInt(hexVal) === 0n) continue;
+        const rawBal = BigInt(hexVal);
         let bal: number;
-        if (decimals <= 6) {
-          bal = Number(rawBal) / Math.pow(10, decimals);
+        if (token.decimals <= 6) {
+          bal = Number(rawBal) / Math.pow(10, token.decimals);
         } else {
-          bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+          bal = Number(rawBal / (10n ** BigInt(token.decimals - 6))) / 1e6;
         }
         if (bal > 0.000001) {
-          tokenEntries.push({ symbol, balance: bal });
+          tokenEntries.push({ symbol: token.symbol, balance: bal });
         }
       }
-
-      nextPageParams = tokenData.next_page_params || null;
-      pageCount++;
-    } while (nextPageParams && pageCount < 10);
+    }
 
     if (tokenEntries.length > 0) {
+      const stablecoins = new Set(["USDT", "USDC", "DAI", "BUSD", "TUSD"]);
       const tokenSymbols = tokenEntries.map(e => e.symbol);
-      const ids = tokenSymbols
-        .filter(s => !stablecoins.has(s))
-        .map(s => COINGECKO_IDS[s])
-        .filter(Boolean);
-
       let tokenPrices: Record<string, number> = {};
-      if (ids.length > 0) {
-        try {
-          const dbPrices = await loadPricesFromDb();
-          for (const sym of tokenSymbols) {
-            if (dbPrices[sym]) tokenPrices[sym] = dbPrices[sym];
-          }
-          const missingSymbols = tokenSymbols.filter(s => !tokenPrices[s] && !stablecoins.has(s) && COINGECKO_IDS[s]);
-          if (missingSymbols.length > 0) {
-            const missingIds = [...new Set(missingSymbols.map(s => COINGECKO_IDS[s]).filter(Boolean))];
+      try {
+        const dbPrices = await loadPricesFromDb();
+        for (const sym of tokenSymbols) {
+          if (dbPrices[sym]) tokenPrices[sym] = dbPrices[sym];
+        }
+        const missingSymbols = tokenSymbols.filter(s => !tokenPrices[s] && !stablecoins.has(s) && COINGECKO_IDS[s]);
+        if (missingSymbols.length > 0) {
+          const missingIds = [...new Set(missingSymbols.map(s => COINGECKO_IDS[s]).filter(Boolean))];
+          if (missingIds.length > 0) {
             const priceData = await fetchJson(
               `https://api.coingecko.com/api/v3/simple/price?ids=${missingIds.join(",")}&vs_currencies=usd`
             );
@@ -1766,8 +1796,8 @@ export async function getBscBalance(address: string): Promise<ChainBalance[]> {
               }
             }
           }
-        } catch {}
-      }
+        }
+      } catch {}
 
       for (const entry of tokenEntries) {
         let usdValue = 0;
