@@ -515,6 +515,7 @@ export async function getSolanaBalance(address: string): Promise<ChainBalance[]>
         "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL": { symbol: "JTO", decimals: 9, coingeckoId: "jito-governance-token" },
         "WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk": { symbol: "WEN", decimals: 5, coingeckoId: "wen-4" },
         "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof": { symbol: "RNDR", decimals: 8, coingeckoId: "render-token" },
+        "6UpQcMAb5xMzxc7ZfPaVMgx3KqsvKZdT5U718BzD5We2": { symbol: "wXRP", decimals: 6, coingeckoId: "ripple" },
       };
 
       const stablecoins = new Set(["USDC", "USDT"]);
