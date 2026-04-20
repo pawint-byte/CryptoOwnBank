@@ -58,6 +58,13 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
     audienceTier: "all",
   },
   {
+    title: "New on CryptoOwnBank: Lend XLM and USDC on Stellar with Blend Capital",
+    description: "Quick update — we just added a third yield source to your Vaults page.\n\nBlend Capital is now live on CryptoOwnBank.\n\nBlend is a non-custodial lending protocol on Stellar Soroban — the same model as Aave or Compound, but settled on Stellar with sub-cent fees and 5-second finality. You can lend XLM and USDC into pools and earn a live, market-driven supply APY paid by borrowers.\n\nWhat this means for you:\n\nConnect your Stellar address (the G... one you already use with Freighter or LOBSTR).\nClick Sync Position on the Yield Vaults page.\nSee your supplied balance, the live supply APY for each pool, and one-click access to app.blend.capital to deposit or withdraw.\nFunds stay in the Soroban smart contract and your wallet — we never hold them.\n\nYou now have three non-custodial yield sources side by side:\n\nSoil Protocol (XRPL) — fixed 5-8% APR on RLUSD, backed by US Treasuries and private credit.\nDoppler Finance (XRPL) — approximately 3.2% APR on XRP via market-neutral strategies.\nBlend Capital (Stellar) — live, variable lending APY on XLM and USDC.\n\nMany members will want to use all three — stable yield in Soil, more XRP through Doppler, and idle XLM or USDC put to work in Blend.\n\nWe never take fees from your yield. 100% of what you earn on Blend stays in your Stellar wallet.",
+    ctaLabel: "Open My Vaults",
+    ctaUrl: "https://cryptoownbank.com/ownbank/vaults",
+    audienceTier: "all",
+  },
+  {
     title: "XLS-66 Native Lending Is Coming to XRPL — Get Ready Now",
     description: "Two new amendments — XLS-65 (Single Asset Vaults) and XLS-66 (Lending Protocol) — are being voted on by XRPL validators right now. When they reach 80% consensus for 2 consecutive weeks, non-custodial lending vaults go live directly on the XRP Ledger.\n\nWhat this means for you:\n\nDeposit XRP or RLUSD into on-ledger vaults and earn yield — your tokens never leave your wallet.\nNon-custodial — no exchange, no middleman, no counterparty risk.\nCryptoOwnBank tracks validator voting in real-time so you know exactly when it activates.\n\nWe've built an \"Are You Ready for XLS-66?\" checklist to help you prepare:\n\n- Connect your XRP wallet\n- Link Xaman for transaction signing\n- Set up RLUSD trustlines (for RLUSD vaults)\n- Use the yield calculator to model different scenarios\n\nDo the homework now so you're ready the moment vaults go live. Pro members get first access to all XLS-66 features.\n\nThis is where everything starts — own your crypto, earn yield, and never hand your keys to anyone.",
     ctaLabel: "Check Your XLS-66 Readiness",
