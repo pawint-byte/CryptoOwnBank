@@ -1874,11 +1874,70 @@ export default function Wallets() {
     return price ? balance * price : 0;
   };
 
+  const CHAIN_DISPLAY: Record<string, string> = {
+    xrp: "XRPL",
+    xrpl: "XRPL",
+    stellar: "Stellar",
+    xlm: "Stellar",
+    ethereum: "Ethereum",
+    eth: "Ethereum",
+    bitcoin: "Bitcoin",
+    btc: "Bitcoin",
+    solana: "Solana",
+    sol: "Solana",
+    hedera: "Hedera",
+    hbar: "Hedera",
+    cardano: "Cardano",
+    ada: "Cardano",
+    polygon: "Polygon",
+    matic: "Polygon",
+    avalanche: "Avalanche",
+    avax: "Avalanche",
+    arbitrum: "Arbitrum",
+    optimism: "Optimism",
+    base: "Base",
+    bnb: "BNB Chain",
+    bsc: "BNB Chain",
+    cosmos: "Cosmos",
+    atom: "Cosmos",
+    polkadot: "Polkadot",
+    dot: "Polkadot",
+    tron: "Tron",
+    trx: "Tron",
+    vechain: "VeChain",
+    vet: "VeChain",
+  };
+
+  const formatSourceLabel = (rawLabel: string | null | undefined, chain: string): string => {
+    const chainKey = chain.toLowerCase();
+    const chainDisplay = CHAIN_DISPLAY[chainKey] || chain.toUpperCase();
+    if (!rawLabel || !rawLabel.trim()) {
+      return `${chain.charAt(0).toUpperCase() + chain.slice(1)} Wallet (${chainDisplay})`;
+    }
+    let device = rawLabel.trim();
+    const prefixPattern = /^(XRP|XRPL|XLM|STELLAR|ETH|ETHEREUM|BTC|BITCOIN|SOL|SOLANA|HBAR|HEDERA|ADA|CARDANO|MATIC|POLYGON|AVAX|AVALANCHE|ARB|ARBITRUM|OP|OPTIMISM|BASE|BNB|BSC|ATOM|COSMOS|DOT|POLKADOT|TRX|TRON|VET|VECHAIN)[_\-\s]+/i;
+    device = device.replace(prefixPattern, "");
+    if (!device) device = rawLabel.trim();
+    const niceDevice = device
+      .split(/[_\s]+/)
+      .filter(Boolean)
+      .map((part) => {
+        if (/\(.+\)/.test(part)) return part;
+        if (part.length <= 3) return part.toUpperCase();
+        return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+      })
+      .join(" ");
+    if (niceDevice.toLowerCase().includes(chainDisplay.toLowerCase())) {
+      return niceDevice;
+    }
+    return `${niceDevice} (${chainDisplay})`;
+  };
+
   const bySourceData = (() => {
     const grouped: Record<string, { name: string; value: number; chain: string }> = {};
     for (const w of userWallets) {
       const total = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
-      const label = (w.label || `${w.chain.charAt(0).toUpperCase() + w.chain.slice(1)} Wallet`).trim().toUpperCase();
+      const label = formatSourceLabel(w.label, w.chain);
       if (!grouped[label]) {
         grouped[label] = { name: label, value: 0, chain: w.chain };
       }
