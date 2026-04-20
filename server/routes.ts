@@ -1478,6 +1478,183 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/blend/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const { fetchAllBlendPositions, BLEND_POOLS, buildPositionSymbol } = await import("./services/blend");
+      const userId = req.user.claims.sub;
+
+      const settings = await storage.getUserSettings(userId);
+      let stellarAddress = settings?.stellarAddress || null;
+
+      if (!stellarAddress && req.body.stellarAddress) {
+        stellarAddress = req.body.stellarAddress;
+        if (stellarAddress && (!stellarAddress.startsWith("G") || stellarAddress.length !== 56)) {
+          return res.status(400).json({ message: "Invalid Stellar address format." });
+        }
+        await storage.upsertUserSettings({ userId, stellarAddress });
+      }
+
+      if (!stellarAddress) {
+        return res.status(400).json({ message: "No Stellar address connected. Connect your Stellar wallet first." });
+      }
+
+      if (!BLEND_POOLS || BLEND_POOLS.length === 0) {
+        return res.status(503).json({
+          message: "Blend pools are not configured. Check your positions directly on app.blend.capital.",
+          noPools: true,
+        });
+      }
+
+      let fetchResult;
+      try {
+        fetchResult = await fetchAllBlendPositions(stellarAddress);
+      } catch (err: any) {
+        console.error("[blend/sync] Soroban query failed:", err?.message || err);
+        return res.status(502).json({
+          message: "Could not reach Blend on Soroban right now. Try again later or check app.blend.capital.",
+        });
+      }
+      const { snapshots, successPoolKeys, failedPoolKeys } = fetchResult;
+      if (snapshots.length === 0 && failedPoolKeys.length > 0) {
+        return res.status(502).json({
+          message: `Blend pool query failed (${failedPoolKeys.join(", ")}). Try again later or check app.blend.capital.`,
+        });
+      }
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let blendAccount = existingAccounts.find(a => a.provider === "blend-stellar");
+      if (!blendAccount) {
+        blendAccount = await storage.createAccount({
+          userId,
+          credentialId: null,
+          provider: "blend-stellar",
+          accountName: "Blend Capital (Stellar)",
+          accountType: "defi",
+        });
+      }
+
+      const priceRows = await db.select().from(priceCacheTable);
+      const priceMap: Record<string, number> = {};
+      for (const row of priceRows) priceMap[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
+
+      const synced: Array<{ poolKey: string; assetSymbol: string; positionSymbol: string; supply: number; collateral: number; liabilities: number; supplyApy: number }> = [];
+      const seenSymbols = new Set<string>();
+
+      for (const snap of snapshots) {
+        for (const p of snap.positions) {
+          const positionSymbol = buildPositionSymbol(snap.poolKey, p.symbol);
+          seenSymbols.add(positionSymbol.toUpperCase());
+          const totalSupply = p.supply + p.collateral;
+          const price = priceMap[p.symbol.toUpperCase()] || 0;
+          const costBasis = totalSupply * price;
+
+          const existing = await storage.getPositionByUserAndAsset(userId, blendAccount.id, positionSymbol);
+          if (totalSupply > 0) {
+            if (existing) {
+              await storage.updatePosition(existing.id, {
+                quantity: totalSupply.toFixed(8),
+                averageCost: price.toFixed(8),
+                totalCostBasis: costBasis.toFixed(2),
+              });
+              if (existing.isAddressed) await storage.markPositionAddressed(existing.id, false);
+            } else {
+              await storage.createPosition({
+                userId,
+                accountId: blendAccount.id,
+                assetSymbol: positionSymbol,
+                quantity: totalSupply.toFixed(8),
+                averageCost: price.toFixed(8),
+                totalCostBasis: costBasis.toFixed(2),
+              });
+            }
+          } else if (existing) {
+            await storage.updatePosition(existing.id, { quantity: "0", totalCostBasis: "0" });
+            await storage.markPositionAddressed(existing.id, true);
+          }
+
+          synced.push({
+            poolKey: snap.poolKey,
+            assetSymbol: p.symbol,
+            positionSymbol,
+            supply: p.supply,
+            collateral: p.collateral,
+            liabilities: p.liabilities,
+            supplyApy: p.supplyApy,
+          });
+        }
+      }
+
+      const allBlendPositions = (await storage.getPositionsByUser(userId)).filter(p =>
+        p.accountId === blendAccount.id && p.assetSymbol.toUpperCase().includes("-BLEND-")
+      );
+      for (const pos of allBlendPositions) {
+        const parts = pos.assetSymbol.toUpperCase().split("-BLEND-");
+        const positionPoolKey = parts[1] || "";
+        const wasFetched = successPoolKeys.has(positionPoolKey);
+        if (wasFetched && !seenSymbols.has(pos.assetSymbol.toUpperCase()) && parseFloat(pos.quantity) > 0) {
+          await storage.updatePosition(pos.id, { quantity: "0", totalCostBasis: "0" });
+          await storage.markPositionAddressed(pos.id, true);
+        }
+      }
+
+      const userSettingsCurrent = await storage.getUserSettings(userId);
+      const store = (userSettingsCurrent?.userDataStore as Record<string, any>) || {};
+      store.blendSync = {
+        lastSyncedAt: new Date().toISOString(),
+        snapshots,
+      };
+      await storage.upsertUserSettings({ userId, userDataStore: store });
+
+      res.json({ synced: true, stellarAddress, positions: synced });
+    } catch (error: any) {
+      console.error("[blend/sync] Error:", error);
+      res.status(500).json({ message: "Failed to sync Blend positions" });
+    }
+  });
+
+  app.get("/api/positions/blend", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const positionsData = await storage.getPositionsByUser(userId);
+      const blendPositions = positionsData.filter(p => p.assetSymbol.toUpperCase().includes("-BLEND-"));
+
+      if (blendPositions.length === 0) return res.json({ positions: [], lastSyncedAt: null, snapshots: [] });
+
+      const settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      const blendSync = store.blendSync || {};
+      const snapshots = blendSync.snapshots || [];
+
+      const apySymbolMap: Record<string, number> = {};
+      for (const snap of snapshots) {
+        for (const p of (snap.positions || [])) {
+          const key = `${snap.poolKey}|${p.symbol}`.toUpperCase();
+          apySymbolMap[key] = p.supplyApy || 0;
+        }
+      }
+
+      const result = blendPositions.map(p => {
+        const parts = p.assetSymbol.split("-BLEND-");
+        const assetSymbol = parts[0] || "";
+        const poolKey = parts[1] || "";
+        const apy = apySymbolMap[`${poolKey}|${assetSymbol}`.toUpperCase()] || 0;
+        return {
+          assetSymbol: p.assetSymbol,
+          tokenSymbol: assetSymbol,
+          poolKey,
+          quantity: p.quantity,
+          totalCostBasis: p.totalCostBasis,
+          supplyApy: apy,
+        };
+      });
+
+      res.json({ positions: result, lastSyncedAt: blendSync.lastSyncedAt || null, snapshots });
+    } catch (error) {
+      console.error("[positions/blend] Error:", error);
+      res.status(500).json({ message: "Failed to fetch Blend positions" });
+    }
+  });
+
   app.get("/api/positions", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

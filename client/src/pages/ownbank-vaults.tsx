@@ -42,7 +42,9 @@ import {
   AFFILIATE_LINKS,
   calculateAccruedInterest,
   DOPPLER_VAULTS,
+  BLEND_VAULTS,
 } from "@/lib/xrpl-client";
+import { useStellarStore } from "@/lib/stellar-store";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
 import { signPayment, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
@@ -135,6 +137,66 @@ export default function OwnBankVaults() {
 
   const [isSyncingDoppler, setIsSyncingDoppler] = useState(false);
   const [dopplerSyncError, setDopplerSyncError] = useState<string | null>(null);
+
+  const { stellarAddress, isConnected: isStellarConnected } = useStellarStore();
+
+  type BlendApiResponse = {
+    positions: { assetSymbol: string; tokenSymbol: string; poolKey: string; quantity: string; totalCostBasis: string; supplyApy: number }[];
+    lastSyncedAt: string | null;
+    snapshots: any[];
+  };
+
+  const { data: blendData } = useQuery<BlendApiResponse>({
+    queryKey: ["/api/positions/blend"],
+  });
+
+  const blendPositionsByPool = useMemo(() => {
+    const map: Record<string, { tokenSymbol: string; quantity: number; supplyApy: number }[]> = {};
+    if (!blendData?.positions) return map;
+    for (const p of blendData.positions) {
+      const qty = parseFloat(p.quantity) || 0;
+      if (qty <= 0) continue;
+      if (!map[p.poolKey]) map[p.poolKey] = [];
+      map[p.poolKey].push({ tokenSymbol: p.tokenSymbol, quantity: qty, supplyApy: p.supplyApy });
+    }
+    return map;
+  }, [blendData]);
+
+  const [isSyncingBlend, setIsSyncingBlend] = useState(false);
+  const [blendSyncError, setBlendSyncError] = useState<string | null>(null);
+
+  const blendSyncMutation = useMutation({
+    mutationFn: async () => {
+      setIsSyncingBlend(true);
+      const res = await apiRequest("POST", "/api/blend/sync", { stellarAddress });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setIsSyncingBlend(false);
+      setBlendSyncError(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/positions/blend"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      const count = (data.positions || []).filter((p: any) => (p.supply + p.collateral) > 0).length;
+      toast({
+        title: count > 0 ? "Blend Position Synced" : "No Blend Position Found",
+        description: count > 0 ? `${count} active position(s) synced from Blend.` : "No active supply or collateral was found on Blend for your Stellar address.",
+      });
+    },
+    onError: (error: any) => {
+      setIsSyncingBlend(false);
+      let msg = "Failed to sync Blend positions. Try again later.";
+      try {
+        const raw = error?.message || "";
+        const jsonStart = raw.indexOf("{");
+        if (jsonStart >= 0) {
+          const parsed = JSON.parse(raw.slice(jsonStart));
+          if (parsed.message) msg = parsed.message;
+        }
+      } catch {}
+      setBlendSyncError(msg);
+      toast({ title: "Sync Failed", description: msg, variant: "destructive" });
+    },
+  });
 
   const dopplerSyncMutation = useMutation({
     mutationFn: async () => {
@@ -412,6 +474,176 @@ export default function OwnBankVaults() {
     }
   }
 
+  function renderBlendSection() {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pt-2">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Stellar / Soroban — Blend Capital</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {BLEND_VAULTS.map((vault) => {
+            const positions = blendPositionsByPool[vault.poolKey] || [];
+            const hasPositions = positions.length > 0;
+            return (
+              <Card key={vault.id} className="border-blue-500/20" data-testid={`card-vault-${vault.id}`}>
+                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <Sparkles className="h-5 w-5 text-blue-500" />
+                    <div className="min-w-0">
+                      <CardTitle className="text-base sm:text-lg" data-testid={`text-vault-name-${vault.id}`}>
+                        {vault.name}
+                      </CardTitle>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {vault.description}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 shrink-0"
+                    data-testid={`badge-network-${vault.id}`}
+                  >
+                    {vault.network}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {hasPositions && (
+                    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3 space-y-2" data-testid={`blend-position-display-${vault.id}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">Your Positions</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700"
+                          onClick={() => blendSyncMutation.mutate()}
+                          disabled={isSyncingBlend || !isStellarConnected}
+                          data-testid={`button-blend-refresh-${vault.id}`}
+                        >
+                          {isSyncingBlend ? <Loader2 className="h-3 w-3 animate-spin" /> : "Refresh"}
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {positions.map(p => (
+                          <div key={p.tokenSymbol} className="flex items-center justify-between text-sm" data-testid={`blend-pos-${vault.id}-${p.tokenSymbol}`}>
+                            <span className="font-medium">{p.tokenSymbol}</span>
+                            <div className="text-right">
+                              <span className="font-semibold">{p.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                              {p.supplyApy > 0 && (
+                                <span className="ml-2 text-xs text-green-600 dark:text-green-400">{(p.supplyApy * 100).toFixed(2)}% APY</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Assets</p>
+                      <span className="text-sm font-medium" data-testid={`text-assets-${vault.id}`}>{vault.assets.join(", ")}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Risk Level</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                        <span className="text-sm font-medium" data-testid={`text-risk-${vault.id}`}>{vault.riskLevel}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Withdrawal</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium" data-testid={`text-withdrawal-${vault.id}`}>{vault.withdrawalTerms}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Provider</p>
+                      <span className="text-sm font-medium">{vault.provider}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md bg-muted/30 border border-muted px-3 py-2">
+                    <div className="flex items-start gap-2">
+                      <Target className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-500" />
+                      <p className="text-xs text-muted-foreground" data-testid={`text-bestfor-${vault.id}`}>
+                        <span className="font-medium text-foreground">Best for:</span> {vault.bestFor}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md bg-blue-500/5 border border-blue-500/20 px-3 py-2">
+                    <div className="flex items-start gap-2">
+                      <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-500" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">Custody:</span> {vault.custodyNote}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={vault.docsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        data-testid={`link-blend-docs-${vault.id}`}
+                      >
+                        Docs
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isStellarConnected ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => blendSyncMutation.mutate()}
+                          disabled={isSyncingBlend}
+                          className="border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                          data-testid={`button-blend-sync-${vault.id}`}
+                        >
+                          {isSyncingBlend ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 mr-1" />
+                          )}
+                          <span className="hidden sm:inline">Sync Position</span>
+                          <span className="sm:hidden">Sync</span>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground" data-testid={`text-blend-connect-${vault.id}`}>
+                          Connect Stellar wallet to sync
+                        </span>
+                      )}
+                      <Button
+                        onClick={() => window.open(vault.depositUrl, "_blank")}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                        data-testid={`button-deposit-${vault.id}`}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Open Blend</span>
+                        <span className="sm:hidden">Open</span>
+                      </Button>
+                    </div>
+                  </div>
+                  {blendSyncError && !hasPositions && (
+                    <p className="text-xs text-blue-400 mt-1" data-testid={`text-blend-sync-fallback-${vault.id}`}>
+                      {blendSyncError}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderDopplerSection() {
     return (
       <div className="space-y-4">
@@ -619,6 +851,8 @@ export default function OwnBankVaults() {
         </Card>
 
         {renderDopplerSection()}
+
+        {renderBlendSection()}
 
         <XrplDisclaimer />
       </div>
@@ -875,6 +1109,8 @@ export default function OwnBankVaults() {
       </div>
 
       {renderDopplerSection()}
+
+      {renderBlendSection()}
 
       <XrplDisclaimer />
 

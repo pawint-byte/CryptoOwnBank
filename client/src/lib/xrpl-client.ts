@@ -284,6 +284,26 @@ export const DOPPLER_VAULTS = [
 
 export const DOPPLER_APP_URL = "https://app.doppler.finance/vaults";
 
+export const BLEND_VAULTS = [
+  {
+    id: "blend-fixed-xlm",
+    poolKey: "FIXEDXLM",
+    name: "Blend Fixed XLM Pool",
+    description: "Supply XLM or USDC on Stellar Soroban to earn lending interest. Non-custodial.",
+    network: "Stellar (Soroban)",
+    assets: ["XLM", "USDC"],
+    riskLevel: "Medium risk",
+    withdrawalTerms: "Liquidity-dependent (typically immediate)",
+    bestFor: "Stellar holders who want non-custodial yield on XLM or USDC",
+    provider: "Blend Capital",
+    custodyNote: "Non-custodial Soroban smart contract. You retain control of your assets via Freighter or other Stellar wallets.",
+    depositUrl: "https://app.blend.capital",
+    docsUrl: "https://docs.blend.capital",
+  },
+];
+
+export const BLEND_APP_URL = "https://app.blend.capital";
+
 export interface SoilTransaction {
   hash: string;
   type: "deposit" | "interest";
