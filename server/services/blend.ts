@@ -36,7 +36,7 @@ function parsePoolsFromEnv(): BlendPoolConfig[] {
 
 const DEFAULT_BLEND_POOLS: BlendPoolConfig[] = [
   {
-    poolId: "CDIE73IJJKOWXWCPU5GWQ745FUKWCSH3YKZRF5IQW7GE3G7YAZ773MYK",
+    poolId: "CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD",
     poolKey: "FIXEDXLM",
     poolName: "Blend Fixed XLM Pool",
     description: "Supply XLM/USDC to earn lending interest on Stellar Soroban",
