@@ -158,7 +158,7 @@ const faqGroups = [
     ],
   },
   {
-    heading: "Yield Vaults (Soil & Doppler)",
+    heading: "Yield Vaults (Soil, Doppler & Blend)",
     items: [
       {
         q: "What is RLUSD and how do the yield vaults work?",
@@ -215,6 +215,14 @@ const faqGroups = [
       {
         q: "How does Doppler Finance compare to Soil Protocol?",
         a: "They serve different purposes and different assets. Soil Protocol: earn 5.2-8.0% APR on RLUSD (Ripple's stablecoin), backed by US Treasuries and private credit. Your RLUSD generates predictable, fixed yield from real-world lending. Doppler Finance: earn ~3.2% APR on XRP itself, using market-neutral trading strategies across exchanges. Your yield is in XRP, not stablecoins. The key difference: Soil earns stablecoin yield (predictable, low volatility), while Doppler earns XRP yield (your stack grows in XRP terms). Many users use both — deposit RLUSD in Soil for stable yield, and deposit XRP in Doppler to accumulate more XRP. Both are accessible from the Yield Vaults page on CryptoOwnBank.",
+      },
+      {
+        q: "What is Blend Capital and how does it work on CryptoOwnBank?",
+        a: "Blend Capital is a non-custodial lending protocol built on Stellar Soroban (Stellar's smart contract platform). You can lend XLM and USDC into isolated pools and earn a live, market-driven supply APY paid by borrowers — the same model that powers Aave or Compound on EVM chains, but settled on Stellar with sub-cent fees and 5-second finality. CryptoOwnBank tracks your Blend lending positions read-only: connect your Stellar address (the same G... address you use with Freighter or LOBSTR), click 'Sync Position' on the Yield Vaults page, and we display your supplied balance, the live supply APY for each pool, and a direct link to app.blend.capital where you can deposit or withdraw. Funds always sit in the Soroban smart contract and your Stellar wallet — CryptoOwnBank never holds them.",
+      },
+      {
+        q: "How is Blend Capital different from Soil and Doppler?",
+        a: "Three different yield models on three different chains. Soil Protocol (XRPL): fixed 5-8% APR on RLUSD, backed by US Treasuries and private credit — predictable, stablecoin-denominated. Doppler Finance (XRPL): ~3.2% APR on XRP itself via market-neutral trading strategies — your XRP stack grows. Blend Capital (Stellar Soroban): live, variable lending APY on XLM and USDC — rates float with utilization, like Aave. Many members use all three: Soil for stable RLUSD yield, Doppler to accumulate more XRP, and Blend to put idle XLM or USDC to work on Stellar. All three are non-custodial — your keys, your funds — and all three live on the same Yield Vaults page on CryptoOwnBank.",
       },
       {
         q: "Where does CryptoOwnBank get its price data?",

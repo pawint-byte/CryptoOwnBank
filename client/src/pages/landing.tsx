@@ -227,7 +227,7 @@ const features = [
     icon: TrendingUp,
     title: "Yield Vaults",
     description:
-      "Earn 5-8% APR on RLUSD through Soil Protocol. Access ~3.2% APR on XRP through Doppler Finance. Discover and manage yield opportunities in one place.",
+      "Earn 5-8% APR on RLUSD through Soil Protocol on XRPL, ~3.2% APR on XRP through Doppler Finance, and live lending APYs on XLM and USDC through Blend Capital on Stellar Soroban. Discover and manage non-custodial yield opportunities in one place.",
     link: "/ownbank/vaults",
     linkLabel: "Explore Vaults",
   },
