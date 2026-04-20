@@ -1500,7 +1500,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
 
       if (!BLEND_POOLS || BLEND_POOLS.length === 0) {
         return res.status(503).json({
-          message: "Blend pools are not configured. Check your positions directly on app.blend.capital.",
+          message: "Blend pools are not configured. Check your positions directly on mainnet.blend.capital.",
           noPools: true,
         });
       }
@@ -1511,13 +1511,13 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       } catch (err: any) {
         console.error("[blend/sync] Soroban query failed:", err?.message || err);
         return res.status(502).json({
-          message: "Could not reach Blend on Soroban right now. Try again later or check app.blend.capital.",
+          message: "Could not reach Blend on Soroban right now. Try again later or check mainnet.blend.capital.",
         });
       }
       const { snapshots, successPoolKeys, failedPoolKeys } = fetchResult;
       if (snapshots.length === 0 && failedPoolKeys.length > 0) {
         return res.status(502).json({
-          message: `Blend pool query failed (${failedPoolKeys.join(", ")}). Try again later or check app.blend.capital.`,
+          message: `Blend pool query failed (${failedPoolKeys.join(", ")}). Try again later or check mainnet.blend.capital.`,
         });
       }
 

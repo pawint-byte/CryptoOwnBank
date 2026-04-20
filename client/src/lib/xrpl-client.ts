@@ -297,12 +297,12 @@ export const BLEND_VAULTS = [
     bestFor: "Stellar holders who want non-custodial yield on XLM or USDC",
     provider: "Blend Capital",
     custodyNote: "Non-custodial Soroban smart contract. You retain control of your assets via Freighter or other Stellar wallets.",
-    depositUrl: "https://app.blend.capital",
+    depositUrl: "https://mainnet.blend.capital",
     docsUrl: "https://docs.blend.capital",
   },
 ];
 
-export const BLEND_APP_URL = "https://app.blend.capital";
+export const BLEND_APP_URL = "https://mainnet.blend.capital";
 
 export interface SoilTransaction {
   hash: string;
