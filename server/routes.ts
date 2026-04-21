@@ -7699,6 +7699,36 @@ Rules you MUST follow:
         console.warn("[wallet-sync] Failed to auto-create user wallet:", syncErr.message);
       }
 
+      // Auto-assign new wallet to legacy plan default beneficiary (if configured)
+      try {
+        const legacyPlan = await storage.getLegacyPlan(userId);
+        if (legacyPlan?.defaultBeneficiaryEmail) {
+          const existingAssign = await storage.getLegacyWalletAssignmentByWalletId(legacyPlan.id, wallet.id);
+          if (!existingAssign) {
+            const beneficiaries = await storage.getLegacyBeneficiaries(legacyPlan.id);
+            const defaultBen = beneficiaries.find(b => (b.email || "").toLowerCase() === legacyPlan.defaultBeneficiaryEmail!.toLowerCase());
+            if (defaultBen) {
+              const assignment = await storage.createLegacyWalletAssignment({
+                legacyPlanId: legacyPlan.id,
+                walletId: wallet.id,
+                walletLabel: wallet.label || `${wallet.chain.toUpperCase()} wallet`,
+                walletType: null,
+                chain: wallet.chain,
+                recoveryMode: "solo",
+                thresholdK: null,
+                thresholdN: null,
+                wishesText: null,
+                walletAssetSummary: null,
+                autoAssigned: true,
+              } as any);
+              await storage.updateLegacyBeneficiary(defaultBen.id, { assignmentId: assignment.id } as any);
+            }
+          }
+        }
+      } catch (autoErr: any) {
+        console.warn("[legacy-auto-assign] Failed:", autoErr.message);
+      }
+
       res.json(wallet);
     } catch (error: any) {
       console.error("Create wallet error:", error);
@@ -8819,7 +8849,10 @@ Rules you MUST follow:
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "No legacy plan found" });
       const updates: Record<string, unknown> = {};
-      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold, lastResortEnabled, lastResortWindowDays } = req.body;
+      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold, lastResortEnabled, lastResortWindowDays, defaultBeneficiaryEmail } = req.body;
+      if (defaultBeneficiaryEmail !== undefined) {
+        updates.defaultBeneficiaryEmail = defaultBeneficiaryEmail ? String(defaultBeneficiaryEmail).toLowerCase().trim() || null : null;
+      }
       if (lastResortEnabled !== undefined) updates.lastResortEnabled = !!lastResortEnabled;
       if (lastResortWindowDays !== undefined) {
         const d = Number(lastResortWindowDays);
@@ -10184,6 +10217,370 @@ ${beneSections}
     } catch (error) {
       console.error("Delete beneficiary error:", error);
       res.status(500).json({ message: "Failed to delete beneficiary" });
+    }
+  });
+
+  // ============================================================
+  // Wallet-first assignments (M:N wallet ↔ beneficiary)
+  // ============================================================
+  const VALID_RECOVERY_MODES = ["solo", "joint_threshold", "shared"];
+
+  app.get("/api/legacy-plan/wallet-assignments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.json([]);
+      const assignments = await storage.getLegacyWalletAssignments(plan.id);
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const enriched = assignments.map(a => ({
+        ...a,
+        beneficiaries: beneficiaries.filter(b => b.assignmentId === a.id).map(b => ({
+          id: b.id,
+          name: b.name,
+          email: b.email,
+          relationship: b.relationship,
+          pieceDescription: b.pieceDescription,
+          privateNote: b.privateNote,
+          confirmationStatus: b.confirmationStatus,
+          vaultVerifiedAt: b.vaultVerifiedAt,
+        })),
+      }));
+      res.json(enriched);
+    } catch (e) {
+      console.error("List wallet assignments error:", e);
+      res.status(500).json({ message: "Failed to load wallet assignments" });
+    }
+  });
+
+  app.post("/api/legacy-plan/wallet-assignments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
+      const { walletId, walletLabel, walletType, chain, recoveryMode, thresholdK, thresholdN, wishesText, walletAssetSummary, autoAssigned } = req.body;
+      if (!walletLabel) return res.status(400).json({ message: "walletLabel required" });
+      const mode = VALID_RECOVERY_MODES.includes(recoveryMode) ? recoveryMode : "solo";
+      const assignment = await storage.createLegacyWalletAssignment({
+        legacyPlanId: plan.id,
+        walletId: walletId || null,
+        walletLabel: String(walletLabel).slice(0, 200),
+        walletType: walletType && VALID_WALLET_TYPES.includes(walletType) ? walletType : null,
+        chain: chain ? String(chain).slice(0, 20) : null,
+        recoveryMode: mode,
+        thresholdK: mode === "joint_threshold" && Number.isFinite(Number(thresholdK)) ? Number(thresholdK) : null,
+        thresholdN: mode === "joint_threshold" && Number.isFinite(Number(thresholdN)) ? Number(thresholdN) : null,
+        wishesText: wishesText ? String(wishesText).slice(0, 5000) : null,
+        walletAssetSummary: walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null,
+        autoAssigned: !!autoAssigned,
+      } as any);
+      res.json(assignment);
+    } catch (e) {
+      console.error("Create wallet assignment error:", e);
+      res.status(500).json({ message: "Failed to create wallet assignment" });
+    }
+  });
+
+  app.patch("/api/legacy-plan/wallet-assignments/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const existing = await storage.getLegacyWalletAssignment(req.params.id);
+      if (!existing || existing.legacyPlanId !== plan.id) return res.status(403).json({ message: "Not your assignment" });
+      const updates: Record<string, unknown> = {};
+      const b = req.body;
+      if (b.walletLabel !== undefined) updates.walletLabel = String(b.walletLabel).slice(0, 200);
+      if (b.walletType !== undefined) updates.walletType = b.walletType && VALID_WALLET_TYPES.includes(b.walletType) ? b.walletType : null;
+      if (b.chain !== undefined) updates.chain = b.chain ? String(b.chain).slice(0, 20) : null;
+      if (b.recoveryMode !== undefined) {
+        const mode = VALID_RECOVERY_MODES.includes(b.recoveryMode) ? b.recoveryMode : "solo";
+        updates.recoveryMode = mode;
+        if (mode !== "joint_threshold") {
+          updates.thresholdK = null;
+          updates.thresholdN = null;
+        }
+      }
+      if (b.thresholdK !== undefined) updates.thresholdK = Number.isFinite(Number(b.thresholdK)) ? Number(b.thresholdK) : null;
+      if (b.thresholdN !== undefined) updates.thresholdN = Number.isFinite(Number(b.thresholdN)) ? Number(b.thresholdN) : null;
+      if (b.wishesText !== undefined) updates.wishesText = b.wishesText ? String(b.wishesText).slice(0, 5000) : null;
+      if (b.walletAssetSummary !== undefined) updates.walletAssetSummary = b.walletAssetSummary ? String(b.walletAssetSummary).slice(0, 10000) : null;
+      if (b.markReviewed === true) {
+        updates.reviewedAt = new Date();
+        updates.autoAssigned = false;
+      }
+      const result = await storage.updateLegacyWalletAssignment(req.params.id, updates as any);
+      res.json(result);
+    } catch (e) {
+      console.error("Update wallet assignment error:", e);
+      res.status(500).json({ message: "Failed to update wallet assignment" });
+    }
+  });
+
+  app.delete("/api/legacy-plan/wallet-assignments/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const existing = await storage.getLegacyWalletAssignment(req.params.id);
+      if (!existing || existing.legacyPlanId !== plan.id) return res.status(403).json({ message: "Not your assignment" });
+      await storage.deleteLegacyWalletAssignment(req.params.id);
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Delete wallet assignment error:", e);
+      res.status(500).json({ message: "Failed to delete wallet assignment" });
+    }
+  });
+
+  // Link/unlink a beneficiary to a wallet assignment + edit per-person packet
+  app.post("/api/legacy-plan/wallet-assignments/:id/beneficiaries", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const assignment = await storage.getLegacyWalletAssignment(req.params.id);
+      if (!assignment || assignment.legacyPlanId !== plan.id) return res.status(403).json({ message: "Not your assignment" });
+      const { beneficiaryId, pieceDescription, privateNote } = req.body;
+      if (!beneficiaryId) return res.status(400).json({ message: "beneficiaryId required" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const target = beneficiaries.find(b => b.id === beneficiaryId);
+      if (!target) return res.status(404).json({ message: "Beneficiary not found" });
+      // Idempotent + non-clobbering: if this person already has a row for this assignment, update it.
+      // Otherwise, if their selected row is unassigned or matches this assignment, use it.
+      // If their selected row is linked to a DIFFERENT assignment, clone it so both links survive.
+      const existingForThisAssignment = beneficiaries.find(b =>
+        (b.email || "").toLowerCase() === (target.email || "").toLowerCase() && b.assignmentId === assignment.id
+      );
+      let rowIdToUpdate = beneficiaryId;
+      if (existingForThisAssignment) {
+        rowIdToUpdate = existingForThisAssignment.id;
+      } else if (target.assignmentId && target.assignmentId !== assignment.id) {
+        // Clone — preserves the other wallet's link
+        const { id, createdAt, updatedAt, confirmationToken, heartbeatToken, vaultVerificationToken, deliveryAckToken, vaultVerifiedAt, vaultVerificationSentAt, ...cloneable } = target as any;
+        const cloned = await storage.createLegacyBeneficiary({
+          ...cloneable,
+          assignmentId: assignment.id,
+          pieceDescription: null,
+          privateNote: null,
+        } as any);
+        rowIdToUpdate = cloned.id;
+      }
+      const updates: Record<string, unknown> = { assignmentId: assignment.id };
+      if (pieceDescription !== undefined) updates.pieceDescription = pieceDescription ? String(pieceDescription).slice(0, 2000) : null;
+      if (privateNote !== undefined) updates.privateNote = privateNote ? String(privateNote).slice(0, 5000) : null;
+      const result = await storage.updateLegacyBeneficiary(rowIdToUpdate, updates as any);
+      res.json(result);
+    } catch (e) {
+      console.error("Link beneficiary error:", e);
+      res.status(500).json({ message: "Failed to link beneficiary" });
+    }
+  });
+
+  app.delete("/api/legacy-plan/wallet-assignments/:id/beneficiaries/:beneficiaryId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const assignment = await storage.getLegacyWalletAssignment(req.params.id);
+      if (!assignment || assignment.legacyPlanId !== plan.id) return res.status(403).json({ message: "Not your assignment" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const target = beneficiaries.find(b => b.id === req.params.beneficiaryId);
+      if (!target || target.assignmentId !== assignment.id) return res.status(404).json({ message: "Beneficiary not on this assignment" });
+      await storage.updateLegacyBeneficiary(req.params.beneficiaryId, { assignmentId: null, pieceDescription: null } as any);
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Unlink beneficiary error:", e);
+      res.status(500).json({ message: "Failed to unlink beneficiary" });
+    }
+  });
+
+  // ============================================================
+  // Family Collaborative Mode v1 — read-only seats
+  // ============================================================
+  const VALID_FAMILY_ROLES = ["viewer", "proposer"];
+
+  app.get("/api/family-seats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const seats = await storage.getFamilySeats(userId);
+      res.json(seats.map(s => ({ ...s, inviteToken: undefined })));
+    } catch (e) {
+      console.error("List family seats error:", e);
+      res.status(500).json({ message: "Failed to list family seats" });
+    }
+  });
+
+  app.post("/api/family-seats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { seatEmail, seatName, relationship, role } = req.body;
+      if (!seatEmail || !seatName) return res.status(400).json({ message: "seatEmail and seatName required" });
+      const cleanEmail = String(seatEmail).toLowerCase().trim().slice(0, 255);
+      const cleanName = String(seatName).slice(0, 255);
+      const cleanRole = VALID_FAMILY_ROLES.includes(role) ? role : "viewer";
+      const existingSeats = await storage.getFamilySeats(userId);
+      if (existingSeats.length >= 10) return res.status(400).json({ message: "Family seat limit reached (10)" });
+      if (existingSeats.find(s => s.seatEmail.toLowerCase() === cleanEmail)) return res.status(409).json({ message: "You've already invited this email" });
+      const inviteToken = crypto.randomBytes(32).toString("hex");
+      const seat = await storage.createFamilySeat({
+        ownerUserId: userId,
+        seatEmail: cleanEmail,
+        seatName: cleanName,
+        relationship: relationship ? String(relationship).slice(0, 100) : null,
+        role: cleanRole,
+        status: "invited",
+        inviteToken,
+      } as any);
+      // Send invite email
+      try {
+        const owner = (req as any).user.dbUser || await db.select().from(users).where(eq(users.id, userId)).then(r => r[0]);
+        const ownerName = owner ? `${owner.firstName || ""} ${owner.lastName || ""}`.trim() || owner.email : "Someone";
+        const acceptUrl = `https://cryptoownbank.com/family/accept/${inviteToken}`;
+        await sendEmail(cleanEmail, `${ownerName} invited you to view their CryptoOwnBank account`, `
+          <p>Hi ${cleanName},</p>
+          <p><strong>${ownerName}</strong> has invited you to be a <em>${cleanRole === "viewer" ? "Viewer" : "Proposer"}</em> on their CryptoOwnBank family seat.</p>
+          <p>${cleanRole === "viewer" ? "You'll be able to see their portfolio in real time, but you won't be able to move funds or change anything. This is a read-only window." : "You'll be able to view their portfolio and propose buys/swaps, but they'll have to sign every transaction in their own wallet."}</p>
+          <p style="margin:24px 0"><a href="${acceptUrl}" style="background:#2563eb;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Accept Invite</a></p>
+          <p style="color:#64748b;font-size:13px">If you don't have a CryptoOwnBank account yet, you'll be asked to create one with this email address. ${ownerName} can revoke access at any time.</p>
+        `);
+      } catch (emailErr) {
+        console.error("Failed to send family seat invite:", emailErr);
+      }
+      res.json({ ...seat, inviteToken: undefined });
+    } catch (e) {
+      console.error("Create family seat error:", e);
+      res.status(500).json({ message: "Failed to invite family member" });
+    }
+  });
+
+  app.delete("/api/family-seats/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const seat = await storage.getFamilySeat(req.params.id);
+      if (!seat || seat.ownerUserId !== userId) return res.status(403).json({ message: "Not your seat" });
+      await storage.updateFamilySeat(seat.id, { status: "revoked", revokedAt: new Date() } as any);
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Revoke family seat error:", e);
+      res.status(500).json({ message: "Failed to revoke seat" });
+    }
+  });
+
+  app.patch("/api/family-seats/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const seat = await storage.getFamilySeat(req.params.id);
+      if (!seat || seat.ownerUserId !== userId) return res.status(403).json({ message: "Not your seat" });
+      const updates: Record<string, unknown> = {};
+      if (req.body.role !== undefined) updates.role = VALID_FAMILY_ROLES.includes(req.body.role) ? req.body.role : "viewer";
+      if (req.body.relationship !== undefined) updates.relationship = req.body.relationship ? String(req.body.relationship).slice(0, 100) : null;
+      const result = await storage.updateFamilySeat(seat.id, updates as any);
+      res.json({ ...result, inviteToken: undefined });
+    } catch (e) {
+      console.error("Update family seat error:", e);
+      res.status(500).json({ message: "Failed to update seat" });
+    }
+  });
+
+  // Public: look up an invite by token (for the accept page UI)
+  app.get("/api/family-seats/invite/:token", async (req, res) => {
+    try {
+      const seat = await storage.getFamilySeatByToken(req.params.token);
+      if (!seat || seat.status !== "invited") return res.status(404).json({ message: "Invite not found or already used" });
+      const [owner] = await db.select().from(users).where(eq(users.id, seat.ownerUserId));
+      const ownerName = owner ? `${owner.firstName || ""} ${owner.lastName || ""}`.trim() || owner.email : "Someone";
+      res.json({
+        seatEmail: seat.seatEmail,
+        seatName: seat.seatName,
+        relationship: seat.relationship,
+        role: seat.role,
+        ownerName,
+      });
+    } catch (e) {
+      console.error("Lookup invite error:", e);
+      res.status(500).json({ message: "Failed to look up invite" });
+    }
+  });
+
+  // Authenticated: accept an invite (links current user to the seat)
+  app.post("/api/family-seats/accept/:token", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [me] = await db.select().from(users).where(eq(users.id, userId));
+      const seat = await storage.getFamilySeatByToken(req.params.token);
+      if (!seat || seat.status !== "invited") return res.status(404).json({ message: "Invite not found or already used" });
+      if (me.email && me.email.toLowerCase() !== seat.seatEmail.toLowerCase()) {
+        return res.status(403).json({ message: `This invite was sent to ${seat.seatEmail}. Please log in with that email or ask the inviter to send a new one.` });
+      }
+      const result = await storage.updateFamilySeat(seat.id, {
+        seatUserId: userId,
+        status: "active",
+        acceptedAt: new Date(),
+        inviteToken: null,
+      } as any);
+      res.json({ success: true, seatId: result?.id });
+    } catch (e) {
+      console.error("Accept invite error:", e);
+      res.status(500).json({ message: "Failed to accept invite" });
+    }
+  });
+
+  // Authenticated: list seats granted TO me (so the kid sees parents' accounts)
+  app.get("/api/family-seats/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const seats = await storage.getFamilySeatsForUser(userId);
+      const enriched = await Promise.all(seats.map(async s => {
+        const [owner] = await db.select().from(users).where(eq(users.id, s.ownerUserId));
+        return {
+          id: s.id,
+          ownerUserId: s.ownerUserId,
+          ownerName: owner ? `${owner.firstName || ""} ${owner.lastName || ""}`.trim() || owner.email : "Owner",
+          ownerEmail: owner?.email,
+          role: s.role,
+          relationship: s.relationship,
+          acceptedAt: s.acceptedAt,
+          lastSeenAt: s.lastSeenAt,
+        };
+      }));
+      res.json(enriched);
+    } catch (e) {
+      console.error("List my seats error:", e);
+      res.status(500).json({ message: "Failed to load family access" });
+    }
+  });
+
+  // Authenticated: read-only view of an owner's portfolio (gated by active seat)
+  app.get("/api/family-seats/:id/view", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const seat = await storage.getFamilySeat(req.params.id);
+      if (!seat) return res.status(404).json({ message: "Seat not found" });
+      if (seat.seatUserId !== userId || seat.status !== "active") return res.status(403).json({ message: "Access denied" });
+      await storage.updateFamilySeat(seat.id, { lastSeenAt: new Date() } as any);
+      const [owner] = await db.select().from(users).where(eq(users.id, seat.ownerUserId));
+      const ownerName = owner ? `${owner.firstName || ""} ${owner.lastName || ""}`.trim() || owner.email : "Owner";
+      const ownerWallets = await storage.getWalletsByUser(seat.ownerUserId);
+      const ownerPositions = await storage.getPositionsByUser(seat.ownerUserId);
+      const ownerBalances = await Promise.all(ownerWallets.map(async w => ({
+        wallet: { id: w.id, chain: w.chain, label: w.label, address: w.address.slice(0, 8) + "…" + w.address.slice(-4) },
+        balances: await storage.getWalletBalances(w.id),
+      })));
+      res.json({
+        ownerName,
+        role: seat.role,
+        relationship: seat.relationship,
+        positions: ownerPositions,
+        wallets: ownerBalances,
+      });
+    } catch (e) {
+      console.error("View family seat error:", e);
+      res.status(500).json({ message: "Failed to load view" });
     }
   });
 

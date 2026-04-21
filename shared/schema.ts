@@ -1032,6 +1032,7 @@ export const legacyPlans = pgTable("legacy_plans", {
   slip39Threshold: integer("slip39_threshold"),
   slip39CompletedAt: timestamp("slip39_completed_at"),
   readinessDismissedTips: text("readiness_dismissed_tips"),
+  defaultBeneficiaryEmail: varchar("default_beneficiary_email", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1065,6 +1066,10 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   shardIndex: integer("shard_index"),
   walletAssetSummary: text("wallet_asset_summary"),
   beneficiaryGroup: varchar("beneficiary_group", { length: 100 }),
+  assignmentId: varchar("assignment_id"),
+  pieceDescription: text("piece_description"),
+  privateNote: text("private_note"),
+  backupBeneficiaryId: varchar("backup_beneficiary_id"),
   markedDeceasedAt: timestamp("marked_deceased_at"),
   deliveredAt: timestamp("delivered_at"),
   deliveryAckToken: varchar("delivery_ack_token", { length: 100 }),
@@ -1091,6 +1096,74 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   index("idx_legacy_beneficiaries_conf_token").on(table.confirmationToken),
   index("idx_legacy_beneficiaries_hb_token").on(table.heartbeatToken),
 ]);
+
+export const legacyWalletAssignments = pgTable("legacy_wallet_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  legacyPlanId: varchar("legacy_plan_id").notNull(),
+  walletId: varchar("wallet_id"),
+  walletLabel: varchar("wallet_label", { length: 200 }),
+  walletType: varchar("wallet_type", { length: 50 }),
+  chain: varchar("chain", { length: 20 }),
+  recoveryMode: varchar("recovery_mode", { length: 30 }).notNull().default("solo"),
+  thresholdK: integer("threshold_k"),
+  thresholdN: integer("threshold_n"),
+  wishesText: text("wishes_text"),
+  walletAssetSummary: text("wallet_asset_summary"),
+  autoAssigned: boolean("auto_assigned").default(false),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_legacy_wallet_assignments_plan").on(table.legacyPlanId),
+  index("idx_legacy_wallet_assignments_wallet").on(table.walletId),
+]);
+
+export const insertLegacyWalletAssignmentSchema = createInsertSchema(legacyWalletAssignments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type LegacyWalletAssignment = typeof legacyWalletAssignments.$inferSelect;
+export type InsertLegacyWalletAssignment = z.infer<typeof insertLegacyWalletAssignmentSchema>;
+
+export const familySeats = pgTable("family_seats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerUserId: varchar("owner_user_id").notNull(),
+  seatUserId: varchar("seat_user_id"),
+  seatEmail: varchar("seat_email", { length: 255 }).notNull(),
+  seatName: varchar("seat_name", { length: 255 }).notNull(),
+  relationship: varchar("relationship", { length: 100 }),
+  role: varchar("role", { length: 20 }).notNull().default("viewer"),
+  status: varchar("status", { length: 20 }).notNull().default("invited"),
+  inviteToken: varchar("invite_token", { length: 100 }),
+  inviteSentAt: timestamp("invite_sent_at"),
+  acceptedAt: timestamp("accepted_at"),
+  lastSeenAt: timestamp("last_seen_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_family_seats_owner").on(table.ownerUserId),
+  index("idx_family_seats_seat_user").on(table.seatUserId),
+  index("idx_family_seats_token").on(table.inviteToken),
+  unique("uq_family_seat_owner_email").on(table.ownerUserId, table.seatEmail),
+]);
+
+export const insertFamilySeatSchema = createInsertSchema(familySeats).omit({
+  id: true,
+  seatUserId: true,
+  inviteToken: true,
+  inviteSentAt: true,
+  acceptedAt: true,
+  lastSeenAt: true,
+  revokedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type FamilySeat = typeof familySeats.$inferSelect;
+export type InsertFamilySeat = z.infer<typeof insertFamilySeatSchema>;
 
 export const legacyCheckIns = pgTable("legacy_check_ins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

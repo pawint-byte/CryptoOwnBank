@@ -90,6 +90,9 @@ import TechnicalAnalysis from "@/pages/technical-analysis";
 import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import XLS66Lending from "@/pages/xls66-lending";
 import LegacyPlan from "@/pages/legacy-plan";
+import FamilyPage from "@/pages/family";
+import FamilyAcceptPage from "@/pages/family-accept";
+import FamilyViewPage from "@/pages/family-view";
 import LearnSlip39 from "@/pages/learn-slip39";
 import Slip39Setup from "@/pages/slip39-setup";
 import LegacyObject from "@/pages/legacy-object";
@@ -273,6 +276,9 @@ function AuthenticatedRoutes() {
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/legacy-plan" component={LegacyPlan} />
+        <Route path="/family" component={FamilyPage} />
+        <Route path="/family/view/:seatId" component={FamilyViewPage} />
+        <Route path="/family/accept/:token" component={FamilyAcceptPage} />
         <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
         <Route path="/legacy-plan/slip39-setup" component={Slip39Setup} />
         <Route path="/legacy-plan/object/:token" component={LegacyObject} />

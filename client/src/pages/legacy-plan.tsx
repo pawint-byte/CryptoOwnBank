@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LegacyReadinessPanel } from "@/components/legacy-readiness-panel";
 import { LegacyPlanSummary } from "@/components/legacy-plan-summary";
 import { LegacyPeopleView } from "@/components/legacy-people-view";
+import { LegacyWalletsView } from "@/components/legacy-wallets-view";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2430,30 +2431,8 @@ export default function LegacyPlanPage() {
         <CardContent>
           {planView === "people" ? (
             <LegacyPeopleView beneficiaries={beneficiaries as any} onEditBeneficiary={(b) => setEditingBeneficiary(b as any)} />
-          ) : beneficiaries.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground" data-testid="text-no-beneficiaries">
-              <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No wallets assigned yet</p>
-              <p className="text-sm">Add at least one beneficiary to complete your legacy plan</p>
-            </div>
           ) : (
-            <div className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                {beneficiaries.map((b) => (
-                  <BeneficiaryCard key={b.id} beneficiary={b} onDelete={() => deleteBeneficiary.mutate(b.id)} onEdit={() => setEditingBeneficiary(b)} />
-                ))}
-              </div>
-              {beneficiaries.length >= 1 && beneficiaries.length < 5 && (
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">
-                    {beneficiaries.length === 1
-                      ? "You can add multiple beneficiaries — a spouse, child, attorney, etc. Each gets their own instructions."
-                      : `${beneficiaries.length} beneficiaries configured. You can add more anytime.`}
-                  </p>
-                  <AddBeneficiaryDialog onAdd={() => {}} splitEnabled={plan.splitDeliveryEnabled ?? false} />
-                </div>
-              )}
-            </div>
+            <LegacyWalletsView beneficiaries={beneficiaries as any} />
           )}
         </CardContent>
       </Card>

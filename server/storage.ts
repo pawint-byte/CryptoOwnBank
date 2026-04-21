@@ -108,11 +108,17 @@ import {
   legacyPlans,
   legacyBeneficiaries,
   legacyCheckIns,
+  legacyWalletAssignments,
+  familySeats,
   type LegacyPlan,
   type InsertLegacyPlan,
   type LegacyBeneficiary,
   type InsertLegacyBeneficiary,
   type LegacyCheckIn,
+  type LegacyWalletAssignment,
+  type InsertLegacyWalletAssignment,
+  type FamilySeat,
+  type InsertFamilySeat,
   tokenBuckets,
   tokenBucketItems,
   type TokenBucket,
@@ -381,6 +387,21 @@ export interface IStorage {
   getLegacyCheckIns(legacyPlanId: string, limit?: number): Promise<LegacyCheckIn[]>;
   getActiveLegacyPlans(): Promise<LegacyPlan[]>;
   getGracePeriodLegacyPlans(): Promise<LegacyPlan[]>;
+
+  getLegacyWalletAssignments(legacyPlanId: string): Promise<LegacyWalletAssignment[]>;
+  getLegacyWalletAssignment(id: string): Promise<LegacyWalletAssignment | undefined>;
+  createLegacyWalletAssignment(data: InsertLegacyWalletAssignment): Promise<LegacyWalletAssignment>;
+  updateLegacyWalletAssignment(id: string, data: Partial<LegacyWalletAssignment>): Promise<LegacyWalletAssignment | undefined>;
+  deleteLegacyWalletAssignment(id: string): Promise<void>;
+  getLegacyWalletAssignmentByWalletId(legacyPlanId: string, walletId: string): Promise<LegacyWalletAssignment | undefined>;
+
+  getFamilySeats(ownerUserId: string): Promise<FamilySeat[]>;
+  getFamilySeatsForUser(seatUserId: string): Promise<FamilySeat[]>;
+  getFamilySeat(id: string): Promise<FamilySeat | undefined>;
+  getFamilySeatByToken(token: string): Promise<FamilySeat | undefined>;
+  createFamilySeat(data: InsertFamilySeat & { inviteToken: string }): Promise<FamilySeat>;
+  updateFamilySeat(id: string, data: Partial<FamilySeat>): Promise<FamilySeat | undefined>;
+  deleteFamilySeat(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1720,6 +1741,67 @@ export class DatabaseStorage implements IStorage {
       default: next.setMonth(next.getMonth() + 1);
     }
     return next;
+  }
+
+  async getLegacyWalletAssignments(legacyPlanId: string): Promise<LegacyWalletAssignment[]> {
+    return db.select().from(legacyWalletAssignments).where(eq(legacyWalletAssignments.legacyPlanId, legacyPlanId));
+  }
+
+  async getLegacyWalletAssignment(id: string): Promise<LegacyWalletAssignment | undefined> {
+    const [r] = await db.select().from(legacyWalletAssignments).where(eq(legacyWalletAssignments.id, id));
+    return r;
+  }
+
+  async getLegacyWalletAssignmentByWalletId(legacyPlanId: string, walletId: string): Promise<LegacyWalletAssignment | undefined> {
+    const [r] = await db.select().from(legacyWalletAssignments).where(and(eq(legacyWalletAssignments.legacyPlanId, legacyPlanId), eq(legacyWalletAssignments.walletId, walletId)));
+    return r;
+  }
+
+  async createLegacyWalletAssignment(data: InsertLegacyWalletAssignment): Promise<LegacyWalletAssignment> {
+    const [r] = await db.insert(legacyWalletAssignments).values(data).returning();
+    return r;
+  }
+
+  async updateLegacyWalletAssignment(id: string, data: Partial<LegacyWalletAssignment>): Promise<LegacyWalletAssignment | undefined> {
+    const [r] = await db.update(legacyWalletAssignments).set({ ...data, updatedAt: new Date() }).where(eq(legacyWalletAssignments.id, id)).returning();
+    return r;
+  }
+
+  async deleteLegacyWalletAssignment(id: string): Promise<void> {
+    await db.update(legacyBeneficiaries).set({ assignmentId: null }).where(eq(legacyBeneficiaries.assignmentId, id));
+    await db.delete(legacyWalletAssignments).where(eq(legacyWalletAssignments.id, id));
+  }
+
+  async getFamilySeats(ownerUserId: string): Promise<FamilySeat[]> {
+    return db.select().from(familySeats).where(eq(familySeats.ownerUserId, ownerUserId));
+  }
+
+  async getFamilySeatsForUser(seatUserId: string): Promise<FamilySeat[]> {
+    return db.select().from(familySeats).where(and(eq(familySeats.seatUserId, seatUserId), eq(familySeats.status, "active")));
+  }
+
+  async getFamilySeat(id: string): Promise<FamilySeat | undefined> {
+    const [r] = await db.select().from(familySeats).where(eq(familySeats.id, id));
+    return r;
+  }
+
+  async getFamilySeatByToken(token: string): Promise<FamilySeat | undefined> {
+    const [r] = await db.select().from(familySeats).where(eq(familySeats.inviteToken, token));
+    return r;
+  }
+
+  async createFamilySeat(data: InsertFamilySeat & { inviteToken: string }): Promise<FamilySeat> {
+    const [r] = await db.insert(familySeats).values({ ...data, inviteSentAt: new Date() }).returning();
+    return r;
+  }
+
+  async updateFamilySeat(id: string, data: Partial<FamilySeat>): Promise<FamilySeat | undefined> {
+    const [r] = await db.update(familySeats).set({ ...data, updatedAt: new Date() }).where(eq(familySeats.id, id)).returning();
+    return r;
+  }
+
+  async deleteFamilySeat(id: string): Promise<void> {
+    await db.delete(familySeats).where(eq(familySeats.id, id));
   }
 }
 
