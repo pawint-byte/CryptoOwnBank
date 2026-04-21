@@ -150,6 +150,7 @@ const allItems: NavItem[] = [
 
   { title: "AI Assistant", url: "/ai-assistant", icon: BrainCircuit, color: "#8b5cf6", group: "planning" },
   { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "planning" },
+  { title: "Family", url: "/family", icon: Users, group: "planning" },
   { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "planning" },
   { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "planning" },
   { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "planning" },

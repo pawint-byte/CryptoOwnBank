@@ -22,6 +22,7 @@ type Beneficiary = {
   vaultVerificationSentAt?: string | null;
   vaultVerificationCapsule?: string | null;
   confirmationStatus?: string;
+  backupBeneficiaryId?: string | null;
 };
 
 function relativeTime(iso: string): string {
@@ -81,6 +82,11 @@ export function LegacyPeopleView({
   onEditBeneficiary: (b: Beneficiary) => void;
 }) {
   const people = useMemo(() => groupByPerson(beneficiaries), [beneficiaries]);
+  const beneficiaryById = useMemo(() => {
+    const m = new Map<string, Beneficiary>();
+    for (const b of beneficiaries) m.set(b.id, b);
+    return m;
+  }, [beneficiaries]);
   const { toast } = useToast();
   const sendVerification = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/legacy-beneficiaries/${id}/send-passphrase-verification`),
@@ -158,6 +164,17 @@ export function LegacyPeopleView({
                 )}
               </div>
             </div>
+
+            {(() => {
+              const backupIds = Array.from(new Set(person.beneficiaries.map(b => b.backupBeneficiaryId).filter((x): x is string => !!x)));
+              const backupNames = backupIds.map(id => beneficiaryById.get(id)?.name).filter(Boolean) as string[];
+              if (backupNames.length === 0) return null;
+              return (
+                <div className="text-xs text-muted-foreground" data-testid={`person-backup-${person.email}`}>
+                  Backup: <span className="font-medium text-foreground">{backupNames.join(", ")}</span>
+                </div>
+              );
+            })()}
 
             <div className="space-y-1.5 pt-2 border-t">
               <p className="text-xs font-medium text-muted-foreground">

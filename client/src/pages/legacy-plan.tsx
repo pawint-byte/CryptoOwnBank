@@ -85,6 +85,7 @@ type LegacyPlanData = {
     lastResortReleasedAt?: string | null;
     lastResortObjectedAt?: string | null;
     lastResortObjectedBy?: string | null;
+    defaultBeneficiaryEmail?: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -102,6 +103,7 @@ type LegacyPlanData = {
     encryptedVault: string | null;
     encryptedVaultHint: string | null;
     walletAssetSummary: string | null;
+    backupBeneficiaryId?: string | null;
     createdAt: string;
   }>;
   checkIns: Array<{
@@ -999,12 +1001,13 @@ function ResendVerificationButton() {
   );
 }
 
-function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOpen, onExternalClose }: {
+function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOpen, onExternalClose, allBeneficiaries = [] }: {
   onAdd: () => void;
   splitEnabled?: boolean;
   editBeneficiary?: LegacyPlanData["beneficiaries"][0] | null;
   externalOpen?: boolean;
   onExternalClose?: () => void;
+  allBeneficiaries?: LegacyPlanData["beneficiaries"];
 }) {
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -1030,6 +1033,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   const [deviceInstructions, setDeviceInstructions] = useState("");
   const [seedPhraseInstructions, setSeedPhraseInstructions] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
+  const [backupBeneficiaryId, setBackupBeneficiaryId] = useState<string>("none");
   const [splitPieces, setSplitPieces] = useState("");
   const [fallbackRecipients, setFallbackRecipients] = useState<Array<{ name: string; email: string }>>([]);
   const [templateFields, setTemplateFields] = useState<Record<string, string>>({});
@@ -1060,6 +1064,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     setDeviceInstructions(editBeneficiary.deviceInstructions || "");
     setSeedPhraseInstructions(editBeneficiary.seedPhraseInstructions || "");
     setSplitPieces(editBeneficiary.splitPieces || "");
+    setBackupBeneficiaryId((editBeneficiary as any).backupBeneficiaryId || "none");
     setWalletAssetSummary(editBeneficiary.walletAssetSummary || "");
     const fb = (editBeneficiary as any).fallbackRecipients;
     setFallbackRecipients(Array.isArray(fb) ? fb.map((f: any) => ({ name: String(f?.name || ""), email: String(f?.email || "") })) : []);
@@ -1233,6 +1238,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
         vaultVerificationCapsule: encryptedVaultResult ? (verificationCapsule || null) : null,
         vaultTested: encryptedVaultResult ? (vaultDirty ? vaultTestPassed : true) : false,
         walletAssetSummary: walletAssetSummary || null,
+        backupBeneficiaryId: backupBeneficiaryId === "none" ? null : backupBeneficiaryId,
         fallbackRecipients: fallbackRecipients.filter(f => f.name.trim() && f.email.trim()).map(f => ({ name: f.name.trim(), email: f.email.trim().toLowerCase() })),
       };
       if (isEditing && editBeneficiary) {
@@ -1321,6 +1327,19 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                 <Input value={beneficiaryGroup} onChange={(e) => setBeneficiaryGroup(e.target.value)} placeholder="e.g., kids, siblings" data-testid="input-beneficiary-group" />
                 <p className="text-[10px] text-muted-foreground">Members of the same group split a deceased member's share per-capita.</p>
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Backup beneficiary (optional)</Label>
+              <Select value={backupBeneficiaryId} onValueChange={setBackupBeneficiaryId}>
+                <SelectTrigger data-testid="select-backup-beneficiary"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {allBeneficiaries.filter(b => !editBeneficiary || b.id !== editBeneficiary.id).map(b => (
+                    <SelectItem key={b.id} value={b.id}>{b.name} ({b.email})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">If this person can't be reached, the backup is contacted instead.</p>
             </div>
             {walletAssets && walletAssets.length > 0 && (
               <div className="space-y-2 rounded-md border p-3 bg-muted/20" data-testid="section-wallet-picker">
@@ -2208,6 +2227,7 @@ export default function LegacyPlanPage() {
   const [editingSettings, setEditingSettings] = useState(false);
   const [editFrequency, setEditFrequency] = useState("");
   const [editGraceDays, setEditGraceDays] = useState("");
+  const [editDefaultHeirEmail, setEditDefaultHeirEmail] = useState<string>("none");
 
   const { data, isLoading, error } = useQuery<LegacyPlanData | null>({
     queryKey: ["/api/legacy-plan"],
@@ -2226,6 +2246,7 @@ export default function LegacyPlanPage() {
     mutationFn: () => apiRequest("PATCH", "/api/legacy-plan", {
       checkInFrequency: editFrequency,
       gracePeriodDays: parseInt(editGraceDays),
+      defaultBeneficiaryEmail: editDefaultHeirEmail === "none" ? null : editDefaultHeirEmail,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
@@ -2332,6 +2353,7 @@ export default function LegacyPlanPage() {
               <Button variant="ghost" size="sm" onClick={() => {
                 setEditFrequency(plan.checkInFrequency);
                 setEditGraceDays(String(plan.gracePeriodDays));
+                setEditDefaultHeirEmail(plan.defaultBeneficiaryEmail || "none");
                 setEditingSettings(!editingSettings);
               }} data-testid="button-edit-settings">
                 <Edit className="h-4 w-4" />
@@ -2365,6 +2387,19 @@ export default function LegacyPlanPage() {
                       <SelectItem value="90">90 days</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Default heir for new wallets</Label>
+                  <Select value={editDefaultHeirEmail} onValueChange={setEditDefaultHeirEmail}>
+                    <SelectTrigger data-testid="select-default-heir"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None — don't auto-assign</SelectItem>
+                      {Array.from(new Map(beneficiaries.filter(b => b.email).map(b => [b.email.toLowerCase(), b])).values()).map(b => (
+                        <SelectItem key={b.email.toLowerCase()} value={b.email.toLowerCase()}>{b.name} ({b.email})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">When you connect a new wallet, it'll be auto-assigned to this person and flagged amber for your review.</p>
                 </div>
                 <Button className="w-full" size="sm" onClick={() => updateSettings.mutate()} disabled={updateSettings.isPending} data-testid="button-save-settings">
                   {updateSettings.isPending ? "Saving..." : "Save"}
@@ -2419,7 +2454,7 @@ export default function LegacyPlanPage() {
               <CardTitle className="text-lg">Your Plan</CardTitle>
               <CardDescription>Two ways to look at the same plan. Pick whichever feels natural.</CardDescription>
             </div>
-            <AddBeneficiaryDialog onAdd={() => {}} splitEnabled={plan.splitDeliveryEnabled ?? false} />
+            <AddBeneficiaryDialog onAdd={() => {}} splitEnabled={plan.splitDeliveryEnabled ?? false} allBeneficiaries={beneficiaries} />
           </div>
           <Tabs value={planView} onValueChange={(v) => { setPlanView(v as "wallets" | "people"); try { localStorage.setItem("legacy-plan-view", v); } catch {} }} className="mt-3">
             <TabsList>
@@ -2443,6 +2478,7 @@ export default function LegacyPlanPage() {
         editBeneficiary={editingBeneficiary}
         externalOpen={!!editingBeneficiary}
         onExternalClose={() => setEditingBeneficiary(null)}
+        allBeneficiaries={beneficiaries}
       />
 
       <Card className="border-dashed">
