@@ -766,6 +766,7 @@ export const userAddons = pgTable("user_addons", {
   status: varchar("status", { length: 20 }).notNull().default("active"),
   paymentMethod: varchar("payment_method", { length: 20 }).notNull(),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  paidInChain: varchar("paid_in_chain", { length: 30 }),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),

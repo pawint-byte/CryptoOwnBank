@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments } from "@shared/schema";
 import OpenAI from "openai";
-import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
+import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
 import multer from "multer";
@@ -5303,7 +5303,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const addonConfig = ADDONS[addonKey as AddonKey];
-      const usdAmount = Math.round(addonConfig.amount * 0.9) / 100;
+      const usdAmount = applyCryptoDiscount(addonConfig.amount / 100, chain);
 
       const ALL_SUPPORTED_CHAINS = [
         "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
@@ -5463,13 +5463,13 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         return res.status(400).json({ message: `No payment address configured for ${chain}.` });
       }
 
-      const USD_AMOUNTS: Record<string, number> = {
-        monthly: 26.10,
-        yearly: 179.10,
-        "pro-monthly": 89.10,
-        "pro-yearly": 719.10,
+      const FULL_USD: Record<string, number> = {
+        monthly: 29,
+        yearly: 199,
+        "pro-monthly": 99,
+        "pro-yearly": 799,
       };
-      const usdAmount = USD_AMOUNTS[plan];
+      const usdAmount = applyCryptoDiscount(FULL_USD[plan], chain);
 
       const CHAIN_TO_COINGECKO: Record<string, string> = {
         bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",

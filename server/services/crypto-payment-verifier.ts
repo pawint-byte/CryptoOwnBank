@@ -791,6 +791,7 @@ export async function activateSubscription(payment: CryptoPayment) {
       status: "active",
       paymentMethod: "crypto",
       stripeSubscriptionId: null,
+      paidInChain: payment.chain,
       expiresAt,
     });
     console.log(`[crypto-verify] Activated addon ${addonKey} for user ${payment.userId} via ${payment.chain}, expires ${expiresAt ? expiresAt.toISOString() : "never (lifetime)"}`);

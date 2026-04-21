@@ -1762,7 +1762,13 @@ export default function SettingsPage() {
                               ) : (
                                 <Coins className="h-4 w-4 mr-2" />
                               )}
-                              Pay ${(billingCycle === "yearly" ? tierPrices[selectedTier].yearly * 0.9 : tierPrices[selectedTier].monthly * 0.9).toFixed(2)} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"} <span className="ml-1 text-xs opacity-75">(10% off)</span>
+                              {(() => {
+                                const isHouse = ["xrp","rlusd","bitcoin","ethereum","solana"].includes(selectedChain || "");
+                                const rate = isHouse ? 0.85 : 0.90;
+                                const pct = isHouse ? "15% off" : "10% off";
+                                const base = billingCycle === "yearly" ? tierPrices[selectedTier].yearly : tierPrices[selectedTier].monthly;
+                                return <>Pay ${(base * rate).toFixed(2)} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"} <span className="ml-1 text-xs opacity-75">({pct}{isHouse ? " · House Tier" : ""})</span></>;
+                              })()}
                             </Button>
                           </>
                         )}
@@ -1809,12 +1815,23 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium">Active Add-Ons</p>
                 {activeAddons.map((addon: any) => {
                   const catalogItem = addonCatalog[addon.addonKey];
+                  const houseChains = ["xrp","rlusd","bitcoin","ethereum","solana"];
+                  const chainLabels: Record<string, string> = { xrp: "XRP", rlusd: "RLUSD", bitcoin: "BTC", ethereum: "ETH", solana: "SOL" };
+                  const isFounder = addon.addonKey === "legacy-plan-lifetime" && addon.paidInChain && houseChains.includes(addon.paidInChain);
+                  const founderMonth = addon.createdAt ? new Date(addon.createdAt).toLocaleString("en-US", { month: "long", year: "numeric" }) : "";
                   return (
-                    <div key={addon.id} className="flex items-center justify-between rounded-lg border p-3" data-testid={`addon-active-${addon.addonKey}`}>
+                    <div key={addon.id} className={`flex items-center justify-between rounded-lg border p-3 ${isFounder ? "border-amber-500/60 bg-gradient-to-r from-amber-500/5 to-yellow-500/5" : ""}`} data-testid={`addon-active-${addon.addonKey}`}>
                       <div className="flex-1">
-                        <span className="text-sm font-medium">{catalogItem?.name || addon.addonKey}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">{catalogItem?.name || addon.addonKey}</span>
+                          {isFounder && (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[10px] px-1.5" data-testid={`badge-founder-${addon.id}`}>
+                              🏛️ Founding Member · paid in {chainLabels[addon.paidInChain]} · {founderMonth}
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          {addon.paymentMethod === "stripe" ? "Card" : "Crypto"} — {addon.expiresAt ? `Expires ${new Date(addon.expiresAt).toLocaleDateString()}` : "Active"}
+                          {addon.paymentMethod === "stripe" ? "Card" : `Crypto${addon.paidInChain ? ` (${chainLabels[addon.paidInChain] || addon.paidInChain.toUpperCase()})` : ""}`} — {addon.expiresAt ? `Expires ${new Date(addon.expiresAt).toLocaleDateString()}` : (addon.addonKey === "legacy-plan-lifetime" ? "Active for life" : "Active")}
                         </p>
                       </div>
                       <Button
@@ -1919,7 +1936,13 @@ export default function SettingsPage() {
                     data-testid="button-addon-pay-crypto"
                   >
                     {addonCryptoLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Coins className="h-3 w-3 mr-1" />}
-                    Pay ${(addonCatalog[pendingAddonPayment.addonKey]?.amount * 0.9 / 100).toFixed(2)} <span className="ml-1 text-xs opacity-75">(10% off)</span>
+                    {(() => {
+                      const isHouse = ["xrp","rlusd","bitcoin","ethereum","solana"].includes(addonSelectedChain);
+                      const rate = isHouse ? 0.85 : 0.90;
+                      const pct = isHouse ? "15% off" : "10% off";
+                      const amt = (addonCatalog[pendingAddonPayment.addonKey]?.amount * rate / 100);
+                      return <>Pay ${amt.toFixed(2)} <span className="ml-1 text-xs opacity-75">({pct}{isHouse ? " · House Tier" : ""})</span></>;
+                    })()}
                   </Button>
                   <Button
                     variant="ghost"

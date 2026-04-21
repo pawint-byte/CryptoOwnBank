@@ -137,6 +137,21 @@ export function isLegacyAddon(key: string): key is LegacyAddonKey {
   return (LEGACY_ADDON_KEYS as readonly string[]).includes(key);
 }
 
+// "House Tier" chains get an extra 5% off (15% total vs 10% baseline) — they're
+// the assets we actually want to hold in treasury (BTC/ETH/SOL appreciate;
+// XRP/RLUSD are our home chain where the yield vaults run).
+export const HOUSE_CHAINS = ["xrp", "rlusd", "bitcoin", "ethereum", "solana"] as const;
+export type HouseChain = typeof HOUSE_CHAINS[number];
+export function isHouseChain(chain: string): chain is HouseChain {
+  return (HOUSE_CHAINS as readonly string[]).includes(chain.toLowerCase());
+}
+export function getCryptoDiscountRate(chain: string): number {
+  return isHouseChain(chain) ? 0.15 : 0.10;
+}
+export function applyCryptoDiscount(usdAmount: number, chain: string): number {
+  return Math.round(usdAmount * (1 - getCryptoDiscountRate(chain)) * 100) / 100;
+}
+
 export type AddonKey = keyof typeof ADDONS;
 
 export async function createCheckoutSession(
