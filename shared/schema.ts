@@ -1007,6 +1007,9 @@ export const legacyPlans = pgTable("legacy_plans", {
   lastAnnualReview: timestamp("last_annual_review"),
   nextAnnualReviewDue: timestamp("next_annual_review_due"),
   annualReviewCount: integer("annual_review_count").default(0),
+  beneficiaryHeartbeatEnabled: boolean("beneficiary_heartbeat_enabled").default(true),
+  beneficiaryHeartbeatFrequency: varchar("beneficiary_heartbeat_frequency", { length: 20 }).default("annual"),
+  nextBeneficiaryHeartbeatDue: timestamp("next_beneficiary_heartbeat_due"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1021,6 +1024,7 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   email: varchar("email", { length: 255 }).notNull(),
   relationship: varchar("relationship", { length: 100 }),
   walletType: varchar("wallet_type", { length: 50 }),
+  walletNickname: varchar("wallet_nickname", { length: 200 }),
   deviceInstructions: text("device_instructions"),
   seedPhraseInstructions: text("seed_phrase_instructions"),
   additionalNotes: text("additional_notes"),
@@ -1029,9 +1033,24 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   encryptedVaultHint: varchar("encrypted_vault_hint", { length: 500 }),
   walletAssetSummary: text("wallet_asset_summary"),
   deliveredAt: timestamp("delivered_at"),
+  confirmationStatus: varchar("confirmation_status", { length: 20 }).default("pending"),
+  confirmationToken: varchar("confirmation_token", { length: 100 }),
+  confirmationSentAt: timestamp("confirmation_sent_at"),
+  confirmedAt: timestamp("confirmed_at"),
+  confirmationExpiresAt: timestamp("confirmation_expires_at"),
+  declinedAt: timestamp("declined_at"),
+  declineReason: text("decline_reason"),
+  bouncedAt: timestamp("bounced_at"),
+  heartbeatToken: varchar("heartbeat_token", { length: 100 }),
+  heartbeatSentAt: timestamp("heartbeat_sent_at"),
+  heartbeatRespondedAt: timestamp("heartbeat_responded_at"),
+  pendingChangeRequest: text("pending_change_request"),
+  pendingChangeReviewedAt: timestamp("pending_change_reviewed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_legacy_beneficiaries_plan").on(table.legacyPlanId),
+  index("idx_legacy_beneficiaries_conf_token").on(table.confirmationToken),
+  index("idx_legacy_beneficiaries_hb_token").on(table.heartbeatToken),
 ]);
 
 export const legacyCheckIns = pgTable("legacy_check_ins", {

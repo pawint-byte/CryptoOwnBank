@@ -810,6 +810,157 @@ export async function sendSecondaryContactVerification(
   await sendEmail(to, `${ownerName} designated you as a Legacy Plan contact`, html);
 }
 
+export async function sendBeneficiaryConfirmation(
+  to: string,
+  beneficiaryName: string,
+  ownerName: string,
+  relationship: string | null,
+  confirmUrl: string,
+  declineUrl: string,
+) {
+  const relText = relationship ? `as their <strong>${escapeHtml(relationship)}</strong>` : "as a beneficiary";
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Beneficiary Confirmation</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(beneficiaryName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          <strong>${escapeHtml(ownerName)}</strong> has named you ${relText} on their CryptoOwnBank Legacy Plan — their plan for what happens to their cryptocurrency holdings if they pass away or become incapacitated.
+        </p>
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #1e40af; margin: 0 0 10px; font-size: 16px;">What this means</h3>
+          <ul style="color: #1e3a8a; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+            <li>You don't need to do anything yet — this is just a confirmation that your email works</li>
+            <li>If ${escapeHtml(ownerName)} stops responding to scheduled check-ins, you will receive an email with wallet recovery instructions</li>
+            <li>Future emails from this address may contain time-sensitive instructions — please <strong>add legacy@cryptoownbank.com to your contacts</strong> and never auto-delete</li>
+            <li>You may receive an annual "are you still reachable?" check-in from us — please respond when it arrives</li>
+          </ul>
+        </div>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          Please click <strong>Confirm</strong> below so ${escapeHtml(ownerName)} knows your email is valid and you're aware of this designation.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${confirmUrl}" style="display: inline-block; background: #16a34a; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px; margin-right: 8px;">
+            Yes — I Acknowledge
+          </a>
+          <a href="${declineUrl}" style="display: inline-block; background: #ffffff; color: #dc2626; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #dc2626;">
+            Decline
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center; line-height: 1.6;">
+          If you decline, ${escapeHtml(ownerName)} will be notified so they can reassign or remove you from the plan. If you have questions, contact ${escapeHtml(ownerName)} directly.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because ${escapeHtml(ownerName)} listed you as a beneficiary on CryptoOwnBank. CryptoOwnBank is not a bank — it's a non-custodial crypto management tool. We do not store seed phrases or private keys.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `${ownerName} named you on their Legacy Plan — please confirm`, html);
+}
+
+export async function sendBeneficiaryHeartbeat(
+  to: string,
+  beneficiaryName: string,
+  ownerName: string,
+  respondUrl: string,
+) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Annual Beneficiary Check-In</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(beneficiaryName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          You're a beneficiary on <strong>${escapeHtml(ownerName)}</strong>'s CryptoOwnBank Legacy Plan. This is our routine annual check-in to make sure we can still reach you when it matters.
+        </p>
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #166534; margin: 0 0 10px; font-size: 16px;">Please take 30 seconds to respond</h3>
+          <p style="color: #15803d; font-size: 14px; line-height: 1.8; margin: 0;">
+            Click below to confirm you're still reachable, or to let ${escapeHtml(ownerName)} know if anything has changed (your email, your relationship to them, or if you'd like to be removed). Whatever you submit will be sent to ${escapeHtml(ownerName)} so they can update their plan.
+          </p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${respondUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Respond to Check-In
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center;">
+          If you don't respond, ${escapeHtml(ownerName)} will be notified to verify your contact information out-of-band. You're not in any trouble — we just want to make sure the plan stays accurate.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because ${escapeHtml(ownerName)} listed you as a beneficiary on CryptoOwnBank. This is an annual maintenance check, not a delivery of recovery information.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Annual check-in — ${ownerName}'s Legacy Plan`, html);
+}
+
+export async function sendBeneficiaryFeedbackToOwner(
+  to: string,
+  ownerName: string,
+  beneficiaryName: string,
+  beneficiaryEmail: string,
+  feedbackType: "confirmed" | "declined" | "heartbeat" | "changes",
+  details: string | null,
+  manageUrl: string,
+) {
+  const titleMap = {
+    confirmed: `${beneficiaryName} confirmed their Legacy Plan designation`,
+    declined: `${beneficiaryName} declined their Legacy Plan designation`,
+    heartbeat: `${beneficiaryName} responded to the annual check-in`,
+    changes: `${beneficiaryName} requested changes to their Legacy Plan info`,
+  };
+  const colorMap = {
+    confirmed: { bg: "#f0fdf4", border: "#86efac", text: "#166534" },
+    declined: { bg: "#fef2f2", border: "#fca5a5", text: "#991b1b" },
+    heartbeat: { bg: "#eff6ff", border: "#bfdbfe", text: "#1e40af" },
+    changes: { bg: "#fffbeb", border: "#fde68a", text: "#92400e" },
+  };
+  const c = colorMap[feedbackType];
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Beneficiary Update</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(ownerName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">${escapeHtml(titleMap[feedbackType])}.</p>
+        <div style="background: ${c.bg}; border: 1px solid ${c.border}; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <p style="color: ${c.text}; font-size: 14px; margin: 0 0 6px;"><strong>${escapeHtml(beneficiaryName)}</strong></p>
+          <p style="color: ${c.text}; font-size: 13px; margin: 0;">${escapeHtml(beneficiaryEmail)}</p>
+          ${details ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid ${c.border};">
+            <p style="color: ${c.text}; font-size: 13px; line-height: 1.7; margin: 0; white-space: pre-wrap;">${escapeHtml(details)}</p>
+          </div>` : ""}
+        </div>
+        ${feedbackType === "declined" ? `
+        <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 14px; margin: 16px 0;">
+          <p style="color: #991b1b; font-size: 13px; margin: 0; line-height: 1.6;">
+            <strong>Action recommended:</strong> Reassign or remove this beneficiary in your Legacy Plan dashboard. If you don't reassign, they will <em>still</em> receive their packet on trigger (defensive default), but they've signaled they don't want the responsibility.
+          </p>
+        </div>
+        ` : ""}
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${manageUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
+            Open Legacy Plan Dashboard
+          </a>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>This notification was sent because a beneficiary on your Legacy Plan responded. You are in control — make any changes from your dashboard.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, titleMap[feedbackType], html);
+}
+
 export async function sendLegacyBeneficiaryDelivery(
   to: string,
   beneficiaryName: string,

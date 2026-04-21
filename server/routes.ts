@@ -6,7 +6,7 @@ import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./repli
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
-import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner } from "./email";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
 import multer from "multer";
 import { db } from "./db";
@@ -9016,21 +9016,51 @@ Rules you MUST follow:
     }
   });
 
+  const VALID_WALLET_TYPES = ["cypherock", "ledger", "ledger-stax", "trezor", "xaman", "tangem", "coldcard", "ellipal", "keystone", "bitbox", "arculus", "safepal", "metamask", "trust", "phantom", "exodus", "uniswap", "coinbase-wallet", "exchange", "manual", "other"];
+
+  async function getOwnerDisplayName(userId: string): Promise<string> {
+    try {
+      const user = await storage.getUser(userId);
+      const first = (user as any)?.firstName || "";
+      const last = (user as any)?.lastName || "";
+      const full = `${first} ${last}`.trim();
+      return full || (user as any)?.email || "Your CryptoOwnBank contact";
+    } catch { return "Your CryptoOwnBank contact"; }
+  }
+
+  function makeToken(): string {
+    return crypto.randomBytes(32).toString("hex");
+  }
+
+  async function dispatchBeneficiaryConfirmation(beneficiary: any, userId: string) {
+    try {
+      const ownerName = await getOwnerDisplayName(userId);
+      const confirmUrl = `https://cryptoownbank.com/api/legacy-beneficiaries/confirm?token=${beneficiary.confirmationToken}`;
+      const declineUrl = `https://cryptoownbank.com/api/legacy-beneficiaries/decline?token=${beneficiary.confirmationToken}`;
+      await sendBeneficiaryConfirmation(beneficiary.email, beneficiary.name, ownerName, beneficiary.relationship || null, confirmUrl, declineUrl);
+    } catch (e) {
+      console.error("Failed to send beneficiary confirmation:", e);
+    }
+  }
+
   app.post("/api/legacy-beneficiaries", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
-      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
+      const { name, email, relationship, walletType, walletNickname, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
-      const validWalletTypes = ["cypherock", "ledger", "trezor", "xaman", "tangem", "coldcard", "ellipal", "keystone", "bitbox", "metamask", "trust", "phantom", "exodus", "coinbase-wallet", "exchange", "other"];
+      const confirmationToken = makeToken();
+      const now = new Date();
+      const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       const beneficiary = await storage.createLegacyBeneficiary({
         legacyPlanId: plan.id,
         name: String(name).slice(0, 200),
-        email: String(email).slice(0, 320),
+        email: String(email).slice(0, 320).toLowerCase().trim(),
         relationship: relationship || null,
-        walletType: walletType && validWalletTypes.includes(walletType) ? walletType : null,
+        walletType: walletType && VALID_WALLET_TYPES.includes(walletType) ? walletType : null,
+        walletNickname: walletNickname ? String(walletNickname).slice(0, 200) : null,
         deviceInstructions: deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null,
         seedPhraseInstructions: seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null,
         additionalNotes: additionalNotes ? String(additionalNotes).slice(0, 5000) : null,
@@ -9038,7 +9068,12 @@ Rules you MUST follow:
         encryptedVault: encryptedVault ? String(encryptedVault).slice(0, 50000) : null,
         encryptedVaultHint: encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null,
         walletAssetSummary: walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null,
-      });
+        confirmationStatus: "pending",
+        confirmationToken,
+        confirmationSentAt: now,
+        confirmationExpiresAt: expires,
+      } as any);
+      dispatchBeneficiaryConfirmation(beneficiary, userId);
       res.json(beneficiary);
     } catch (error) {
       console.error("Create beneficiary error:", error);
@@ -9053,13 +9088,20 @@ Rules you MUST follow:
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(403).json({ message: "No legacy plan found" });
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
-      if (!beneficiaries.find(b => b.id === req.params.id)) return res.status(403).json({ message: "Not your beneficiary" });
-      const { name, email, relationship, walletType, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      const { name, email, relationship, walletType, walletNickname, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
       const safeUpdates: Record<string, unknown> = {};
       if (name !== undefined) safeUpdates.name = String(name).slice(0, 200);
-      if (email !== undefined) safeUpdates.email = String(email).slice(0, 320);
+      let emailChanged = false;
+      if (email !== undefined) {
+        const newEmail = String(email).slice(0, 320).toLowerCase().trim();
+        safeUpdates.email = newEmail;
+        if (newEmail !== (existing.email || "").toLowerCase().trim()) emailChanged = true;
+      }
       if (relationship !== undefined) safeUpdates.relationship = relationship;
-      if (walletType !== undefined) safeUpdates.walletType = walletType;
+      if (walletType !== undefined) safeUpdates.walletType = walletType && VALID_WALLET_TYPES.includes(walletType) ? walletType : null;
+      if (walletNickname !== undefined) safeUpdates.walletNickname = walletNickname ? String(walletNickname).slice(0, 200) : null;
       if (deviceInstructions !== undefined) safeUpdates.deviceInstructions = deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null;
       if (seedPhraseInstructions !== undefined) safeUpdates.seedPhraseInstructions = seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null;
       if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 5000) : null;
@@ -9067,12 +9109,235 @@ Rules you MUST follow:
       if (encryptedVault !== undefined) safeUpdates.encryptedVault = encryptedVault ? String(encryptedVault).slice(0, 50000) : null;
       if (encryptedVaultHint !== undefined) safeUpdates.encryptedVaultHint = encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null;
       if (walletAssetSummary !== undefined) safeUpdates.walletAssetSummary = walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null;
+      if (emailChanged) {
+        const newToken = makeToken();
+        const now = new Date();
+        safeUpdates.confirmationStatus = "pending";
+        safeUpdates.confirmationToken = newToken;
+        safeUpdates.confirmationSentAt = now;
+        safeUpdates.confirmationExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        safeUpdates.confirmedAt = null;
+        safeUpdates.declinedAt = null;
+        safeUpdates.declineReason = null;
+        safeUpdates.bouncedAt = null;
+      }
       const result = await storage.updateLegacyBeneficiary(req.params.id, safeUpdates as any);
       if (!result) return res.status(404).json({ message: "Beneficiary not found" });
+      if (emailChanged) dispatchBeneficiaryConfirmation(result, userId);
       res.json(result);
     } catch (error) {
       console.error("Update beneficiary error:", error);
       res.status(500).json({ message: "Failed to update beneficiary" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/:id/resend-confirmation", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      const newToken = makeToken();
+      const now = new Date();
+      const updated = await storage.updateLegacyBeneficiary(req.params.id, {
+        confirmationStatus: "pending",
+        confirmationToken: newToken,
+        confirmationSentAt: now,
+        confirmationExpiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        confirmedAt: null,
+        declinedAt: null,
+        declineReason: null,
+        bouncedAt: null,
+      } as any);
+      if (updated) dispatchBeneficiaryConfirmation(updated, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Resend confirmation error:", error);
+      res.status(500).json({ message: "Failed to resend" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/:id/send-heartbeat", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      const heartbeatToken = makeToken();
+      const now = new Date();
+      const updated = await storage.updateLegacyBeneficiary(req.params.id, {
+        heartbeatToken,
+        heartbeatSentAt: now,
+        heartbeatRespondedAt: null,
+      } as any);
+      try {
+        const ownerName = await getOwnerDisplayName(userId);
+        const respondUrl = `https://cryptoownbank.com/api/legacy-beneficiaries/heartbeat?token=${heartbeatToken}`;
+        await sendBeneficiaryHeartbeat(existing.email, existing.name, ownerName, respondUrl);
+      } catch (e) { console.error("Heartbeat send failed:", e); }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Send heartbeat error:", error);
+      res.status(500).json({ message: "Failed to send heartbeat" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/:id/clear-feedback", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      if (!beneficiaries.find(b => b.id === req.params.id)) return res.status(403).json({ message: "Not your beneficiary" });
+      await storage.updateLegacyBeneficiary(req.params.id, {
+        pendingChangeRequest: null,
+        pendingChangeReviewedAt: new Date(),
+      } as any);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Clear feedback error:", error);
+      res.status(500).json({ message: "Failed to clear" });
+    }
+  });
+
+  function htmlPage(title: string, body: string): string {
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;margin:0;padding:40px 20px;color:#0f172a}.card{max-width:560px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:36px;box-shadow:0 4px 14px rgba(0,0,0,0.04)}h1{color:#00A4E4;margin:0 0 8px;font-size:22px}h2{color:#0f172a;margin:0 0 16px;font-size:18px}p{line-height:1.7;color:#334155;margin:10px 0;font-size:15px}.muted{color:#64748b;font-size:13px}.success{color:#16a34a;font-weight:600}.danger{color:#dc2626;font-weight:600}textarea,input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;box-sizing:border-box;margin-top:6px}label{font-size:14px;font-weight:600;color:#0f172a;display:block;margin-top:14px}button{background:#00A4E4;color:#fff;border:0;padding:12px 24px;border-radius:8px;font-weight:600;font-size:15px;cursor:pointer;margin-top:16px}.opt{display:flex;align-items:flex-start;gap:8px;margin:8px 0;font-size:14px;color:#334155}</style></head><body><div class="card"><h1>CryptoOwnBank</h1>${body}</div></body></html>`;
+  }
+
+  app.get("/api/legacy-beneficiaries/confirm", async (req, res) => {
+    try {
+      const token = String(req.query.token || "");
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2><p>This confirmation link is missing its token.</p>`));
+      const beneficiary = await storage.getLegacyBeneficiaryByConfirmationToken(token);
+      if (!beneficiary) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2><p>This confirmation link has already been used or is no longer valid. If you believe this is a mistake, contact the person who added you.</p>`));
+      if (beneficiary.confirmationExpiresAt && new Date() > new Date(beneficiary.confirmationExpiresAt)) {
+        return res.status(410).send(htmlPage("Expired", `<h2>This link has expired</h2><p>Please ask the person who added you to resend the confirmation.</p>`));
+      }
+      if (beneficiary.confirmationStatus === "confirmed") {
+        return res.send(htmlPage("Already confirmed", `<h2 class="success">Already confirmed</h2><p>You've already confirmed this designation. Thank you.</p>`));
+      }
+      const plan = await db.select().from(legacyPlans).where(eq(legacyPlans.id, beneficiary.legacyPlanId)).limit(1);
+      const ownerName = plan[0] ? await getOwnerDisplayName(plan[0].userId) : "the plan owner";
+      await storage.updateLegacyBeneficiary(beneficiary.id, {
+        confirmationStatus: "confirmed",
+        confirmedAt: new Date(),
+        confirmationToken: null,
+      } as any);
+      if (plan[0]) {
+        try {
+          const ownerEmail = (await storage.getUser(plan[0].userId) as any)?.email;
+          if (ownerEmail) {
+            const manageUrl = "https://cryptoownbank.com/legacy-plan";
+            await sendBeneficiaryFeedbackToOwner(ownerEmail, ownerName, beneficiary.name, beneficiary.email, "confirmed", null, manageUrl);
+          }
+        } catch (e) { console.error("Owner notify failed:", e); }
+      }
+      res.send(htmlPage("Confirmed", `<h2 class="success">Thank you, ${escapeHtml(beneficiary.name)}</h2><p>You've confirmed your designation on ${escapeHtml(ownerName)}'s Legacy Plan. They've been notified.</p><p class="muted">No further action is needed. We may send an annual check-in to verify you're still reachable. If anything changes, contact ${escapeHtml(ownerName)} directly.</p>`));
+    } catch (e) {
+      console.error("Confirm error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2><p>Please try again or contact the person who added you.</p>`));
+    }
+  });
+
+  app.get("/api/legacy-beneficiaries/decline", async (req, res) => {
+    try {
+      const token = String(req.query.token || "");
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const beneficiary = await storage.getLegacyBeneficiaryByConfirmationToken(token);
+      if (!beneficiary) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2><p>This link has already been used or is no longer valid.</p>`));
+      res.send(htmlPage("Decline", `<h2>Decline this designation</h2><p>If you don't want to be a beneficiary on this Legacy Plan, let us know why (optional). The plan owner will be notified so they can reassign or remove you.</p><form method="POST" action="/api/legacy-beneficiaries/decline"><input type="hidden" name="token" value="${escapeHtml(token)}"><label>Reason (optional)<textarea name="reason" rows="4" placeholder="e.g. I'd rather not have this responsibility"></textarea></label><button type="submit" class="danger" style="background:#dc2626">Confirm Decline</button></form>`));
+    } catch (e) {
+      console.error("Decline GET error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/decline", express.urlencoded({ extended: true }) as any, async (req: any, res) => {
+    try {
+      const token = String(req.body.token || "");
+      const reason = String(req.body.reason || "").slice(0, 1000);
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const beneficiary = await storage.getLegacyBeneficiaryByConfirmationToken(token);
+      if (!beneficiary) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2>`));
+      const plan = await db.select().from(legacyPlans).where(eq(legacyPlans.id, beneficiary.legacyPlanId)).limit(1);
+      await storage.updateLegacyBeneficiary(beneficiary.id, {
+        confirmationStatus: "declined",
+        declinedAt: new Date(),
+        declineReason: reason || null,
+        confirmationToken: null,
+      } as any);
+      if (plan[0]) {
+        try {
+          const ownerEmail = (await storage.getUser(plan[0].userId) as any)?.email;
+          const ownerName = await getOwnerDisplayName(plan[0].userId);
+          if (ownerEmail) {
+            const manageUrl = "https://cryptoownbank.com/legacy-plan";
+            await sendBeneficiaryFeedbackToOwner(ownerEmail, ownerName, beneficiary.name, beneficiary.email, "declined", reason || null, manageUrl);
+          }
+        } catch (e) { console.error("Owner notify failed:", e); }
+      }
+      res.send(htmlPage("Declined", `<h2>Declined</h2><p>The plan owner has been notified. Thank you for letting us know.</p><p class="muted">If this was a mistake, contact the plan owner so they can re-add you.</p>`));
+    } catch (e) {
+      console.error("Decline POST error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
+    }
+  });
+
+  app.get("/api/legacy-beneficiaries/heartbeat", async (req, res) => {
+    try {
+      const token = String(req.query.token || "");
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const beneficiary = await storage.getLegacyBeneficiaryByHeartbeatToken(token);
+      if (!beneficiary) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2><p>This check-in link has already been used or expired.</p>`));
+      const plan = await db.select().from(legacyPlans).where(eq(legacyPlans.id, beneficiary.legacyPlanId)).limit(1);
+      const ownerName = plan[0] ? await getOwnerDisplayName(plan[0].userId) : "the plan owner";
+      res.send(htmlPage("Annual Check-In", `<h2>Annual check-in</h2><p>Hi ${escapeHtml(beneficiary.name)} — please tell ${escapeHtml(ownerName)} if everything is still accurate.</p><form method="POST" action="/api/legacy-beneficiaries/heartbeat"><input type="hidden" name="token" value="${escapeHtml(token)}"><label><input type="radio" name="response" value="ok" checked> Yes — I'm still reachable, no changes needed</label><label><input type="radio" name="response" value="changes"> I have changes to report</label><label>Notes / changes (optional)<textarea name="notes" rows="4" placeholder="e.g. New email is..., I'd like to be removed, my relationship is now spouse, etc."></textarea></label><button type="submit">Submit Response</button></form><p class="muted">Whatever you submit goes directly to ${escapeHtml(ownerName)}. They make the changes — you don't need to.</p>`));
+    } catch (e) {
+      console.error("Heartbeat GET error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/heartbeat", express.urlencoded({ extended: true }) as any, async (req: any, res) => {
+    try {
+      const token = String(req.body.token || "");
+      const response = String(req.body.response || "ok");
+      const notes = String(req.body.notes || "").slice(0, 2000);
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const beneficiary = await storage.getLegacyBeneficiaryByHeartbeatToken(token);
+      if (!beneficiary) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2>`));
+      const plan = await db.select().from(legacyPlans).where(eq(legacyPlans.id, beneficiary.legacyPlanId)).limit(1);
+      const hasChanges = response === "changes" || notes.trim().length > 0;
+      const updates: any = {
+        heartbeatRespondedAt: new Date(),
+        heartbeatToken: null,
+      };
+      if (hasChanges) {
+        updates.pendingChangeRequest = `${response === "changes" ? "Changes requested" : "Confirmed reachable"}\n${notes ? `\nNotes:\n${notes}` : ""}`.trim();
+        updates.pendingChangeReviewedAt = null;
+      }
+      await storage.updateLegacyBeneficiary(beneficiary.id, updates);
+      if (plan[0]) {
+        try {
+          const ownerEmail = (await storage.getUser(plan[0].userId) as any)?.email;
+          const ownerName = await getOwnerDisplayName(plan[0].userId);
+          if (ownerEmail) {
+            const manageUrl = "https://cryptoownbank.com/legacy-plan";
+            await sendBeneficiaryFeedbackToOwner(ownerEmail, ownerName, beneficiary.name, beneficiary.email, hasChanges ? "changes" : "heartbeat", notes || null, manageUrl);
+          }
+        } catch (e) { console.error("Owner notify failed:", e); }
+      }
+      res.send(htmlPage("Submitted", `<h2 class="success">Response received</h2><p>Thank you. The plan owner has been notified.</p>`));
+    } catch (e) {
+      console.error("Heartbeat POST error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
     }
   });
 
