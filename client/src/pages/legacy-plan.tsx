@@ -1034,7 +1034,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   const [templateFields, setTemplateFields] = useState<Record<string, string>>({});
   const [walletAssetSummary, setWalletAssetSummary] = useState("");
   const [selectedWalletIds, setSelectedWalletIds] = useState<string[]>([]);
-  const [initialized, setInitialized] = useState(false);
+  const [initializedForId, setInitializedForId] = useState<string | null>(null);
 
   const [vaultEnabled, setVaultEnabled] = useState(false);
   const [vaultContent, setVaultContent] = useState("");
@@ -1049,7 +1049,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
 
   useEffect(() => {
     if (!isEditing || !open || !editBeneficiary) return;
-    if (initialized) return;
+    if (initializedForId === editBeneficiary.id) return;
     setName(editBeneficiary.name || "");
     setEmail(editBeneficiary.email || "");
     setRelationship(editBeneficiary.relationship || "");
@@ -1090,8 +1090,8 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
       setEncryptedVaultResult(editBeneficiary.encryptedVault);
       setVaultHint(editBeneficiary.encryptedVaultHint || "");
     }
-    setInitialized(true);
-  }, [open, editBeneficiary, isEditing, initialized]);
+    setInitializedForId(editBeneficiary.id);
+  }, [open, editBeneficiary, isEditing, initializedForId]);
 
   const { data: walletAssets } = useQuery<WalletAsset[]>({
     queryKey: ["/api/legacy-plan/wallet-assets"],
@@ -1241,7 +1241,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
     setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
     setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
-    setVaultHint(""); setEncryptedVaultResult(""); setVerificationCapsule(""); setTestDecryptResult(null); setInitialized(false);
+    setVaultHint(""); setEncryptedVaultResult(""); setVerificationCapsule(""); setTestDecryptResult(null); setInitializedForId(null);
   };
 
   const walletCategories = [
