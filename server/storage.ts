@@ -110,6 +110,7 @@ import {
   legacyCheckIns,
   legacyWalletAssignments,
   familySeats,
+  familyProposals,
   type LegacyPlan,
   type InsertLegacyPlan,
   type LegacyBeneficiary,
@@ -119,6 +120,8 @@ import {
   type InsertLegacyWalletAssignment,
   type FamilySeat,
   type InsertFamilySeat,
+  type FamilyProposal,
+  type InsertFamilyProposal,
   tokenBuckets,
   tokenBucketItems,
   type TokenBucket,
@@ -402,6 +405,12 @@ export interface IStorage {
   createFamilySeat(data: InsertFamilySeat & { inviteToken: string }): Promise<FamilySeat>;
   updateFamilySeat(id: string, data: Partial<FamilySeat>): Promise<FamilySeat | undefined>;
   deleteFamilySeat(id: string): Promise<void>;
+  createFamilyProposal(data: InsertFamilyProposal): Promise<FamilyProposal>;
+  getFamilyProposalsByOwner(ownerUserId: string, status?: string): Promise<FamilyProposal[]>;
+  getFamilyProposalsBySeat(seatId: string): Promise<FamilyProposal[]>;
+  getFamilyProposalsByProposer(proposedByUserId: string): Promise<FamilyProposal[]>;
+  getFamilyProposal(id: string): Promise<FamilyProposal | undefined>;
+  updateFamilyProposal(id: string, data: Partial<FamilyProposal>): Promise<FamilyProposal | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1797,6 +1806,31 @@ export class DatabaseStorage implements IStorage {
 
   async updateFamilySeat(id: string, data: Partial<FamilySeat>): Promise<FamilySeat | undefined> {
     const [r] = await db.update(familySeats).set({ ...data, updatedAt: new Date() }).where(eq(familySeats.id, id)).returning();
+    return r;
+  }
+
+  async createFamilyProposal(data: InsertFamilyProposal): Promise<FamilyProposal> {
+    const [r] = await db.insert(familyProposals).values(data as any).returning();
+    return r;
+  }
+  async getFamilyProposalsByOwner(ownerUserId: string, status?: string): Promise<FamilyProposal[]> {
+    const where = status
+      ? and(eq(familyProposals.ownerUserId, ownerUserId), eq(familyProposals.status, status))
+      : eq(familyProposals.ownerUserId, ownerUserId);
+    return db.select().from(familyProposals).where(where).orderBy(desc(familyProposals.createdAt));
+  }
+  async getFamilyProposalsBySeat(seatId: string): Promise<FamilyProposal[]> {
+    return db.select().from(familyProposals).where(eq(familyProposals.seatId, seatId)).orderBy(desc(familyProposals.createdAt));
+  }
+  async getFamilyProposalsByProposer(proposedByUserId: string): Promise<FamilyProposal[]> {
+    return db.select().from(familyProposals).where(eq(familyProposals.proposedByUserId, proposedByUserId)).orderBy(desc(familyProposals.createdAt));
+  }
+  async getFamilyProposal(id: string): Promise<FamilyProposal | undefined> {
+    const [r] = await db.select().from(familyProposals).where(eq(familyProposals.id, id));
+    return r;
+  }
+  async updateFamilyProposal(id: string, data: Partial<FamilyProposal>): Promise<FamilyProposal | undefined> {
+    const [r] = await db.update(familyProposals).set(data as any).where(eq(familyProposals.id, id)).returning();
     return r;
   }
 

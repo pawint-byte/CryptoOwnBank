@@ -3,10 +3,10 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey } from "./stripe";
-import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner } from "./email";
+import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
 import multer from "multer";
 import { db } from "./db";
@@ -10581,6 +10581,239 @@ ${beneSections}
     } catch (e) {
       console.error("View family seat error:", e);
       res.status(500).json({ message: "Failed to load view" });
+    }
+  });
+
+  // ============================================================
+  // Family Proposals — kid/seat requests, owner approves
+  // ============================================================
+  const VALID_ACTION_TYPES = ["send", "dca", "stake", "unstake", "swap", "other"];
+
+  function buildHumanSummary(actionType: string, payload: any, proposerName: string): string {
+    const amt = payload?.amount ? `${payload.amount} ${payload.asset || ""}`.trim() : "";
+    switch (actionType) {
+      case "send":
+        return `${proposerName} requests sending ${amt} to ${payload?.destinationLabel || payload?.destination || "a saved address"}`;
+      case "dca":
+        return `${proposerName} requests starting a DCA: ${amt} ${payload?.frequency ? "every " + payload.frequency : ""} into ${payload?.targetAsset || "a token"}`;
+      case "stake":
+        return `${proposerName} requests staking ${amt}`;
+      case "unstake":
+        return `${proposerName} requests unstaking ${amt}`;
+      case "swap":
+        return `${proposerName} requests swapping ${amt} → ${payload?.toAsset || "another asset"}`;
+      case "other":
+        return `${proposerName} has a request: ${payload?.description || "(see note)"}`;
+      default:
+        return `${proposerName} has a request`;
+    }
+  }
+
+  // Whitelist: addresses the seat may pick from (owner's saved payees + own wallets)
+  app.get("/api/family-seats/:id/whitelist", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const seat = await storage.getFamilySeat(req.params.id);
+      if (!seat || seat.seatUserId !== userId || seat.status !== "active") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      // Owner's wallets (kid can request sends to owner's own wallets)
+      const wallets = await storage.getWalletsByUser(seat.ownerUserId);
+      const walletAddresses = wallets.map(w => ({
+        label: w.label || `${w.chain.toUpperCase()} wallet`,
+        address: w.address,
+        chain: w.chain,
+        source: "wallet" as const,
+      }));
+      // Owner's saved scheduled-payment payees
+      let payeeAddresses: any[] = [];
+      try {
+        const payees = await db.select().from(scheduledPayments).where(eq(scheduledPayments.userId, seat.ownerUserId));
+        const seen = new Set<string>();
+        for (const p of payees) {
+          const key = `${p.chain}:${p.payeeAddress}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          payeeAddresses.push({ label: p.payeeName, address: p.payeeAddress, chain: p.chain, source: "payee" as const });
+        }
+      } catch (e) { /* ignore if table missing */ }
+      res.json({ destinations: [...walletAddresses, ...payeeAddresses] });
+    } catch (e) {
+      console.error("Whitelist error:", e);
+      res.status(500).json({ message: "Failed to load whitelist" });
+    }
+  });
+
+  // Seat creates a proposal
+  app.post("/api/family-proposals", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { seatId, actionType, actionLabel, payload, proposerNote } = req.body;
+      if (!seatId || !actionType) return res.status(400).json({ message: "seatId and actionType required" });
+      if (!VALID_ACTION_TYPES.includes(actionType)) return res.status(400).json({ message: "Invalid actionType" });
+      const seat = await storage.getFamilySeat(seatId);
+      if (!seat || seat.seatUserId !== userId || seat.status !== "active") return res.status(403).json({ message: "Not your seat" });
+      if (seat.role !== "proposer") return res.status(403).json({ message: "Your role is read-only. Ask the owner to upgrade you to Proposer." });
+
+      // For "send" requests, enforce whitelist
+      if (actionType === "send") {
+        const dest = payload?.destination;
+        if (!dest) return res.status(400).json({ message: "Destination is required" });
+        const wallets = await storage.getWalletsByUser(seat.ownerUserId);
+        const ownerPayees = await db.select().from(scheduledPayments).where(eq(scheduledPayments.userId, seat.ownerUserId)).catch(() => []);
+        const allowed = new Set<string>([
+          ...wallets.map(w => w.address),
+          ...ownerPayees.map(p => p.payeeAddress),
+        ]);
+        if (!allowed.has(dest)) return res.status(400).json({ message: "Destination is not on the whitelist of saved addresses" });
+      }
+
+      const [me] = await db.select().from(users).where(eq(users.id, userId));
+      const proposerName = me ? `${me.firstName || ""} ${me.lastName || ""}`.trim() || me.email || seat.seatName : seat.seatName;
+      const humanSummary = buildHumanSummary(actionType, payload, proposerName);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 72); // 72h
+
+      const proposal = await storage.createFamilyProposal({
+        seatId: seat.id,
+        ownerUserId: seat.ownerUserId,
+        proposedByUserId: userId,
+        proposedByName: proposerName,
+        actionType,
+        actionLabel: String(actionLabel || actionType).slice(0, 100),
+        payload: payload || {},
+        humanSummary,
+        proposerNote: proposerNote ? String(proposerNote).slice(0, 1000) : null,
+        expiresAt,
+      } as any);
+
+      // Notify owner
+      try {
+        const [owner] = await db.select().from(users).where(eq(users.id, seat.ownerUserId));
+        if (owner?.email) {
+          const reviewUrl = `https://cryptoownbank.com/family?tab=requests`;
+          const safeProposerName = escapeHtml(proposerName);
+          const safeSummary = escapeHtml(humanSummary);
+          const safeNote = proposerNote ? escapeHtml(String(proposerNote).slice(0, 500)) : "";
+          const safeOwnerFirst = escapeHtml(owner.firstName || "");
+          await sendEmail(owner.email, `New request from ${proposerName}`, `
+            <p>Hi ${safeOwnerFirst},</p>
+            <p><strong>${safeProposerName}</strong> sent you a request on CryptoOwnBank:</p>
+            <blockquote style="border-left:4px solid #2563eb;padding:8px 16px;background:#f8fafc;margin:12px 0;border-radius:4px">
+              ${safeSummary}
+              ${safeNote ? `<p style="margin:8px 0 0;color:#64748b;font-size:14px"><em>"${safeNote}"</em></p>` : ""}
+            </blockquote>
+            <p>Nothing happens until you approve it. Requests expire in 72 hours.</p>
+            <p style="margin:24px 0"><a href="${reviewUrl}" style="background:#2563eb;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Review request</a></p>
+          `);
+        }
+      } catch (emailErr) { console.error("Failed to send proposal email:", emailErr); }
+
+      res.json(proposal);
+    } catch (e) {
+      console.error("Create proposal error:", e);
+      res.status(500).json({ message: "Failed to create request" });
+    }
+  });
+
+  // Owner: list pending proposals across all seats (with optional ?status=)
+  app.get("/api/family-proposals/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = typeof req.query.status === "string" ? req.query.status : "pending";
+      const proposals = await storage.getFamilyProposalsByOwner(userId, status);
+      res.json(proposals);
+    } catch (e) {
+      console.error("List pending proposals error:", e);
+      res.status(500).json({ message: "Failed to load requests" });
+    }
+  });
+
+  // Seat: list my own proposals (across all owners)
+  app.get("/api/family-proposals/mine", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const proposals = await storage.getFamilyProposalsByProposer(userId);
+      res.json(proposals);
+    } catch (e) {
+      console.error("List my proposals error:", e);
+      res.status(500).json({ message: "Failed to load your requests" });
+    }
+  });
+
+  // Owner: approve
+  app.post("/api/family-proposals/:id/approve", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const p = await storage.getFamilyProposal(req.params.id);
+      if (!p || p.ownerUserId !== userId) return res.status(403).json({ message: "Not your request" });
+      if (p.status !== "pending") return res.status(400).json({ message: `Request is already ${p.status}` });
+      const note = req.body?.note ? String(req.body.note).slice(0, 1000) : null;
+      const updated = await storage.updateFamilyProposal(p.id, { status: "approved", decidedAt: new Date(), ownerDecisionNote: note } as any);
+      // Notify proposer
+      try {
+        const [proposer] = await db.select().from(users).where(eq(users.id, p.proposedByUserId));
+        if (proposer?.email) {
+          const safeFirst = escapeHtml(proposer.firstName || "");
+          const safeSummary = escapeHtml(p.humanSummary);
+          const safeNote = note ? escapeHtml(note) : "";
+          await sendEmail(proposer.email, `Your request was approved`, `
+            <p>Hi ${safeFirst},</p>
+            <p>Your request was <strong style="color:#16a34a">approved</strong>:</p>
+            <blockquote style="border-left:4px solid #16a34a;padding:8px 16px;background:#f0fdf4;margin:12px 0;border-radius:4px">${safeSummary}</blockquote>
+            ${safeNote ? `<p><em>Note from owner: "${safeNote}"</em></p>` : ""}
+            <p>The owner will execute the action from their account. You can see the status on your <a href="https://cryptoownbank.com/family">Family page</a>.</p>
+          `);
+        }
+      } catch (emailErr) { console.error("Failed to send approval email:", emailErr); }
+      res.json(updated);
+    } catch (e) {
+      console.error("Approve proposal error:", e);
+      res.status(500).json({ message: "Failed to approve" });
+    }
+  });
+
+  // Owner: reject
+  app.post("/api/family-proposals/:id/reject", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const p = await storage.getFamilyProposal(req.params.id);
+      if (!p || p.ownerUserId !== userId) return res.status(403).json({ message: "Not your request" });
+      if (p.status !== "pending") return res.status(400).json({ message: `Request is already ${p.status}` });
+      const note = req.body?.note ? String(req.body.note).slice(0, 1000) : null;
+      const updated = await storage.updateFamilyProposal(p.id, { status: "rejected", decidedAt: new Date(), ownerDecisionNote: note } as any);
+      try {
+        const [proposer] = await db.select().from(users).where(eq(users.id, p.proposedByUserId));
+        if (proposer?.email) {
+          const safeFirst = escapeHtml(proposer.firstName || "");
+          const safeSummary = escapeHtml(p.humanSummary);
+          const safeNote = note ? escapeHtml(note) : "";
+          await sendEmail(proposer.email, `Your request was declined`, `
+            <p>Hi ${safeFirst},</p>
+            <p>Your request was <strong style="color:#dc2626">declined</strong>:</p>
+            <blockquote style="border-left:4px solid #dc2626;padding:8px 16px;background:#fef2f2;margin:12px 0;border-radius:4px">${safeSummary}</blockquote>
+            ${safeNote ? `<p><em>Note from owner: "${safeNote}"</em></p>` : "<p>No note provided. Talk it over with them — that's usually the best next step.</p>"}
+          `);
+        }
+      } catch (emailErr) { console.error("Failed to send rejection email:", emailErr); }
+      res.json(updated);
+    } catch (e) {
+      console.error("Reject proposal error:", e);
+      res.status(500).json({ message: "Failed to reject" });
+    }
+  });
+
+  // Proposer: withdraw
+  app.post("/api/family-proposals/:id/withdraw", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const p = await storage.getFamilyProposal(req.params.id);
+      if (!p || p.proposedByUserId !== userId) return res.status(403).json({ message: "Not your request" });
+      if (p.status !== "pending") return res.status(400).json({ message: `Request is already ${p.status}` });
+      const updated = await storage.updateFamilyProposal(p.id, { status: "withdrawn", decidedAt: new Date() } as any);
+      res.json(updated);
+    } catch (e) {
+      console.error("Withdraw proposal error:", e);
+      res.status(500).json({ message: "Failed to withdraw" });
     }
   });
 

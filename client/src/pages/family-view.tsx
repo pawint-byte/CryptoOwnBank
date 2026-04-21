@@ -1,24 +1,27 @@
+import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Eye, ArrowLeft, Wallet, TrendingUp, ShieldCheck, Loader2 } from "lucide-react";
+import { Eye, ArrowLeft, Wallet, TrendingUp, ShieldCheck, Loader2, Send } from "lucide-react";
+import { FamilyRequestDialog } from "@/components/family-request-dialog";
 
 type SeatView = {
-  seat: { id: string; role: string; ownerName: string };
+  ownerName: string;
+  role: string;
   wallets: {
     wallet: { id: string; chain: string; label: string | null; address: string };
     balances: { id: string; assetSymbol: string; balance: string; usdValue: string | null }[];
   }[];
   positions: { id: string; assetSymbol: string; quantity: string; averageCost: string | null }[];
-  totals: { totalUsd: number };
 };
 
 export default function FamilyViewPage() {
   const [, params] = useRoute("/family/view/:seatId");
   const seatId = params?.seatId;
+  const [requestOpen, setRequestOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery<SeatView>({
     queryKey: ["/api/family-seats", seatId, "view"],
@@ -45,7 +48,9 @@ export default function FamilyViewPage() {
     );
   }
 
-  const { seat, wallets, positions, totals } = data;
+  const { ownerName, role, wallets, positions } = data;
+  const totalUsd = wallets.reduce((sum, w) => sum + w.balances.reduce((s, b) => s + (b.usdValue ? Number(b.usdValue) : 0), 0), 0);
+  const isProposer = role === "proposer";
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto p-4">
@@ -54,21 +59,32 @@ export default function FamilyViewPage() {
         <div className="flex items-center gap-2">
           <Eye className="h-5 w-5 text-blue-600" />
           <div>
-            <div className="font-semibold text-sm">Viewing as guest of {seat.ownerName}</div>
-            <div className="text-xs text-muted-foreground">Read-only access · You cannot move funds, swap, or change settings.</div>
+            <div className="font-semibold text-sm">Viewing as guest of {ownerName}</div>
+            <div className="text-xs text-muted-foreground">
+              {isProposer
+                ? "Proposer access · You can suggest actions, but the owner approves and signs every move."
+                : "Read-only access · You cannot move funds, swap, or change settings."}
+            </div>
           </div>
         </div>
-        <Link href="/family"><Button size="sm" variant="ghost" data-testid="button-back-family"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Button></Link>
+        <div className="flex items-center gap-2">
+          {isProposer && (
+            <Button size="sm" onClick={() => setRequestOpen(true)} data-testid="button-make-request">
+              <Send className="h-4 w-4 mr-1" /> Make a request
+            </Button>
+          )}
+          <Link href="/family"><Button size="sm" variant="ghost" data-testid="button-back-family"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Button></Link>
+        </div>
       </div>
 
       {/* Total card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Portfolio total</CardTitle>
-          <CardDescription>{seat.ownerName}'s combined portfolio value</CardDescription>
+          <CardDescription>{ownerName}'s combined portfolio value</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold" data-testid="text-portfolio-total">${totals.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+          <div className="text-4xl font-bold" data-testid="text-portfolio-total">${totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
           <div className="text-xs text-muted-foreground mt-1">Across {wallets.length} wallet(s) and {positions.length} position(s)</div>
         </CardContent>
       </Card>
@@ -133,8 +149,17 @@ export default function FamilyViewPage() {
 
       <Alert>
         <ShieldCheck className="h-4 w-4" />
-        <AlertDescription className="text-xs">This is a read-only view. {seat.ownerName} can revoke your access at any time. CryptoOwnBank never gives you private keys or seed phrases.</AlertDescription>
+        <AlertDescription className="text-xs">This is a {isProposer ? "proposer" : "read-only"} view. {ownerName} can revoke your access at any time. CryptoOwnBank never gives you private keys or seed phrases.</AlertDescription>
       </Alert>
+
+      {seatId && (
+        <FamilyRequestDialog
+          open={requestOpen}
+          onOpenChange={setRequestOpen}
+          seatId={seatId}
+          ownerName={ownerName}
+        />
+      )}
     </div>
   );
 }

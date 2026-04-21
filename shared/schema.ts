@@ -1165,6 +1165,39 @@ export const insertFamilySeatSchema = createInsertSchema(familySeats).omit({
 export type FamilySeat = typeof familySeats.$inferSelect;
 export type InsertFamilySeat = z.infer<typeof insertFamilySeatSchema>;
 
+export const familyProposals = pgTable("family_proposals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  seatId: varchar("seat_id").notNull(),
+  ownerUserId: varchar("owner_user_id").notNull(),
+  proposedByUserId: varchar("proposed_by_user_id").notNull(),
+  proposedByName: varchar("proposed_by_name", { length: 255 }).notNull(),
+  actionType: varchar("action_type", { length: 32 }).notNull(),
+  actionLabel: varchar("action_label", { length: 100 }).notNull(),
+  payload: jsonb("payload").notNull().default({}),
+  humanSummary: text("human_summary").notNull(),
+  proposerNote: text("proposer_note"),
+  ownerDecisionNote: text("owner_decision_note"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  expiresAt: timestamp("expires_at"),
+  decidedAt: timestamp("decided_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_family_proposals_owner").on(table.ownerUserId),
+  index("idx_family_proposals_seat").on(table.seatId),
+  index("idx_family_proposals_status").on(table.status),
+]);
+
+export const insertFamilyProposalSchema = createInsertSchema(familyProposals).omit({
+  id: true,
+  createdAt: true,
+  decidedAt: true,
+  status: true,
+  ownerDecisionNote: true,
+});
+
+export type FamilyProposal = typeof familyProposals.$inferSelect;
+export type InsertFamilyProposal = z.infer<typeof insertFamilyProposalSchema>;
+
 export const legacyCheckIns = pgTable("legacy_check_ins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   legacyPlanId: varchar("legacy_plan_id").notNull(),
