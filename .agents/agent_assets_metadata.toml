@@ -18,3 +18,9 @@ id = "BlofMdCehfou5KKHdTmsO"
 uri = "file://INTEGRATIONS_REFERENCE.md"
 type = "text"
 title = "CryptoOwnBank Integration Reference Guide"
+
+[[outputs]]
+id = "uubCLgywzpDvfJJDXm4qz"
+uri = "file://docs/announcements/2026-04-wallets-first-and-family.md"
+type = "text"
+title = "Email announcement: Wallets-first + Family mode"
