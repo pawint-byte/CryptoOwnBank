@@ -105,3 +105,27 @@ The user has been repeatedly told that things were done when they were not. He h
 
 ### External Dependencies
 - xrpl.js, Xumm SDK, ethers.js v6, 1inch API, LI.FI, Squid Router, CoinGecko, DefiLlama, FRED API, Stripe, Resend email, OpenAI (GPT-4o-mini)
+
+## Backlog (post-Legacy-Plan v2)
+
+### Family Collaborative Mode (high priority — next major build after Legacy Plan v2 ships)
+**Concept:** Family members get their own seats on cryptoownbank.com with read-only or "proposer" permissions. Kid sees the dashboard, can propose a buy/swap/DCA — primary member gets notified, signs the transaction in their own wallet (Xaman/MetaMask/Ledger). Site never holds keys for anyone. Pure intent/proposal layer + parent-signs-with-own-wallet execution.
+
+**Why:** Education layer for families, sticky retention (kids learn here, upgrade to own paid accounts at 18), justifies the Family/Lifetime tier with real value beyond a discount, and the "people" already in someone's Legacy Plan are the natural family seats.
+
+**Key design constraints (security):**
+- Non-custodial — keys never leave member device. We construct tx data, parent signs.
+- Per-seat 2FA required. Kid account changes notify the primary, not just the kid.
+- Hard rate limits on proposals per kid (max 3 pending). Cooling-off delays on amounts above thresholds the parent sets.
+- Two-channel confirmation (wallet sig + email click) for proposals above auto-approve cap.
+- Auto-approve presets are off by default; if shipped, capped at $25/mo absolute, allow-listed tokens only, instant revoke + cooldown if kid tries to raise.
+- "Kid grows up" offramp: clean conversion of apprentice seat → own full account with own wallet, with mutual opt-in to keep collaboration.
+- No CEX integration in collaborative mode at first — DEX/proposal flows only, since CEX implies custody.
+
+**Pricing tie-in:** Family/Lifetime tier ($199–249/yr or $1,499 lifetime) includes 5 family seats. Lifetime seat passes to primary beneficiary on trigger.
+
+**Scope estimate:** 2–3 month build with security review. Bones already exist (multi-wallet, non-custodial signing, DCA/DEX tx construction, Legacy Plan people-as-first-class).
+
+**Pre-work that validates demand (do these first as cheap signal tests):**
+1. Post-confirmation landing page — when a beneficiary clicks "I accept," show "Mary trusted you with her crypto. Start your own free account." Measure click-through.
+2. Heartbeat-email and PDF-export footers — soft CTAs to free accounts.
