@@ -1377,10 +1377,26 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
               </div>
             )}
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            {!isEditing && (
+              <div className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 p-3 text-xs text-blue-900 dark:text-blue-100">
+                <strong>Email-first:</strong> When you save, we send {name || "this person"} a quick confirmation email so you know the address works <em>before</em> you spend time on wallet details. You can save them as a person now and come back to attach wallets later — or continue straight through to wallet setup if you're ready.
+              </div>
+            )}
+
+            <DialogFooter className="flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel-beneficiary">Cancel</Button>
+              {!isEditing && (
+                <Button
+                  variant="secondary"
+                  onClick={() => saveBeneficiary.mutate()}
+                  disabled={!name || !email || saveBeneficiary.isPending}
+                  data-testid="button-save-person-only"
+                >
+                  {saveBeneficiary.isPending ? "Sending…" : "Save person & send confirmation"}
+                </Button>
+              )}
               <Button onClick={() => setStep(2)} disabled={!name || !email || !walletType} data-testid="button-next-step-1">
-                Next: Recovery Template
+                Continue to wallet setup →
               </Button>
             </DialogFooter>
           </div>
