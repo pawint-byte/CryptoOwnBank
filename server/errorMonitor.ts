@@ -130,6 +130,7 @@ export function setupProcessErrorHandlers() {
     const message = reason?.message || String(reason);
     const stack = reason?.stack;
     console.error("[unhandledRejection]", message);
+    if (stack) console.error(stack);
     captureError({
       message: `Unhandled Promise Rejection: ${message}`,
       stack,

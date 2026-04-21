@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-15 by main agent (Doppler Finance position sync via Partner API added)**
+**Last updated: 2026-04-21 by main agent (Legacy Plan v2 frontend complete: per-capita group label + nickname inputs, status badges, mark-deceased toggle, ack-delivery route, Arculus/SafePal/Uniswap/Manual wallet types)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 

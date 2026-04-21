@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
@@ -9018,6 +9018,15 @@ Rules you MUST follow:
 
   const VALID_WALLET_TYPES = ["cypherock", "ledger", "ledger-stax", "trezor", "xaman", "tangem", "coldcard", "ellipal", "keystone", "bitbox", "arculus", "safepal", "metamask", "trust", "phantom", "exodus", "uniswap", "coinbase-wallet", "exchange", "manual", "other"];
 
+  function escapeHtml(str: string): string {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   async function getOwnerDisplayName(userId: string): Promise<string> {
     try {
       const user = await storage.getUser(userId);
@@ -9049,7 +9058,7 @@ Rules you MUST follow:
       if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
-      const { name, email, relationship, walletType, walletNickname, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
+      const { name, email, relationship, walletType, walletNickname, beneficiaryGroup, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
       const confirmationToken = makeToken();
       const now = new Date();
@@ -9061,6 +9070,7 @@ Rules you MUST follow:
         relationship: relationship || null,
         walletType: walletType && VALID_WALLET_TYPES.includes(walletType) ? walletType : null,
         walletNickname: walletNickname ? String(walletNickname).slice(0, 200) : null,
+        beneficiaryGroup: beneficiaryGroup ? String(beneficiaryGroup).slice(0, 100).trim() : null,
         deviceInstructions: deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null,
         seedPhraseInstructions: seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null,
         additionalNotes: additionalNotes ? String(additionalNotes).slice(0, 5000) : null,
@@ -9090,7 +9100,7 @@ Rules you MUST follow:
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
       const existing = beneficiaries.find(b => b.id === req.params.id);
       if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
-      const { name, email, relationship, walletType, walletNickname, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
+      const { name, email, relationship, walletType, walletNickname, beneficiaryGroup, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
       const safeUpdates: Record<string, unknown> = {};
       if (name !== undefined) safeUpdates.name = String(name).slice(0, 200);
       let emailChanged = false;
@@ -9102,6 +9112,7 @@ Rules you MUST follow:
       if (relationship !== undefined) safeUpdates.relationship = relationship;
       if (walletType !== undefined) safeUpdates.walletType = walletType && VALID_WALLET_TYPES.includes(walletType) ? walletType : null;
       if (walletNickname !== undefined) safeUpdates.walletNickname = walletNickname ? String(walletNickname).slice(0, 200) : null;
+      if (beneficiaryGroup !== undefined) safeUpdates.beneficiaryGroup = beneficiaryGroup ? String(beneficiaryGroup).slice(0, 100).trim() : null;
       if (deviceInstructions !== undefined) safeUpdates.deviceInstructions = deviceInstructions ? String(deviceInstructions).slice(0, 2000) : null;
       if (seedPhraseInstructions !== undefined) safeUpdates.seedPhraseInstructions = seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null;
       if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 5000) : null;
@@ -9157,6 +9168,46 @@ Rules you MUST follow:
     } catch (error) {
       console.error("Resend confirmation error:", error);
       res.status(500).json({ message: "Failed to resend" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/:id/mark-deceased", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      const deceased = req.body?.deceased === true;
+      const updated = await storage.updateLegacyBeneficiary(req.params.id, {
+        markedDeceasedAt: deceased ? new Date() : null,
+      } as any);
+      res.json(updated);
+    } catch (error) {
+      console.error("Mark deceased error:", error);
+      res.status(500).json({ message: "Failed to update" });
+    }
+  });
+
+  app.get("/api/legacy-beneficiaries/acknowledge-delivery", async (req, res) => {
+    try {
+      const token = String(req.query.token || "");
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const beneficiary = await storage.getLegacyBeneficiaryByDeliveryAckToken(token);
+      if (!beneficiary) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2><p>This acknowledgment link has already been used or is no longer valid.</p>`));
+      if (beneficiary.deliveryAcknowledgedAt) {
+        return res.send(htmlPage("Already acknowledged", `<h2 class="success">Already acknowledged</h2><p>You've already confirmed receipt. Thank you.</p>`));
+      }
+      await storage.updateLegacyBeneficiary(beneficiary.id, {
+        deliveryAcknowledgedAt: new Date(),
+        deliveryAckToken: null,
+      } as any);
+      res.send(htmlPage("Acknowledged", `<h2 class="success">Receipt acknowledged</h2><p>Thank you, ${escapeHtml(beneficiary.name)}. We've recorded that you received your packet and have access to its contents.</p><p class="muted">Your share will not be redistributed. If you ever need to reach out, contact the plan owner's family directly.</p>`));
+    } catch (e) {
+      console.error("Acknowledge delivery error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2><p>Please try the link again.</p>`));
     }
   });
 

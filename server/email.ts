@@ -973,6 +973,9 @@ export async function sendLegacyBeneficiaryDelivery(
   splitPieces: string | null,
   walletSummary: Array<{ name: string; chain: string; address?: string; notes?: string }>,
   assetSummary: Array<{ asset: string; balance: string; value?: string }>,
+  acknowledgeUrl?: string | null,
+  redistributionDays?: number | null,
+  isRedistribution?: { fromName: string; reason: string } | null,
 ) {
   const walletLabels: Record<string, string> = {
     cypherock: "CypheRock X1", ledger: "Ledger", trezor: "Trezor",
@@ -1090,11 +1093,32 @@ export async function sendLegacyBeneficiaryDelivery(
           Below you will find the information ${ownerName} wanted you to have, including wallet recovery instructions and an overview of their tracked crypto assets.
         </p>
 
+        ${isRedistribution ? `
+        <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 12px; padding: 18px; margin: 20px 0;">
+          <h3 style="color: #991b1b; margin: 0 0 8px; font-size: 15px;">Contingent Delivery — Per Capita Redistribution</h3>
+          <p style="color: #7f1d1d; font-size: 14px; line-height: 1.7; margin: 0;">
+            This packet was originally addressed to <strong>${escapeHtml(isRedistribution.fromName)}</strong>. ${escapeHtml(isRedistribution.reason)}. Per ${escapeHtml(ownerName)}'s wishes, their share is being redistributed to surviving members of their group.
+          </p>
+        </div>
+        ` : ""}
+
         ${personalMessageBlock}
         ${instructionsBlock}
         ${splitBlock}
         ${walletListHtml}
         ${assetListHtml}
+
+        ${acknowledgeUrl ? `
+        <div style="background: #eff6ff; border: 2px solid #00A4E4; border-radius: 12px; padding: 22px; margin: 24px 0; text-align: center;">
+          <h3 style="color: #00A4E4; margin: 0 0 8px; font-size: 16px;">Please Acknowledge Receipt</h3>
+          <p style="color: #1e3a8a; font-size: 14px; line-height: 1.7; margin: 0 0 14px;">
+            Click below to confirm you received this email and have access to its contents.${redistributionDays ? ` If no acknowledgment is received within <strong>${redistributionDays} days</strong>, this packet will be redistributed to surviving members of your group as a contingency.` : ""}
+          </p>
+          <a href="${acknowledgeUrl}" style="display: inline-block; background: #00A4E4; color: #ffffff; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;">
+            I Received This — Acknowledge
+          </a>
+        </div>
+        ` : ""}
 
         <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 20px 0;">
           <h3 style="color: #9a3412; margin: 0 0 10px; font-size: 15px;">Important Notes</h3>

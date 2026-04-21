@@ -649,6 +649,82 @@ const WALLET_TYPES: Record<string, { label: string; category: "cold" | "hot" | "
       ],
     },
   },
+  arculus: {
+    label: "Arculus Key Card",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "12-word recovery phrase + NFC card",
+    template: {
+      deviceLabel: "Where is the Arculus Key Card?",
+      devicePlaceholder: "e.g., Wallet, home safe, with attorney",
+      seedLabel: "Where is the 12-word recovery phrase?",
+      seedPlaceholder: "e.g., Sealed envelope in home safe",
+      guidanceTitle: "Arculus Recovery Guide",
+      guidanceText: "Arculus is an NFC-tap card paired with a mobile app. Survivor needs the physical card AND the 6-digit PIN to unlock, OR the 12-word recovery phrase to restore on a new card. The Arculus app must be installed on a phone with NFC.",
+      templateFields: [
+        { label: "Card 6-digit PIN location", placeholder: "e.g., Written on slip in safe", key: "pin" },
+        { label: "Arculus app installed where?", placeholder: "e.g., iPhone 15, in App Store", key: "software" },
+        { label: "Which chains held?", placeholder: "e.g., BTC, ETH, USDC", key: "apps" },
+      ],
+    },
+  },
+  safepal: {
+    label: "SafePal (S1 / X1)",
+    category: "cold",
+    icon: HardDrive,
+    recoveryMethod: "12 or 24-word seed phrase, air-gapped (QR)",
+    template: {
+      deviceLabel: "Where is the SafePal device?",
+      devicePlaceholder: "e.g., Home safe, in original SafePal box",
+      seedLabel: "Where is the recovery phrase (12 or 24 words)?",
+      seedPlaceholder: "e.g., Steel plate in fireproof safe",
+      guidanceTitle: "SafePal Recovery Guide",
+      guidanceText: "SafePal is air-gapped — communicates with its mobile app via QR codes only. Survivor needs the device + PIN, or the seed words to restore on a new SafePal. The SafePal app on a phone is required to use the device.",
+      templateFields: [
+        { label: "Device PIN", placeholder: "e.g., Written on card in safe", key: "pin" },
+        { label: "SafePal app installed on which phone?", placeholder: "e.g., Android phone in nightstand drawer", key: "software" },
+        { label: "Which chains held?", placeholder: "e.g., BTC, ETH, BNB, SOL", key: "apps" },
+      ],
+    },
+  },
+  uniswap: {
+    label: "Uniswap Wallet (mobile)",
+    category: "hot",
+    icon: Smartphone,
+    recoveryMethod: "12-word recovery phrase",
+    template: {
+      deviceLabel: "Where is the Uniswap Wallet installed?",
+      devicePlaceholder: "e.g., iPhone, mobile app",
+      seedLabel: "Where is the 12-word recovery phrase?",
+      seedPlaceholder: "e.g., Written in safe, or iCloud Keychain backup",
+      guidanceTitle: "Uniswap Wallet Recovery Guide",
+      guidanceText: "Uniswap Wallet is a self-custody mobile wallet for Ethereum and L2s (Optimism, Arbitrum, Polygon, Base). Uses a 12-word recovery phrase. May have iCloud/Google Drive backup enabled with a separate password. Survivor imports the phrase into a new install.",
+      templateFields: [
+        { label: "App passcode / biometric", placeholder: "e.g., FaceID, or 6-digit PIN written in safe", key: "pin" },
+        { label: "Cloud backup enabled?", placeholder: "e.g., Yes — iCloud Keychain backup, password in 1Password", key: "cloudBackup" },
+        { label: "Which chains used?", placeholder: "e.g., Ethereum, Optimism, Base, Arbitrum", key: "apps" },
+      ],
+    },
+  },
+  manual: {
+    label: "Manual Entry (paper / brain / custom)",
+    category: "cold",
+    icon: Wallet,
+    recoveryMethod: "Whatever the owner describes",
+    template: {
+      deviceLabel: "What is being secured? (be specific)",
+      devicePlaceholder: "e.g., Paper wallet for 5 BTC, generated 2014",
+      seedLabel: "Where is the recovery information?",
+      seedPlaceholder: "e.g., Sealed envelope at attorney's office labeled 'BTC paper'",
+      guidanceTitle: "Manual Entry — Custom Wallet",
+      guidanceText: "Use this for paper wallets, brain wallets, multi-sig setups, MPC wallets, or anything that doesn't fit the standard categories. Be very explicit about what kind of wallet this is, what software/library was used to create it, and exactly what the survivor needs to recover the funds.",
+      templateFields: [
+        { label: "Wallet type / software used to create it", placeholder: "e.g., bitaddress.org paper wallet, or Casa multi-sig 2-of-3", key: "walletDetails" },
+        { label: "Recovery steps (be precise)", placeholder: "e.g., Import private key WIF into Electrum / Coordinate with co-signers at Casa", key: "steps" },
+        { label: "Any time-locked or special conditions?", placeholder: "e.g., Time-locked until 2030, or requires 2 of 3 hardware co-signers", key: "conditions" },
+      ],
+    },
+  },
   other: {
     label: "Other Wallet",
     category: "hot",
@@ -700,15 +776,52 @@ async function encryptVault(plaintext: string, passphrase: string): Promise<stri
 
 function BeneficiaryCard({ beneficiary, onDelete, onEdit }: { beneficiary: LegacyPlanData["beneficiaries"][0]; onDelete: () => void; onEdit: () => void }) {
   const walletConfig = beneficiary.walletType ? WALLET_TYPES[beneficiary.walletType] : null;
+  const { toast } = useToast();
+  const b: any = beneficiary;
+  const status: string = b.confirmationStatus || "pending";
+  const isDeceased = !!b.markedDeceasedAt;
+  const hasPendingChange = !!b.pendingChangeRequest;
+
+  const resendConfirm = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/legacy-beneficiaries/${beneficiary.id}/resend-confirmation`),
+    onSuccess: () => { toast({ title: "Confirmation resent", description: `New confirmation email sent to ${beneficiary.email}` }); queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const sendHb = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/legacy-beneficiaries/${beneficiary.id}/send-heartbeat`),
+    onSuccess: () => { toast({ title: "Check-in sent", description: `Heartbeat email sent to ${beneficiary.email}` }); queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const markDeceased = useMutation({
+    mutationFn: (deceased: boolean) => apiRequest("POST", `/api/legacy-beneficiaries/${beneficiary.id}/mark-deceased`, { deceased }),
+    onSuccess: () => { toast({ title: "Updated", description: isDeceased ? "Marked as living again" : "Marked as deceased — share will redistribute on trigger" }); queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const clearFeedback = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/legacy-beneficiaries/${beneficiary.id}/clear-feedback`),
+    onSuccess: () => { toast({ title: "Cleared" }); queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] }); },
+  });
+
+  const statusBadge = isDeceased
+    ? <Badge className="text-[10px] bg-zinc-700 text-white">Marked Deceased</Badge>
+    : status === "confirmed" ? <Badge className="text-[10px] bg-green-600 text-white">Confirmed</Badge>
+    : status === "declined" ? <Badge className="text-[10px] bg-red-600 text-white">Declined</Badge>
+    : status === "bounced" ? <Badge className="text-[10px] bg-orange-600 text-white">Bounced</Badge>
+    : <Badge variant="outline" className="text-[10px]">Pending Confirmation</Badge>;
 
   return (
-    <Card data-testid={`card-beneficiary-${beneficiary.id}`}>
+    <Card data-testid={`card-beneficiary-${beneficiary.id}`} className={isDeceased ? "opacity-60" : ""}>
       <CardContent className="pt-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="font-medium" data-testid={`text-beneficiary-name-${beneficiary.id}`}>{beneficiary.name}</p>
             <p className="text-sm text-muted-foreground">{beneficiary.email}</p>
-            {beneficiary.relationship && <Badge variant="outline" className="mt-1">{beneficiary.relationship}</Badge>}
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              {beneficiary.relationship && <Badge variant="outline" className="text-[10px]">{beneficiary.relationship}</Badge>}
+              {b.beneficiaryGroup && <Badge variant="outline" className="text-[10px] border-blue-500/50 text-blue-600 dark:text-blue-400">Group: {b.beneficiaryGroup}</Badge>}
+              {b.walletNickname && <Badge variant="outline" className="text-[10px]">{b.walletNickname}</Badge>}
+              {statusBadge}
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={onEdit} data-testid={`button-edit-beneficiary-${beneficiary.id}`}>
@@ -718,6 +831,37 @@ function BeneficiaryCard({ beneficiary, onDelete, onEdit }: { beneficiary: Legac
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
+        </div>
+
+        {hasPendingChange && !isDeceased && (
+          <div className="text-xs rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+            <p className="font-semibold text-amber-900 dark:text-amber-200">Beneficiary submitted feedback:</p>
+            <p className="whitespace-pre-wrap text-amber-800 dark:text-amber-200">{b.pendingChangeRequest}</p>
+            <Button size="sm" variant="outline" onClick={() => clearFeedback.mutate()} data-testid={`button-clear-feedback-${beneficiary.id}`}>Mark Reviewed</Button>
+          </div>
+        )}
+
+        {status === "declined" && !isDeceased && (
+          <div className="text-xs rounded-md border border-red-500/40 bg-red-50 dark:bg-red-950/30 p-2.5 text-red-800 dark:text-red-200">
+            This beneficiary declined. They will <em>still</em> receive their packet on trigger (defensive default), but consider reassigning their wallet pieces to someone else.
+            {b.declineReason && <p className="mt-1 italic opacity-80">Reason: {b.declineReason}</p>}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-1.5">
+          {!isDeceased && status !== "confirmed" && (
+            <Button size="sm" variant="outline" onClick={() => resendConfirm.mutate()} disabled={resendConfirm.isPending} data-testid={`button-resend-confirm-${beneficiary.id}`} className="text-xs h-7">
+              Resend Confirmation
+            </Button>
+          )}
+          {!isDeceased && (
+            <Button size="sm" variant="outline" onClick={() => sendHb.mutate()} disabled={sendHb.isPending} data-testid={`button-send-heartbeat-${beneficiary.id}`} className="text-xs h-7">
+              Send Annual Check-In Now
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => markDeceased.mutate(!isDeceased)} disabled={markDeceased.isPending} data-testid={`button-mark-deceased-${beneficiary.id}`} className="text-xs h-7">
+            {isDeceased ? "Mark Living Again" : "Mark Deceased"}
+          </Button>
         </div>
         {walletConfig && (
           <div className="text-xs text-muted-foreground space-y-1">
@@ -814,6 +958,8 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [relationship, setRelationship] = useState("");
+  const [beneficiaryGroup, setBeneficiaryGroup] = useState("");
+  const [walletNickname, setWalletNickname] = useState("");
   const [walletType, setWalletType] = useState("");
   const [deviceInstructions, setDeviceInstructions] = useState("");
   const [seedPhraseInstructions, setSeedPhraseInstructions] = useState("");
@@ -840,6 +986,8 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     setName(editBeneficiary.name || "");
     setEmail(editBeneficiary.email || "");
     setRelationship(editBeneficiary.relationship || "");
+    setBeneficiaryGroup((editBeneficiary as any).beneficiaryGroup || "");
+    setWalletNickname((editBeneficiary as any).walletNickname || "");
     setWalletType(editBeneficiary.walletType || "");
     setDeviceInstructions(editBeneficiary.deviceInstructions || "");
     setSeedPhraseInstructions(editBeneficiary.seedPhraseInstructions || "");
@@ -979,8 +1127,10 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
 
   const saveBeneficiary = useMutation({
     mutationFn: () => {
-      const payload = {
+      const payload: any = {
         name, email, relationship: relationship || null,
+        beneficiaryGroup: beneficiaryGroup.trim() || null,
+        walletNickname: walletNickname.trim() || null,
         walletType: walletType || null,
         deviceInstructions: deviceInstructions || null,
         seedPhraseInstructions: seedPhraseInstructions || null,
@@ -1006,7 +1156,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   });
 
   const resetForm = () => {
-    setStep(1); setName(""); setEmail(""); setRelationship(""); setWalletType("");
+    setStep(1); setName(""); setEmail(""); setRelationship(""); setBeneficiaryGroup(""); setWalletNickname(""); setWalletType("");
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
     setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
     setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
@@ -1070,6 +1220,18 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Group (optional)</Label>
+                <Input value={beneficiaryGroup} onChange={(e) => setBeneficiaryGroup(e.target.value)} placeholder="e.g., kids, siblings" data-testid="input-beneficiary-group" />
+                <p className="text-[10px] text-muted-foreground">Members of the same group split a deceased member's share per-capita.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Wallet Nickname (optional)</Label>
+                <Input value={walletNickname} onChange={(e) => setWalletNickname(e.target.value)} placeholder="e.g., Cold #1, Trading Ledger" data-testid="input-wallet-nickname" />
+                <p className="text-[10px] text-muted-foreground">Use when you have multiple wallets of the same type.</p>
               </div>
               <div className="space-y-1">
                 <Label>Wallet / Device Type *</Label>

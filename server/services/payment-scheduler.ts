@@ -439,8 +439,15 @@ async function processLegacyPlans(): Promise<void> {
                 value: v.value > 0 ? `$${v.value.toFixed(2)}` : undefined,
               }));
 
+            const redistributionDays = plan.contingencyRedistributionDays ?? 14;
             for (const b of beneficiaries) {
+              if (b.markedDeceasedAt) {
+                console.log(`[Legacy] Skipping deceased beneficiary ${b.name} — will redistribute`);
+                continue;
+              }
               try {
+                const ackToken = crypto.randomBytes(32).toString("hex");
+                const ackUrl = `https://cryptoownbank.com/api/legacy-beneficiaries/acknowledge-delivery?token=${ackToken}`;
                 await sendLegacyBeneficiaryDelivery(
                   b.email,
                   b.name,
@@ -453,8 +460,14 @@ async function processLegacyPlans(): Promise<void> {
                   b.splitPieces,
                   walletSummary,
                   assetSummary,
+                  b.beneficiaryGroup ? ackUrl : null,
+                  b.beneficiaryGroup ? redistributionDays : null,
+                  null,
                 );
-                await storage.updateLegacyBeneficiary(b.id, { deliveredAt: now });
+                await storage.updateLegacyBeneficiary(b.id, {
+                  deliveredAt: now,
+                  deliveryAckToken: b.beneficiaryGroup ? ackToken : null,
+                } as any);
                 console.log(`[Legacy] Delivered to beneficiary ${b.name} (${b.email})`);
               } catch (emailErr) {
                 console.error(`[Legacy] Failed to deliver to ${b.email}:`, emailErr);
@@ -466,6 +479,102 @@ async function processLegacyPlans(): Promise<void> {
         }
       }
     }
+
+    const triggeredPlans = await storage.getTriggeredLegacyPlans();
+    for (const plan of triggeredPlans) {
+      try {
+        const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+        const redistributionDays = plan.contingencyRedistributionDays ?? 14;
+        const groups = new Map<string, typeof beneficiaries>();
+        for (const b of beneficiaries) {
+          if (!b.beneficiaryGroup) continue;
+          const key = b.beneficiaryGroup.toLowerCase();
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key)!.push(b);
+        }
+        for (const [groupKey, members] of Array.from(groups.entries())) {
+          const survivors = members.filter(m => m.deliveryAcknowledgedAt && !m.markedDeceasedAt);
+          const lapsed: typeof members = [];
+          for (const m of members) {
+            if (m.redistributionDoneAt) continue;
+            if (m.deliveryAcknowledgedAt) continue;
+            if (m.markedDeceasedAt) {
+              lapsed.push(m);
+              continue;
+            }
+            if (m.deliveredAt) {
+              const windowEnd = new Date(m.deliveredAt);
+              windowEnd.setDate(windowEnd.getDate() + redistributionDays);
+              if (now >= windowEnd) lapsed.push(m);
+            }
+          }
+          if (lapsed.length === 0 || survivors.length === 0) continue;
+
+          const [owner] = await db.select({
+            firstName: users.firstName,
+            email: users.email,
+          }).from(users).where(eq(users.id, plan.userId));
+          const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "The plan holder";
+          const userWallets = await storage.getUserWallets(plan.userId);
+          const walletSummary = userWallets.map(w => ({
+            name: w.label || w.address?.slice(0, 12) + "..." || "Unnamed",
+            chain: w.chain || "Unknown",
+            address: w.address || undefined,
+            notes: w.notes || undefined,
+          }));
+          const balances = await storage.getWalletBalancesByUser(plan.userId);
+          const assetMap = new Map<string, { balance: number; value: number }>();
+          for (const bal of balances) {
+            const ex = assetMap.get(bal.asset) || { balance: 0, value: 0 };
+            ex.balance += parseFloat(bal.balance || "0");
+            ex.value += parseFloat(bal.usdValue || "0");
+            assetMap.set(bal.asset, ex);
+          }
+          const assetSummary = Array.from(assetMap.entries())
+            .filter(([, v]) => v.balance > 0)
+            .sort((a, b) => b[1].value - a[1].value)
+            .slice(0, 20)
+            .map(([asset, v]) => ({
+              asset,
+              balance: v.balance < 0.0001 ? v.balance.toExponential(2) : v.balance.toFixed(4),
+              value: v.value > 0 ? `$${v.value.toFixed(2)}` : undefined,
+            }));
+
+          for (const lapsedMember of lapsed) {
+            const reason = lapsedMember.markedDeceasedAt
+              ? "They were marked deceased by the plan owner before the trigger fired"
+              : `They did not acknowledge receipt within ${redistributionDays} days of the original delivery`;
+            for (const survivor of survivors) {
+              try {
+                await sendLegacyBeneficiaryDelivery(
+                  survivor.email,
+                  survivor.name,
+                  ownerName,
+                  plan.personalMessage,
+                  lapsedMember.walletType,
+                  lapsedMember.deviceInstructions,
+                  lapsedMember.seedPhraseInstructions,
+                  lapsedMember.additionalNotes,
+                  lapsedMember.splitPieces,
+                  walletSummary,
+                  assetSummary,
+                  null,
+                  null,
+                  { fromName: lapsedMember.name, reason },
+                );
+                console.log(`[Legacy] Redistributed ${lapsedMember.name}'s packet to ${survivor.name} (group: ${groupKey})`);
+              } catch (e) {
+                console.error(`[Legacy] Redistribution send failed:`, e);
+              }
+            }
+            await storage.updateLegacyBeneficiary(lapsedMember.id, { redistributionDoneAt: now } as any);
+          }
+        }
+      } catch (e) {
+        console.error(`[Legacy] Redistribution check failed for plan ${plan.id}:`, e);
+      }
+    }
+    return;
   } catch (error) {
     console.error("[Legacy] Error processing legacy plans:", error);
   }

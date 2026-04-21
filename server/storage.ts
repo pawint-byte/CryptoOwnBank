@@ -367,6 +367,8 @@ export interface IStorage {
   getLegacyBeneficiary(id: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyBeneficiaryByConfirmationToken(token: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyBeneficiaryByHeartbeatToken(token: string): Promise<LegacyBeneficiary | undefined>;
+  getLegacyBeneficiaryByDeliveryAckToken(token: string): Promise<LegacyBeneficiary | undefined>;
+  getTriggeredLegacyPlans(): Promise<LegacyPlan[]>;
   createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn>;
   getLegacyCheckIns(legacyPlanId: string, limit?: number): Promise<LegacyCheckIn[]>;
   getActiveLegacyPlans(): Promise<LegacyPlan[]>;
@@ -1615,6 +1617,15 @@ export class DatabaseStorage implements IStorage {
   async getLegacyBeneficiaryByHeartbeatToken(token: string): Promise<LegacyBeneficiary | undefined> {
     const [result] = await db.select().from(legacyBeneficiaries).where(eq(legacyBeneficiaries.heartbeatToken, token));
     return result;
+  }
+
+  async getLegacyBeneficiaryByDeliveryAckToken(token: string): Promise<LegacyBeneficiary | undefined> {
+    const [result] = await db.select().from(legacyBeneficiaries).where(eq(legacyBeneficiaries.deliveryAckToken, token));
+    return result;
+  }
+
+  async getTriggeredLegacyPlans(): Promise<LegacyPlan[]> {
+    return db.select().from(legacyPlans).where(eq(legacyPlans.status, "triggered"));
   }
 
   async createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn> {
