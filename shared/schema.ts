@@ -1019,6 +1019,15 @@ export const legacyPlans = pgTable("legacy_plans", {
   earlyTriggerVetoToken: varchar("early_trigger_veto_token", { length: 100 }),
   earlyTriggerVetoedAt: timestamp("early_trigger_vetoed_at"),
   earlyTriggerVetoDays: integer("early_trigger_veto_days").default(30),
+  lastResortEnabled: boolean("last_resort_enabled").default(true),
+  lastResortWindowDays: integer("last_resort_window_days").default(365),
+  lastResortNotifyStartedAt: timestamp("last_resort_notify_started_at"),
+  lastResortConfirmStartedAt: timestamp("last_resort_confirm_started_at"),
+  lastResortReleasedAt: timestamp("last_resort_released_at"),
+  lastResortObjectionToken: varchar("last_resort_objection_token", { length: 100 }),
+  lastResortObjectedAt: timestamp("last_resort_objected_at"),
+  lastResortObjectedBy: varchar("last_resort_objected_by", { length: 255 }),
+  lastResortAuditLog: text("last_resort_audit_log"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1026,6 +1035,7 @@ export const legacyPlans = pgTable("legacy_plans", {
   index("idx_legacy_plans_status").on(table.status),
   index("idx_legacy_plans_early_veto_token").on(table.earlyTriggerVetoToken),
   index("idx_legacy_plans_early_request_token").on(table.earlyTriggerRequestToken),
+  index("idx_legacy_plans_last_resort_token").on(table.lastResortObjectionToken),
 ]);
 
 export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {

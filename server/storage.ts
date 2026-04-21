@@ -373,6 +373,8 @@ export interface IStorage {
   getLegacyPlansNeedingExportReminder(): Promise<LegacyPlan[]>;
   getLegacyPlansWithPendingEarlyTrigger(): Promise<LegacyPlan[]>;
   getTriggeredLegacyPlans(): Promise<LegacyPlan[]>;
+  getTriggeredLegacyPlansForLastResort(): Promise<LegacyPlan[]>;
+  getLegacyPlanByLastResortToken(token: string): Promise<LegacyPlan | undefined>;
   createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn>;
   getLegacyCheckIns(legacyPlanId: string, limit?: number): Promise<LegacyCheckIn[]>;
   getActiveLegacyPlans(): Promise<LegacyPlan[]>;
@@ -1678,6 +1680,22 @@ export class DatabaseStorage implements IStorage {
 
   async getGracePeriodLegacyPlans(): Promise<LegacyPlan[]> {
     return db.select().from(legacyPlans).where(eq(legacyPlans.status, "grace"));
+  }
+
+  async getLegacyPlanByLastResortToken(token: string): Promise<LegacyPlan | undefined> {
+    const [result] = await db.select().from(legacyPlans).where(eq(legacyPlans.lastResortObjectionToken, token));
+    return result;
+  }
+
+  async getTriggeredLegacyPlansForLastResort(): Promise<LegacyPlan[]> {
+    return db.select().from(legacyPlans).where(
+      and(
+        eq(legacyPlans.status, "triggered"),
+        eq(legacyPlans.lastResortEnabled, true),
+        sql`${legacyPlans.lastResortReleasedAt} IS NULL`,
+        sql`${legacyPlans.triggeredAt} IS NOT NULL`,
+      )
+    );
   }
 
   private calcNextCheckIn(from: Date, frequency: string): Date {

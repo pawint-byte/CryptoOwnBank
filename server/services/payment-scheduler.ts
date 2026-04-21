@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { storage } from "../storage";
 import { db } from "../db";
-import { users, walletBalances, userSettings, autoWithdrawLogs, dcaOrders, type CustomVault } from "@shared/schema";
+import { users, walletBalances, userSettings, autoWithdrawLogs, dcaOrders, legacyPlans, type CustomVault } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { sendLegacyBeneficiaryDelivery } from "../email";
 import { Client } from "xrpl";
@@ -670,6 +670,182 @@ async function processLegacyPlans(): Promise<void> {
         console.error(`[Legacy] Redistribution check failed for plan ${plan.id}:`, e);
       }
     }
+
+    try {
+      const { sendLegacyLastResortNotification, sendLegacyLastResortConfirmation, sendLegacyLastResortRelease } = await import("../email");
+      const lastResortPlans = await storage.getTriggeredLegacyPlansForLastResort();
+      const NOTIFY_PHASE_DAYS = 30;
+      const CONFIRM_PHASE_DAYS = 60;
+
+      for (const plan of lastResortPlans) {
+        if (!plan.triggeredAt) continue;
+        const windowDays = plan.lastResortWindowDays ?? 365;
+        const windowOpensAt = new Date(plan.triggeredAt.getTime() + windowDays * 86400000);
+        if (now < windowOpensAt) continue;
+        if (plan.lastResortObjectedAt) {
+          const objectedAge = now.getTime() - plan.lastResortObjectedAt.getTime();
+          if (objectedAge < 90 * 86400000) continue;
+          await storage.updateLegacyPlan(plan.id, {
+            lastResortObjectedAt: null,
+            lastResortObjectedBy: null,
+            lastResortNotifyStartedAt: null,
+            lastResortConfirmStartedAt: null,
+            lastResortObjectionToken: null,
+          } as any);
+          continue;
+        }
+
+        const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+        const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "The plan holder";
+        const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+
+        const stakeholders: Array<{ name: string; email: string; role: string }> = [];
+        for (const b of beneficiaries) {
+          if (b.email) stakeholders.push({ name: b.name, email: b.email, role: "beneficiary" });
+        }
+        if (plan.secondaryContactEmail) {
+          stakeholders.push({
+            name: plan.secondaryContactName || "Secondary contact",
+            email: plan.secondaryContactEmail,
+            role: "secondary",
+          });
+        }
+        if (owner?.email) stakeholders.push({ name: ownerName, email: owner.email, role: "owner" });
+
+        if (!plan.lastResortNotifyStartedAt) {
+          const token = crypto.randomBytes(32).toString("hex");
+          const auditEntry = `${now.toISOString()} NOTIFY_OPENED stakeholders=${stakeholders.length}`;
+          const [claimed] = await db.update(legacyPlans).set({
+            lastResortNotifyStartedAt: now,
+            lastResortObjectionToken: token,
+            lastResortAuditLog: ((plan.lastResortAuditLog || "") + "\n" + auditEntry).trim(),
+          } as any).where(
+            and(
+              eq(legacyPlans.id, plan.id),
+              sql`${legacyPlans.lastResortNotifyStartedAt} IS NULL`,
+              sql`${legacyPlans.lastResortReleasedAt} IS NULL`,
+              sql`${legacyPlans.lastResortObjectedAt} IS NULL`,
+            )
+          ).returning();
+          if (!claimed) {
+            console.log(`[Legacy LastResort] Plan ${plan.id} notification phase already claimed — skipping`);
+            continue;
+          }
+          const objectionUrl = `https://cryptoownbank.com/legacy-plan/object/${token}`;
+          for (const s of stakeholders) {
+            try {
+              await sendLegacyLastResortNotification(s.email, s.name, ownerName, objectionUrl, NOTIFY_PHASE_DAYS, CONFIRM_PHASE_DAYS);
+            } catch (e) {
+              console.error(`[Legacy LastResort] Notify failed for ${s.email}:`, e);
+            }
+          }
+          console.log(`[Legacy LastResort] Plan ${plan.id} entered notification phase — ${stakeholders.length} stakeholders contacted`);
+          continue;
+        }
+
+        const notifyAge = now.getTime() - plan.lastResortNotifyStartedAt.getTime();
+        if (notifyAge < NOTIFY_PHASE_DAYS * 86400000) continue;
+
+        if (!plan.lastResortConfirmStartedAt) {
+          const auditEntry = `${now.toISOString()} CONFIRM_OPENED stakeholders=${stakeholders.length}`;
+          const [claimed] = await db.update(legacyPlans).set({
+            lastResortConfirmStartedAt: now,
+            lastResortAuditLog: ((plan.lastResortAuditLog || "") + "\n" + auditEntry).trim(),
+          } as any).where(
+            and(
+              eq(legacyPlans.id, plan.id),
+              sql`${legacyPlans.lastResortConfirmStartedAt} IS NULL`,
+              sql`${legacyPlans.lastResortReleasedAt} IS NULL`,
+              sql`${legacyPlans.lastResortObjectedAt} IS NULL`,
+            )
+          ).returning();
+          if (!claimed) {
+            console.log(`[Legacy LastResort] Plan ${plan.id} confirmation phase already claimed or objected — skipping`);
+            continue;
+          }
+          const objectionUrl = `https://cryptoownbank.com/legacy-plan/object/${plan.lastResortObjectionToken}`;
+          for (const s of stakeholders) {
+            try {
+              await sendLegacyLastResortConfirmation(s.email, s.name, ownerName, objectionUrl, CONFIRM_PHASE_DAYS);
+            } catch (e) {
+              console.error(`[Legacy LastResort] Confirm failed for ${s.email}:`, e);
+            }
+          }
+          console.log(`[Legacy LastResort] Plan ${plan.id} entered confirmation phase`);
+          continue;
+        }
+
+        const confirmAge = now.getTime() - plan.lastResortConfirmStartedAt.getTime();
+        if (confirmAge < CONFIRM_PHASE_DAYS * 86400000) continue;
+
+        const [ownerForRelease] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+        const ownerNameRel = ownerForRelease?.firstName || ownerForRelease?.email?.split("@")[0] || "The plan holder";
+        const userWalletsR = await storage.getUserWallets(plan.userId);
+        const walletSummaryR = userWalletsR.map(w => ({
+          name: w.label || w.address?.slice(0, 12) + "..." || "Unnamed",
+          chain: w.chain || "Unknown",
+          address: w.address || undefined,
+          notes: w.notes || undefined,
+        }));
+        const balancesR = await storage.getWalletBalancesByUser(plan.userId);
+        const assetMapR = new Map<string, { balance: number; value: number }>();
+        for (const bal of balancesR) {
+          const ex = assetMapR.get(bal.asset) || { balance: 0, value: 0 };
+          ex.balance += parseFloat(bal.balance || "0");
+          ex.value += parseFloat(bal.usdValue || "0");
+          assetMapR.set(bal.asset, ex);
+        }
+        const assetSummaryR = Array.from(assetMapR.entries())
+          .filter(([, v]) => v.balance > 0)
+          .sort((a, b) => b[1].value - a[1].value).slice(0, 20)
+          .map(([asset, v]) => ({
+            asset,
+            balance: v.balance < 0.0001 ? v.balance.toExponential(2) : v.balance.toFixed(4),
+            value: v.value > 0 ? `$${v.value.toFixed(2)}` : undefined,
+          }));
+
+        const releaseAuditEntry = `${now.toISOString()} RELEASE_CLAIMED`;
+        const [releaseClaimed] = await db.update(legacyPlans).set({
+          lastResortReleasedAt: now,
+          lastResortAuditLog: ((plan.lastResortAuditLog || "") + "\n" + releaseAuditEntry).trim(),
+        } as any).where(
+          and(
+            eq(legacyPlans.id, plan.id),
+            sql`${legacyPlans.lastResortReleasedAt} IS NULL`,
+            sql`${legacyPlans.lastResortObjectedAt} IS NULL`,
+            sql`${legacyPlans.lastResortConfirmStartedAt} IS NOT NULL`,
+          )
+        ).returning();
+        if (!releaseClaimed) {
+          console.log(`[Legacy LastResort] Plan ${plan.id} release already claimed or objection arrived — skipping`);
+          continue;
+        }
+        let releasedCount = 0;
+        for (const b of beneficiaries) {
+          if (!b.email) continue;
+          try {
+            await sendLegacyLastResortRelease(
+              b.email, b.name, ownerNameRel,
+              plan.personalMessage,
+              b.walletType, b.deviceInstructions, b.seedPhraseInstructions,
+              b.additionalNotes, b.splitPieces, b.encryptedVault, b.encryptedVaultHint,
+              walletSummaryR, assetSummaryR,
+            );
+            releasedCount++;
+          } catch (e) {
+            console.error(`[Legacy LastResort] Release send failed for ${b.email}:`, e);
+          }
+        }
+        const finalAudit = `${now.toISOString()} RELEASED beneficiaries=${releasedCount}`;
+        await storage.updateLegacyPlan(plan.id, {
+          lastResortAuditLog: ((releaseClaimed.lastResortAuditLog || "") + "\n" + finalAudit).trim(),
+        } as any);
+        console.log(`[Legacy LastResort] Plan ${plan.id} RELEASED to ${releasedCount} beneficiaries`);
+      }
+    } catch (e) {
+      console.error("[Legacy LastResort] Loop failed:", e);
+    }
+
     return;
   } catch (error) {
     console.error("[Legacy] Error processing legacy plans:", error);

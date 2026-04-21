@@ -101,6 +101,7 @@ The user has been repeatedly told that things were done when they were not. He h
 - PostgreSQL with Drizzle ORM
 - Key tables: users, accounts, transactions, positions, tax_lots, price_cache, wallets, wallet_balances, legacy_plans, legacy_beneficiaries, legacy_check_ins, ai_chat_messages
 - Legacy Plan: `wallets.hardwareDevice` tags which hardware/software holds each address. `legacy_beneficiaries` has `encryptedVault` (AES-256-GCM client-side encrypted), `encryptedVaultHint`, `walletAssetSummary`. Standalone `/decrypt` page (no login required) for survivors.
+- Legacy Plan v2 Last-Resort Fallback: if SLIP-39 shards are never reconstructed within `lastResortWindowDays` (default 365) after trigger, scheduler enters notify (30d) → confirm (60d) → release. All beneficiaries + secondaryContact + owner share one 64-char `lastResortObjectionToken` mailed to them; objections allowed only from those stakeholder emails (enforced server-side). Phase transitions use atomic compare-and-set in `legacy_plans` to prevent duplicate sends and pre-release race vs. objection arrival. Audit trail in `lastResortAuditLog`.
 
 ### External Dependencies
 - xrpl.js, Xumm SDK, ethers.js v6, 1inch API, LI.FI, Squid Router, CoinGecko, DefiLlama, FRED API, Stripe, Resend email, OpenAI (GPT-4o-mini)

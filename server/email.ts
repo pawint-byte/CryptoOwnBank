@@ -1272,3 +1272,108 @@ export async function sendLegacyBeneficiaryDelivery(
   `;
   await sendEmail(to, `Legacy Plan Delivery from ${ownerName} — CryptoOwnBank`, html);
 }
+
+export async function sendLegacyLastResortNotification(
+  to: string,
+  recipientName: string,
+  ownerName: string,
+  objectionUrl: string,
+  notifyDays: number,
+  confirmDays: number,
+) {
+  const totalDays = notifyDays + confirmDays;
+  const html = injectSecurityPhrase(`
+    <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #b45309;">Last-Resort Window Opening — ${ownerName}'s Legacy Plan</h2>
+      <p>Hello ${recipientName},</p>
+      <p>The dead-man-switch on ${ownerName}'s CryptoOwnBank Legacy Plan fired more than a year ago, and the encrypted vault has not yet been recovered through the normal SLIP-39 shard process.</p>
+      <p>To prevent the funds from being lost forever, the system will <strong>release the full encrypted vault</strong> to all listed beneficiaries in approximately <strong>${totalDays} days</strong>, unless someone with standing objects.</p>
+      <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0 0 8px;"><strong>You are receiving this because you are listed as a stakeholder</strong> (beneficiary, secondary contact, or the plan holder).</p>
+        <p style="margin: 0;">If ${ownerName} is alive, if shards are still being collected, or if release would be inappropriate for any reason, click below to OBJECT. Objecting pauses release for 90 days, after which the cycle restarts.</p>
+      </div>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${objectionUrl}" style="display: inline-block; background: #dc2626; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">Object to last-resort release</a>
+      </p>
+      <p style="font-size: 13px; color: #64748b;">Phase 1 (you are here): ${notifyDays}-day notification.<br>Phase 2: ${confirmDays}-day confirmation, with a final reminder.<br>Phase 3: vault release to all beneficiaries.</p>
+      <p style="font-size: 12px; color: #94a3b8; margin-top: 32px;">CryptoOwnBank does not store seed phrases. The vault remains encrypted with the plan holder's passphrase. Beneficiaries still need that passphrase (recorded elsewhere in the estate plan) to decrypt.</p>
+    </div>
+  `);
+  await sendEmail(to, `Action may be required — ${ownerName}'s Legacy Plan last-resort window`, html);
+}
+
+export async function sendLegacyLastResortConfirmation(
+  to: string,
+  recipientName: string,
+  ownerName: string,
+  objectionUrl: string,
+  confirmDays: number,
+) {
+  const html = injectSecurityPhrase(`
+    <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #b91c1c;">FINAL NOTICE — Last-Resort Release in ${confirmDays} Days</h2>
+      <p>Hello ${recipientName},</p>
+      <p>This is the final notice. Nobody objected during the first 30 days. In <strong>${confirmDays} days</strong>, the encrypted vault from ${ownerName}'s Legacy Plan will be released to all beneficiaries.</p>
+      <p>If this is wrong — if ${ownerName} is alive, or if you are still working on shard recovery — click below NOW to object. After ${confirmDays} days the release becomes irreversible.</p>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${objectionUrl}" style="display: inline-block; background: #dc2626; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">Object now (final chance)</a>
+      </p>
+      <p style="font-size: 12px; color: #94a3b8;">CryptoOwnBank, automated message based on the plan holder's instructions.</p>
+    </div>
+  `);
+  await sendEmail(to, `FINAL: ${ownerName}'s Legacy Plan — last-resort release in ${confirmDays} days`, html);
+}
+
+export async function sendLegacyLastResortRelease(
+  to: string,
+  beneficiaryName: string,
+  ownerName: string,
+  personalMessage: string | null,
+  walletType: string | null,
+  deviceInstructions: string | null,
+  seedPhraseInstructions: string | null,
+  additionalNotes: string | null,
+  splitPieces: string | null,
+  encryptedVault: string | null,
+  encryptedVaultHint: string | null,
+  walletSummary: Array<{ name: string; chain: string; address?: string; notes?: string }>,
+  assetSummary: Array<{ asset: string; balance: string; value?: string }>,
+) {
+  const personalBlock = personalMessage ? `<div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin: 16px 0;"><p style="margin: 0; white-space: pre-wrap;">${personalMessage}</p></div>` : "";
+  const instructionsBlock = (deviceInstructions || seedPhraseInstructions || additionalNotes) ? `
+    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <h3 style="margin: 0 0 8px; color: #166534;">Recovery Instructions${walletType ? ` — ${walletType}` : ""}</h3>
+      ${deviceInstructions ? `<p><strong>Device:</strong> ${deviceInstructions}</p>` : ""}
+      ${seedPhraseInstructions ? `<p><strong>Seed phrase:</strong> ${seedPhraseInstructions}</p>` : ""}
+      ${additionalNotes ? `<p><strong>Notes:</strong> ${additionalNotes}</p>` : ""}
+    </div>
+  ` : "";
+  const splitBlock = splitPieces ? `<p style="background: #faf5ff; padding: 12px; border-radius: 8px;"><strong>Split delivery:</strong> ${splitPieces}</p>` : "";
+  const vaultBlock = encryptedVault ? `
+    <div style="background: #fef2f2; border: 2px solid #dc2626; border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <h3 style="margin: 0 0 8px; color: #991b1b;">LAST-RESORT VAULT RELEASE</h3>
+      <p>Below is the encrypted vault from ${ownerName}'s plan. It is still encrypted with their passphrase — you will need that passphrase (likely recorded elsewhere in their estate documents) to decrypt it on cryptoownbank.com/decrypt.</p>
+      ${encryptedVaultHint ? `<p><strong>Passphrase hint:</strong> ${encryptedVaultHint}</p>` : ""}
+      <pre style="background: white; padding: 12px; border-radius: 4px; font-size: 11px; word-break: break-all; white-space: pre-wrap; max-height: 300px; overflow: auto;">${encryptedVault}</pre>
+      <p style="font-size: 12px; color: #64748b;">Released because the SLIP-39 shard recovery did not complete within the configured window and no stakeholder objected.</p>
+    </div>
+  ` : `<div style="background: #fef2f2; border: 1px solid #fca5a5; padding: 12px;"><p>The plan holder did not store an encrypted vault — only the standard recovery instructions above apply.</p></div>`;
+  const walletList = walletSummary.length > 0 ? `<h3>Tracked wallets</h3><ul>${walletSummary.map(w => `<li>${w.name} (${w.chain})${w.address ? ` — <code>${w.address}</code>` : ""}</li>`).join("")}</ul>` : "";
+  const assetList = assetSummary.length > 0 ? `<h3>Last-known balances</h3><ul>${assetSummary.map(a => `<li>${a.balance} ${a.asset}${a.value ? ` (~${a.value})` : ""}</li>`).join("")}</ul>` : "";
+
+  const html = injectSecurityPhrase(`
+    <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #991b1b;">Last-Resort Vault Release — ${ownerName}'s Legacy Plan</h2>
+      <p>Hello ${beneficiaryName},</p>
+      <p>The full encrypted vault is being released because the SLIP-39 recovery process did not complete within the configured window and no stakeholder objected during the 90-day notification + confirmation period.</p>
+      ${personalBlock}
+      ${vaultBlock}
+      ${instructionsBlock}
+      ${splitBlock}
+      ${walletList}
+      ${assetList}
+      <p style="font-size: 12px; color: #94a3b8; margin-top: 32px;">This is the final automated message for this plan. CryptoOwnBank does not store seed phrases or passphrases. Recovery is your responsibility from here.</p>
+    </div>
+  `);
+  await sendEmail(to, `LAST-RESORT RELEASE — ${ownerName}'s Legacy Plan vault`, html);
+}

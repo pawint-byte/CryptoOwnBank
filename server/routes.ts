@@ -8819,7 +8819,12 @@ Rules you MUST follow:
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "No legacy plan found" });
       const updates: Record<string, unknown> = {};
-      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold } = req.body;
+      const { checkInFrequency, gracePeriodDays, secondaryContactName, secondaryContactEmail, personalMessage, splitDeliveryEnabled, splitDeliveryMode, splitDeliveryThreshold, lastResortEnabled, lastResortWindowDays } = req.body;
+      if (lastResortEnabled !== undefined) updates.lastResortEnabled = !!lastResortEnabled;
+      if (lastResortWindowDays !== undefined) {
+        const d = Number(lastResortWindowDays);
+        if ([180, 365, 540, 730, 1095].includes(d)) updates.lastResortWindowDays = d;
+      }
       const validFrequencies = ["weekly", "biweekly", "monthly", "quarterly"];
       if (checkInFrequency && validFrequencies.includes(checkInFrequency)) updates.checkInFrequency = checkInFrequency;
       if (gracePeriodDays && [7, 14, 30, 60, 90].includes(Number(gracePeriodDays))) updates.gracePeriodDays = Number(gracePeriodDays);
@@ -9355,6 +9360,76 @@ ${beneSections}
     } catch (error) {
       console.error("Export error:", error);
       res.status(500).send("Failed to generate export");
+    }
+  });
+
+  app.get("/api/legacy-plan/last-resort-status/:token", async (req, res) => {
+    try {
+      const token = String(req.params.token || "");
+      if (!token) return res.status(400).json({ message: "Invalid token" });
+      const plan = await storage.getLegacyPlanByLastResortToken(token);
+      if (!plan) return res.status(404).json({ message: "Token not found or expired" });
+      const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+      const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "the plan holder";
+      res.json({
+        ownerName,
+        triggeredAt: plan.triggeredAt,
+        notifyStartedAt: plan.lastResortNotifyStartedAt,
+        confirmStartedAt: plan.lastResortConfirmStartedAt,
+        objectedAt: plan.lastResortObjectedAt,
+        objectedBy: plan.lastResortObjectedBy,
+        releasedAt: plan.lastResortReleasedAt,
+        windowDays: plan.lastResortWindowDays || 365,
+      });
+    } catch (e) {
+      console.error("Last-resort status error:", e);
+      res.status(500).json({ message: "Failed to load status" });
+    }
+  });
+
+  app.post("/api/legacy-plan/last-resort-object/:token", express.json(), async (req: any, res) => {
+    try {
+      const token = String(req.params.token || "");
+      const objectorEmail = String(req.body?.email || "").trim().toLowerCase();
+      const objectorReason = String(req.body?.reason || "").slice(0, 500);
+      if (!token) return res.status(400).json({ message: "Invalid token" });
+      if (!objectorEmail || !objectorEmail.includes("@")) return res.status(400).json({ message: "Valid email required to record objection" });
+      const plan = await storage.getLegacyPlanByLastResortToken(token);
+      if (!plan) return res.status(404).json({ message: "Token not found" });
+      if (plan.lastResortReleasedAt) return res.status(409).json({ message: "Vault has already been released — objection cannot be recorded" });
+
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const [owner] = await db.select({ email: users.email }).from(users).where(eq(users.id, plan.userId));
+      const allowedEmails = new Set<string>();
+      for (const b of beneficiaries) if (b.email) allowedEmails.add(b.email.trim().toLowerCase());
+      if (plan.secondaryContactEmail) allowedEmails.add(plan.secondaryContactEmail.trim().toLowerCase());
+      if (owner?.email) allowedEmails.add(owner.email.trim().toLowerCase());
+      if (!allowedEmails.has(objectorEmail)) {
+        console.log(`[Legacy LastResort] Rejected objection from non-stakeholder ${objectorEmail} for plan ${plan.id}`);
+        return res.status(403).json({ message: "This email is not listed as a stakeholder on the plan. Use the email address you were notified at." });
+      }
+
+      const now = new Date();
+      const auditEntry = `${now.toISOString()} OBJECTION by=${objectorEmail} reason="${objectorReason.replace(/"/g, "'")}"`;
+      const [updated] = await db.update(legacyPlans).set({
+        lastResortObjectedAt: now,
+        lastResortObjectedBy: objectorEmail,
+        lastResortAuditLog: ((plan.lastResortAuditLog || "") + "\n" + auditEntry).trim(),
+      } as any).where(
+        and(
+          eq(legacyPlans.id, plan.id),
+          sql`${legacyPlans.lastResortReleasedAt} IS NULL`,
+          sql`${legacyPlans.lastResortObjectionToken} = ${token}`,
+        )
+      ).returning();
+      if (!updated) {
+        return res.status(409).json({ message: "Plan state changed — objection could not be recorded. Refresh and try again." });
+      }
+      console.log(`[Legacy LastResort] Objection recorded for plan ${plan.id} by ${objectorEmail}`);
+      res.json({ ok: true, message: "Objection recorded. Last-resort release is paused for 90 days." });
+    } catch (e) {
+      console.error("Last-resort object error:", e);
+      res.status(500).json({ message: "Failed to record objection" });
     }
   });
 

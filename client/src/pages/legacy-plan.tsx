@@ -22,6 +22,7 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  ShieldAlert,
   Plus,
   Trash2,
   UserPlus,
@@ -72,6 +73,13 @@ type LegacyPlanData = {
     earlyTriggerVetoedAt: string | null;
     earlyTriggerVetoDays: number | null;
     earlyTriggerRequestNotes: string | null;
+    lastResortEnabled?: boolean | null;
+    lastResortWindowDays?: number | null;
+    lastResortNotifyStartedAt?: string | null;
+    lastResortConfirmStartedAt?: string | null;
+    lastResortReleasedAt?: string | null;
+    lastResortObjectedAt?: string | null;
+    lastResortObjectedBy?: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -1631,6 +1639,90 @@ function SurvivabilityExportCard({ plan }: { plan: LegacyPlanData["plan"] }) {
   );
 }
 
+function LastResortFallbackSection({ plan }: { plan: LegacyPlanData["plan"] }) {
+  const { toast } = useToast();
+  const enabled = plan.lastResortEnabled ?? true;
+  const windowDays = plan.lastResortWindowDays ?? 365;
+
+  const update = useMutation({
+    mutationFn: (data: { lastResortEnabled?: boolean; lastResortWindowDays?: number }) =>
+      apiRequest("PATCH", "/api/legacy-plan", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      toast({ title: "Last-resort settings updated" });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to update settings", variant: "destructive" }),
+  });
+
+  const phase = plan.lastResortReleasedAt
+    ? `Released on ${new Date(plan.lastResortReleasedAt).toLocaleDateString()}`
+    : plan.lastResortObjectedAt
+    ? `Objection recorded ${new Date(plan.lastResortObjectedAt).toLocaleDateString()} by ${plan.lastResortObjectedBy || "unknown"} — paused 90 days`
+    : plan.lastResortConfirmStartedAt
+    ? `In confirmation phase (60 days, started ${new Date(plan.lastResortConfirmStartedAt).toLocaleDateString()})`
+    : plan.lastResortNotifyStartedAt
+    ? `In notification phase (30 days, started ${new Date(plan.lastResortNotifyStartedAt).toLocaleDateString()})`
+    : "Idle — will only activate if the dead-man trigger fires AND the SLIP-39 shard recovery window passes";
+
+  return (
+    <Card data-testid="card-last-resort">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-amber-600" /> Last-Resort Fallback
+            </CardTitle>
+            <CardDescription>
+              Final safety valve: if SLIP-39 shards never reconstruct after the dead-man trigger fires, release the encrypted vault to all beneficiaries — unless any stakeholder objects.
+            </CardDescription>
+          </div>
+          <Button
+            variant={enabled ? "default" : "outline"}
+            size="sm"
+            onClick={() => update.mutate({ lastResortEnabled: !enabled })}
+            disabled={update.isPending}
+            data-testid="button-toggle-last-resort"
+          >
+            {enabled ? "Enabled" : "Disabled"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-md bg-muted/40 p-3 text-sm">
+          <p className="font-medium mb-1">Current state</p>
+          <p className="text-muted-foreground">{phase}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium">Window after trigger before fallback opens</label>
+          <select
+            className="w-full mt-1 rounded-md border bg-background px-3 py-2 text-sm"
+            value={windowDays}
+            disabled={!enabled || update.isPending}
+            onChange={(e) => update.mutate({ lastResortWindowDays: Number(e.target.value) })}
+            data-testid="select-last-resort-window"
+          >
+            <option value={180}>6 months (180 days)</option>
+            <option value={365}>1 year (365 days) — recommended</option>
+            <option value={540}>18 months (540 days)</option>
+            <option value={730}>2 years (730 days)</option>
+            <option value={1095}>3 years (1,095 days)</option>
+          </select>
+          <p className="text-xs text-muted-foreground mt-2">
+            After the trigger fires, the system waits this long. Then a 30-day notification + 60-day confirmation phase opens. Beneficiaries, your secondary contact, and you can object via email at any point. An objection pauses release for 90 days.
+          </p>
+        </div>
+        {!enabled && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Fallback disabled</AlertTitle>
+            <AlertDescription>If your SLIP-39 shards are lost or beneficiaries fail to reconstruct, the funds will stay locked forever. Re-enable unless you've explicitly chosen this.</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function LearnSlip39Card() {
   return (
     <Card data-testid="card-learn-slip39" className="border-primary/30 bg-primary/5">
@@ -2198,6 +2290,8 @@ export default function LegacyPlanPage() {
       <LearnSlip39Card />
 
       <SplitDeliverySection plan={plan} beneficiaries={beneficiaries} />
+
+      <LastResortFallbackSection plan={plan} />
 
       <Card>
         <CardHeader>
