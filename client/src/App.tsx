@@ -89,6 +89,7 @@ import TechnicalAnalysis from "@/pages/technical-analysis";
 import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import XLS66Lending from "@/pages/xls66-lending";
 import LegacyPlan from "@/pages/legacy-plan";
+import LearnSlip39 from "@/pages/learn-slip39";
 import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
 import BuyCrypto from "@/pages/buy-crypto";
@@ -269,6 +270,7 @@ function AuthenticatedRoutes() {
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/legacy-plan" component={LegacyPlan} />
+        <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
         <Route path="/native-staking" component={NativeStaking} />
@@ -333,6 +335,7 @@ function Router() {
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
         <Route path="/decrypt" component={DecryptPage} />
+        <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
         <Route path="/snapshot/:token" component={Snapshot} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
@@ -354,6 +357,7 @@ function Router() {
       <Route path="/yield-calculator" component={YieldCalculator} />
       <Route path="/pay" component={PayPage} />
       <Route path="/decrypt" component={DecryptPage} />
+      <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
       <Route path="/snapshot/:token" component={Snapshot} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />

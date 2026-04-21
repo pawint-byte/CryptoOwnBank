@@ -759,6 +759,48 @@ type WalletAsset = {
   assets: Array<{ symbol: string; balance: string; usdValue: string | null }>;
 };
 
+function detectSeedPhrase(text: string): { detected: boolean; wordCount: number } {
+  const trimmed = text.trim().toLowerCase();
+  if (!trimmed) return { detected: false, wordCount: 0 };
+  const lines = trimmed.split(/\n+/);
+  for (const line of lines) {
+    const cleaned = line.replace(/^(seed[\s-]*words?|recovery[\s-]*phrase|mnemonic|words?)\s*[:=-]?\s*/i, "").trim();
+    const words = cleaned.split(/[\s,]+/).filter(w => /^[a-z]{3,8}$/.test(w));
+    if (words.length === 12 || words.length === 15 || words.length === 18 || words.length === 21 || words.length === 24) {
+      return { detected: true, wordCount: words.length };
+    }
+  }
+  return { detected: false, wordCount: 0 };
+}
+
+function SeedPhraseWarning({ text }: { text: string }) {
+  const result = detectSeedPhrase(text);
+  if (!result.detected) return null;
+  return (
+    <Alert className="mt-2 border-amber-500/60 bg-amber-500/10" data-testid="alert-seed-detected">
+      <AlertTriangle className="h-4 w-4 text-amber-600" />
+      <AlertTitle className="text-sm">This looks like a {result.wordCount}-word seed phrase</AlertTitle>
+      <AlertDescription className="text-xs space-y-1 mt-1">
+        <p>
+          Storing a raw seed in any digital form — even encrypted — goes against hardware wallet
+          best practice. The encryption is only as strong as the passphrase you choose, and your
+          seed becomes recoverable by anyone who learns that passphrase.
+        </p>
+        <p>
+          <strong>Safer alternatives:</strong> store the <em>location</em> of your physical seed
+          backup (Cryptosteel, metal plate, safety deposit box) instead of the seed itself, or
+          split the seed across multiple people using SLIP-39.{" "}
+          <Link href="/legacy-plan/learn-slip39" className="underline">Try SLIP-39 in the sandbox</Link>.
+        </p>
+        <p className="text-muted-foreground">
+          You can still proceed if this is intentional (for example, a small operational wallet) —
+          this is just a heads-up.
+        </p>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 async function encryptVault(plaintext: string, passphrase: string): Promise<string> {
   const enc = new TextEncoder();
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -1432,12 +1474,13 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                       <Textarea
                         value={vaultContent}
                         onChange={(e) => setVaultContent(e.target.value)}
-                        placeholder={"Enter what you want to protect, for example:\n\nSeed words: word1 word2 word3 ... word24\nPassphrase (25th word): mypassphrase\nPIN: 1234\nExchange password: ...\n\nThis text will be encrypted before leaving your browser."}
+                        placeholder={"Best practice — store the LOCATION of your seed, not the seed itself:\n\n  Ledger Nano X is in the fireproof safe in the office.\n  PIN is in a sealed envelope at my mother's house.\n  Recovery phrase is engraved on a Cryptosteel in safety deposit box #412 at Chase.\n  The bank key is in my desk's top-right drawer.\n\nThis text is encrypted in your browser before it leaves your device."}
                         rows={6}
                         className="font-mono text-xs"
                         data-testid="input-vault-content"
                       />
                       <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">This data is encrypted in your browser. It never leaves your device unencrypted.</p>
+                      <SeedPhraseWarning text={vaultContent} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
@@ -1582,6 +1625,30 @@ function SurvivabilityExportCard({ plan }: { plan: LegacyPlanData["plan"] }) {
             <Download className="h-4 w-4 mr-2" />
             {downloading ? "Generating..." : overdue ? "Re-export now (overdue)" : "Download Export"}
           </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LearnSlip39Card() {
+  return (
+    <Card data-testid="card-learn-slip39" className="border-primary/30 bg-primary/5">
+      <CardContent className="pt-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="rounded-md bg-primary/10 p-2"><Shield className="h-5 w-5 text-primary" /></div>
+            <div className="min-w-0">
+              <p className="font-medium">SLIP-39 hands-on sandbox (new)</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Learn how Shamir's Secret Sharing splits a recovery phrase across multiple people, and try it
+                yourself with safe test data. Recommended before we ship the real SLIP-39 setup for your wallets.
+              </p>
+            </div>
+          </div>
+          <Link href="/legacy-plan/learn-slip39">
+            <Button variant="outline" data-testid="link-learn-slip39">Open sandbox</Button>
+          </Link>
         </div>
       </CardContent>
     </Card>
@@ -2083,6 +2150,8 @@ export default function LegacyPlanPage() {
       <AnnualReviewSection plan={plan} />
 
       <SurvivabilityExportCard plan={plan} />
+
+      <LearnSlip39Card />
 
       <SplitDeliverySection plan={plan} beneficiaries={beneficiaries} />
 
