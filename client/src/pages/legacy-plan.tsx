@@ -1383,6 +1383,15 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
               </div>
             )}
 
+            {!isEditing && name && email && walletType && (
+              <div className="rounded-md border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-2.5 text-[11px] text-amber-900 dark:text-amber-100 flex gap-2 items-start" data-testid="warning-skip-email-validation">
+                <span className="text-amber-600 dark:text-amber-400 mt-0.5">⚠</span>
+                <div>
+                  Heads up — if you continue, the confirmation email only gets sent at the very end after step 3. If <strong>{email}</strong> turns out to be wrong, you'll have done the wallet work for nothing. Saving the person first is safer when you're not 100% sure of the address.
+                </div>
+              </div>
+            )}
+
             <DialogFooter className="flex-wrap gap-2">
               <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel-beneficiary">Cancel</Button>
               {!isEditing && (
