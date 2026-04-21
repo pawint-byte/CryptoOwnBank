@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { LegacyReadinessPanel } from "@/components/legacy-readiness-panel";
+import { LegacyPlanSummary } from "@/components/legacy-plan-summary";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2182,6 +2183,8 @@ export default function LegacyPlanPage() {
       <StatusBanner plan={plan} />
 
       <LegacyReadinessPanel />
+
+      <LegacyPlanSummary />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
