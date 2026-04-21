@@ -1007,6 +1007,12 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
 }) {
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
+  useEffect(() => {
+    if (editBeneficiary) return;
+    const handler = () => setInternalOpen(true);
+    window.addEventListener("open-add-beneficiary", handler);
+    return () => window.removeEventListener("open-add-beneficiary", handler);
+  }, [editBeneficiary]);
   const open = editBeneficiary ? (externalOpen ?? false) : internalOpen;
   const setOpen = (v: boolean) => {
     if (editBeneficiary) { if (!v && onExternalClose) onExternalClose(); }
@@ -2311,7 +2317,7 @@ export default function LegacyPlanPage() {
 
       <LastResortFallbackSection plan={plan} />
 
-      <Card>
+      <Card id="beneficiaries-section">
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>

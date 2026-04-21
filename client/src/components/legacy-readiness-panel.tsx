@@ -133,19 +133,41 @@ export function LegacyReadinessPanel() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{check.message}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    {check.fixUrl && (
-                      check.fixUrl.startsWith("/") ? (
-                        <Link href={check.fixUrl}>
-                          <Button size="sm" variant="outline" data-testid={`button-fix-${check.id}`}>
+                    {check.fixUrl && (() => {
+                      const samePagePath = check.fixUrl.startsWith("/") && check.fixUrl.split("#")[0] === window.location.pathname;
+                      const opensAddDialog = ["no-beneficiaries", "uncovered-high", "uncovered-any"].includes(check.id);
+                      const sectionId = ["no-beneficiaries", "uncovered-high", "uncovered-any", "untested-vault", "pending-beneficiaries", "declined-beneficiaries", "slip39-mismatch", "slip39-duplicate"].includes(check.id) ? "beneficiaries-section" : null;
+                      const handleClick = () => {
+                        if (sectionId) {
+                          const el = document.getElementById(sectionId);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                        if (opensAddDialog) {
+                          setTimeout(() => window.dispatchEvent(new CustomEvent("open-add-beneficiary")), 250);
+                        }
+                      };
+                      if (samePagePath) {
+                        return (
+                          <Button size="sm" variant="outline" onClick={handleClick} data-testid={`button-fix-${check.id}`}>
                             {check.fixLabel || "Fix"} <ArrowRight className="h-3 w-3 ml-1" />
                           </Button>
-                        </Link>
-                      ) : (
+                        );
+                      }
+                      if (check.fixUrl.startsWith("/")) {
+                        return (
+                          <Link href={check.fixUrl}>
+                            <Button size="sm" variant="outline" data-testid={`button-fix-${check.id}`}>
+                              {check.fixLabel || "Fix"} <ArrowRight className="h-3 w-3 ml-1" />
+                            </Button>
+                          </Link>
+                        );
+                      }
+                      return (
                         <Button size="sm" variant="outline" asChild>
                           <a href={check.fixUrl} target="_blank" rel="noopener noreferrer">{check.fixLabel || "Fix"}</a>
                         </Button>
-                      )
-                    )}
+                      );
+                    })()}
                     {check.severity === "tip" && (
                       <Button
                         size="sm"
