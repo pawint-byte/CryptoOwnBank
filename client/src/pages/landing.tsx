@@ -861,6 +861,43 @@ const faqGroups = [
     ],
   },
   {
+    heading: "Legacy Plan & Inheritance",
+    items: [
+      {
+        q: "What is the Legacy Plan, in plain language?",
+        a: "The Legacy Plan is a non-custodial dead-man's switch built into CryptoOwnBank. You add up to 25 beneficiaries, write each of them an encrypted recovery packet (which wallets, what's in them, how to access them), and the system periodically checks in with you. If you stop responding for a configurable grace period, every beneficiary automatically receives their packet by email. Your crypto stays in your wallets the entire time, earning yield. We never hold the keys, we never see the contents — the packets are AES-256-GCM encrypted in your browser before they ever leave your device. Pro tier ($99/mo).",
+      },
+      {
+        q: "What's new in Legacy Plan v2 (April 2026)?",
+        a: "Three big safety upgrades. (1) Survivability Export — one click downloads a self-contained printable HTML file with every beneficiary, fallback, encrypted vault, and plan setting, so you can keep an offline copy in a safe or with your attorney. The system reminds you annually to refresh it. (2) Fallback recipients — each beneficiary can now have up to 5 backup people. If the primary doesn't acknowledge their packet in time or you mark them deceased, the packet automatically routes to their fallbacks first, before any group redistribution. (3) Secondary-contact early-trigger with 30-day veto — your verified secondary contact (a spouse, sibling, lawyer) can request an early trigger if they believe something has happened to you. You get a veto email and a red banner on your dashboard with a 30-day countdown. One click on 'I'm Alive' both vetoes the request and resets the dead-man switch. If you don't respond in 30 days, the plan fires automatically.",
+      },
+      {
+        q: "How does the Survivability Export work and why do I need it?",
+        a: "On your Legacy Plan dashboard, click 'Download Survivability Export.' You get a single self-contained HTML file you can open in any browser, on any device, forever — no internet, no CryptoOwnBank login, no dependencies. Inside is the full snapshot: every beneficiary, their fallbacks, your encrypted vaults (still encrypted — the file does not leak your secrets), and your plan settings. Print it, keep it on a USB stick in a safe, attach it to your will, give a sealed envelope to your attorney. The point is simple: even if CryptoOwnBank disappeared tomorrow, your family would still have the structure of your plan in their hands. We log the date you last exported and email you a reminder once a year if you haven't refreshed it.",
+      },
+      {
+        q: "What are fallback recipients and when do they activate?",
+        a: "When you add a beneficiary, you can also list up to 5 fallback people for that beneficiary (name + email each). They activate in two situations: (1) the primary beneficiary doesn't acknowledge receipt of their packet within the acknowledgment window after the plan triggers, or (2) you (or your secondary contact, with proof) mark the primary as deceased. In either case, the system sends the packet to the fallbacks first, before any per-capita redistribution to the rest of the group. This solves a real problem — what if your primary beneficiary has already passed away themselves, or simply lost access to their email? With fallbacks, the packet still reaches a real person you trusted them to choose, instead of being silently absorbed back into the group.",
+      },
+      {
+        q: "How does the secondary-contact early trigger and 30-day veto work?",
+        a: "When you set up your Legacy Plan you can designate a secondary contact — typically a spouse, adult child, sibling, or attorney. They verify their email through a link we send them. From that moment they have a personal request URL: if they believe something has happened to you, they can submit an early-trigger request with a short note explaining why. Three things happen instantly: (1) you get a veto email at every address on file, (2) a red banner appears on your dashboard with a live countdown, (3) a 30-day clock starts (you can change the window in settings). To stop it, just click 'I'm Alive' anywhere — that single click both cancels the request and resets your normal dead-man check-in. If you genuinely don't respond within 30 days, the plan auto-fires. Changing your secondary contact instantly revokes any pending request from the previous one.",
+      },
+      {
+        q: "Can my secondary contact trigger the plan maliciously?",
+        a: "No. They can only request a trigger — they cannot fire the plan themselves. You get notified at every email address on file the moment they submit a request, the dashboard shows a red banner the next time you log in, and you have a full 30 days (configurable) to veto with a single click. The veto button doubles as a check-in, so you don't even have to think about it. If at any point you become uncomfortable with your secondary contact, you can remove or replace them in plan settings, which immediately revokes their request token. The system is designed so the worst a malicious secondary can do is annoy you with a 30-day countdown that you cancel in one click.",
+      },
+      {
+        q: "What happens if I die before refreshing my Survivability Export?",
+        a: "Nothing breaks. The Survivability Export is a backup, not the primary mechanism. The primary mechanism is the dead-man switch itself: once you stop responding to check-ins for the grace period you configured, the platform automatically emails every beneficiary their encrypted packet, with fallback routing if any primary doesn't acknowledge. The export exists so your family has an offline reference even in catastrophic scenarios — CryptoOwnBank goes offline, your account is compromised, the wider internet is unreachable in their region. Annual reminders just nudge you to keep the offline copy fresh; missing one doesn't disable anything.",
+      },
+      {
+        q: "Is any of this custodial? Do you ever hold my keys or see my recovery info?",
+        a: "No, and no. CryptoOwnBank is non-custodial across the board, and the Legacy Plan is the strictest part. Your recovery vaults are encrypted in your browser using AES-256-GCM with a passphrase only you know — we receive and store the ciphertext, never the plaintext. Beneficiary packets contain that same ciphertext plus the hint you wrote them; only the passphrase you've shared with them out-of-band can unlock it. We can't read your packets, your beneficiaries' packets, or your vaults. If our entire database leaked tomorrow, the contents of your Legacy Plan would still be encrypted gibberish to anyone without the passphrase you set.",
+      },
+    ],
+  },
+  {
     heading: "Safety & Disclaimers",
     items: [
       {
