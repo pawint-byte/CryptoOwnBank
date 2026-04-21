@@ -530,7 +530,10 @@ export default function SettingsPage() {
 
   const addonsMonthlyCost = Array.from(selectedAddons).reduce((sum, key) => {
     const addon = (addonCatalog as Record<string, any>)[key];
-    return sum + (addon ? addon.amount / 100 : 0);
+    if (!addon) return sum;
+    if (addon.interval === "year") return sum + addon.amount / 100 / 12;
+    if (!addon.interval) return sum;
+    return sum + addon.amount / 100;
   }, 0);
   const totalMonthlyCost = baseMonthlyCost + addonsMonthlyCost;
 
@@ -1559,7 +1562,7 @@ export default function SettingsPage() {
                       </div>
                       <p className="text-[11px] text-muted-foreground mb-3 ml-6">Add extra chains, tools, or features to any paid plan</p>
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {Object.entries(addonCatalog).map(([key, addon]: [string, any]) => {
+                        {Object.entries(addonCatalog).filter(([k]) => k !== "legacy-plan-yearly" && k !== "legacy-plan-lifetime").map(([key, addon]: [string, any]) => {
                           const isActive = activeAddons.some((a: any) => a.addonKey === key);
                           const isIncludedInTier = selectedTier === "pro" || (selectedTier === "premium" && (addon.type === "multi_chain" || addon.type === "technical_analysis" || addon.type === "payments"));
                           const isSelected = selectedAddons.has(key);
@@ -1592,8 +1595,8 @@ export default function SettingsPage() {
                                 )}
                               </div>
                               <div className="flex items-center justify-between mt-1">
-                                <p className="text-[11px] text-muted-foreground flex-1">{addon.description?.replace(/\s*—\s*\$[\d.]+\/mo/, "")}</p>
-                                <span className="text-[10px] font-medium text-muted-foreground ml-2 shrink-0">${(addon.amount / 100).toFixed(2)}/mo</span>
+                                <p className="text-[11px] text-muted-foreground flex-1">{addon.description?.replace(/\s*—\s*\$[\d.]+\/(mo|yr)/, "")}</p>
+                                <span className="text-[10px] font-medium text-muted-foreground ml-2 shrink-0">{addon.priceLabel || `$${(addon.amount / 100).toFixed(2)}/mo`}</span>
                               </div>
                             </div>
                           );
@@ -1916,7 +1919,7 @@ export default function SettingsPage() {
                     data-testid="button-addon-pay-crypto"
                   >
                     {addonCryptoLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Coins className="h-3 w-3 mr-1" />}
-                    Pay ${(addonCatalog[pendingAddonPayment.addonKey]?.amount / 100).toFixed(2)}
+                    Pay ${(addonCatalog[pendingAddonPayment.addonKey]?.amount * 0.9 / 100).toFixed(2)} <span className="ml-1 text-xs opacity-75">(10% off)</span>
                   </Button>
                   <Button
                     variant="ghost"

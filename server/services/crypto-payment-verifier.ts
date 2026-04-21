@@ -773,8 +773,16 @@ export async function activateSubscription(payment: CryptoPayment) {
       return;
     }
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    let expiresAt: Date | null;
+    if (addonKey === "legacy-plan-lifetime") {
+      expiresAt = null;
+    } else if (addonConfig.interval === "year") {
+      expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    } else {
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+    }
 
     await storage.createUserAddon({
       userId: payment.userId,
@@ -785,7 +793,7 @@ export async function activateSubscription(payment: CryptoPayment) {
       stripeSubscriptionId: null,
       expiresAt,
     });
-    console.log(`[crypto-verify] Activated addon ${addonKey} for user ${payment.userId} via ${payment.chain}, expires ${expiresAt.toISOString()}`);
+    console.log(`[crypto-verify] Activated addon ${addonKey} for user ${payment.userId} via ${payment.chain}, expires ${expiresAt ? expiresAt.toISOString() : "never (lifetime)"}`);
     await notifyAdminOfPayment(payment);
     return;
   }

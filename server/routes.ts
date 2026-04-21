@@ -5229,8 +5229,15 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const { tier } = await getEffectiveTier(userId);
-      if (addonKey === "legacy-plan") {
+      const isLegacy = addonKey === "legacy-plan" || addonKey === "legacy-plan-yearly" || addonKey === "legacy-plan-lifetime";
+      if (isLegacy) {
         if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
+        for (const k of ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"]) {
+          const existingLegacy = await storage.getUserAddonByKey(userId, k);
+          if (existingLegacy && existingLegacy.status === "active") {
+            return res.status(400).json({ message: "You already have an active Legacy Plan. Cancel it first to switch billing options." });
+          }
+        }
       } else {
         if (tier === "premium" || tier === "pro") return res.status(400).json({ message: "This feature is already included in your plan." });
       }
@@ -5271,8 +5278,15 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
 
       const { tier } = await getEffectiveTier(userId);
-      if (addonKey === "legacy-plan") {
+      const isLegacy = addonKey === "legacy-plan" || addonKey === "legacy-plan-yearly" || addonKey === "legacy-plan-lifetime";
+      if (isLegacy) {
         if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
+        for (const k of ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"]) {
+          const existingLegacy = await storage.getUserAddonByKey(userId, k);
+          if (existingLegacy && existingLegacy.status === "active") {
+            return res.status(400).json({ message: "You already have an active Legacy Plan. Cancel it first to switch billing options." });
+          }
+        }
       } else {
         if (tier === "premium" || tier === "pro") return res.status(400).json({ message: "This feature is already included in your plan." });
       }
@@ -8777,8 +8791,11 @@ Rules you MUST follow:
   async function hasLegacyAccess(userId: string): Promise<boolean> {
     const { tier } = await getEffectiveTier(userId);
     if (tier === "pro") return true;
-    const addon = await storage.getUserAddonByKey(userId, "legacy-plan");
-    return !!addon && addon.status === "active";
+    for (const k of ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"]) {
+      const addon = await storage.getUserAddonByKey(userId, k);
+      if (addon && addon.status === "active") return true;
+    }
+    return false;
   }
 
   app.get("/api/legacy-plan", isAuthenticated, async (req: any, res) => {

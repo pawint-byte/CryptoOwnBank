@@ -103,14 +103,39 @@ export const ADDONS = {
     description: "Send/receive XRP & XLM, recurring payments — $7.99/mo",
   },
   "legacy-plan": {
-    name: "Legacy Plan (Dead-Man Switch)",
+    name: "Legacy Plan — Monthly",
     type: "legacy_plan",
     key: "legacy-plan",
     amount: 999,
     interval: "month" as const,
+    priceLabel: "$9.99/mo",
     description: "Crypto inheritance dead-man switch — $9.99/mo (included free with Pro)",
   },
+  "legacy-plan-yearly": {
+    name: "Legacy Plan — Annual",
+    type: "legacy_plan",
+    key: "legacy-plan-yearly",
+    amount: 7900,
+    interval: "year" as const,
+    priceLabel: "$79/yr",
+    description: "Crypto inheritance dead-man switch — $79/yr (save $40 vs monthly)",
+  },
+  "legacy-plan-lifetime": {
+    name: "Legacy Plan — Lifetime",
+    type: "legacy_plan",
+    key: "legacy-plan-lifetime",
+    amount: 49900,
+    interval: null as null,
+    priceLabel: "$499 once",
+    description: "One-time payment, never expires. Stays active until trigger fires + 12 months after release. Lifetime seat passes to your primary beneficiary.",
+  },
 };
+
+export const LEGACY_ADDON_KEYS = ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"] as const;
+export type LegacyAddonKey = typeof LEGACY_ADDON_KEYS[number];
+export function isLegacyAddon(key: string): key is LegacyAddonKey {
+  return (LEGACY_ADDON_KEYS as readonly string[]).includes(key);
+}
 
 export type AddonKey = keyof typeof ADDONS;
 
@@ -160,9 +185,10 @@ export async function createAddonCheckoutSession(
   cancelUrl: string
 ) {
   const addonConfig = ADDONS[addonKey];
+  const isOneTime = !addonConfig.interval;
 
   const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
+    mode: isOneTime ? "payment" : "subscription",
     payment_method_types: ["card"],
     line_items: [
       {
@@ -173,9 +199,9 @@ export async function createAddonCheckoutSession(
             description: addonConfig.description,
           },
           unit_amount: addonConfig.amount,
-          recurring: {
-            interval: addonConfig.interval,
-          },
+          ...(isOneTime
+            ? {}
+            : { recurring: { interval: addonConfig.interval as "month" | "year" } }),
         },
         quantity: 1,
       },
@@ -187,6 +213,7 @@ export async function createAddonCheckoutSession(
       addonKey,
       addonType: addonConfig.type,
       isAddon: "true",
+      isLifetime: isOneTime ? "true" : "false",
     },
   });
 
