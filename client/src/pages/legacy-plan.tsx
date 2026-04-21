@@ -1100,20 +1100,17 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
 
   const walletConfig = walletType ? WALLET_TYPES[walletType] : null;
 
-  const filteredWallets = useMemo(() => {
-    if (!walletAssets || !walletType) return [];
-    return walletAssets.filter(w => {
-      if (w.hardwareDevice === walletType) return true;
-      if (walletType === "xaman" && w.chain === "xrp") return true;
-      if (walletType === "metamask" && ["eth", "polygon", "arbitrum", "bsc", "avalanche", "optimism", "base"].includes(w.chain)) return true;
-      if (walletType === "phantom" && w.chain === "sol") return true;
-      return false;
-    });
-  }, [walletAssets, walletType]);
+  const walletTotalUsd = (w: WalletAsset) =>
+    w.assets.reduce((sum, a) => sum + (a.usdValue ? Number(a.usdValue) : 0), 0);
 
-  const handleLoadWallets = () => {
-    const selected = filteredWallets.filter(w => selectedWalletIds.includes(w.walletId));
-    if (selected.length === 0) return;
+  const guessWalletTypeFromChain = (chain: string): string | null => {
+    if (chain === "xrp") return "xaman";
+    if (chain === "sol") return "phantom";
+    if (["eth", "polygon", "arbitrum", "bsc", "avalanche", "optimism", "base"].includes(chain)) return "metamask";
+    return null;
+  };
+
+  const buildAssetSummary = (selected: WalletAsset[]): string => {
     const lines: string[] = [];
     for (const w of selected) {
       const label = w.label || `${w.chain.toUpperCase()} wallet`;
@@ -1123,10 +1120,26 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
         const usd = a.usdValue ? ` (~$${Number(a.usdValue).toLocaleString()})` : "";
         lines.push(`  ${a.symbol}: ${Number(a.balance).toLocaleString(undefined, { maximumFractionDigits: 6 })}${usd}`);
       }
+      lines.push("");
     }
-    setWalletAssetSummary(lines.join("\n"));
-    toast({ title: "Wallet data loaded", description: `${selected.length} wallet(s) pre-filled into the asset summary.` });
+    return lines.join("\n").trim();
   };
+
+  useEffect(() => {
+    if (!walletAssets || selectedWalletIds.length === 0) return;
+    const selected = walletAssets.filter(w => selectedWalletIds.includes(w.walletId));
+    if (selected.length === 0) return;
+    setWalletAssetSummary(buildAssetSummary(selected));
+    if (!walletType) {
+      const tagged = selected.find(w => w.hardwareDevice && WALLET_TYPES[w.hardwareDevice]);
+      if (tagged?.hardwareDevice) {
+        setWalletType(tagged.hardwareDevice);
+      } else {
+        const guess = guessWalletTypeFromChain(selected[0].chain);
+        if (guess) setWalletType(guess);
+      }
+    }
+  }, [selectedWalletIds, walletAssets]);
 
   const handleTemplateFieldChange = (key: string, value: string) => {
     setTemplateFields(prev => ({ ...prev, [key]: value }));
@@ -1308,6 +1321,84 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                 <p className="text-[10px] text-muted-foreground">Members of the same group split a deceased member's share per-capita.</p>
               </div>
             </div>
+            {walletAssets && walletAssets.length > 0 && (
+              <div className="space-y-2 rounded-md border p-3 bg-muted/20" data-testid="section-wallet-picker">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="flex items-center gap-1.5 text-sm font-medium">
+                    <Wallet className="h-3.5 w-3.5 text-blue-500" /> Which wallet(s) does this person inherit?
+                  </Label>
+                  {selectedWalletIds.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px]" data-testid="badge-wallets-selected">
+                      {selectedWalletIds.length} selected
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Pick the actual wallet(s) from your portfolio. Type and asset summary fill in automatically — you can still edit them below.
+                </p>
+                <div className="space-y-1 max-h-64 overflow-auto pr-1">
+                  {walletAssets.map(w => {
+                    const total = walletTotalUsd(w);
+                    const checked = selectedWalletIds.includes(w.walletId);
+                    const topAssets = [...w.assets]
+                      .sort((a, b) => Number(b.usdValue || 0) - Number(a.usdValue || 0))
+                      .slice(0, 3);
+                    return (
+                      <label
+                        key={w.walletId}
+                        className={`flex items-start gap-2 rounded px-2 py-2 cursor-pointer hover-elevate ${checked ? "bg-blue-50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-700" : "border border-transparent"}`}
+                        data-testid={`row-pick-wallet-${w.walletId}`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(c) => {
+                            setSelectedWalletIds(prev => c ? [...prev, w.walletId] : prev.filter(id => id !== w.walletId));
+                          }}
+                          className="mt-0.5"
+                          data-testid={`checkbox-pick-wallet-${w.walletId}`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm truncate" data-testid={`text-wallet-label-${w.walletId}`}>
+                              {w.label || `${w.chain.toUpperCase()} wallet`}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">{w.chain.toUpperCase()}</Badge>
+                            {w.hardwareDevice && WALLET_TYPES[w.hardwareDevice] && (
+                              <Badge variant="outline" className="text-[10px] h-4 px-1 text-purple-600 border-purple-600/40">
+                                {WALLET_TYPES[w.hardwareDevice].label}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                            {w.address.slice(0, 10)}...{w.address.slice(-6)}
+                          </div>
+                          {w.assets.length > 0 ? (
+                            <div className="text-[11px] mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              <span className="font-medium" data-testid={`text-wallet-total-${w.walletId}`}>
+                                {total > 0 ? `$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}
+                              </span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="text-muted-foreground">
+                                {topAssets.map(a => `${Number(a.balance).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${a.symbol}`).join(", ")}
+                                {w.assets.length > 3 ? ` +${w.assets.length - 3} more` : ""}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-muted-foreground mt-1">No tracked balances</div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {walletAssets && walletAssets.length === 0 && (
+              <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground" data-testid="empty-wallet-picker">
+                You don't have any tracked wallets yet. You can still describe this beneficiary's wallet manually below — or go to the Portfolio page first to add wallets, then come back.
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Wallet Nickname (optional)</Label>
@@ -1316,7 +1407,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
               </div>
               <div className="space-y-1">
                 <Label>Wallet / Device Type *</Label>
-                <Select value={walletType} onValueChange={(v) => { setWalletType(v); setTemplateFields({}); setSelectedWalletIds([]); setWalletAssetSummary(""); }}>
+                <Select value={walletType} onValueChange={(v) => { setWalletType(v); setTemplateFields({}); }}>
                   <SelectTrigger data-testid="select-wallet-type"><SelectValue placeholder="Select wallet..." /></SelectTrigger>
                   <SelectContent>
                     {walletCategories.map(cat => {
@@ -1426,38 +1517,11 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
               </AlertDescription>
             </Alert>
 
-            {filteredWallets.length > 0 && (
-              <div className="space-y-2 rounded-md border p-3">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-1.5 text-sm"><Download className="h-3.5 w-3.5 text-blue-500" /> Pre-fill from your connected wallets</Label>
-                  <Button size="sm" variant="outline" onClick={handleLoadWallets} disabled={selectedWalletIds.length === 0} data-testid="button-load-wallets">
-                    Load Selected
-                  </Button>
-                </div>
-                <div className="space-y-1.5">
-                  {filteredWallets.map(w => (
-                    <label key={w.walletId} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
-                      <Checkbox
-                        checked={selectedWalletIds.includes(w.walletId)}
-                        onCheckedChange={(checked) => {
-                          setSelectedWalletIds(prev => checked ? [...prev, w.walletId] : prev.filter(id => id !== w.walletId));
-                        }}
-                        data-testid={`checkbox-wallet-${w.walletId}`}
-                      />
-                      <span className="font-medium">{w.label || `${w.chain.toUpperCase()} wallet`}</span>
-                      <span className="text-muted-foreground">{w.chain.toUpperCase()} — {w.address.slice(0, 8)}...{w.address.slice(-4)}</span>
-                      <span className="text-muted-foreground ml-auto">{w.assets.length} asset{w.assets.length !== 1 ? "s" : ""}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {walletAssetSummary && (
               <div className="space-y-1">
                 <Label className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> Assets on this device (auto-filled)</Label>
-                <Textarea value={walletAssetSummary} onChange={(e) => setWalletAssetSummary(e.target.value)} rows={4} className="font-mono text-xs" data-testid="input-asset-summary" />
-                <p className="text-xs text-muted-foreground">You can edit this summary. It shows your survivor what's on this device so they know what to look for.</p>
+                <Textarea value={walletAssetSummary} onChange={(e) => setWalletAssetSummary(e.target.value)} rows={Math.min(10, Math.max(4, walletAssetSummary.split("\n").length))} className="font-mono text-xs" data-testid="input-asset-summary" />
+                <p className="text-xs text-muted-foreground">Auto-filled from the wallet(s) you picked above. You can edit this summary — it shows your survivor what's on this device so they know what to look for.</p>
               </div>
             )}
 
