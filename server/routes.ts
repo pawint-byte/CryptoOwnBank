@@ -9044,6 +9044,182 @@ Rules you MUST follow:
     }
   });
 
+  app.post("/api/legacy-beneficiaries/:id/mark-tested", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      if (!existing.encryptedVault) return res.status(400).json({ message: "No encrypted vault on this beneficiary" });
+      await storage.updateLegacyBeneficiary(req.params.id, { vaultTested: true, vaultTestedAt: new Date() } as any);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("mark-tested error:", e);
+      res.status(500).json({ message: "Failed to record test" });
+    }
+  });
+
+  app.post("/api/legacy-plan/slip39", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const total = Number(req.body?.totalShards);
+      const threshold = Number(req.body?.threshold);
+      if (!Number.isFinite(total) || total < 2 || total > 16) return res.status(400).json({ message: "totalShards must be 2-16" });
+      if (!Number.isFinite(threshold) || threshold < 1 || threshold > total) return res.status(400).json({ message: "threshold must be between 1 and totalShards" });
+      await storage.updateLegacyPlan(plan.id, {
+        slip39TotalShards: total,
+        slip39Threshold: threshold,
+        slip39CompletedAt: new Date(),
+      } as any);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("slip39 record error:", e);
+      res.status(500).json({ message: "Failed to record SLIP-39 setup" });
+    }
+  });
+
+  app.post("/api/legacy-plan/dismiss-tip", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+      const tipId = String(req.body?.tipId || "").slice(0, 80);
+      if (!tipId) return res.status(400).json({ message: "tipId required" });
+      const dismissed = (plan as any).readinessDismissedTips ? String((plan as any).readinessDismissedTips).split(",") : [];
+      if (!dismissed.includes(tipId)) dismissed.push(tipId);
+      await storage.updateLegacyPlan(plan.id, { readinessDismissedTips: dismissed.join(",") } as any);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("dismiss-tip error:", e);
+      res.status(500).json({ message: "Failed to dismiss" });
+    }
+  });
+
+  app.get("/api/legacy-plan/readiness", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan access required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.json({ score: 0, checks: [{ id: "no-plan", severity: "critical", title: "Create your Legacy Plan", message: "You haven't created a Legacy Plan yet.", fixUrl: "/legacy-plan", fixLabel: "Get started" }] });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const userWallets = await storage.getWalletsByUser(userId);
+      const dismissed = (plan as any).readinessDismissedTips ? String((plan as any).readinessDismissedTips).split(",") : [];
+
+      const walletInfos: { id: string; chain: string; address: string; label: string | null; usd: number }[] = [];
+      for (const w of userWallets) {
+        const balances = await storage.getWalletBalances(w.id);
+        const usd = balances.reduce((s, b) => s + (parseFloat(b.usdValue || "0") || 0), 0);
+        walletInfos.push({ id: w.id, chain: w.chain, address: w.address, label: w.label, usd });
+      }
+
+      const referencedAddrs = new Set<string>();
+      for (const b of beneficiaries) {
+        const blob = `${b.deviceInstructions || ""} ${b.seedPhraseInstructions || ""} ${b.additionalNotes || ""} ${b.walletAssetSummary || ""}`.toLowerCase();
+        for (const w of walletInfos) {
+          if (w.address && blob.includes(w.address.toLowerCase().slice(0, 12))) referencedAddrs.add(w.id);
+          if (w.label && blob.includes(w.label.toLowerCase())) referencedAddrs.add(w.id);
+        }
+      }
+      const uncovered = walletInfos.filter(w => !referencedAddrs.has(w.id));
+      const uncoveredHigh = uncovered.filter(w => w.usd >= 10000);
+      const uncoveredAny = uncovered.filter(w => w.usd > 0);
+
+      const checks: Array<{ id: string; severity: "critical" | "warning" | "tip"; title: string; message: string; fixUrl?: string; fixLabel?: string }> = [];
+
+      if (beneficiaries.length === 0) {
+        checks.push({ id: "no-beneficiaries", severity: "critical", title: "Add at least one beneficiary", message: "Without a beneficiary, the plan can never deliver anything when triggered.", fixUrl: "/legacy-plan", fixLabel: "Add beneficiary" });
+      }
+
+      const untestedVaults = beneficiaries.filter((b: any) => b.encryptedVault && !b.vaultTested);
+      if (untestedVaults.length > 0) {
+        checks.push({ id: "untested-vault", severity: "critical", title: `${untestedVaults.length} encrypted vault${untestedVaults.length > 1 ? "s" : ""} never test-decrypted`, message: `These vaults will be delivered to your survivors but were never verified to open. Edit each beneficiary and click Test Decrypt: ${untestedVaults.map((b: any) => b.name).join(", ")}.`, fixUrl: "/legacy-plan", fixLabel: "Test now" });
+      }
+
+      if (uncoveredHigh.length > 0) {
+        checks.push({ id: "uncovered-high", severity: "critical", title: `${uncoveredHigh.length} high-value wallet${uncoveredHigh.length > 1 ? "s" : ""} not covered`, message: `Wallets totaling ${uncoveredHigh.map(w => `$${Math.round(w.usd).toLocaleString()} (${w.chain})`).join(", ")} have no beneficiary instructions. Your family won't know they exist.`, fixUrl: "/legacy-plan", fixLabel: "Add coverage" });
+      }
+
+      const slip39Total = (plan as any).slip39TotalShards;
+      const slip39Threshold = (plan as any).slip39Threshold;
+      if (slip39Total) {
+        const beneficiariesWithShards = beneficiaries.filter((b: any) => Number.isFinite(b.shardIndex)).length;
+        if (beneficiariesWithShards < slip39Total) {
+          checks.push({ id: "slip39-mismatch", severity: "critical", title: "SLIP-39 shards not fully distributed", message: `You generated ${slip39Total} shards (need ${slip39Threshold} to reconstruct) but only ${beneficiariesWithShards} are assigned to beneficiaries. The remaining ${slip39Total - beneficiariesWithShards} shard${slip39Total - beneficiariesWithShards > 1 ? "s have" : " has"} nowhere to go.`, fixUrl: "/legacy-plan", fixLabel: "Assign shards" });
+        }
+        const slip39Set = new Set(beneficiaries.map((b: any) => b.shardIndex).filter((n: any) => Number.isFinite(n)));
+        if (slip39Set.size < beneficiariesWithShards) {
+          checks.push({ id: "slip39-duplicate", severity: "critical", title: "Duplicate SLIP-39 shards assigned", message: "Two or more beneficiaries hold the same shard. Threshold reconstruction will fail.", fixUrl: "/legacy-plan", fixLabel: "Fix assignments" });
+        }
+      }
+
+      const pendingOld = beneficiaries.filter((b: any) => b.confirmationStatus === "pending" && b.confirmationSentAt && (Date.now() - new Date(b.confirmationSentAt).getTime()) > 14 * 86400000);
+      if (pendingOld.length > 0) {
+        checks.push({ id: "pending-beneficiaries", severity: "warning", title: `${pendingOld.length} beneficiary email${pendingOld.length > 1 ? "s" : ""} unconfirmed > 14 days`, message: `${pendingOld.map((b: any) => b.name).join(", ")} never clicked the confirmation link. They may have wrong/dead email addresses.`, fixUrl: "/legacy-plan", fixLabel: "Resend or fix" });
+      }
+
+      const declined = beneficiaries.filter((b: any) => b.confirmationStatus === "declined");
+      if (declined.length > 0) {
+        checks.push({ id: "declined-beneficiaries", severity: "warning", title: `${declined.length} beneficiary declined`, message: `${declined.map((b: any) => b.name).join(", ")} declined the role. Replace them or your plan has a hole.`, fixUrl: "/legacy-plan", fixLabel: "Replace" });
+      }
+
+      if (!plan.secondaryContactEmail) {
+        checks.push({ id: "no-secondary", severity: "warning", title: "No secondary contact set", message: "A secondary contact (spouse, attorney) is your last line of human verification before trigger fires.", fixUrl: "/legacy-plan", fixLabel: "Add contact" });
+      } else if (plan.secondaryContactEmail && !plan.secondaryContactVerified) {
+        checks.push({ id: "secondary-unverified", severity: "warning", title: "Secondary contact not verified", message: `${plan.secondaryContactEmail} hasn't clicked the verification link yet.`, fixUrl: "/legacy-plan", fixLabel: "Resend" });
+      }
+
+      if (uncoveredAny.length > 0 && uncoveredHigh.length === 0) {
+        checks.push({ id: "uncovered-any", severity: "warning", title: `${uncoveredAny.length} wallet${uncoveredAny.length > 1 ? "s" : ""} with balance not covered`, message: `Wallets on ${[...new Set(uncoveredAny.map(w => w.chain))].join(", ")} have balances but no instructions for survivors.`, fixUrl: "/legacy-plan", fixLabel: "Add coverage" });
+      }
+
+      const nextDue = plan.nextCheckInDue ? new Date(plan.nextCheckInDue).getTime() : 0;
+      if (nextDue && nextDue < Date.now() && plan.status === "active") {
+        const daysOverdue = Math.floor((Date.now() - nextDue) / 86400000);
+        checks.push({ id: "checkin-overdue", severity: "warning", title: `Check-in overdue by ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""}`, message: "Press 'I'm Still Here' to reset the timer before grace period begins.", fixUrl: "/legacy-plan", fixLabel: "Check in" });
+      }
+
+      if (!plan.personalMessage && !dismissed.includes("personal-message")) {
+        checks.push({ id: "personal-message", severity: "tip", title: "Write a personal message", message: "A short note to your survivors is the human touch they will remember most. Even one sentence helps.", fixUrl: "/legacy-plan", fixLabel: "Write message" });
+      }
+
+      if (!slip39Total && !dismissed.includes("slip39-tip") && beneficiaries.length >= 2) {
+        checks.push({ id: "slip39-tip", severity: "tip", title: "Consider SLIP-39 splitting", message: "Splitting a seed across multiple beneficiaries removes the single-point-of-failure risk. With 2+ beneficiaries you can use 2-of-3 or 3-of-5.", fixUrl: "/slip39-setup", fixLabel: "Learn more" });
+      }
+
+      if (!plan.lastExportedAt && !dismissed.includes("export-tip")) {
+        checks.push({ id: "export-tip", severity: "tip", title: "Export a Survivability snapshot", message: "Print or save a one-page PDF that survivors can use even if CryptoOwnBank is unreachable.", fixUrl: "/legacy-plan", fixLabel: "Export" });
+      }
+
+      let score = 100;
+      for (const c of checks) {
+        if (c.severity === "critical") score -= 20;
+        else if (c.severity === "warning") score -= 8;
+        else score -= 2;
+      }
+      score = Math.max(0, Math.min(100, score));
+
+      res.json({
+        score,
+        totalWallets: walletInfos.length,
+        coveredWallets: referencedAddrs.size,
+        totalBeneficiaries: beneficiaries.length,
+        confirmedBeneficiaries: beneficiaries.filter((b: any) => b.confirmationStatus === "confirmed").length,
+        slip39: slip39Total ? { total: slip39Total, threshold: slip39Threshold, assigned: beneficiaries.filter((b: any) => Number.isFinite(b.shardIndex)).length } : null,
+        checks,
+      });
+    } catch (e) {
+      console.error("readiness error:", e);
+      res.status(500).json({ message: "Failed to compute readiness" });
+    }
+  });
+
   const VALID_WALLET_TYPES = ["cypherock", "ledger", "ledger-stax", "trezor", "xaman", "tangem", "coldcard", "ellipal", "keystone", "bitbox", "arculus", "safepal", "metamask", "trust", "phantom", "exodus", "uniswap", "coinbase-wallet", "exchange", "manual", "other"];
 
   function escapeHtml(str: string): string {
@@ -9120,6 +9296,12 @@ textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;f
       const confirmationToken = makeToken();
       const now = new Date();
       const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const hasVault = !!encryptedVault;
+      const vaultTestedClient = req.body?.vaultTested === true;
+      if (hasVault && !vaultTestedClient) {
+        return res.status(400).json({ message: "Test Decrypt your encrypted vault before saving. This guarantees your survivors can actually open it." });
+      }
+      const shardIndexNum = Number.isFinite(Number(req.body?.shardIndex)) ? Number(req.body?.shardIndex) : null;
       const beneficiary = await storage.createLegacyBeneficiary({
         legacyPlanId: plan.id,
         name: String(name).slice(0, 200),
@@ -9134,6 +9316,9 @@ textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;f
         splitPieces: splitPieces ? String(splitPieces).slice(0, 500) : null,
         encryptedVault: encryptedVault ? String(encryptedVault).slice(0, 50000) : null,
         encryptedVaultHint: encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null,
+        vaultTested: hasVault ? true : false,
+        vaultTestedAt: hasVault ? now : null,
+        shardIndex: shardIndexNum,
         walletAssetSummary: walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null,
         fallbackRecipients: cleanFallbacks.length ? cleanFallbacks : null,
         confirmationStatus: "pending",
@@ -9180,8 +9365,29 @@ textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;f
       if (seedPhraseInstructions !== undefined) safeUpdates.seedPhraseInstructions = seedPhraseInstructions ? String(seedPhraseInstructions).slice(0, 2000) : null;
       if (additionalNotes !== undefined) safeUpdates.additionalNotes = additionalNotes ? String(additionalNotes).slice(0, 5000) : null;
       if (splitPieces !== undefined) safeUpdates.splitPieces = splitPieces ? String(splitPieces).slice(0, 500) : null;
-      if (encryptedVault !== undefined) safeUpdates.encryptedVault = encryptedVault ? String(encryptedVault).slice(0, 50000) : null;
+      let vaultChanged = false;
+      if (encryptedVault !== undefined) {
+        const newVault = encryptedVault ? String(encryptedVault).slice(0, 50000) : null;
+        safeUpdates.encryptedVault = newVault;
+        if ((newVault || null) !== (existing.encryptedVault || null)) vaultChanged = true;
+      }
       if (encryptedVaultHint !== undefined) safeUpdates.encryptedVaultHint = encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null;
+      if (vaultChanged) {
+        const willHaveVault = !!safeUpdates.encryptedVault;
+        const vaultTestedClient = req.body?.vaultTested === true;
+        if (willHaveVault && !vaultTestedClient) {
+          return res.status(400).json({ message: "Test Decrypt the new encrypted vault before saving. Editing the vault clears the previous test." });
+        }
+        safeUpdates.vaultTested = willHaveVault ? true : false;
+        safeUpdates.vaultTestedAt = willHaveVault ? new Date() : null;
+      } else if (req.body?.vaultTested === true && existing.encryptedVault) {
+        safeUpdates.vaultTested = true;
+        safeUpdates.vaultTestedAt = new Date();
+      }
+      if (req.body?.shardIndex !== undefined) {
+        const n = Number(req.body.shardIndex);
+        safeUpdates.shardIndex = Number.isFinite(n) ? n : null;
+      }
       if (walletAssetSummary !== undefined) safeUpdates.walletAssetSummary = walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null;
       if (emailChanged) {
         const newToken = makeToken();

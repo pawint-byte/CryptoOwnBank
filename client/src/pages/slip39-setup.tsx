@@ -84,6 +84,14 @@ export default function Slip39SetupPage() {
       const flat = result.shards.map((s) => s.mnemonic);
       setShares(flat);
       toast({ title: "Shards generated", description: `${flat.length} SLIP-39 shares created in your browser.` });
+      try {
+        await fetch("/api/legacy-plan/slip39", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ totalShards: preset.total, threshold: preset.threshold }),
+        });
+      } catch {}
     } catch (e: any) {
       setError(e?.message || "Failed to generate shards.");
     } finally {

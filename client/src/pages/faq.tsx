@@ -7,6 +7,7 @@ import { SeoHead } from "@/components/seo-head";
 
 const faqGroups = [
   {
+    groupKey: "about",
     heading: "About CryptoOwnBank",
     items: [
       {
@@ -60,6 +61,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "wallet-security",
     heading: "Wallet & Security Basics",
     items: [
       {
@@ -133,6 +135,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "exchange-risks",
     heading: "Exchange Risks & Exit Strategies",
     items: [
       {
@@ -158,6 +161,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "yield-vaults",
     heading: "Yield Vaults (Soil, Doppler & Blend)",
     items: [
       {
@@ -231,6 +235,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "stablecoins",
     heading: "Stablecoins & Real-World Assets",
     items: [
       {
@@ -256,6 +261,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "exchange-imports",
     heading: "Importing Exchange Data",
     items: [
       {
@@ -273,6 +279,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "statements",
     heading: "Statement Uploads",
     items: [
       {
@@ -294,6 +301,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "getting-started",
     heading: "Getting Started & Transfers",
     items: [
       {
@@ -327,6 +335,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "pricing",
     heading: "Pricing & Plans",
     items: [
       {
@@ -436,6 +445,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "recommendations",
     heading: "Recommendations & Yield Optimization",
     items: [
       {
@@ -465,6 +475,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "tax",
     heading: "Tax Reporting & Filing",
     items: [
       {
@@ -502,6 +513,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "xrpl-tools",
     heading: "XRPL Tools",
     items: [
       {
@@ -695,6 +707,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "token-research",
     heading: "Token Research",
     items: [
       {
@@ -740,6 +753,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "payments",
     heading: "Payments & Business",
     items: [
       {
@@ -809,6 +823,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "amm-flare",
     heading: "XRPL AMM Pools & Flare FTSO",
     items: [
       {
@@ -850,6 +865,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "mobile",
     heading: "Mobile App & PWA",
     items: [
       {
@@ -867,6 +883,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "learn-more",
     heading: "Learn More",
     items: [
       {
@@ -888,6 +905,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "secure-storage",
     heading: "Secure Crypto Storage Options",
     items: [
       {
@@ -921,6 +939,7 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "safety",
     heading: "Safety & Disclaimers",
     items: [
       {

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { LegacyReadinessPanel } from "@/components/legacy-readiness-panel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1160,6 +1161,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     }
   };
 
+  const [vaultTestPassed, setVaultTestPassed] = useState(false);
   const handleTestDecrypt = async () => {
     if (!encryptedVaultResult) return;
     try {
@@ -1178,13 +1180,18 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
       );
       const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
       setTestDecryptResult(new TextDecoder().decode(decrypted));
+      setVaultTestPassed(true);
     } catch {
       setTestDecryptResult("DECRYPTION FAILED — check your passphrase");
+      setVaultTestPassed(false);
     }
   };
 
   const saveBeneficiary = useMutation({
     mutationFn: () => {
+      const vaultDirty = isEditing && editBeneficiary
+        ? (encryptedVaultResult || null) !== ((editBeneficiary as any).encryptedVault || null)
+        : !!encryptedVaultResult;
       const payload: any = {
         name, email, relationship: relationship || null,
         beneficiaryGroup: beneficiaryGroup.trim() || null,
@@ -1196,6 +1203,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
         splitPieces: splitPieces || null,
         encryptedVault: encryptedVaultResult || null,
         encryptedVaultHint: vaultHint || null,
+        vaultTested: encryptedVaultResult ? (vaultDirty ? vaultTestPassed : true) : false,
         walletAssetSummary: walletAssetSummary || null,
         fallbackRecipients: fallbackRecipients.filter(f => f.name.trim() && f.email.trim()).map(f => ({ name: f.name.trim(), email: f.email.trim().toLowerCase() })),
       };
@@ -2171,6 +2179,8 @@ export default function LegacyPlanPage() {
       </div>
 
       <StatusBanner plan={plan} />
+
+      <LegacyReadinessPanel />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
