@@ -266,6 +266,10 @@ XRPL flag reference: `tfPassive`=0x00010000, `tfImmediateOrCancel`=0x00020000, `
 
 ## COMPLETED
 
+- [2026-04-21] Legacy Plan v2 — three new safety features end-to-end:
+  1. **Survivability Export** — `/api/legacy-plan/export` produces a self-contained, printable HTML file with every beneficiary, fallback, encrypted vault, and plan settings. Annual reminder email auto-sent by scheduler when `lastExportedAt` > 365 days. New "Survivability Export" card on dashboard with overdue warning.
+  2. **Fallback recipients per beneficiary** — `fallbackRecipients` jsonb (max 5 {name,email}). When a beneficiary lapses ack window or is marked deceased, scheduler routes the packet to fallbacks FIRST, before any group per-capita redistribution. Editor in beneficiary form Step 1.
+  3. **Secondary-contact early-trigger w/ 30-day veto** — verify-contact now mints `earlyTriggerRequestToken` and emails secondary their personal request URL. They can submit a request with notes; owner gets a veto email; if no veto in `earlyTriggerVetoDays` (default 30), scheduler auto-fires grace→trigger. Veto link doubles as a check-in (resets dead-man switch). Big red banner on owner dashboard with countdown + check-in button.
 - [2026-03-24] Noah Cash-to-Stablecoin on-ramp added to all 16 Ledger entries on Buy Crypto page (bank transfer USD/EUR to instant USDC/USDT, no credit card needed) + FAQ entry added
 - [2026-03-24] CL Card (Ledger Visa debit by Baanx) added to Crypto Debit Cards page as featured card — 1% cashback in BTC/USDC/USDT, Apple/Google Pay, hardware wallet security — uses Ledger referral link. FAQ updated to mention CL Card.
 - [2026-03-24] Server startup crash fixed ("app is not defined" — Gnosis Pay code was placed inside `startPriceAlertChecker()` which has no `app` in scope; moved to `registerRoutes()`)

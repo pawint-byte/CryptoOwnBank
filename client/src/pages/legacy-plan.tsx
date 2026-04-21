@@ -67,6 +67,11 @@ type LegacyPlanData = {
     lastAnnualReview: string | null;
     nextAnnualReviewDue: string | null;
     annualReviewCount: number | null;
+    lastExportedAt: string | null;
+    earlyTriggerRequestedAt: string | null;
+    earlyTriggerVetoedAt: string | null;
+    earlyTriggerVetoDays: number | null;
+    earlyTriggerRequestNotes: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -965,6 +970,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   const [seedPhraseInstructions, setSeedPhraseInstructions] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [splitPieces, setSplitPieces] = useState("");
+  const [fallbackRecipients, setFallbackRecipients] = useState<Array<{ name: string; email: string }>>([]);
   const [templateFields, setTemplateFields] = useState<Record<string, string>>({});
   const [walletAssetSummary, setWalletAssetSummary] = useState("");
   const [selectedWalletIds, setSelectedWalletIds] = useState<string[]>([]);
@@ -993,6 +999,8 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     setSeedPhraseInstructions(editBeneficiary.seedPhraseInstructions || "");
     setSplitPieces(editBeneficiary.splitPieces || "");
     setWalletAssetSummary(editBeneficiary.walletAssetSummary || "");
+    const fb = (editBeneficiary as any).fallbackRecipients;
+    setFallbackRecipients(Array.isArray(fb) ? fb.map((f: any) => ({ name: String(f?.name || ""), email: String(f?.email || "") })) : []);
 
     const wt = editBeneficiary.walletType ? WALLET_TYPES[editBeneficiary.walletType] : null;
     const rawNotes = editBeneficiary.additionalNotes || "";
@@ -1139,6 +1147,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
         encryptedVault: encryptedVaultResult || null,
         encryptedVaultHint: vaultHint || null,
         walletAssetSummary: walletAssetSummary || null,
+        fallbackRecipients: fallbackRecipients.filter(f => f.name.trim() && f.email.trim()).map(f => ({ name: f.name.trim(), email: f.email.trim().toLowerCase() })),
       };
       if (isEditing && editBeneficiary) {
         return apiRequest("PATCH", `/api/legacy-beneficiaries/${editBeneficiary.id}`, payload);
@@ -1156,7 +1165,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   });
 
   const resetForm = () => {
-    setStep(1); setName(""); setEmail(""); setRelationship(""); setBeneficiaryGroup(""); setWalletNickname(""); setWalletType("");
+    setStep(1); setName(""); setEmail(""); setRelationship(""); setBeneficiaryGroup(""); setWalletNickname(""); setWalletType(""); setFallbackRecipients([]);
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
     setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
     setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
@@ -1255,6 +1264,25 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+              <Label className="flex items-center gap-1.5 text-sm font-medium">
+                Fallback Recipients (optional)
+              </Label>
+              <p className="text-[11px] text-muted-foreground">If this beneficiary doesn't acknowledge the packet within your contingency window — or you mark them deceased — their packet is sent to these people first, before any group redistribution. Max 5.</p>
+              {fallbackRecipients.map((fb, i) => (
+                <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2" data-testid={`row-fallback-${i}`}>
+                  <Input value={fb.name} onChange={(e) => setFallbackRecipients(prev => prev.map((p, j) => j === i ? { ...p, name: e.target.value } : p))} placeholder="Name" data-testid={`input-fallback-name-${i}`} />
+                  <Input type="email" value={fb.email} onChange={(e) => setFallbackRecipients(prev => prev.map((p, j) => j === i ? { ...p, email: e.target.value } : p))} placeholder="email@example.com" data-testid={`input-fallback-email-${i}`} />
+                  <Button variant="ghost" size="sm" onClick={() => setFallbackRecipients(prev => prev.filter((_, j) => j !== i))} data-testid={`button-remove-fallback-${i}`}>Remove</Button>
+                </div>
+              ))}
+              {fallbackRecipients.length < 5 && (
+                <Button variant="outline" size="sm" onClick={() => setFallbackRecipients(prev => [...prev, { name: "", email: "" }])} data-testid="button-add-fallback">
+                  + Add fallback recipient
+                </Button>
+              )}
             </div>
 
             {splitEnabled && (
@@ -1507,6 +1535,101 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SurvivabilityExportCard({ plan }: { plan: LegacyPlanData["plan"] }) {
+  const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
+  const lastExport = plan.lastExportedAt ? new Date(plan.lastExportedAt) : null;
+  const daysAgo = lastExport ? Math.floor((Date.now() - lastExport.getTime()) / 86400000) : null;
+  const overdue = daysAgo !== null && daysAgo >= 365;
+  const handleExport = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/legacy-plan/export", { credentials: "include" });
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const cd = res.headers.get("content-disposition") || "";
+      const m = cd.match(/filename="?([^";]+)"?/);
+      a.download = m ? m[1] : `cryptoownbank-legacy-export-${new Date().toISOString().slice(0,10)}.html`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      toast({ title: "Export downloaded", description: "Print it and store it somewhere physical (safe, attorney, etc.)." });
+    } catch (e: any) {
+      toast({ title: "Export failed", description: String(e?.message || e), variant: "destructive" });
+    } finally { setDownloading(false); }
+  };
+  return (
+    <Card className={overdue ? "border-amber-500" : ""} data-testid="card-survivability-export">
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-3">
+            <Download className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">Survivability Export</p>
+              <p className="text-xs text-muted-foreground max-w-xl">
+                One self-contained HTML file with every beneficiary, fallback, and encrypted vault. Print it and store it physically. Re-export annually.
+                {lastExport ? ` · Last exported ${daysAgo === 0 ? "today" : `${daysAgo} day${daysAgo !== 1 ? "s" : ""} ago`}.` : " · Not exported yet."}
+              </p>
+            </div>
+          </div>
+          <Button onClick={handleExport} disabled={downloading} variant={overdue ? "default" : "outline"} size="sm" data-testid="button-export-legacy">
+            <Download className="h-4 w-4 mr-2" />
+            {downloading ? "Generating..." : overdue ? "Re-export now (overdue)" : "Download Export"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EarlyTriggerBanner({ plan }: { plan: LegacyPlanData["plan"] }) {
+  if (!plan.earlyTriggerRequestedAt || plan.earlyTriggerVetoedAt) return null;
+  if (plan.status === "triggered") return null;
+  const requestedAt = new Date(plan.earlyTriggerRequestedAt);
+  const vetoDays = plan.earlyTriggerVetoDays || 30;
+  const deadline = new Date(requestedAt.getTime() + vetoDays * 86400000);
+  const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 86400000));
+  const checkIn = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/legacy-plan/check-in"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+    },
+  });
+  return (
+    <Card className="border-2 border-red-500 bg-red-50 dark:bg-red-950/30" data-testid="card-early-trigger-banner">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg flex items-center gap-2 text-red-700 dark:text-red-400">
+          <AlertTriangle className="h-5 w-5" />
+          Early-Trigger Request Pending — {daysLeft} day{daysLeft !== 1 ? "s" : ""} to veto
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-red-800 dark:text-red-300">
+          Your secondary contact <strong>{plan.secondaryContactName || "your secondary contact"}</strong> requested an early trigger on <strong>{requestedAt.toLocaleDateString()}</strong>.
+          Unless you act, your Legacy Plan will trigger automatically on <strong>{deadline.toLocaleDateString()}</strong> and all beneficiary packets will be delivered.
+        </p>
+        {plan.earlyTriggerRequestNotes && (
+          <div className="p-2 rounded border bg-white/50 dark:bg-black/20 text-xs">
+            <strong>Their notes:</strong> {plan.earlyTriggerRequestNotes}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Vetoing also counts as a check-in (it resets your dead-man switch). The veto link was emailed to you when the request was made — find that email or check in below to silence the request.
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => checkIn.mutate()} disabled={checkIn.isPending} className="bg-red-600 hover:bg-red-700" data-testid="button-veto-via-checkin">
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            {checkIn.isPending ? "Sending..." : "I'm Alive — Check In Now"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1955,7 +2078,11 @@ export default function LegacyPlanPage() {
         </Card>
       </div>
 
+      <EarlyTriggerBanner plan={plan} />
+
       <AnnualReviewSection plan={plan} />
+
+      <SurvivabilityExportCard plan={plan} />
 
       <SplitDeliverySection plan={plan} beneficiaries={beneficiaries} />
 

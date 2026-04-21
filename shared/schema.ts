@@ -1011,11 +1011,21 @@ export const legacyPlans = pgTable("legacy_plans", {
   beneficiaryHeartbeatFrequency: varchar("beneficiary_heartbeat_frequency", { length: 20 }).default("annual"),
   nextBeneficiaryHeartbeatDue: timestamp("next_beneficiary_heartbeat_due"),
   contingencyRedistributionDays: integer("contingency_redistribution_days").default(14),
+  lastExportedAt: timestamp("last_exported_at"),
+  exportReminderSentAt: timestamp("export_reminder_sent_at"),
+  earlyTriggerRequestToken: varchar("early_trigger_request_token", { length: 100 }),
+  earlyTriggerRequestedAt: timestamp("early_trigger_requested_at"),
+  earlyTriggerRequestNotes: text("early_trigger_request_notes"),
+  earlyTriggerVetoToken: varchar("early_trigger_veto_token", { length: 100 }),
+  earlyTriggerVetoedAt: timestamp("early_trigger_vetoed_at"),
+  earlyTriggerVetoDays: integer("early_trigger_veto_days").default(30),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_legacy_plans_user").on(table.userId),
   index("idx_legacy_plans_status").on(table.status),
+  index("idx_legacy_plans_early_veto_token").on(table.earlyTriggerVetoToken),
+  index("idx_legacy_plans_early_request_token").on(table.earlyTriggerRequestToken),
 ]);
 
 export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
@@ -1052,6 +1062,8 @@ export const legacyBeneficiaries = pgTable("legacy_beneficiaries", {
   heartbeatRespondedAt: timestamp("heartbeat_responded_at"),
   pendingChangeRequest: text("pending_change_request"),
   pendingChangeReviewedAt: timestamp("pending_change_reviewed_at"),
+  fallbackRecipients: jsonb("fallback_recipients"),
+  fallbackUsedAt: timestamp("fallback_used_at"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_legacy_beneficiaries_plan").on(table.legacyPlanId),

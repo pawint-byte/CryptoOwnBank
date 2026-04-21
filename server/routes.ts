@@ -8826,6 +8826,13 @@ Rules you MUST follow:
       if (secondaryContactName !== undefined) updates.secondaryContactName = secondaryContactName;
       if (secondaryContactEmail !== undefined) {
         updates.secondaryContactEmail = secondaryContactEmail;
+        if (secondaryContactEmail !== plan.secondaryContactEmail) {
+          updates.earlyTriggerRequestToken = null;
+          updates.earlyTriggerVetoToken = null;
+          updates.earlyTriggerRequestedAt = null;
+          updates.earlyTriggerVetoedAt = null;
+          updates.earlyTriggerRequestNotes = null;
+        }
         if (secondaryContactEmail && secondaryContactEmail !== plan.secondaryContactEmail) {
           const newToken = crypto.randomUUID().replace(/-/g, "");
           updates.secondaryContactVerified = false;
@@ -8877,12 +8884,19 @@ Rules you MUST follow:
         default: nextDue.setMonth(nextDue.getMonth() + 1);
       }
       await storage.createLegacyCheckIn(plan.id);
-      const updated = await storage.updateLegacyPlan(plan.id, {
+      const checkInUpdates: any = {
         lastCheckIn: now,
         nextCheckInDue: nextDue,
         status: "active",
         graceStartedAt: null,
-      });
+      };
+      if (plan.earlyTriggerRequestedAt && !plan.earlyTriggerVetoedAt) {
+        checkInUpdates.earlyTriggerVetoedAt = now;
+        checkInUpdates.earlyTriggerVetoToken = null;
+        checkInUpdates.earlyTriggerRequestedAt = null;
+        checkInUpdates.earlyTriggerRequestNotes = null;
+      }
+      const updated = await storage.updateLegacyPlan(plan.id, checkInUpdates);
       res.json(updated);
     } catch (error) {
       console.error("Check-in error:", error);
@@ -8936,7 +8950,16 @@ Rules you MUST follow:
           </body></html>
         `);
       }
-      await storage.updateLegacyPlan(plan.id, { secondaryContactVerified: true });
+      const earlyReqToken = crypto.randomUUID().replace(/-/g, "");
+      await storage.updateLegacyPlan(plan.id, { secondaryContactVerified: true, earlyTriggerRequestToken: earlyReqToken, secondaryContactVerifyToken: null });
+      try {
+        const [owner2] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+        const ownerName2 = owner2?.firstName || owner2?.email?.split("@")[0] || "the plan owner";
+        const reqUrl = `https://cryptoownbank.com/api/legacy-plan/early-trigger-request?token=${earlyReqToken}`;
+        const vetoDays = plan.earlyTriggerVetoDays || 30;
+        const { sendEarlyTriggerInstructionsToSecondary } = await import("./email");
+        await sendEarlyTriggerInstructionsToSecondary(plan.secondaryContactEmail!, plan.secondaryContactName!, ownerName2, reqUrl, vetoDays);
+      } catch (e) { console.error("Failed to email early-trigger instructions:", e); }
       res.send(`
         <html><head><title>Verified — CryptoOwnBank</title></head>
         <body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px;">
@@ -9041,6 +9064,33 @@ Rules you MUST follow:
     return crypto.randomBytes(32).toString("hex");
   }
 
+  function sanitizeFallbackRecipients(input: any): Array<{ name: string; email: string }> | null {
+    if (input === null || input === undefined || input === "") return [];
+    if (!Array.isArray(input)) return null;
+    if (input.length > 5) return null;
+    const out: Array<{ name: string; email: string }> = [];
+    for (const item of input) {
+      if (!item || typeof item !== "object") return null;
+      const name = String(item.name || "").trim().slice(0, 200);
+      const email = String(item.email || "").toLowerCase().trim().slice(0, 320);
+      if (!name && !email) continue;
+      if (!name || !email) return null;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+      out.push({ name, email });
+    }
+    return out;
+  }
+
+  function htmlPage(title: string, body: string): string {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)} — CryptoOwnBank</title>
+<style>body{font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:48px 24px;color:#222;line-height:1.55}
+h1{color:#00A4E4}h2{color:#1e3a8a}.success{color:#16a34a}.muted{color:#888;font-size:13px}
+button,form button{background:#00A4E4;color:#fff;border:0;padding:12px 24px;border-radius:8px;font-size:15px;cursor:pointer;margin-top:16px}
+button.danger{background:#dc2626}label{display:block;margin:16px 0 6px;font-weight:600}
+textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:14px;box-sizing:border-box}
+</style></head><body><h1>CryptoOwnBank</h1>${body}</body></html>`;
+  }
+
   async function dispatchBeneficiaryConfirmation(beneficiary: any, userId: string) {
     try {
       const ownerName = await getOwnerDisplayName(userId);
@@ -9058,8 +9108,10 @@ Rules you MUST follow:
       if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan requires Pro tier or Legacy Plan add-on ($9.99/mo)" });
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.status(404).json({ message: "Create a legacy plan first" });
-      const { name, email, relationship, walletType, walletNickname, beneficiaryGroup, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
+      const { name, email, relationship, walletType, walletNickname, beneficiaryGroup, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary, fallbackRecipients } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email are required" });
+      const cleanFallbacks = sanitizeFallbackRecipients(fallbackRecipients);
+      if (cleanFallbacks === null) return res.status(400).json({ message: "Fallback recipients must be a list of {name, email} (max 5)" });
       const confirmationToken = makeToken();
       const now = new Date();
       const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -9078,6 +9130,7 @@ Rules you MUST follow:
         encryptedVault: encryptedVault ? String(encryptedVault).slice(0, 50000) : null,
         encryptedVaultHint: encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null,
         walletAssetSummary: walletAssetSummary ? String(walletAssetSummary).slice(0, 10000) : null,
+        fallbackRecipients: cleanFallbacks.length ? cleanFallbacks : null,
         confirmationStatus: "pending",
         confirmationToken,
         confirmationSentAt: now,
@@ -9100,8 +9153,13 @@ Rules you MUST follow:
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
       const existing = beneficiaries.find(b => b.id === req.params.id);
       if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
-      const { name, email, relationship, walletType, walletNickname, beneficiaryGroup, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary } = req.body;
+      const { name, email, relationship, walletType, walletNickname, beneficiaryGroup, deviceInstructions, seedPhraseInstructions, additionalNotes, splitPieces, encryptedVault, encryptedVaultHint, walletAssetSummary, fallbackRecipients } = req.body;
       const safeUpdates: Record<string, unknown> = {};
+      if (fallbackRecipients !== undefined) {
+        const cleanFB = sanitizeFallbackRecipients(fallbackRecipients);
+        if (cleanFB === null) return res.status(400).json({ message: "Fallback recipients must be a list of {name, email} (max 5)" });
+        safeUpdates.fallbackRecipients = cleanFB.length ? cleanFB : null;
+      }
       if (name !== undefined) safeUpdates.name = String(name).slice(0, 200);
       let emailChanged = false;
       if (email !== undefined) {
@@ -9188,6 +9246,208 @@ Rules you MUST follow:
     } catch (error) {
       console.error("Mark deceased error:", error);
       res.status(500).json({ message: "Failed to update" });
+    }
+  });
+
+  app.get("/api/legacy-plan/export", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).send("Legacy Plan required");
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).send("No legacy plan");
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const [owner] = await db.select({ firstName: users.firstName, lastName: users.lastName, email: users.email }).from(users).where(eq(users.id, userId));
+      const ownerName = [owner?.firstName, owner?.lastName].filter(Boolean).join(" ") || owner?.email || "Plan Owner";
+      const now = new Date();
+
+      const beneSections = beneficiaries.map((b, i) => {
+        const fr: any[] = Array.isArray((b as any).fallbackRecipients) ? (b as any).fallbackRecipients : [];
+        return `
+        <section class="bene">
+          <h2>Beneficiary ${i + 1}: ${escapeHtml(b.name)}</h2>
+          <table>
+            <tr><th>Email</th><td>${escapeHtml(b.email)}</td></tr>
+            <tr><th>Relationship</th><td>${escapeHtml(b.relationship || "—")}</td></tr>
+            <tr><th>Group</th><td>${escapeHtml((b as any).beneficiaryGroup || "—")}</td></tr>
+            <tr><th>Wallet Type</th><td>${escapeHtml(b.walletType || "—")}</td></tr>
+            <tr><th>Wallet Nickname</th><td>${escapeHtml((b as any).walletNickname || "—")}</td></tr>
+            <tr><th>Confirmation Status</th><td>${escapeHtml((b as any).confirmationStatus || "pending")}</td></tr>
+            <tr><th>Marked Deceased</th><td>${(b as any).markedDeceasedAt ? "YES — " + new Date((b as any).markedDeceasedAt).toISOString() : "no"}</td></tr>
+          </table>
+          ${fr.length ? `<h3>Fallback Recipients</h3><ul>${fr.map((f: any) => `<li><strong>${escapeHtml(f.name || "")}</strong> &lt;${escapeHtml(f.email || "")}&gt;</li>`).join("")}</ul>` : ""}
+          ${b.deviceInstructions ? `<h3>Device Location</h3><p>${escapeHtml(b.deviceInstructions)}</p>` : ""}
+          ${b.seedPhraseInstructions ? `<h3>Recovery Backup Location</h3><p>${escapeHtml(b.seedPhraseInstructions)}</p>` : ""}
+          ${b.additionalNotes ? `<h3>Additional Notes</h3><pre>${escapeHtml(b.additionalNotes)}</pre>` : ""}
+          ${b.splitPieces ? `<h3>Receives (split pieces)</h3><p>${escapeHtml(b.splitPieces)}</p>` : ""}
+          ${b.walletAssetSummary ? `<h3>Asset Summary</h3><pre>${escapeHtml(b.walletAssetSummary)}</pre>` : ""}
+          ${b.encryptedVault ? `
+            <h3>Encrypted Recovery Vault</h3>
+            <p><em>Hint: ${escapeHtml(b.encryptedVaultHint || "(no hint set)")}</em></p>
+            <details><summary>Show ciphertext (base64, AES-GCM)</summary>
+              <pre class="vault">${escapeHtml(b.encryptedVault)}</pre>
+            </details>
+          ` : ""}
+        </section>`;
+      }).join("\n");
+
+      const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>CryptoOwnBank Legacy Plan Export — ${escapeHtml(ownerName)} — ${now.toISOString().slice(0,10)}</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#222;line-height:1.55}
+h1{color:#00A4E4;border-bottom:3px solid #00A4E4;padding-bottom:8px}
+h2{color:#1e3a8a;margin-top:40px;border-bottom:1px solid #ddd;padding-bottom:6px}
+h3{color:#555;margin-top:18px;font-size:14px;text-transform:uppercase;letter-spacing:0.5px}
+.warning{background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:16px;margin:20px 0;color:#991b1b}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin:20px 0}
+table{border-collapse:collapse;width:100%;margin:8px 0}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #eee;vertical-align:top}
+th{width:180px;color:#555;font-weight:600}
+pre{background:#f6f8fa;padding:10px;border-radius:6px;white-space:pre-wrap;word-break:break-word;font-size:12px}
+pre.vault{font-size:10px;max-height:240px;overflow:auto}
+section.bene{page-break-inside:avoid;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin:24px 0;background:#fafafa}
+.muted{color:#888;font-size:12px}
+@media print{body{padding:16px}section.bene{break-inside:avoid}}
+</style></head><body>
+<h1>CryptoOwnBank Legacy Plan — Survivability Export</h1>
+<p><strong>Owner:</strong> ${escapeHtml(ownerName)} (${escapeHtml(owner?.email || "")})</p>
+<p><strong>Generated:</strong> ${now.toLocaleString()}</p>
+<p><strong>Beneficiaries:</strong> ${beneficiaries.length}</p>
+
+<div class="warning">
+  <strong>This file contains the location of recovery materials and (if you set them) encrypted recovery vaults.</strong> It does NOT contain plaintext seed phrases. Treat this file like you would treat the materials it points to: store it physically (fireproof safe, safe deposit box, with your attorney). Do not email it. Do not store it in plain cloud sync. If your encrypted vaults use weak passphrases, this file is only as secure as those passphrases.
+</div>
+
+<div class="info">
+  <strong>How survivors use this file:</strong>
+  <ol>
+    <li>Each section below describes one beneficiary, what they would receive, and where the recovery materials physically live.</li>
+    <li>Encrypted vaults are AES-GCM ciphertext (base64). The owner shared the passphrase with each beneficiary out of band. To decrypt, paste the ciphertext into the open-source decryption tool documented at <code>cryptoownbank.com/decrypt</code>, or use the offline script included in any annual export ZIP.</li>
+    <li>Re-export this file annually after any change to your beneficiaries or wallets.</li>
+  </ol>
+</div>
+
+<h2>Plan Settings</h2>
+<table>
+  <tr><th>Status</th><td>${escapeHtml(plan.status)}</td></tr>
+  <tr><th>Check-in frequency</th><td>${escapeHtml(plan.checkInFrequency)}</td></tr>
+  <tr><th>Grace period (days)</th><td>${plan.gracePeriodDays}</td></tr>
+  <tr><th>Last check-in</th><td>${plan.lastCheckIn ? new Date(plan.lastCheckIn).toLocaleString() : "—"}</td></tr>
+  <tr><th>Next check-in due</th><td>${plan.nextCheckInDue ? new Date(plan.nextCheckInDue).toLocaleString() : "—"}</td></tr>
+  <tr><th>Secondary contact</th><td>${escapeHtml(plan.secondaryContactName || "—")} ${plan.secondaryContactEmail ? `&lt;${escapeHtml(plan.secondaryContactEmail)}&gt;` : ""} ${plan.secondaryContactVerified ? "(verified)" : "(unverified)"}</td></tr>
+  <tr><th>Beneficiary heartbeat</th><td>${plan.beneficiaryHeartbeatEnabled ? `enabled, ${escapeHtml(plan.beneficiaryHeartbeatFrequency || "annual")}` : "disabled"}</td></tr>
+  <tr><th>Contingency redistribution window</th><td>${plan.contingencyRedistributionDays} days</td></tr>
+  <tr><th>Early-trigger veto window</th><td>${plan.earlyTriggerVetoDays} days</td></tr>
+</table>
+
+${plan.personalMessage ? `<h2>Personal Message to Beneficiaries</h2><pre>${escapeHtml(plan.personalMessage)}</pre>` : ""}
+
+${beneSections}
+
+<p class="muted">Export ID: ${crypto.randomUUID()} — generated by CryptoOwnBank server. This file is not transmitted or stored after generation.</p>
+</body></html>`;
+
+      await storage.updateLegacyPlan(plan.id, { lastExportedAt: now } as any);
+      const filename = `cryptoownbank-legacy-export-${now.toISOString().slice(0,10)}.html`;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Cache-Control", "no-store, max-age=0");
+      res.send(html);
+    } catch (error) {
+      console.error("Export error:", error);
+      res.status(500).send("Failed to generate export");
+    }
+  });
+
+  app.get("/api/legacy-plan/early-trigger-request", async (req, res) => {
+    try {
+      const token = String(req.query.token || "");
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const plan = await storage.getLegacyPlanByEarlyTriggerRequestToken(token);
+      if (!plan) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2><p>This link is no longer valid.</p>`));
+      if (plan.status === "triggered") return res.send(htmlPage("Already triggered", `<h2>Plan already triggered</h2><p>This Legacy Plan has already been triggered. No further action is needed.</p>`));
+      if (plan.earlyTriggerRequestedAt && !plan.earlyTriggerVetoedAt) {
+        const deadline = new Date(plan.earlyTriggerRequestedAt.getTime() + (plan.earlyTriggerVetoDays || 30) * 86400000);
+        return res.send(htmlPage("Already requested", `<h2>Request already pending</h2><p>You requested early trigger on ${escapeHtml(plan.earlyTriggerRequestedAt.toLocaleString())}. The veto deadline is <strong>${escapeHtml(deadline.toLocaleString())}</strong>. The plan owner has been notified and can veto until then.</p>`));
+      }
+      const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+      const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "the plan owner";
+      res.send(htmlPage("Request Early Trigger", `
+        <h2>Request Early Trigger</h2>
+        <p>You're about to ask CryptoOwnBank to start the trigger process for <strong>${escapeHtml(ownerName)}</strong>'s Legacy Plan.</p>
+        <p>${escapeHtml(ownerName)} will receive an email with a <strong>${plan.earlyTriggerVetoDays || 30}-day veto window</strong>. If they don't veto, all beneficiary packets will be delivered automatically.</p>
+        <p>Only do this if you have reason to believe ${escapeHtml(ownerName)} cannot respond. Add brief notes about why (optional but helpful):</p>
+        <form method="POST" action="/api/legacy-plan/early-trigger-request">
+          <input type="hidden" name="token" value="${escapeHtml(token)}">
+          <label>Notes (optional)<textarea name="notes" rows="5" placeholder="e.g., Hospitalized, unable to communicate; family has confirmed; etc."></textarea></label>
+          <button type="submit" class="danger" style="background:#dc2626">Send Early-Trigger Request</button>
+        </form>
+      `));
+    } catch (e) {
+      console.error("Early trigger GET error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
+    }
+  });
+
+  app.post("/api/legacy-plan/early-trigger-request", express.urlencoded({ extended: true }) as any, async (req: any, res) => {
+    try {
+      const token = String(req.body.token || "");
+      const notes = String(req.body.notes || "").slice(0, 2000);
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const plan = await storage.getLegacyPlanByEarlyTriggerRequestToken(token);
+      if (!plan) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2>`));
+      if (plan.status === "triggered") return res.send(htmlPage("Already triggered", `<h2>Already triggered</h2>`));
+      if (plan.earlyTriggerRequestedAt && !plan.earlyTriggerVetoedAt) return res.send(htmlPage("Already requested", `<h2>Already requested</h2>`));
+
+      const vetoToken = crypto.randomUUID().replace(/-/g, "");
+      const requestedAt = new Date();
+      const vetoDays = plan.earlyTriggerVetoDays || 30;
+      await storage.updateLegacyPlan(plan.id, {
+        earlyTriggerRequestedAt: requestedAt,
+        earlyTriggerVetoToken: vetoToken,
+        earlyTriggerVetoedAt: null,
+        earlyTriggerRequestNotes: notes || null,
+      } as any);
+      const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+      const ownerName = owner?.firstName || owner?.email?.split("@")[0] || "the plan owner";
+      const ownerEmail = owner?.email || "";
+      const vetoUrl = `https://cryptoownbank.com/api/legacy-plan/veto-early-trigger?token=${vetoToken}`;
+      const deadline = new Date(requestedAt.getTime() + vetoDays * 86400000);
+      try {
+        const { sendEarlyTriggerVetoToOwner } = await import("./email");
+        if (ownerEmail) await sendEarlyTriggerVetoToOwner(ownerEmail, ownerName, plan.secondaryContactName || "your secondary contact", notes || null, vetoUrl, vetoDays, deadline);
+      } catch (e) { console.error("Failed to email owner veto link:", e); }
+      res.send(htmlPage("Request sent", `<h2 class="success">Request sent</h2><p>${escapeHtml(ownerName)} has been notified and has until <strong>${escapeHtml(deadline.toLocaleString())}</strong> to veto. If they don't veto, the plan will trigger automatically.</p><p class="muted">Thank you for handling this carefully.</p>`));
+    } catch (e) {
+      console.error("Early trigger POST error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
+    }
+  });
+
+  app.get("/api/legacy-plan/veto-early-trigger", async (req, res) => {
+    try {
+      const token = String(req.query.token || "");
+      if (!token) return res.status(400).send(htmlPage("Invalid", `<h2>Invalid link</h2>`));
+      const plan = await storage.getLegacyPlanByEarlyTriggerVetoToken(token);
+      if (!plan) return res.status(404).send(htmlPage("Not found", `<h2>Link not found</h2><p>This veto link is no longer valid.</p>`));
+      if (plan.status === "triggered") return res.send(htmlPage("Already triggered", `<h2>Too late</h2><p>The plan has already triggered. Vetoing is no longer possible. Contact support if this was a mistake.</p>`));
+      if (plan.earlyTriggerVetoedAt) return res.send(htmlPage("Already vetoed", `<h2 class="success">Already vetoed</h2><p>You already vetoed this request. Your plan is fine.</p>`));
+      const now = new Date();
+      const nextCheckIn = new Date(now.getTime() + (plan.checkInFrequency === "weekly" ? 7 : plan.checkInFrequency === "biweekly" ? 14 : plan.checkInFrequency === "quarterly" ? 90 : 30) * 86400000);
+      await storage.updateLegacyPlan(plan.id, {
+        earlyTriggerVetoedAt: now,
+        earlyTriggerVetoToken: null,
+        earlyTriggerRequestedAt: null,
+        earlyTriggerRequestNotes: null,
+        lastCheckIn: now,
+        nextCheckInDue: nextCheckIn,
+        graceStartedAt: null,
+        status: "active",
+      } as any);
+      await storage.createLegacyCheckIn(plan.id);
+      res.send(htmlPage("Vetoed", `<h2 class="success">Vetoed — your plan is safe</h2><p>The early-trigger request has been cancelled, and we've also recorded this as a check-in (your dead-man switch has been reset).</p><p class="muted">If your secondary contact keeps making false requests, consider updating them in your dashboard.</p>`));
+    } catch (e) {
+      console.error("Veto early trigger error:", e);
+      res.status(500).send(htmlPage("Error", `<h2>Something went wrong</h2>`));
     }
   });
 

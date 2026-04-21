@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { storage } from "../storage";
 import { db } from "../db";
 import { users, walletBalances, userSettings, autoWithdrawLogs, dcaOrders, type CustomVault } from "@shared/schema";
@@ -395,6 +396,41 @@ async function processLegacyPlans(): Promise<void> {
       }
     }
 
+    try {
+      const exportReminderPlans = await storage.getLegacyPlansNeedingExportReminder();
+      for (const plan of exportReminderPlans) {
+        try {
+          const [owner] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+          if (!owner?.email) continue;
+          const ownerName = owner.firstName || owner.email.split("@")[0];
+          const exportUrl = `https://cryptoownbank.com/legacy-plan?action=export`;
+          const { sendLegacyExportReminder } = await import("../email");
+          await sendLegacyExportReminder(owner.email, ownerName, exportUrl, plan.lastExportedAt || null);
+          await storage.updateLegacyPlan(plan.id, { exportReminderSentAt: now } as any);
+          console.log(`[Legacy] Sent annual export reminder to ${owner.email}`);
+        } catch (e) {
+          console.error(`[Legacy] Export reminder failed for plan ${plan.id}:`, e);
+        }
+      }
+    } catch (e) {
+      console.error("[Legacy] Export reminder loop failed:", e);
+    }
+
+    try {
+      const earlyTriggerPlans = await storage.getLegacyPlansWithPendingEarlyTrigger();
+      for (const plan of earlyTriggerPlans) {
+        if (!plan.earlyTriggerRequestedAt) continue;
+        const vetoDays = plan.earlyTriggerVetoDays || 30;
+        const deadline = new Date(plan.earlyTriggerRequestedAt.getTime() + vetoDays * 86400000);
+        if (now >= deadline && plan.status !== "triggered") {
+          console.log(`[Legacy] Plan ${plan.id} early-trigger veto window expired — triggering`);
+          await storage.updateLegacyPlan(plan.id, { status: "grace", graceStartedAt: new Date(now.getTime() - (plan.gracePeriodDays || 14) * 86400000 - 1000) } as any);
+        }
+      }
+    } catch (e) {
+      console.error("[Legacy] Early-trigger loop failed:", e);
+    }
+
     const gracePlans = await storage.getGracePeriodLegacyPlans();
     for (const plan of gracePlans) {
       if (plan.graceStartedAt) {
@@ -485,9 +521,69 @@ async function processLegacyPlans(): Promise<void> {
       try {
         const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
         const redistributionDays = plan.contingencyRedistributionDays ?? 14;
+
+        const [ownerForFallback] = await db.select({ firstName: users.firstName, email: users.email }).from(users).where(eq(users.id, plan.userId));
+        const ownerNameFB = ownerForFallback?.firstName || ownerForFallback?.email?.split("@")[0] || "The plan holder";
+        const userWalletsFB = await storage.getUserWallets(plan.userId);
+        const walletSummaryFB = userWalletsFB.map(w => ({
+          name: w.label || w.address?.slice(0, 12) + "..." || "Unnamed",
+          chain: w.chain || "Unknown",
+          address: w.address || undefined,
+          notes: w.notes || undefined,
+        }));
+        const balancesFB = await storage.getWalletBalancesByUser(plan.userId);
+        const assetMapFB = new Map<string, { balance: number; value: number }>();
+        for (const bal of balancesFB) {
+          const ex = assetMapFB.get(bal.asset) || { balance: 0, value: 0 };
+          ex.balance += parseFloat(bal.balance || "0");
+          ex.value += parseFloat(bal.usdValue || "0");
+          assetMapFB.set(bal.asset, ex);
+        }
+        const assetSummaryFB = Array.from(assetMapFB.entries())
+          .filter(([, v]) => v.balance > 0)
+          .sort((a, b) => b[1].value - a[1].value)
+          .slice(0, 20)
+          .map(([asset, v]) => ({
+            asset,
+            balance: v.balance < 0.0001 ? v.balance.toExponential(2) : v.balance.toFixed(4),
+            value: v.value > 0 ? `$${v.value.toFixed(2)}` : undefined,
+          }));
+
+        for (const b of beneficiaries) {
+          if (b.fallbackUsedAt) continue;
+          if (b.deliveryAcknowledgedAt) continue;
+          const fallbacks: any[] = Array.isArray((b as any).fallbackRecipients) ? (b as any).fallbackRecipients : [];
+          if (fallbacks.length === 0) continue;
+          const isLapsed = b.markedDeceasedAt || (b.deliveredAt && (now.getTime() - new Date(b.deliveredAt).getTime()) >= redistributionDays * 86400000 && !b.deliveryAcknowledgedAt);
+          if (!isLapsed) continue;
+          const reason = b.markedDeceasedAt
+            ? `${b.name} was marked deceased — packet routed to their fallback recipient(s)`
+            : `${b.name} did not acknowledge receipt within ${redistributionDays} days — packet routed to their fallback recipient(s)`;
+          for (const fb of fallbacks) {
+            if (!fb?.email || !fb?.name) continue;
+            try {
+              await sendLegacyBeneficiaryDelivery(
+                String(fb.email), String(fb.name), ownerNameFB,
+                plan.personalMessage,
+                b.walletType, b.deviceInstructions, b.seedPhraseInstructions,
+                b.additionalNotes, b.splitPieces, walletSummaryFB, assetSummaryFB,
+                null, null,
+                { fromName: b.name, reason },
+              );
+              console.log(`[Legacy] Fallback delivery to ${fb.name} for ${b.name}`);
+            } catch (e) {
+              console.error(`[Legacy] Fallback send failed:`, e);
+            }
+          }
+          await storage.updateLegacyBeneficiary(b.id, { fallbackUsedAt: now, redistributionDoneAt: now } as any);
+          (b as any).fallbackUsedAt = now;
+          (b as any).redistributionDoneAt = now;
+        }
+
         const groups = new Map<string, typeof beneficiaries>();
         for (const b of beneficiaries) {
           if (!b.beneficiaryGroup) continue;
+          if (b.fallbackUsedAt) continue;
           const key = b.beneficiaryGroup.toLowerCase();
           if (!groups.has(key)) groups.set(key, []);
           groups.get(key)!.push(b);

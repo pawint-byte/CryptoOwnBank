@@ -961,6 +961,131 @@ export async function sendBeneficiaryFeedbackToOwner(
   await sendEmail(to, titleMap[feedbackType], html);
 }
 
+export async function sendLegacyExportReminder(
+  to: string,
+  ownerName: string,
+  exportUrl: string,
+  lastExportedAt: Date | null,
+) {
+  const lastText = lastExportedAt
+    ? `You last exported on <strong>${lastExportedAt.toLocaleDateString()}</strong>.`
+    : `You haven't exported your plan yet.`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Annual Export Reminder</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(ownerName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          Once a year we remind Legacy Plan owners to download a fresh <strong>Survivability Export</strong> — a self-contained file with all of your beneficiary packets, recovery instructions, and encrypted vaults. Store it somewhere physical (a fireproof safe, with your attorney, on a USB drive in a safe deposit box) so your plan still works if CryptoOwnBank is ever unreachable.
+        </p>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <p style="color: #92400e; font-size: 14px; margin: 0 0 8px;"><strong>Why this matters</strong></p>
+          <p style="color: #92400e; font-size: 13px; line-height: 1.7; margin: 0;">
+            Your plan is non-custodial — we don't hold your seed phrases. The export is your offline backup of "where everything is" and the encrypted recovery data. ${lastText}
+          </p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${exportUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Download My Survivability Export
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center;">
+          The export is generated on demand and only sent to your browser. It never sits on our servers.
+        </p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Annual reminder — download your Legacy Plan export`, html);
+}
+
+export async function sendEarlyTriggerInstructionsToSecondary(
+  to: string,
+  secondaryName: string,
+  ownerName: string,
+  requestUrl: string,
+  vetoDays: number,
+) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Secondary Contact Instructions</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(secondaryName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          You've been verified as the <strong>secondary contact</strong> on ${escapeHtml(ownerName)}'s CryptoOwnBank Legacy Plan. Save this email — it contains the link you'll need if something happens.
+        </p>
+        <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <p style="color: #991b1b; font-size: 14px; margin: 0 0 8px;"><strong>If ${escapeHtml(ownerName)} has passed away or become incapacitated</strong></p>
+          <p style="color: #991b1b; font-size: 13px; line-height: 1.7; margin: 0 0 12px;">
+            You can request that the Legacy Plan be triggered early. ${escapeHtml(ownerName)} will receive an email with a <strong>${vetoDays}-day veto window</strong> — if they don't veto (because they can't or because the request is correct), the plan triggers and beneficiary packets go out automatically.
+          </p>
+          <p style="color: #991b1b; font-size: 13px; line-height: 1.7; margin: 0;">
+            <strong>Only use this link if you have reason to believe ${escapeHtml(ownerName)} cannot respond.</strong> A false trigger costs them ${vetoDays} days of stress to veto.
+          </p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${requestUrl}" style="display: inline-block; background: #dc2626; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Request Early Trigger
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center; line-height: 1.6;">
+          Bookmark this email. The link is unique to you and ${escapeHtml(ownerName)}'s plan.
+        </p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `${ownerName}'s Legacy Plan — secondary contact instructions (save this email)`, html);
+}
+
+export async function sendEarlyTriggerVetoToOwner(
+  to: string,
+  ownerName: string,
+  secondaryName: string,
+  requestNotes: string | null,
+  vetoUrl: string,
+  vetoDays: number,
+  vetoDeadline: Date,
+) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #dc2626;">
+        <h1 style="color: #dc2626; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">URGENT — Legacy Plan Early Trigger Requested</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(ownerName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          Your secondary contact, <strong>${escapeHtml(secondaryName)}</strong>, has requested that your CryptoOwnBank Legacy Plan be triggered early. If you're reading this, the request is probably wrong — they should only do this if they believe you've passed away or become incapacitated.
+        </p>
+        <div style="background: #fef2f2; border: 2px solid #dc2626; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <p style="color: #991b1b; font-size: 16px; margin: 0 0 8px;"><strong>Action required within ${vetoDays} days</strong></p>
+          <p style="color: #991b1b; font-size: 14px; line-height: 1.7; margin: 0 0 8px;">
+            If you don't veto by <strong>${vetoDeadline.toLocaleDateString()} ${vetoDeadline.toLocaleTimeString()}</strong>, your plan will trigger and all beneficiary packets will be delivered.
+          </p>
+          ${requestNotes ? `<p style="color: #991b1b; font-size: 13px; line-height: 1.7; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid #fca5a5;"><strong>Notes from ${escapeHtml(secondaryName)}:</strong><br><span style="white-space: pre-wrap;">${escapeHtml(requestNotes)}</span></p>` : ""}
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${vetoUrl}" style="display: inline-block; background: #16a34a; color: white; padding: 16px 40px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 16px;">
+            VETO — I'm Fine
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center; line-height: 1.6;">
+          Vetoing also performs a check-in, resetting your dead-man switch. If you intentionally want the plan to trigger, just don't click anything.
+        </p>
+        <p style="color: #888; font-size: 12px; text-align: center; line-height: 1.6;">
+          You'll receive daily reminders until the deadline. After triggering, vetoing is no longer possible.
+        </p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `URGENT — Veto early trigger of your Legacy Plan within ${vetoDays} days`, html);
+}
+
 export async function sendLegacyBeneficiaryDelivery(
   to: string,
   beneficiaryName: string,

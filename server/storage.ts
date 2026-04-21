@@ -368,6 +368,10 @@ export interface IStorage {
   getLegacyBeneficiaryByConfirmationToken(token: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyBeneficiaryByHeartbeatToken(token: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyBeneficiaryByDeliveryAckToken(token: string): Promise<LegacyBeneficiary | undefined>;
+  getLegacyPlanByEarlyTriggerVetoToken(token: string): Promise<LegacyPlan | undefined>;
+  getLegacyPlanByEarlyTriggerRequestToken(token: string): Promise<LegacyPlan | undefined>;
+  getLegacyPlansNeedingExportReminder(): Promise<LegacyPlan[]>;
+  getLegacyPlansWithPendingEarlyTrigger(): Promise<LegacyPlan[]>;
   getTriggeredLegacyPlans(): Promise<LegacyPlan[]>;
   createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn>;
   getLegacyCheckIns(legacyPlanId: string, limit?: number): Promise<LegacyCheckIn[]>;
@@ -1626,6 +1630,37 @@ export class DatabaseStorage implements IStorage {
 
   async getTriggeredLegacyPlans(): Promise<LegacyPlan[]> {
     return db.select().from(legacyPlans).where(eq(legacyPlans.status, "triggered"));
+  }
+
+  async getLegacyPlanByEarlyTriggerVetoToken(token: string): Promise<LegacyPlan | undefined> {
+    const [result] = await db.select().from(legacyPlans).where(eq(legacyPlans.earlyTriggerVetoToken, token));
+    return result;
+  }
+
+  async getLegacyPlanByEarlyTriggerRequestToken(token: string): Promise<LegacyPlan | undefined> {
+    const [result] = await db.select().from(legacyPlans).where(eq(legacyPlans.earlyTriggerRequestToken, token));
+    return result;
+  }
+
+  async getLegacyPlansNeedingExportReminder(): Promise<LegacyPlan[]> {
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    return db.select().from(legacyPlans).where(
+      and(
+        eq(legacyPlans.status, "active"),
+        sql`(${legacyPlans.lastExportedAt} IS NULL OR ${legacyPlans.lastExportedAt} < ${oneYearAgo})`,
+        sql`(${legacyPlans.exportReminderSentAt} IS NULL OR ${legacyPlans.exportReminderSentAt} < ${oneYearAgo})`,
+      )
+    );
+  }
+
+  async getLegacyPlansWithPendingEarlyTrigger(): Promise<LegacyPlan[]> {
+    return db.select().from(legacyPlans).where(
+      and(
+        sql`${legacyPlans.earlyTriggerRequestedAt} IS NOT NULL`,
+        sql`${legacyPlans.earlyTriggerVetoedAt} IS NULL`,
+        sql`${legacyPlans.status} != 'triggered'`,
+      )
+    );
   }
 
   async createLegacyCheckIn(legacyPlanId: string): Promise<LegacyCheckIn> {
