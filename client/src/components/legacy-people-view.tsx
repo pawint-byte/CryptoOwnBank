@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, CheckCircle2, Clock, AlertCircle, Pencil, ShieldCheck, Send } from "lucide-react";
+import { Users, Mail, CheckCircle2, Clock, AlertCircle, Pencil, ShieldCheck, Send, FlaskConical } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -89,6 +89,17 @@ export function LegacyPeopleView({
       toast({ title: "Verification email sent", description: "They'll receive a link to confirm they still remember the passphrase." });
     },
     onError: (e: any) => toast({ title: "Couldn't send", description: e?.message || "Try again in a moment.", variant: "destructive" }),
+  });
+  const generateTestLink = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/legacy-beneficiaries/${id}/generate-test-verification-link`);
+      return res.json() as Promise<{ verifyUrl: string }>;
+    },
+    onSuccess: (data) => {
+      window.open(data.verifyUrl, "_blank", "noopener,noreferrer");
+      toast({ title: "Test link opened", description: "Dry run — your readiness score won't change either way." });
+    },
+    onError: (e: any) => toast({ title: "Couldn't generate test link", description: e?.message || "Try again in a moment.", variant: "destructive" }),
   });
 
   if (people.length === 0) {
@@ -191,17 +202,30 @@ export function LegacyPeopleView({
                         </div>
                       </div>
                       {b.encryptedVault && b.vaultVerificationCapsule && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => sendVerification.mutate(b.id)}
-                          disabled={sendVerification.isPending}
-                          title="Email this person a link to confirm they still remember the passphrase"
-                          data-testid={`button-send-verification-${b.id}`}
-                        >
-                          <Send className="h-3 w-3 mr-1" /> Verify
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => generateTestLink.mutate(b.id)}
+                            disabled={generateTestLink.isPending}
+                            title="Open the verification link in a new tab to dry-run it yourself (won't affect readiness score)"
+                            data-testid={`button-test-verification-${b.id}`}
+                          >
+                            <FlaskConical className="h-3 w-3 mr-1" /> Test
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => sendVerification.mutate(b.id)}
+                            disabled={sendVerification.isPending}
+                            title="Email this person a link to confirm they still remember the passphrase"
+                            data-testid={`button-send-verification-${b.id}`}
+                          >
+                            <Send className="h-3 w-3 mr-1" /> Verify
+                          </Button>
+                        </>
                       )}
                       <Button
                         size="sm"

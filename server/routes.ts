@@ -9949,6 +9949,30 @@ ${beneSections}
     }
   });
 
+  app.post("/api/legacy-beneficiaries/:id/generate-test-verification-link", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      if (!(existing as any).encryptedVault) return res.status(400).json({ message: "This beneficiary has no encrypted vault — nothing to test" });
+      if (!(existing as any).vaultVerificationCapsule) return res.status(400).json({ message: "Verification capsule missing — please re-encrypt the vault to enable passphrase verification" });
+      const token = makeToken();
+      await storage.updateLegacyBeneficiary(req.params.id, {
+        vaultVerificationToken: token,
+      } as any);
+      const origin = (req.headers["x-forwarded-host"] ? `https://${req.headers["x-forwarded-host"]}` : `${req.protocol}://${req.get("host")}`);
+      const verifyUrl = `${origin}/verify-passphrase/${token}?test=1`;
+      res.json({ verifyUrl });
+    } catch (error) {
+      console.error("Generate test verification link error:", error);
+      res.status(500).json({ message: "Failed to generate test link" });
+    }
+  });
+
   app.get("/api/legacy-plan/passphrase-verify/:token", async (req, res) => {
     try {
       const token = String(req.params.token || "");
@@ -9976,13 +10000,18 @@ ${beneSections}
       const beneficiary = await storage.getLegacyBeneficiaryByVaultVerificationToken(token);
       if (!beneficiary) return res.status(404).json({ message: "Invalid or expired verification link" });
       const success = req.body?.success === true;
-      if (success) {
+      const isTest = req.body?.isTest === true;
+      if (isTest) {
+        await storage.updateLegacyBeneficiary(beneficiary.id, {
+          vaultVerificationToken: null,
+        } as any);
+      } else if (success) {
         await storage.updateLegacyBeneficiary(beneficiary.id, {
           vaultVerifiedAt: new Date(),
           vaultVerificationToken: null,
         } as any);
       }
-      res.json({ success: true });
+      res.json({ success: true, testMode: isTest });
     } catch (error) {
       console.error("Passphrase verify POST error:", error);
       res.status(500).json({ message: "Failed to record verification" });

@@ -18,7 +18,9 @@ type AttemptState =
 
 export default function VerifyPassphrase() {
   const params = useParams<{ token?: string }>();
-  const token = params.token || new URLSearchParams(window.location.search).get("token") || "";
+  const search = new URLSearchParams(window.location.search);
+  const token = params.token || search.get("token") || "";
+  const isTestMode = search.get("test") === "1";
   const [load, setLoad] = useState<LoadState>({ kind: "loading" });
   const [passphrase, setPassphrase] = useState("");
   const [attempt, setAttempt] = useState<AttemptState>({ kind: "idle" });
@@ -69,7 +71,7 @@ export default function VerifyPassphrase() {
         await fetch(`/api/legacy-plan/passphrase-verify/${encodeURIComponent(token)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ success: ok }),
+          body: JSON.stringify({ success: ok, isTest: isTestMode }),
         });
       } catch {}
     } catch {
@@ -78,7 +80,7 @@ export default function VerifyPassphrase() {
         await fetch(`/api/legacy-plan/passphrase-verify/${encodeURIComponent(token)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ success: false }),
+          body: JSON.stringify({ success: false, isTest: isTestMode }),
         });
       } catch {}
     }
@@ -94,6 +96,11 @@ export default function VerifyPassphrase() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isTestMode && (
+            <div className="rounded-md border border-blue-300/60 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-700/40 p-3 text-xs leading-relaxed" data-testid="banner-test-mode">
+              <strong>TEST MODE</strong> — this is a dry run from your dashboard. Your readiness score will not change either way. Use this to confirm the link works end-to-end before sending it to a real beneficiary.
+            </div>
+          )}
           {load.kind === "loading" && (
             <div className="flex items-center gap-2 text-muted-foreground" data-testid="state-loading">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading...
