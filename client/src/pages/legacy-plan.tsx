@@ -1634,21 +1634,63 @@ function SurvivabilityExportCard({ plan }: { plan: LegacyPlanData["plan"] }) {
 function LearnSlip39Card() {
   return (
     <Card data-testid="card-learn-slip39" className="border-primary/30 bg-primary/5">
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 space-y-3">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="rounded-md bg-primary/10 p-2"><Shield className="h-5 w-5 text-primary" /></div>
             <div className="min-w-0">
-              <p className="font-medium">SLIP-39 hands-on sandbox (new)</p>
+              <p className="font-medium">SLIP-39 — split your seed across multiple people</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Learn how Shamir's Secret Sharing splits a recovery phrase across multiple people, and try it
-                yourself with safe test data. Recommended before we ship the real SLIP-39 setup for your wallets.
+                Two routes: practice with safe test data in the sandbox, or split your real wallet seed in your
+                browser and distribute shards to family. Reconstruct anytime on the recovery page.
               </p>
             </div>
           </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <Link href="/legacy-plan/learn-slip39">
-            <Button variant="outline" data-testid="link-learn-slip39">Open sandbox</Button>
+            <Button variant="outline" size="sm" data-testid="link-learn-slip39">Open sandbox (start here)</Button>
           </Link>
+          <Link href="/legacy-plan/slip39-setup">
+            <Button variant="default" size="sm" data-testid="link-slip39-setup">Split my real seed</Button>
+          </Link>
+          <Link href="/decrypt">
+            <Button variant="ghost" size="sm" data-testid="link-decrypt-from-legacy">Recover from shards</Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HighBalanceSlip39Suggestion() {
+  const { data: portfolio } = useQuery<{ totalValue?: number } | undefined>({
+    queryKey: ["/api/portfolio"],
+  });
+  const totalUsd = Number(portfolio?.totalValue || 0);
+  const threshold = 10000;
+  if (!totalUsd || totalUsd < threshold) return null;
+  return (
+    <Card className="border-amber-500/60 bg-amber-500/5" data-testid="card-slip39-suggestion">
+      <CardContent className="pt-6">
+        <div className="flex items-start gap-3">
+          <div className="rounded-md bg-amber-500/10 p-2"><AlertTriangle className="h-5 w-5 text-amber-600" /></div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Your tracked portfolio is over ${threshold.toLocaleString()} — consider SLIP-39</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              At this balance, a single seed phrase is your single point of failure. SLIP-39 splits it across
+              several trusted people so any threshold (e.g. 3 of 5) can recover, but no single person ever holds
+              the whole thing. One shard can also be auto-released by your dead-man switch.
+            </p>
+            <div className="flex gap-2 mt-3 flex-wrap">
+              <Link href="/legacy-plan/learn-slip39">
+                <Button size="sm" variant="outline">Learn how it works</Button>
+              </Link>
+              <Link href="/legacy-plan/slip39-setup">
+                <Button size="sm">Set up now</Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -2150,6 +2192,8 @@ export default function LegacyPlanPage() {
       <AnnualReviewSection plan={plan} />
 
       <SurvivabilityExportCard plan={plan} />
+
+      <HighBalanceSlip39Suggestion />
 
       <LearnSlip39Card />
 

@@ -90,6 +90,7 @@ import AdminErrorMonitor from "@/pages/admin-error-monitor";
 import XLS66Lending from "@/pages/xls66-lending";
 import LegacyPlan from "@/pages/legacy-plan";
 import LearnSlip39 from "@/pages/learn-slip39";
+import Slip39Setup from "@/pages/slip39-setup";
 import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
 import BuyCrypto from "@/pages/buy-crypto";
@@ -271,6 +272,7 @@ function AuthenticatedRoutes() {
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/legacy-plan" component={LegacyPlan} />
         <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
+        <Route path="/legacy-plan/slip39-setup" component={Slip39Setup} />
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
         <Route path="/native-staking" component={NativeStaking} />
@@ -336,6 +338,7 @@ function Router() {
         <Route path="/pay" component={PayPage} />
         <Route path="/decrypt" component={DecryptPage} />
         <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
+        <Route path="/legacy-plan/slip39-setup" component={Slip39Setup} />
         <Route path="/snapshot/:token" component={Snapshot} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
@@ -358,6 +361,7 @@ function Router() {
       <Route path="/pay" component={PayPage} />
       <Route path="/decrypt" component={DecryptPage} />
       <Route path="/legacy-plan/learn-slip39" component={LearnSlip39} />
+      <Route path="/legacy-plan/slip39-setup" component={Slip39Setup} />
       <Route path="/snapshot/:token" component={Snapshot} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />

@@ -3,11 +3,16 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    nodePolyfills({
+      include: ["crypto", "buffer", "stream", "util"],
+      globals: { Buffer: true, global: true, process: true },
+    }),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "pwa-192x192.svg", "pwa-512x512.svg", "apple-touch-icon.svg"],
