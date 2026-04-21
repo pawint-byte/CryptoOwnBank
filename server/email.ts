@@ -862,6 +862,49 @@ export async function sendBeneficiaryConfirmation(
   await sendEmail(to, `${ownerName} named you on their Legacy Plan — please confirm`, html);
 }
 
+export async function sendBeneficiaryPassphraseVerification(
+  to: string,
+  beneficiaryName: string,
+  ownerName: string,
+  verifyUrl: string,
+) {
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Legacy Plan — Passphrase Check</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333;">Hello ${escapeHtml(beneficiaryName)},</h2>
+        <p style="color: #555; line-height: 1.7; font-size: 15px;">
+          You're a beneficiary on <strong>${escapeHtml(ownerName)}</strong>'s CryptoOwnBank Legacy Plan. Part of that plan is an <strong>encrypted recovery vault</strong> — and ${escapeHtml(ownerName)} shared a passphrase with you that you'll need to open it if anything happens to them.
+        </p>
+        <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #92400e; margin: 0 0 10px; font-size: 16px;">Why this email?</h3>
+          <p style="color: #78350f; font-size: 14px; line-height: 1.7; margin: 0 0 10px;">
+            ${escapeHtml(ownerName)} asked us to confirm you still remember the passphrase. This is just a routine check — <strong>your passphrase is never sent over the internet and we never see it.</strong> The check happens entirely in your browser.
+          </p>
+          <p style="color: #78350f; font-size: 14px; line-height: 1.7; margin: 0;">
+            If you don't remember it, that's important to know <strong>now</strong> while ${escapeHtml(ownerName)} is still around to share it again — not in an emergency.
+          </p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verifyUrl}" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 36px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Verify My Passphrase
+          </a>
+        </div>
+        <p style="color: #888; font-size: 13px; text-align: center; line-height: 1.6;">
+          The verification page works in any browser, no account needed. Whether the check succeeds or fails, ${escapeHtml(ownerName)} will see the result on their dashboard so they can update the plan if needed.
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p>You're receiving this because ${escapeHtml(ownerName)} listed you as a beneficiary on CryptoOwnBank. CryptoOwnBank is non-custodial — we never store seed phrases, private keys, or passphrases.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `${ownerName} asked you to verify your Legacy Plan passphrase`, html);
+}
+
 export async function sendBeneficiaryHeartbeat(
   to: string,
   beneficiaryName: string,

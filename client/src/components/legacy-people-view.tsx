@@ -1,7 +1,10 @@
 import { useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, CheckCircle2, Clock, AlertCircle, Pencil } from "lucide-react";
+import { Users, Mail, CheckCircle2, Clock, AlertCircle, Pencil, ShieldCheck, Send } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type Beneficiary = {
   id: string;
@@ -15,8 +18,21 @@ type Beneficiary = {
   shardIndex: number | null;
   encryptedVault: string | null;
   vaultTested?: boolean;
+  vaultVerifiedAt?: string | null;
+  vaultVerificationSentAt?: string | null;
+  vaultVerificationCapsule?: string | null;
   confirmationStatus?: string;
 };
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const days = Math.floor((Date.now() - then) / 86_400_000);
+  if (days < 1) return "today";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
 
 type Person = {
   email: string;
@@ -65,6 +81,15 @@ export function LegacyPeopleView({
   onEditBeneficiary: (b: Beneficiary) => void;
 }) {
   const people = useMemo(() => groupByPerson(beneficiaries), [beneficiaries]);
+  const { toast } = useToast();
+  const sendVerification = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/legacy-beneficiaries/${id}/send-passphrase-verification`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      toast({ title: "Verification email sent", description: "They'll receive a link to confirm they still remember the passphrase." });
+    },
+    onError: (e: any) => toast({ title: "Couldn't send", description: e?.message || "Try again in a moment.", variant: "destructive" }),
+  });
 
   if (people.length === 0) {
     return (
@@ -153,8 +178,31 @@ export function LegacyPeopleView({
                               {b.vaultTested ? "vault tested" : "vault untested"}
                             </Badge>
                           )}
+                          {b.encryptedVault && b.vaultVerifiedAt && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1 text-green-600 border-green-600/40 gap-0.5" data-testid={`badge-passphrase-verified-${b.id}`}>
+                              <ShieldCheck className="h-2.5 w-2.5" /> verified {relativeTime(b.vaultVerifiedAt)}
+                            </Badge>
+                          )}
+                          {b.encryptedVault && !b.vaultVerifiedAt && b.vaultVerificationSentAt && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1 text-amber-600 border-amber-600/40">
+                              verification sent {relativeTime(b.vaultVerificationSentAt)}
+                            </Badge>
+                          )}
                         </div>
                       </div>
+                      {b.encryptedVault && b.vaultVerificationCapsule && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => sendVerification.mutate(b.id)}
+                          disabled={sendVerification.isPending}
+                          title="Email this person a link to confirm they still remember the passphrase"
+                          data-testid={`button-send-verification-${b.id}`}
+                        >
+                          <Send className="h-3 w-3 mr-1" /> Verify
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"

@@ -367,6 +367,8 @@ export interface IStorage {
   getLegacyBeneficiary(id: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyBeneficiaryByConfirmationToken(token: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyBeneficiaryByHeartbeatToken(token: string): Promise<LegacyBeneficiary | undefined>;
+  getLegacyBeneficiaryByVaultVerificationToken(token: string): Promise<LegacyBeneficiary | undefined>;
+  getLegacyPlanById(id: string): Promise<LegacyPlan | undefined>;
   getLegacyBeneficiaryByDeliveryAckToken(token: string): Promise<LegacyBeneficiary | undefined>;
   getLegacyPlanByEarlyTriggerVetoToken(token: string): Promise<LegacyPlan | undefined>;
   getLegacyPlanByEarlyTriggerRequestToken(token: string): Promise<LegacyPlan | undefined>;
@@ -1622,6 +1624,16 @@ export class DatabaseStorage implements IStorage {
 
   async getLegacyBeneficiaryByHeartbeatToken(token: string): Promise<LegacyBeneficiary | undefined> {
     const [result] = await db.select().from(legacyBeneficiaries).where(eq(legacyBeneficiaries.heartbeatToken, token));
+    return result;
+  }
+
+  async getLegacyBeneficiaryByVaultVerificationToken(token: string): Promise<LegacyBeneficiary | undefined> {
+    const [result] = await db.select().from(legacyBeneficiaries).where(eq(legacyBeneficiaries.vaultVerificationToken, token));
+    return result;
+  }
+
+  async getLegacyPlanById(id: string): Promise<LegacyPlan | undefined> {
+    const [result] = await db.select().from(legacyPlans).where(eq(legacyPlans.id, id));
     return result;
   }
 

@@ -30,6 +30,7 @@ import Signup from "@/pages/signup";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import VerifyEmail from "@/pages/verify-email";
+import VerifyPassphrase from "@/pages/verify-passphrase";
 import Dashboard from "@/pages/dashboard";
 import Transactions from "@/pages/transactions";
 import Portfolio from "@/pages/portfolio";
@@ -348,6 +349,8 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password/:token" component={ResetPassword} />
         <Route path="/verify-email/:token" component={VerifyEmail} />
+        <Route path="/verify-passphrase/:token?" component={VerifyPassphrase} />
+        <Route path="/verify-passphrase" component={VerifyPassphrase} />
         <Route component={Landing} />
       </Switch>
     );

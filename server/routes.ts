@@ -9142,6 +9142,23 @@ Rules you MUST follow:
         checks.push({ id: "untested-vault", severity: "critical", title: `${untestedVaults.length} encrypted vault${untestedVaults.length > 1 ? "s" : ""} never test-decrypted`, message: `These vaults will be delivered to your survivors but were never verified to open. Edit each beneficiary and click Test Decrypt: ${untestedVaults.map((b: any) => b.name).join(", ")}.`, fixUrl: "/legacy-plan", fixLabel: "Test now" });
       }
 
+      const SIX_MONTHS = 180 * 86400000;
+      const staleVerifications = beneficiaries.filter((b: any) => b.encryptedVault && b.vaultVerificationCapsule && (!b.vaultVerifiedAt || (Date.now() - new Date(b.vaultVerifiedAt).getTime()) > SIX_MONTHS));
+      if (staleVerifications.length > 0) {
+        const names = staleVerifications.map((b: any) => b.name).join(", ");
+        const allUnverified = staleVerifications.every((b: any) => !b.vaultVerifiedAt);
+        checks.push({
+          id: "stale-passphrase-verification",
+          severity: "warning",
+          title: allUnverified
+            ? `${staleVerifications.length} beneficiar${staleVerifications.length > 1 ? "ies have" : "y has"} never verified their passphrase`
+            : `${staleVerifications.length} passphrase verification${staleVerifications.length > 1 ? "s are" : " is"} over 6 months old`,
+          message: `Send ${names} a quick check so you know they still remember the passphrase — better to find out now than in an emergency.`,
+          fixUrl: "/legacy-plan?view=people",
+          fixLabel: "Send check",
+        });
+      }
+
       if (uncoveredHigh.length > 0) {
         checks.push({ id: "uncovered-high", severity: "critical", title: `${uncoveredHigh.length} high-value wallet${uncoveredHigh.length > 1 ? "s" : ""} not covered`, message: `Wallets totaling ${uncoveredHigh.map(w => `$${Math.round(w.usd).toLocaleString()} (${w.chain})`).join(", ")} have no beneficiary instructions. Your family won't know they exist.`, fixUrl: "/legacy-plan", fixLabel: "Add coverage" });
       }
@@ -9316,6 +9333,7 @@ textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;f
         splitPieces: splitPieces ? String(splitPieces).slice(0, 500) : null,
         encryptedVault: encryptedVault ? String(encryptedVault).slice(0, 50000) : null,
         encryptedVaultHint: encryptedVaultHint ? String(encryptedVaultHint).slice(0, 500) : null,
+        vaultVerificationCapsule: hasVault && req.body?.vaultVerificationCapsule ? String(req.body.vaultVerificationCapsule).slice(0, 5000) : null,
         vaultTested: hasVault ? true : false,
         vaultTestedAt: hasVault ? now : null,
         shardIndex: shardIndexNum,
@@ -9380,6 +9398,10 @@ textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;f
         }
         safeUpdates.vaultTested = willHaveVault ? true : false;
         safeUpdates.vaultTestedAt = willHaveVault ? new Date() : null;
+        safeUpdates.vaultVerificationCapsule = willHaveVault && req.body?.vaultVerificationCapsule ? String(req.body.vaultVerificationCapsule).slice(0, 5000) : null;
+        safeUpdates.vaultVerifiedAt = null;
+        safeUpdates.vaultVerificationToken = null;
+        safeUpdates.vaultVerificationSentAt = null;
       } else if (req.body?.vaultTested === true && existing.encryptedVault) {
         safeUpdates.vaultTested = true;
         safeUpdates.vaultTestedAt = new Date();
@@ -9895,6 +9917,75 @@ ${beneSections}
     } catch (error) {
       console.error("Send heartbeat error:", error);
       res.status(500).json({ message: "Failed to send heartbeat" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/:id/send-passphrase-verification", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) return res.status(403).json({ message: "Legacy Plan required" });
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan" });
+      const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const existing = beneficiaries.find(b => b.id === req.params.id);
+      if (!existing) return res.status(403).json({ message: "Not your beneficiary" });
+      if (!(existing as any).encryptedVault) return res.status(400).json({ message: "This beneficiary has no encrypted vault — nothing to verify" });
+      if (!(existing as any).vaultVerificationCapsule) return res.status(400).json({ message: "Verification capsule missing — please re-encrypt the vault to enable passphrase verification" });
+      const token = makeToken();
+      const now = new Date();
+      await storage.updateLegacyBeneficiary(req.params.id, {
+        vaultVerificationToken: token,
+        vaultVerificationSentAt: now,
+      } as any);
+      try {
+        const ownerName = await getOwnerDisplayName(userId);
+        const verifyUrl = `https://cryptoownbank.com/verify-passphrase?token=${token}`;
+        await sendBeneficiaryPassphraseVerification(existing.email, existing.name, ownerName, verifyUrl);
+      } catch (e) { console.error("Passphrase verification send failed:", e); }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Send passphrase verification error:", error);
+      res.status(500).json({ message: "Failed to send verification" });
+    }
+  });
+
+  app.get("/api/legacy-plan/passphrase-verify/:token", async (req, res) => {
+    try {
+      const token = String(req.params.token || "");
+      if (token.length < 16) return res.status(404).json({ message: "Invalid link" });
+      const beneficiary = await storage.getLegacyBeneficiaryByVaultVerificationToken(token);
+      if (!beneficiary) return res.status(404).json({ message: "Invalid or expired verification link" });
+      if (!(beneficiary as any).vaultVerificationCapsule) return res.status(400).json({ message: "No verification capsule on file" });
+      const plan = await storage.getLegacyPlanById((beneficiary as any).legacyPlanId);
+      const ownerName = plan ? await getOwnerDisplayName(plan.userId) : "the plan owner";
+      res.json({
+        capsule: (beneficiary as any).vaultVerificationCapsule,
+        beneficiaryName: beneficiary.name,
+        ownerName,
+      });
+    } catch (error) {
+      console.error("Passphrase verify GET error:", error);
+      res.status(500).json({ message: "Failed to load verification" });
+    }
+  });
+
+  app.post("/api/legacy-plan/passphrase-verify/:token", async (req, res) => {
+    try {
+      const token = String(req.params.token || "");
+      if (token.length < 16) return res.status(404).json({ message: "Invalid link" });
+      const beneficiary = await storage.getLegacyBeneficiaryByVaultVerificationToken(token);
+      if (!beneficiary) return res.status(404).json({ message: "Invalid or expired verification link" });
+      const success = req.body?.success === true;
+      if (success) {
+        await storage.updateLegacyBeneficiary(beneficiary.id, {
+          vaultVerifiedAt: new Date(),
+          vaultVerificationToken: null,
+        } as any);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Passphrase verify POST error:", error);
+      res.status(500).json({ message: "Failed to record verification" });
     }
   });
 

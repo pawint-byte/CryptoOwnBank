@@ -1043,6 +1043,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
   const [vaultHint, setVaultHint] = useState("");
   const [showVaultPassphrase, setShowVaultPassphrase] = useState(false);
   const [encryptedVaultResult, setEncryptedVaultResult] = useState("");
+  const [verificationCapsule, setVerificationCapsule] = useState("");
   const [testDecryptResult, setTestDecryptResult] = useState<string | null>(null);
   const [encrypting, setEncrypting] = useState(false);
 
@@ -1162,6 +1163,9 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     try {
       const encrypted = await encryptVault(vaultContent, vaultPassphrase);
       setEncryptedVaultResult(encrypted);
+      const capsuleToken = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, "0")).join("");
+      const capsule = await encryptVault(`OK:${capsuleToken}`, vaultPassphrase);
+      setVerificationCapsule(capsule);
       toast({ title: "Encrypted successfully", description: "Your recovery data has been encrypted. Test the decryption before saving." });
     } catch {
       toast({ title: "Encryption failed", description: "Something went wrong.", variant: "destructive" });
@@ -1212,6 +1216,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
         splitPieces: splitPieces || null,
         encryptedVault: encryptedVaultResult || null,
         encryptedVaultHint: vaultHint || null,
+        vaultVerificationCapsule: encryptedVaultResult ? (verificationCapsule || null) : null,
         vaultTested: encryptedVaultResult ? (vaultDirty ? vaultTestPassed : true) : false,
         walletAssetSummary: walletAssetSummary || null,
         fallbackRecipients: fallbackRecipients.filter(f => f.name.trim() && f.email.trim()).map(f => ({ name: f.name.trim(), email: f.email.trim().toLowerCase() })),
@@ -1236,7 +1241,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
     setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
     setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
-    setVaultHint(""); setEncryptedVaultResult(""); setTestDecryptResult(null); setInitialized(false);
+    setVaultHint(""); setEncryptedVaultResult(""); setVerificationCapsule(""); setTestDecryptResult(null); setInitialized(false);
   };
 
   const walletCategories = [
