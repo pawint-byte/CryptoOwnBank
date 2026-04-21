@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { LegacyReadinessPanel } from "@/components/legacy-readiness-panel";
 import { LegacyPlanSummary } from "@/components/legacy-plan-summary";
+import { LegacyPeopleView } from "@/components/legacy-people-view";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -2143,6 +2144,9 @@ export default function LegacyPlanPage() {
   });
 
   const [editingBeneficiary, setEditingBeneficiary] = useState<LegacyPlanData["beneficiaries"][0] | null>(null);
+  const [planView, setPlanView] = useState<"wallets" | "people">(() => {
+    try { const v = localStorage.getItem("legacy-plan-view"); return v === "people" ? "people" : "wallets"; } catch { return "wallets"; }
+  });
 
   if (isLoading) {
     return (
@@ -2309,19 +2313,27 @@ export default function LegacyPlanPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle className="text-lg">Beneficiaries</CardTitle>
-              <CardDescription>People who will receive your wallet recovery instructions</CardDescription>
+              <CardTitle className="text-lg">Your Plan</CardTitle>
+              <CardDescription>Two ways to look at the same plan. Pick whichever feels natural.</CardDescription>
             </div>
             <AddBeneficiaryDialog onAdd={() => {}} splitEnabled={plan.splitDeliveryEnabled ?? false} />
           </div>
+          <Tabs value={planView} onValueChange={(v) => { setPlanView(v as "wallets" | "people"); try { localStorage.setItem("legacy-plan-view", v); } catch {} }} className="mt-3">
+            <TabsList>
+              <TabsTrigger value="wallets" data-testid="tab-view-wallets">Wallets ({beneficiaries.length})</TabsTrigger>
+              <TabsTrigger value="people" data-testid="tab-view-people">People ({new Set(beneficiaries.map(b => (b.email || "").toLowerCase()).filter(Boolean)).size})</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
-          {beneficiaries.length === 0 ? (
+          {planView === "people" ? (
+            <LegacyPeopleView beneficiaries={beneficiaries as any} onEditBeneficiary={(b) => setEditingBeneficiary(b as any)} />
+          ) : beneficiaries.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground" data-testid="text-no-beneficiaries">
               <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No beneficiaries yet</p>
+              <p className="font-medium">No wallets assigned yet</p>
               <p className="text-sm">Add at least one beneficiary to complete your legacy plan</p>
             </div>
           ) : (
