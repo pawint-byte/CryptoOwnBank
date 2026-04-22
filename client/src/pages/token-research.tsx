@@ -468,7 +468,7 @@ export default function TokenResearch() {
                           {tradeableCount > 0 && <span className="text-primary font-medium"> {tradeableCount} tradeable on EVM Swap.</span>}
                           {safeCount > 0 && <span className="text-green-600 font-medium"> {safeCount} passed safety checks.</span>}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">Results sorted by tradeability and market cap. Safety checked for top EVM matches via GoPlus. Always DYOR before trading.</p>
+                        <p className="text-[10px] text-muted-foreground"><strong>Tradeable</strong> = swappable in-app via our EVM DEX (Ethereum, Base, Arbitrum, Optimism, BNB, Polygon, etc.). <strong>Not Tradeable</strong> = lives on a non-EVM chain (e.g. Hyperliquid, Solana-only tokens, app-specific L1s) — you'd need a CEX or that chain's native bridge to buy it. Results sorted by tradeability and market cap. Safety checked via GoPlus. Always DYOR.</p>
                       </div>
                     );
                   })()}
