@@ -1936,7 +1936,102 @@ async function getFetBalance(address: string): Promise<ChainBalance[]> {
   }
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "bsc" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon" | "sui" | "sonic" | "fet";
+const EVM_L2_CONFIG: Record<"base" | "arbitrum" | "optimism", { rpc: string; blockscout: string; native: string }> = {
+  base: {
+    rpc: "https://base-rpc.publicnode.com",
+    blockscout: "https://base.blockscout.com",
+    native: "ETH",
+  },
+  arbitrum: {
+    rpc: "https://arbitrum-one-rpc.publicnode.com",
+    blockscout: "https://arbitrum.blockscout.com",
+    native: "ETH",
+  },
+  optimism: {
+    rpc: "https://optimism-rpc.publicnode.com",
+    blockscout: "https://optimism.blockscout.com",
+    native: "ETH",
+  },
+};
+
+export async function getEvmL2Balance(
+  address: string,
+  chain: "base" | "arbitrum" | "optimism"
+): Promise<ChainBalance[]> {
+  const balances: ChainBalance[] = [];
+  const cfg = EVM_L2_CONFIG[chain];
+
+  try {
+    const data = await fetchJson(cfg.rpc, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getBalance",
+        params: [address, "latest"],
+      }),
+    });
+    const hexBalance = data.result;
+    if (hexBalance && hexBalance !== "0x0") {
+      const wei = BigInt(hexBalance);
+      const eth = Number(wei / 10n ** 12n) / 1e6;
+      if (eth > 0) {
+        const prices = await getPrices([cfg.native]);
+        balances.push({
+          symbol: cfg.native,
+          balance: eth,
+          usdValue: eth * (prices[cfg.native] || 0),
+        });
+      }
+    }
+  } catch (err) {
+    console.error(`${chain} native balance fetch error:`, err);
+  }
+
+  try {
+    const url = `${cfg.blockscout}/api/v2/addresses/${address}/tokens?type=ERC-20`;
+    const tokenData = await fetchJson(url);
+    const items = tokenData.items || [];
+    const tokenEntries: Array<{ symbol: string; balance: number }> = [];
+
+    for (const item of items.slice(0, 50)) {
+      const token = item.token || {};
+      const symbol = (token.symbol || "").toUpperCase();
+      const decimals = parseInt(token.decimals || "18");
+      const rawBalance = item.value || "0";
+      if (!symbol || rawBalance === "0") continue;
+      const rawBal = BigInt(rawBalance);
+      let bal: number;
+      if (decimals <= 6) {
+        bal = Number(rawBal) / Math.pow(10, decimals);
+      } else {
+        bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
+      }
+      if (bal > 0.000001) {
+        tokenEntries.push({ symbol, balance: bal });
+      }
+    }
+
+    if (tokenEntries.length > 0) {
+      const symbols = Array.from(new Set(tokenEntries.map((t) => t.symbol)));
+      const prices = await getPrices(symbols);
+      for (const t of tokenEntries) {
+        balances.push({
+          symbol: t.symbol,
+          balance: t.balance,
+          usdValue: t.balance * (prices[t.symbol] || 0),
+        });
+      }
+    }
+  } catch (err) {
+    console.error(`${chain} ERC-20 fetch error:`, err);
+  }
+
+  return balances;
+}
+
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "bsc" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon" | "sui" | "sonic" | "fet" | "base" | "arbitrum" | "optimism";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -1968,6 +2063,9 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   sui: { name: "Sui", symbol: "SUI", addressPattern: "^0x[a-fA-F0-9]{64}$", example: "0x..." },
   sonic: { name: "Sonic", symbol: "S", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   fet: { name: "Fetch.ai / ASI", symbol: "FET", addressPattern: "^(fetch1|0x)", example: "fetch1..." },
+  base: { name: "Base", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  arbitrum: { name: "Arbitrum One", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
+  optimism: { name: "Optimism", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
 };
 
 export async function getWalletBalances(chain: SupportedChain, address: string): Promise<ChainBalance[]> {
@@ -2030,6 +2128,12 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getSonicBalance(address);
     case "fet":
       return getFetBalance(address);
+    case "base":
+      return getEvmL2Balance(address, "base");
+    case "arbitrum":
+      return getEvmL2Balance(address, "arbitrum");
+    case "optimism":
+      return getEvmL2Balance(address, "optimism");
     default:
       return [];
   }
@@ -2046,6 +2150,7 @@ export function detectCorrectChain(storedChain: SupportedChain, address: string)
     "tron", "cardano", "algorand", "cosmos", "hedera", "polkadot",
     "stellar", "vechain", "cronos", "nervos", "zilliqa", "digibyte",
     "casper", "verge", "avalanche", "xdc", "polygon", "bsc", "sui", "sonic", "fet",
+    "base", "arbitrum", "optimism",
   ];
   for (const chain of priorityOrder) {
     if (chain === storedChain) continue;

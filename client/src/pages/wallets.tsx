@@ -1984,7 +1984,9 @@ export default function Wallets() {
 
   const chains = [
     { value: "algorand", label: "Algorand (ALGO)" },
+    { value: "arbitrum", label: "Arbitrum One (ETH)" },
     { value: "avalanche", label: "Avalanche C-Chain (AVAX)" },
+    { value: "base", label: "Base (ETH)" },
     { value: "bitcoin", label: "Bitcoin (BTC)" },
     { value: "bsc", label: "BNB Smart Chain (BSC)" },
     { value: "cardano", label: "Cardano (ADA)" },
@@ -1999,6 +2001,7 @@ export default function Wallets() {
     { value: "hedera", label: "Hedera (HBAR)" },
     { value: "litecoin", label: "Litecoin (LTC)" },
     { value: "nervos", label: "Nervos (CKB)" },
+    { value: "optimism", label: "Optimism (ETH)" },
     { value: "polkadot", label: "Polkadot (DOT)" },
     { value: "polygon", label: "Polygon (POL)" },
     { value: "solana", label: "Solana (SOL)" },
