@@ -417,86 +417,69 @@ export default function DcaOrders() {
 
   async function executeNow(order: DcaOrder) {
     if (order.chain === "stellar") {
-      if (isMobileDca) {
-        toast({ title: "Opening LOBSTR", description: `Open the trade in LOBSTR to execute your ${order.buyCurrency} DCA buy manually.` });
-        openLobstrForDca(order);
-        return;
-      }
+      setExecutingOrderId(order.id);
+      try {
+        const buildRes = await apiRequest("POST", `/api/dca-orders/${order.id}/stellar/build-tx`, {});
+        const data = await buildRes.json();
 
-      const freighterReady = await isFreighterInstalled();
-      if (freighterReady) {
-        setExecutingOrderId(order.id);
-        try {
-          const connectResult = await connectFreighter();
-          if (!connectResult.address) {
-            toast({ title: "Could not connect Freighter", description: connectResult.error, variant: "destructive" });
-            setExecutingOrderId(null);
+        if (data.kind === "needsTrustline") {
+          toast({
+            title: `${data.assetCode} trustline needed first`,
+            description: `LOBSTR needs a trustline to ${data.assetCode} before this trade can settle. Tap to add it (one-time, ~0.5 XLM reserve).`,
+            duration: 15000,
+            action: (
+              <ToastAction altText={`Add ${data.assetCode} trustline`} onClick={() => { window.location.href = data.trustlineDeepLink; }}>
+                Add trustline
+              </ToastAction>
+            ),
+          });
+          return;
+        }
+        if (data.kind === "needsFunding") {
+          toast({ title: "Stellar account needs funding", description: `Wallet has ${data.currentXlm} XLM, need at least ${data.minXlm} XLM to cover reserve + fee.`, variant: "destructive" });
+          return;
+        }
+        if (data.kind === "noLiquidity") {
+          toast({ title: "No DEX liquidity right now", description: `Couldn't route ${data.spendCurrency} → ${data.buyCurrency} on the Stellar DEX. Try again in a bit or check your spend balance.`, variant: "destructive" });
+          return;
+        }
+        if (data.kind !== "ready") {
+          toast({ title: "Could not prepare trade", description: data.message || "Unexpected response from server.", variant: "destructive" });
+          return;
+        }
+
+        const sinceIso = new Date().toISOString();
+        toast({ title: "Opening LOBSTR…", description: `Approve the buy in LOBSTR. We'll record the result here automatically. Expected: ~${parseFloat(data.expectedReceive).toFixed(4)} ${order.buyCurrency}.`, duration: 8000 });
+        window.location.href = data.deepLink;
+
+        const pollStart = Date.now();
+        const pollInterval = window.setInterval(async () => {
+          if (Date.now() - pollStart > 5 * 60 * 1000) {
+            window.clearInterval(pollInterval);
             return;
           }
-          const freighterAddr = connectResult.address;
-
-          const spendAmount = parseFloat(order.spendAmount);
-          const sellingAsset = {
-            code: order.spendCurrency,
-            issuer: order.spendIssuer || null,
-            type: order.spendCurrency === "XLM" ? "native" : "credit_alphanum4",
-          };
-          const buyingAsset = {
-            code: order.buyCurrency,
-            issuer: order.buyIssuer || null,
-            type: order.buyCurrency === "XLM" ? "native" : "credit_alphanum4",
-          };
-
-          const obRes = await fetch(
-            `https://horizon.stellar.org/order_book?selling_asset_type=${sellingAsset.type === "native" ? "native" : sellingAsset.type}&${sellingAsset.type !== "native" ? `selling_asset_code=${sellingAsset.code}&selling_asset_issuer=${sellingAsset.issuer}&` : ""}buying_asset_type=${buyingAsset.type === "native" ? "native" : buyingAsset.type}&${buyingAsset.type !== "native" ? `buying_asset_code=${buyingAsset.code}&buying_asset_issuer=${buyingAsset.issuer}&` : ""}limit=1`
-          );
-          let price = "1";
-          if (obRes.ok) {
-            const obData = await obRes.json();
-            if (obData.asks?.length > 0) {
-              price = obData.asks[0].price;
+          try {
+            const r = await apiRequest("GET", `/api/dca-orders/${order.id}/stellar/check-execution?since=${encodeURIComponent(sinceIso)}&token=${data.token}`);
+            const cd = await r.json();
+            if (cd.execution) {
+              window.clearInterval(pollInterval);
+              if (cd.execution.status === "completed") {
+                toast({ title: "DCA buy executed", description: `Tx ${cd.execution.txHash?.slice(0, 14)}…` });
+              } else {
+                toast({ title: "DCA buy failed in LOBSTR", description: cd.execution.errorMessage || "Check Stellar wallet for details.", variant: "destructive", duration: 12000 });
+              }
+              queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/dca-executions"] });
+            } else if (!cd.stillPending) {
+              window.clearInterval(pollInterval);
             }
-          }
-
-          const result = await buildAndSignOffer({
-            sourceAddress: freighterAddr,
-            selling: sellingAsset,
-            buying: buyingAsset,
-            amount: spendAmount.toFixed(7),
-            price,
-          });
-
-          if (result.success) {
-            toast({ title: "DCA Trade Executed", description: `Stellar trade confirmed: ${result.txHash?.slice(0, 12)}...` });
-            try {
-              await apiRequest("POST", `/api/dca/${order.id}/execution`, {
-                status: "completed",
-                executedPrice: price,
-                txHash: result.txHash,
-              });
-              queryClient.invalidateQueries({ queryKey: ["/api/dca"] });
-            } catch {}
-          } else {
-            toast({ title: "DCA Trade Failed", description: result.error, variant: "destructive" });
-          }
-        } catch (err: any) {
-          toast({ title: "Execute Error", description: err?.message || "Failed to execute Stellar DCA", variant: "destructive" });
-        } finally {
-          setExecutingOrderId(null);
-        }
-        return;
+          } catch {}
+        }, 3000);
+      } catch (err: any) {
+        toast({ title: "Could not prepare Stellar trade", description: err?.message || "Server error", variant: "destructive" });
+      } finally {
+        setExecutingOrderId(null);
       }
-      toast({
-        title: "Stellar signing tool needed",
-        description: "On desktop, install Freighter (freighter.app) to sign Stellar trades in your browser. Or open this trade in LOBSTR's web app instead.",
-        variant: "destructive",
-        duration: 15000,
-        action: (
-          <ToastAction altText="Open LOBSTR Web" onClick={() => openLobstrForDca(order)}>
-            Open LOBSTR
-          </ToastAction>
-        ),
-      });
       return;
     }
     const walletAddress = activeWallet || useXrplStore.getState().walletAddress;

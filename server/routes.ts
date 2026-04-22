@@ -11053,6 +11053,145 @@ ${beneSections}
     }
   });
 
+  app.post("/api/dca-orders/:id/stellar/build-tx", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const order = await storage.getDcaOrder(req.params.id);
+      if (!order || order.userId !== userId) {
+        return res.status(404).json({ message: "DCA order not found" });
+      }
+      if (order.chain !== "stellar") {
+        return res.status(400).json({ message: "This endpoint is for Stellar DCA orders only" });
+      }
+      if (order.status === "completed") {
+        return res.status(400).json({ message: "This DCA order is already completed" });
+      }
+
+      const wallets = await storage.getUserWallets(userId);
+      const stellarWallet = wallets.find(
+        (w) => w.chain === "stellar" && w.address.startsWith("G") && w.address.length === 56
+      );
+      if (!stellarWallet) {
+        return res.status(400).json({
+          message: "No Stellar wallet connected. Add your LOBSTR / Stellar address under Wallets first.",
+        });
+      }
+
+      const proto = (req.headers["x-forwarded-proto"] as string)?.split(",")[0] || req.protocol || "https";
+      const host = req.headers["x-forwarded-host"] || req.headers.host;
+      const publicAppUrl = `${proto}://${host}`;
+
+      const { buildStellarDcaTransaction } = await import("./services/stellar-dca");
+      const result = await buildStellarDcaTransaction({
+        order,
+        sourceAddress: stellarWallet.address,
+        publicAppUrl,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("[stellar-dca] build-tx error:", error?.message || error);
+      res.status(500).json({ message: error?.message || "Failed to prepare Stellar DCA transaction" });
+    }
+  });
+
+  app.post("/api/stellar/dca-callback", async (req: any, res) => {
+    try {
+      const token = (req.query.token as string) || "";
+      if (!token) return res.status(400).send("missing token");
+
+      const { getPendingBuild, consumePendingBuild, verifySignedXdrMatchesIntent, submitSignedStellarTransaction } = await import("./services/stellar-dca");
+      const pending = getPendingBuild(token);
+      if (!pending) return res.status(404).send("token expired or unknown");
+
+      const xdr: string | undefined = req.body?.xdr;
+      if (!xdr) return res.status(400).send("missing xdr");
+
+      const verify = verifySignedXdrMatchesIntent(xdr, pending);
+      if (!verify.ok) {
+        console.warn(`[stellar-dca] callback rejected — XDR does not match pending intent: ${verify.reason}`);
+        return res.status(400).send(`xdr/intent mismatch: ${verify.reason}`);
+      }
+
+      const order = await storage.getDcaOrder(pending.orderId);
+      if (!order || order.userId !== pending.userId) {
+        return res.status(404).send("order not found");
+      }
+      if (order.status === "completed") return res.status(400).send("order already completed");
+
+      consumePendingBuild(token);
+
+      let submitResult: { hash: string; receivedAmount?: string };
+      try {
+        submitResult = await submitSignedStellarTransaction(xdr);
+      } catch (submitErr: any) {
+        const errMsg = submitErr?.response?.data?.extras?.result_codes
+          ? JSON.stringify(submitErr.response.data.extras.result_codes)
+          : submitErr?.message || "submit failed";
+        await storage.createDcaExecution({
+          dcaOrderId: order.id,
+          userId: order.userId,
+          status: "failed",
+          spendAmount: order.spendAmount,
+          receivedAmount: null,
+          xamanPayloadId: null,
+          txHash: null,
+          errorMessage: errMsg,
+        });
+        console.error(`[stellar-dca] submit failed for order ${order.id.slice(0, 8)}: ${errMsg}`);
+        return res.status(200).send("recorded failure");
+      }
+
+      const execution = await storage.createDcaExecution({
+        dcaOrderId: order.id,
+        userId: order.userId,
+        status: "completed",
+        spendAmount: order.spendAmount,
+        receivedAmount: submitResult.receivedAmount || pending.expectedReceive,
+        xamanPayloadId: null,
+        txHash: submitResult.hash,
+        errorMessage: null,
+      });
+
+      const newRunsCompleted = (order.runsCompleted || 0) + 1;
+      const isComplete = order.totalRuns && newRunsCompleted >= order.totalRuns;
+      const { getNextRunDate } = await import("./services/payment-scheduler");
+      await storage.updateDcaOrder(order.id, {
+        lastRunAt: new Date(),
+        nextRunAt: isComplete ? order.nextRunAt : getNextRunDate(order.nextRunAt, order.frequency, order.preferredDay),
+        runsCompleted: newRunsCompleted,
+        status: isComplete ? "completed" : order.status,
+      });
+
+      console.log(`[stellar-dca] Order ${order.id.slice(0, 8)} executed via LOBSTR — tx ${submitResult.hash.slice(0, 12)}…`);
+      res.status(200).send("ok");
+    } catch (err: any) {
+      console.error("[stellar-dca] callback error:", err?.message || err);
+      res.status(500).send("internal error");
+    }
+  });
+
+  app.get("/api/dca-orders/:id/stellar/check-execution", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const order = await storage.getDcaOrder(req.params.id);
+      if (!order || order.userId !== userId) {
+        return res.status(404).json({ message: "DCA order not found" });
+      }
+      const since = req.query.since ? new Date(req.query.since as string) : new Date(Date.now() - 30 * 60 * 1000);
+      const executions = await storage.getDcaExecutionsByOrder(order.id);
+      const recent = executions.find((e) => e.executedAt && new Date(e.executedAt) >= since);
+      const { getPendingBuild } = await import("./services/stellar-dca");
+      const stillPending = req.query.token ? !!getPendingBuild(req.query.token as string) : false;
+      res.json({
+        execution: recent || null,
+        stillPending,
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message || "check failed" });
+    }
+  });
+
   app.post("/api/dca-orders/:id/reset", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -15163,21 +15302,5 @@ function startPriceAlertChecker() {
       console.error("[startup-fix-erc20] Error:", err);
     }
   }, 20000);
-
-  setTimeout(async () => {
-    try {
-      const result = await db.execute(
-        sql`UPDATE dca_orders SET status = 'paused' WHERE chain = 'stellar' AND status = 'active'`
-      );
-      const count = (result as any).rowCount ?? 0;
-      if (count > 0) {
-        console.log(`[startup-pause-stellar-dca] Paused ${count} active Stellar DCA order(s) — feature withdrawn pending Stellar wallet background-signing support.`);
-      } else {
-        console.log("[startup-pause-stellar-dca] No active Stellar DCA orders to pause.");
-      }
-    } catch (err) {
-      console.error("[startup-pause-stellar-dca] Error:", err);
-    }
-  }, 22000);
 
 }

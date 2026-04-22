@@ -82,40 +82,6 @@ import RecurringPayments from "@/pages/recurring-payments";
 import DcaOrders from "@/pages/dca-orders";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button as UiButton } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
-
-function StellarDcaUnavailable() {
-  return (
-    <div className="max-w-2xl mx-auto p-6" data-testid="page-stellar-dca-unavailable">
-      <Card className="border-yellow-500/30 bg-yellow-500/5">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-yellow-600 shrink-0 mt-0.5" />
-            <div className="space-y-2">
-              <h1 className="text-xl font-semibold">Stellar DCA is temporarily unavailable</h1>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                We've paused Stellar DCA because the wallets that support Stellar (LOBSTR, Freighter, Solar) don't yet
-                offer the background push-signing flow that XRPL DCA uses with Xaman. Without that, every Stellar DCA
-                buy would require you to manually re-enter the trade in LOBSTR — which is not actually automated DCA.
-              </p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Any existing Stellar DCA orders on your account have been paused — no buys will execute and you won't
-                be charged. We'll bring this back the moment a Stellar wallet supports proper background signing.
-              </p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                <strong>XRPL DCA still works as designed</strong> — Xaman handles push-signed approvals so each buy is one tap.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            <a href="/ownbank/dca" data-testid="link-go-xrpl-dca"><UiButton className="w-full sm:w-auto">Use XRPL DCA instead</UiButton></a>
-            <a href="/stellar/dex" data-testid="link-go-stellar-dex"><UiButton variant="outline" className="w-full sm:w-auto">Trade Stellar manually on DEX</UiButton></a>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 import TokenBuckets from "@/pages/token-buckets";
 import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
@@ -286,7 +252,7 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/dca" component={DcaOrders} />
         {/* <Route path="/token-buckets" component={TokenBuckets} /> */}{/* TODO: Hidden until cross-chain bucket execution is built */}
         <Route path="/ownbank/recurring" component={RecurringPayments} />
-        <Route path="/stellar/dca" component={StellarDcaUnavailable} />
+        <Route path="/stellar/dca" component={DcaOrders} />
         <Route path="/stellar/recurring" component={RecurringPayments} />
         <Route path="/ownbank/my-card" component={MyCard} />
         <Route path="/ownbank/payment-queue" component={PaymentQueue} />
@@ -369,7 +335,7 @@ function Router() {
         <Route path="/insurance" component={Insurance} />
         <Route path="/stellar/wallet" component={StellarWallet} />
         <Route path="/stellar/dex" component={StellarDex} />
-        <Route path="/stellar/dca" component={StellarDcaUnavailable} />
+        <Route path="/stellar/dca" component={DcaOrders} />
         <Route path="/stellar/send" component={StellarSend} />
         <Route path="/stellar/tokens" component={StellarTokens} />
         <Route path="/stellar/invoices" component={StellarInvoices} />
