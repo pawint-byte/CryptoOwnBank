@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, X } from "lucide-react";
+import { Download, X, Copy, Check } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -11,10 +11,12 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISS_KEY = "cob-pwa-dismissed-at";
 const DISMISS_DAYS = 14;
 
+type Mode = "native" | "ios-safari" | "ios-chrome" | null;
+
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [iosHint, setIosHint] = useState(false);
+  const [mode, setMode] = useState<Mode>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
@@ -26,18 +28,21 @@ export function PWAInstallPrompt() {
       (window.navigator as any).standalone === true;
     if (isStandalone) return;
 
-    const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-    const isMobile = isIos || /android/i.test(window.navigator.userAgent);
+    const ua = window.navigator.userAgent;
+    const isIos = /iphone|ipad|ipod/i.test(ua);
+    // Chrome on iOS ships as "CriOS"; Edge as "EdgiOS"; Firefox as "FxiOS"
+    const isIosNonSafari = isIos && /CriOS|EdgiOS|FxiOS/i.test(ua);
+    const isIosSafari = isIos && !isIosNonSafari;
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
+      setMode("native");
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    if (isIos && isMobile) {
-      const t = setTimeout(() => setIosHint(true), 4000);
+    if (isIos) {
+      const t = setTimeout(() => setMode(isIosSafari ? "ios-safari" : "ios-chrome"), 4000);
       return () => {
         clearTimeout(t);
         window.removeEventListener("beforeinstallprompt", handler);
@@ -49,8 +54,7 @@ export function PWAInstallPrompt() {
 
   const dismiss = () => {
     localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    setVisible(false);
-    setIosHint(false);
+    setMode(null);
   };
 
   const install = async () => {
@@ -59,13 +63,54 @@ export function PWAInstallPrompt() {
     const choice = await deferredPrompt.userChoice;
     if (choice.outcome === "accepted") {
       setDeferredPrompt(null);
-      setVisible(false);
+      setMode(null);
     } else {
       dismiss();
     }
   };
 
-  if (!visible && !iosHint) return null;
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText("https://cryptoownbank.com");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {}
+  };
+
+  if (!mode) return null;
+
+  let title = "Install CryptoOwnBank";
+  let body: string;
+  let action: React.ReactNode = null;
+
+  if (mode === "native") {
+    body = "Add to your home screen for fullscreen access and faster launch.";
+    action = (
+      <Button size="sm" className="mt-2 h-8" onClick={install} data-testid="button-install-pwa">
+        Install app
+      </Button>
+    );
+  } else if (mode === "ios-safari") {
+    body = "Tap the Share button (square with arrow up), then scroll down and tap 'Add to Home Screen'.";
+  } else {
+    title = "Open in Safari to install";
+    body = "iOS only allows installing apps from Safari. Copy the link below, open Safari, paste, then tap Share → Add to Home Screen.";
+    action = (
+      <Button
+        size="sm"
+        variant="outline"
+        className="mt-2 h-8"
+        onClick={copyUrl}
+        data-testid="button-copy-url"
+      >
+        {copied ? (
+          <><Check className="h-3.5 w-3.5 mr-1.5" />Copied</>
+        ) : (
+          <><Copy className="h-3.5 w-3.5 mr-1.5" />Copy cryptoownbank.com</>
+        )}
+      </Button>
+    );
+  }
 
   return (
     <div className="fixed bottom-20 md:bottom-4 left-4 right-4 z-[60] max-w-md mx-auto" data-testid="pwa-install-prompt">
@@ -76,23 +121,10 @@ export function PWAInstallPrompt() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium" data-testid="text-install-title">
-              Install CryptoOwnBank
+              {title}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {iosHint
-                ? "Tap the Share button, then 'Add to Home Screen' to use it like a native app."
-                : "Add to your home screen for fullscreen access and faster launch."}
-            </p>
-            {!iosHint && (
-              <Button
-                size="sm"
-                className="mt-2 h-8"
-                onClick={install}
-                data-testid="button-install-pwa"
-              >
-                Install app
-              </Button>
-            )}
+            <p className="text-xs text-muted-foreground mt-0.5">{body}</p>
+            {action}
           </div>
           <Button
             variant="ghost"
