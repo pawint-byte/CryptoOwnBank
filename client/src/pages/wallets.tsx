@@ -94,7 +94,8 @@ import { CUSTODY_KNOWLEDGE } from "@/lib/custody-knowledge";
 import { COLD_WALLETS } from "@/lib/cold-wallet-data";
 import { connectXumm, connectXummForLinkDesktop, createXummLinkPayload, pollXummLinkStatus, completePendingXummSignIn, hasPendingXummSignIn, hasPendingXummLink, getPendingXummLink, clearPendingXummLink } from "@/lib/xumm-connector";
 import type { XummLinkPayload } from "@/lib/xumm-connector";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { ToastAction } from "@/components/ui/toast";
 import type { Wallet as WalletType, WalletBalance, Position } from "@shared/schema";
 
 interface SubscriptionLimits {
@@ -1333,6 +1334,7 @@ export default function Wallets() {
   const [walletSortMode, setWalletSortMode] = useState<"value" | "name">("value");
   const [detailSortMode, setDetailSortMode] = useState<"value" | "name" | "source" | "chain">("value");
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const xrplStore = useXrplStore();
 
   const { data: xrplWalletData } = useQuery<{ walletAddress: string; walletType: string }>({
@@ -1618,6 +1620,13 @@ export default function Wallets() {
     queryKey: ["/api/subscription/limits"],
   });
 
+  const { data: userAddons } = useQuery<Array<{ addonKey: string; status: string }>>({
+    queryKey: ["/api/addons"],
+  });
+  const hasLegacyPlan = (userAddons || []).some(
+    (a) => a.status === "active" && (a.addonKey === "legacy-plan" || a.addonKey === "legacy-plan-yearly" || a.addonKey === "legacy-plan-lifetime")
+  );
+
   const [showWriteOffExcess, setShowWriteOffExcess] = useState(false);
   const [writeOffExcessForm, setWriteOffExcessForm] = useState({ reason: "scam", note: "" });
   const writeOffExcessMutation = useMutation({
@@ -1714,6 +1723,21 @@ export default function Wallets() {
       setIsDialogOpen(false);
       form.reset();
       syncMutation.mutate(wallet.id);
+
+      if (hasLegacyPlan) {
+        setTimeout(() => {
+          toast({
+            title: "Update your Legacy Plan",
+            description: "You added a new wallet — open Legacy Plan to assign a beneficiary and recovery template so this address is covered.",
+            duration: 12000,
+            action: (
+              <ToastAction altText="Open Legacy Plan" onClick={() => setLocation("/legacy-plan")} data-testid="toast-action-open-legacy">
+                Open
+              </ToastAction>
+            ) as any,
+          });
+        }, 1500);
+      }
     },
     onError: () => {
       toast({ title: "Failed to add wallet", variant: "destructive" });
