@@ -77,7 +77,6 @@ interface StellarPair {
 const XLM_NATIVE: StellarAsset = { code: "XLM", issuer: null, display: "XLM", type: "native" };
 const USDC_STELLAR: StellarAsset = { code: "USDC", issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", display: "USDC", type: "credit_alphanum4" };
 const EURC_STELLAR: StellarAsset = { code: "EURC", issuer: "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE", display: "EURC", type: "credit_alphanum4" };
-const USDT_STELLAR: StellarAsset = { code: "USDT", issuer: "GCQTGZQQ5G4PTM2GL7CDIFKUBBER43GPYJHEZ5B65LNQP3WGSY6RA24T", display: "USDT", type: "credit_alphanum4" };
 const BTC_ULTRA: StellarAsset = { code: "BTC", issuer: "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF", display: "BTC", type: "credit_alphanum4" };
 const ETH_ULTRA: StellarAsset = { code: "ETH", issuer: "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF", display: "ETH", type: "credit_alphanum4" };
 const AQUA_STELLAR: StellarAsset = { code: "AQUA", issuer: "GBNZILSTVQZ4R7IKQDGHYGY2QXL5QOFJYQMXPKWRRM5PAV7Y4M67AQUA", display: "AQUA", type: "credit_alphanum4" };
@@ -91,7 +90,6 @@ const MOBI_STELLAR: StellarAsset = { code: "MOBI", issuer: "GA6HCMBLTZS5VYYBCATR
 const STELLAR_PAIRS: StellarPair[] = [
   { label: "XLM / USDC", base: XLM_NATIVE, quote: USDC_STELLAR, category: "Stablecoins" },
   { label: "XLM / EURC", base: XLM_NATIVE, quote: EURC_STELLAR, category: "Stablecoins" },
-  { label: "XLM / USDT", base: XLM_NATIVE, quote: USDT_STELLAR, category: "Stablecoins" },
   { label: "USDC / EURC", base: USDC_STELLAR, quote: EURC_STELLAR, category: "Stablecoins" },
   { label: "XLM / BTC", base: XLM_NATIVE, quote: BTC_ULTRA, category: "Crypto" },
   { label: "XLM / ETH", base: XLM_NATIVE, quote: ETH_ULTRA, category: "Crypto" },

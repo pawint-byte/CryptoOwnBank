@@ -1,4 +1,4 @@
-import { Horizon, TransactionBuilder, Asset, Operation, BASE_FEE, Networks, Transaction } from "@stellar/stellar-sdk";
+import { Horizon, TransactionBuilder, Asset, Operation, BASE_FEE, Networks, Transaction, StrKey } from "@stellar/stellar-sdk";
 import crypto from "node:crypto";
 import type { DcaOrder } from "@shared/schema";
 
@@ -60,7 +60,12 @@ function resolveAsset(code: string, issuerOverride?: string | null): Asset {
   if (code === "XLM" || code === "native") return Asset.native();
   const known = STELLAR_ASSETS[code];
   const issuer = issuerOverride || known?.issuer;
-  if (!issuer) throw new Error(`Unknown Stellar asset ${code} — no issuer available`);
+  if (!issuer) {
+    throw new Error(`Unknown Stellar asset ${code} — no issuer is configured. Delete this DCA order and recreate it from the current preset list.`);
+  }
+  if (!StrKey.isValidEd25519PublicKey(issuer)) {
+    throw new Error(`The issuer for ${code} on this DCA order is not a valid Stellar account ID. This usually means the order was created against an outdated asset preset. Delete this order and recreate it from the current list.`);
+  }
   return new Asset(code, issuer);
 }
 

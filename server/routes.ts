@@ -11082,13 +11082,21 @@ ${beneSections}
       const publicAppUrl = `${proto}://${host}`;
 
       const { buildStellarDcaTransaction } = await import("./services/stellar-dca");
-      const result = await buildStellarDcaTransaction({
-        order,
-        sourceAddress: stellarWallet.address,
-        publicAppUrl,
-      });
-
-      res.json(result);
+      try {
+        const result = await buildStellarDcaTransaction({
+          order,
+          sourceAddress: stellarWallet.address,
+          publicAppUrl,
+        });
+        return res.json(result);
+      } catch (buildErr: any) {
+        const msg: string = buildErr?.message || "build failed";
+        if (msg.includes("not a valid Stellar account ID") || msg.includes("no issuer is configured")) {
+          await storage.updateDcaOrder(order.id, { status: "paused" });
+          return res.status(400).json({ kind: "invalidOrder", message: msg, autoPaused: true });
+        }
+        throw buildErr;
+      }
     } catch (error: any) {
       console.error("[stellar-dca] build-tx error:", error?.message || error);
       res.status(500).json({ message: error?.message || "Failed to prepare Stellar DCA transaction" });

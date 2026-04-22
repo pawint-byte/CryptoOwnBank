@@ -133,7 +133,6 @@ const XRPL_DCA_PAIRS: DcaPair[] = [
 
 const USDC_ISSUER_S = "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN";
 const EURC_ISSUER_S = "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y36DAVIZA67UEAX7CTAZ5STE";
-const USDT_ISSUER_S = "GCQTGZQQ5G4PTM2GL7CDIFKUBBER43GPYJHEZ5B65LNQP3WGSY6RA24T";
 const ULTRA_ISSUER = "GAUTUYY2THLF7SGITDFMXJVYH3LHDSMGEAKSBU267M2K7A3W543CKUEF";
 const AQUA_ISSUER = "GBNZILSTVQZ4R7IKQDGHYGY2QXL5QOFJYQMXPKWRRM5PAV7Y4M67AQUA";
 const YXLM_ISSUER = "GARDNV3Q7YGT4AKSDF25LT32YSCCW4EV22Y2TV3I2PU2MMXJTEDL5T55";
@@ -142,7 +141,6 @@ const XRP_ISSUER_S = "GBXRPL45NPHCVMFFAYZVUVFFVKSIZ362ZXFP7I2ETNOJEMON2KWSSVAIX"
 const STELLAR_DCA_PAIRS: DcaPair[] = [
   { label: "Buy XLM with USDC", spendCurrency: "USDC", spendIssuer: USDC_ISSUER_S, spendDisplay: "USDC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
   { label: "Buy XLM with EURC", spendCurrency: "EURC", spendIssuer: EURC_ISSUER_S, spendDisplay: "EURC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
-  { label: "Buy XLM with USDT", spendCurrency: "USDT", spendIssuer: USDT_ISSUER_S, spendDisplay: "USDT", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
   { label: "Sell BTC → XLM", spendCurrency: "BTC", spendIssuer: ULTRA_ISSUER, spendDisplay: "BTC", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
   { label: "Sell ETH → XLM", spendCurrency: "ETH", spendIssuer: ULTRA_ISSUER, spendDisplay: "ETH", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
   { label: "Sell AQUA → XLM", spendCurrency: "AQUA", spendIssuer: AQUA_ISSUER, spendDisplay: "AQUA", buyCurrency: "XLM", buyIssuer: null, buyDisplay: "XLM", category: "Accumulate XLM" },
@@ -441,6 +439,11 @@ export default function DcaOrders() {
         }
         if (data.kind === "noLiquidity") {
           toast({ title: "No DEX liquidity right now", description: `Couldn't route ${data.spendCurrency} → ${data.buyCurrency} on the Stellar DEX. Try again in a bit or check your spend balance.`, variant: "destructive" });
+          return;
+        }
+        if (data.kind === "invalidOrder") {
+          toast({ title: "This DCA order can't run", description: `${data.message} The order has been paused for you.`, variant: "destructive", duration: 15000 });
+          queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
           return;
         }
         if (data.kind !== "ready") {
