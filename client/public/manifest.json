@@ -1,0 +1,52 @@
+{
+  "name": "CryptoOwnBank — Self-Custody Crypto Platform",
+  "short_name": "CryptoOwnBank",
+  "description": "Non-custodial crypto platform with portfolio tracking, RLUSD yield vaults, DEX, DCA, cross-chain swaps, and Legacy Plan inheritance.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00A4E4",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Portfolio",
+      "short_name": "Portfolio",
+      "url": "/portfolio",
+      "description": "View your portfolio across all chains"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard",
+      "description": "Open your dashboard"
+    },
+    {
+      "name": "Family",
+      "short_name": "Family",
+      "url": "/family",
+      "description": "Manage family seats"
+    }
+  ]
+}
