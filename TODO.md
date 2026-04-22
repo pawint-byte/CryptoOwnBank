@@ -1,8 +1,38 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-21 by main agent (Legacy Plan v2 frontend complete: per-capita group label + nickname inputs, status badges, mark-deceased toggle, ack-delivery route, Arculus/SafePal/Uniswap/Manual wallet types)**
+**Last updated: 2026-04-22 by main agent (Added the Two-Filter Rule at the top of TODO.md — every feature must pass compliance + works-end-to-end before being suggested or built)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
+
+---
+
+## 🚨 THE TWO-FILTER RULE — APPLY BEFORE SUGGESTING OR BUILDING ANYTHING (Added 2026-04-22)
+
+**The user's stated principle, confirmed multiple times. Every feature, every suggestion, every "we could add X" must pass both filters in this order BEFORE you propose it, BEFORE you start building, and BEFORE you ask the user to test it.**
+
+### Filter 1 — Does it make sense for the site?
+- **Regulatory:** Does this expose us as an unlicensed money transmitter, broker-dealer, investment adviser, MSB, or custodian? If unsure, don't propose it.
+- **Compliance:** KYC/AML, sanctions (OFAC), tax-reporting obligations, securities classification of any token, jurisdiction restrictions. If it triggers any of these without us being prepared, cut it.
+- **Custody model:** CryptoOwnBank is **strictly non-custodial**. Anything that requires us to hold, encrypt, store, or be able to access user private keys breaks the core promise and the regulatory shield. Reject by default.
+- **Liability:** If a feature can be reasonably interpreted as financial advice, a recommendation to buy/sell, or a guarantee of yield, cut it or restructure it as informational with disclaimers.
+
+### Filter 2 — Does it actually work end-to-end?
+- **End-to-end means:** user starts the action → the action completes successfully → the result is visible/usable → on the device(s) we claim to support (desktop browser, iOS PWA, Android PWA).
+- **A reminder is not the feature.** A scheduled prompt that requires the user to manually do the trade in another app is NOT "DCA," it's a reminder. Don't ship it as DCA.
+- **A deep-link is not the feature.** If we link to an external app/URL, it must actually load and complete the intended task. Test the URL before shipping.
+- **Cached PWA caveat:** "It works after publish + force-refresh" is not the same as "it works." Account for cache lag in QA.
+- **If a feature works on desktop but not mobile (or vice versa) and we promote it as cross-platform, it fails this filter** until we either fix it or explicitly label the gap.
+
+### What this means for the agent's behavior:
+1. **Do not pitch features to the user.** The user is not looking for ideas to test — they want a product that works. Only suggest building something when both filters are clearly green.
+2. **When in doubt, ask "does this pass both filters?" — if no, propose cutting/hiding it instead of building more.**
+3. **Audit existing features through these filters before suggesting enhancements to them.** If a feature fails Filter 2, the right move is usually to hide/disable it until it works, not to add a workaround that papers over the gap.
+4. **Capability honesty in the UI:** when a feature has limitations (semi-automated, desktop-only, requires external app), surface that **at the moment the user is creating/configuring the feature**, not at the moment of execution.
+5. **Stop asking the user to test things to find out if they work.** That's the agent's job during build. The user tests for fit-to-purpose, not for "did the basics work."
+
+### Live decisions from 2026-04-22 applying these filters:
+- **Stellar DCA — FAILS Filter 2.** XRPL DCA works hands-off via Xaman push payloads. No major Stellar wallet (LOBSTR, Freighter, Solar) supports equivalent background signing today. The "DCA" we shipped is a manual-trade-with-checklist, not real DCA. **Action: hide Stellar DCA from sidebar, disable create flow, auto-pause existing Stellar DCA orders with explanatory note. Re-enable only when SEP-0007 prepared-XDR signing OR WalletConnect-with-LOBSTR background signing is built and proven.** (Stellar balance tracking and Stellar DEX page remain — they pass both filters.)
+- **HYPE / non-EVM tradeable badge — PASSES both filters as informational.** We don't claim to swap it; we route the user to a CEX with clear instructions and bring them back to track the wallet. Honest scope.
 
 ---
 
