@@ -897,6 +897,44 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "bitcoin-lightning",
+    heading: "Bitcoin & Lightning",
+    items: [
+      {
+        q: "Does CryptoOwnBank support Bitcoin and the Lightning Network?",
+        a: "Yes — both, and both non-custodially. <strong>Bitcoin</strong> on-chain has been part of our 32+ chain portfolio tracker from day one: add any BTC address (legacy, SegWit, or Taproot — 1…, 3…, or bc1…) and we pull the balance, convert it to USD live, and roll it into your portfolio totals, Recommendations Hub, and Legacy Plan. <strong>Lightning</strong> is now a first-class send/receive surface at <a href='/bitcoin' class='text-primary hover:underline'>cryptoownbank.com/bitcoin</a>. We never hold sats, never hold a key, and never see your channels — every payment is signed inside your own Lightning wallet (Phoenix, Muun, Wallet of Satoshi, Breez, Zeus, Alby, etc.). We're the interface; your wallet is the bank.",
+      },
+      {
+        q: "How do I send Bitcoin over Lightning from CryptoOwnBank?",
+        a: "Open <a href='/bitcoin' class='text-primary hover:underline'>Bitcoin &amp; Lightning</a> → Send tab. You have two ways to pay: <strong>(1) Paste a BOLT11 invoice</strong> (those long strings starting with <code>lnbc…</code> someone shares with you) — tap 'Open in Lightning wallet' and your phone hands the invoice to Phoenix, Muun, WoS, Breez or whichever LN wallet you have installed. You confirm and sign there. <strong>(2) Pay a Lightning Address</strong> (e.g., <code>alice@walletofsatoshi.com</code>) — enter the address and the amount in sats, and our server requests a fresh BOLT11 invoice from the recipient's LNURL endpoint, then opens your wallet to sign. Optional comment field works on wallets that support it (LUD-12). If your wallet doesn't auto-launch, we show a fallback QR you can scan with any Lightning wallet.",
+      },
+      {
+        q: "How do I receive Bitcoin over Lightning at CryptoOwnBank?",
+        a: "Open <a href='/bitcoin' class='text-primary hover:underline'>Bitcoin &amp; Lightning</a> → Receive tab. You'll need a Lightning Address from your wallet first (Wallet of Satoshi, Alby, Phoenix with LNURL plugins, BTCPay-hosted nodes, etc. all give you one in <code>name@domain.tld</code> format). Paste it in, hit Verify &amp; Save — we ping the recipient's LNURL-pay endpoint to confirm it's reachable and capture the min/max sats it accepts. Once saved, the page displays it as a scannable QR (and copyable text). Anyone with a Lightning wallet can scan and pay you instantly. You can optionally set a specific amount in sats so the requestor doesn't have to type it. Your address is stored locally on your device only — we don't keep it on our servers.",
+      },
+      {
+        q: "Why doesn't CryptoOwnBank just hold my sats for me, like a bank account?",
+        a: "Because that's the entire reason CryptoOwnBank exists. The day we hold your sats is the day we become FTX, Celsius, BlockFi, or Mt. Gox — a single point of failure with billions of dollars of other people's money on its balance sheet. The Lightning Network is inherently a network of self-custodied wallets connected by payment channels, and we want to keep it that way. Our role is to be the easiest possible interface: a clean Send screen that handles invoice + LNURL parsing, a clean Receive screen with QR codes, plus full BTC on-chain tracking inside your portfolio. The funds always stay in <em>your</em> Lightning wallet, signed by <em>your</em> keys. Even if CryptoOwnBank vanished tomorrow, your sats would still be in Phoenix, Muun, or Wallet of Satoshi — completely untouched.",
+      },
+      {
+        q: "Which Lightning wallets work with CryptoOwnBank?",
+        a: "Any wallet that handles the standard <code>lightning:</code> deep link will work, which is essentially all of them. We specifically recommend: <strong>Phoenix</strong> (self-custodial, ACINQ-built, beginner-friendly automated channels), <strong>Muun</strong> (hybrid on-chain + Lightning, nice UX), <strong>Wallet of Satoshi</strong> (custodial but easiest, great for first-timers), <strong>Breez</strong> (self-custodial with built-in POS features for merchants), <strong>Zeus</strong> (power users, connects to your own LND/Core Lightning/Eclair node), and <strong>Alby</strong> (browser extension + hub, includes a Lightning Address by default). Ledger users with the Lightning sidecar setup also work fine. Pick what fits your custody preference — CryptoOwnBank doesn't care which one you use.",
+      },
+      {
+        q: "What's a Lightning Address vs a BOLT11 invoice — and which should I use?",
+        a: "A <strong>BOLT11 invoice</strong> is a one-time payment request that encodes a specific amount, a description, and a payment hash (those long <code>lnbc1500n1p…</code> strings). It expires after a short window (usually 1 hour) and can only be paid once. Use a BOLT11 when someone sends you a specific bill to pay. A <strong>Lightning Address</strong> looks like an email (<code>name@domain.tld</code>) and is a permanent identifier under LUD-16 — the recipient's server generates a fresh BOLT11 on demand whenever someone wants to pay them. Use a Lightning Address when you want a stable identity that anyone can pay (think tip jar, donation page, or just sharing your contact info). CryptoOwnBank's Send tab handles both seamlessly — just paste whichever you have.",
+      },
+      {
+        q: "Are there fees? How fast are Lightning payments?",
+        a: "<strong>CryptoOwnBank charges zero fees on Lightning payments</strong> — we don't touch your sats, so there's nothing to take a cut of. The only fees involved are the Lightning routing fees your wallet pays to nodes that forward your payment, which are typically <strong>0–10 sats</strong> for most consumer payments (often less than $0.01). Settlement is essentially instant — most payments confirm in <strong>1–3 seconds</strong> globally, including cross-border. Compare that to a US wire ($25 + 1–3 business days) or PayPal international (4% + 24 hours). On-chain Bitcoin payments cost more in fees and confirm in 10–60 minutes; Lightning is the right choice for everything under ~$500 or anything time-sensitive.",
+      },
+      {
+        q: "What's coming next for Bitcoin & Lightning on CryptoOwnBank?",
+        a: "This first release ships Send (BOLT11 + Lightning Address), Receive (your address as QR), and full BTC on-chain portfolio tracking. Next up on our roadmap, in priority order: (1) <strong>Lightning recurring payments</strong> — schedule weekly/monthly auto-payments to a Lightning Address (great for tipping creators or paying subscriptions); (2) <strong>Lightning-denominated invoices</strong> in the Invoices feature so you can bill clients in sats with a payment link; (3) <strong>BTC DCA</strong> on Lightning corridors via partner integrations; (4) <strong>BTC inheritance recipes</strong> in the Legacy Plan for Bitcoin-only wallets like Coldcard, BitBox02, and Sparrow setups. We'll never custody — every new feature stays non-custodial.",
+      },
+    ],
+  },
+  {
     groupKey: "mobile",
     heading: "Mobile App & PWA",
     items: [

@@ -2065,14 +2065,14 @@ export default function Landing() {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-3" data-testid="heading-multi-chain">
-                Two Chains, One Platform — Use Each for What It Does Best
+                Three Chains, One Platform — Use Each for What It Does Best
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                XRP Ledger for institutional-grade savings and trading. Stellar for retail payments and global remittances.
-                CryptoOwnBank brings both together so you don't have to choose.
+                XRP Ledger for institutional-grade savings and trading. Stellar for retail payments and global remittances. Bitcoin &amp; Lightning for the world's most-trusted store of value and instant micropayments.
+                CryptoOwnBank brings them together so you don't have to choose.
               </p>
             </div>
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="p-5 rounded-xl border bg-[#00A4E4]/5 border-[#00A4E4]/20">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="h-3 w-3 rounded-full bg-[#00A4E4]" />
@@ -2100,6 +2100,21 @@ export default function Landing() {
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/invoices" className="hover:text-[#7B61FF] hover:underline transition-colors">Invoicing — QR codes &amp; payment request links via web+stellar:pay →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stellar/remittances" className="hover:text-[#7B61FF] hover:underline transition-colors">Remittance corridor calculator &amp; guides →</a></li>
                   <li className="flex items-start gap-2"><span className="text-[#7B61FF] mt-0.5">✓</span> <a href="/stablecoins" className="hover:text-[#7B61FF] hover:underline transition-colors">USDC &amp; EURC stablecoin support →</a></li>
+                </ul>
+              </div>
+              <div className="p-5 rounded-xl border bg-[#F7931A]/5 border-[#F7931A]/20" data-testid="card-bitcoin-lightning">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="h-3 w-3 rounded-full bg-[#F7931A]" />
+                  <h3 className="font-semibold">Bitcoin &amp; Lightning</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">Store of Value &amp; Micropayments</span>
+                </div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2"><span className="text-[#F7931A] mt-0.5">✓</span> <a href="/wallets" className="hover:text-[#F7931A] hover:underline transition-colors">Add any BTC address — balance &amp; USD value tracked automatically →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#F7931A] mt-0.5">✓</span> <a href="/bitcoin" className="hover:text-[#F7931A] hover:underline transition-colors">Pay any BOLT11 invoice — opens directly in your Lightning wallet →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#F7931A] mt-0.5">✓</span> <a href="/bitcoin" className="hover:text-[#F7931A] hover:underline transition-colors">Pay a Lightning Address (name@domain.tld) by amount + comment →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#F7931A] mt-0.5">✓</span> <a href="/bitcoin" className="hover:text-[#F7931A] hover:underline transition-colors">Receive sats — your Lightning Address as a shareable QR →</a></li>
+                  <li className="flex items-start gap-2"><span className="text-[#F7931A] mt-0.5">✓</span> Works with Phoenix, Muun, Wallet of Satoshi, Breez, Zeus &amp; Alby</li>
+                  <li className="flex items-start gap-2"><span className="text-[#F7931A] mt-0.5">✓</span> Non-custodial by design — we never hold a key, your wallet signs every payment</li>
                 </ul>
               </div>
             </div>
