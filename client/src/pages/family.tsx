@@ -414,7 +414,7 @@ function InviteDialog({ onClose }: { onClose: () => void }) {
               <SelectTrigger data-testid="select-seat-role"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="viewer">Viewer — read-only (recommended)</SelectItem>
-                <SelectItem value="proposer">Proposer — can suggest actions you must approve (coming soon)</SelectItem>
+                <SelectItem value="proposer">Proposer — can suggest actions you must approve</SelectItem>
               </SelectContent>
             </Select>
           </div>
