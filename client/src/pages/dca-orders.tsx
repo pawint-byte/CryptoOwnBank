@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { useStellarStore } from "@/lib/stellar-store";
@@ -478,7 +479,17 @@ export default function DcaOrders() {
         }
         return;
       }
-      toast({ title: "Stellar DCA — Freighter required on desktop", description: "Install the Freighter browser extension (freighter.app) to execute Stellar DCA trades. On mobile, use LOBSTR instead.", variant: "destructive" });
+      toast({
+        title: "Stellar signing tool needed",
+        description: "On desktop, install Freighter (freighter.app) to sign Stellar trades in your browser. Or open this trade in LOBSTR's web app instead.",
+        variant: "destructive",
+        duration: 15000,
+        action: (
+          <ToastAction altText="Open LOBSTR Web" onClick={() => openLobstrForDca(order)}>
+            Open LOBSTR
+          </ToastAction>
+        ),
+      });
       return;
     }
     const walletAddress = activeWallet || useXrplStore.getState().walletAddress;
