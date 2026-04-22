@@ -392,6 +392,20 @@ export default function DcaOrders() {
   }, []);
 
   const isMobileDca = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const [freighterStatus, setFreighterStatus] = useState<"unknown" | "ready" | "missing">("unknown");
+  useEffect(() => {
+    if (chain !== "stellar" || isMobileDca) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const ready = await isFreighterInstalled();
+        if (!cancelled) setFreighterStatus(ready ? "ready" : "missing");
+      } catch {
+        if (!cancelled) setFreighterStatus("missing");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [chain, isMobileDca]);
 
   function openLobstrForDca(order: DcaOrder) {
     const buyCode = order.buyCurrency;
@@ -708,6 +722,30 @@ export default function DcaOrders() {
             onChange={setActiveWallet}
             label="Signing Wallet"
           />
+        )}
+
+        {chain === "stellar" && !isMobileDca && freighterStatus === "missing" && (
+          <Card className="border-yellow-500/30 bg-yellow-500/5" data-testid="banner-freighter-missing">
+            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <ShieldAlert className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-sm">Freighter wallet extension required to execute Stellar trades</p>
+                  <p className="text-xs text-muted-foreground">Stellar trades sign in your browser via the free Freighter extension (Chrome, Brave, Edge, Firefox). Install it once, connect your Stellar wallet, and Execute Now will work. Your XLM stays in your wallet — Freighter only signs the trade you approve. On mobile, use LOBSTR instead.</p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <a href="https://www.freighter.app/" target="_blank" rel="noopener noreferrer" data-testid="link-install-freighter">
+                  <Button size="sm" variant="default" className="bg-yellow-600 hover:bg-yellow-700">
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Install Freighter
+                  </Button>
+                </a>
+                <Button size="sm" variant="outline" onClick={() => window.location.reload()} data-testid="button-recheck-freighter">
+                  Re-check
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {isLoading ? (
