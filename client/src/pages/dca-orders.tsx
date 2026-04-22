@@ -48,6 +48,8 @@ import {
   Zap,
   Bell,
   Pencil,
+  ShieldAlert,
+  ExternalLink,
 } from "lucide-react";
 import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
