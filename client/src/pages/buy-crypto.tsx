@@ -1979,10 +1979,6 @@ export default function BuyCrypto() {
                     <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                     Trade on Stellar DEX (18 pairs)
                   </Link>
-                  <Link href="/stellar/dca" className="flex items-center gap-2 hover:text-foreground transition-colors">
-                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                    Set up DCA orders
-                  </Link>
                   <Link href="/stellar/send" className="flex items-center gap-2 hover:text-foreground transition-colors">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                     Send payments via LOBSTR

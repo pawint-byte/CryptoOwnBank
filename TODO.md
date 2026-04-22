@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-22 by main agent (Added the Two-Filter Rule at the top of TODO.md — every feature must pass compliance + works-end-to-end before being suggested or built)**
+**Last updated: 2026-04-22 by main agent (Executed the Stellar DCA pull-down: removed from sidebar, both /stellar/dca routes now serve a "temporarily unavailable" explanation page, removed buy-crypto cross-link, added startup task that auto-pauses any active stellar DCA orders in DB. Process note: when user approves a pull-down recommendation, EXECUTE IT in the same turn — do not leave it pending and patch peripheral pieces. Patching a feature that fails Filter 2 just adds more Filter 2 failures.)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 

@@ -123,7 +123,6 @@ const allItems: NavItem[] = [
   { title: "XRPL DEX", url: "/ownbank/dex", icon: TrendingUp, group: "ownbank", chain: "xrpl" },
   { title: "Stellar DEX", url: "/stellar/dex", icon: TrendingUp, group: "ownbank", chain: "stellar" },
   { title: "XRPL DCA", url: "/ownbank/dca", icon: Repeat, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar DCA", url: "/stellar/dca", icon: Repeat, group: "ownbank", chain: "stellar" },
   // { title: "Token Buckets", url: "/token-buckets", icon: Layers, group: "ownbank", chain: "xrpl" }, // TODO: Hidden until cross-chain bucket execution is built
   { title: "Payments Hub", url: "/payments", icon: CreditCard, group: "ownbank" },
   { title: "XRPL Send & Receive", url: "/ownbank/send", icon: Send, group: "ownbank", chain: "xrpl" },

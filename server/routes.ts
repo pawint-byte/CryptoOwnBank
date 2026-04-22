@@ -15164,4 +15164,20 @@ function startPriceAlertChecker() {
     }
   }, 20000);
 
+  setTimeout(async () => {
+    try {
+      const result = await db.execute(
+        sql`UPDATE dca_orders SET status = 'paused' WHERE chain = 'stellar' AND status = 'active'`
+      );
+      const count = (result as any).rowCount ?? 0;
+      if (count > 0) {
+        console.log(`[startup-pause-stellar-dca] Paused ${count} active Stellar DCA order(s) — feature withdrawn pending Stellar wallet background-signing support.`);
+      } else {
+        console.log("[startup-pause-stellar-dca] No active Stellar DCA orders to pause.");
+      }
+    } catch (err) {
+      console.error("[startup-pause-stellar-dca] Error:", err);
+    }
+  }, 22000);
+
 }
