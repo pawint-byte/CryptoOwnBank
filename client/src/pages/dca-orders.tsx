@@ -413,6 +413,17 @@ export default function DcaOrders() {
     setLobstrDialogOrder(order);
   }
 
+  const [stellarSignState, setStellarSignState] = useState<{
+    order: DcaOrder;
+    xdr: string;
+    deepLink: string;
+    expectedReceive: string;
+    minReceive: string;
+    token: string;
+    sinceIso: string;
+    pollIntervalId?: number;
+  } | null>(null);
+
   async function executeNow(order: DcaOrder) {
     if (order.chain === "stellar") {
       setExecutingOrderId(order.id);
@@ -452,32 +463,15 @@ export default function DcaOrders() {
         }
 
         const sinceIso = new Date().toISOString();
-        toast({ title: "Opening LOBSTR…", description: `Approve the buy in LOBSTR. We'll record the result here automatically. Expected: ~${parseFloat(data.expectedReceive).toFixed(4)} ${order.buyCurrency}.`, duration: 8000 });
-        window.location.href = data.deepLink;
-
-        const pollStart = Date.now();
-        const pollInterval = window.setInterval(async () => {
-          if (Date.now() - pollStart > 5 * 60 * 1000) {
-            window.clearInterval(pollInterval);
-            return;
-          }
-          try {
-            const r = await apiRequest("GET", `/api/dca-orders/${order.id}/stellar/check-execution?since=${encodeURIComponent(sinceIso)}&token=${data.token}`);
-            const cd = await r.json();
-            if (cd.execution) {
-              window.clearInterval(pollInterval);
-              if (cd.execution.status === "completed") {
-                toast({ title: "DCA buy executed", description: `Tx ${cd.execution.txHash?.slice(0, 14)}…` });
-              } else {
-                toast({ title: "DCA buy failed in LOBSTR", description: cd.execution.errorMessage || "Check Stellar wallet for details.", variant: "destructive", duration: 12000 });
-              }
-              queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/dca-executions"] });
-            } else if (!cd.stillPending) {
-              window.clearInterval(pollInterval);
-            }
-          } catch {}
-        }, 3000);
+        setStellarSignState({
+          order,
+          xdr: data.xdr,
+          deepLink: data.deepLink,
+          expectedReceive: data.expectedReceive,
+          minReceive: data.minReceive,
+          token: data.token,
+          sinceIso,
+        });
       } catch (err: any) {
         toast({ title: "Could not prepare Stellar trade", description: err?.message || "Server error", variant: "destructive" });
       } finally {
@@ -1060,6 +1054,147 @@ export default function DcaOrders() {
             >
               {editMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!stellarSignState} onOpenChange={(open) => {
+        if (!open) {
+          if (stellarSignState?.pollIntervalId) window.clearInterval(stellarSignState.pollIntervalId);
+          setStellarSignState(null);
+        }
+      }}>
+        <DialogContent className="max-w-md" data-testid="dialog-stellar-sign">
+          <DialogHeader>
+            <DialogTitle>Sign your DCA buy</DialogTitle>
+          </DialogHeader>
+          {stellarSignState && (
+            <div className="space-y-4">
+              <div className="rounded-md bg-muted/50 border p-3 space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Sell:</span><span className="font-mono font-medium">{stellarSignState.order.spendAmount} {stellarSignState.order.spendCurrency}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Receive (est):</span><span className="font-mono font-medium">~{parseFloat(stellarSignState.expectedReceive).toFixed(4)} {stellarSignState.order.buyCurrency}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Min received:</span><span className="font-mono">{parseFloat(stellarSignState.minReceive).toFixed(4)} {stellarSignState.order.buyCurrency}</span></div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pick how to sign</p>
+
+                <Button
+                  className="w-full justify-start h-auto py-3"
+                  variant="default"
+                  data-testid="button-sign-lobstr-web"
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(stellarSignState.xdr); } catch {}
+                    toast({ title: "XDR copied to clipboard", description: "Paste it into LOBSTR's transaction signer.", duration: 8000 });
+                    window.open("https://lobstr.co/sign", "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <div className="flex flex-col items-start text-left">
+                    <span className="font-medium">Sign on LOBSTR Web (recommended on iPhone)</span>
+                    <span className="text-xs opacity-80 font-normal">Opens lobstr.co/sign in a new tab. We auto-copy the XDR — paste &amp; sign.</span>
+                  </div>
+                </Button>
+
+                <Button
+                  className="w-full justify-start h-auto py-3"
+                  variant="outline"
+                  data-testid="button-sign-lobstr-app"
+                  onClick={() => {
+                    const sinceIso = stellarSignState.sinceIso;
+                    const orderId = stellarSignState.order.id;
+                    const token = stellarSignState.token;
+                    const pollStart = Date.now();
+                    const pollInterval = window.setInterval(async () => {
+                      if (Date.now() - pollStart > 5 * 60 * 1000) { window.clearInterval(pollInterval); return; }
+                      try {
+                        const r = await apiRequest("GET", `/api/dca-orders/${orderId}/stellar/check-execution?since=${encodeURIComponent(sinceIso)}&token=${token}`);
+                        const cd = await r.json();
+                        if (cd.execution) {
+                          window.clearInterval(pollInterval);
+                          if (cd.execution.status === "completed") {
+                            toast({ title: "DCA buy executed", description: `Tx ${cd.execution.txHash?.slice(0, 14)}…` });
+                          } else {
+                            toast({ title: "DCA buy failed in LOBSTR", description: cd.execution.errorMessage || "Check Stellar wallet for details.", variant: "destructive", duration: 12000 });
+                          }
+                          queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/dca-executions"] });
+                          setStellarSignState(null);
+                        } else if (!cd.stillPending) {
+                          window.clearInterval(pollInterval);
+                        }
+                      } catch {}
+                    }, 3000);
+                    setStellarSignState({ ...stellarSignState, pollIntervalId: pollInterval });
+                    window.location.href = stellarSignState.deepLink;
+                  }}
+                >
+                  <div className="flex flex-col items-start text-left">
+                    <span className="font-medium">Open in LOBSTR app (deep link)</span>
+                    <span className="text-xs opacity-80 font-normal">Only works if the LOBSTR mobile app is installed. Auto-records the result.</span>
+                  </div>
+                </Button>
+
+                <Button
+                  className="w-full justify-start h-auto py-3"
+                  variant="outline"
+                  data-testid="button-copy-xdr"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(stellarSignState.xdr);
+                      toast({ title: "XDR copied", description: "Paste it into Freighter, StellarTerm, or any Stellar wallet's transaction signer." });
+                    } catch {
+                      toast({ title: "Couldn't copy", description: "Long-press the XDR below to select and copy manually.", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <div className="flex flex-col items-start text-left">
+                    <span className="font-medium">Copy XDR — sign in any Stellar wallet</span>
+                    <span className="text-xs opacity-80 font-normal">Freighter, StellarTerm, StellarX, Stellar Lab — anything that signs raw XDR.</span>
+                  </div>
+                </Button>
+              </div>
+
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground" data-testid="toggle-raw-xdr">Show raw XDR</summary>
+                <textarea
+                  readOnly
+                  className="mt-2 w-full text-[10px] font-mono p-2 rounded bg-muted border h-24"
+                  value={stellarSignState.xdr}
+                  data-testid="text-raw-xdr"
+                />
+              </details>
+
+              <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-muted-foreground">
+                After signing in LOBSTR (Web or App), come back here and tap <strong className="text-foreground">"I signed it"</strong> below so we can record the buy. <em>If you used the app deep link, we'll detect it automatically — you don't need to tap.</em>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              className="w-full"
+              variant="secondary"
+              data-testid="button-stellar-mark-signed"
+              onClick={async () => {
+                if (!stellarSignState) return;
+                try {
+                  await apiRequest("POST", `/api/dca/${stellarSignState.order.id}/execution`, {
+                    status: "completed",
+                    executedPrice: "0",
+                    txHash: "manual-lobstr-web",
+                  });
+                  queryClient.invalidateQueries({ queryKey: ["/api/dca"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/dca-orders"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/dca-executions"] });
+                  toast({ title: "Logged", description: "DCA buy logged. Verify on stellar.expert if you want to double-check." });
+                  if (stellarSignState.pollIntervalId) window.clearInterval(stellarSignState.pollIntervalId);
+                  setStellarSignState(null);
+                } catch (e: any) {
+                  toast({ title: "Could not log", description: e?.message || "Try again", variant: "destructive" });
+                }
+              }}
+            >
+              I signed it in LOBSTR
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -18,7 +18,7 @@ export type StellarBuildResult =
   | { kind: "needsTrustline"; assetCode: string; assetIssuer: string; trustlineDeepLink: string }
   | { kind: "needsFunding"; minXlm: number; currentXlm: number }
   | { kind: "noLiquidity"; spendCurrency: string; buyCurrency: string }
-  | { kind: "ready"; token: string; deepLink: string; expectedReceive: string; minReceive: string; expiresAt: number };
+  | { kind: "ready"; token: string; deepLink: string; xdr: string; expectedReceive: string; minReceive: string; expiresAt: number };
 
 interface PendingBuild {
   orderId: string;
@@ -240,6 +240,7 @@ export async function buildStellarDcaTransaction(params: {
     kind: "ready",
     token,
     deepLink,
+    xdr,
     expectedReceive,
     minReceive,
     expiresAt: Date.now() + BUILD_TTL_MS,
