@@ -1131,18 +1131,33 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     return lines.join("\n").trim();
   };
 
+  const selectedWalletObjs = (walletAssets || []).filter(w => selectedWalletIds.includes(w.walletId));
+  const selectionTemplateInfo = (() => {
+    if (selectedWalletObjs.length === 0) return null;
+    const tagged = selectedWalletObjs.map(w => w.hardwareDevice).filter((x): x is string => !!x && !!WALLET_TYPES[x]);
+    const uniqueTagged = Array.from(new Set(tagged));
+    if (uniqueTagged.length === 1) {
+      return { kind: "matched" as const, type: uniqueTagged[0], label: WALLET_TYPES[uniqueTagged[0]].label, count: selectedWalletObjs.length };
+    }
+    if (uniqueTagged.length > 1) {
+      return { kind: "mixed" as const, types: uniqueTagged, labels: uniqueTagged.map(t => WALLET_TYPES[t].label) };
+    }
+    const guess = guessWalletTypeFromChain(selectedWalletObjs[0].chain);
+    return { kind: "guessed" as const, type: guess, label: guess ? WALLET_TYPES[guess]?.label : null, count: selectedWalletObjs.length };
+  })();
+
   useEffect(() => {
     if (!walletAssets || selectedWalletIds.length === 0) return;
     const selected = walletAssets.filter(w => selectedWalletIds.includes(w.walletId));
     if (selected.length === 0) return;
     setWalletAssetSummary(buildAssetSummary(selected));
     if (!walletType) {
-      const tagged = selected.find(w => w.hardwareDevice && WALLET_TYPES[w.hardwareDevice]);
-      if (tagged?.hardwareDevice) {
-        setWalletType(tagged.hardwareDevice);
-      } else {
-        const guess = guessWalletTypeFromChain(selected[0].chain);
-        if (guess) setWalletType(guess);
+      if (selectionTemplateInfo?.kind === "matched" && selectionTemplateInfo.type) {
+        setWalletType(selectionTemplateInfo.type);
+      } else if (selectionTemplateInfo?.kind === "mixed") {
+        setWalletType(selectionTemplateInfo.types[0]);
+      } else if (selectionTemplateInfo?.kind === "guessed" && selectionTemplateInfo.type) {
+        setWalletType(selectionTemplateInfo.type);
       }
     }
   }, [selectedWalletIds, walletAssets]);
@@ -1354,8 +1369,46 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Pick the actual wallet(s) from your portfolio. Type and asset summary fill in automatically — you can still edit them below.
+                  Pick the actual wallet(s) from your portfolio. The recovery template below auto-fills from your selection — one set of instructions covers all wallets you check.
                 </p>
+                {selectionTemplateInfo && (
+                  <div
+                    className={`flex items-start gap-2 rounded-md p-2 text-[11px] ${
+                      selectionTemplateInfo.kind === "matched"
+                        ? "bg-green-50 dark:bg-green-950/20 text-green-900 dark:text-green-200 border border-green-200 dark:border-green-900"
+                        : selectionTemplateInfo.kind === "mixed"
+                        ? "bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900"
+                        : "bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-900"
+                    }`}
+                    data-testid="status-template-detected"
+                  >
+                    <span className="mt-0.5">
+                      {selectionTemplateInfo.kind === "matched" ? "✓" : selectionTemplateInfo.kind === "mixed" ? "⚠" : "ℹ"}
+                    </span>
+                    <div className="flex-1">
+                      {selectionTemplateInfo.kind === "matched" && (
+                        <>
+                          Recovery template: <strong>{selectionTemplateInfo.label}</strong> — applies to all{" "}
+                          {selectionTemplateInfo.count} selected wallet{selectionTemplateInfo.count > 1 ? "s" : ""}.
+                        </>
+                      )}
+                      {selectionTemplateInfo.kind === "mixed" && (
+                        <>
+                          Mixed device types in your selection: <strong>{selectionTemplateInfo.labels.join(", ")}</strong>.
+                          We'll use <strong>{WALLET_TYPES[selectionTemplateInfo.types[0]].label}</strong> as the primary template — describe the others in the notes in step 2, or split this person into separate beneficiary entries (one per device).
+                        </>
+                      )}
+                      {selectionTemplateInfo.kind === "guessed" && selectionTemplateInfo.label && (
+                        <>
+                          No hardware-device tag on the selected wallet{selectionTemplateInfo.count > 1 ? "s" : ""}. Suggested template: <strong>{selectionTemplateInfo.label}</strong> — change below if it's wrong.
+                        </>
+                      )}
+                      {selectionTemplateInfo.kind === "guessed" && !selectionTemplateInfo.label && (
+                        <>Pick a recovery template below — we couldn't infer one from the selected chains.</>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1 max-h-64 overflow-auto pr-1">
                   {walletAssets.map(w => {
                     const total = walletTotalUsd(w);
@@ -1426,9 +1479,13 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                 <p className="text-[10px] text-muted-foreground">Use when you have multiple wallets of the same type.</p>
               </div>
               <div className="space-y-1">
-                <Label>Wallet / Device Type *</Label>
+                <Label>
+                  {selectedWalletIds.length > 0 ? "Recovery template *" : "Wallet / Device Type *"}
+                </Label>
                 <Select value={walletType} onValueChange={(v) => { setWalletType(v); setTemplateFields({}); }}>
-                  <SelectTrigger data-testid="select-wallet-type"><SelectValue placeholder="Select wallet..." /></SelectTrigger>
+                  <SelectTrigger data-testid="select-wallet-type">
+                    <SelectValue placeholder={selectedWalletIds.length > 0 ? "Auto-filled from selection..." : "Select wallet..."} />
+                  </SelectTrigger>
                   <SelectContent>
                     {walletCategories.map(cat => {
                       const items = Object.entries(WALLET_TYPES).filter(([, v]) => v.category === cat.key);
