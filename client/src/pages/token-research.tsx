@@ -683,6 +683,31 @@ export default function TokenResearch() {
                         {token.platforms.length === 0 && (!token.allPlatforms || token.allPlatforms.length === 0) && (
                           <p className="text-xs text-muted-foreground italic">Contract data not available yet</p>
                         )}
+                        {!isTradeable && (
+                          <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-2.5 mt-1.5 space-y-1.5">
+                            <p className="text-xs font-medium flex items-center gap-1.5">
+                              <Info className="h-3.5 w-3.5 text-blue-600" />
+                              How to acquire {token.symbol}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              This token isn't on an EVM chain we route to, so you can't swap it inside CryptoOwnBank. To buy it: (1) check if a centralized exchange lists it, (2) buy with USD/USDT/USDC there, (3) withdraw to your own wallet on its native chain, then (4) add that wallet address here so it shows in your portfolio.
+                            </p>
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              <a href={`https://www.coingecko.com/en/coins/${token.id}#markets`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline" data-testid={`link-markets-${token.id}`}>
+                                <ExternalLink className="h-3 w-3" />Where to buy ({token.symbol})
+                              </a>
+                              <a href={`https://www.coinbase.com/price/${token.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline" data-testid={`link-coinbase-${token.id}`}>
+                                <ExternalLink className="h-3 w-3" />Check Coinbase
+                              </a>
+                              <a href={`https://www.binance.com/en/trade/${token.symbol}_USDT`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline" data-testid={`link-binance-${token.id}`}>
+                                <ExternalLink className="h-3 w-3" />Check Binance
+                              </a>
+                              <Link href="/wallets" className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline" data-testid={`link-add-wallet-${token.id}`}>
+                                <ArrowRight className="h-3 w-3" />Add wallet to track
+                              </Link>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex gap-3 mt-1.5 pt-1.5 border-t">
                           <a
                             href={`https://www.coingecko.com/en/coins/${token.id}`}
