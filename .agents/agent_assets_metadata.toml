@@ -1,5 +1,28 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "FVFmh8QCDTRF5fBX7TieJ"
+uri = "file://attached_assets/generated_images/pwa_mockup_home_icon.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "L8RSt-JBz-DwH0BNto0yc"
+uri = "file://attached_assets/generated_images/pwa_mockup_install_prompt.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "rUxXz9vzVq1tllzeZod5E"
+uri = "file://attached_assets/generated_images/pwa_mockup_fullscreen_dashboard.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "1e7eW3qJNiNO_vSg9F1u1"
+uri = "file://attached_assets/generated_images/pwa_mockup_bottom_sheet.png"
+type = "image"
+title = "generated_image"
 
 [[outputs]]
 id = "5SYBb-a6hAnLWmo2e9Esi"
@@ -24,3 +47,27 @@ id = "uubCLgywzpDvfJJDXm4qz"
 uri = "file://docs/announcements/2026-04-wallets-first-and-family.md"
 type = "text"
 title = "Email announcement: Wallets-first + Family mode"
+
+[[outputs]]
+id = "rTVxOaplgUHamAKFqiAUH"
+uri = "file://attached_assets/generated_images/pwa_mockup_home_icon.png"
+type = "image"
+title = "1. Home-screen icon — what your app looks like installed next to native apps"
+
+[[outputs]]
+id = "TUWSw88-cu0KAbxWket6y"
+uri = "file://attached_assets/generated_images/pwa_mockup_install_prompt.png"
+type = "image"
+title = "2. Install prompt — first-visit banner inviting the user to add to home screen"
+
+[[outputs]]
+id = "wIygcB5tAsaQRcQ22FKfn"
+uri = "file://attached_assets/generated_images/pwa_mockup_fullscreen_dashboard.png"
+type = "image"
+title = "3. Fullscreen launch — dashboard with no browser bar, native bottom tab bar"
+
+[[outputs]]
+id = "JAglI_km70R6ug1rdyCFd"
+uri = "file://attached_assets/generated_images/pwa_mockup_bottom_sheet.png"
+type = "image"
+title = "4. Bottom sheet dialog — Pay With Crypto sliding up like a native iOS modal"
