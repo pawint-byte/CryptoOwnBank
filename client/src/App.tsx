@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
@@ -417,6 +418,7 @@ function App() {
           <TooltipProvider>
             <ReferralDetector />
             <Toaster />
+            <PWAInstallPrompt />
             <Router />
           </TooltipProvider>
         </ThemeProvider>
