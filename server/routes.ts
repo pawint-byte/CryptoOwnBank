@@ -11130,7 +11130,7 @@ ${beneSections}
         const msg: string = buildErr?.message || "build failed";
         if (msg.includes("not a valid Stellar account ID") || msg.includes("no issuer is configured")) {
           await storage.updateDcaOrder(order.id, { status: "paused" });
-          return res.status(400).json({ kind: "invalidOrder", message: msg, autoPaused: true });
+          return res.json({ kind: "invalidOrder", message: msg, autoPaused: true });
         }
         throw buildErr;
       }
