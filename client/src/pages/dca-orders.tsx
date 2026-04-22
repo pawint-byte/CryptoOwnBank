@@ -407,19 +407,10 @@ export default function DcaOrders() {
     return () => { cancelled = true; };
   }, [chain, isMobileDca]);
 
+  const [lobstrDialogOrder, setLobstrDialogOrder] = useState<DcaOrder | null>(null);
+
   function openLobstrForDca(order: DcaOrder) {
-    const buyCode = order.buyCurrency;
-    const buyIssuer = order.buyIssuer;
-    const assetParam = buyCode === "XLM" ? "native" : `${buyCode}:${buyIssuer}`;
-    const lobstrUrl = `https://lobstr.co/trade/${assetParam}`;
-    window.location.href = lobstrUrl;
-    setTimeout(() => {
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const storeUrl = isIOS
-        ? "https://apps.apple.com/app/lobstr-stellar-wallet/id1429103572"
-        : "https://play.google.com/store/apps/details?id=com.lobstr.client";
-      window.location.href = storeUrl;
-    }, 2500);
+    setLobstrDialogOrder(order);
   }
 
   async function executeNow(order: DcaOrder) {
@@ -1081,6 +1072,83 @@ export default function DcaOrders() {
             >
               {editMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!lobstrDialogOrder} onOpenChange={(open) => !open && setLobstrDialogOrder(null)}>
+        <DialogContent className="max-w-md" data-testid="dialog-lobstr-instructions">
+          <DialogHeader>
+            <DialogTitle>Execute this trade in LOBSTR</DialogTitle>
+          </DialogHeader>
+          {lobstrDialogOrder && (
+            <div className="space-y-4">
+              <div className="rounded-md bg-muted/50 border p-3 space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Sell:</span><span className="font-mono font-medium">{lobstrDialogOrder.spendAmount} {lobstrDialogOrder.spendCurrency}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Buy:</span><span className="font-mono font-medium">{lobstrDialogOrder.buyCurrency}</span></div>
+                {lobstrDialogOrder.buyIssuer && (
+                  <div className="flex justify-between gap-2"><span className="text-muted-foreground shrink-0">Issuer:</span><span className="font-mono text-[10px] break-all text-right">{lobstrDialogOrder.buyIssuer}</span></div>
+                )}
+                <div className="flex justify-between"><span className="text-muted-foreground">Order type:</span><span>Market buy</span></div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Steps in LOBSTR:</p>
+                <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal pl-4">
+                  <li>Open the <strong>LOBSTR</strong> app on your phone (install if needed).</li>
+                  <li>Tap <strong>Trade</strong> at the bottom.</li>
+                  <li>Search for <strong className="font-mono">{lobstrDialogOrder.buyCurrency}</strong>{lobstrDialogOrder.buyIssuer ? " — confirm the issuer matches the address shown above" : ""}.</li>
+                  {lobstrDialogOrder.buyCurrency !== "XLM" && lobstrDialogOrder.buyIssuer && (
+                    <li>If prompted, accept the <strong>trustline</strong> for this asset (one-time, costs ~0.5 XLM reserve).</li>
+                  )}
+                  <li>Choose <strong>Buy</strong>, enter <strong className="font-mono">{lobstrDialogOrder.spendAmount}</strong> {lobstrDialogOrder.spendCurrency} as the amount to spend.</li>
+                  <li>Tap <strong>Place Order</strong> and confirm.</li>
+                  <li>Come back here and tap <strong>Mark as executed</strong> below to log the buy.</li>
+                </ol>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">LOBSTR doesn't yet support automatic background signing for third-party DCA. This is the same one-tap flow you'd use to place any manual trade in LOBSTR.</p>
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <a href="https://lobstr.co/" target="_blank" rel="noopener noreferrer" className="w-full" data-testid="link-open-lobstr">
+              <Button className="w-full" variant="default">
+                <ExternalLink className="w-4 h-4 mr-2" /> Open LOBSTR
+              </Button>
+            </a>
+            <a
+              href={/iPhone|iPad|iPod/i.test(navigator.userAgent)
+                ? "https://apps.apple.com/app/lobstr-stellar-wallet/id1429103572"
+                : "https://play.google.com/store/apps/details?id=com.lobstr.client"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full"
+              data-testid="link-install-lobstr"
+            >
+              <Button className="w-full" variant="outline">
+                Install LOBSTR app
+              </Button>
+            </a>
+            <Button
+              className="w-full"
+              variant="secondary"
+              onClick={async () => {
+                if (!lobstrDialogOrder) return;
+                try {
+                  await apiRequest("POST", `/api/dca/${lobstrDialogOrder.id}/execution`, {
+                    status: "completed",
+                    executedPrice: "0",
+                    txHash: "manual-lobstr",
+                  });
+                  queryClient.invalidateQueries({ queryKey: ["/api/dca"] });
+                  toast({ title: "Logged", description: "DCA buy logged. Verify in LOBSTR's transactions." });
+                  setLobstrDialogOrder(null);
+                } catch (e: any) {
+                  toast({ title: "Could not log", description: e?.message || "Try again", variant: "destructive" });
+                }
+              }}
+              data-testid="button-mark-executed"
+            >
+              Mark as executed
             </Button>
           </DialogFooter>
         </DialogContent>
