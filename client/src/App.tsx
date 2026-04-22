@@ -80,6 +80,7 @@ import Insurance from "@/pages/insurance";
 import DeFiBorrowing from "@/pages/defi-borrowing";
 import RecurringPayments from "@/pages/recurring-payments";
 import DcaOrders from "@/pages/dca-orders";
+import BitcoinLightning from "@/pages/bitcoin-lightning";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button as UiButton } from "@/components/ui/button";
 import TokenBuckets from "@/pages/token-buckets";
@@ -250,6 +251,8 @@ function AuthenticatedRoutes() {
         <Route path="/ownbank/transfer" component={OwnBankTransfer} />
         <Route path="/ownbank/invoices" component={OwnBankInvoices} />
         <Route path="/ownbank/dca" component={DcaOrders} />
+        <Route path="/bitcoin" component={BitcoinLightning} />
+        <Route path="/bitcoin/send" component={BitcoinLightning} />
         {/* <Route path="/token-buckets" component={TokenBuckets} /> */}{/* TODO: Hidden until cross-chain bucket execution is built */}
         <Route path="/ownbank/recurring" component={RecurringPayments} />
         <Route path="/stellar/dca" component={DcaOrders} />

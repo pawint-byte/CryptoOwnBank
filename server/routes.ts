@@ -11053,6 +11053,43 @@ ${beneSections}
     }
   });
 
+  app.post("/api/lightning/validate-address", isAuthenticated, async (req: any, res) => {
+    try {
+      const address = String(req.body?.address || "").trim();
+      if (!address) return res.status(400).json({ ok: false, reason: "address is required" });
+      const { resolveLightningAddress } = await import("./services/lightning");
+      const result = await resolveLightningAddress(address);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ ok: false, reason: err?.message || "validation failed" });
+    }
+  });
+
+  app.post("/api/lightning/fetch-invoice", isAuthenticated, async (req: any, res) => {
+    try {
+      const address = String(req.body?.address || "").trim();
+      const amountSats = Number(req.body?.amountSats);
+      const comment = req.body?.comment ? String(req.body.comment) : undefined;
+      if (!address || !Number.isFinite(amountSats) || amountSats <= 0) {
+        return res.status(400).json({ ok: false, reason: "address and positive amountSats are required" });
+      }
+      const { resolveLightningAddress, fetchInvoiceForLnAddress } = await import("./services/lightning");
+      const resolved = await resolveLightningAddress(address);
+      if (!resolved.ok) return res.status(400).json(resolved);
+      const sats = Math.floor(amountSats);
+      if (sats < resolved.minSendableSats || sats > resolved.maxSendableSats) {
+        return res.status(400).json({
+          ok: false,
+          reason: `Amount must be between ${resolved.minSendableSats} and ${resolved.maxSendableSats} sats for this Lightning Address.`,
+        });
+      }
+      const invoice = await fetchInvoiceForLnAddress(resolved.callback, sats, comment);
+      res.json(invoice);
+    } catch (err: any) {
+      res.status(500).json({ ok: false, reason: err?.message || "fetch failed" });
+    }
+  });
+
   app.post("/api/dca-orders/:id/stellar/build-tx", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

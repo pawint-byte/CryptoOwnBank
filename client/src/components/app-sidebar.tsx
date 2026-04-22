@@ -128,6 +128,7 @@ const allItems: NavItem[] = [
   { title: "Payments Hub", url: "/payments", icon: CreditCard, group: "ownbank" },
   { title: "XRPL Send & Receive", url: "/ownbank/send", icon: Send, group: "ownbank", chain: "xrpl" },
   { title: "Stellar Send & Receive", url: "/stellar/send", icon: Send, group: "ownbank", chain: "stellar" },
+  { title: "Bitcoin & Lightning", url: "/bitcoin", icon: Send, group: "ownbank" },
   { title: "XRPL Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, group: "ownbank", chain: "xrpl" },
   { title: "Stellar Invoices", url: "/stellar/invoices", icon: InvoiceIcon, group: "ownbank", chain: "stellar" },
   { title: "XRPL Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, group: "ownbank", chain: "xrpl" },
