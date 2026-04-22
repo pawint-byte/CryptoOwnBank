@@ -17,6 +17,8 @@ const STELLAR_ASSETS: Record<string, { code: string; issuer: string | null }> = 
 export type StellarBuildResult =
   | { kind: "needsTrustline"; assetCode: string; assetIssuer: string; trustlineDeepLink: string }
   | { kind: "needsFunding"; minXlm: number; currentXlm: number }
+  | { kind: "needsSpendTrustline"; assetCode: string; assetIssuer: string }
+  | { kind: "insufficientBalance"; assetCode: string; required: string; available: string }
   | { kind: "noLiquidity"; spendCurrency: string; buyCurrency: string }
   | { kind: "ready"; token: string; deepLink: string; xdr: string; expectedReceive: string; minReceive: string; expiresAt: number };
 
@@ -168,13 +170,17 @@ export async function buildStellarDcaTransaction(params: {
         b.asset_issuer === sendIssuer
     ) as any;
     const sendAmountNum = parseFloat(order.spendAmount);
-    if (!sendBal || parseFloat(sendBal.balance) < sendAmountNum) {
-      return { kind: "noLiquidity", spendCurrency: order.spendCurrency, buyCurrency: order.buyCurrency };
+    if (!sendBal) {
+      return { kind: "needsSpendTrustline", assetCode: sendCode, assetIssuer: sendIssuer };
+    }
+    const available = parseFloat(sendBal.balance);
+    if (available < sendAmountNum) {
+      return { kind: "insufficientBalance", assetCode: sendCode, required: order.spendAmount, available: sendBal.balance };
     }
   } else {
     const sendAmountNum = parseFloat(order.spendAmount);
     if (xlmBalance - 1.5 < sendAmountNum) {
-      return { kind: "noLiquidity", spendCurrency: order.spendCurrency, buyCurrency: order.buyCurrency };
+      return { kind: "insufficientBalance", assetCode: "XLM", required: order.spendAmount, available: (xlmBalance - 1.5).toFixed(7) };
     }
   }
 

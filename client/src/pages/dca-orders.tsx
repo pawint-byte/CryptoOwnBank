@@ -448,8 +448,26 @@ export default function DcaOrders() {
           toast({ title: "Stellar account needs funding", description: `Wallet has ${data.currentXlm} XLM, need at least ${data.minXlm} XLM to cover reserve + fee.`, variant: "destructive" });
           return;
         }
+        if (data.kind === "needsSpendTrustline") {
+          toast({
+            title: `No ${data.assetCode} trustline`,
+            description: `Your Stellar wallet doesn't trust ${data.assetCode} yet. Add the trustline in LOBSTR (Trade → search ${data.assetCode} → Add asset) and fund the wallet with ${data.assetCode}, then try again.`,
+            variant: "destructive",
+            duration: 15000,
+          });
+          return;
+        }
+        if (data.kind === "insufficientBalance") {
+          toast({
+            title: `Not enough ${data.assetCode}`,
+            description: `This buy needs ${data.required} ${data.assetCode} but your wallet only has ${parseFloat(data.available).toFixed(4)} ${data.assetCode} available. Top up your Stellar wallet and try again.`,
+            variant: "destructive",
+            duration: 15000,
+          });
+          return;
+        }
         if (data.kind === "noLiquidity") {
-          toast({ title: "No DEX liquidity right now", description: `Couldn't route ${data.spendCurrency} → ${data.buyCurrency} on the Stellar DEX. Try again in a bit or check your spend balance.`, variant: "destructive" });
+          toast({ title: "No DEX liquidity right now", description: `Couldn't route ${data.spendCurrency} → ${data.buyCurrency} on the Stellar DEX. Try again in a bit — this is rare for major pairs.`, variant: "destructive" });
           return;
         }
         if (data.kind === "invalidOrder") {
