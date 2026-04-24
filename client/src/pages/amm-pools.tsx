@@ -275,7 +275,19 @@ export default function AmmPools() {
             </div>
           ) : (
             <div className="space-y-3">
-              {pools.map((pool) => (
+              {pools.map((pool) => {
+                const feeRate = pool.tradingFeePercent / 100;
+                const asset1Pool = parseFloat(pool.asset1Amount) || 0;
+                const asset2Pool = parseFloat(pool.asset2Amount) || 0;
+                const vol1 = pool.volume24hAsset1 ?? 0;
+                const vol2 = pool.volume24hAsset2 ?? 0;
+                const apr1 = asset1Pool > 0 ? (vol1 * feeRate * 365) / asset1Pool * 100 : 0;
+                const apr2 = asset2Pool > 0 ? (vol2 * feeRate * 365) / asset2Pool * 100 : 0;
+                const sides = [apr1, apr2].filter((v) => v > 0);
+                const estimatedApr = sides.length > 0 ? sides.reduce((a, b) => a + b, 0) / sides.length : 0;
+                const hasVolume = vol1 > 0 || vol2 > 0;
+
+                return (
                 <div
                   key={pool.id}
                   className="rounded-lg border p-4 hover:bg-accent/30 transition-colors"
@@ -288,10 +300,33 @@ export default function AmmPools() {
                         Pool Account: {pool.account?.slice(0, 8)}...{pool.account?.slice(-6)}
                       </p>
                     </div>
-                    <Badge className="bg-green-500/10 text-green-600 border-green-500/30" variant="outline">
-                      <Percent className="h-3 w-3 mr-1" />
-                      {pool.tradingFeePercent}% fee
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {hasVolume ? (
+                        <Badge
+                          className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                          variant="outline"
+                          data-testid={`badge-pool-apr-${pool.id}`}
+                          title={`Estimated annualised yield: 24h volume (${formatNumber(vol1, 2)} ${pool.asset1Currency} / ${formatNumber(vol2, 2)} ${pool.asset2Currency}) × ${pool.tradingFeePercent}% fee × 365 ÷ pool TVL. Assumes current volume continues.`}
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          ~{estimatedApr.toFixed(2)}% APR
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground border-muted-foreground/30"
+                          data-testid={`badge-pool-apr-${pool.id}`}
+                          title="No on-chain trading volume in the last 24 hours, so an APR estimate isn't meaningful right now."
+                        >
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          APR n/a
+                        </Badge>
+                      )}
+                      <Badge className="bg-green-500/10 text-green-600 border-green-500/30" variant="outline">
+                        <Percent className="h-3 w-3 mr-1" />
+                        {pool.tradingFeePercent}% fee
+                      </Badge>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm">
                     <div>
@@ -311,6 +346,14 @@ export default function AmmPools() {
                       <p className="font-medium text-green-600">{pool.tradingFeePercent}% per trade</p>
                     </div>
                   </div>
+                  {hasVolume && (
+                    <p
+                      className="text-[10px] text-muted-foreground leading-snug mt-2"
+                      data-testid={`text-pool-apr-disclaimer-${pool.id}`}
+                    >
+                      Estimated APR assumes the last 24h on-chain volume ({formatNumber(vol1, 2)} {pool.asset1Currency} / {formatNumber(vol2, 2)} {pool.asset2Currency}) continues for a full year. Actual yield depends on future volume, fee changes and impermanent loss.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
                     <Button
                       size="sm"
@@ -340,7 +383,8 @@ export default function AmmPools() {
                     </a>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
