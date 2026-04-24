@@ -4736,7 +4736,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
   app.put("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone, stellarAddress, fullName, addressLine1, addressLine2, profileCity, profileStateProvince, postalCode, profileCountry } = req.body;
+      const { taxMethod, defaultCurrency, taxYear, businessName, businessLogo, businessTagline, businessEmail, businessWebsite, businessPhone, stellarAddress, fullName, addressLine1, addressLine2, profileCity, profileStateProvince, postalCode, profileCountry, rpcMode, customRpcUrl } = req.body;
       
       const updateData: any = { userId };
       if (taxMethod !== undefined) updateData.taxMethod = taxMethod;
@@ -4756,6 +4756,27 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       if (profileStateProvince !== undefined) updateData.profileStateProvince = profileStateProvince;
       if (postalCode !== undefined) updateData.postalCode = postalCode;
       if (profileCountry !== undefined) updateData.profileCountry = profileCountry;
+      if (rpcMode !== undefined) {
+        if (typeof rpcMode !== "string" || !["direct", "relay", "custom"].includes(rpcMode)) {
+          return res.status(400).json({ message: "Invalid rpcMode (must be direct, relay, or custom)" });
+        }
+        updateData.rpcMode = rpcMode;
+      }
+      if (customRpcUrl !== undefined) {
+        if (customRpcUrl === null || customRpcUrl === "") {
+          updateData.customRpcUrl = null;
+        } else if (typeof customRpcUrl !== "string" || !/^https:\/\//i.test(customRpcUrl) || customRpcUrl.length > 500) {
+          return res.status(400).json({ message: "customRpcUrl must be an https:// URL up to 500 chars" });
+        } else {
+          updateData.customRpcUrl = customRpcUrl;
+        }
+      }
+      if (updateData.rpcMode === "custom" && !updateData.customRpcUrl) {
+        const existing = await storage.getUserSettings(userId);
+        if (!existing?.customRpcUrl) {
+          return res.status(400).json({ message: "customRpcUrl is required when rpcMode is custom" });
+        }
+      }
       
       const settings = await storage.upsertUserSettings(updateData);
       
@@ -4763,6 +4784,58 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     } catch (error) {
       console.error("Update settings error:", error);
       res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
+  const rpcRateLimits = new Map<string, { count: number; windowStart: number }>();
+  const RPC_RATE_LIMIT = 60;
+  const RPC_RATE_WINDOW_MS = 60_000;
+  const RPC_MAX_BODY_BYTES = 64 * 1024;
+
+  app.post("/api/rpc/:chain", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const now = Date.now();
+      const bucket = rpcRateLimits.get(userId);
+      if (!bucket || now - bucket.windowStart > RPC_RATE_WINDOW_MS) {
+        rpcRateLimits.set(userId, { count: 1, windowStart: now });
+      } else {
+        bucket.count += 1;
+        if (bucket.count > RPC_RATE_LIMIT) {
+          return res.status(429).json({ message: "Rate limit exceeded" });
+        }
+      }
+
+      const { chain } = req.params;
+      const ALLOWED = ["flare", "xrpl", "ethereum", "avalanche", "solana"];
+      if (!ALLOWED.includes(chain)) {
+        return res.status(400).json({ message: "Unsupported chain" });
+      }
+
+      const bodyBytes = JSON.stringify(req.body || {}).length;
+      if (bodyBytes > RPC_MAX_BODY_BYTES) {
+        return res.status(413).json({ message: "Payload too large" });
+      }
+
+      const { method, params } = req.body || {};
+      if (typeof method !== "string" || !Array.isArray(params)) {
+        return res.status(400).json({ message: "Invalid JSON-RPC payload" });
+      }
+
+      const DENIED_METHODS = new Set([
+        "debug_traceTransaction", "debug_traceBlockByNumber", "debug_traceBlockByHash",
+        "trace_block", "trace_filter", "trace_replayBlockTransactions",
+      ]);
+      if (DENIED_METHODS.has(method)) {
+        return res.status(403).json({ message: "Method not allowed via relay" });
+      }
+
+      const { relayJsonRpc } = await import("./services/rpc-relay");
+      const result = await relayJsonRpc(chain as any, method, params);
+      res.json({ jsonrpc: "2.0", id: 1, result });
+    } catch (error: any) {
+      console.error("RPC relay error:", error?.message || error);
+      res.status(502).json({ message: "Relay failed", detail: error?.message });
     }
   });
 

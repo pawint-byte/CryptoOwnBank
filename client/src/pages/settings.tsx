@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
@@ -78,6 +79,155 @@ import {
   Zap,
 } from "lucide-react";
 import type { UserSettings, UserWallet } from "@shared/schema";
+
+function PrivacyModeCard() {
+  const { toast } = useToast();
+  const { data: settings } = useQuery<UserSettings>({ queryKey: ["/api/settings"] });
+  const currentMode = ((settings as any)?.rpcMode as "direct" | "relay" | "custom") || "direct";
+  const currentCustomUrl = (settings as any)?.customRpcUrl || "";
+
+  const [mode, setMode] = useState<"direct" | "relay" | "custom">(currentMode);
+  const [customUrl, setCustomUrl] = useState<string>(currentCustomUrl);
+
+  useEffect(() => {
+    setMode(currentMode);
+    setCustomUrl(currentCustomUrl);
+  }, [currentMode, currentCustomUrl]);
+
+  const mutation = useMutation({
+    mutationFn: async (payload: { rpcMode: string; customRpcUrl: string | null }) =>
+      apiRequest("PUT", "/api/settings", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "Privacy Mode saved" });
+    },
+    onError: () => {
+      toast({ title: "Failed to save Privacy Mode", variant: "destructive" });
+    },
+  });
+
+  const isCustomValid = mode !== "custom" || /^https:\/\//i.test(customUrl);
+
+  const handleSave = () => {
+    if (!isCustomValid) {
+      toast({ title: "Custom RPC URL must start with https://", variant: "destructive" });
+      return;
+    }
+    mutation.mutate({
+      rpcMode: mode,
+      customRpcUrl: mode === "custom" ? customUrl : null,
+    });
+  };
+
+  return (
+    <Card data-testid="card-privacy-mode">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Privacy Mode
+        </CardTitle>
+        <CardDescription className="max-w-3xl">
+          Choose how your wallet reaches blockchain networks. CryptoOwnBank does not
+          custody your funds in any mode — your keys always stay on your device.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <RadioGroup
+          value={mode}
+          onValueChange={(v) => setMode(v as any)}
+          className="space-y-2"
+        >
+          <div className="flex items-start gap-3 p-3 rounded-md border hover-elevate cursor-pointer">
+            <RadioGroupItem value="direct" id="rpc-direct" data-testid="radio-rpc-direct" />
+            <Label htmlFor="rpc-direct" className="flex-1 cursor-pointer">
+              <div className="font-medium">Direct (default)</div>
+              <p className="text-xs text-muted-foreground">
+                Your browser/wallet talks to public RPC providers (Infura, Alchemy,
+                Ripple). Fastest. Public RPC providers can see your IP address.
+              </p>
+            </Label>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-md border hover-elevate cursor-pointer">
+            <RadioGroupItem value="relay" id="rpc-relay" data-testid="radio-rpc-relay" />
+            <Label htmlFor="rpc-relay" className="flex-1 cursor-pointer">
+              <div className="font-medium">CryptoOwnBank Relay</div>
+              <p className="text-xs text-muted-foreground">
+                RPC reads and broadcasts are routed through CryptoOwnBank with multi-RPC
+                failover. Public RPC providers see our IP, not yours. Free.
+              </p>
+            </Label>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-md border hover-elevate cursor-pointer">
+            <RadioGroupItem value="custom" id="rpc-custom" data-testid="radio-rpc-custom" />
+            <Label htmlFor="rpc-custom" className="flex-1 cursor-pointer">
+              <div className="font-medium">Custom Private RPC</div>
+              <p className="text-xs text-muted-foreground">
+                Use your own RPC endpoint (self-hosted node, paid provider, etc.). Used
+                client-side only — we don't proxy custom URLs from our server.
+              </p>
+            </Label>
+          </div>
+        </RadioGroup>
+
+        {mode === "custom" && (
+          <div className="space-y-1">
+            <Label htmlFor="custom-rpc-url">Custom RPC URL</Label>
+            <Input
+              id="custom-rpc-url"
+              type="url"
+              placeholder="https://your-rpc-endpoint.example/rpc"
+              value={customUrl}
+              onChange={(e) => setCustomUrl(e.target.value)}
+              data-testid="input-custom-rpc-url"
+            />
+            <p className="text-xs text-muted-foreground">Must start with https://</p>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button
+            onClick={handleSave}
+            disabled={mutation.isPending || !isCustomValid}
+            data-testid="button-save-privacy-mode"
+          >
+            {mutation.isPending ? "Saving..." : "Save & Apply"}
+          </Button>
+        </div>
+
+        <Separator />
+
+        <ul className="space-y-1 list-disc pl-5 text-sm text-muted-foreground">
+          <li>
+            Privacy Mode does not anonymize on-chain transactions. Transaction details
+            remain permanently visible on the public blockchain.
+          </li>
+          <li>CryptoOwnBank is not a VPN service and does not relay general internet traffic.</li>
+          <li>
+            We do not log or sell relay activity. We may rate-limit abusive use to keep
+            relays available for everyone.
+          </li>
+          <li>
+            Users are responsible for compliance with applicable laws in their
+            jurisdiction.
+          </li>
+        </ul>
+
+        <p className="text-sm text-muted-foreground">
+          Wallet integrations adopt your chosen mode incrementally as features are
+          updated. Looking for network-level privacy beyond RPC?{" "}
+          <a
+            href="/dvpn"
+            className="underline text-primary"
+            data-testid="link-dvpn-from-privacy"
+          >
+            Browse decentralized network partners
+          </a>
+          .
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 const settingsFormSchema = z.object({
   taxMethod: z.enum(["FIFO", "LIFO"]),
@@ -2000,6 +2150,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PrivacyModeCard />
 
       <Card>
         <CardHeader>

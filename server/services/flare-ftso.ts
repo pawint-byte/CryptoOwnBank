@@ -1,4 +1,5 @@
-const FLARE_RPC = "https://flare-api.flare.network/ext/C/rpc";
+import { relayJsonRpc } from "./rpc-relay";
+
 const FLARE_EXPLORER_API = "https://flare-explorer.flare.network/api";
 
 const WFLR_CONTRACT = "0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d";
@@ -9,15 +10,7 @@ const FLARE_CACHE: Record<string, { data: any; lastFetch: number }> = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
 async function rpcCall(method: string, params: any[]): Promise<any> {
-  const resp = await fetch(FLARE_RPC, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(15000),
-  });
-  const json = await resp.json();
-  if (json.error) throw new Error(json.error.message);
-  return json.result;
+  return relayJsonRpc("flare", method, params);
 }
 
 function encodeAddress(addr: string): string {

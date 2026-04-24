@@ -596,6 +596,18 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
+                  isActive={location === "/dvpn"}
+                  data-testid="nav-dvpn"
+                >
+                  <Link href="/dvpn">
+                    <Shield className="h-4 w-4" />
+                    <span>dVPN Partners</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
                   isActive={location === "/settings"}
                   data-testid="nav-settings"
                 >

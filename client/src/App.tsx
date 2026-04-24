@@ -38,6 +38,7 @@ import Portfolio from "@/pages/portfolio";
 import TaxReports from "@/pages/tax-reports";
 import Integrations from "@/pages/integrations";
 import Settings from "@/pages/settings";
+import DvpnDirectory from "@/pages/dvpn-directory";
 import OwnBankDashboard from "@/pages/ownbank-dashboard";
 import OwnBankVaults from "@/pages/ownbank-vaults";
 import OwnBankWithdraw from "@/pages/ownbank-withdraw";
@@ -235,6 +236,7 @@ function AuthenticatedRoutes() {
         <Route path="/tax-reports" component={TaxReports} />
         <Route path="/integrations" component={Integrations} />
         <Route path="/settings" component={Settings} />
+        <Route path="/dvpn" component={DvpnDirectory} />
         <Route path="/ownbank" component={OwnBankDashboard} />
         <Route path="/ownbank/vaults" component={OwnBankVaults} />
         <Route path="/ownbank/withdraw" component={OwnBankWithdraw} />

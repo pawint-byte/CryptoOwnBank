@@ -149,6 +149,8 @@ export const userSettings = pgTable("user_settings", {
   autoWithdrawThreshold: decimal("auto_withdraw_threshold", { precision: 18, scale: 6 }).default("5"),
   autoWithdrawFrequency: varchar("auto_withdraw_frequency", { length: 20 }).default("daily"),
   autoWithdrawLastRunAt: timestamp("auto_withdraw_last_run_at"),
+  rpcMode: varchar("rpc_mode", { length: 20 }).default("direct"),
+  customRpcUrl: varchar("custom_rpc_url", { length: 500 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
