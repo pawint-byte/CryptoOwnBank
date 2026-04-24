@@ -5,7 +5,11 @@ const AMM_CACHE: {
   lastFetch: number;
 } = { data: null, lastFetch: 0 };
 
+const VOLUME_CACHE: Record<string, { vol1: number; vol2: number; lastFetch: number }> = {};
+
 const CACHE_TTL = 5 * 60 * 1000;
+const VOLUME_CACHE_TTL = 5 * 60 * 1000;
+const RIPPLE_EPOCH = 946684800;
 
 const POPULAR_AMM_PAIRS = [
   {
@@ -47,6 +51,117 @@ async function connectXrpl(): Promise<Client> {
   throw new Error("Could not connect to any XRPL endpoint");
 }
 
+async function compute24hVolume(
+  client: Client,
+  ammAccount: string,
+  asset2Currency: string,
+): Promise<{ vol1: number; vol2: number }> {
+  const cached = VOLUME_CACHE[ammAccount];
+  const now = Date.now();
+  if (cached && now - cached.lastFetch < VOLUME_CACHE_TTL) {
+    return { vol1: cached.vol1, vol2: cached.vol2 };
+  }
+
+  const cutoffUnix = Math.floor(now / 1000) - 24 * 3600;
+  let vol1 = 0;
+  let vol2 = 0;
+  let marker: any = undefined;
+  const maxPages = 4;
+  let page = 0;
+
+  try {
+    while (page < maxPages) {
+      const resp: any = await client.request({
+        command: "account_tx",
+        account: ammAccount,
+        limit: 100,
+        forward: false,
+        marker,
+      } as any);
+
+      const txs = resp?.result?.transactions || [];
+      if (txs.length === 0) break;
+
+      let stop = false;
+      for (const entry of txs) {
+        const tx = entry.tx || entry.tx_json || {};
+        const meta = entry.meta;
+        const rippleDate = tx.date ?? entry.tx_json?.date;
+        if (typeof rippleDate !== "number") continue;
+        const txUnix = rippleDate + RIPPLE_EPOCH;
+        if (txUnix < cutoffUnix) {
+          stop = true;
+          break;
+        }
+
+        const txType = tx.TransactionType;
+        if (txType === "AMMDeposit" || txType === "AMMWithdraw" || txType === "AMMCreate") continue;
+        if (!meta || !meta.AffectedNodes) continue;
+
+        let delta1 = 0;
+        let delta2 = 0;
+
+        for (const node of meta.AffectedNodes) {
+          const wrapper = node.ModifiedNode || node.CreatedNode || node.DeletedNode;
+          if (!wrapper) continue;
+
+          if (wrapper.LedgerEntryType === "AccountRoot") {
+            const fields = wrapper.FinalFields || wrapper.NewFields || {};
+            if (fields.Account !== ammAccount) continue;
+            const finalBal = parseInt(fields.Balance ?? "0", 10);
+            const prevBal = parseInt(
+              wrapper.PreviousFields?.Balance ?? fields.Balance ?? "0",
+              10,
+            );
+            if (!isNaN(finalBal) && !isNaN(prevBal)) {
+              delta1 += (finalBal - prevBal) / 1_000_000;
+            }
+          } else if (wrapper.LedgerEntryType === "RippleState") {
+            const fields = wrapper.FinalFields || wrapper.NewFields || {};
+            const lowLimit = fields.LowLimit;
+            const highLimit = fields.HighLimit;
+            const involvesAmm =
+              lowLimit?.issuer === ammAccount || highLimit?.issuer === ammAccount;
+            if (!involvesAmm) continue;
+            const finalBalance = fields.Balance;
+            if (!finalBalance) continue;
+            if (finalBalance.currency !== asset2Currency) continue;
+            const prevBalance =
+              wrapper.PreviousFields?.Balance ?? finalBalance;
+            const finalVal = parseFloat(finalBalance.value || "0");
+            const prevVal = parseFloat(prevBalance.value || finalBalance.value || "0");
+            if (!isNaN(finalVal) && !isNaN(prevVal)) {
+              delta2 += Math.abs(finalVal - prevVal);
+            }
+          }
+        }
+
+        vol1 += Math.abs(delta1);
+        vol2 += delta2;
+      }
+
+      if (stop) break;
+      marker = resp?.result?.marker;
+      if (!marker) break;
+      page++;
+    }
+  } catch (err: any) {
+    console.warn(`[xrpl-amm] Volume calc failed for ${ammAccount}:`, err?.message || err);
+  }
+
+  VOLUME_CACHE[ammAccount] = { vol1, vol2, lastFetch: now };
+  return { vol1, vol2 };
+}
+
+function decodeCurrency(code: string | undefined): string {
+  if (!code) return "";
+  if (code === "XRP") return "XRP";
+  if (code.length > 3) {
+    return Buffer.from(code, "hex").toString("utf8").replace(/\0/g, "");
+  }
+  return code;
+}
+
 export async function getAmmPoolInfo(): Promise<any[]> {
   const now = Date.now();
   if (AMM_CACHE.data && now - AMM_CACHE.lastFetch < CACHE_TTL) {
@@ -77,21 +192,22 @@ export async function getAmmPoolInfo(): Promise<any[]> {
           const tradingFee = amm.trading_fee || 0;
           const feePercent = tradingFee / 1000;
 
+          const asset2RawCurrency = typeof amm.amount2 === "string" ? "XRP" : amm.amount2?.currency;
+          const { vol1, vol2 } = await compute24hVolume(client, amm.account, asset2RawCurrency);
+
           pools.push({
             id: pair.id,
             label: pair.label,
             asset1Amount: amount1.value || "0",
-            asset1Currency: amount1.currency === "XRP" ? "XRP" : amount1.currency?.length > 3
-              ? Buffer.from(amount1.currency, "hex").toString("utf8").replace(/\0/g, "")
-              : amount1.currency,
+            asset1Currency: decodeCurrency(amount1.currency),
             asset2Amount: amount2.value || "0",
-            asset2Currency: amount2.currency === "XRP" ? "XRP" : amount2.currency?.length > 3
-              ? Buffer.from(amount2.currency, "hex").toString("utf8").replace(/\0/g, "")
-              : amount2.currency,
+            asset2Currency: decodeCurrency(amount2.currency),
             lpTokenBalance: amm.lp_token?.value || "0",
             tradingFeePercent: feePercent,
             auctionSlot: amm.auction_slot || null,
             account: amm.account,
+            volume24hAsset1: vol1,
+            volume24hAsset2: vol2,
           });
         }
       } catch (err: any) {
@@ -164,10 +280,10 @@ export async function getUserAmmPositions(walletAddress: string): Promise<any[]>
             const tradingFee = amm.trading_fee || 0;
             const feePercent = tradingFee / 1000;
 
-            const asset2Currency = typeof amm.amount2 === "string" ? "XRP" :
-              (amm.amount2?.currency?.length > 3
-                ? Buffer.from(amm.amount2.currency, "hex").toString("utf8").replace(/\0/g, "")
-                : amm.amount2?.currency);
+            const asset2RawCurrency = typeof amm.amount2 === "string" ? "XRP" : amm.amount2?.currency;
+            const asset2Currency = decodeCurrency(asset2RawCurrency);
+
+            const { vol1, vol2 } = await compute24hVolume(client, ammAccount, asset2RawCurrency);
 
             positions.push({
               id: pair.id,
@@ -182,6 +298,8 @@ export async function getUserAmmPositions(walletAddress: string): Promise<any[]>
               tradingFeePercent: feePercent,
               totalPoolAsset1: amount1,
               totalPoolAsset2: amount2,
+              volume24hAsset1: vol1,
+              volume24hAsset2: vol2,
             });
           }
         }

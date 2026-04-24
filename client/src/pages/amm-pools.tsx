@@ -47,6 +47,8 @@ interface AmmPool {
   lpTokenBalance: string;
   tradingFeePercent: number;
   account: string;
+  volume24hAsset1?: number;
+  volume24hAsset2?: number;
 }
 
 interface AmmPosition {
@@ -62,6 +64,8 @@ interface AmmPosition {
   tradingFeePercent: number;
   totalPoolAsset1: number;
   totalPoolAsset2: number;
+  volume24hAsset1?: number;
+  volume24hAsset2?: number;
 }
 
 function formatNumber(n: number | string, decimals = 2): string {
@@ -150,36 +154,86 @@ export default function AmmPools() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {positions.map((pos) => (
-                <Card key={pos.id} className="border-blue-500/30" data-testid={`card-position-${pos.id}`}>
-                  <CardContent className="pt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold" data-testid={`text-position-label-${pos.id}`}>{pos.label}</p>
-                      <Badge variant="outline" className="text-blue-600 border-blue-500/30 text-xs">
-                        {pos.sharePercent.toFixed(4)}% share
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Your {pos.asset1Currency}</p>
-                        <p className="font-medium" data-testid={`text-user-asset1-${pos.id}`}>{formatNumber(pos.userAsset1)}</p>
+              {positions.map((pos) => {
+                const share = pos.sharePercent / 100;
+                const feeRate = pos.tradingFeePercent / 100;
+                const vol1 = pos.volume24hAsset1 ?? 0;
+                const vol2 = pos.volume24hAsset2 ?? 0;
+                const dailyAsset1 = vol1 * feeRate * share;
+                const dailyAsset2 = vol2 * feeRate * share;
+                const monthlyAsset1 = dailyAsset1 * 30;
+                const monthlyAsset2 = dailyAsset2 * 30;
+                const hasVolume = vol1 > 0 || vol2 > 0;
+
+                return (
+                  <Card key={pos.id} className="border-blue-500/30" data-testid={`card-position-${pos.id}`}>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold" data-testid={`text-position-label-${pos.id}`}>{pos.label}</p>
+                        <Badge variant="outline" className="text-blue-600 border-blue-500/30 text-xs">
+                          {pos.sharePercent.toFixed(4)}% share
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Your {pos.asset2Currency}</p>
-                        <p className="font-medium" data-testid={`text-user-asset2-${pos.id}`}>{formatNumber(pos.userAsset2)}</p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Your {pos.asset1Currency}</p>
+                          <p className="font-medium" data-testid={`text-user-asset1-${pos.id}`}>{formatNumber(pos.userAsset1)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Your {pos.asset2Currency}</p>
+                          <p className="font-medium" data-testid={`text-user-asset2-${pos.id}`}>{formatNumber(pos.userAsset2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">LP Tokens</p>
+                          <p className="font-medium">{formatNumber(pos.lpTokens, 4)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Trading Fee</p>
+                          <p className="font-medium text-green-600">{pos.tradingFeePercent}%</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">LP Tokens</p>
-                        <p className="font-medium">{formatNumber(pos.lpTokens, 4)}</p>
+
+                      <div className="rounded-md border border-green-500/20 bg-green-500/5 p-3 space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                          <p className="text-xs font-semibold text-green-700 dark:text-green-400" data-testid={`text-earnings-title-${pos.id}`}>
+                            Estimated fee earnings
+                          </p>
+                        </div>
+                        {hasVolume ? (
+                          <>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">Per day</p>
+                                <p className="font-medium" data-testid={`text-daily-earnings-${pos.id}`}>
+                                  {formatNumber(dailyAsset1, 4)} {pos.asset1Currency}
+                                  <span className="text-muted-foreground"> + </span>
+                                  {formatNumber(dailyAsset2, 4)} {pos.asset2Currency}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Per month</p>
+                                <p className="font-medium" data-testid={`text-monthly-earnings-${pos.id}`}>
+                                  {formatNumber(monthlyAsset1, 4)} {pos.asset1Currency}
+                                  <span className="text-muted-foreground"> + </span>
+                                  {formatNumber(monthlyAsset2, 4)} {pos.asset2Currency}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground leading-snug" data-testid={`text-earnings-disclaimer-${pos.id}`}>
+                              Estimate based on the pool's last 24h on-chain volume ({formatNumber(vol1, 2)} {pos.asset1Currency} / {formatNumber(vol2, 2)} {pos.asset2Currency}) × {pos.tradingFeePercent}% fee × your {pos.sharePercent.toFixed(4)}% share. Actual earnings vary with volume and impermanent loss.
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-muted-foreground" data-testid={`text-no-volume-${pos.id}`}>
+                            No trading volume in the last 24 hours — fees only accrue when this pool is traded against.
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Trading Fee</p>
-                        <p className="font-medium text-green-600">{pos.tradingFeePercent}%</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
