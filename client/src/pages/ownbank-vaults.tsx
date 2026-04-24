@@ -32,6 +32,7 @@ import {
   Clock,
   AlertTriangle,
   Target,
+  Search,
 } from "lucide-react";
 import { useXrplStore, type VaultDeposit } from "@/lib/xrpl-store";
 import { WalletPicker } from "@/components/wallet-picker";
@@ -137,6 +138,22 @@ export default function OwnBankVaults() {
 
   const [isSyncingDoppler, setIsSyncingDoppler] = useState(false);
   const [dopplerSyncError, setDopplerSyncError] = useState<string | null>(null);
+  const [isDetectingDoppler, setIsDetectingDoppler] = useState(false);
+  const [dopplerDetectResult, setDopplerDetectResult] = useState<null | {
+    detected: boolean;
+    walletAddress: string;
+    netDeposited: number;
+    totalDeposited: number;
+    totalWithdrawn: number;
+    depositCount: number;
+    withdrawalCount: number;
+    firstDepositDate?: string;
+    lastDepositDate?: string;
+    estimatedEarnedToDate?: number;
+    deposits?: { amount: number; date: string; txHash: string }[];
+    truncated?: boolean;
+    message?: string;
+  }>(null);
 
   const { stellarAddress, isConnected: isStellarConnected } = useStellarStore();
 
@@ -195,6 +212,49 @@ export default function OwnBankVaults() {
       } catch {}
       setBlendSyncError(msg);
       toast({ title: "Sync Failed", description: msg, variant: "destructive" });
+    },
+  });
+
+  const dopplerDetectMutation = useMutation({
+    mutationFn: async () => {
+      setIsDetectingDoppler(true);
+      const res = await apiRequest("POST", "/api/doppler/detect-onchain", {
+        walletAddress,
+        walletType,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      setIsDetectingDoppler(false);
+      setDopplerSyncError(null);
+      setDopplerDetectResult(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/positions/doppler"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      if (data.detected) {
+        toast({
+          title: "On-chain deposits found",
+          description: `${data.netDeposited.toLocaleString(undefined, { maximumFractionDigits: 2 })} XRP net deposited across ${data.depositCount} payment${data.depositCount === 1 ? "" : "s"}.`,
+        });
+      } else {
+        toast({
+          title: "No deposits found",
+          description: data.message || "No payments to the Doppler XRP Vault address were found in your wallet's history.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      setIsDetectingDoppler(false);
+      let msg = "Could not scan XRPL history. Try again later.";
+      try {
+        const raw = error?.message || "";
+        const jsonStart = raw.indexOf("{");
+        if (jsonStart >= 0) {
+          const parsed = JSON.parse(raw.slice(jsonStart));
+          if (parsed.message) msg = parsed.message;
+        }
+      } catch {}
+      setDopplerSyncError(msg);
+      toast({ title: "On-chain detection failed", description: msg, variant: "destructive" });
     },
   });
 
@@ -787,7 +847,7 @@ export default function OwnBankVaults() {
                       Xaman Guide
                     </a>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {isConnected && !dopplerPosition && (
                       <Button
                         variant="outline"
@@ -804,6 +864,25 @@ export default function OwnBankVaults() {
                         )}
                         <span className="hidden sm:inline">Sync Position</span>
                         <span className="sm:hidden">Sync</span>
+                      </Button>
+                    )}
+                    {isConnected && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => dopplerDetectMutation.mutate()}
+                        disabled={isDetectingDoppler}
+                        className="border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                        data-testid="button-doppler-detect-onchain"
+                        title="Scan your XRPL transaction history for deposits to the Doppler vault address. Works without a partner API key."
+                      >
+                        {isDetectingDoppler ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4 mr-1" />
+                        )}
+                        <span className="hidden sm:inline">Detect on-chain</span>
+                        <span className="sm:hidden">Detect</span>
                       </Button>
                     )}
                     <Button

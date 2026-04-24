@@ -1427,6 +1427,233 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/doppler/detect-onchain", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      const [user] = await db.select({
+        xrplWalletAddress: users.xrplWalletAddress,
+      }).from(users).where(eq(users.id, userId));
+
+      let walletAddress = user?.xrplWalletAddress;
+      if (!walletAddress && req.body.walletAddress) {
+        walletAddress = req.body.walletAddress;
+        await db.update(users).set({
+          xrplWalletAddress: walletAddress,
+          xrplWalletType: req.body.walletType || "xumm",
+        }).where(eq(users.id, userId));
+      }
+
+      if (!walletAddress || typeof walletAddress !== "string" || !walletAddress.startsWith("r")) {
+        return res.status(400).json({ message: "No XRPL wallet connected. Connect your XRPL wallet first." });
+      }
+
+      const deposits: { amountXrp: number; date: string; txHash: string }[] = [];
+      const withdrawals: { amountXrp: number; date: string; txHash: string }[] = [];
+
+      const MAX_PAGES = 20;
+      let marker: any = undefined;
+      let pages = 0;
+      let xrplError: string | null = null;
+
+      while (pages < MAX_PAGES) {
+        pages++;
+        const params: any = {
+          account: walletAddress,
+          ledger_index_min: -1,
+          ledger_index_max: -1,
+          limit: 200,
+          forward: false,
+        };
+        if (marker) params.marker = marker;
+
+        let apiRes: Response;
+        try {
+          apiRes = await fetch("https://xrplcluster.com", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ method: "account_tx", params: [params] }),
+            signal: AbortSignal.timeout(15000),
+          });
+        } catch (err: any) {
+          xrplError = `Could not reach XRPL: ${err?.message || "network error"}`;
+          break;
+        }
+
+        if (!apiRes.ok) {
+          xrplError = `XRPL responded with HTTP ${apiRes.status}`;
+          break;
+        }
+
+        const data = await apiRes.json();
+        const result = data?.result;
+        if (!result || result.status !== "success") {
+          xrplError = result?.error_message || "XRPL request did not succeed";
+          break;
+        }
+
+        const txs = result.transactions || [];
+        if (txs.length === 0) break;
+
+        for (const entry of txs) {
+          const tx = entry.tx || entry.tx_json;
+          const meta = entry.meta;
+          if (!tx || !meta) continue;
+          if (tx.TransactionType !== "Payment") continue;
+          if (meta.TransactionResult !== "tesSUCCESS") continue;
+
+          const isDepositOut = tx.Account === walletAddress && tx.Destination === DOPPLER_DEPOSIT_ADDRESS;
+          const isWithdrawalIn = tx.Destination === walletAddress && (tx.Account === DOPPLER_WITHDRAWAL_ADDRESS || tx.Account === DOPPLER_TREASURY_ADDRESS);
+          if (!isDepositOut && !isWithdrawalIn) continue;
+
+          const delivered = meta.delivered_amount || meta.DeliveredAmount;
+          if (!delivered) continue;
+          if (typeof delivered !== "string") continue;
+          const drops = Number(delivered);
+          if (!Number.isFinite(drops) || drops <= 0) continue;
+          const amountXrp = drops / 1e6;
+
+          let dateIso: string;
+          const closeTime = (entry.tx?.date ?? tx.date) as number | undefined;
+          const closeTimeIso = entry.close_time_iso as string | undefined;
+          if (typeof closeTimeIso === "string") {
+            dateIso = closeTimeIso;
+          } else if (typeof closeTime === "number") {
+            dateIso = new Date((closeTime + 946684800) * 1000).toISOString();
+          } else {
+            continue;
+          }
+
+          const txHash = (tx.hash || entry.hash || "") as string;
+
+          if (isDepositOut) {
+            deposits.push({ amountXrp, date: dateIso, txHash });
+          } else {
+            withdrawals.push({ amountXrp, date: dateIso, txHash });
+          }
+        }
+
+        marker = result.marker;
+        if (!marker) break;
+      }
+
+      if (xrplError && deposits.length === 0 && withdrawals.length === 0) {
+        return res.status(502).json({ message: `Could not read XRPL transaction history: ${xrplError}` });
+      }
+
+      const totalDeposited = deposits.reduce((s, d) => s + d.amountXrp, 0);
+      const totalWithdrawn = withdrawals.reduce((s, w) => s + w.amountXrp, 0);
+      const netDeposited = Math.max(0, totalDeposited - totalWithdrawn);
+
+      if (deposits.length === 0) {
+        return res.json({
+          detected: false,
+          walletAddress,
+          totalDeposited: 0,
+          netDeposited: 0,
+          depositCount: 0,
+          message: "No deposits to the Doppler XRP Vault address were found in this wallet's history.",
+        });
+      }
+
+      deposits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const firstDepositDate = deposits[0].date;
+      const lastDepositDate = deposits[deposits.length - 1].date;
+
+      let earnedToDate = 0;
+      const now = Date.now();
+      for (const d of deposits) {
+        const days = Math.max(0, (now - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24));
+        earnedToDate += d.amountXrp * (DOPPLER_XRP_VAULT_APR / 365) * days;
+      }
+      for (const w of withdrawals) {
+        const days = Math.max(0, (now - new Date(w.date).getTime()) / (1000 * 60 * 60 * 24));
+        earnedToDate -= w.amountXrp * (DOPPLER_XRP_VAULT_APR / 365) * days;
+      }
+      earnedToDate = Math.max(0, Math.round(earnedToDate * 1e6) / 1e6);
+
+      const existingAccounts = await storage.getAccountsByUser(userId);
+      let dopplerAccount = existingAccounts.find(a => a.provider === "doppler-xrpl");
+      if (!dopplerAccount) {
+        dopplerAccount = await storage.createAccount({
+          userId,
+          credentialId: null,
+          provider: "doppler-xrpl",
+          accountName: "Doppler Finance (XRPL)",
+          accountType: "defi",
+        });
+      }
+
+      const vault = DOPPLER_SERVER_VAULTS[0];
+      const posSymbol = vault.positionSymbol;
+      const existingPos = await storage.getPositionByUserAndAsset(userId, dopplerAccount.id, posSymbol);
+
+      const priceRow = await db.select({ priceUsd: priceCacheTable.priceUsd }).from(priceCacheTable).where(eq(priceCacheTable.symbol, "XRP")).limit(1);
+      const xrpPrice = priceRow.length > 0 ? parseFloat(priceRow[0].priceUsd) : 0;
+      const costBasis = netDeposited * xrpPrice;
+
+      if (netDeposited > 0) {
+        if (existingPos) {
+          await storage.updatePosition(existingPos.id, {
+            quantity: netDeposited.toFixed(8),
+            averageCost: xrpPrice.toFixed(8),
+            totalCostBasis: costBasis.toFixed(2),
+          });
+          if (existingPos.isAddressed) {
+            await storage.markPositionAddressed(existingPos.id, false);
+          }
+        } else {
+          await storage.createPosition({
+            userId,
+            accountId: dopplerAccount.id,
+            assetSymbol: posSymbol,
+            quantity: netDeposited.toFixed(8),
+            averageCost: xrpPrice.toFixed(8),
+            totalCostBasis: costBasis.toFixed(2),
+          });
+        }
+      } else if (existingPos) {
+        await storage.updatePosition(existingPos.id, {
+          quantity: "0",
+          totalCostBasis: "0",
+        });
+        await storage.markPositionAddressed(existingPos.id, true);
+      }
+
+      const settings = await storage.getUserSettings(userId);
+      const store = (settings?.userDataStore as Record<string, any>) || {};
+      store.dopplerSync = {
+        depositDate: firstDepositDate,
+        pendingRewards: earnedToDate,
+        stakedAmount: netDeposited,
+        lastSyncedAt: new Date().toISOString(),
+        source: "onchain",
+        depositCount: deposits.length,
+        withdrawalCount: withdrawals.length,
+      };
+      await storage.upsertUserSettings({ userId, userDataStore: store });
+
+      res.json({
+        detected: true,
+        walletAddress,
+        totalDeposited: Math.round(totalDeposited * 1e6) / 1e6,
+        totalWithdrawn: Math.round(totalWithdrawn * 1e6) / 1e6,
+        netDeposited: Math.round(netDeposited * 1e6) / 1e6,
+        depositCount: deposits.length,
+        withdrawalCount: withdrawals.length,
+        firstDepositDate,
+        lastDepositDate,
+        estimatedEarnedToDate: earnedToDate,
+        apr: DOPPLER_XRP_VAULT_APR * 100,
+        deposits: deposits.map(d => ({ amount: d.amountXrp, date: d.date, txHash: d.txHash })),
+        truncated: pages >= MAX_PAGES,
+      });
+    } catch (error: any) {
+      console.error("[doppler/detect-onchain] Error:", error);
+      res.status(500).json({ message: error?.message || "Failed to detect on-chain Doppler deposits" });
+    }
+  });
+
   app.get("/api/positions/doppler", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
