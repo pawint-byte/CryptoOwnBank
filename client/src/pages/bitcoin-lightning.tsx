@@ -70,6 +70,10 @@ export default function BitcoinLightning() {
   const [receiveAmountSats, setReceiveAmountSats] = useState<string>("");
   const [receivePayLink, setReceivePayLink] = useState<string>("");
 
+  const [pastedInvoice, setPastedInvoice] = useState<string>("");
+  const [acceptedInvoice, setAcceptedInvoice] = useState<string>("");
+  const [invoiceError, setInvoiceError] = useState<string>("");
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LN_ADDR_KEY);
@@ -294,6 +298,72 @@ export default function BitcoinLightning() {
                 <Button onClick={saveLnAddress} disabled={validating || !draftLnAddress.trim()} data-testid="button-save-ln">
                   {validating ? "Verifying…" : "Verify & save"}
                 </Button>
+
+                <div className="pt-4 mt-2 border-t space-y-2">
+                  <div>
+                    <p className="text-sm font-medium">Using Phoenix, Muun, or any wallet that doesn't give a Lightning Address?</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Open your wallet, tap <strong>Receive</strong>, copy the BOLT11 invoice it generates (starts with <code className="text-[10px] bg-muted px-1 rounded">lnbc…</code>), and paste it below. We'll show a QR + copy link you can share. Each invoice is single-use and expires after about an hour.
+                    </p>
+                  </div>
+                  <Label htmlFor="paste-invoice">BOLT11 invoice (single-use)</Label>
+                  <Textarea
+                    id="paste-invoice"
+                    data-testid="input-paste-invoice"
+                    placeholder="lnbc1p57kagl..."
+                    value={pastedInvoice}
+                    onChange={(e) => { setPastedInvoice(e.target.value); setInvoiceError(""); }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    rows={3}
+                    className="font-mono text-xs"
+                  />
+                  {invoiceError && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> {invoiceError}
+                    </p>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const stripped = pastedInvoice.trim().toLowerCase().replace(/^lightning:/, "");
+                      if (!stripped) {
+                        setInvoiceError("Paste a BOLT11 invoice first.");
+                        return;
+                      }
+                      if (!isBolt11(stripped)) {
+                        setInvoiceError("That doesn't look like a BOLT11 invoice. It should start with lnbc and be a long string of letters/numbers.");
+                        return;
+                      }
+                      setAcceptedInvoice(stripped);
+                      setInvoiceError("");
+                    }}
+                    disabled={!pastedInvoice.trim()}
+                    data-testid="button-show-invoice-qr"
+                  >
+                    Show QR &amp; copy link
+                  </Button>
+
+                  {acceptedInvoice && (
+                    <div className="flex flex-col items-center gap-2 p-3 rounded-md bg-muted/30 mt-3">
+                      <QrImage value={acceptedInvoice} />
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        Single-use invoice — expires in ~1 hour. Generate a fresh one in Phoenix for the next payment.
+                      </p>
+                      <CopyButton value={acceptedInvoice} label="Copy invoice" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setAcceptedInvoice(""); setPastedInvoice(""); }}
+                        data-testid="button-clear-invoice"
+                        className="text-muted-foreground"
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : (
