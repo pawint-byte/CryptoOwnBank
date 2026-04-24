@@ -11,8 +11,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { Bitcoin, Zap, ExternalLink, Copy, Check, AlertCircle, QrCode } from "lucide-react";
 
 const LN_ADDR_KEY = "cob.lightning_address";
+const BTC_ONCHAIN_KEY = "cob.btc_onchain_address";
 const BOLT11_RE = /^ln(bc|tb)[0-9]{0,10}[munp]?[a-z0-9]+$/i;
 const LN_ADDR_RE = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+const BTC_BECH32_RE = /^bc1[ac-hj-np-z02-9]{8,87}$/i;
+const BTC_BASE58_RE = /^[13][1-9A-HJ-NP-Za-km-z]{25,39}$/;
 
 function isLnAddress(s: string) {
   return LN_ADDR_RE.test(s.trim());
@@ -20,6 +23,18 @@ function isLnAddress(s: string) {
 function isBolt11(s: string) {
   const stripped = s.trim().toLowerCase().replace(/^lightning:/, "");
   return BOLT11_RE.test(stripped);
+}
+function isBtcOnchain(s: string) {
+  const stripped = s.trim().replace(/^bitcoin:/i, "").split("?")[0];
+  return BTC_BECH32_RE.test(stripped) || BTC_BASE58_RE.test(stripped);
+}
+function btcAddressKind(s: string): string {
+  const stripped = s.trim().replace(/^bitcoin:/i, "").split("?")[0].toLowerCase();
+  if (stripped.startsWith("bc1p")) return "Taproot (bc1p…)";
+  if (stripped.startsWith("bc1q")) return "Native SegWit (bc1q…)";
+  if (stripped.startsWith("3")) return "P2SH (3…)";
+  if (stripped.startsWith("1")) return "Legacy (1…)";
+  return "Bitcoin address";
 }
 
 function buildLightningDeepLink(target: string): string {
@@ -74,12 +89,49 @@ export default function BitcoinLightning() {
   const [acceptedInvoice, setAcceptedInvoice] = useState<string>("");
   const [invoiceError, setInvoiceError] = useState<string>("");
 
+  const [savedBtcAddress, setSavedBtcAddress] = useState<string>("");
+  const [draftBtcAddress, setDraftBtcAddress] = useState<string>("");
+  const [btcRequestAmount, setBtcRequestAmount] = useState<string>("");
+  const [btcRequestLabel, setBtcRequestLabel] = useState<string>("");
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LN_ADDR_KEY);
       if (stored) setSavedLnAddress(stored);
+      const storedBtc = localStorage.getItem(BTC_ONCHAIN_KEY);
+      if (storedBtc) setSavedBtcAddress(storedBtc);
     } catch {}
   }, []);
+
+  function saveBtcAddress() {
+    const candidate = draftBtcAddress.trim().replace(/^bitcoin:/i, "").split("?")[0];
+    if (!isBtcOnchain(candidate)) {
+      toast({ title: "Not a valid Bitcoin address", description: "Should start with bc1, 3, or 1 and be 26–90 characters.", variant: "destructive" });
+      return;
+    }
+    try { localStorage.setItem(BTC_ONCHAIN_KEY, candidate); } catch {}
+    setSavedBtcAddress(candidate);
+    setDraftBtcAddress("");
+    toast({ title: "Bitcoin address saved", description: `Anyone can send BTC to ${btcAddressKind(candidate)} ${candidate.slice(0, 10)}…` });
+  }
+
+  function clearBtcAddress() {
+    try { localStorage.removeItem(BTC_ONCHAIN_KEY); } catch {}
+    setSavedBtcAddress("");
+    setBtcRequestAmount("");
+    setBtcRequestLabel("");
+    toast({ title: "Bitcoin address cleared" });
+  }
+
+  const btcReceiveUri = useMemo(() => {
+    if (!savedBtcAddress) return "";
+    const params = new URLSearchParams();
+    const amt = parseFloat(btcRequestAmount);
+    if (Number.isFinite(amt) && amt > 0) params.set("amount", amt.toString());
+    if (btcRequestLabel.trim()) params.set("label", btcRequestLabel.trim());
+    const qs = params.toString();
+    return qs ? `bitcoin:${savedBtcAddress}?${qs}` : `bitcoin:${savedBtcAddress}`;
+  }, [savedBtcAddress, btcRequestAmount, btcRequestLabel]);
 
   async function saveLnAddress() {
     const candidate = draftLnAddress.trim().toLowerCase();
@@ -176,7 +228,7 @@ export default function BitcoinLightning() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Bitcoin & Lightning</h1>
-          <p className="text-sm text-muted-foreground">Send and receive BTC over the Lightning Network — non-custodial, your wallet signs every payment.</p>
+          <p className="text-sm text-muted-foreground">Send and receive BTC on-chain or over Lightning — non-custodial, your wallet signs every payment.</p>
         </div>
       </div>
 
@@ -193,9 +245,10 @@ export default function BitcoinLightning() {
       </Card>
 
       <Tabs defaultValue="send" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="send" data-testid="tab-send">Send</TabsTrigger>
-          <TabsTrigger value="receive" data-testid="tab-receive">Receive</TabsTrigger>
+          <TabsTrigger value="receive" data-testid="tab-receive">Receive ⚡</TabsTrigger>
+          <TabsTrigger value="receive-onchain" data-testid="tab-receive-onchain">Receive BTC</TabsTrigger>
         </TabsList>
 
         <TabsContent value="send" className="space-y-4 mt-4">
@@ -412,6 +465,107 @@ export default function BitcoinLightning() {
                 </div>
 
                 <Button variant="ghost" size="sm" onClick={clearLnAddress} data-testid="button-clear-ln" className="text-muted-foreground">
+                  Use a different address
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="receive-onchain" className="space-y-4 mt-4">
+          {!savedBtcAddress ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Bitcoin className="w-5 h-5 text-orange-500" /> Add your Bitcoin address
+                </CardTitle>
+                <CardDescription>
+                  Just like an XRP address — static, reusable, anyone can send to it. Get this from your wallet's <strong>Receive → Bitcoin</strong> screen (in Phoenix, tap Receive then switch from Lightning to Bitcoin). Format: starts with <code className="text-xs bg-muted px-1.5 py-0.5 rounded">bc1</code>, <code className="text-xs bg-muted px-1.5 py-0.5 rounded">3</code>, or <code className="text-xs bg-muted px-1.5 py-0.5 rounded">1</code>.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label htmlFor="btc-addr">Bitcoin address</Label>
+                  <Textarea
+                    id="btc-addr"
+                    data-testid="input-btc-address"
+                    placeholder="bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
+                    value={draftBtcAddress}
+                    onChange={(e) => setDraftBtcAddress(e.target.value)}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    rows={2}
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <Button onClick={saveBtcAddress} disabled={!draftBtcAddress.trim()} data-testid="button-save-btc">
+                  Save Bitcoin address
+                </Button>
+                <p className="text-xs text-muted-foreground pt-2">
+                  Note: on-chain Bitcoin payments take ~10–60 minutes to confirm and cost network fees ($1–$50 depending on traffic). For instant, near-free small payments, use the Lightning tab instead.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Bitcoin className="w-5 h-5 text-orange-500" /> Your Bitcoin address
+                    </CardTitle>
+                    <CardDescription>{btcAddressKind(savedBtcAddress)} — share with anyone, they send BTC, it lands in your wallet.</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">Saved</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2 p-3 rounded-md bg-muted/40">
+                  <code className="font-mono text-xs flex-1 break-all" data-testid="text-btc-address">{savedBtcAddress}</code>
+                  <CopyButton value={savedBtcAddress} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="btc-amount">Request amount (BTC, optional)</Label>
+                    <Input
+                      id="btc-amount"
+                      data-testid="input-btc-amount"
+                      type="number"
+                      step="0.00000001"
+                      min={0}
+                      placeholder="0.001"
+                      value={btcRequestAmount}
+                      onChange={(e) => setBtcRequestAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="btc-label">Label (optional)</Label>
+                    <Input
+                      id="btc-label"
+                      data-testid="input-btc-label"
+                      placeholder="Invoice #123"
+                      value={btcRequestLabel}
+                      onChange={(e) => setBtcRequestLabel(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-2 p-3 rounded-md bg-muted/30">
+                  <QrImage value={btcReceiveUri} />
+                  <p className="text-xs text-muted-foreground text-center">Scan with any Bitcoin wallet, or copy below</p>
+                  <CopyButton value={btcReceiveUri} label="Copy payment link" />
+                  <CopyButton value={savedBtcAddress} label="Copy address only" />
+                </div>
+
+                <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                  <p>• Confirmations take ~10 minutes per block. 1 confirmation is usually enough for small amounts; wait 3–6 for larger ones.</p>
+                  <p>• You'll see incoming payments in your Phoenix wallet, not here. We don't custody anything — we just save the address for sharing.</p>
+                </div>
+
+                <Button variant="ghost" size="sm" onClick={clearBtcAddress} data-testid="button-clear-btc" className="text-muted-foreground">
                   Use a different address
                 </Button>
               </CardContent>
