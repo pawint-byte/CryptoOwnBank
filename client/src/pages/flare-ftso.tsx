@@ -136,6 +136,17 @@ export default function FlareFtso() {
 
   const renderVaultBadges = (key: string, snapshotBadge: JSX.Element, snapshotMeta: JSX.Element) => {
     const v = vaultByKey(key);
+    if (v?.status === "error") {
+      return (
+        <div className="flex items-center gap-2 flex-wrap" data-testid={`badges-vault-${key}-error`}>
+          <Badge variant="outline" className="text-[10px] border-orange-500 text-orange-600" title={v.message ?? undefined}>
+            On-chain read failed — showing snapshot
+          </Badge>
+          {snapshotBadge}
+          {snapshotMeta}
+        </div>
+      );
+    }
     if (!v || v.status !== "live" || !v.isConfigured) {
       return (
         <div className="flex items-center gap-2" data-testid={`badges-vault-${key}-snapshot`}>
@@ -162,10 +173,22 @@ export default function FlareFtso() {
     );
   };
 
-  const allSnapshot = !vaultStatusData || vaultStatusData.vaults.every((v) => v.status !== "live");
-  const statusHeading = allSnapshot
-    ? "Current Status (snapshot — live on-chain status not yet configured)"
-    : `Current Status (live as of ${new Date(vaultStatusData!.lastCheckedAt).toLocaleString()})`;
+  const vaults = vaultStatusData?.vaults ?? [];
+  const liveCount = vaults.filter((v) => v.status === "live").length;
+  const errorCount = vaults.filter((v) => v.status === "error").length;
+  const snapshotCount = vaults.filter((v) => v.status === "snapshot").length;
+  let statusHeading: string;
+  if (vaults.length === 0) {
+    statusHeading = "Current Status (snapshot — live on-chain status not yet configured)";
+  } else if (liveCount === vaults.length) {
+    statusHeading = `Current Status (live on-chain as of ${new Date(vaultStatusData!.lastCheckedAt).toLocaleString()})`;
+  } else if (liveCount > 0) {
+    statusHeading = `Current Status (mixed — ${liveCount} live, ${snapshotCount} snapshot${errorCount ? `, ${errorCount} read failed` : ""}, as of ${new Date(vaultStatusData!.lastCheckedAt).toLocaleString()})`;
+  } else if (errorCount > 0) {
+    statusHeading = `Current Status (on-chain read failed — showing snapshot${snapshotCount ? ` and unconfigured` : ""})`;
+  } else {
+    statusHeading = "Current Status (snapshot — live on-chain status not yet configured)";
+  }
 
   const { data: walletInfo, isLoading: walletLoading, refetch: refetchWallet } = useQuery<FlareWalletInfo>({
     queryKey: ["/api/flare/wallet", savedAddress],
