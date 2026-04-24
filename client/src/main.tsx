@@ -17,10 +17,15 @@ if (gaId) {
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/sw.js", { updateViaCache: "none" })
       .then((reg) => {
-        reg.update().catch(() => {});
-        setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+        const checkForUpdate = () => reg.update().catch(() => {});
+        checkForUpdate();
+        setInterval(checkForUpdate, 15 * 60 * 1000);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") checkForUpdate();
+        });
+        window.addEventListener("focus", checkForUpdate);
 
         let reloaded = false;
         navigator.serviceWorker.addEventListener("controllerchange", () => {
