@@ -396,35 +396,42 @@ export default function AmmPools() {
                 <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">1</div>
                 <div className="flex-1">
                   <p className="font-medium">Open Xaman on your phone</p>
-                  <p className="text-xs text-muted-foreground">Xaman is the most-supported XRPL wallet for AMM operations. (Bifrost and Crossmark also work.)</p>
+                  <p className="text-xs text-muted-foreground">Make sure the wallet you want to LP from is selected at the top of the Home tab.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">2</div>
                 <div className="flex-1">
-                  <p className="font-medium">Tap More → AMM Pools</p>
-                  <p className="text-xs text-muted-foreground">In Xaman: bottom nav → More → scroll to <span className="font-medium">AMM Pools</span> (under DeFi).</p>
+                  <p className="font-medium">Tap <span className="font-semibold">xApps</span> in the bottom nav</p>
+                  <p className="text-xs text-muted-foreground">XRPL AMM operations live inside Xaman xApps (mini-apps), not in a built-in menu.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">3</div>
                 <div className="flex-1">
-                  <p className="font-medium">Find the {provideLpPool?.asset1Currency}/{provideLpPool?.asset2Currency} pool</p>
-                  <p className="text-xs text-muted-foreground">Search by symbol or paste the pool address above. Tap <span className="font-medium">Deposit</span>.</p>
+                  <p className="font-medium">Open an AMM xApp</p>
+                  <p className="text-xs text-muted-foreground">Tap the search icon (top-right) and open <span className="font-medium">Magnetic</span> (the #1 XRPL DEX/AMM xApp). <span className="font-medium">FirstLedger</span> and <span className="font-medium">Sologenic</span> also work.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">4</div>
                 <div className="flex-1">
-                  <p className="font-medium">Choose deposit amounts &amp; sign</p>
-                  <p className="text-xs text-muted-foreground">You can deposit one asset (single-sided) or both. Xaman shows the LP tokens you'll receive. Slide to sign.</p>
+                  <p className="font-medium">Find the {provideLpPool?.asset1Currency}/{provideLpPool?.asset2Currency} pool</p>
+                  <p className="text-xs text-muted-foreground">Inside Magnetic: tap <span className="font-medium">Pools</span> (or <span className="font-medium">Liquidity</span>), search the pair, and tap <span className="font-medium">Add Liquidity</span>. You can paste the pool address above to find the exact pool.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="rounded-full bg-green-500/15 text-green-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">5</div>
+                <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">5</div>
+                <div className="flex-1">
+                  <p className="font-medium">Choose amounts &amp; sign</p>
+                  <p className="text-xs text-muted-foreground">Single-sided or balanced deposit — the xApp will show the LP tokens you'll receive. Xaman pops up to sign the AMMDeposit transaction. Slide to confirm.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-green-500/15 text-green-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">6</div>
                 <div className="flex-1">
                   <p className="font-medium">Come back here to track</p>
-                  <p className="text-xs text-muted-foreground">Once your LP tokens land, your position will show in <span className="font-medium">Your Liquidity Positions</span> above with fees accruing automatically.</p>
+                  <p className="text-xs text-muted-foreground">Once your LP tokens land, your position shows up in <span className="font-medium">Your Liquidity Positions</span> above with fees accruing automatically.</p>
                 </div>
               </div>
             </div>
