@@ -906,6 +906,13 @@ export default function OwnBankVaults() {
             </Card>
           ))}
         </div>
+
+        <p
+          className="text-[11px] leading-relaxed text-muted-foreground/80 mt-3 px-1"
+          data-testid="text-third-party-disclosure"
+        >
+          Third-party vaults (Doppler and others) are operated by independent providers and enforce their own KYC, eligibility, and geographic restrictions. Availability, supported countries, and rates can change at any time and depend on your jurisdiction. CryptoOwnBank is non-custodial and does not control these terms — please review the provider's site before depositing.
+        </p>
       </div>
     );
   }
