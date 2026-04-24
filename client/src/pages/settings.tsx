@@ -150,10 +150,22 @@ function PrivacyModeCard() {
           <div className="flex items-start gap-3 p-3 rounded-md border hover-elevate cursor-pointer">
             <RadioGroupItem value="relay" id="rpc-relay" data-testid="radio-rpc-relay" />
             <Label htmlFor="rpc-relay" className="flex-1 cursor-pointer">
-              <div className="font-medium">CryptoOwnBank Relay</div>
+              <div className="font-medium flex items-center gap-2">
+                CryptoOwnBank Relay
+                {(settings as any)?.subscriptionTier === "pro" ? (
+                  <Badge variant="secondary" className="text-[10px]" data-testid="badge-relay-pro">
+                    Pro · 60/min
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px]" data-testid="badge-relay-free">
+                    Free · 10/min
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 RPC reads and broadcasts are routed through CryptoOwnBank with multi-RPC
-                failover. Public RPC providers see our IP, not yours. Free.
+                failover. Public RPC providers see our IP, not yours. Free tier is limited
+                to 10 requests per minute; Pro members get 60.
               </p>
             </Label>
           </div>

@@ -270,6 +270,22 @@ const features = [
       "We never touch your keys. All transactions are signed on your device — Xaman, MetaMask, or Ledger. You always control your funds.",
   },
   {
+    icon: Shield,
+    title: "Privacy Mode & Multi-RPC Failover",
+    description:
+      "Choose how your browser talks to the blockchain: connect directly to public RPCs (default), route through CryptoOwnBank's relay so providers see our IP instead of yours, or point at your own self-hosted node. Behind the scenes, automatic multi-endpoint failover across Flare, XRPL, Stellar, Ethereum, Avalanche, Solana, Bitcoin, Doge, and Litecoin keeps the app working when individual providers go down. Network-level privacy and resilience — not a VPN, not transaction anonymization.",
+    link: "/settings",
+    linkLabel: "Configure Privacy",
+  },
+  {
+    icon: Globe,
+    title: "dVPN Partner Directory",
+    description:
+      "An information page listing established decentralized VPN projects (Sentinel, Mysterium, Orchid) for members who want general internet-level privacy beyond what Privacy Mode covers. We don't operate them, don't take payment for inclusion, and don't log your choice — we just point you at independent infrastructure with public source code.",
+    link: "/dvpn",
+    linkLabel: "Browse dVPN Partners",
+  },
+  {
     icon: Lock,
     title: "Principal Protection",
     description:

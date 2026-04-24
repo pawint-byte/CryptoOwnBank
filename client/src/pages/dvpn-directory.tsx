@@ -180,7 +180,9 @@ export default function DvpnDirectory() {
             For network-level privacy from public RPC providers (Infura, Alchemy, Ripple),
             you can also enable our optional <strong>Privacy Mode</strong> in Settings,
             which routes blockchain reads through CryptoOwnBank infrastructure instead of
-            sending them directly from your browser to public RPC providers.
+            sending them directly from your browser to public RPC providers. Privacy Mode
+            is included free for all members; Pro members get higher relay throughput
+            (60 requests/min vs 10 for free).
           </p>
         </CardContent>
       </Card>

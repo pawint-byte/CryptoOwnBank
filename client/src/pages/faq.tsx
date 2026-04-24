@@ -1017,6 +1017,44 @@ const faqGroups = [
     ],
   },
   {
+    groupKey: "privacy-resilience",
+    heading: "Privacy & Network Resilience",
+    items: [
+      {
+        q: "What is Privacy Mode?",
+        a: "Privacy Mode is a setting in your account (Settings → Privacy & Network) that controls <strong>how your browser talks to blockchain networks</strong> when CryptoOwnBank reads balances, prices, or broadcasts a transaction. By default, your browser connects directly to public RPC providers like Infura, Alchemy, QuickNode, or Ripple's public servers. Those providers can see your IP address and the requests you make. Privacy Mode gives you two alternatives: route those requests through CryptoOwnBank's relay infrastructure (so the RPC provider sees our IP, not yours), or point them at your own private RPC endpoint (so neither we nor a public provider sees them). It is a network-level privacy setting, not a transaction-level one. Your on-chain transactions are still publicly visible on the blockchain — that's how blockchains work — but the IP address that submitted them no longer has to be yours.",
+      },
+      {
+        q: "What are the three Privacy Mode options?",
+        a: "<strong>Direct (default):</strong> Your browser connects straight to public RPC providers. Fastest path, no intermediaries, but the provider sees your IP. This is how almost every wallet and dApp works out of the box.<br/><br/><strong>CryptoOwnBank Relay:</strong> Reads and broadcasts pass through our backend, which then forwards them to a healthy public RPC. The provider sees CryptoOwnBank's server IP instead of yours. Free members get 10 requests per minute; Pro members get 60. This is the same pattern privacy-respecting wallets like Rabby, Frame, and Brave Wallet use for their own users.<br/><br/><strong>Custom Private RPC:</strong> You paste in the URL of an RPC endpoint you control or trust — your own self-hosted node, a paid Alchemy/QuickNode endpoint, a Pocket Network gateway, or anything else. Your browser talks to that endpoint directly; CryptoOwnBank never sees the traffic. This is the strongest option, but it requires you to actually have an endpoint to point at.",
+      },
+      {
+        q: "What does Privacy Mode NOT do? (Please read this.)",
+        a: "Privacy Mode is honest about its limits. It does <strong>not</strong> anonymize your on-chain transactions — every send, swap, deposit, and vault interaction is permanently visible on the public blockchain along with the addresses involved. It does <strong>not</strong> hide your wallet address from chain analytics firms like Chainalysis or TRM Labs, which work from on-chain data, not RPC traffic. It is <strong>not a VPN</strong> — your general internet traffic still goes through your normal ISP and DNS. It does <strong>not</strong> change your tax obligations or reporting requirements anywhere. It is <strong>not</strong> a tool for evading sanctions, KYC requirements, or any law that applies to you. What it does do, narrowly: it changes which IP address public RPC providers see when your wallet pings them. That's a meaningful privacy improvement against passive RPC-side data collection, and we think it's worth offering — but please don't mistake it for something larger than it is.",
+      },
+      {
+        q: "What is multi-RPC failover and do I have to turn it on?",
+        a: "Multi-RPC failover is automatic. Behind the scenes, CryptoOwnBank now keeps a pool of public RPC endpoints for every chain we touch — Flare, XRPL, Stellar, Ethereum, Avalanche, Solana, Bitcoin, Dogecoin, Litecoin. When one provider rate-limits us, returns a stale block, or simply goes down (and they all do, regularly), our backend automatically tries the next one. Each endpoint has health tracking with exponential backoff, so a flaky provider gets temporarily skipped instead of repeatedly burning your time. You don't have to enable anything. The practical effect: when Infura had its 4-hour outage in November 2024 and half the crypto industry went dark, an app built like this would have stayed up. We didn't exist back then; now we do, and we built for it.",
+      },
+      {
+        q: "Why does the Pro tier get 60 requests/min on Relay vs 10 for Free?",
+        a: "Honest answer: bandwidth and RPC provider rate limits cost real money, and Relay traffic is the one feature where every active user has a direct, measurable cost to us. We didn't want to gate Privacy Mode entirely — that would be hostile and against the spirit of the product — but we did want a structure that scales. Free members get a comfortable 10 requests/minute, which covers normal portfolio browsing and occasional swaps for almost everyone. Heavy users (active traders, people opening many vault positions per session, anyone running a script) will hit the limit and either upgrade or switch to <strong>Custom Private RPC</strong> mode, which is unlimited because it doesn't touch our infrastructure. Direct mode is also always free and unlimited because it doesn't touch our infrastructure either. We deliberately built two free unlimited paths so the paywall is about <em>convenience and shared bandwidth</em>, not about gating the privacy principle.",
+      },
+      {
+        q: "What is the dVPN partner directory and why isn't CryptoOwnBank a VPN?",
+        a: "The <a href=\"/dvpn\" class=\"text-[#00A4E4] hover:underline\">dVPN directory</a> is an information page that lists three established decentralized VPN projects — Sentinel, Mysterium, and Orchid — for members who want general internet-level privacy beyond what Privacy Mode covers. We do not operate any of these services, do not log which providers our members choose, do not receive payment for inclusion, and do not run any VPN infrastructure ourselves. CryptoOwnBank is a non-custodial crypto platform; running a VPN service is a fundamentally different business with very different licensing, abuse-handling, and regulatory obligations that we have no interest in taking on. We list these projects because they're publicly documented, open-source, and run by independent teams with their own published terms — and because we'd rather you make an informed choice from established providers than search blindly. As always: third-party services, third-party terms, and you are responsible for compliance with the laws that apply to you.",
+      },
+      {
+        q: "Is using a custom RPC URL safe?",
+        a: "It depends entirely on whose URL you're using. A self-hosted node you run on your own hardware is the gold standard — nobody but you sees the requests. A paid endpoint from a reputable provider (Alchemy, QuickNode, Ankr, Chainstack) is essentially the same as Direct mode but with a contract that limits what the provider can do with your data. A free public endpoint you found on a list somewhere is <strong>worse than Direct mode</strong>, because random operators can log your queries, return manipulated balances, or even MEV-sandwich your broadcasts. Two practical rules: (1) only use HTTPS endpoints — we enforce this in the form — and (2) for anything you're going to actually transact through, prefer a provider you have a relationship with over a free anonymous one. CryptoOwnBank validates the URL format but cannot validate the operator's intent; that part is on you, which is exactly what self-custody means.",
+      },
+      {
+        q: "Why is CryptoOwnBank building all this network-resilience stuff?",
+        a: "Because the dirty secret of \"non-custodial\" crypto is that almost every wallet and dashboard still has a small handful of single points of failure — the RPC provider, the price oracle, the indexer, the front-end host. When any one of those goes down or decides to deplatform an app, users lose access to their own funds even though the keys are still on their own hardware. \"Your keys, your coins\" is true; \"your keys, your access to your coins\" is what we're filling in. Multi-RPC failover means no single provider outage takes the app down. Privacy Mode (especially Custom RPC) means no single provider can build a profile of your activity. The dVPN directory exists for the same reason — pointing you at infrastructure you can use independently of us, in case we ever stop being the right choice for you. The endgame is a product where, if CryptoOwnBank disappeared tomorrow, you'd still have your wallet, your coins, your transaction history exportable, and a clear map of which independent tools to use next. That's what self-custody should mean in 2026, and it's what we're building toward.",
+      },
+    ],
+  },
+  {
     groupKey: "safety",
     heading: "Safety & Disclaimers",
     items: [

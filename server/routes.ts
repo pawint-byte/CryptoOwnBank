@@ -4788,21 +4788,31 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
   });
 
   const rpcRateLimits = new Map<string, { count: number; windowStart: number }>();
-  const RPC_RATE_LIMIT = 60;
+  const RPC_RATE_LIMIT_FREE = 10;
+  const RPC_RATE_LIMIT_PRO = 60;
   const RPC_RATE_WINDOW_MS = 60_000;
   const RPC_MAX_BODY_BYTES = 64 * 1024;
 
   app.post("/api/rpc/:chain", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const { tier } = await getEffectiveTier(userId);
+      const limit = tier === "pro" ? RPC_RATE_LIMIT_PRO : RPC_RATE_LIMIT_FREE;
       const now = Date.now();
       const bucket = rpcRateLimits.get(userId);
       if (!bucket || now - bucket.windowStart > RPC_RATE_WINDOW_MS) {
         rpcRateLimits.set(userId, { count: 1, windowStart: now });
       } else {
         bucket.count += 1;
-        if (bucket.count > RPC_RATE_LIMIT) {
-          return res.status(429).json({ message: "Rate limit exceeded" });
+        if (bucket.count > limit) {
+          return res.status(429).json({
+            message: tier === "pro"
+              ? "Rate limit exceeded (60/min)"
+              : "Free tier limit reached (10/min). Upgrade to Pro for 60/min.",
+            tier,
+            limit,
+            upgradeUrl: "/settings?tab=subscription",
+          });
         }
       }
 
