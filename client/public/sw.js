@@ -3,7 +3,7 @@
 // cache-first for static assets (icons, fonts, images).
 // Bumping CACHE_VERSION forces all clients to refresh on next load.
 
-const CACHE_VERSION = "cob-v14";
+const CACHE_VERSION = "cob-v15";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -25,13 +25,21 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => !k.startsWith(CACHE_VERSION))
-          .map((k) => caches.delete(k))
+    caches.keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => !k.startsWith(CACHE_VERSION))
+            .map((k) => caches.delete(k))
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((clients) => {
+        // Notify all open tabs that a new SW is active so they can reload
+        // themselves and pick up the new JS bundle automatically.
+        clients.forEach((c) => c.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION }));
+      })
   );
 });
 
