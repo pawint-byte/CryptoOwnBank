@@ -957,7 +957,20 @@ export default function FlareFtso() {
                     <Badge variant="outline" className="text-[10px]">~3.4% APY when open</Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">The original Clearstar-curated vault, accessed via the "Flare XRPFi Yield" xApp in Xaman. The xApp currently only shows this vault — when it's at capacity you'll see a "vault full" message; tap "Notify me" to get alerted when deposits reopen.</p>
+                <p className="text-sm text-muted-foreground">The original Clearstar-curated vault. Two ways in: deposit FXRP directly on <strong>Upshift</strong> (web), or use the <strong>"Flare XRPFi Yield"</strong> xApp in Xaman. The xApp shows a "vault full" message when at capacity — tap "Notify me" to get alerted when deposits reopen.</p>
+                <p className="text-xs text-muted-foreground italic">Separate website — not inside Xaman. You need FXRP in a Flare wallet first.</p>
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <a href="https://upshift.finance" target="_blank" rel="noopener noreferrer" className="inline-flex">
+                    <Button variant="outline" size="sm" className="gap-1 text-xs" data-testid="button-upshift-link">
+                      <ExternalLink className="h-3 w-3" /> Open Upshift (earnXRP)
+                    </Button>
+                  </a>
+                  <a href="https://xumm.app" target="_blank" rel="noopener noreferrer" className="inline-flex">
+                    <Button variant="outline" size="sm" className="gap-1 text-xs" data-testid="button-xaman-xapp-link">
+                      <ExternalLink className="h-3 w-3" /> Open in Xaman (xApp)
+                    </Button>
+                  </a>
+                </div>
               </div>
             </div>
 
