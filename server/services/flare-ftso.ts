@@ -166,10 +166,17 @@ type VaultDef = {
   name: string;
   protocol: string;
   asset: string;
+  assetAddress: string;
+  decimals: number;
   address: string;
   url: string;
   expectedApy: string;
 };
+
+// FXRP token on Flare — 6 decimals (matches XRP native), used as TVL-fallback
+// asset when a vault doesn't expose ERC-4626 totalAssets() directly.
+const FXRP_ADDRESS = "0xAd552A648C74D49E10027AB8a618A3ad4901c5bE";
+const FXRP_DECIMALS = 6;
 
 const FLARE_VAULTS: VaultDef[] = [
   {
@@ -177,6 +184,8 @@ const FLARE_VAULTS: VaultDef[] = [
     name: "earnXRP Vault",
     protocol: "Upshift + Clearstar",
     asset: "FXRP",
+    assetAddress: FXRP_ADDRESS,
+    decimals: FXRP_DECIMALS,
     address: process.env.FLARE_VAULT_EARNXRP_ADDRESS ?? "",
     url: "https://upshift.finance",
     expectedApy: "~3.4%",
@@ -186,6 +195,8 @@ const FLARE_VAULTS: VaultDef[] = [
     name: "Firelight stXRP",
     protocol: "Firelight",
     asset: "FXRP",
+    assetAddress: FXRP_ADDRESS,
+    decimals: FXRP_DECIMALS,
     address: process.env.FLARE_VAULT_FIRELIGHT_ADDRESS ?? "",
     url: "https://firelight.finance",
     expectedApy: "variable",
@@ -195,6 +206,8 @@ const FLARE_VAULTS: VaultDef[] = [
     name: "Morpho FXRP Vault",
     protocol: "Morpho + Mystic",
     asset: "FXRP",
+    assetAddress: FXRP_ADDRESS,
+    decimals: FXRP_DECIMALS,
     address: process.env.FLARE_VAULT_MORPHO_ADDRESS ?? "",
     url: "https://app.morpho.org",
     expectedApy: "~2-5%",
@@ -203,34 +216,65 @@ const FLARE_VAULTS: VaultDef[] = [
 
 const ERC4626_TOTAL_ASSETS_SELECTOR = "0x01e1d114";
 const ERC4626_MAX_DEPOSIT_SELECTOR = "0x402d267d";
+const ERC20_BALANCE_OF_SELECTOR = "0x70a08231";
 const MAX_UINT256 = (1n << 256n) - 1n;
 
-async function readVaultOnChain(address: string): Promise<{
+async function tryRpcCall(to: string, data: string): Promise<bigint | null> {
+  try {
+    const raw = await rpcCall("eth_call", [{ to, data }, "latest"]);
+    if (!raw || raw === "0x") return null;
+    return BigInt(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function readVaultOnChain(def: VaultDef): Promise<{
   totalAssetsXrp: number;
   remainingCapacityXrp: number | null;
   isUncapped: boolean;
+  tvlSource: "totalAssets" | "balanceOf";
+  capacityKnown: boolean;
 }> {
-  const totalAssetsRaw = await rpcCall("eth_call", [
-    { to: address, data: ERC4626_TOTAL_ASSETS_SELECTOR },
-    "latest",
-  ]);
-  // Use a non-zero "burn" probe address so vaults that special-case the zero
-  // address (allowlists, KYC checks) still return a representative cap value.
+  const divisor = 10 ** def.decimals;
+
+  // 1. Try standard ERC-4626 totalAssets() first.
+  let totalAssetsWei = await tryRpcCall(def.address, ERC4626_TOTAL_ASSETS_SELECTOR);
+  let tvlSource: "totalAssets" | "balanceOf" = "totalAssets";
+
+  // 2. Fallback to assetToken.balanceOf(vault) — works for non-ERC-4626 vaults
+  //    (e.g. Upshift earnXRP which holds FXRP directly but doesn't expose totalAssets).
+  if (totalAssetsWei === null) {
+    const balanceOfData = ERC20_BALANCE_OF_SELECTOR + encodeAddress(def.address);
+    totalAssetsWei = await tryRpcCall(def.assetAddress, balanceOfData);
+    tvlSource = "balanceOf";
+  }
+
+  if (totalAssetsWei === null) {
+    throw new Error(`Could not read TVL for ${def.key} (totalAssets and balanceOf both reverted)`);
+  }
+
+  const totalAssetsXrp = Number(totalAssetsWei) / divisor;
+
+  // 3. Try maxDeposit() — but treat failure as "capacity unknown", not error.
   const probeAddr = process.env.FLARE_VAULT_PROBE_ADDRESS || "0x000000000000000000000000000000000000dEaD";
   const probeAddrEncoded = encodeAddress(probeAddr);
-  const maxDepositRaw = await rpcCall("eth_call", [
-    { to: address, data: ERC4626_MAX_DEPOSIT_SELECTOR + probeAddrEncoded },
-    "latest",
-  ]);
+  const maxDepositWei = await tryRpcCall(def.address, ERC4626_MAX_DEPOSIT_SELECTOR + probeAddrEncoded);
 
-  const totalAssetsWei = BigInt(totalAssetsRaw && totalAssetsRaw !== "0x" ? totalAssetsRaw : "0x0");
-  const maxDepositWei = BigInt(maxDepositRaw && maxDepositRaw !== "0x" ? maxDepositRaw : "0x0");
+  let remainingCapacityXrp: number | null = null;
+  let isUncapped = false;
+  let capacityKnown = false;
 
-  const totalAssetsXrp = Number(totalAssetsWei) / 1e18;
-  const isUncapped = maxDepositWei === MAX_UINT256;
-  const remainingCapacityXrp = isUncapped ? null : Number(maxDepositWei) / 1e18;
+  if (maxDepositWei !== null) {
+    capacityKnown = true;
+    if (maxDepositWei === MAX_UINT256) {
+      isUncapped = true;
+    } else {
+      remainingCapacityXrp = Number(maxDepositWei) / divisor;
+    }
+  }
 
-  return { totalAssetsXrp, remainingCapacityXrp, isUncapped };
+  return { totalAssetsXrp, remainingCapacityXrp, isUncapped, tvlSource, capacityKnown };
 }
 
 export async function getFlareVaultStatus(): Promise<any> {
@@ -256,12 +300,15 @@ export async function getFlareVaultStatus(): Promise<any> {
       }
 
       try {
-        const { totalAssetsXrp, remainingCapacityXrp, isUncapped } = await readVaultOnChain(def.address);
+        const { totalAssetsXrp, remainingCapacityXrp, isUncapped, tvlSource, capacityKnown } = await readVaultOnChain(def);
         const totalCapacityXrp = remainingCapacityXrp === null ? null : totalAssetsXrp + remainingCapacityXrp;
         const percentFull = totalCapacityXrp && totalCapacityXrp > 0
           ? Math.min(100, (totalAssetsXrp / totalCapacityXrp) * 100)
           : null;
-        const isAccepting = remainingCapacityXrp === null ? true : remainingCapacityXrp > 0;
+        // If capacity is unknown, we can't determine accepting status from the chain.
+        const isAccepting = capacityKnown
+          ? (isUncapped ? true : (remainingCapacityXrp ?? 0) > 0)
+          : null;
 
         return {
           key: def.key,
@@ -279,6 +326,8 @@ export async function getFlareVaultStatus(): Promise<any> {
           percentFull: percentFull === null ? null : Number(percentFull.toFixed(1)),
           isAccepting,
           isUncapped,
+          capacityKnown,
+          tvlSource,
           lastCheckedAt: new Date().toISOString(),
         };
       } catch (err: any) {

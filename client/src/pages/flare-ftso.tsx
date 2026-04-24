@@ -110,8 +110,10 @@ export default function FlareFtso() {
     name: string;
     status: "live" | "snapshot" | "error";
     isConfigured: boolean;
-    isAccepting?: boolean;
+    isAccepting?: boolean | null;
     isUncapped?: boolean;
+    capacityKnown?: boolean;
+    tvlSource?: "totalAssets" | "balanceOf";
     totalAssetsXrp?: number;
     totalCapacityXrp?: number | null;
     percentFull?: number | null;
@@ -155,19 +157,31 @@ export default function FlareFtso() {
         </div>
       );
     }
-    const accepting = v.isAccepting ?? false;
+    const tvlPrefix = v.tvlSource === "balanceOf" ? "Holds " : "";
     const fillText = v.isUncapped
-      ? `${formatXrp(v.totalAssetsXrp)} TVL · uncapped`
+      ? `${tvlPrefix}${formatXrp(v.totalAssetsXrp)} TVL · uncapped`
       : v.totalCapacityXrp
         ? `${formatXrp(v.totalAssetsXrp)} / ${formatXrp(v.totalCapacityXrp)} (${v.percentFull?.toFixed(1)}% full)`
-        : formatXrp(v.totalAssetsXrp);
+        : `${tvlPrefix}${formatXrp(v.totalAssetsXrp)} TVL`;
+
+    // Capacity-known: show clear Accepting / FULL pill.
+    // Capacity-unknown (e.g. earnXRP via balanceOf fallback): show "Live · capacity unknown".
+    let statusPill: JSX.Element;
+    if (v.capacityKnown === false) {
+      statusPill = (
+        <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-600" title="TVL read on-chain via FXRP balanceOf — vault doesn't expose ERC-4626 maxDeposit, so remaining capacity is unknown.">
+          Live · capacity unknown
+        </Badge>
+      );
+    } else if (v.isAccepting) {
+      statusPill = <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits · Live</Badge>;
+    } else {
+      statusPill = <Badge variant="outline" className="text-[10px] border-red-500 text-red-600">FULL — Not Accepting · Live</Badge>;
+    }
+
     return (
       <div className="flex items-center gap-2 flex-wrap" data-testid={`badges-vault-${key}-live`}>
-        {accepting ? (
-          <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits · Live</Badge>
-        ) : (
-          <Badge variant="outline" className="text-[10px] border-red-500 text-red-600">FULL — Not Accepting · Live</Badge>
-        )}
+        {statusPill}
         <Badge variant="outline" className="text-[10px]">{fillText}</Badge>
       </div>
     );
