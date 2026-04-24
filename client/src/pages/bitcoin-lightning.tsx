@@ -576,17 +576,63 @@ export default function BitcoinLightning() {
 
       <Card className="bg-muted/20">
         <CardHeader>
-          <CardTitle className="text-base">Need a Lightning wallet?</CardTitle>
-          <CardDescription className="text-xs">All non-custodial or self-custodial. CryptoOwnBank doesn't endorse — pick what fits you.</CardDescription>
+          <CardTitle className="text-base">Wallet compatibility</CardTitle>
+          <CardDescription className="text-xs">All non-custodial or self-custodial. CryptoOwnBank doesn't endorse — pick what fits you. Every wallet works with at least one of our receive methods.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ul className="text-sm space-y-1.5 text-muted-foreground">
-            <li>• <strong>Phoenix</strong> — self-custodial channels, beginner-friendly. <a href="https://phoenix.acinq.co" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">phoenix.acinq.co</a></li>
-            <li>• <strong>Muun</strong> — on-chain + Lightning hybrid. <a href="https://muun.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">muun.com</a></li>
-            <li>• <strong>Wallet of Satoshi</strong> — easiest, custodial. <a href="https://walletofsatoshi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">walletofsatoshi.com</a></li>
-            <li>• <strong>Breez</strong> — self-custodial w/ POS features. <a href="https://breez.technology" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">breez.technology</a></li>
-            <li>• <strong>Zeus</strong> — power users, connects to your own node. <a href="https://zeusln.app" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">zeusln.app</a></li>
-          </ul>
+        <CardContent className="space-y-3">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="text-muted-foreground">
+                <tr className="border-b">
+                  <th className="text-left py-2 pr-2 font-medium">Wallet</th>
+                  <th className="text-center py-2 px-1 font-medium">⚡ LN Address<br/><span className="text-[10px] font-normal">(reusable)</span></th>
+                  <th className="text-center py-2 px-1 font-medium">⚡ Paste invoice<br/><span className="text-[10px] font-normal">(one-time)</span></th>
+                  <th className="text-center py-2 px-1 font-medium">₿ On-chain<br/><span className="text-[10px] font-normal">(reusable)</span></th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                <tr className="border-b">
+                  <td className="py-2 pr-2"><a href="https://phoenix.acinq.co" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Phoenix</a><div className="text-[10px] text-muted-foreground">self-custodial channels</div></td>
+                  <td className="text-center px-1 text-muted-foreground">—</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2 pr-2"><a href="https://muun.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Muun</a><div className="text-[10px] text-muted-foreground">on-chain + Lightning hybrid</div></td>
+                  <td className="text-center px-1 text-muted-foreground">—</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2 pr-2"><a href="https://walletofsatoshi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Wallet of Satoshi</a><div className="text-[10px] text-muted-foreground">easiest, custodial</div></td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2 pr-2"><a href="https://breez.technology" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Breez</a><div className="text-[10px] text-muted-foreground">self-custodial, POS features</div></td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2 pr-2"><a href="https://zeusln.app" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Zeus</a><div className="text-[10px] text-muted-foreground">connects to your own node</div></td>
+                  <td className="text-center px-1 text-yellow-600" title="Only if your node runs an LNURL service">~</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-2"><a href="https://getalby.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Alby</a><div className="text-[10px] text-muted-foreground">bridge → Phoenix via NWC</div></td>
+                  <td className="text-center px-1 text-green-600">✓</td>
+                  <td className="text-center px-1 text-muted-foreground">—</td>
+                  <td className="text-center px-1 text-muted-foreground">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <strong>Reading this:</strong> ✓ = works out of the box. ~ = works in some setups. — = wallet doesn't expose this option (use a different method from the same row). Phoenix and Muun are the most common case — they don't issue a Lightning Address, so use the "paste invoice" option on the Receive ⚡ tab, or save the on-chain address on the Receive BTC tab.
+          </p>
         </CardContent>
       </Card>
     </div>
