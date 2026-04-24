@@ -9,6 +9,15 @@ import { SeoHead } from "@/components/seo-head";
 import { useAuth } from "@/hooks/use-auth";
 import { useXrplStore } from "@/lib/xrpl-store";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
   Droplets,
   TrendingUp,
   Wallet,
@@ -23,6 +32,9 @@ import {
   ChevronUp,
   ArrowRightLeft,
   ArrowRight,
+  PlusCircle,
+  Copy,
+  Smartphone,
 } from "lucide-react";
 
 interface AmmPool {
@@ -63,7 +75,14 @@ function formatNumber(n: number | string, decimals = 2): string {
 export default function AmmPools() {
   const { user } = useAuth();
   const { walletAddress, isConnected } = useXrplStore();
+  const { toast } = useToast();
   const [showGuide, setShowGuide] = useState(false);
+  const [provideLpPool, setProvideLpPool] = useState<AmmPool | null>(null);
+
+  const copyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: `${label} copied`, description: text });
+  };
 
   const { data: pools = [], isLoading: poolsLoading, refetch: refetchPools } = useQuery<AmmPool[]>({
     queryKey: ["/api/xrpl/amm-pools"],
@@ -102,6 +121,24 @@ export default function AmmPools() {
           Refresh
         </Button>
       </div>
+
+      <Card className="border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
+        <CardContent className="pt-5 pb-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-blue-500/15 p-2 shrink-0">
+              <PlusCircle className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h2 className="font-semibold text-base" data-testid="text-earn-fees-title">
+                Earn real trading fees by providing liquidity
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Deposit two assets (e.g. XRP + RLUSD) into an AMM pool and you earn a share of every trade that happens in that pool. Fees are paid in the same two assets and accrue automatically into your LP position — no smart contract, no middleman, fully on-chain. Tap <span className="font-medium text-foreground">Provide Liquidity</span> on any pool below for step-by-step instructions.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {positions.length > 0 && (
         <Card className="border-blue-500/20 bg-blue-500/5">
@@ -221,10 +258,20 @@ export default function AmmPools() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => setProvideLpPool(pool)}
+                      data-testid={`button-provide-lp-${pool.id}`}
+                    >
+                      <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                      Provide Liquidity
+                    </Button>
                     <Link href="/ownbank/dex">
-                      <Button size="sm" variant="default" className="text-xs" data-testid={`button-trade-${pool.id}`}>
+                      <Button size="sm" variant="outline" className="text-xs" data-testid={`button-trade-${pool.id}`}>
                         <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
-                        Trade {pool.asset1Currency}/{pool.asset2Currency}
+                        Trade Pair
                       </Button>
                     </Link>
                     <a
@@ -234,7 +281,7 @@ export default function AmmPools() {
                     >
                       <Button size="sm" variant="outline" className="text-xs" data-testid={`button-view-pool-${pool.id}`}>
                         <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                        View on XRPScan
+                        XRPScan
                       </Button>
                     </a>
                   </div>
@@ -314,6 +361,116 @@ export default function AmmPools() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={!!provideLpPool} onOpenChange={(open) => { if (!open) setProvideLpPool(null); }}>
+        <DialogContent className="max-w-lg" data-testid="dialog-provide-liquidity">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PlusCircle className="h-5 w-5 text-blue-600" />
+              Provide Liquidity to {provideLpPool?.label}
+            </DialogTitle>
+            <DialogDescription>
+              Add {provideLpPool?.asset1Currency} and {provideLpPool?.asset2Currency} to this AMM pool to start earning {provideLpPool?.tradingFeePercent}% on every trade.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm">
+            <div className="rounded-md border bg-muted/30 p-3 space-y-1.5">
+              <p className="text-xs text-muted-foreground">Pool Account (AMM address)</p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs break-all flex-1" data-testid="text-pool-account">{provideLpPool?.account}</code>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 shrink-0"
+                  onClick={() => provideLpPool && copyText(provideLpPool.account, "Pool address")}
+                  data-testid="button-copy-pool-account"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">1</div>
+                <div className="flex-1">
+                  <p className="font-medium">Open Xaman on your phone</p>
+                  <p className="text-xs text-muted-foreground">Xaman is the most-supported XRPL wallet for AMM operations. (Bifrost and Crossmark also work.)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">2</div>
+                <div className="flex-1">
+                  <p className="font-medium">Tap More → AMM Pools</p>
+                  <p className="text-xs text-muted-foreground">In Xaman: bottom nav → More → scroll to <span className="font-medium">AMM Pools</span> (under DeFi).</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">3</div>
+                <div className="flex-1">
+                  <p className="font-medium">Find the {provideLpPool?.asset1Currency}/{provideLpPool?.asset2Currency} pool</p>
+                  <p className="text-xs text-muted-foreground">Search by symbol or paste the pool address above. Tap <span className="font-medium">Deposit</span>.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-500/15 text-blue-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">4</div>
+                <div className="flex-1">
+                  <p className="font-medium">Choose deposit amounts &amp; sign</p>
+                  <p className="text-xs text-muted-foreground">You can deposit one asset (single-sided) or both. Xaman shows the LP tokens you'll receive. Slide to sign.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-green-500/15 text-green-600 h-6 w-6 flex items-center justify-center text-xs font-semibold shrink-0">5</div>
+                <div className="flex-1">
+                  <p className="font-medium">Come back here to track</p>
+                  <p className="text-xs text-muted-foreground">Once your LP tokens land, your position will show in <span className="font-medium">Your Liquidity Positions</span> above with fees accruing automatically.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Impermanent loss</p>
+                  <p className="text-xs text-amber-700/90 dark:text-amber-400/90">If the price ratio of {provideLpPool?.asset1Currency} / {provideLpPool?.asset2Currency} shifts significantly while you're in the pool, you may end up with less total value than if you'd just held the assets. Stable-stable pools (e.g. RLUSD/USDC) have minimal IL; volatile pairs have more.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-md border bg-muted/30 p-3">
+              <div className="flex items-start gap-2">
+                <Smartphone className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  In-app one-tap LP deposits via Xaman are coming soon. For now, the steps above use Xaman's native AMM interface — same wallet, same security, just a few more taps.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <a
+              href={`https://xrpscan.com/account/${provideLpPool?.account}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none"
+            >
+              <Button variant="outline" className="w-full" data-testid="button-dialog-xrpscan">
+                <ExternalLink className="h-4 w-4 mr-1.5" />
+                View pool on XRPScan
+              </Button>
+            </a>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white flex-1 sm:flex-none"
+              onClick={() => setProvideLpPool(null)}
+              data-testid="button-dialog-close"
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
