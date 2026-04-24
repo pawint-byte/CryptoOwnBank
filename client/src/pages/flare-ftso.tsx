@@ -105,6 +105,68 @@ export default function FlareFtso() {
     refetchInterval: 10 * 60 * 1000,
   });
 
+  type VaultStatus = {
+    key: string;
+    name: string;
+    status: "live" | "snapshot" | "error";
+    isConfigured: boolean;
+    isAccepting?: boolean;
+    isUncapped?: boolean;
+    totalAssetsXrp?: number;
+    totalCapacityXrp?: number | null;
+    percentFull?: number | null;
+    lastCheckedAt?: string;
+    message?: string;
+  };
+  type VaultStatusResponse = { vaults: VaultStatus[]; lastCheckedAt: string };
+
+  const { data: vaultStatusData } = useQuery<VaultStatusResponse>({
+    queryKey: ["/api/flare/vault-status"],
+    refetchInterval: 5 * 60 * 1000,
+  });
+
+  const vaultByKey = (key: string) => vaultStatusData?.vaults.find((v) => v.key === key);
+
+  const formatXrp = (n?: number | null) => {
+    if (n === undefined || n === null) return "";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M XRP`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K XRP`;
+    return `${n.toFixed(0)} XRP`;
+  };
+
+  const renderVaultBadges = (key: string, snapshotBadge: JSX.Element, snapshotMeta: JSX.Element) => {
+    const v = vaultByKey(key);
+    if (!v || v.status !== "live" || !v.isConfigured) {
+      return (
+        <div className="flex items-center gap-2" data-testid={`badges-vault-${key}-snapshot`}>
+          {snapshotBadge}
+          {snapshotMeta}
+        </div>
+      );
+    }
+    const accepting = v.isAccepting ?? false;
+    const fillText = v.isUncapped
+      ? `${formatXrp(v.totalAssetsXrp)} TVL · uncapped`
+      : v.totalCapacityXrp
+        ? `${formatXrp(v.totalAssetsXrp)} / ${formatXrp(v.totalCapacityXrp)} (${v.percentFull?.toFixed(1)}% full)`
+        : formatXrp(v.totalAssetsXrp);
+    return (
+      <div className="flex items-center gap-2 flex-wrap" data-testid={`badges-vault-${key}-live`}>
+        {accepting ? (
+          <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits · Live</Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px] border-red-500 text-red-600">FULL — Not Accepting · Live</Badge>
+        )}
+        <Badge variant="outline" className="text-[10px]">{fillText}</Badge>
+      </div>
+    );
+  };
+
+  const allSnapshot = !vaultStatusData || vaultStatusData.vaults.every((v) => v.status !== "live");
+  const statusHeading = allSnapshot
+    ? "Current Status (snapshot — live on-chain status not yet configured)"
+    : `Current Status (live as of ${new Date(vaultStatusData!.lastCheckedAt).toLocaleString()})`;
+
   const { data: walletInfo, isLoading: walletLoading, refetch: refetchWallet } = useQuery<FlareWalletInfo>({
     queryKey: ["/api/flare/wallet", savedAddress],
     queryFn: () => fetch(`/api/flare/wallet/${savedAddress}`, { credentials: "include" }).then(r => r.json()),
@@ -759,9 +821,9 @@ export default function FlareFtso() {
             <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4 space-y-2">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
-                Current Status (March 2026)
+                {statusHeading}
               </p>
-              <p className="text-sm text-muted-foreground">The <strong>"Flare XRPFi Yield"</strong> xApp in Xaman currently only connects to the <strong>earnXRP vault</strong>, which has reached its <strong>25M FXRP capacity ($35M+ TVL)</strong>. When you open the xApp, you'll see a message that the vault is full with an option to sign up for notifications when deposits reopen.</p>
+              <p className="text-sm text-muted-foreground">The <strong>"Flare XRPFi Yield"</strong> xApp in Xaman is tied to the <strong>earnXRP vault</strong>. When the vault is at capacity the xApp shows a "vault full" message with an option to sign up for notifications. The badges on each vault below show live on-chain status when configured, and a snapshot otherwise.</p>
               <p className="text-sm text-muted-foreground">Firelight and Morpho/Mystic are <strong>separate platforms on Flare</strong> — they are NOT inside the Xaman xApp. To use them, you need to get FXRP through a different route (see below).</p>
             </div>
 
@@ -806,10 +868,11 @@ export default function FlareFtso() {
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     Firelight stXRP
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits</Badge>
+                  {renderVaultBadges(
+                    "firelight",
+                    <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits</Badge>,
                     <Badge variant="outline" className="text-[10px]">Live since Dec 2025</Badge>
-                  </div>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">Stake your FXRP on Firelight to receive <strong>liquid stXRP</strong>. Variable yield through Firelight's insurance and DeFi model. stXRP stays liquid — tradable on SparkDEX or Enosys anytime.</p>
                 <p className="text-xs text-muted-foreground italic">Separate website — not inside Xaman. You need FXRP in a Flare wallet first.</p>
@@ -828,10 +891,11 @@ export default function FlareFtso() {
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     Morpho + Mystic Lending
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits</Badge>
+                  {renderVaultBadges(
+                    "morpho",
+                    <Badge className="bg-green-600 text-white text-[10px]">Accepting Deposits</Badge>,
                     <Badge variant="outline" className="text-[10px]">Live since Feb 2026</Badge>
-                  </div>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">Lend your FXRP in curated Morpho vaults for <strong>~2–5% variable yield</strong>. You can also borrow against your FXRP (USDT0 or FLR-backed). Claim and redeem anytime — no lock-ups.</p>
                 <p className="text-xs text-muted-foreground italic">Separate website — not inside Xaman. You need FXRP in a Flare wallet first.</p>
@@ -850,12 +914,13 @@ export default function FlareFtso() {
                     <AlertTriangle className="h-4 w-4 text-orange-500" />
                     earnXRP Vault (Upshift + Clearstar)
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] border-red-500 text-red-600">FULL — Not Accepting Deposits</Badge>
+                  {renderVaultBadges(
+                    "earnXRP",
+                    <Badge variant="outline" className="text-[10px] border-red-500 text-red-600">FULL — Not Accepting Deposits</Badge>,
                     <Badge variant="outline" className="text-[10px]">~3.4% APY when open</Badge>
-                  </div>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">The original Clearstar-curated vault, accessed via the "Flare XRPFi Yield" xApp in Xaman. <strong>Currently full at 25M FXRP capacity ($35M+ TVL).</strong> The xApp currently only shows this vault — when you open it, you'll see a capacity reached message. Tap "Notify me" to get alerted when deposits reopen.</p>
+                <p className="text-sm text-muted-foreground">The original Clearstar-curated vault, accessed via the "Flare XRPFi Yield" xApp in Xaman. The xApp currently only shows this vault — when it's at capacity you'll see a "vault full" message; tap "Notify me" to get alerted when deposits reopen.</p>
               </div>
             </div>
 

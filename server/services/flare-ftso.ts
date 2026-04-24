@@ -161,6 +161,151 @@ export async function getFlareWalletInfo(address: string): Promise<any> {
   }
 }
 
+type VaultDef = {
+  key: string;
+  name: string;
+  protocol: string;
+  asset: string;
+  address: string;
+  url: string;
+  expectedApy: string;
+};
+
+const FLARE_VAULTS: VaultDef[] = [
+  {
+    key: "earnXRP",
+    name: "earnXRP Vault",
+    protocol: "Upshift + Clearstar",
+    asset: "FXRP",
+    address: process.env.FLARE_VAULT_EARNXRP_ADDRESS ?? "",
+    url: "https://upshift.finance",
+    expectedApy: "~3.4%",
+  },
+  {
+    key: "firelight",
+    name: "Firelight stXRP",
+    protocol: "Firelight",
+    asset: "FXRP",
+    address: process.env.FLARE_VAULT_FIRELIGHT_ADDRESS ?? "",
+    url: "https://firelight.finance",
+    expectedApy: "variable",
+  },
+  {
+    key: "morpho",
+    name: "Morpho FXRP Vault",
+    protocol: "Morpho + Mystic",
+    asset: "FXRP",
+    address: process.env.FLARE_VAULT_MORPHO_ADDRESS ?? "",
+    url: "https://app.morpho.org",
+    expectedApy: "~2-5%",
+  },
+];
+
+const ERC4626_TOTAL_ASSETS_SELECTOR = "0x01e1d114";
+const ERC4626_MAX_DEPOSIT_SELECTOR = "0x402d267d";
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+async function readVaultOnChain(address: string): Promise<{
+  totalAssetsXrp: number;
+  remainingCapacityXrp: number | null;
+  isUncapped: boolean;
+}> {
+  const totalAssetsRaw = await rpcCall("eth_call", [
+    { to: address, data: ERC4626_TOTAL_ASSETS_SELECTOR },
+    "latest",
+  ]);
+  // Use a non-zero "burn" probe address so vaults that special-case the zero
+  // address (allowlists, KYC checks) still return a representative cap value.
+  const probeAddr = process.env.FLARE_VAULT_PROBE_ADDRESS || "0x000000000000000000000000000000000000dEaD";
+  const probeAddrEncoded = encodeAddress(probeAddr);
+  const maxDepositRaw = await rpcCall("eth_call", [
+    { to: address, data: ERC4626_MAX_DEPOSIT_SELECTOR + probeAddrEncoded },
+    "latest",
+  ]);
+
+  const totalAssetsWei = BigInt(totalAssetsRaw && totalAssetsRaw !== "0x" ? totalAssetsRaw : "0x0");
+  const maxDepositWei = BigInt(maxDepositRaw && maxDepositRaw !== "0x" ? maxDepositRaw : "0x0");
+
+  const totalAssetsXrp = Number(totalAssetsWei) / 1e18;
+  const isUncapped = maxDepositWei === MAX_UINT256;
+  const remainingCapacityXrp = isUncapped ? null : Number(maxDepositWei) / 1e18;
+
+  return { totalAssetsXrp, remainingCapacityXrp, isUncapped };
+}
+
+export async function getFlareVaultStatus(): Promise<any> {
+  const cached = FLARE_CACHE["vault-status"];
+  if (cached && Date.now() - cached.lastFetch < 5 * 60 * 1000) {
+    return cached.data;
+  }
+
+  const vaults = await Promise.all(
+    FLARE_VAULTS.map(async (def) => {
+      if (!def.address) {
+        return {
+          key: def.key,
+          name: def.name,
+          protocol: def.protocol,
+          asset: def.asset,
+          url: def.url,
+          expectedApy: def.expectedApy,
+          isConfigured: false,
+          status: "snapshot" as const,
+          message: "Live status not configured — set the vault address to enable live data.",
+        };
+      }
+
+      try {
+        const { totalAssetsXrp, remainingCapacityXrp, isUncapped } = await readVaultOnChain(def.address);
+        const totalCapacityXrp = remainingCapacityXrp === null ? null : totalAssetsXrp + remainingCapacityXrp;
+        const percentFull = totalCapacityXrp && totalCapacityXrp > 0
+          ? Math.min(100, (totalAssetsXrp / totalCapacityXrp) * 100)
+          : null;
+        const isAccepting = remainingCapacityXrp === null ? true : remainingCapacityXrp > 0;
+
+        return {
+          key: def.key,
+          name: def.name,
+          protocol: def.protocol,
+          asset: def.asset,
+          url: def.url,
+          expectedApy: def.expectedApy,
+          address: def.address,
+          isConfigured: true,
+          status: "live" as const,
+          totalAssetsXrp: Number(totalAssetsXrp.toFixed(2)),
+          totalCapacityXrp: totalCapacityXrp === null ? null : Number(totalCapacityXrp.toFixed(2)),
+          remainingCapacityXrp: remainingCapacityXrp === null ? null : Number(remainingCapacityXrp.toFixed(2)),
+          percentFull: percentFull === null ? null : Number(percentFull.toFixed(1)),
+          isAccepting,
+          isUncapped,
+          lastCheckedAt: new Date().toISOString(),
+        };
+      } catch (err: any) {
+        return {
+          key: def.key,
+          name: def.name,
+          protocol: def.protocol,
+          asset: def.asset,
+          url: def.url,
+          expectedApy: def.expectedApy,
+          isConfigured: true,
+          status: "error" as const,
+          message: `On-chain read failed: ${err?.message ?? "unknown error"}. Showing snapshot.`,
+        };
+      }
+    })
+  );
+
+  const result = {
+    vaults,
+    lastCheckedAt: new Date().toISOString(),
+  };
+
+  FLARE_CACHE["vault-status"] = { data: result, lastFetch: Date.now() };
+  return result;
+}
+
 export async function getFlareNetworkStats(): Promise<any> {
   const cached = FLARE_CACHE["network-stats"];
   if (cached && Date.now() - cached.lastFetch < CACHE_TTL) {

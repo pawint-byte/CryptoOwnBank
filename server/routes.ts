@@ -12733,6 +12733,17 @@ ${beneSections}
     }
   });
 
+  app.get("/api/flare/vault-status", async (_req: any, res) => {
+    try {
+      const { getFlareVaultStatus } = await import("./services/flare-ftso");
+      const status = await getFlareVaultStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Flare vault status error:", error);
+      res.status(500).json({ message: "Failed to fetch Flare vault status" });
+    }
+  });
+
   app.get("/api/dismissed-recommendations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
