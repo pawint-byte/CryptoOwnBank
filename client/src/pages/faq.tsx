@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -871,6 +871,10 @@ const faqGroups = [
         a: "Impermanent loss occurs when the price ratio of the two assets in a pool changes after you deposit. If you provide liquidity for XRP/RLUSD and XRP's price doubles, you would have been better off simply holding your XRP rather than providing liquidity — because the pool rebalances and you end up with more RLUSD and less XRP. The loss is called 'impermanent' because it reverses if prices return to where they were when you deposited. Trading fees you earn from the pool may offset impermanent loss, especially in high-volume pools. The CryptoOwnBank AMM Pools page includes an educational section explaining this in detail.",
       },
       {
+        q: "How do I deposit liquidity into an XRPL AMM pool? (Step-by-step, verified)",
+        a: 'Here is the exact flow that works today, end-to-end. Native one-tap LP deposits via Xaman are coming soon — for now you sign through a trusted XRPL AMM xApp inside Xaman. <strong>1) Pick a pool on CryptoOwnBank.</strong> Open the <a href="/amm-pools" class="text-[#00A4E4] underline hover:no-underline">AMM Pools page</a>, find the pair you want (e.g., XRP/RLUSD), and tap <strong>Provide Liquidity</strong>. A dialog opens with the live trading-fee rate, the pool address, and the steps below. <strong>2) Make sure both assets are in your Xaman wallet.</strong> For XRP/RLUSD that means you need XRP <em>and</em> RLUSD in the same wallet. To add RLUSD: in Xaman, tap <em>Add a token</em> → search RLUSD → enable the trustline (one-time, ~2 XRP reserve). Then send some RLUSD to that address from an exchange that supports it (Uphold, Bitstamp, Bitso). <strong>3) Open the xApps tab in Xaman.</strong> Bottom navigation → xApps. (Xaman does not have a built-in AMM menu — XRPL AMM operations live inside xApps.) <strong>4) Open Magnetic.</strong> Tap the search icon top-right and open <strong>Magnetic</strong> — the most popular XRPL DEX/AMM xApp. <strong>FirstLedger</strong> and <strong>Sologenic</strong> also work. <strong>5) Find the pool.</strong> Inside Magnetic, go to <em>Pools</em> (or <em>Liquidity</em>), search by symbol, or paste the pool address from the CryptoOwnBank dialog to find the exact pool. Tap <strong>Add Liquidity</strong>. <strong>6) Enter amounts and sign.</strong> You can deposit single-sided (one asset) or balanced (both at the current ratio). The xApp shows you the LP tokens you will receive. Xaman pops up the AMMDeposit transaction — slide to sign. <strong>7) Confirm success.</strong> Within a few seconds your XRP and RLUSD balances drop in Xaman, and a new line item with an "LP" badge appears at the bottom of your token list (it shows the pool address, e.g., <code>rhWTXC2m2...VPb1tcS3</code> for XRP/RLUSD). That is your liquidity position — you are now earning a share of every trade through that pool. <strong>8) Track it on CryptoOwnBank.</strong> Refresh the AMM Pools page — your position auto-appears in <em>Your Liquidity Positions</em> with current value and accrued fees. <strong>To withdraw later:</strong> reverse the flow — open Magnetic → Pools → select your position → Withdraw → sign the AMMWithdraw in Xaman. Your XRP and RLUSD return to your wallet (plus any fees you earned).',
+      },
+      {
         q: "What is Flare FTSO and how do delegation rewards work?",
         a: "Flare is a Layer 1 blockchain designed to provide decentralized data to smart contracts. FTSO (Flare Time Series Oracle) is Flare's native price oracle system. You earn rewards by delegating your WFLR (wrapped FLR) to FTSO data providers — these are operators who submit price data to the network. When their data is accurate, both the provider and their delegators earn FLR rewards. Estimated APY is 5–15% depending on which providers you delegate to and current network participation rates.",
       },
@@ -1070,7 +1074,22 @@ function FAQItem({ q, a, forceOpen, highlight }: { q: string; a: string; forceOp
 }
 
 export default function FAQ() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("q") ?? "";
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) {
+      setTimeout(() => {
+        const el = document.querySelector('[data-testid="input-faq-search"]') as HTMLInputElement | null;
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, []);
 
   const faqJsonLd = useMemo(() => ({
     "@context": "https://schema.org",

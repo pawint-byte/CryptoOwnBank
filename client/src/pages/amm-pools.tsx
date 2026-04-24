@@ -456,7 +456,17 @@ export default function AmmPools() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-2">
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-2">
+            <a
+              href="/faq?q=deposit+liquidity+xrpl+amm"
+              className="flex-1 sm:flex-none"
+              onClick={() => setProvideLpPool(null)}
+              data-testid="link-dialog-faq"
+            >
+              <Button variant="ghost" className="w-full">
+                Full step-by-step guide
+              </Button>
+            </a>
             <a
               href={`https://xrpscan.com/account/${provideLpPool?.account}`}
               target="_blank"
