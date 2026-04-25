@@ -571,12 +571,13 @@ export default function OwnBankVaults() {
       provider: "Upshift × Clearstar",
       apr: "~3-4%",
       asset: "FXRP (wrapped XRP on Flare)",
-      description: "The original Clearstar-curated XRP yield vault. Deposit FXRP via Upshift web app, or use the 'Flare XRPFi Yield' xApp in Xaman. Vault often hits capacity — sign up for notifications when full.",
+      description: "The original Clearstar-curated XRP yield vault. Deposit FXRP via Upshift web app (desktop), or use the 'Flare XRPFi Yield' xApp inside the Xaman mobile app. Vault often hits capacity — sign up for notifications when full.",
       bestFor: "XRP holders who want set-and-forget yield with the simplest Xaman flow.",
       custodyNote: "Self-custody — your FXRP stays in your wallet, you sign every deposit/withdraw.",
       withdrawal: "Redeem to XRP anytime",
-      docsUrl: "https://app.upshift.finance",
-      docsLabel: "Open Upshift",
+      docsUrl: "https://app.upshift.finance/pools/14/0x373D7d201C8134D4a2f7b5c63560da217e3dEA28",
+      docsLabel: "Open Vault on Upshift",
+      mobileHint: "On phone: open the Xaman app → xApps → search 'Flare XRPFi Yield' (browser links to Xaman don't work — has to be the installed app).",
     },
     {
       key: "firelight",
@@ -590,6 +591,7 @@ export default function OwnBankVaults() {
       withdrawal: "Trade stXRP anytime; unwrap on Firelight",
       docsUrl: "https://firelight.fi",
       docsLabel: "Open Firelight",
+      mobileHint: null,
     },
     {
       key: "morphoMystic",
@@ -603,6 +605,7 @@ export default function OwnBankVaults() {
       withdrawal: "Withdraw anytime, subject to vault liquidity",
       docsUrl: "https://app.morpho.org",
       docsLabel: "Open Morpho",
+      mobileHint: null,
     },
   ];
 
@@ -723,6 +726,17 @@ export default function OwnBankVaults() {
                       </p>
                     </div>
                   </div>
+
+                  {vault.mobileHint && (
+                    <div className="rounded-md bg-blue-500/5 border border-blue-500/20 px-3 py-2" data-testid={`hint-mobile-flare-${vault.key}`}>
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-500" />
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground">Mobile (Xaman):</span> {vault.mobileHint}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
                     <Link href="/flare-ftso" data-testid={`link-flare-guide-${vault.key}`}>

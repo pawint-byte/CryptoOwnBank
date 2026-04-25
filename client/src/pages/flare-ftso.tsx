@@ -960,16 +960,16 @@ export default function FlareFtso() {
                 <p className="text-sm text-muted-foreground">The original Clearstar-curated vault. Two ways in: deposit FXRP directly on <strong>Upshift</strong> (web), or use the <strong>"Flare XRPFi Yield"</strong> xApp in Xaman. The xApp shows a "vault full" message when at capacity — tap "Notify me" to get alerted when deposits reopen.</p>
                 <p className="text-xs text-muted-foreground italic">Separate website — not inside Xaman. You need FXRP in a Flare wallet first.</p>
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
-                  <a href="https://upshift.finance" target="_blank" rel="noopener noreferrer" className="inline-flex">
+                  <a href="https://app.upshift.finance/pools/14/0x373D7d201C8134D4a2f7b5c63560da217e3dEA28" target="_blank" rel="noopener noreferrer" className="inline-flex">
                     <Button variant="outline" size="sm" className="gap-1 text-xs" data-testid="button-upshift-link">
-                      <ExternalLink className="h-3 w-3" /> Open Upshift (earnXRP)
+                      <ExternalLink className="h-3 w-3" /> Open Vault on Upshift
                     </Button>
                   </a>
-                  <a href="https://xumm.app" target="_blank" rel="noopener noreferrer" className="inline-flex">
-                    <Button variant="outline" size="sm" className="gap-1 text-xs" data-testid="button-xaman-xapp-link">
-                      <ExternalLink className="h-3 w-3" /> Open in Xaman (xApp)
-                    </Button>
-                  </a>
+                </div>
+                <div className="rounded-md bg-blue-500/5 border border-blue-500/20 px-3 py-2 mt-2" data-testid="hint-xaman-mobile">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">On phone (Xaman app required):</span> open Xaman → tap <strong>xApps</strong> → search for <strong>"Flare XRPFi Yield"</strong> and open it. (Browser links to Xaman don't work — the xApp only opens inside the installed mobile app, which is why the old "Open in Xaman" web button gave a 404.)
+                  </p>
                 </div>
               </div>
             </div>
