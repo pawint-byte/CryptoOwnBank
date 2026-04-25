@@ -1254,7 +1254,9 @@ export default function OwnBankVaults() {
           return { vault: v, principal: dep.principal, accrued };
         }).filter(Boolean) as { vault: typeof SOIL_VAULTS[0]; principal: number; accrued: number }[];
         
-        if (allDeposits.length > 0) {
+        const dopplerActive = dopplerPosition ? 1 : 0;
+        const totalActiveVaults = allDeposits.length + dopplerActive;
+        if (totalActiveVaults > 0) {
           const totalDeposited = allDeposits.reduce((s, d) => s + d.principal, 0);
           const totalInterest = allDeposits.reduce((s, d) => s + d.accrued, 0);
           const totalBalance = totalDeposited + totalInterest;
@@ -1263,20 +1265,23 @@ export default function OwnBankVaults() {
               <CardContent className="pt-6">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Deposited</p>
+                    <p className="text-xs text-muted-foreground">Total Deposited (RLUSD)</p>
                     <p className="text-lg font-bold" data-testid="text-total-deposited">{formatCurrency(totalDeposited)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Est. Earned to Date</p>
+                    <p className="text-xs text-muted-foreground">Est. Earned to Date (RLUSD)</p>
                     <p className="text-lg font-bold text-green-600 dark:text-green-400" data-testid="text-total-earned">+{formatCurrency(totalInterest)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Balance</p>
+                    <p className="text-xs text-muted-foreground">Total Balance (RLUSD)</p>
                     <p className="text-lg font-bold text-[#00A4E4]" data-testid="text-total-balance">{formatCurrency(totalBalance)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Active Vaults</p>
-                    <p className="text-lg font-bold" data-testid="text-active-vaults">{allDeposits.length}</p>
+                    <p className="text-lg font-bold" data-testid="text-active-vaults">{totalActiveVaults}</p>
+                    {dopplerActive > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">incl. Doppler XRP</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
