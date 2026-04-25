@@ -49,7 +49,14 @@ export default function FamilyViewPage() {
   }
 
   const { ownerName, role, wallets, positions } = data;
-  const totalUsd = wallets.reduce((sum, w) => sum + w.balances.reduce((s, b) => s + (b.usdValue ? Number(b.usdValue) : 0), 0), 0);
+  const safeNum = (v: unknown): number => {
+    const n = typeof v === "number" ? v : Number(v ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const totalUsd = wallets.reduce(
+    (sum, w) => sum + w.balances.reduce((s, b) => s + safeNum(b.usdValue), 0),
+    0,
+  );
   const isProposer = role === "proposer";
 
   return (
@@ -100,7 +107,7 @@ export default function FamilyViewPage() {
           ) : (
             <div className="space-y-3">
               {wallets.map(w => {
-                const usd = w.balances.reduce((s, b) => s + (b.usdValue ? Number(b.usdValue) : 0), 0);
+                const usd = w.balances.reduce((s, b) => s + safeNum(b.usdValue), 0);
                 return (
                   <div key={w.wallet.id} className="rounded border p-3" data-testid={`row-wallet-${w.wallet.id}`}>
                     <div className="flex items-center justify-between">
@@ -115,7 +122,7 @@ export default function FamilyViewPage() {
                         {w.balances.map(b => (
                           <div key={b.id} className="flex justify-between rounded bg-muted/40 px-2 py-1">
                             <span className="font-medium">{b.assetSymbol}</span>
-                            <span className="text-muted-foreground">{Number(b.balance).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
+                            <span className="text-muted-foreground">{safeNum(b.balance).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
                           </div>
                         ))}
                       </div>
@@ -139,7 +146,7 @@ export default function FamilyViewPage() {
               {positions.map(p => (
                 <div key={p.id} className="flex justify-between text-sm py-1 border-b last:border-0" data-testid={`row-position-${p.id}`}>
                   <span className="font-medium">{p.assetSymbol}</span>
-                  <span className="text-muted-foreground">{Number(p.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
+                  <span className="text-muted-foreground">{safeNum(p.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
                 </div>
               ))}
             </div>
