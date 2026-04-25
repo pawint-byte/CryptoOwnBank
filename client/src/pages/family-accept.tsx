@@ -38,7 +38,12 @@ export default function FamilyAcceptPage() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/family-seats/me"] });
       toast({ title: "Access granted!", description: `You can now view ${invite?.ownerName || invite?.ownerEmail}'s portfolio.` });
-      setLocation(`/family/view/${data.id || invite?.seatId}`);
+      const targetSeatId = data?.seatId || data?.id || invite?.seatId;
+      if (targetSeatId) {
+        setLocation(`/family/view/${targetSeatId}`);
+      } else {
+        setLocation("/family");
+      }
     },
     onError: (err: any) => toast({ title: "Couldn't accept invite", description: err?.message || String(err), variant: "destructive" }),
   });

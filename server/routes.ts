@@ -10822,11 +10822,14 @@ ${beneSections}
       const [owner] = await db.select().from(users).where(eq(users.id, seat.ownerUserId));
       const ownerName = owner ? `${owner.firstName || ""} ${owner.lastName || ""}`.trim() || owner.email : "Someone";
       res.json({
+        seatId: seat.id,
         seatEmail: seat.seatEmail,
         seatName: seat.seatName,
         relationship: seat.relationship,
         role: seat.role,
         ownerName,
+        ownerEmail: owner?.email || null,
+        status: seat.status,
       });
     } catch (e) {
       console.error("Lookup invite error:", e);
