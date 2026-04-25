@@ -343,6 +343,20 @@ function SeatRow({ seat }: { seat: FamilySeat }) {
     mutationFn: async () => apiRequest("PATCH", `/api/family-seats/${seat.id}`, { resendInvite: true }),
     onSuccess: () => toast({ title: "Invite resent" }),
   });
+  const roleMutation = useMutation({
+    mutationFn: async (newRole: "viewer" | "proposer") =>
+      apiRequest("PATCH", `/api/family-seats/${seat.id}`, { role: newRole }),
+    onSuccess: (_data, newRole) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/family-seats"] });
+      toast({
+        title: `Role changed to ${newRole}`,
+        description: newRole === "proposer"
+          ? "They can now suggest actions you must approve. They just need to refresh their Family page."
+          : "They are now read-only. Any pending requests they sent stay until you decide on them.",
+      });
+    },
+    onError: (err: any) => toast({ title: "Could not change role", description: err?.message || String(err), variant: "destructive" }),
+  });
 
   const statusBadge =
     seat.status === "active" ? <Badge className="bg-green-600 text-[10px]">Active</Badge>
@@ -350,7 +364,7 @@ function SeatRow({ seat }: { seat: FamilySeat }) {
     : <Badge variant="destructive" className="text-[10px]">Revoked</Badge>;
 
   return (
-    <div className="rounded border p-3 flex items-center justify-between hover-elevate" data-testid={`row-seat-${seat.id}`}>
+    <div className="rounded border p-3 flex items-center justify-between gap-2 hover-elevate" data-testid={`row-seat-${seat.id}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium" data-testid={`text-seat-name-${seat.id}`}>{seat.seatName || seat.seatEmail}</span>
@@ -360,7 +374,22 @@ function SeatRow({ seat }: { seat: FamilySeat }) {
         <div className="text-xs text-muted-foreground mt-0.5">{seat.seatEmail}</div>
         {seat.acceptedAt && <div className="text-[10px] text-muted-foreground mt-0.5">Joined {new Date(seat.acceptedAt).toLocaleDateString()}{seat.lastSeenAt ? ` · last seen ${new Date(seat.lastSeenAt).toLocaleDateString()}` : ""}</div>}
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 shrink-0">
+        {seat.status !== "revoked" && (
+          <Select
+            value={seat.role}
+            onValueChange={(v) => roleMutation.mutate(v as "viewer" | "proposer")}
+            disabled={roleMutation.isPending}
+          >
+            <SelectTrigger className="h-8 w-[110px] text-xs" data-testid={`select-role-${seat.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectItem value="proposer">Proposer</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         {seat.status === "invited" && (
           <Button size="sm" variant="outline" onClick={() => resendMutation.mutate()} disabled={resendMutation.isPending} data-testid={`button-resend-${seat.id}`}>
             <Mail className="h-3.5 w-3.5 mr-1" /> Resend
