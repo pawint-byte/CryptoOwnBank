@@ -33,7 +33,10 @@ import {
   AlertTriangle,
   Target,
   Search,
+  Flame,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "wouter";
 import { useXrplStore, type VaultDeposit } from "@/lib/xrpl-store";
 import { WalletPicker } from "@/components/wallet-picker";
 import {
@@ -534,6 +537,220 @@ export default function OwnBankVaults() {
     }
   }
 
+  type FlareVaultStatus = {
+    key: string;
+    name: string;
+    status: "live" | "snapshot" | "error";
+    isConfigured: boolean;
+    isAccepting?: boolean | null;
+    isUncapped?: boolean;
+    capacityKnown?: boolean;
+    tvlSource?: "totalAssets" | "balanceOf";
+    totalAssetsXrp?: number;
+    totalCapacityXrp?: number | null;
+    percentFull?: number | null;
+    message?: string;
+  };
+  type FlareVaultStatusResponse = { vaults: FlareVaultStatus[]; lastCheckedAt: string };
+  const { data: flareVaultStatus } = useQuery<FlareVaultStatusResponse>({
+    queryKey: ["/api/flare/vault-status"],
+    refetchInterval: 5 * 60 * 1000,
+  });
+  const flareVaultByKey = (key: string) => flareVaultStatus?.vaults.find((v) => v.key === key);
+  const formatFlareXrp = (n?: number | null) => {
+    if (n === undefined || n === null) return "";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M XRP`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K XRP`;
+    return `${n.toFixed(0)} XRP`;
+  };
+
+  const FLARE_VAULTS = [
+    {
+      key: "earnXRP",
+      name: "earnXRP Vault",
+      provider: "Upshift × Clearstar",
+      apr: "~3-4%",
+      asset: "FXRP (wrapped XRP on Flare)",
+      description: "The original Clearstar-curated XRP yield vault. Deposit FXRP via Upshift web app, or use the 'Flare XRPFi Yield' xApp in Xaman. Vault often hits capacity — sign up for notifications when full.",
+      bestFor: "XRP holders who want set-and-forget yield with the simplest Xaman flow.",
+      custodyNote: "Self-custody — your FXRP stays in your wallet, you sign every deposit/withdraw.",
+      withdrawal: "Redeem to XRP anytime",
+      docsUrl: "https://app.upshift.finance",
+      docsLabel: "Open Upshift",
+    },
+    {
+      key: "firelight",
+      name: "Firelight Liquid Staking",
+      provider: "Firelight",
+      apr: "Variable",
+      asset: "FXRP → stXRP",
+      description: "Stake FXRP to receive liquid stXRP that stays tradable on SparkDEX or Enosys. Variable yield through Firelight's insurance and DeFi model.",
+      bestFor: "Active users who want yield + liquidity to use stXRP elsewhere.",
+      custodyNote: "Self-custody — stXRP is a token you hold in your Flare wallet.",
+      withdrawal: "Trade stXRP anytime; unwrap on Firelight",
+      docsUrl: "https://firelight.fi",
+      docsLabel: "Open Firelight",
+    },
+    {
+      key: "morphoMystic",
+      name: "Morpho Mystic FXRP",
+      provider: "Morpho × Mystic Finance",
+      apr: "~2-5%",
+      asset: "FXRP",
+      description: "Lend FXRP in curated Morpho vaults. You can also borrow against FXRP (USDT0 or FLR-backed). Claim and redeem anytime — no lock-ups.",
+      bestFor: "DeFi users comfortable with lending markets and looking for borrow capacity.",
+      custodyNote: "Self-custody — Morpho is non-custodial; you sign every interaction.",
+      withdrawal: "Withdraw anytime, subject to vault liquidity",
+      docsUrl: "https://app.morpho.org",
+      docsLabel: "Open Morpho",
+    },
+  ];
+
+  function renderFlareSection() {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pt-2">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Flare Network — XRP Yield (FXRP)</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <Card className="border-orange-500/20 bg-orange-500/5">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <Flame className="h-6 w-6 text-orange-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" data-testid="text-flare-section-intro">
+                  Earn yield on your XRP through Flare. All three options below require bridging XRP → FXRP first (one-time setup).
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Self-custody throughout. CryptoOwnBank doesn't operate these vaults — we surface them and walk you through bridging in the setup guide.
+                </p>
+              </div>
+              <Link href="/flare-ftso" data-testid="link-flare-setup-guide">
+                <Button size="sm" variant="outline" className="border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 shrink-0">
+                  Setup Guide <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {FLARE_VAULTS.map((vault) => {
+            const live = flareVaultByKey(vault.key);
+            let statusBadge: JSX.Element;
+            if (live?.status === "live") {
+              if (live.capacityKnown === false) {
+                statusBadge = (
+                  <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-600">Live · capacity unknown</Badge>
+                );
+              } else if (live.isAccepting) {
+                statusBadge = <Badge className="bg-green-600 text-white text-[10px]">Accepting · Live</Badge>;
+              } else {
+                statusBadge = <Badge variant="outline" className="text-[10px] border-red-500 text-red-600">FULL · Live</Badge>;
+              }
+            } else {
+              statusBadge = <Badge variant="outline" className="text-[10px]">Snapshot</Badge>;
+            }
+            return (
+              <Card key={vault.key} className="border-orange-500/20" data-testid={`card-vault-flare-${vault.key}`}>
+                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    <div className="min-w-0">
+                      <CardTitle className="text-base sm:text-lg" data-testid={`text-vault-name-flare-${vault.key}`}>
+                        {vault.name}
+                      </CardTitle>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {vault.description}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30 shrink-0"
+                    data-testid={`badge-apr-flare-${vault.key}`}
+                  >
+                    {vault.apr} APR
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-2 flex-wrap" data-testid={`badges-flare-${vault.key}`}>
+                    {statusBadge}
+                    {live?.totalAssetsXrp !== undefined && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {formatFlareXrp(live.totalAssetsXrp)} TVL
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Asset</p>
+                      <span className="text-sm font-medium" data-testid={`text-asset-flare-${vault.key}`}>{vault.asset}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Provider</p>
+                      <span className="text-sm font-medium">{vault.provider}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Withdrawal</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium" data-testid={`text-withdrawal-flare-${vault.key}`}>{vault.withdrawal}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Network</p>
+                      <span className="text-sm font-medium">Flare C-Chain</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md bg-muted/30 border border-muted px-3 py-2">
+                    <div className="flex items-start gap-2">
+                      <Target className="h-3.5 w-3.5 mt-0.5 shrink-0 text-orange-500" />
+                      <p className="text-xs text-muted-foreground" data-testid={`text-bestfor-flare-${vault.key}`}>
+                        <span className="font-medium text-foreground">Best for:</span> {vault.bestFor}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md bg-orange-500/5 border border-orange-500/20 px-3 py-2">
+                    <div className="flex items-start gap-2">
+                      <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0 text-orange-500" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">Custody:</span> {vault.custodyNote}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                    <Link href="/flare-ftso" data-testid={`link-flare-guide-${vault.key}`}>
+                      <Button variant="outline" size="sm" className="border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 w-full sm:w-auto">
+                        How to Get FXRP
+                      </Button>
+                    </Link>
+                    <a
+                      href={vault.docsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid={`link-flare-docs-${vault.key}`}
+                    >
+                      <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto">
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        {vault.docsLabel}
+                      </Button>
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderBlendSection() {
     return (
       <div className="space-y-4">
@@ -938,6 +1155,8 @@ export default function OwnBankVaults() {
 
         {renderDopplerSection()}
 
+        {renderFlareSection()}
+
         {renderBlendSection()}
 
         <XrplDisclaimer />
@@ -1195,6 +1414,8 @@ export default function OwnBankVaults() {
       </div>
 
       {renderDopplerSection()}
+
+      {renderFlareSection()}
 
       {renderBlendSection()}
 
