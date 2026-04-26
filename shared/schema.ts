@@ -1278,6 +1278,62 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 
+export const OFF_CHAIN_ASSET_TYPES = [
+  "startup",
+  "insurance",
+  "brokerage",
+  "vehicle",
+  "collectible",
+  "other",
+] as const;
+export type OffChainAssetType = typeof OFF_CHAIN_ASSET_TYPES[number];
+
+export const OFF_CHAIN_STATUSES = [
+  "active",
+  "exited",
+  "matured",
+  "written_off",
+  "cancelled",
+] as const;
+export type OffChainStatus = typeof OFF_CHAIN_STATUSES[number];
+
+export const offChainHoldings = pgTable("off_chain_holdings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  assetType: varchar("asset_type", { length: 20 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  provider: varchar("provider", { length: 255 }),
+  accountIdentifier: varchar("account_identifier", { length: 255 }),
+  amountInvested: decimal("amount_invested", { precision: 14, scale: 2 }),
+  currentValue: decimal("current_value", { precision: 14, scale: 2 }),
+  purchaseDate: varchar("purchase_date", { length: 10 }),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  notes: text("notes"),
+  legacyInstructions: text("legacy_instructions"),
+  beneficiaryName: varchar("beneficiary_name", { length: 255 }),
+  beneficiaryContact: varchar("beneficiary_contact", { length: 500 }),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_off_chain_holdings_user").on(table.userId),
+  index("idx_off_chain_holdings_user_type").on(table.userId, table.assetType),
+]);
+
+export const insertOffChainHoldingSchema = createInsertSchema(offChainHoldings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  assetType: z.enum(OFF_CHAIN_ASSET_TYPES),
+  status: z.enum(OFF_CHAIN_STATUSES).optional(),
+  amountInvested: z.union([z.string(), z.number()]).optional().nullable(),
+  currentValue: z.union([z.string(), z.number()]).optional().nullable(),
+});
+
+export type OffChainHolding = typeof offChainHoldings.$inferSelect;
+export type InsertOffChainHolding = z.infer<typeof insertOffChainHoldingSchema>;
+
 export const housingIndices = pgTable("housing_indices", {
   id: serial("id").primaryKey(),
   seriesId: varchar("series_id", { length: 50 }).notNull(),

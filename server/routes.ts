@@ -3,7 +3,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
@@ -3827,8 +3827,24 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         }
       }
 
-      const grandTotalValue = totalValue + propertyTotalValue + statementTotalValue;
-      const grandTotalCostBasis = totalCostBasis + propertyTotalCostBasis + statementTotalValue;
+      const userOffChainHoldings = await db.select().from(offChainHoldings).where(eq(offChainHoldings.userId, userId));
+      let offChainTotalValue = 0;
+      let offChainCostBasis = 0;
+      const offChainTypeValues = new Map<string, number>();
+      for (const h of userOffChainHoldings) {
+        if (h.status !== "active") continue;
+        const cv = parseFloat(h.currentValue || "0");
+        const ai = parseFloat(h.amountInvested || "0");
+        const value = cv > 0 ? cv : ai;
+        if (value > 0) {
+          offChainTotalValue += value;
+          offChainCostBasis += ai;
+          offChainTypeValues.set(h.assetType, (offChainTypeValues.get(h.assetType) || 0) + value);
+        }
+      }
+
+      const grandTotalValue = totalValue + propertyTotalValue + statementTotalValue + offChainTotalValue;
+      const grandTotalCostBasis = totalCostBasis + propertyTotalCostBasis + statementTotalValue + offChainCostBasis;
       const totalGainLoss = grandTotalValue - grandTotalCostBasis;
       const totalGainLossPercent = grandTotalCostBasis > 0 ? (totalGainLoss / grandTotalCostBasis) * 100 : 0;
 
@@ -3837,6 +3853,18 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       }
       if (statementTotalValue > 0) {
         allocationMap.set("Bank & Brokerage", (allocationMap.get("Bank & Brokerage") || 0) + statementTotalValue);
+      }
+      const OFF_CHAIN_ALLOC_LBL: Record<string, string> = {
+        startup: "Startups",
+        insurance: "Insurance",
+        brokerage: "Brokerage",
+        vehicle: "Vehicles",
+        collectible: "Collectibles",
+        other: "Other Assets",
+      };
+      for (const [type, value] of Array.from(offChainTypeValues.entries())) {
+        const label = OFF_CHAIN_ALLOC_LBL[type] || "Other Assets";
+        allocationMap.set(label, (allocationMap.get(label) || 0) + value);
       }
       const allocation = Array.from(allocationMap.entries()).map(([name, value], idx) => ({
         name,
@@ -3856,6 +3884,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         propertyCount: userProperties.length,
         statementValue: statementTotalValue,
         statementSourceCount: statementSourceValues.size,
+        offChainValue: offChainTotalValue,
+        offChainCount: userOffChainHoldings.filter(h => h.status === "active").length,
       });
     } catch (error) {
       console.error("Portfolio error:", error);
@@ -3979,6 +4009,26 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         return { address: p.address, city: p.city, purchasePrice: pp, currentValue: cv, gainLoss: cv - pp };
       });
 
+      const userHoldingsStmt = await db.select().from(offChainHoldings).where(eq(offChainHoldings.userId, userId));
+      let holdingsTotal = 0;
+      let holdingsCostBasis = 0;
+      const holdingsRows = userHoldingsStmt
+        .filter(h => h.status === "active")
+        .map(h => {
+          const cv = parseFloat(h.currentValue || "0") || parseFloat(h.amountInvested || "0");
+          const ai = parseFloat(h.amountInvested || "0");
+          holdingsTotal += cv;
+          holdingsCostBasis += ai;
+          return {
+            name: h.name,
+            type: h.assetType,
+            provider: h.provider || "",
+            invested: ai,
+            currentValue: cv,
+            gainLoss: cv - ai,
+          };
+        });
+
       const stmtHoldings = await storage.getStatementHoldingsByUser(userId);
       let stmtTotal = 0;
       const bankRows = stmtHoldings.filter(h => parseFloat(h.balance || "0") > 0).map(h => {
@@ -3987,8 +4037,8 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         return { label: h.label || h.productType, balance: bal, apy: h.apy ? parseFloat(h.apy) : null };
       });
 
-      const grandTotal = cryptoTotal + propTotal + stmtTotal;
-      const grandCostBasis = cryptoCostBasis + propCostBasis + stmtTotal;
+      const grandTotal = cryptoTotal + propTotal + stmtTotal + holdingsTotal;
+      const grandCostBasis = cryptoCostBasis + propCostBasis + stmtTotal + holdingsCostBasis;
       const totalGL = grandTotal - grandCostBasis;
 
       const { jsPDF } = await import("jspdf");
@@ -4177,6 +4227,36 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
           headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
           styles: { fontSize: 8, cellPadding: 2 },
           columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+          margin: { left: 14, right: 14 },
+        });
+        curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+      }
+
+      if (holdingsRows.length > 0) {
+        curY += 8;
+        if (curY > 250) { doc.addPage(); curY = 14; }
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text("Other Investments & Insurance", 14, curY);
+        const TYPE_LBL: Record<string, string> = {
+          startup: "Startup", insurance: "Insurance", brokerage: "Brokerage",
+          vehicle: "Vehicle", collectible: "Collectible", other: "Other",
+        };
+        autoTable(doc, {
+          startY: curY + 4,
+          head: [["Name", "Type", "Provider", "Invested", "Current Value", "Gain/Loss"]],
+          body: holdingsRows.map(r => [
+            r.name,
+            TYPE_LBL[r.type] || r.type,
+            r.provider,
+            r.invested > 0 ? fmtCur(r.invested) : "--",
+            fmtCur(r.currentValue),
+            r.invested > 0 ? fmtCur(r.gainLoss) : "--",
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
           margin: { left: 14, right: 14 },
         });
         curY = (doc as any).lastAutoTable?.finalY || curY + 40;
@@ -4421,6 +4501,130 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     } catch (error) {
       console.error("Property delete error:", error);
       res.status(500).json({ message: "Failed to delete property" });
+    }
+  });
+
+  // ========================================================================
+  // Off-chain holdings (seed investments, insurance, brokerage, vehicles, etc)
+  // ========================================================================
+  app.get("/api/off-chain-holdings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const rows = await db.select().from(offChainHoldings).where(eq(offChainHoldings.userId, userId));
+      res.json(rows);
+    } catch (error) {
+      console.error("Off-chain holdings fetch error:", error);
+      res.status(500).json({ message: "Failed to load holdings" });
+    }
+  });
+
+  app.post("/api/off-chain-holdings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const parsed = insertOffChainHoldingSchema.parse({ ...req.body, userId });
+      const insertData: any = {
+        userId,
+        assetType: parsed.assetType,
+        name: parsed.name,
+        provider: parsed.provider || null,
+        accountIdentifier: parsed.accountIdentifier || null,
+        amountInvested: parsed.amountInvested != null && parsed.amountInvested !== "" ? String(parsed.amountInvested) : null,
+        currentValue: parsed.currentValue != null && parsed.currentValue !== "" ? String(parsed.currentValue) : null,
+        purchaseDate: parsed.purchaseDate || null,
+        status: parsed.status || "active",
+        notes: parsed.notes || null,
+        legacyInstructions: parsed.legacyInstructions || null,
+        beneficiaryName: parsed.beneficiaryName || null,
+        beneficiaryContact: parsed.beneficiaryContact || null,
+        metadata: parsed.metadata || {},
+      };
+      const [created] = await db.insert(offChainHoldings).values(insertData).returning();
+      res.json(created);
+    } catch (error: any) {
+      console.error("Off-chain holding create error:", error);
+      res.status(400).json({ message: error?.message || "Failed to create holding" });
+    }
+  });
+
+  app.post("/api/off-chain-holdings/bulk", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const items = Array.isArray(req.body?.items) ? req.body.items : [];
+      if (items.length === 0) return res.status(400).json({ message: "No items provided" });
+      if (items.length > 200) return res.status(400).json({ message: "Maximum 200 items per import" });
+
+      const inserted: any[] = [];
+      const errors: { row: number; message: string }[] = [];
+      for (let i = 0; i < items.length; i++) {
+        try {
+          const parsed = insertOffChainHoldingSchema.parse({ ...items[i], userId });
+          const [row] = await db.insert(offChainHoldings).values({
+            userId,
+            assetType: parsed.assetType,
+            name: parsed.name,
+            provider: parsed.provider || null,
+            accountIdentifier: parsed.accountIdentifier || null,
+            amountInvested: parsed.amountInvested != null && parsed.amountInvested !== "" ? String(parsed.amountInvested) : null,
+            currentValue: parsed.currentValue != null && parsed.currentValue !== "" ? String(parsed.currentValue) : null,
+            purchaseDate: parsed.purchaseDate || null,
+            status: parsed.status || "active",
+            notes: parsed.notes || null,
+            legacyInstructions: parsed.legacyInstructions || null,
+            beneficiaryName: parsed.beneficiaryName || null,
+            beneficiaryContact: parsed.beneficiaryContact || null,
+            metadata: parsed.metadata || {},
+          } as any).returning();
+          inserted.push(row);
+        } catch (e: any) {
+          errors.push({ row: i + 1, message: e?.message || "Invalid row" });
+        }
+      }
+      res.json({ inserted: inserted.length, errors, items: inserted });
+    } catch (error: any) {
+      console.error("Off-chain bulk import error:", error);
+      res.status(500).json({ message: error?.message || "Bulk import failed" });
+    }
+  });
+
+  app.patch("/api/off-chain-holdings/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const existing = await db.select().from(offChainHoldings).where(and(eq(offChainHoldings.id, id), eq(offChainHoldings.userId, userId)));
+      if (existing.length === 0) return res.status(404).json({ message: "Holding not found" });
+
+      const allowed = ["assetType", "name", "provider", "accountIdentifier", "amountInvested", "currentValue", "purchaseDate", "status", "notes", "legacyInstructions", "beneficiaryName", "beneficiaryContact", "metadata"];
+      const updates: any = { updatedAt: new Date() };
+      for (const k of allowed) {
+        if (req.body[k] !== undefined) {
+          if (k === "assetType" && !OFF_CHAIN_ASSET_TYPES.includes(req.body[k])) continue;
+          if (k === "status" && !OFF_CHAIN_STATUSES.includes(req.body[k])) continue;
+          if (k === "amountInvested" || k === "currentValue") {
+            updates[k] = req.body[k] != null && req.body[k] !== "" ? String(req.body[k]) : null;
+          } else {
+            updates[k] = req.body[k];
+          }
+        }
+      }
+      const [updated] = await db.update(offChainHoldings).set(updates).where(and(eq(offChainHoldings.id, id), eq(offChainHoldings.userId, userId))).returning();
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Off-chain holding update error:", error);
+      res.status(500).json({ message: error?.message || "Failed to update holding" });
+    }
+  });
+
+  app.delete("/api/off-chain-holdings/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const existing = await db.select().from(offChainHoldings).where(and(eq(offChainHoldings.id, id), eq(offChainHoldings.userId, userId)));
+      if (existing.length === 0) return res.status(404).json({ message: "Holding not found" });
+      await db.delete(offChainHoldings).where(eq(offChainHoldings.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Off-chain holding delete error:", error);
+      res.status(500).json({ message: "Failed to delete holding" });
     }
   });
 

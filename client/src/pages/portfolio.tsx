@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getAssetCategory, CATEGORY_COLORS, isStockOrETF } from "@shared/asset-categories";
 import type { Position } from "@shared/schema";
+import { OffChainHoldingsCard } from "@/components/off-chain-holdings";
 
 interface PositionWithMarket extends Position {
   currentPrice?: number;
@@ -1449,6 +1450,8 @@ export default function Portfolio() {
           )}
         </CardContent>
       </Card>
+
+      <OffChainHoldingsCard />
 
       {(data?.statementValue ?? 0) > 0 && (
         <Card>
