@@ -1,7 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollText, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollText, AlertCircle, Briefcase, ShieldCheck, Building2, Car, Gem, Package, Phone, Globe } from "lucide-react";
+import type { OffChainHolding } from "@shared/schema";
+
+const OC_TYPE_LABEL: Record<string, string> = {
+  startup: "Startup / Seed Investment",
+  insurance: "Insurance Policy",
+  brokerage: "Brokerage / Retirement",
+  vehicle: "Vehicle",
+  collectible: "Collectible",
+  other: "Other",
+};
+const OC_TYPE_ICON: Record<string, any> = {
+  startup: Briefcase, insurance: ShieldCheck, brokerage: Building2,
+  vehicle: Car, collectible: Gem, other: Package,
+};
 
 type Beneficiary = {
   id: string;
@@ -51,6 +66,7 @@ function deliveryClause(b: Beneficiary, sharedCount: number): string {
 
 export function LegacyPlanSummary() {
   const { data, isLoading } = useQuery<PlanResponse>({ queryKey: ["/api/legacy-plan"] });
+  const { data: offChain = [] } = useQuery<OffChainHolding[]>({ queryKey: ["/api/off-chain-holdings"] });
 
   if (isLoading || !data) {
     return (
@@ -135,6 +151,83 @@ export function LegacyPlanSummary() {
             Read this to yourself out loud. If a sentence sounds wrong or surprises you, edit that beneficiary above and the summary will update.
           </p>
         </div>
+
+        {offChain.filter(h => h.status === "active").length > 0 && (
+          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3" data-testid="legacy-off-chain-section">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-amber-600" />
+              <p className="font-medium text-sm text-amber-700 dark:text-amber-500">
+                Off-chain assets your family will need to know about
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              These items aren't on a blockchain. Your beneficiary will need to contact each provider directly to claim them.
+            </p>
+            <div className="space-y-2">
+              {offChain.filter(h => h.status === "active").map(h => {
+                const Icon = OC_TYPE_ICON[h.assetType] || Package;
+                const url = h.contactUrl
+                  ? (h.contactUrl.startsWith("http") ? h.contactUrl : `https://${h.contactUrl}`)
+                  : null;
+                const cv = parseFloat(h.currentValue || "0") || parseFloat(h.amountInvested || "0");
+                return (
+                  <div key={h.id} className="rounded border bg-background p-2.5 text-xs" data-testid={`legacy-off-chain-${h.id}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 min-w-0 flex-1">
+                        <Icon className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-foreground flex items-center gap-1 flex-wrap">
+                            <span>{h.name}</span>
+                            {h.provider && <Badge variant="outline" className="text-[10px] px-1 py-0">{h.provider}</Badge>}
+                          </div>
+                          <div className="text-muted-foreground mt-0.5">
+                            {OC_TYPE_LABEL[h.assetType] || h.assetType}
+                            {h.accountIdentifier && <> · {h.assetType === "insurance" ? "Policy #" : "Acct #"} <span className="font-mono">{h.accountIdentifier}</span></>}
+                          </div>
+                          {h.quantity && (
+                            <div className="text-foreground/80 mt-0.5">{h.quantity}</div>
+                          )}
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            {url && (
+                              <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline" data-testid={`legacy-url-${h.id}`}>
+                                <Globe className="h-3 w-3" />
+                                <span className="truncate max-w-[180px]">{h.contactUrl?.replace(/^https?:\/\//, "")}</span>
+                              </a>
+                            )}
+                            {h.contactPhone && (
+                              <a href={`tel:${h.contactPhone.replace(/[^0-9+]/g, "")}`} className="inline-flex items-center gap-1 text-primary hover:underline" data-testid={`legacy-phone-${h.id}`}>
+                                <Phone className="h-3 w-3" />
+                                <span>{h.contactPhone}</span>
+                              </a>
+                            )}
+                          </div>
+                          {(h.beneficiaryName || h.legacyInstructions) && (
+                            <div className="mt-1.5 pt-1.5 border-t border-amber-500/20 text-[11px]">
+                              {h.beneficiaryName && (
+                                <div><span className="font-medium text-amber-700 dark:text-amber-500">Goes to:</span> {h.beneficiaryName}{h.beneficiaryContact && ` (${h.beneficiaryContact})`}</div>
+                              )}
+                              {h.legacyInstructions && (
+                                <div className="mt-0.5 text-muted-foreground italic">"{h.legacyInstructions}"</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {cv > 0 && (
+                        <div className="font-mono text-[11px] text-muted-foreground shrink-0">
+                          ${cv.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground italic pt-1 border-t border-amber-500/20">
+              Edit any of these on your Portfolio page under "Other Investments &amp; Insurance".
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

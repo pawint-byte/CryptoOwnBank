@@ -219,6 +219,33 @@ function HoldingRow({ holding, onEdit, onDelete }: { holding: OffChainHolding; o
               {holding.accountIdentifier && ` · ${holding.accountIdentifier}`}
               {holding.purchaseDate && ` · ${holding.purchaseDate}`}
             </div>
+            {holding.quantity && (
+              <div className="text-xs text-foreground/80 mt-0.5">{holding.quantity}</div>
+            )}
+            {(holding.contactUrl || holding.contactPhone) && (
+              <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground flex-wrap">
+                {holding.contactUrl && (
+                  <a
+                    href={holding.contactUrl.startsWith("http") ? holding.contactUrl : `https://${holding.contactUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline truncate max-w-[200px]"
+                    data-testid={`link-holding-url-${holding.id}`}
+                  >
+                    {holding.contactUrl.replace(/^https?:\/\//, "")}
+                  </a>
+                )}
+                {holding.contactPhone && (
+                  <a
+                    href={`tel:${holding.contactPhone.replace(/[^0-9+]/g, "")}`}
+                    className="text-primary hover:underline"
+                    data-testid={`link-holding-phone-${holding.id}`}
+                  >
+                    {holding.contactPhone}
+                  </a>
+                )}
+              </div>
+            )}
             {holding.notes && (
               <p className="text-xs text-muted-foreground italic mt-1 line-clamp-2">{holding.notes}</p>
             )}
@@ -268,6 +295,9 @@ function HoldingDialog({ existing, onClose }: { existing: OffChainHolding | null
     accountIdentifier: existing?.accountIdentifier || "",
     amountInvested: existing?.amountInvested || "",
     currentValue: existing?.currentValue || "",
+    quantity: existing?.quantity || "",
+    contactUrl: existing?.contactUrl || "",
+    contactPhone: existing?.contactPhone || "",
     purchaseDate: existing?.purchaseDate || "",
     status: (existing?.status as OffChainStatus) || "active",
     notes: existing?.notes || "",
@@ -394,11 +424,52 @@ function HoldingDialog({ existing, onClose }: { existing: OffChainHolding | null
           </div>
 
           <div>
+            <Label>
+              {isStartup ? "Quantity (shares / units)" : isInsurance ? "Policy term / coverage details" : "Quantity / units"}
+            </Label>
+            <Input
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+              placeholder={
+                isStartup ? "e.g., 5,000 shares @ $1.20 (Series Seed)"
+                  : isInsurance ? "e.g., 20-yr term, $500K coverage"
+                  : "e.g., 1 unit, 100 shares, 1 vehicle"
+              }
+              data-testid="input-holding-quantity"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>{isStartup ? "Login URL" : isInsurance ? "Insurer website" : "Website / login URL"}</Label>
+              <Input
+                value={form.contactUrl}
+                onChange={(e) => setForm({ ...form, contactUrl: e.target.value })}
+                placeholder={
+                  isStartup ? "https://startengine.com/login"
+                    : isInsurance ? "https://metlife.com"
+                    : "https://..."
+                }
+                data-testid="input-holding-url"
+              />
+            </div>
+            <div>
+              <Label>{isInsurance ? "Claims phone *" : "Customer service phone"}</Label>
+              <Input
+                value={form.contactPhone}
+                onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
+                placeholder={isInsurance ? "1-800-METLIFE" : "1-800-555-0100"}
+                data-testid="input-holding-phone"
+              />
+            </div>
+          </div>
+
+          <div>
             <Label>Notes</Label>
             <Textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder={isStartup ? "e.g., 5,000 shares @ $1.20, Series Seed (SAFE), exit target 2028" : "Anything you want to remember about this"}
+              placeholder={isStartup ? "e.g., Series Seed (SAFE), exit target 2028, board observer rights" : "Anything you want to remember about this"}
               rows={2}
               data-testid="input-holding-notes"
             />
@@ -504,6 +575,9 @@ function BulkImportDialog({ onClose }: { onClose: () => void }) {
       account: "accountIdentifier", accountnumber: "accountIdentifier", policynumber: "accountIdentifier", investorid: "accountIdentifier", id: "accountIdentifier",
       invested: "amountInvested", amount: "amountInvested", amountinvested: "amountInvested", premium: "amountInvested", costbasis: "amountInvested", cost: "amountInvested",
       value: "currentValue", currentvalue: "currentValue", facevalue: "currentValue", coverage: "currentValue", marketvalue: "currentValue",
+      quantity: "quantity", shares: "quantity", units: "quantity", numberofshares: "quantity", numshares: "quantity", qty: "quantity",
+      url: "contactUrl", website: "contactUrl", link: "contactUrl", loginurl: "contactUrl", site: "contactUrl",
+      phone: "contactPhone", phonenumber: "contactPhone", telephone: "contactPhone", tel: "contactPhone", claimsphone: "contactPhone", customerservice: "contactPhone",
       date: "purchaseDate", purchasedate: "purchaseDate", effectivedate: "purchaseDate", investmentdate: "purchaseDate",
       status: "status",
       notes: "notes", note: "notes", description2: "notes",

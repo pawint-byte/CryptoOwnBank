@@ -4023,9 +4023,16 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
             name: h.name,
             type: h.assetType,
             provider: h.provider || "",
+            accountId: h.accountIdentifier || "",
+            quantity: h.quantity || "",
+            contactUrl: h.contactUrl || "",
+            contactPhone: h.contactPhone || "",
             invested: ai,
             currentValue: cv,
             gainLoss: cv - ai,
+            beneficiary: h.beneficiaryName || "",
+            beneficiaryContact: h.beneficiaryContact || "",
+            legacyInstructions: h.legacyInstructions || "",
           };
         });
 
@@ -4244,22 +4251,56 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         };
         autoTable(doc, {
           startY: curY + 4,
-          head: [["Name", "Type", "Provider", "Invested", "Current Value", "Gain/Loss"]],
+          head: [["Name", "Type", "Provider", "Acct/Policy #", "Quantity", "Invested", "Current Value"]],
           body: holdingsRows.map(r => [
             r.name,
             TYPE_LBL[r.type] || r.type,
             r.provider,
+            r.accountId,
+            r.quantity,
             r.invested > 0 ? fmtCur(r.invested) : "--",
             fmtCur(r.currentValue),
-            r.invested > 0 ? fmtCur(r.gainLoss) : "--",
           ]),
           theme: "striped",
           headStyles: { fillColor: [0, 164, 228], fontSize: 8 },
-          styles: { fontSize: 8, cellPadding: 2 },
-          columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
+          styles: { fontSize: 7.5, cellPadding: 2 },
+          columnStyles: { 5: { halign: "right" }, 6: { halign: "right" } },
           margin: { left: 14, right: 14 },
         });
         curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+
+        const hasLegacyDetails = holdingsRows.some(r => r.contactUrl || r.contactPhone || r.legacyInstructions || r.beneficiary);
+        if (hasLegacyDetails) {
+          curY += 6;
+          if (curY > 240) { doc.addPage(); curY = 14; }
+          doc.setFontSize(10);
+          doc.setTextColor(180, 100, 0);
+          doc.text("Legacy Plan — Contact & Beneficiary Info", 14, curY);
+          doc.setTextColor(0);
+          autoTable(doc, {
+            startY: curY + 4,
+            head: [["Name", "Website", "Phone", "Beneficiary", "Instructions"]],
+            body: holdingsRows.map(r => [
+              r.name,
+              r.contactUrl,
+              r.contactPhone,
+              r.beneficiary + (r.beneficiaryContact ? `\n${r.beneficiaryContact}` : ""),
+              r.legacyInstructions,
+            ]),
+            theme: "grid",
+            headStyles: { fillColor: [180, 100, 0], fontSize: 8 },
+            styles: { fontSize: 7.5, cellPadding: 2, valign: "top" },
+            columnStyles: {
+              0: { cellWidth: 30 },
+              1: { cellWidth: 45 },
+              2: { cellWidth: 25 },
+              3: { cellWidth: 35 },
+              4: { cellWidth: "auto" },
+            },
+            margin: { left: 14, right: 14 },
+          });
+          curY = (doc as any).lastAutoTable?.finalY || curY + 40;
+        }
       }
 
       if (bankRows.length > 0) {
@@ -4593,7 +4634,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       const existing = await db.select().from(offChainHoldings).where(and(eq(offChainHoldings.id, id), eq(offChainHoldings.userId, userId)));
       if (existing.length === 0) return res.status(404).json({ message: "Holding not found" });
 
-      const allowed = ["assetType", "name", "provider", "accountIdentifier", "amountInvested", "currentValue", "purchaseDate", "status", "notes", "legacyInstructions", "beneficiaryName", "beneficiaryContact", "metadata"];
+      const allowed = ["assetType", "name", "provider", "accountIdentifier", "amountInvested", "currentValue", "quantity", "contactUrl", "contactPhone", "purchaseDate", "status", "notes", "legacyInstructions", "beneficiaryName", "beneficiaryContact", "metadata"];
       const updates: any = { updatedAt: new Date() };
       for (const k of allowed) {
         if (req.body[k] !== undefined) {
