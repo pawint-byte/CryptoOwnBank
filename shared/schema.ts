@@ -1378,3 +1378,78 @@ export const aiChatMessages = pgTable("ai_chat_messages", {
 ]);
 
 export type AiChatMessage = typeof aiChatMessages.$inferSelect;
+
+export const ROADMAP_STATUSES = [
+  "idea",
+  "gathering",
+  "strong",
+  "under_review",
+  "planned",
+  "in_progress",
+  "shipped",
+  "not_pursuing",
+] as const;
+export type RoadmapStatus = typeof ROADMAP_STATUSES[number];
+
+export const ROADMAP_CATEGORIES = [
+  "principles",
+  "access",
+  "language",
+  "family",
+  "infrastructure",
+  "money",
+  "community",
+  "honesty",
+] as const;
+export type RoadmapCategory = typeof ROADMAP_CATEGORIES[number];
+
+export const roadmapItems = pgTable("roadmap_items", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 30 }).notNull(),
+  status: varchar("status", { length: 30 }).notNull().default("idea"),
+  teamResponse: text("team_response"),
+  teamResponseAt: timestamp("team_response_at"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  unique("uq_roadmap_items_slug").on(table.slug),
+  index("idx_roadmap_items_status").on(table.status),
+  index("idx_roadmap_items_sort").on(table.sortOrder),
+]);
+
+export const roadmapVotes = pgTable("roadmap_votes", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  unique("uq_roadmap_votes_item_user").on(table.itemId, table.userId),
+  index("idx_roadmap_votes_item").on(table.itemId),
+  index("idx_roadmap_votes_user").on(table.userId),
+]);
+
+export const insertRoadmapItemSchema = createInsertSchema(roadmapItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  status: z.enum(ROADMAP_STATUSES).optional(),
+  category: z.enum(ROADMAP_CATEGORIES),
+});
+
+export const insertRoadmapVoteSchema = createInsertSchema(roadmapVotes).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  comment: z.string().max(500).optional().nullable(),
+});
+
+export type RoadmapItem = typeof roadmapItems.$inferSelect;
+export type InsertRoadmapItem = z.infer<typeof insertRoadmapItemSchema>;
+export type RoadmapVote = typeof roadmapVotes.$inferSelect;
+export type InsertRoadmapVote = z.infer<typeof insertRoadmapVoteSchema>;
