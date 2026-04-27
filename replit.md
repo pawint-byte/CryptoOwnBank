@@ -3,6 +3,16 @@
 ## Overview
 CryptoOwnBank is a multi-chain crypto platform combining portfolio tracker, non-custodial XRPL yield vault (Soil Protocol), Stellar payment tools, RWA yield discovery, Legacy Plan, DEX trading, DCA orders, EVM swaps via 1inch, cross-chain swaps via LI.FI, XRPL Bridge, and WalletConnect. Three-tier freemium: Free, Premium ($29/mo or $199/yr), Pro ($99/mo or $799/yr). Non-custodial only, no financial advice.
 
+## Three Core Principles (locked 2026-04-27 — public page at `/principles`)
+1. **Non-custodial.** We never hold member money. Nothing for any government to subpoena from us about balances because we don't have balances.
+2. **No gatekeeping of transactions.** We don't decide who a member can send to. That's between the two parties.
+3. **Fungibility — no taint scoring, ever.** A satoshi is a satoshi. We will never integrate Chainalysis/TRM/Elliptic-style coin-history scoring tools.
+
+These three are the editorial filter for every new feature, marketing page, and copy revision. Anything that conflicts with them gets rejected or rewritten.
+
+## License
+**AGPL-3.0** (locked 2026-04-27). LICENSE file at repo root. Protects the mission against hostile/private forks — anyone running modified copies of CryptoOwnBank from this code is legally required to publish their changes back. Free, perpetual, no registration. Switching to MIT or SSPL would require a deliberate decision and rewrite.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language. No technical jargon.
 

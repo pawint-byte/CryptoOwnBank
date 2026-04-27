@@ -3086,6 +3086,30 @@ export default function Landing() {
         <AmendmentTracker />
         </>)}
 
+        <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-t bg-muted/30" data-testid="section-principles-teaser">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-sm font-medium tracking-wide uppercase text-[#00A4E4] mb-3">Our Principles</p>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4" data-testid="heading-principles-teaser">
+              Money That Works for All of Us
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-3 max-w-2xl mx-auto">
+              We built this because money shouldn't pick sides. You hold your own money. We don't decide who you can send to. We tell you the truth.
+            </p>
+            <p className="text-base text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto">
+              For the schoolteacher in Buenos Aires. The dad in Houston sending money home. The widow who shouldn't have to learn twenty new things in the worst week of her life. The auntie in the village with a flip phone.
+            </p>
+            <p className="text-xl font-semibold mb-8">
+              Welcome in. We saved you a seat at the table.
+            </p>
+            <a href="/principles">
+              <Button size="lg" variant="outline" className="border-[#00A4E4] text-[#00A4E4] hover:bg-[#00A4E4] hover:text-white" data-testid="button-read-principles">
+                Read our principles
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </a>
+          </div>
+        </section>
+
         <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#00A4E4] text-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4" data-testid="heading-cta">The Migration Is Already Underway</h2>
@@ -3129,6 +3153,7 @@ export default function Landing() {
             <div>
               <p className="text-sm font-medium text-gray-200 mb-3">Resources</p>
               <div className="flex flex-col gap-2 text-sm">
+                <a href="/principles" className="hover:text-[#00A4E4] transition-colors" data-testid="link-principles-footer">Our Principles</a>
                 <a href="/migration-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-migration-guide">Migration Guide</a>
                 <a href="/setup-guide" className="hover:text-[#00A4E4] transition-colors" data-testid="link-setup-guide">Getting Started</a>
                 <a href="/yield-calculator" className="hover:text-[#00A4E4] transition-colors" data-testid="link-yield-calculator">Yield Calculator</a>
