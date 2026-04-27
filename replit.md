@@ -13,6 +13,14 @@ These three are the editorial filter for every new feature, marketing page, and 
 ## License
 **AGPL-3.0** (locked 2026-04-27). LICENSE file at repo root. Protects the mission against hostile/private forks — anyone running modified copies of CryptoOwnBank from this code is legally required to publish their changes back. Free, perpetual, no registration. Switching to MIT or SSPL would require a deliberate decision and rewrite.
 
+## Member-Voted Roadmap (locked 2026-04-27 — public page at `/roadmap`)
+- 14 starter items seeded on server startup, written in plain English.
+- One verified email + 7-day-old account = one vote. No weighting, no paid extra say.
+- Each member can have at most 10 active votes at once (votes on `shipped`/`not_pursuing` items don't count toward the cap).
+- Status ladder: idea → gathering → strong → under_review → planned → in_progress → shipped/not_pursuing.
+- 30-day team-response promise: when an item gathers strong support, the team posts a public answer (yes / no / "here's why not yet") via the admin endpoint. Response is timestamped on the card.
+- Admin gate uses the same pattern as other admin routes (`db.select(users)` + `isAdmin || ADMIN_EMAILS.includes(email)`).
+
 ## User Preferences
 Preferred communication style: Simple, everyday language. No technical jargon.
 

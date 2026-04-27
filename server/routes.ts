@@ -3,7 +3,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
@@ -15111,6 +15111,141 @@ ${beneSections}
     res.json({ appId: GP_APP_ID });
   });
 
+  app.get("/api/roadmap", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub ?? null;
+      const items = await storage.listRoadmapItems(userId);
+      let viewer: { isAuthed: boolean; canVote: boolean; reason: string | null; activeVotes: number; maxVotes: number } = {
+        isAuthed: false,
+        canVote: false,
+        reason: "not_authed",
+        activeVotes: 0,
+        maxVotes: 10,
+      };
+      if (userId) {
+        const [u] = await db.select().from(users).where(eq(users.id, userId));
+        const activeVotes = await storage.getUserActiveVoteCount(userId);
+        let reason: string | null = null;
+        let canVote = true;
+        if (!u) {
+          canVote = false; reason = "not_authed";
+        } else if (!u.emailVerified) {
+          canVote = false; reason = "email_not_verified";
+        } else {
+          const ageMs = Date.now() - new Date(u.createdAt as any).getTime();
+          if (ageMs < 7 * 24 * 60 * 60 * 1000) {
+            canVote = false; reason = "account_too_new";
+          } else if (activeVotes >= 10) {
+            canVote = false; reason = "vote_cap_reached";
+          }
+        }
+        viewer = { isAuthed: true, canVote, reason, activeVotes, maxVotes: 10 };
+      }
+      res.json({ items, viewer });
+    } catch (error) {
+      console.error("[GET /api/roadmap] error:", error);
+      res.status(500).json({ message: "Failed to load roadmap" });
+    }
+  });
+
+  app.post("/api/roadmap/:itemId/vote", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = parseInt(req.params.itemId, 10);
+      if (!Number.isFinite(itemId)) return res.status(400).json({ message: "Invalid item id" });
+
+      const item = await storage.getRoadmapItem(itemId);
+      if (!item) return res.status(404).json({ message: "Item not found" });
+      if (item.status === "shipped" || item.status === "not_pursuing") {
+        return res.status(400).json({ message: "Voting is closed on this item" });
+      }
+
+      const [u] = await db.select().from(users).where(eq(users.id, userId));
+      if (!u) return res.status(401).json({ message: "Sign in to vote" });
+      if (!u.emailVerified) return res.status(403).json({ message: "Verify your email before voting", reason: "email_not_verified" });
+      const ageMs = Date.now() - new Date(u.createdAt as any).getTime();
+      if (ageMs < 7 * 24 * 60 * 60 * 1000) {
+        return res.status(403).json({ message: "Accounts must be at least 7 days old to vote", reason: "account_too_new" });
+      }
+      const activeVotes = await storage.getUserActiveVoteCount(userId);
+      if (activeVotes >= 10) {
+        return res.status(403).json({ message: "You've used all 10 active votes. Remove one to free up a slot.", reason: "vote_cap_reached" });
+      }
+
+      const commentSchema = z.object({ comment: z.string().max(500).optional().nullable() });
+      const parsed = commentSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ message: "Invalid comment" });
+
+      try {
+        const vote = await storage.voteOnRoadmapItem(itemId, userId, parsed.data.comment ?? null);
+        res.json({ vote });
+      } catch (err: any) {
+        if (err?.code === "23505") {
+          return res.status(409).json({ message: "You've already voted on this item" });
+        }
+        throw err;
+      }
+    } catch (error) {
+      console.error("[POST /api/roadmap/:itemId/vote] error:", error);
+      res.status(500).json({ message: "Failed to record vote" });
+    }
+  });
+
+  app.delete("/api/roadmap/:itemId/vote", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = parseInt(req.params.itemId, 10);
+      if (!Number.isFinite(itemId)) return res.status(400).json({ message: "Invalid item id" });
+      await storage.unvoteRoadmapItem(itemId, userId);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("[DELETE /api/roadmap/:itemId/vote] error:", error);
+      res.status(500).json({ message: "Failed to remove vote" });
+    }
+  });
+
+  app.patch("/api/admin/roadmap/:itemId/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [u] = await db.select().from(users).where(eq(users.id, userId));
+      if (!u?.isAdmin && !ADMIN_EMAILS.includes(u?.email?.toLowerCase() || "")) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const itemId = parseInt(req.params.itemId, 10);
+      if (!Number.isFinite(itemId)) return res.status(400).json({ message: "Invalid item id" });
+      const parsed = z.object({ status: z.enum(ROADMAP_STATUSES) }).safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ message: "Invalid status" });
+      const updated = await storage.updateRoadmapItemStatus(itemId, parsed.data.status as RoadmapStatus);
+      if (!updated) return res.status(404).json({ message: "Item not found" });
+      res.json({ item: updated });
+    } catch (error) {
+      console.error("[PATCH /api/admin/roadmap/:itemId/status] error:", error);
+      res.status(500).json({ message: "Failed to update status" });
+    }
+  });
+
+  app.patch("/api/admin/roadmap/:itemId/response", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [u] = await db.select().from(users).where(eq(users.id, userId));
+      if (!u?.isAdmin && !ADMIN_EMAILS.includes(u?.email?.toLowerCase() || "")) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const itemId = parseInt(req.params.itemId, 10);
+      if (!Number.isFinite(itemId)) return res.status(400).json({ message: "Invalid item id" });
+      const parsed = z.object({ response: z.string().min(1).max(4000) }).safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ message: "Response is required (max 4000 chars)" });
+      const updated = await storage.postRoadmapTeamResponse(itemId, parsed.data.response);
+      if (!updated) return res.status(404).json({ message: "Item not found" });
+      res.json({ item: updated });
+    } catch (error) {
+      console.error("[PATCH /api/admin/roadmap/:itemId/response] error:", error);
+      res.status(500).json({ message: "Failed to post response" });
+    }
+  });
+
+  seedRoadmapStarterItems().catch((err) => console.error("[roadmap-seed] error:", err));
+
   startPriceAlertChecker();
   seedPriceCache();
   startPriceCacheScheduler(4);
@@ -15125,6 +15260,41 @@ ${beneSections}
   startInactivityReminder();
 
   return httpServer;
+}
+
+async function seedRoadmapStarterItems() {
+  const STARTER_ITEMS = [
+    { slug: "principles-page", category: "principles", title: "A welcome page that says exactly what we stand for", description: "No tech talk. Just plain words on what we promise and what we'll never do. (This is the Principles page.)", status: "shipped" },
+    { slug: "external-tools-reference", category: "access", title: "A page that points you to other good tools we don't build ourselves", description: "Wallets, apps, and helpers from other teams that fit our principles — for the people who want them." },
+    { slug: "site-translations", category: "language", title: "The site in your language", description: "Spanish, Portuguese, Arabic, Swahili first. More to follow. So you can use this in the words you actually think in." },
+    { slug: "phone-walkthrough", category: "access", title: "A phone number you can call to set up your wallet", description: "A calm voice walks you through it in your language. No reading needed. No smartphone needed." },
+    { slug: "flip-phone-payments", category: "access", title: "Send and receive money on a flip phone", description: "Dial a code, type the amount, money moves. Already works in parts of Africa — we want to bring it to more places." },
+    { slug: "diaspora-send", category: "family", title: "Diaspora Send", description: "One tap to send small amounts to family back home. They don't need a bank, an app, or an ID to receive it." },
+    { slug: "family-treasure-checklist", category: "family", title: "Family Treasure Checklist", description: "Step-by-step plain-English guide for keeping your money safe like the cash your grandparents hid in the mattress — but better. Hardware wallet, metal plate, family split, the whole thing." },
+    { slug: "satellite-receiver", category: "infrastructure", title: "A receiver that works when the internet doesn't", description: "When the network is cut or censored, your wallet quietly switches to receiving over satellite. Free. Already working in space today." },
+    { slug: "bitcoin-lightning-priority", category: "money", title: "Bitcoin and Lightning, faster", description: "Move our work on Bitcoin (the one that survives every government that ever tried to kill it) and Lightning (instant, almost-free sends) up the priority list." },
+    { slug: "two-of-three-multisig", category: "family", title: "Two-of-three keys for big amounts", description: "A wizard that helps you set up a wallet where two trusted people have to agree before money moves. Like needing two signatures on a check." },
+    { slug: "fedimint-pools", category: "community", title: "Community money pools (Fedimint)", description: "For families and villages that want to share a wallet protected by people they trust — instead of a corporation. We don't run it. We just help you connect." },
+    { slug: "cash-swap-map", category: "community", title: "A map of trusted people who can swap cash for crypto in your area", description: "Like the corner store that does Western Union, but for digital money. We don't run them, we just help you find them." },
+    { slug: "picture-and-voice-mode", category: "access", title: "Picture-and-voice mode", description: "No reading required. Big icons, audio confirmations of every step, in your own language." },
+    { slug: "stablecoin-report-card", category: "honesty", title: "An honest report card on stablecoins", description: "Show clearly which kinds of digital dollars can be frozen by the company that issued them and which can't, so you choose with eyes open." },
+  ];
+  try {
+    const items = STARTER_ITEMS.map((item, idx) => ({
+      slug: item.slug,
+      title: item.title,
+      description: item.description,
+      category: item.category as any,
+      status: (item.status ?? "idea") as any,
+      sortOrder: idx + 1,
+    }));
+    const inserted = await storage.seedRoadmapItemsIfEmpty(items);
+    if (inserted > 0) {
+      console.log(`[roadmap-seed] Inserted ${inserted} starter roadmap items`);
+    }
+  } catch (err) {
+    console.error("[roadmap-seed] error:", err);
+  }
 }
 
 async function seedPriceCache() {

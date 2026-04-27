@@ -412,6 +412,16 @@ export interface IStorage {
   createFamilySeat(data: InsertFamilySeat & { inviteToken: string }): Promise<FamilySeat>;
   updateFamilySeat(id: string, data: Partial<FamilySeat>): Promise<FamilySeat | undefined>;
   deleteFamilySeat(id: string): Promise<void>;
+  listRoadmapItems(viewerUserId?: string | null): Promise<Array<RoadmapItem & { voteCount: number; userVoted: boolean }>>;
+  getRoadmapItem(id: number): Promise<RoadmapItem | undefined>;
+  getRoadmapItemBySlug(slug: string): Promise<RoadmapItem | undefined>;
+  createRoadmapItem(data: InsertRoadmapItem): Promise<RoadmapItem>;
+  updateRoadmapItemStatus(id: number, status: RoadmapStatus): Promise<RoadmapItem | undefined>;
+  postRoadmapTeamResponse(id: number, response: string): Promise<RoadmapItem | undefined>;
+  voteOnRoadmapItem(itemId: number, userId: string, comment?: string | null): Promise<RoadmapVote>;
+  unvoteRoadmapItem(itemId: number, userId: string): Promise<void>;
+  getUserActiveVoteCount(userId: string): Promise<number>;
+  seedRoadmapItemsIfEmpty(items: InsertRoadmapItem[]): Promise<number>;
   createFamilyProposal(data: InsertFamilyProposal): Promise<FamilyProposal>;
   getFamilyProposalsByOwner(ownerUserId: string, status?: string): Promise<FamilyProposal[]>;
   getFamilyProposalsBySeat(seatId: string): Promise<FamilyProposal[]>;
@@ -1843,6 +1853,109 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFamilySeat(id: string): Promise<void> {
     await db.delete(familySeats).where(eq(familySeats.id, id));
+  }
+
+  async listRoadmapItems(viewerUserId?: string | null): Promise<Array<RoadmapItem & { voteCount: number; userVoted: boolean }>> {
+    const items = await db
+      .select()
+      .from(roadmapItems)
+      .orderBy(roadmapItems.sortOrder, roadmapItems.id);
+
+    if (items.length === 0) return [];
+
+    const counts = await db
+      .select({
+        itemId: roadmapVotes.itemId,
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(roadmapVotes)
+      .groupBy(roadmapVotes.itemId);
+    const countMap = new Map<number, number>();
+    for (const row of counts) countMap.set(row.itemId, row.count);
+
+    let votedSet = new Set<number>();
+    if (viewerUserId) {
+      const userVotes = await db
+        .select({ itemId: roadmapVotes.itemId })
+        .from(roadmapVotes)
+        .where(eq(roadmapVotes.userId, viewerUserId));
+      votedSet = new Set(userVotes.map((v) => v.itemId));
+    }
+
+    return items.map((item) => ({
+      ...item,
+      voteCount: countMap.get(item.id) ?? 0,
+      userVoted: votedSet.has(item.id),
+    }));
+  }
+
+  async getRoadmapItem(id: number): Promise<RoadmapItem | undefined> {
+    const [r] = await db.select().from(roadmapItems).where(eq(roadmapItems.id, id));
+    return r;
+  }
+
+  async getRoadmapItemBySlug(slug: string): Promise<RoadmapItem | undefined> {
+    const [r] = await db.select().from(roadmapItems).where(eq(roadmapItems.slug, slug));
+    return r;
+  }
+
+  async createRoadmapItem(data: InsertRoadmapItem): Promise<RoadmapItem> {
+    const [r] = await db.insert(roadmapItems).values(data as any).returning();
+    return r;
+  }
+
+  async updateRoadmapItemStatus(id: number, status: RoadmapStatus): Promise<RoadmapItem | undefined> {
+    const [r] = await db
+      .update(roadmapItems)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(roadmapItems.id, id))
+      .returning();
+    return r;
+  }
+
+  async postRoadmapTeamResponse(id: number, response: string): Promise<RoadmapItem | undefined> {
+    const [r] = await db
+      .update(roadmapItems)
+      .set({ teamResponse: response, teamResponseAt: new Date(), updatedAt: new Date() })
+      .where(eq(roadmapItems.id, id))
+      .returning();
+    return r;
+  }
+
+  async voteOnRoadmapItem(itemId: number, userId: string, comment?: string | null): Promise<RoadmapVote> {
+    const [r] = await db
+      .insert(roadmapVotes)
+      .values({ itemId, userId, comment: comment ?? null })
+      .returning();
+    return r;
+  }
+
+  async unvoteRoadmapItem(itemId: number, userId: string): Promise<void> {
+    await db
+      .delete(roadmapVotes)
+      .where(and(eq(roadmapVotes.itemId, itemId), eq(roadmapVotes.userId, userId)));
+  }
+
+  async getUserActiveVoteCount(userId: string): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
+      .from(roadmapVotes)
+      .innerJoin(roadmapItems, eq(roadmapVotes.itemId, roadmapItems.id))
+      .where(
+        and(
+          eq(roadmapVotes.userId, userId),
+          sql`${roadmapItems.status} NOT IN ('shipped', 'not_pursuing')`,
+        ),
+      );
+    return row?.count ?? 0;
+  }
+
+  async seedRoadmapItemsIfEmpty(items: InsertRoadmapItem[]): Promise<number> {
+    const [row] = await db.select({ count: sql<number>`count(*)`.mapWith(Number) }).from(roadmapItems);
+    if ((row?.count ?? 0) > 0) return 0;
+    if (items.length === 0) return 0;
+    await db.insert(roadmapItems).values(items as any[]);
+    return items.length;
   }
 }
 
