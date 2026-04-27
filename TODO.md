@@ -1,6 +1,6 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
-**Last updated: 2026-04-22 by main agent (Stellar DCA v2 rebuilt on SEP-0007 `web+stellar:tx?xdr=...&callback=...` deep links — server builds pathPaymentStrictSend XDR with 1.5% slippage via Horizon strictSendPaths, checks trustline + funding pre-flight, returns deep link + token. LOBSTR opens, user signs, LOBSTR POSTs signed XDR to `/api/stellar/dca-callback`, server submits to Horizon and records execution. Frontend polls `/check-execution` every 3s for 5min. Re-enabled sidebar entry, restored `/stellar/dca` routes to DcaOrders, removed startup auto-pause task, bumped sw.js cache to cob-v4. ⚠️ HARD GATE: Must verify end-to-end on a funded test Stellar wallet (iPhone Safari → LOBSTR → callback → execution row in DB) before user trusts it. Do NOT promote to "working" without that test.)**
+**Last updated: 2026-04-27 by main agent (Captured the full state of the multi-round Principles Page + Member-Voted Roadmap design conversation — three core principles locked, final ~370-word Principles page copy ready, Roadmap voting design decisions converged, ~210-word roadmap intro copy, 14 starter items in plain English, mission-integrity guardrails documented, outstanding decisions for Peter Sr listed, and recommended build sequence outlined. Talking stage complete; nothing built yet — Peter Sr is on a break and will return to give the green light. See "PENDING — Principles Page & Member-Voted Roadmap" section below for the full record. Earlier in the session: shipped the off-chain holdings tracker enhancements — added `quantity`, `contactUrl`, `contactPhone` columns to `offChainHoldings`; updated form, row display, bulk CSV header map, PATCH allowlist, and Statement PDF export with a dedicated "Legacy Plan — Contact & Beneficiary Info" table; updated `LegacyPlanSummary` component with an amber-bordered "Off-chain assets your family will need to know about" section showing each holding's institution, account/policy number, quantity, clickable URL/phone, beneficiary, and instructions.)**
 
 **This file is the official memory for pending items, decisions made, and things to revisit. Every session MUST read this file and update it when items are completed or new ones are added. Update the "Last updated" line above with the current date every time you make changes. Every entry MUST include the date it was added. Completed items MUST include the date completed.**
 
@@ -33,6 +33,148 @@
 ### Live decisions from 2026-04-22 applying these filters:
 - **Stellar DCA — FAILS Filter 2.** XRPL DCA works hands-off via Xaman push payloads. No major Stellar wallet (LOBSTR, Freighter, Solar) supports equivalent background signing today. The "DCA" we shipped is a manual-trade-with-checklist, not real DCA. **Action: hide Stellar DCA from sidebar, disable create flow, auto-pause existing Stellar DCA orders with explanatory note. Re-enable only when SEP-0007 prepared-XDR signing OR WalletConnect-with-LOBSTR background signing is built and proven.** (Stellar balance tracking and Stellar DEX page remain — they pass both filters.)
 - **HYPE / non-EVM tradeable badge — PASSES both filters as informational.** We don't claim to swap it; we route the user to a CEX with clear instructions and bring them back to track the wallet. Honest scope.
+
+---
+
+## PENDING — Principles Page & Member-Voted Roadmap (Added 2026-04-27)
+
+**Status:** Talking stage complete, copy converged across multiple rounds with outside-AI triangulation. NOT YET BUILT. Peter Sr is on a break and will return to give the green light.
+
+### Three Core Principles (locked — to be enshrined in `replit.md` and on a public page)
+1. **Non-custodial.** We never hold member money. Nothing for any government to subpoena from us about balances because we don't have balances.
+2. **No gatekeeping of transactions.** We don't decide who a member can send to. That's between the two parties.
+3. **Fungibility — no taint scoring, ever.** A satoshi is a satoshi. We will never integrate Chainalysis/TRM/Elliptic-style coin-history scoring tools.
+
+### Final Principles Page Copy (ready to publish at `/principles`, ~370 words)
+
+> **Money That Works for All of Us**
+>
+> We built this because money shouldn't pick sides.
+>
+> It shouldn't care what country you're from, what your government says this year, or whether you have a smartphone or a $20 flip phone. A dollar, a naira, a peso, a real, a satoshi — they should be worth the same in your hand as they are in mine. That's what money is supposed to be.
+>
+> So here's what we promise:
+>
+> **You hold your own money.** We never touch it. We don't have it to freeze, lose, or hand over.
+>
+> **We don't decide who you can send to.** That's between you and the person on the other side.
+>
+> **We tell you the truth.** Some kinds of money — like Bitcoin held in your own wallet — can't be frozen overnight or pulled back by the company that issued them. Other kinds (like certain stablecoins) can be. We'll show you which is which so you choose with eyes open.
+>
+> **Your family is part of this.** We help you set things up so the people you love aren't locked out if something happens to you. You can split the secret words between trusted family — no one person can touch everything alone, but together they can help each other.
+>
+> **It works where you are.** Smartphone, flip phone, or no phone at all — we're building paths to all of them. You don't need perfect English. Some days you don't even need internet.
+>
+> **And here's the honest part:** if you lose the secret words and your family doesn't have the pieces, the money is gone. Nobody can recover it for you — not even us. That's the trade for nobody being able to take it from you. We'll help you set this up so it doesn't happen.
+>
+> ---
+>
+> People have always built their own money systems when the official one shut them out — *susu* circles in West Africa and the Caribbean, *tanda* groups in Mexico, *hui* in China, mutual aid societies in Black communities after Reconstruction, mattress money in every immigrant home everywhere. None of these are backward. They're what people do when the system isn't built for them. We're building the next version of that — same idea, modern tools, your family included.
+>
+> ---
+>
+> This is for the schoolteacher in Buenos Aires watching her salary buy less rice every Friday.
+>
+> For the dad in Houston sending money home so his mom doesn't have to wait in line at Western Union.
+>
+> For the widow who shouldn't have to learn twenty new things in the worst week of her life.
+>
+> For the auntie in the village with a flip phone who deserves the same tools as the trader on Wall Street.
+>
+> For every family that just wants a fair shot when the rules keep changing.
+>
+> **Welcome in. We saved you a seat at the table.**
+>
+> *— The CryptoOwnBank team*
+
+### Member-Voted Roadmap — Final Design Decisions
+
+- **Page lives at `/roadmap`** — public read (anyone), login required to vote.
+- **One verified account = one vote.** No tenure weighting. No paid-tier weighting. (Strict equality is mission-aligned.)
+- **Max 10 active votes per member** — forces prioritization.
+- **Anti-gaming layer:**
+  - Email verification + 7-day account age before voting unlocks
+  - Optional phone verification (still one vote, just credibility signal)
+  - Quiet rate limit on vote changes
+  - Server-side IP/device clustering check to flag (not block) suspicious bursts to admin
+- **Status ladder visible to everyone:**
+  - Idea → Gathering interest (under 100 votes) → Strong interest (100–500) → Under team review → Planned → In progress → Shipped (or Not pursuing with honest one-paragraph explanation)
+- **30-day team-response promise:** anything that hits "Strong interest" gets a public team answer within 30 days, even if the answer is "no, here's why."
+- **Principles guardrail:** if a proposal conflicts with the three core principles (custody, gatekeeping, taint scoring), we publicly explain why instead of silently disappearing it.
+- **What's NOT voteable:** security fixes, compliance work, infrastructure plumbing — those just get done. Voting is for member-facing features, languages, and access paths.
+- **Optional comment per vote** — members can briefly say *why* they want it (gold for prioritization).
+- **Quarterly state-of-the-roadmap post** so people see what moved.
+
+### Final Roadmap Intro Copy (ready to publish at top of `/roadmap`, ~210 words)
+
+> **What Should We Build Next?**
+>
+> We don't decide alone. We decide with you. You tell us what matters most for your family, your village, your daily life — and we tell you back, in plain words, what we can do and when.
+>
+> **How it works:**
+>
+> - Everything here is in plain English, no tech talk.
+> - You vote with one account. No big companies, no bots, no paid tier gets extra say. Everyone is equal.
+> - You can support up to 10 ideas at a time, so you have to choose what matters most.
+> - When something gets enough support, the team gives a real public answer within 30 days — yes, no, or "here's why not yet."
+>
+> **What you won't see on this list:** security fixes, work the law requires us to do, or behind-the-scenes plumbing. Those just get done. Everything else — every feature, every language, every new path to reach more families — that's where your voice comes in.
+>
+> **Some things won't be possible:** if an idea conflicts with our Principles (we never custody your money, we never score your coins, we never decide who you can send to), we'll tell you so plainly. We won't quietly disappear it.
+>
+> Scroll down to see what's already on the list. Vote for what would help you or your family the most. Or propose something we haven't thought of yet.
+
+### Starter List of 14 Items (load these into the roadmap on launch — written in plain English)
+
+1. **A welcome page that says exactly what we stand for.** No tech talk. Just plain words on what we promise and what we'll never do. *(This is the Principles page.)*
+2. **A page that points you to other good tools we don't build ourselves.** Wallets, apps, and helpers from other teams that fit our principles — for the people who want them.
+3. **The site in your language.** Spanish, Portuguese, Arabic, Swahili first. More to follow. So you can use this in the words you actually think in.
+4. **A phone number you can call to set up your wallet.** A calm voice walks you through it in your language. No reading needed. No smartphone needed.
+5. **Send and receive money on a flip phone.** Dial a code, type the amount, money moves. Already works in parts of Africa — we want to bring it to more places.
+6. **Diaspora Send.** One tap to send small amounts to family back home. They don't need a bank, an app, or an ID to receive it.
+7. **Family Treasure Checklist.** Step-by-step plain-English guide for keeping your money safe like the cash your grandparents hid in the mattress — but better. Hardware wallet, metal plate, family split, the whole thing.
+8. **A receiver that works when the internet doesn't.** When the network is cut or censored, your wallet quietly switches to receiving over satellite. Free. Already working in space today.
+9. **Bitcoin and Lightning, faster.** Move our work on Bitcoin (the one that survives every government that ever tried to kill it) and Lightning (instant, almost-free sends) up the priority list.
+10. **Two-of-three keys for big amounts.** A wizard that helps you set up a wallet where two trusted people have to agree before money moves. Like needing two signatures on a check.
+11. **Community money pools (Fedimint).** For families and villages that want to share a wallet protected by people they trust — instead of a corporation. We don't run it. We just help you connect.
+12. **A map of trusted people who can swap cash for crypto in your area.** Like the corner store that does Western Union, but for digital money. We don't run them, we just help you find them.
+13. **Picture-and-voice mode.** No reading required. Big icons, audio confirmations of every step, in your own language.
+14. **An honest report card on stablecoins.** Show clearly which kinds of digital dollars can be frozen by the company that issued them and which can't, so you choose with eyes open.
+
+### Mission-Integrity Guardrails (recurring issues — watch for these on every revision)
+- **Never name XMR/Monero on public-facing marketing pages.** Risk of regulator-attention to a US-touching platform. Educated members can find it via the External Tools reference page (which is informational and can name names).
+- **Never write "no government can take it" type overpromises.** A court can compel disclosure of keys. Honest version: "Nobody can move your money without your secret words."
+- **Never use defiant-sounding language.** Avoid phrases like "no matter what the rules say this week." Replace with "even when the world around them keeps changing."
+- **Never imply members vote = automatic build.** Vote totals are signal, not command. Some things can't be voted on. Keep the 30-day-response promise as the trust contract.
+- **Always include the honest disclaimer about responsibility.** If members lose keys without a family backup, the money is gone. This filter is healthy.
+
+### Outstanding Decisions for Peter Sr (when he returns)
+1. **License for the codebase** — recommended **AGPL-3.0** (protects mission against hostile/private forks). Alternatives: MIT (more permissive but lets censoring entities run our code privately) or SSPL.
+2. **Dashboard placement of the "Vote on what we build next" card** — prominent on main dashboard (more engagement, more noise) vs. footer link only (cleaner, less engagement).
+3. **Sequencing confirmation** — recommended order: (a) Principles page first, (b) Roadmap voting page with starter items loaded, (c) build top-voted items based on signal.
+4. **Whether to formally add these as project tasks** in the project task system (currently captured here in TODO.md as the canonical record).
+
+### Larger Strategic Frame from This Conversation
+- **Mission:** "Everyone at the table." Borderless commerce, fungible money, no jurisdictional gatekeeping at the protocol layer. Build-track infrastructure that survives political whiplash.
+- **Audience emphasis:** non-US underserved populations (Argentina, Turkey, Nigeria, Lebanon, Venezuela, etc.) where ordinary people are at the mercy of currency collapse and capital controls. Plus the global "everyone" — schoolteachers, dad-sending-money-home, widows, aunties in villages.
+- **Hard line we will NOT cross:** OFAC-sanctioned jurisdictions (Iran, North Korea, Cuba, Syria, Crimea/DNR/LNR). Crossing it kills the platform via Stripe/banking termination + IEEPA personal exposure for Peter Sr. The 190+ other countries are fair game and underserved.
+- **Structural questions raised but not decided:** US incorporation vs. foreign vs. distributed (open-source frontend). These need a real international fintech lawyer conversation (Peter Sr's call). Suggested attorneys: Anderson Kill (US), Schellenberg Wittmer / MME Legal (Switzerland-Zug), Harneys (BVI/Cayman), Drew & Napier (Singapore).
+- **Triangulation methodology:** Peter Sr is using outside AI for fresh generative copy + this thread for editorial discipline + continuity. He won't share my notes back to outside AI to keep their generation fresh. Recurring outside-AI re-introductions to filter on each round: XMR naming, "no government" overpromise, defiant-tone phrases.
+
+### Recommended Build Sequence When Peter Sr Says Go
+**Phase 1 (low-risk, high-signal — ~1 week of work):**
+- Ship `/principles` page with the copy above
+- Add three core principles to `replit.md` as foundational
+- Make license decision and apply across repo
+
+**Phase 2 (real engineering — ~2-3 weeks):**
+- Build `/roadmap` voting page with the 14 starter items loaded
+- Anti-gaming friction (email verify + 7-day age + optional phone)
+- Status ladder + 30-day response process
+- Dashboard card linking in (placement TBD)
+
+**Phase 3 (build the winners — ongoing):**
+- Whichever items rise to "Strong interest" first, with honest team responses
 
 ---
 
