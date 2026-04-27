@@ -1,0 +1,54 @@
+Yes — we can (and should) implement exactly this.
+A public, member-voted roadmap is one of the smartest, most mission-aligned things we could ship right now. It turns “everyone at the table” from words into reality: ordinary people get to say what gets built next, in plain English, without needing to be a developer or a big subscriber. It builds real trust instead of the usual “trust us, we’ll update the Trello someday” nonsense most apps do.
+I’ve added it to the running to-do list (it’s now #1 priority item after the Principles page we already have copy for). Here’s my straight take on how to make it work without it turning into theater or a headache.
+My Thoughts on the Design (Building on the Team’s Points)
+The team nailed the big risks and choices. My refinements are small but important for keeping it eye-level and true to your vision:
+
+Where it lives
+Public landing page at /roadmap (no login required to read).
+Anyone — the schoolteacher in Buenos Aires, the auntie in Ghana, a journalist, even a regulator — can see what we’re thinking about. This is huge for credibility.
+Voting only after login (one verified account = one vote).
+Stops bots and fake accounts. We can add a simple “max 10 active votes per person” so people have to choose what matters most to them.
+Not in FAQ. FAQ is “how do I fix X?” Roadmap is “what should we build next?” Put a clean card on the logged-in dashboard that says “Vote on what we build next — your voice matters” and link straight to /roadmap.
+
+Vote weighting
+Stick with strict one-person, one-vote. No tenure, no paid-tier bonus. Anything else would quietly say “money picks sides even inside our own platform,” which contradicts everything we’re trying to do. Simple is better.
+Thresholds
+The team’s status ladder is perfect. Use it exactly as they sketched:
+Idea → Gathering interest (under 100 votes) → Strong interest (100–500) → Under team review → Planned → In progress → Shipped (or Not pursuing with honest explanation).
+Promise in big plain text: “Anything that hits ‘Strong interest’ gets a public answer from the team within 30 days — even if the answer is ‘not right now, here’s why.’”
+This keeps it honest instead of fake-democracy.
+
+Initial list
+Use the team’s starter menu (13 items). It’s excellent. I’d add one more at the top in your honor:
+“Self-Custody Resilience Checklist” — the exact step-by-step guide (with pictures) for doing what you’re already doing with your two Arculus wallets: hardware setup, metal seed plates, splitting words with family, testing it, hiding copies in different places.
+That way the very first thing members vote on directly helps families protect themselves the same way you’re protecting yours.
+
+Plain-English Framing for the Roadmap Page Itself
+Here’s the eye-level copy that would go at the very top (ready to use):
+What Should We Build Next?
+We don’t decide alone. You do.
+This is your chance to tell us what matters most to your family, your village, your daily life.
+
+Everything here is in plain words.
+You vote with one account (no big companies or bots get extra say).
+We listen. When something gets enough votes, we give a real answer — yes, no, or “here’s why not yet.”
+No fancy tech talk. Just real tools that help regular people keep control of their money no matter what the rules say this week.
+
+Scroll down to see the list. Vote for what would help you or your family the most.
+Then list the items with a one-sentence plain description each (e.g., “Voice call that walks you through setting up your own wallet in Spanish or Swahili — no reading needed”).
+How This Connects Straight to Your Personal Plan
+Every single item on that roadmap is built so that when a member votes and it ships, they can do exactly what you’re doing right now with your two new Arculus wallets:
+
+Swap cleanly to XMR or BTC outside the platform if they want max privacy.
+Set up hardware + metal plates + family split.
+Have a real “mattress stash” that no issuer or government can claw back.
+
+The Self-Custody Checklist item would literally teach thousands of people the same steps you’re following. That’s powerful.
+My Recommendation on Sequencing
+
+Ship the Principles page this week (we already have the warm copy).
+Build and launch the /roadmap voting page right after (with the starter list already loaded).
+Then let members vote and watch what rises to the top.
+
+This way the page isn’t empty on day one — it already has real, useful items people can vote on immediately.
