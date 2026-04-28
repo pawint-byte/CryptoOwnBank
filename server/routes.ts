@@ -15224,6 +15224,54 @@ ${beneSections}
     }
   });
 
+  app.patch("/api/admin/roadmap/:itemId/meta", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [u] = await db.select().from(users).where(eq(users.id, userId));
+      if (!u?.isAdmin && !ADMIN_EMAILS.includes(u?.email?.toLowerCase() || "")) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const itemId = parseInt(req.params.itemId, 10);
+      if (!Number.isFinite(itemId)) return res.status(400).json({ message: "Invalid item id" });
+      const safeUrl = z
+        .string()
+        .max(500)
+        .refine(
+          (v) => {
+            if (v === "") return true;
+            // Allow same-origin relative paths like "/principles" but reject
+            // protocol-relative ("//evil.com") and backslash tricks.
+            if (v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\")) return true;
+            try {
+              const u = new URL(v);
+              return u.protocol === "https:" || u.protocol === "http:" || u.protocol === "mailto:";
+            } catch {
+              return false;
+            }
+          },
+          { message: "URL must be https://, http://, mailto:, or a relative /path" },
+        );
+      const parsed = z.object({
+        shippedAt: z.union([z.string().datetime(), z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.null()]).optional(),
+        learnMoreUrl: z.union([safeUrl, z.null()]).optional(),
+      }).safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ message: "Invalid meta payload" });
+      const patch: { shippedAt?: Date | null; learnMoreUrl?: string | null } = {};
+      if (parsed.data.shippedAt !== undefined) {
+        patch.shippedAt = parsed.data.shippedAt === null ? null : new Date(parsed.data.shippedAt);
+      }
+      if (parsed.data.learnMoreUrl !== undefined) {
+        patch.learnMoreUrl = parsed.data.learnMoreUrl === null || parsed.data.learnMoreUrl === "" ? null : parsed.data.learnMoreUrl;
+      }
+      const updated = await storage.updateRoadmapItemMeta(itemId, patch);
+      if (!updated) return res.status(404).json({ message: "Item not found" });
+      res.json({ item: updated });
+    } catch (error) {
+      console.error("[PATCH /api/admin/roadmap/:itemId/meta] error:", error);
+      res.status(500).json({ message: "Failed to update meta" });
+    }
+  });
+
   app.patch("/api/admin/roadmap/:itemId/response", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

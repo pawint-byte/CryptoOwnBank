@@ -417,6 +417,7 @@ export interface IStorage {
   getRoadmapItemBySlug(slug: string): Promise<RoadmapItem | undefined>;
   createRoadmapItem(data: InsertRoadmapItem): Promise<RoadmapItem>;
   updateRoadmapItemStatus(id: number, status: RoadmapStatus): Promise<RoadmapItem | undefined>;
+  updateRoadmapItemMeta(id: number, data: { shippedAt?: Date | null; learnMoreUrl?: string | null }): Promise<RoadmapItem | undefined>;
   postRoadmapTeamResponse(id: number, response: string): Promise<RoadmapItem | undefined>;
   voteOnRoadmapItem(itemId: number, userId: string, comment?: string | null): Promise<RoadmapVote>;
   unvoteRoadmapItem(itemId: number, userId: string): Promise<void>;
@@ -1905,9 +1906,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateRoadmapItemStatus(id: number, status: RoadmapStatus): Promise<RoadmapItem | undefined> {
+    const patch: any = { status, updatedAt: new Date() };
+    if (status === "shipped") {
+      const [existing] = await db.select().from(roadmapItems).where(eq(roadmapItems.id, id));
+      if (existing && !existing.shippedAt) {
+        patch.shippedAt = new Date();
+      }
+    }
     const [r] = await db
       .update(roadmapItems)
-      .set({ status, updatedAt: new Date() })
+      .set(patch)
+      .where(eq(roadmapItems.id, id))
+      .returning();
+    return r;
+  }
+
+  async updateRoadmapItemMeta(
+    id: number,
+    data: { shippedAt?: Date | null; learnMoreUrl?: string | null }
+  ): Promise<RoadmapItem | undefined> {
+    const patch: any = { updatedAt: new Date() };
+    if (data.shippedAt !== undefined) patch.shippedAt = data.shippedAt;
+    if (data.learnMoreUrl !== undefined) patch.learnMoreUrl = data.learnMoreUrl;
+    const [r] = await db
+      .update(roadmapItems)
+      .set(patch)
       .where(eq(roadmapItems.id, id))
       .returning();
     return r;

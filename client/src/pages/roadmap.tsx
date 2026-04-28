@@ -24,6 +24,7 @@ import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Input } from "@/components/ui/input";
 import {
   Wallet,
   ArrowLeft,
@@ -32,6 +33,14 @@ import {
   CheckCircle2,
   MessageSquare,
   ShieldCheck,
+  CalendarCheck,
+  ExternalLink,
+  Settings2,
+  Sparkles,
+  Eye,
+  Cpu,
+  Zap,
+  Coins,
 } from "lucide-react";
 
 type RoadmapStatus =
@@ -53,9 +62,118 @@ interface RoadmapItemDTO {
   status: RoadmapStatus;
   teamResponse: string | null;
   teamResponseAt: string | null;
+  shippedAt: string | null;
+  learnMoreUrl: string | null;
   sortOrder: number;
   voteCount: number;
   userVoted: boolean;
+}
+
+interface ChainUpgrade {
+  chain: string;
+  chainColor: string;
+  icon: typeof Sparkles;
+  title: string;
+  whatItMeans: string;
+  timing: string;
+  whatWeWillDo: string;
+}
+
+const CHAIN_UPGRADES: ChainUpgrade[] = [
+  {
+    chain: "XRPL",
+    chainColor: "bg-blue-600 text-white",
+    icon: Coins,
+    title: "Built-in lending vaults on XRPL (XLS-66)",
+    whatItMeans:
+      "The chain itself will offer lending pools — no extra contract code in the middle. Same yield idea as Soil today, but with one less moving part to trust.",
+    timing: "Network vote underway, expected to land H1–H2 2026.",
+    whatWeWillDo:
+      "When it ships, we'll add it as an option alongside Soil. You choose which one you want.",
+  },
+  {
+    chain: "XRPL",
+    chainColor: "bg-blue-600 text-white",
+    icon: Eye,
+    title: "Confidential transfers (zero-knowledge proofs)",
+    whatItMeans:
+      "Send money on XRPL without exposing the amount or who you sent it to — when you want to. Nothing changes when you don't.",
+    timing: "Q1–Q2 2026 rollout on XRPL devnet, mainnet to follow.",
+    whatWeWillDo:
+      "We'll surface this as an opt-in privacy switch. Fits our principle of no taint scoring — your business is your business.",
+  },
+  {
+    chain: "XRPL",
+    chainColor: "bg-blue-600 text-white",
+    icon: Zap,
+    title: "Smart escrows + batch transactions",
+    whatItMeans:
+      "Smarter conditions for releasing money (good for inheritance) and the ability to send to many people in one cheap transaction (good for remittances).",
+    timing: "Rolling out across 2026 as part of XRPL DeFi upgrades.",
+    whatWeWillDo:
+      "Better Legacy Plan triggers and cheaper Diaspora Send to multiple family members in one tap.",
+  },
+  {
+    chain: "XRPL",
+    chainColor: "bg-blue-600 text-white",
+    icon: Cpu,
+    title: "Post-quantum readiness (4-phase plan to 2028)",
+    whatItMeans:
+      "Future computers may be able to break today's signatures. XRPL is testing new cryptography that survives that future — earlier than Bitcoin or Ethereum.",
+    timing: "H1 2026: testing on devnet. H2 2026: hybrid signing schemes.",
+    whatWeWillDo:
+      "Nothing for you to do. Your wallet upgrades when the chain does. Your grandchildren can still open this account in 2050.",
+  },
+  {
+    chain: "Stellar",
+    chainColor: "bg-violet-600 text-white",
+    icon: Sparkles,
+    title: "Soroban smart contracts (already live, expanding)",
+    whatItMeans:
+      "Stellar's programmable layer means we can build the same yield, lending, and inheritance tools on Stellar that we have on XRPL — without leaving self-custody.",
+    timing: "Live now, ecosystem expanding through 2026.",
+    whatWeWillDo:
+      "Bring our XRPL-first tools (Legacy Plan, vaults, scheduled payments) to Stellar users on equal footing.",
+  },
+  {
+    chain: "Flare",
+    chainColor: "bg-orange-600 text-white",
+    icon: Coins,
+    title: "FAssets — non-custodial Bitcoin, XRP, and Doge on Flare",
+    whatItMeans:
+      "Bring assets from other chains onto Flare without a centralized custodian holding them. Lets you use Bitcoin or XRP in DeFi without giving them to a company.",
+    timing: "Mainnet rollout phasing in through 2026.",
+    whatWeWillDo:
+      "Add FAsset support so you can earn yield or pay with these coins without ever handing custody to anyone.",
+  },
+];
+
+function formatShippedDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function toDateInputValue(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Defense-in-depth: only render anchors for safe URL shapes. Blocks
+// javascript:, data:, vbscript:, file:, and protocol-relative // URLs.
+function isSafeLink(url: string): boolean {
+  if (!url) return false;
+  if (url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\")) return true;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:" || u.protocol === "mailto:";
+  } catch {
+    return false;
+  }
 }
 
 interface ViewerInfo {
@@ -166,6 +284,9 @@ export default function Roadmap() {
   const [comment, setComment] = useState("");
   const [responseDialogItem, setResponseDialogItem] = useState<RoadmapItemDTO | null>(null);
   const [responseDraft, setResponseDraft] = useState("");
+  const [metaDialogItem, setMetaDialogItem] = useState<RoadmapItemDTO | null>(null);
+  const [metaShippedAt, setMetaShippedAt] = useState("");
+  const [metaLearnMoreUrl, setMetaLearnMoreUrl] = useState("");
 
   const { data, isLoading } = useQuery<RoadmapResponse>({
     queryKey: ["/api/roadmap"],
@@ -228,6 +349,36 @@ export default function Roadmap() {
     },
     onError: (err: any) => {
       toast({ title: "Couldn't post response", description: err.message ?? "Please try again.", variant: "destructive" });
+    },
+  });
+
+  const metaMutation = useMutation({
+    mutationFn: async ({
+      itemId,
+      shippedAt,
+      learnMoreUrl,
+    }: {
+      itemId: number;
+      shippedAt: string | null;
+      learnMoreUrl: string | null;
+    }) => {
+      const res = await apiRequest("PATCH", `/api/admin/roadmap/${itemId}/meta`, {
+        shippedAt,
+        learnMoreUrl,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/roadmap"] });
+      toast({ title: "Shipped details saved" });
+      setMetaDialogItem(null);
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Couldn't save details",
+        description: err.message ?? "Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -371,6 +522,56 @@ export default function Roadmap() {
           </div>
         </section>
 
+        {/* What's coming from the chains we ride on */}
+        <section className="mb-12" data-testid="section-chain-upgrades">
+          <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-5 md:p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-xl md:text-2xl font-bold" data-testid="text-chain-upgrades-title">
+                What's coming from the chains we ride on
+              </h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-5 max-w-3xl" data-testid="text-chain-upgrades-intro">
+              These aren't ours to vote on — the people who run the networks decide. We just tell you what's
+              coming and when, so you can plan. When these land, we'll plug them in for you.
+            </p>
+            <div className="grid md:grid-cols-2 gap-3">
+              {CHAIN_UPGRADES.map((u, idx) => {
+                const Icon = u.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="rounded-lg border bg-card p-4 flex flex-col gap-2"
+                    data-testid={`chain-upgrade-${idx}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${u.chainColor} text-xs`} data-testid={`chain-upgrade-chain-${idx}`}>
+                        {u.chain}
+                      </Badge>
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-semibold text-sm leading-snug" data-testid={`chain-upgrade-title-${idx}`}>
+                      {u.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground" data-testid={`chain-upgrade-meaning-${idx}`}>
+                      <span className="font-semibold text-foreground">What it means: </span>
+                      {u.whatItMeans}
+                    </p>
+                    <p className="text-xs text-muted-foreground" data-testid={`chain-upgrade-timing-${idx}`}>
+                      <span className="font-semibold text-foreground">Timing: </span>
+                      {u.timing}
+                    </p>
+                    <p className="text-xs text-muted-foreground" data-testid={`chain-upgrade-action-${idx}`}>
+                      <span className="font-semibold text-foreground">What we'll do: </span>
+                      {u.whatWeWillDo}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* Items list */}
         <section className="space-y-10">
           {isLoading && (
@@ -461,6 +662,36 @@ export default function Roadmap() {
                               </div>
                             )}
 
+                            {/* Shipped marker + read-more link */}
+                            {item.status === "shipped" && (item.shippedAt || item.learnMoreUrl) && (
+                              <div
+                                className="mt-4 flex flex-wrap items-center gap-3 text-sm"
+                                data-testid={`shipped-meta-${item.id}`}
+                              >
+                                {item.shippedAt && (
+                                  <span
+                                    className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400"
+                                    data-testid={`text-shipped-date-${item.id}`}
+                                  >
+                                    <CalendarCheck className="h-4 w-4" />
+                                    Shipped {formatShippedDate(item.shippedAt)}
+                                  </span>
+                                )}
+                                {item.learnMoreUrl && isSafeLink(item.learnMoreUrl) && (
+                                  <a
+                                    href={item.learnMoreUrl}
+                                    className="inline-flex items-center gap-1.5 text-primary underline hover:no-underline"
+                                    target={item.learnMoreUrl.startsWith("http") ? "_blank" : undefined}
+                                    rel={item.learnMoreUrl.startsWith("http") ? "noopener noreferrer" : undefined}
+                                    data-testid={`link-learn-more-${item.id}`}
+                                  >
+                                    Read more / open feature
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
                             {/* Admin controls */}
                             {isAdmin && (
                               <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t" data-testid={`admin-controls-${item.id}`}>
@@ -496,6 +727,20 @@ export default function Roadmap() {
                                 >
                                   <MessageSquare className="h-3.5 w-3.5 mr-1" />
                                   {item.teamResponse ? "Edit response" : "Post response"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8"
+                                  onClick={() => {
+                                    setMetaDialogItem(item);
+                                    setMetaShippedAt(toDateInputValue(item.shippedAt));
+                                    setMetaLearnMoreUrl(item.learnMoreUrl ?? "");
+                                  }}
+                                  data-testid={`button-shipped-details-${item.id}`}
+                                >
+                                  <Settings2 className="h-3.5 w-3.5 mr-1" />
+                                  Shipped details
                                 </Button>
                               </div>
                             )}
@@ -589,6 +834,71 @@ export default function Roadmap() {
               data-testid="button-response-confirm"
             >
               {responseMutation.isPending ? "Posting…" : "Post response"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin shipped-details dialog */}
+      <Dialog open={!!metaDialogItem} onOpenChange={(o) => !o && setMetaDialogItem(null)}>
+        <DialogContent data-testid="dialog-meta">
+          <DialogHeader>
+            <DialogTitle>Shipped details</DialogTitle>
+            <DialogDescription>
+              Set when this item shipped (you can backdate) and a link to where members can read more or
+              open the feature. Both fields are optional — leave blank to clear.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Shipped on</label>
+              <Input
+                type="date"
+                value={metaShippedAt}
+                onChange={(e) => setMetaShippedAt(e.target.value)}
+                data-testid="input-meta-shipped-at"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave blank to clear. Backdating is fine for items shipped before this system existed.
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Read more / open feature URL</label>
+              <Input
+                type="text"
+                placeholder="/principles or https://..."
+                value={metaLearnMoreUrl}
+                onChange={(e) => setMetaLearnMoreUrl(e.target.value)}
+                data-testid="input-meta-learn-more-url"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Internal paths like <code>/principles</code> or full URLs both work. Leave blank to hide
+                the link.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setMetaDialogItem(null)}
+              data-testid="button-meta-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!metaDialogItem) return;
+                const url = metaLearnMoreUrl.trim();
+                metaMutation.mutate({
+                  itemId: metaDialogItem.id,
+                  shippedAt: metaShippedAt ? metaShippedAt : null,
+                  learnMoreUrl: url ? url : null,
+                });
+              }}
+              disabled={metaMutation.isPending}
+              data-testid="button-meta-confirm"
+            >
+              {metaMutation.isPending ? "Saving…" : "Save details"}
             </Button>
           </DialogFooter>
         </DialogContent>

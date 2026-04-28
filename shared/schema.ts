@@ -1412,6 +1412,8 @@ export const roadmapItems = pgTable("roadmap_items", {
   status: varchar("status", { length: 30 }).notNull().default("idea"),
   teamResponse: text("team_response"),
   teamResponseAt: timestamp("team_response_at"),
+  shippedAt: timestamp("shipped_at"),
+  learnMoreUrl: text("learn_more_url"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
