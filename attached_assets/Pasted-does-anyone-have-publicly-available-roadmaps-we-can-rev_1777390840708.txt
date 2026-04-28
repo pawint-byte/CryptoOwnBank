@@ -1,0 +1,43 @@
+does anyone have publicly available roadmaps we can review and get some ideas from or track upcoming things that we can leverage for our members?Yes — there are several excellent, publicly available roadmaps from the XRPL ecosystem (and a couple of closely related projects) that align directly with CryptoOwnBank.com’s focus on non-custodial self-custody, RLUSD yield, portfolio tools, payments, and the Legacy Plan (inheritance).
+These are all from official or semi-official sources and are easy to review for inspiration, integration opportunities, or features you could surface/vote on with your members. I’ve prioritized the most relevant ones from the last 6–12 months.
+1. Ripple / XRPL Institutional DeFi Roadmap (Most Relevant for You)
+Ripple regularly publishes detailed updates on ripple.com/insights. These are the core “2026 blueprint” for XRPL DeFi, lending, privacy, and RWA tools.
+
+Key 2026 Highlights (already rolling out or Q1–Q2):
+Native Lending Protocol (XLS-65/66) — Single-Asset Vaults for pooling liquidity + fixed-term loans (on-ledger, low-fee, compliance-ready). This directly supercharges RLUSD yield opportunities beyond what Soil currently offers.
+Multi-Purpose Tokens (MPTs) + Confidential Transfers via Zero-Knowledge Proofs (ZKPs) launching Q1 2026 — privacy-preserving collateral and tokenized assets.
+Permissioned Domains / Regulated DEX — gated, AML/KYC-controlled trading for RWAs and FX.
+Smart Escrows, Batch Transactions, and deeper RLUSD/XRP integration as the auto-bridge asset.
+
+Best pages to review:
+The Next Phase of Institutional DeFi on the XRPL
+Institutional DeFi on XRPL: Scaling Real-World Finance
+
+
+These are perfect for tracking native yield, privacy features, and institutional-grade tools you could add to your dashboard or Recommendations Hub.
+2. XRPL Post-Quantum Readiness Roadmap (April 2026)
+Ripple published a clear 4-phase plan to make the entire ledger quantum-resistant by 2028 (ahead of Bitcoin/Ethereum timelines).
+
+2026 Focus:
+H1: Risk assessment + testing NIST-recommended post-quantum signatures (e.g., ML-DSA) on Devnet with Project Eleven.
+H2: Hybrid signing schemes and broader exploration of PQ-friendly ZK proofs/privacy tools.
+
+Why it matters for you: Long-term self-custody security story (great for your Legacy Plan marketing and member trust).
+→ Full details: Post-Quantum Readiness on the XRP Ledger
+
+3. Soil Protocol / ORQO Group (Your Existing Yield Partner)
+No single “official 2026 roadmap” document is published yet, but their public announcements are very actionable:
+
+They launched the first compliant RWA-backed yield protocol for RLUSD on XRPL in February 2026.
+Introduced Single Asset Vaults (early adopter of XLS-66 lending protocol).
+More asset pools and institutional vaults are explicitly planned “in the coming weeks/months.”
+
+They are tightly coupled to XRPL’s native lending rollout, so any new Soil vaults or features will be easy to add to your platform as soon as they drop. Keep an eye on their announcements via soil.co or ORQO updates.
+4. Xaman (Xumm) Wallet – Feature Roadmap & Updates
+Xaman (the most popular XRPL self-custody wallet) doesn’t publish a giant public roadmap PDF, but their blog and release notes are transparent and frequent:
+
+Recent focus: DeFi yield integration (e.g., one-click vault strategies), virtual assets, offline resilience, DEX/AMM UX improvements, and smarter pathfinding.
+2026 theme: “Year of growth” with 50k+ new users already onboarded and ongoing emphasis on seamless XRPL DeFi access.
+
+→ Check their blog: xaman.app/blog (latest posts from Jan–Feb 2026).
+Great for ideas on wallet/dashboard UX that keeps everything non-custodial.
