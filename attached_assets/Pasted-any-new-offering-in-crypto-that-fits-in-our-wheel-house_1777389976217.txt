@@ -1,0 +1,30 @@
+any new offering in crypto that fits in our wheel house, cryptoownbank.com? i am looking to see if any announcement has been made recently (within the last year) that could fit our offeringYes — there are several strong, recent launches (within the last ~12 months, mostly Q1–Q2 2026) that align extremely well with CryptoOwnBank.com’s wheelhouse.
+Your core offering is a non-custodial, self-custody XRPL-focused dashboard that lets users “Be Your Own Bank”: connect their own wallet (Xumm, Ledger, etc.), earn fixed real yield on RLUSD via Soil Protocol vaults, track portfolios multi-chain, trade on DEXs, handle fast/cheap global payments/remittances, and use the Legacy Plan (dead-man’s switch for inheritance). Everything stays non-custodial, no middlemen, free tier, heavy XRPL/RLUSD emphasis for everyday users in emerging markets or anyone tired of traditional banks.
+Here are the best-fitting new offerings/announcements that could integrate into your dashboard, expand your yield/inheritance tools, or create partnership opportunities:
+1. Soil Protocol’s XRPL Launch – First Compliant RWA-Backed Yield Protocol for RLUSD (Feb 19, 2026)
+
+What it is: ORQO Group expanded Soil to the XRP Ledger with the first native, compliant RWA yield protocol on XRPL. Users deposit RLUSD into on-chain single-asset Yield Vaults and earn fixed, stable returns backed by tokenized real-world assets (Treasury bills + institutional lending). Fully non-custodial, low-volatility, principal-protected style.
+Why it fits perfectly: You already integrate Soil vaults for the 5–8% APR on RLUSD. This was a major expansion tailored to XRPL/RLUSD holders — it directly powers/enhances the exact yield product you promote. New vaults or features rolling out can be added to your Recommendations Hub or dashboard instantly.
+Opportunity for you: Immediate upsell/expansion of your existing yield offering. Positions you even stronger as the simplest on-ramp to real, compliant yield on XRPL without leaving self-custody.
+
+2. Bron Wallet’s Digital Inheritance / Succession Planning Feature (March 6, 2026)
+
+What it is: Non-custodial wallet added MPC-powered “digital inheritance” — automated succession planning so crypto assets pass to beneficiaries without court/probate issues if the owner passes away or becomes incapacitated.
+Why it fits perfectly: Direct overlap with your Legacy Plan (the dead-man’s switch you already offer for automated inheritance). Both solve the same pain point in self-custody: “What happens to my crypto when I’m gone?”
+Opportunity for you: You could integrate similar MPC tech, partner, or highlight Bron-style features as an enhancement to your Legacy Plan. Huge for your target users (families, freelancers, anyone in emerging markets worried about estate planning).
+
+3. Bitwise Non-Custodial Vaults (January 26, 2026)
+
+What it is: Bitwise launched transparent, non-custodial on-chain vaults that combine liquidity, automated strategy execution, and risk controls for yield/Real World Assets.
+Why it fits: Aligns with your non-custodial RWA yield focus (Treasury-backed stablecoin returns) and multi-chain portfolio dashboard. Users stay in full control while getting institutional-grade yield products.
+Opportunity for you: Easy to surface these (or similar) vaults in your Recommendations Hub alongside Soil, giving users more diversified self-custodial yield options.
+
+4. XRPL Ecosystem Upgrades + Ripple RLUSD DeFi Integrations (Early–March 2026)
+
+Ripple announced new DeFi integrations and utility expansions for RLUSD on XRPL.
+Ongoing rollout of protocol features (e.g., XLS-66 style lending/single-asset vaults) enabling native on-chain yield and lending directly on XRPL.
+Why it fits: Everything stays on your home chain (XRPL), non-custodial, and boosts RLUSD utility exactly as your platform does. More liquidity and yield options = more reasons for users to stay in your dashboard.
+
+Quick Take & Next Steps
+The biggest tailwind right now for you is the Soil XRPL launch — it’s literally the protocol you already feature, now officially live and expanding on your chain. Combined with the inheritance tools (Bron) and broader XRPL RWA momentum, these are plug-and-play extensions of your current offering.
+Other trends (tokenized bank deposits from regulated players, more self-custodial neobanks) are moving in your direction too, but the above four are the most direct matches announced in the last year
