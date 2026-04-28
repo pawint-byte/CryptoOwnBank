@@ -15278,6 +15278,7 @@ async function seedRoadmapStarterItems() {
     { slug: "cash-swap-map", category: "community", title: "A map of trusted people who can swap cash for crypto in your area", description: "Like the corner store that does Western Union, but for digital money. We don't run them, we just help you find them." },
     { slug: "picture-and-voice-mode", category: "access", title: "Picture-and-voice mode", description: "No reading required. Big icons, audio confirmations of every step, in your own language." },
     { slug: "stablecoin-report-card", category: "honesty", title: "An honest report card on stablecoins", description: "Show clearly which kinds of digital dollars can be frozen by the company that issued them and which can't, so you choose with eyes open." },
+    { slug: "lightning-bitcoin-swaps", category: "money", title: "Buy and sell Bitcoin and digital dollars right here — instantly, no middleman holding your money", description: "Trade between Bitcoin and digital dollars from inside your own wallet, in seconds, over the Lightning Network. We never take custody — your coins stay yours through every step of the swap. Built on a new tool called RailsX. No bridges, no wrapped fakes, no big exchange in the middle. Fits our principles: non-custodial, no gatekeeping, no taint scoring." },
   ];
   try {
     const items = STARTER_ITEMS.map((item, idx) => ({
