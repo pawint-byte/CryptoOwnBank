@@ -19,7 +19,7 @@ import type { Position } from "@shared/schema";
 import { OffChainHoldingsCard } from "@/components/off-chain-holdings";
 
 type SectionKey = "crypto" | "real-estate" | "off-chain" | "bank-brokerage";
-const COLLAPSED_SECTIONS_KEY = "portfolio-collapsed-sections-v1";
+const COLLAPSED_SECTIONS_KEY = "portfolio_collapsed_sections_v1";
 
 interface PositionWithMarket extends Position {
   currentPrice?: number;
@@ -856,14 +856,18 @@ export default function Portfolio() {
             variant="ghost"
             className="h-7 text-xs px-2 text-muted-foreground"
             onClick={() => {
-              const allKeys: SectionKey[] = ["crypto", "real-estate", "off-chain", "bank-brokerage"];
-              const allCollapsed = allKeys.every(k => collapsedSections.has(k));
-              setCollapsedSections(allCollapsed ? new Set() : new Set(allKeys));
+              const visibleKeys: SectionKey[] = ["crypto", "real-estate", "off-chain"];
+              if ((data?.statementValue ?? 0) > 0) visibleKeys.push("bank-brokerage");
+              const allCollapsed = visibleKeys.every(k => collapsedSections.has(k));
+              setCollapsedSections(allCollapsed ? new Set() : new Set(visibleKeys));
             }}
             data-testid="button-toggle-all-sections"
           >
-            {(["crypto","real-estate","off-chain","bank-brokerage"] as SectionKey[]).every(k => collapsedSections.has(k))
-              ? "Expand all" : "Collapse all"}
+            {(() => {
+              const visibleKeys: SectionKey[] = ["crypto", "real-estate", "off-chain"];
+              if ((data?.statementValue ?? 0) > 0) visibleKeys.push("bank-brokerage");
+              return visibleKeys.every(k => collapsedSections.has(k)) ? "Expand all" : "Collapse all";
+            })()}
           </Button>
         </div>
       </div>
