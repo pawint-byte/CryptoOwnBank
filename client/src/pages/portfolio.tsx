@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getAssetCategory, CATEGORY_COLORS, isStockOrETF } from "@shared/asset-categories";
 import type { Position } from "@shared/schema";
 import { OffChainHoldingsCard } from "@/components/off-chain-holdings";
+
+type SectionKey = "crypto" | "real-estate" | "off-chain" | "bank-brokerage";
+const COLLAPSED_SECTIONS_KEY = "portfolio-collapsed-sections-v1";
 
 interface PositionWithMarket extends Position {
   currentPrice?: number;
@@ -168,6 +171,34 @@ export default function Portfolio() {
   const [showAddressed, setShowAddressed] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<SectionKey>>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(COLLAPSED_SECTIONS_KEY) : null;
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return new Set(Array.isArray(arr) ? (arr as SectionKey[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(Array.from(collapsedSections))); } catch {}
+  }, [collapsedSections]);
+  const toggleSection = (key: SectionKey) => setCollapsedSections(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  const isCollapsed = (key: SectionKey) => collapsedSections.has(key);
+  const scrollToSection = (key: SectionKey) => {
+    if (collapsedSections.has(key)) {
+      setCollapsedSections(prev => { const n = new Set(prev); n.delete(key); return n; });
+    }
+    setTimeout(() => {
+      const el = document.getElementById(`section-${key}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
   const [editingPosition, setEditingPosition] = useState<PositionWithMarket | null>(null);
   const [downloadingStatement, setDownloadingStatement] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -767,9 +798,100 @@ export default function Portfolio() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div
+        className="sticky top-0 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b"
+        data-testid="portfolio-jump-nav"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1 hidden sm:inline">
+            Jump to
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs px-2"
+            onClick={() => scrollToSection("crypto")}
+            data-testid="jump-crypto"
+          >
+            <Coins className="h-3.5 w-3.5 mr-1" />
+            Crypto
+            <span className="ml-1 text-muted-foreground">({cryptoFiltered.length})</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs px-2"
+            onClick={() => scrollToSection("real-estate")}
+            data-testid="jump-real-estate"
+          >
+            <Home className="h-3.5 w-3.5 mr-1" />
+            Real Estate
+            <span className="ml-1 text-muted-foreground">({propertiesData.length})</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs px-2"
+            onClick={() => scrollToSection("off-chain")}
+            data-testid="jump-off-chain"
+          >
+            <Briefcase className="h-3.5 w-3.5 mr-1" />
+            Off-Chain
+          </Button>
+          {(data?.statementValue ?? 0) > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs px-2"
+              onClick={() => scrollToSection("bank-brokerage")}
+              data-testid="jump-bank-brokerage"
+            >
+              <Building2 className="h-3.5 w-3.5 mr-1" />
+              Bank
+            </Button>
+          )}
+          <div className="flex-1" />
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs px-2 text-muted-foreground"
+            onClick={() => {
+              const allKeys: SectionKey[] = ["crypto", "real-estate", "off-chain", "bank-brokerage"];
+              const allCollapsed = allKeys.every(k => collapsedSections.has(k));
+              setCollapsedSections(allCollapsed ? new Set() : new Set(allKeys));
+            }}
+            data-testid="button-toggle-all-sections"
+          >
+            {(["crypto","real-estate","off-chain","bank-brokerage"] as SectionKey[]).every(k => collapsedSections.has(k))
+              ? "Expand all" : "Collapse all"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3" id="section-crypto" style={{ scrollMarginTop: 64 }}>
         <Card className="lg:col-span-2">
           <CardHeader>
+            <div className="flex items-center gap-2 mb-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 -ml-2"
+                onClick={() => toggleSection("crypto")}
+                data-testid="button-collapse-crypto"
+                aria-expanded={!isCollapsed("crypto")}
+              >
+                {isCollapsed("crypto") ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <span className="ml-1.5 font-semibold text-sm flex items-center gap-1.5">
+                  <Coins className="h-4 w-4 text-primary" /> Crypto Holdings
+                </span>
+              </Button>
+              {isCollapsed("crypto") && (
+                <span className="ml-auto text-xs text-muted-foreground font-mono" data-testid="text-crypto-summary">
+                  {cryptoFiltered.length} {cryptoFiltered.length === 1 ? "asset" : "assets"} · {formatCurrency(data?.totalValue || 0)}
+                </span>
+              )}
+            </div>
+            {!isCollapsed("crypto") && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <Button
@@ -850,7 +972,9 @@ export default function Portfolio() {
                 </div>
               )}
             </div>
+            )}
           </CardHeader>
+          {!isCollapsed("crypto") && (
           <CardContent>
             {viewMode === "holdings" && (
               <>
@@ -1154,6 +1278,7 @@ export default function Portfolio() {
               </div>
             )}
           </CardContent>
+          )}
         </Card>
 
         <div className="space-y-6">
@@ -1218,16 +1343,35 @@ export default function Portfolio() {
         </Card>
       )}
 
-      <Card>
+      <Card id="section-real-estate" style={{ scrollMarginTop: 64 }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Home className="h-5 w-5 text-emerald-600" />
-              Real Estate
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Values auto-update using regional housing indices
-            </p>
+          <div className="flex items-center gap-2 min-w-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 -ml-1"
+              onClick={() => toggleSection("real-estate")}
+              data-testid="button-collapse-real-estate"
+              aria-expanded={!isCollapsed("real-estate")}
+            >
+              {isCollapsed("real-estate") ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            <div className="min-w-0">
+              <CardTitle className="flex items-center gap-2">
+                <Home className="h-5 w-5 text-emerald-600" />
+                Real Estate
+                {isCollapsed("real-estate") && (
+                  <span className="text-xs text-muted-foreground font-mono ml-2" data-testid="text-real-estate-summary">
+                    {propertiesData.length} {propertiesData.length === 1 ? "property" : "properties"} · {formatCurrency(propertiesData.reduce((sum, p) => sum + parseFloat(p.currentValue || p.purchasePrice || "0"), 0))}
+                  </span>
+                )}
+              </CardTitle>
+              {!isCollapsed("real-estate") && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Values auto-update using regional housing indices
+                </p>
+              )}
+            </div>
           </div>
           <Dialog open={propertyOpen} onOpenChange={setPropertyOpen}>
             <DialogTrigger asChild>
@@ -1364,6 +1508,7 @@ export default function Portfolio() {
             </DialogContent>
           </Dialog>
         </CardHeader>
+        {!isCollapsed("real-estate") && (
         <CardContent>
           {propertiesData.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground" data-testid="empty-properties">
@@ -1449,21 +1594,46 @@ export default function Portfolio() {
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
-      <OffChainHoldingsCard />
+      <div id="section-off-chain" style={{ scrollMarginTop: 64 }}>
+        <OffChainHoldingsCard
+          collapsed={isCollapsed("off-chain")}
+          onToggleCollapsed={() => toggleSection("off-chain")}
+        />
+      </div>
 
       {(data?.statementValue ?? 0) > 0 && (
-        <Card>
+        <Card id="section-bank-brokerage" style={{ scrollMarginTop: 64 }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-blue-600" />
-                Bank & Brokerage
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                From uploaded statements · {data?.statementSourceCount || 0} source{(data?.statementSourceCount || 0) !== 1 ? "s" : ""}
-              </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 -ml-1"
+                onClick={() => toggleSection("bank-brokerage")}
+                data-testid="button-collapse-bank-brokerage"
+                aria-expanded={!isCollapsed("bank-brokerage")}
+              >
+                {isCollapsed("bank-brokerage") ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              <div className="min-w-0">
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  Bank & Brokerage
+                  {isCollapsed("bank-brokerage") && (
+                    <span className="text-xs text-muted-foreground font-mono ml-2" data-testid="text-bank-summary">
+                      {data?.statementSourceCount || 0} {(data?.statementSourceCount || 0) === 1 ? "source" : "sources"} · {formatCurrency(data?.statementValue || 0)}
+                    </span>
+                  )}
+                </CardTitle>
+                {!isCollapsed("bank-brokerage") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    From uploaded statements · {data?.statementSourceCount || 0} source{(data?.statementSourceCount || 0) !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
             </div>
             <Link href="/statement-insights">
               <Button size="sm" variant="outline" data-testid="button-manage-statements">
@@ -1472,6 +1642,7 @@ export default function Portfolio() {
               </Button>
             </Link>
           </CardHeader>
+          {!isCollapsed("bank-brokerage") && (
           <CardContent>
             <div className="flex items-center justify-between pt-2 border-t text-sm">
               <span className="text-muted-foreground">Total Bank & Brokerage Value</span>
@@ -1480,6 +1651,7 @@ export default function Portfolio() {
               </span>
             </div>
           </CardContent>
+          )}
         </Card>
       )}
 

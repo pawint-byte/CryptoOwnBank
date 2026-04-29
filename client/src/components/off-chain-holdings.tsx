@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Briefcase, ShieldCheck, Building2, Car, Gem, Package, Plus, Trash2, Pencil, Upload, FileSpreadsheet, ScrollText } from "lucide-react";
+import { Briefcase, ShieldCheck, Building2, Car, Gem, Package, Plus, Trash2, Pencil, Upload, FileSpreadsheet, ScrollText, ChevronDown, ChevronRight } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { OffChainHolding, OffChainAssetType, OffChainStatus } from "@shared/schema";
@@ -59,7 +59,12 @@ function num(s: string | null | undefined): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-export function OffChainHoldingsCard() {
+interface OffChainHoldingsCardProps {
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+}
+
+export function OffChainHoldingsCard({ collapsed = false, onToggleCollapsed }: OffChainHoldingsCardProps = {}) {
   const { toast } = useToast();
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<OffChainHolding | null>(null);
@@ -97,14 +102,35 @@ export function OffChainHoldingsCard() {
   return (
     <Card data-testid="card-off-chain-holdings">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4 gap-2">
-        <div className="min-w-0">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Briefcase className="h-5 w-5 text-amber-600" />
-            Other Investments &amp; Insurance
-          </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Manually track seed investments, insurance, brokerage accounts &amp; more — included in your Legacy Plan.
-          </p>
+        <div className="flex items-start gap-2 min-w-0">
+          {onToggleCollapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 -ml-1 mt-0.5"
+              onClick={onToggleCollapsed}
+              data-testid="button-collapse-off-chain"
+              aria-expanded={!collapsed}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          )}
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2 text-base flex-wrap">
+              <Briefcase className="h-5 w-5 text-amber-600" />
+              Other Investments &amp; Insurance
+              {collapsed && (
+                <span className="text-xs text-muted-foreground font-mono ml-2" data-testid="text-off-chain-summary">
+                  {holdings.filter(h => h.status === "active").length} active · ${totalActiveValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </span>
+              )}
+            </CardTitle>
+            {!collapsed && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Manually track seed investments, insurance, brokerage accounts &amp; more — included in your Legacy Plan.
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
           <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)} data-testid="button-bulk-import-holdings">
@@ -115,6 +141,7 @@ export function OffChainHoldingsCard() {
           </Button>
         </div>
       </CardHeader>
+      {!collapsed && (
       <CardContent>
         {isLoading ? (
           <div className="text-sm text-muted-foreground py-6 text-center">Loading...</div>
@@ -180,6 +207,7 @@ export function OffChainHoldingsCard() {
           </div>
         )}
       </CardContent>
+      )}
 
       {addOpen && (
         <HoldingDialog
