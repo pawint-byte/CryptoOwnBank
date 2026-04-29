@@ -18,7 +18,7 @@ import { getAssetCategory, CATEGORY_COLORS, isStockOrETF } from "@shared/asset-c
 import type { Position } from "@shared/schema";
 import { OffChainHoldingsCard } from "@/components/off-chain-holdings";
 
-type SectionKey = "crypto" | "real-estate" | "off-chain" | "bank-brokerage";
+type SectionKey = "crypto" | "stocks" | "real-estate" | "off-chain" | "bank-brokerage";
 const COLLAPSED_SECTIONS_KEY = "portfolio_collapsed_sections_v1";
 
 interface PositionWithMarket extends Position {
@@ -817,6 +817,19 @@ export default function Portfolio() {
             Crypto
             <span className="ml-1 text-muted-foreground">({cryptoFiltered.length})</span>
           </Button>
+          {stockFiltered.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs px-2"
+              onClick={() => scrollToSection("stocks")}
+              data-testid="jump-stocks"
+            >
+              <BarChart3 className="h-3.5 w-3.5 mr-1" />
+              Stocks
+              <span className="ml-1 text-muted-foreground">({stockFiltered.length})</span>
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -857,6 +870,7 @@ export default function Portfolio() {
             className="h-7 text-xs px-2 text-muted-foreground"
             onClick={() => {
               const visibleKeys: SectionKey[] = ["crypto", "real-estate", "off-chain"];
+              if (stockFiltered.length > 0) visibleKeys.push("stocks");
               if ((data?.statementValue ?? 0) > 0) visibleKeys.push("bank-brokerage");
               const allCollapsed = visibleKeys.every(k => collapsedSections.has(k));
               setCollapsedSections(allCollapsed ? new Set() : new Set(visibleKeys));
@@ -865,6 +879,7 @@ export default function Portfolio() {
           >
             {(() => {
               const visibleKeys: SectionKey[] = ["crypto", "real-estate", "off-chain"];
+              if (stockFiltered.length > 0) visibleKeys.push("stocks");
               if ((data?.statementValue ?? 0) > 0) visibleKeys.push("bank-brokerage");
               return visibleKeys.every(k => collapsedSections.has(k)) ? "Expand all" : "Collapse all";
             })()}
@@ -1294,16 +1309,38 @@ export default function Portfolio() {
       </div>
 
       {stockFiltered.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-yellow-600" />
-              Stocks & ETFs
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Traditional investments tracked separately from crypto • {stockFiltered.length} position{stockFiltered.length !== 1 ? "s" : ""}
-            </p>
+        <Card id="section-stocks" style={{ scrollMarginTop: 64 }}>
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 -ml-1"
+                onClick={() => toggleSection("stocks")}
+                data-testid="button-collapse-stocks"
+                aria-expanded={!isCollapsed("stocks")}
+              >
+                {isCollapsed("stocks") ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              <div className="min-w-0">
+                <CardTitle className="flex items-center gap-2 flex-wrap">
+                  <BarChart3 className="h-5 w-5 text-yellow-600" />
+                  Stocks & ETFs
+                  {isCollapsed("stocks") && (
+                    <span className="text-xs text-muted-foreground font-mono ml-2" data-testid="text-stocks-summary">
+                      {stockFiltered.length} {stockFiltered.length === 1 ? "position" : "positions"} · {formatCurrency(stockTotalValue)}
+                    </span>
+                  )}
+                </CardTitle>
+                {!isCollapsed("stocks") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Traditional investments tracked separately from crypto • {stockFiltered.length} position{stockFiltered.length !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            </div>
           </CardHeader>
+          {!isCollapsed("stocks") && (
           <CardContent>
             <div className="space-y-1">
               {stockFiltered.map((position) => {
@@ -1344,6 +1381,7 @@ export default function Portfolio() {
               </div>
             </div>
           </CardContent>
+          )}
         </Card>
       )}
 

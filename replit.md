@@ -25,11 +25,11 @@ These three are the editorial filter for every new feature, marketing page, and 
 - Read-only "What's coming from the chains we ride on" section above the voting list lists upstream chain upgrades (XRPL EVM/AMM/MPT/checks, Stellar Soroban, Flare FAssets) — informational, no voting.
 
 ## Portfolio Page UX (2026-04-29)
-- `/portfolio` now has a sticky jump-nav toolbar with chips for Crypto, Real Estate, Off-Chain (Other Investments & Insurance), and Bank & Brokerage (Bank chip + section conditional on `data?.statementValue > 0`). Toolbar includes a "Collapse all"/"Expand all" toggle.
+- `/portfolio` now has a sticky jump-nav toolbar with chips for Crypto, Stocks (when `stockFiltered.length > 0`), Real Estate, Off-Chain (Other Investments & Insurance), and Bank & Brokerage (Bank chip + section conditional on `data?.statementValue > 0`). Toolbar includes a "Collapse all"/"Expand all" toggle that ignores chips/sections that aren't currently rendered.
 - Each section card has a chevron in its header. Collapsed bodies are hidden; the title shows a one-line summary `({count} · {formatted total})`.
-- Collapsed-section state persisted in localStorage under key `portfolio_collapsed_sections_v1`.
+- Collapsed-section state persisted in localStorage under key `portfolio_collapsed_sections_v1`. SectionKey union: `crypto | stocks | real-estate | off-chain | bank-brokerage`.
 - `OffChainHoldingsCard` accepts optional `collapsed` and `onToggleCollapsed` props (backward compatible — chevron only renders when `onToggleCollapsed` is supplied).
-- Jump-nav `scrollToSection` first expands the target section, then `scrollIntoView({ behavior: "smooth" })`. Section IDs (`section-crypto`, `section-real-estate`, `section-off-chain`, `section-bank-brokerage`) live on always-rendered wrappers so anchors work even when content is collapsed.
+- Jump-nav `scrollToSection` first expands the target section, then `scrollIntoView({ behavior: "smooth" })`. Section IDs (`section-crypto`, `section-stocks`, `section-real-estate`, `section-off-chain`, `section-bank-brokerage`) live on always-rendered wrappers so anchors work even when content is collapsed.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language. No technical jargon.
