@@ -1455,3 +1455,43 @@ export type RoadmapItem = typeof roadmapItems.$inferSelect;
 export type InsertRoadmapItem = z.infer<typeof insertRoadmapItemSchema>;
 export type RoadmapVote = typeof roadmapVotes.$inferSelect;
 export type InsertRoadmapVote = z.infer<typeof insertRoadmapVoteSchema>;
+
+export const whispers = pgTable("whispers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerId: varchar("owner_id").notNull(),
+  token: varchar("token", { length: 32 }).notNull().unique(),
+  positionId: varchar("position_id").notNull(),
+  assetSymbol: varchar("asset_symbol", { length: 50 }).notNull(),
+  senderName: varchar("sender_name", { length: 60 }),
+  recipientName: varchar("recipient_name", { length: 100 }),
+  personalNote: varchar("personal_note", { length: 280 }),
+  showAddress: boolean("show_address").default(false),
+  walletAddress: varchar("wallet_address", { length: 200 }),
+  viewCount: integer("view_count").default(0),
+  lastViewedAt: timestamp("last_viewed_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_whispers_token").on(table.token),
+  index("idx_whispers_owner").on(table.ownerId),
+]);
+
+export const insertWhisperSchema = createInsertSchema(whispers).omit({
+  id: true,
+  token: true,
+  viewCount: true,
+  lastViewedAt: true,
+  revokedAt: true,
+  createdAt: true,
+}).extend({
+  positionId: z.string().min(1, "positionId is required"),
+  assetSymbol: z.string().trim().min(1).max(50),
+  senderName: z.string().trim().max(60).optional().nullable(),
+  recipientName: z.string().trim().max(100).optional().nullable(),
+  personalNote: z.string().trim().max(280).optional().nullable(),
+  walletAddress: z.string().trim().max(200).optional().nullable(),
+  showAddress: z.boolean().optional(),
+});
+
+export type Whisper = typeof whispers.$inferSelect;
+export type InsertWhisper = z.infer<typeof insertWhisperSchema>;

@@ -24,6 +24,22 @@ These three are the editorial filter for every new feature, marketing page, and 
 - `shippedAt` auto-stamps when status transitions to `shipped` if not already set; backdating supported via the meta dialog.
 - Read-only "What's coming from the chains we ride on" section above the voting list lists upstream chain upgrades (XRPL EVM/AMM/MPT/checks, Stellar Soroban, Flare FAssets) — informational, no voting.
 
+## Whisper — Tier 1 sharing (2026-04-30 — public viewer at `/v/:token`, manage at `/whispers`)
+- Tier 1 of a planned 3-tier sharing system (Whisper / Window / Room). Lets a portfolio owner share **one specific asset** via a no-login public link to drive viral signups.
+- Token-based, opaque (12 random bytes → base64url, ~16 chars / ~96 bits entropy), revocable, granular — never reveals other accounts, balances, or PII.
+- Schema: `whispers (id, ownerId, token unique, positionId NOT NULL, assetSymbol, senderName?, recipientName?, personalNote? ≤280 chars, showAddress, walletAddress?, viewCount, lastViewedAt, revokedAt, createdAt)`.
+- Routes: `POST/GET /api/whispers` (auth), `POST /api/whispers/:id/revoke` + `DELETE /api/whispers/:id` (auth), `GET /api/whispers/public/:token` (public, 30s cache, view counter increments fire-and-forget).
+- Privacy & integrity hardening (post-architect review):
+  - **No PII auto-leakage**: the public payload uses an owner-typed `senderName` (max 60 chars). Owner's real first name is never auto-pulled. Default fallback string: "A CryptoOwnBank user".
+  - **Server derives `assetSymbol` from the position** (client-supplied symbol is stripped) so a user can't price asset B against position A's quantity.
+  - `positionId` is required (column NOT NULL + zod min(1)); the server rejects whispers that don't resolve to one of the owner's positions (404).
+  - Public endpoint has its own per-IP token-bucket (60 req/min) on top of the global `/api/*` 300 req/15min limiter, to deter token-probing and view-spam.
+- Public payload: senderName, asset symbol, live quantity (joined from positions), live USD value (`storage.getAsset(symbol).currentPrice`), optional personal note + recipient greeting, optional wallet address (off by default).
+- Cap: 25 active (non-revoked) whispers per owner. Revoke returns 410 Gone with friendly "turned off" page; not found returns 404.
+- UI surface: `Share2` icon button on each crypto position row in `client/src/pages/portfolio.tsx` opens `WhisperShareDialog`. Two-step dialog (Show as / Who's this for / Note / Wallet-address toggle → ready-to-share link with copy button). Owner-managed list at `/whispers`.
+- Public viewer page `/v/:token` registered in BOTH unauth and auth route Switches in `App.tsx` (so logged-in members can preview their own links without losing context).
+- Stocks, real estate, off-chain, bank/brokerage holdings are intentionally out-of-scope for v1; ship crypto first to validate the loop.
+
 ## Portfolio Page UX (2026-04-29)
 - `/portfolio` now has a sticky jump-nav toolbar with chips for Crypto, Stocks (when `stockFiltered.length > 0`), Real Estate, Off-Chain (Other Investments & Insurance), and Bank & Brokerage (Bank chip + section conditional on `data?.statementValue > 0`). Toolbar includes a "Collapse all"/"Expand all" toggle that ignores chips/sections that aren't currently rendered.
 - Each section card has a chevron in its header. Collapsed bodies are hidden; the title shows a one-line summary `({count} · {formatted total})`.

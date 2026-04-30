@@ -88,6 +88,8 @@ import { Button as UiButton } from "@/components/ui/button";
 import TokenBuckets from "@/pages/token-buckets";
 import MyCard from "@/pages/my-card";
 import Snapshot from "@/pages/snapshot";
+import WhisperView from "@/pages/whisper-view";
+import Whispers from "@/pages/whispers";
 import PaymentQueue from "@/pages/payment-queue";
 import PaymentsHub from "@/pages/payments-hub";
 import WhaleAlerts from "@/pages/whale-alerts";
@@ -236,6 +238,7 @@ function AuthenticatedRoutes() {
         <Route path="/" component={Dashboard} />
         <Route path="/transactions" component={Transactions} />
         <Route path="/portfolio" component={Portfolio} />
+        <Route path="/whispers" component={Whispers} />
         <Route path="/tax-reports" component={TaxReports} />
         <Route path="/integrations" component={Integrations} />
         <Route path="/settings" component={Settings} />
@@ -362,6 +365,7 @@ function Router() {
         <Route path="/legacy-plan/slip39-setup" component={Slip39Setup} />
         <Route path="/legacy-plan/object/:token" component={LegacyObject} />
         <Route path="/snapshot/:token" component={Snapshot} />
+        <Route path="/v/:token" component={WhisperView} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -389,6 +393,7 @@ function Router() {
       <Route path="/legacy-plan/slip39-setup" component={Slip39Setup} />
         <Route path="/legacy-plan/object/:token" component={LegacyObject} />
       <Route path="/snapshot/:token" component={Snapshot} />
+      <Route path="/v/:token" component={WhisperView} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />

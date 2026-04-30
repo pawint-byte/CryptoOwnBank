@@ -3,7 +3,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
@@ -12261,6 +12261,151 @@ ${beneSections}
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to load snapshot" });
+    }
+  });
+
+  // ============ WHISPER (Tier 1: no-login single-asset share) ============
+  // Per-IP rate limit on the public viewer to discourage token-probing and view-spam.
+  const whisperPublicHits = new Map<string, { count: number; windowStart: number }>();
+  const WHISPER_PUBLIC_WINDOW_MS = 60 * 1000;
+  const WHISPER_PUBLIC_MAX = 60;
+
+  app.post("/api/whispers", isAuthenticated, async (req: any, res) => {
+    try {
+      const ownerId = req.user.claims.sub;
+      // Strip client-supplied assetSymbol — we derive it from the position to prevent
+      // pricing one asset while pointing at another's quantity.
+      const { assetSymbol: _ignoredSymbol, ...rest } = req.body || {};
+      const looseParsed = insertWhisperSchema.partial({ assetSymbol: true }).safeParse({ ...rest, ownerId });
+      if (!looseParsed.success) {
+        return res.status(400).json({ message: "Invalid input", errors: looseParsed.error.flatten() });
+      }
+      const data = looseParsed.data;
+      if (!data.positionId) {
+        return res.status(400).json({ message: "positionId is required" });
+      }
+      const [pos] = await db.select().from(positions).where(eq(positions.id, data.positionId));
+      if (!pos || pos.userId !== ownerId) {
+        return res.status(404).json({ message: "Position not found" });
+      }
+      const derivedSymbol = pos.assetSymbol;
+      const existing = await storage.listWhispersByOwner(ownerId);
+      const liveCount = existing.filter((w) => !w.revokedAt).length;
+      if (liveCount >= 25) {
+        return res.status(400).json({ message: "You can have at most 25 active Whispers. Revoke some first." });
+      }
+      const token = require("crypto").randomBytes(12).toString("base64url");
+      const whisper = await storage.createWhisper({ ...data, assetSymbol: derivedSymbol, token } as any);
+      res.json({
+        ...whisper,
+        url: `/v/${token}`,
+        shareUrl: `${req.protocol}://${req.get("host")}/v/${token}`,
+      });
+    } catch (error) {
+      console.error("Create whisper error:", error);
+      res.status(500).json({ message: "Failed to create Whisper" });
+    }
+  });
+
+  app.get("/api/whispers", isAuthenticated, async (req: any, res) => {
+    try {
+      const ownerId = req.user.claims.sub;
+      const list = await storage.listWhispersByOwner(ownerId);
+      res.json(list.map((w) => ({ ...w, shareUrl: `${req.protocol}://${req.get("host")}/v/${w.token}` })));
+    } catch (error) {
+      console.error("List whispers error:", error);
+      res.status(500).json({ message: "Failed to list Whispers" });
+    }
+  });
+
+  app.post("/api/whispers/:id/revoke", isAuthenticated, async (req: any, res) => {
+    try {
+      const ownerId = req.user.claims.sub;
+      await storage.revokeWhisper(req.params.id, ownerId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Revoke whisper error:", error);
+      res.status(500).json({ message: "Failed to revoke" });
+    }
+  });
+
+  app.delete("/api/whispers/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const ownerId = req.user.claims.sub;
+      await storage.deleteWhisper(req.params.id, ownerId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete whisper error:", error);
+      res.status(500).json({ message: "Failed to delete" });
+    }
+  });
+
+  app.get("/api/whispers/public/:token", async (req, res) => {
+    try {
+      // Per-IP rate limit (in addition to the global /api/* limiter).
+      const ip = (req.ip || req.socket?.remoteAddress || "unknown").toString();
+      const now = Date.now();
+      const bucket = whisperPublicHits.get(ip);
+      if (!bucket || now - bucket.windowStart > WHISPER_PUBLIC_WINDOW_MS) {
+        whisperPublicHits.set(ip, { count: 1, windowStart: now });
+      } else {
+        bucket.count += 1;
+        if (bucket.count > WHISPER_PUBLIC_MAX) {
+          return res.status(429).json({ message: "Too many requests, please slow down." });
+        }
+      }
+      // Opportunistic janitor — keep the map from growing unbounded.
+      if (whisperPublicHits.size > 5000) {
+        for (const [k, v] of whisperPublicHits) {
+          if (now - v.windowStart > WHISPER_PUBLIC_WINDOW_MS) whisperPublicHits.delete(k);
+        }
+      }
+
+      const token = req.params.token;
+      if (!token || token.length < 8 || token.length > 32) {
+        return res.status(404).json({ message: "Whisper not found" });
+      }
+      const whisper = await storage.getWhisperByToken(token);
+      if (!whisper) return res.status(404).json({ message: "Whisper not found" });
+      if (whisper.revokedAt) return res.status(410).json({ message: "This Whisper has been revoked by the owner." });
+
+      let quantity = 0;
+      let priceSource: "live" | "stored" = "stored";
+      if (whisper.positionId) {
+        const [pos] = await db.select().from(positions).where(eq(positions.id, whisper.positionId));
+        if (pos && pos.userId === whisper.ownerId) {
+          quantity = parseFloat(pos.quantity) || 0;
+        }
+      }
+      const asset = await storage.getAsset(whisper.assetSymbol);
+      const currentPrice = asset?.currentPrice ? parseFloat(asset.currentPrice) : 0;
+      if (currentPrice > 0) priceSource = "live";
+      const value = quantity * currentPrice;
+
+      // Owner-controlled display name (opt-in). We never auto-pull the owner's real name.
+      const senderName = (whisper.senderName || "").trim() || "A CryptoOwnBank user";
+
+      // Fire-and-forget view recording
+      storage.recordWhisperView(whisper.id).catch(() => {});
+
+      res.set("Cache-Control", "public, max-age=30");
+      res.json({
+        assetSymbol: whisper.assetSymbol,
+        quantity,
+        currentPrice,
+        value,
+        priceSource,
+        priceUpdatedAt: asset?.priceUpdatedAt || null,
+        recipientName: whisper.recipientName || null,
+        personalNote: whisper.personalNote || null,
+        showAddress: !!whisper.showAddress,
+        walletAddress: whisper.showAddress ? whisper.walletAddress || null : null,
+        senderName,
+        createdAt: whisper.createdAt,
+      });
+    } catch (error) {
+      console.error("Get public whisper error:", error);
+      res.status(500).json({ message: "Failed to load Whisper" });
     }
   });
 

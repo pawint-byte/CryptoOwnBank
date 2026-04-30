@@ -20,11 +20,14 @@ import {
   alertLog,
   roadmapItems,
   roadmapVotes,
+  whispers,
   type RoadmapItem,
   type InsertRoadmapItem,
   type RoadmapVote,
   type InsertRoadmapVote,
   type RoadmapStatus,
+  type Whisper,
+  type InsertWhisper,
   type ApiCredential,
   type InsertApiCredential,
   type Account,
@@ -423,6 +426,12 @@ export interface IStorage {
   unvoteRoadmapItem(itemId: number, userId: string): Promise<void>;
   getUserActiveVoteCount(userId: string): Promise<number>;
   seedRoadmapItemsIfEmpty(items: InsertRoadmapItem[]): Promise<number>;
+  createWhisper(data: InsertWhisper & { token: string }): Promise<Whisper>;
+  getWhisperByToken(token: string): Promise<Whisper | undefined>;
+  listWhispersByOwner(ownerId: string): Promise<Whisper[]>;
+  revokeWhisper(id: string, ownerId: string): Promise<void>;
+  deleteWhisper(id: string, ownerId: string): Promise<void>;
+  recordWhisperView(id: string): Promise<void>;
   createFamilyProposal(data: InsertFamilyProposal): Promise<FamilyProposal>;
   getFamilyProposalsByOwner(ownerUserId: string, status?: string): Promise<FamilyProposal[]>;
   getFamilyProposalsBySeat(seatId: string): Promise<FamilyProposal[]>;
@@ -1979,6 +1988,44 @@ export class DatabaseStorage implements IStorage {
     if (items.length === 0) return 0;
     await db.insert(roadmapItems).values(items as any[]);
     return items.length;
+  }
+
+  async createWhisper(data: InsertWhisper & { token: string }): Promise<Whisper> {
+    const [row] = await db.insert(whispers).values(data as any).returning();
+    return row;
+  }
+
+  async getWhisperByToken(token: string): Promise<Whisper | undefined> {
+    const [row] = await db.select().from(whispers).where(eq(whispers.token, token));
+    return row;
+  }
+
+  async listWhispersByOwner(ownerId: string): Promise<Whisper[]> {
+    return await db
+      .select()
+      .from(whispers)
+      .where(eq(whispers.ownerId, ownerId))
+      .orderBy(desc(whispers.createdAt));
+  }
+
+  async revokeWhisper(id: string, ownerId: string): Promise<void> {
+    await db
+      .update(whispers)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(whispers.id, id), eq(whispers.ownerId, ownerId)));
+  }
+
+  async deleteWhisper(id: string, ownerId: string): Promise<void> {
+    await db
+      .delete(whispers)
+      .where(and(eq(whispers.id, id), eq(whispers.ownerId, ownerId)));
+  }
+
+  async recordWhisperView(id: string): Promise<void> {
+    await db
+      .update(whispers)
+      .set({ viewCount: sql`COALESCE(${whispers.viewCount}, 0) + 1`, lastViewedAt: new Date() })
+      .where(eq(whispers.id, id));
   }
 }
 

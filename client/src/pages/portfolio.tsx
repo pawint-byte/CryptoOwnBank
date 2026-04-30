@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2 } from "lucide-react";
+import { WhisperShareDialog } from "@/components/whisper-share-dialog";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -200,6 +201,7 @@ export default function Portfolio() {
     }, 80);
   };
   const [editingPosition, setEditingPosition] = useState<PositionWithMarket | null>(null);
+  const [whisperingPosition, setWhisperingPosition] = useState<PositionWithMarket | null>(null);
   const [downloadingStatement, setDownloadingStatement] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualForm, setManualForm] = useState({
@@ -1125,6 +1127,16 @@ export default function Portfolio() {
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-primary"
+                                    onClick={() => setWhisperingPosition(position)}
+                                    data-testid={`button-whisper-${position.id}`}
+                                    title={`Share just this ${position.assetSymbol} (no login required)`}
+                                  >
+                                    <Share2 className="h-4 w-4" />
+                                  </Button>
                                   {!position.isWallet && (
                                     <Button
                                       variant="ghost"
@@ -1702,6 +1714,14 @@ export default function Portfolio() {
           <EditPositionDialog position={editingPosition} onClose={() => setEditingPosition(null)} />
         )}
       </Dialog>
+
+      <WhisperShareDialog
+        open={!!whisperingPosition}
+        onOpenChange={(open) => { if (!open) setWhisperingPosition(null); }}
+        positionId={whisperingPosition?.id || null}
+        assetSymbol={whisperingPosition?.assetSymbol || ""}
+        walletAddress={(whisperingPosition as any)?.walletAddress || null}
+      />
     </div>
   );
 }
