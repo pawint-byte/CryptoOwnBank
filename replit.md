@@ -15,6 +15,7 @@ These three are the editorial filter for every new feature, marketing page, and 
 
 ## Member-Voted Roadmap (locked 2026-04-27 — public page at `/roadmap`)
 - 15 starter items seeded on server startup, written in plain English (Amboss RailsX item added 2026-04-28).
+- Network Health & Growth Tracker added 2026-04-30 as id=16, slug `network-health-tracker`, category `honesty`, status `under_review`, sortOrder 16. Asset-agnostic dashboard (BTC/ETH/XRP/XLM at launch) measuring 5 universal categories (Activity / Holders / Capital Flow / Velocity / Builders) + 1 custom row per asset. Composite Health Score: weights Activity 30 / Holders 25 / Capital 20 / Velocity 15 / Builders 10, z-scored against 365d range, output -100..+100. **Strict no-price-prediction discipline** — dashboard shows facts only; thesis lives in editorial. Inserted directly via SQL (not added to STARTER_ITEMS array because seed only runs when table is empty).
 - One verified email + 7-day-old account = one vote. No weighting, no paid extra say.
 - Each member can have at most 10 active votes at once (votes on `shipped`/`not_pursuing` items don't count toward the cap).
 - Status ladder: idea → gathering → strong → under_review → planned → in_progress → shipped/not_pursuing.
