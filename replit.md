@@ -44,6 +44,7 @@ CryptoOwnBank is a multi-chain crypto platform offering portfolio tracking, non-
 - **Roadmap Page**: `/roadmap` (public)
 - **Principles Page**: `/principles` (public)
 - **Sovereignty Page**: `/sovereignty` (public) — the "Be Your Own Bank — Now and Forever" educational page explaining seed-phrase universality, the self-custody vs. exchange distinction, seed storage options, the annual sovereignty drill, and AGPL-3.0 self-hostability
+- **Sovereignty Recovery Kit Page**: `/sovereignty-kit` (authenticated, all tiers) — generates a printable HTML kit with the member's public addresses grouped by chain, per-chain restore guidance, storage advice, annual drill checklist. Backed by `GET /api/sovereignty-kit/export` and the shared helper `server/sovereignty-kit-html.ts` (`buildSovereigntyKitContent({ wallets, audience })`). The same helper is invoked by `GET /api/legacy-plan/export` with `audience: "survivor"` to bundle the kit content as an appendix in the Legacy Plan export — survivors get one complete document instead of two.
 - **Whisper Viewer Page**: `/v/:token` (public)
 - **Whisper Management Page**: `/whispers` (authenticated)
 - **License File**: `LICENSE` (repo root)

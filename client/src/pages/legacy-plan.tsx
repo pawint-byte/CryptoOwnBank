@@ -1812,7 +1812,7 @@ function SurvivabilityExportCard({ plan }: { plan: LegacyPlanData["plan"] }) {
             <div className="text-sm">
               <p className="font-medium">Survivability Export</p>
               <p className="text-xs text-muted-foreground max-w-xl">
-                One self-contained HTML file with every beneficiary, fallback, and encrypted vault. Print it and store it physically. Re-export annually.
+                One self-contained HTML file with every beneficiary, fallback, and encrypted vault &mdash; plus a bundled <strong>Recovery Kit appendix</strong> with chain-by-chain restore guidance so survivors don't need a second document. Print it and store it physically. Re-export annually.
                 {lastExport ? ` · Last exported ${daysAgo === 0 ? "today" : `${daysAgo} day${daysAgo !== 1 ? "s" : ""} ago`}.` : " · Not exported yet."}
               </p>
             </div>
