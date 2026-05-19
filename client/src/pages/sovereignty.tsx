@@ -359,6 +359,15 @@ export default function Sovereignty() {
 
           {/* Action row */}
           <div className="grid gap-3 sm:grid-cols-2 mb-8">
+            <a href="/sovereignty-kit" data-testid="link-sovereignty-kit">
+              <Button size="lg" className="w-full justify-start gap-3 h-auto py-4 bg-[#00A4E4] hover:bg-[#00A4E4]/90 text-white">
+                <Printer className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="font-semibold text-sm">Download your Recovery Kit</p>
+                  <p className="text-xs font-normal opacity-90">Printable, per-chain restore guide. Sign in if you haven't.</p>
+                </div>
+              </Button>
+            </a>
             <a href="/legacy-plan" data-testid="link-legacy-plan">
               <Button size="lg" variant="outline" className="w-full justify-start gap-3 h-auto py-4">
                 <HeartHandshake className="h-5 w-5 flex-shrink-0 text-[#00A4E4]" />

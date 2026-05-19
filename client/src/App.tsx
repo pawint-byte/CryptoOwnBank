@@ -27,6 +27,7 @@ import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import Principles from "@/pages/principles";
 import Sovereignty from "@/pages/sovereignty";
+import SovereigntyKit from "@/pages/sovereignty-kit";
 import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -292,6 +293,7 @@ function AuthenticatedRoutes() {
         <Route path="/insurance" component={Insurance} />
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
+        <Route path="/sovereignty-kit" component={SovereigntyKit} />
         <Route path="/legacy-plan" component={LegacyPlan} />
         <Route path="/family" component={FamilyPage} />
         <Route path="/family/view/:seatId" component={FamilyViewPage} />

@@ -160,6 +160,7 @@ const allItems: NavItem[] = [
 
   { title: "Our Principles", url: "/principles", icon: Heart, group: "learn" },
   { title: "Sovereignty", url: "/sovereignty", icon: KeyRound, group: "learn" },
+  { title: "Recovery Kit", url: "/sovereignty-kit", icon: FileText, group: "learn" },
   { title: "Roadmap & Voting", url: "/roadmap", icon: Rocket, group: "learn" },
   { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "learn" },
   { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "learn" },
