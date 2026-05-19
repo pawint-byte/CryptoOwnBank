@@ -26,6 +26,7 @@ import Roadmap from "@/pages/roadmap";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import Principles from "@/pages/principles";
+import Sovereignty from "@/pages/sovereignty";
 import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -212,6 +213,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                   {" "}&middot;{" "}
                   <a href="/principles" className="hover:text-foreground transition-colors underline-offset-4 hover:underline" data-testid="link-principles-footer-app">Our Principles</a>
                   {" "}&middot;{" "}
+                  <a href="/sovereignty" className="hover:text-foreground transition-colors underline-offset-4 hover:underline" data-testid="link-sovereignty-footer-app">Sovereignty</a>
+                  {" "}&middot;{" "}
                   <a href="/legal" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Legal</a>
                   {" "}&middot;{" "}
                   <a href="/privacy" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Privacy</a>
@@ -336,6 +339,7 @@ function Router() {
         <Route path="/legal" component={Legal} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/principles" component={Principles} />
+        <Route path="/sovereignty" component={Sovereignty} />
         <Route path="/setup-guide" component={SetupGuide} />
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
@@ -383,6 +387,7 @@ function Router() {
       <Route path="/legal" component={Legal} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/principles" component={Principles} />
+      <Route path="/sovereignty" component={Sovereignty} />
       <Route path="/setup-guide" component={SetupGuide} />
       <Route path="/signing-options" component={SigningOptions} />
       <Route path="/contact" component={Contact} />

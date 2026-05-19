@@ -60,6 +60,7 @@ import {
   Layers,
   BrainCircuit,
   Search,
+  KeyRound,
 } from "lucide-react";
 import {
   Sidebar,
@@ -158,6 +159,7 @@ const allItems: NavItem[] = [
   { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "planning" },
 
   { title: "Our Principles", url: "/principles", icon: Heart, group: "learn" },
+  { title: "Sovereignty", url: "/sovereignty", icon: KeyRound, group: "learn" },
   { title: "Roadmap & Voting", url: "/roadmap", icon: Rocket, group: "learn" },
   { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "learn" },
   { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "learn" },

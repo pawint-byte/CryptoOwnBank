@@ -43,6 +43,7 @@ CryptoOwnBank is a multi-chain crypto platform offering portfolio tracking, non-
 - **Tax Reports**: `client/src/pages/tax-reports.tsx`
 - **Roadmap Page**: `/roadmap` (public)
 - **Principles Page**: `/principles` (public)
+- **Sovereignty Page**: `/sovereignty` (public) — the "Be Your Own Bank — Now and Forever" educational page explaining seed-phrase universality, the self-custody vs. exchange distinction, seed storage options, the annual sovereignty drill, and AGPL-3.0 self-hostability
 - **Whisper Viewer Page**: `/v/:token` (public)
 - **Whisper Management Page**: `/whispers` (authenticated)
 - **License File**: `LICENSE` (repo root)
