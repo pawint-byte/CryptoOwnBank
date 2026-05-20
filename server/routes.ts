@@ -3,7 +3,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, insertWhisperSchema, positions } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
@@ -15582,6 +15582,23 @@ async function seedRoadmapStarterItems() {
     const inserted = await storage.seedRoadmapItemsIfEmpty(items);
     if (inserted > 0) {
       console.log(`[roadmap-seed] Inserted ${inserted} starter roadmap items`);
+    }
+    const followOnItems: InsertRoadmapItem[] = [
+      {
+        slug: "transaction-categories-money-flow",
+        category: "tracking",
+        title: "Tag every transaction so your dashboard shows real cash flow, not just a portfolio chart",
+        description: "Every move of money — sent, received, swapped, deposited — gets tagged with who it was with (family, friend, client, customer, vendor, yourself) and what it was for (income, gift, allowance, expense, investment, internal transfer). From those two tags, the dashboard shows your real monthly cash flow, your tax report knows which lines are taxable income vs gifts vs internal moves, your year-end statement looks like a bank statement that actually means something, and your business persona (freelancers, small shops) gets a real P&L. Tags get set automatically when you use the right door inside the app (Send to Family, Invoice a Client, Vault Deposit). For wallet-scanned transactions, an address book learns over time — once you tag your son's wallet as Family/Allowance, every future send to that address tags itself. Categories are always editable, never gate a payment, and never require the user to fill out a form before sending money. Why this matters: the blockchain only knows addresses and amounts. It doesn't know that a transfer was a birthday gift to your son or a software invoice to a client — and without that, no report downstream (budget, P&L, tax) is honest. This is the layer that turns a portfolio tracker into a real personal-finance home for your crypto, non-custodially, the same way Mint did for bank money — except cleaner, because the tags are stamped at the moment the transaction is created rather than reverse-engineered from a bank scrape. (Conversation origin: founder asked whether labeling family-vs-business flows was just optics or whether it should also drive spend tracking and P&L — the answer turned out to be both, and this is the unified item.)",
+        status: "idea",
+      },
+    ];
+    for (const extra of followOnItems) {
+      try {
+        const added = await storage.addRoadmapItemIfMissing(extra);
+        if (added) console.log(`[roadmap-seed] Added follow-on item: ${extra.slug}`);
+      } catch (err) {
+        console.error(`[roadmap-seed] follow-on insert failed for ${extra.slug}:`, err);
+      }
     }
   } catch (err) {
     console.error("[roadmap-seed] error:", err);

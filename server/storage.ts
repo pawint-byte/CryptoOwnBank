@@ -426,6 +426,7 @@ export interface IStorage {
   unvoteRoadmapItem(itemId: number, userId: string): Promise<void>;
   getUserActiveVoteCount(userId: string): Promise<number>;
   seedRoadmapItemsIfEmpty(items: InsertRoadmapItem[]): Promise<number>;
+  addRoadmapItemIfMissing(item: InsertRoadmapItem): Promise<boolean>;
   createWhisper(data: InsertWhisper & { token: string }): Promise<Whisper>;
   getWhisperByToken(token: string): Promise<Whisper | undefined>;
   listWhispersByOwner(ownerId: string): Promise<Whisper[]>;
@@ -1988,6 +1989,15 @@ export class DatabaseStorage implements IStorage {
     if (items.length === 0) return 0;
     await db.insert(roadmapItems).values(items as any[]);
     return items.length;
+  }
+
+  async addRoadmapItemIfMissing(item: InsertRoadmapItem): Promise<boolean> {
+    const [existing] = await db.select({ id: roadmapItems.id }).from(roadmapItems).where(eq(roadmapItems.slug, item.slug));
+    if (existing) return false;
+    const [maxRow] = await db.select({ max: sql<number>`coalesce(max(${roadmapItems.sortOrder}), 0)`.mapWith(Number) }).from(roadmapItems);
+    const nextSort = (maxRow?.max ?? 0) + 1;
+    await db.insert(roadmapItems).values({ ...item, sortOrder: item.sortOrder ?? nextSort } as any);
+    return true;
   }
 
   async createWhisper(data: InsertWhisper & { token: string }): Promise<Whisper> {
