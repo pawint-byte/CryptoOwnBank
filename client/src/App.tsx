@@ -109,6 +109,7 @@ import LegacyObject from "@/pages/legacy-object";
 import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
 import BuyCrypto from "@/pages/buy-crypto";
+import WalletCreate from "@/pages/wallet-create";
 import CryptoDebitCards from "@/pages/crypto-debit-cards";
 import DecryptPage from "@/pages/decrypt";
 import AiAssistant from "@/pages/ai-assistant";
@@ -306,6 +307,7 @@ function AuthenticatedRoutes() {
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/ai-assistant" component={AiAssistant} />
         <Route path="/buy-crypto" component={BuyCrypto} />
+        <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
@@ -363,6 +365,7 @@ function Router() {
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
         <Route path="/buy-crypto" component={BuyCrypto} />
+        <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />

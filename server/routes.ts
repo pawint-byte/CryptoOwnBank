@@ -173,6 +173,75 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/wallets/keygen-save", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { chain, address, label, notes } = req.body || {};
+      if (!chain || typeof chain !== "string") {
+        return res.status(400).json({ message: "chain is required" });
+      }
+      if (!address || typeof address !== "string") {
+        return res.status(400).json({ message: "address is required" });
+      }
+      const addr = address.trim();
+      if (addr.length > 255) {
+        return res.status(400).json({ message: "address too long" });
+      }
+      if (chain === "xrp" && !/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(addr)) {
+        return res.status(400).json({ message: "Invalid XRPL address format" });
+      }
+      const looksLikeSecret = (s: string): string | null => {
+        const t = s.trim();
+        if (!t) return null;
+        const words = t.toLowerCase().split(/\s+/);
+        if (words.length >= 10 && words.length <= 24 && words.every((w) => /^[a-z]{3,8}$/.test(w))) {
+          return "looks like a BIP-39 seed phrase";
+        }
+        if (/^s[1-9A-HJ-NP-Za-km-z]{27,30}$/.test(t)) return "looks like an XRPL family seed (sXXX)";
+        if (/^[0-9a-fA-F]{64}$/.test(t)) return "looks like a 256-bit private key";
+        if (/^(0x)?[0-9a-fA-F]{64}$/.test(t)) return "looks like a hex private key";
+        return null;
+      };
+      const addrSecret = looksLikeSecret(addr);
+      if (addrSecret) {
+        console.warn(`[wallets/keygen-save] rejected address field — ${addrSecret}`);
+        return res.status(400).json({ message: `Address field ${addrSecret} — never send secrets to the server` });
+      }
+      if (typeof label === "string") {
+        const labelSecret = looksLikeSecret(label);
+        if (labelSecret) {
+          console.warn(`[wallets/keygen-save] rejected label field — ${labelSecret}`);
+          return res.status(400).json({ message: `Label ${labelSecret} — never send secrets to the server` });
+        }
+      }
+      if (typeof notes === "string") {
+        const notesSecret = looksLikeSecret(notes);
+        if (notesSecret) {
+          console.warn(`[wallets/keygen-save] rejected notes field — ${notesSecret}`);
+          return res.status(400).json({ message: `Notes ${notesSecret} — never send secrets to the server` });
+        }
+      }
+      const existing = await storage.getWalletsByUser(userId);
+      const dup = existing.find((w) => w.chain === chain && w.address.toLowerCase() === addr.toLowerCase());
+      if (dup) {
+        return res.json({ success: true, wallet: dup, alreadyExists: true });
+      }
+      const safeLabel = (typeof label === "string" && label.trim()) ? label.trim().slice(0, 100) : `XRP_Wallet_${existing.filter((w) => w.chain === chain).length + 1}`;
+      const wallet = await storage.createWallet({
+        userId,
+        chain,
+        address: addr,
+        label: safeLabel,
+        notes: (typeof notes === "string" ? notes.slice(0, 500) : null) || "Created in-browser via CryptoOwnBank wallet generator. Keys held only by the member; the server stores the public address only.",
+      });
+      console.log(`[wallets/keygen-save] created wallet ${wallet.id} for user ${userId}`);
+      res.json({ success: true, wallet });
+    } catch (error: any) {
+      console.error("[wallets/keygen-save] ERROR:", error);
+      res.status(500).json({ message: "Failed to save wallet" });
+    }
+  });
+
   app.get("/api/xaman-connections", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
