@@ -14,6 +14,7 @@ import { SeoHead } from "@/components/seo-head";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { deriveAllAddresses, NON_DERIVABLE_CHAINS, type DerivedAddress } from "@/lib/multi-chain-derive";
 import {
   Wallet as WalletIcon,
   Shield,
@@ -30,6 +31,9 @@ import {
   RefreshCw,
   Lock,
   Download,
+  Globe,
+  Loader2,
+  Info,
 } from "lucide-react";
 
 type Step = "mode" | "generate" | "import" | "entropy" | "verify" | "done";
@@ -93,8 +97,53 @@ export default function WalletCreate() {
   const [verifyAnswers, setVerifyAnswers] = useState<[string, string]>(["", ""]);
   const [walletLabel, setWalletLabel] = useState<string>("");
   const [savedWalletId, setSavedWalletId] = useState<string | null>(null);
+  const [seedLength, setSeedLength] = useState<12 | 24>(12);
+  const [savingAll, setSavingAll] = useState(false);
+  const [savedChains, setSavedChains] = useState<Set<string>>(new Set());
 
   const mnemonicWords = useMemo(() => (mnemonic ? mnemonic.split(" ") : []), [mnemonic]);
+
+  const derivedAll = useMemo<DerivedAddress[]>(() => {
+    if (step !== "done" || !mnemonic) return [];
+    try {
+      return deriveAllAddresses(mnemonic);
+    } catch (err) {
+      console.error("[wallet-create] multi-chain derivation failed:", err);
+      return [];
+    }
+  }, [step, mnemonic]);
+
+  const handleSaveAllChains = async () => {
+    if (savingAll || derivedAll.length === 0) return;
+    setSavingAll(true);
+    const newlySaved = new Set(savedChains);
+    let failed = 0;
+    for (const d of derivedAll) {
+      if (newlySaved.has(d.chain)) continue;
+      try {
+        await apiRequest("POST", "/api/wallets/keygen-save", {
+          chain: d.chain,
+          address: d.address,
+          label: `${d.symbol}_Wallet_${d.chain}`,
+        });
+        newlySaved.add(d.chain);
+        setSavedChains(new Set(newlySaved));
+      } catch (err: any) {
+        failed += 1;
+        console.warn(`[wallet-create] save failed for ${d.chain}:`, err?.message);
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+    setSavingAll(false);
+    if (failed === 0) {
+      toast({ title: `Saved ${newlySaved.size} addresses`, description: "Your wallet list now shows all chains." });
+    } else {
+      toast({
+        title: `Saved ${newlySaved.size - failed} of ${derivedAll.length}`,
+        description: `${failed} couldn't be saved — likely already in your list.`,
+      });
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async (payload: { chain: string; address: string; label: string }) => {
@@ -138,7 +187,7 @@ export default function WalletCreate() {
   const handleModeSelect = (m: Mode) => {
     setMode(m);
     if (m === "generate") {
-      const fresh = bip39.generateMnemonic(128);
+      const fresh = bip39.generateMnemonic(seedLength === 24 ? 256 : 128);
       setMnemonic(fresh);
       try {
         setAddress(deriveAddressFromMnemonic(fresh));
@@ -180,18 +229,20 @@ export default function WalletCreate() {
   };
 
   const handleEntropySubmit = async () => {
+    const requiredBits = seedLength === 24 ? 256 : 128;
     const bits = shannonEntropyBits(entropyInput);
-    if (bits < 128) {
+    if (bits < requiredBits) {
       toast({
         title: "Not enough entropy yet",
-        description: `You have ~${bits} bits. Need 128+. Add more dice rolls, coin flips, or random characters.`,
+        description: `You have ~${bits} bits. Need ${requiredBits}+ for a ${seedLength}-word seed. Add more dice rolls, coin flips, or random characters.`,
         variant: "destructive",
       });
       return;
     }
     try {
       const hex = await sha256Hex(entropyInput);
-      const fresh = bip39.entropyToMnemonic(hex.slice(0, 32));
+      const hexLen = seedLength === 24 ? 64 : 32;
+      const fresh = bip39.entropyToMnemonic(hex.slice(0, hexLen));
       setMnemonic(fresh);
       setAddress(deriveAddressFromMnemonic(fresh));
       setStep("generate");
@@ -304,10 +355,43 @@ export default function WalletCreate() {
 
         {step === "mode" && (
           <div className="space-y-3" data-testid="step-mode">
+            <div className="rounded-md border bg-muted/30 p-3 flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <div className="text-sm font-semibold">Seed phrase length</div>
+                <div className="text-xs text-muted-foreground">
+                  {seedLength === 12
+                    ? "12 words = 128 bits of entropy. Plenty for personal use, easier to back up. Industry default."
+                    : "24 words = 256 bits of entropy. Maximum strength, what cold-wallet manufacturers ship by default. Same security model — just more to write down."}
+                </div>
+              </div>
+              <div className="inline-flex rounded-md border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setSeedLength(12)}
+                  className={`px-3 py-1.5 text-sm font-semibold transition-colors ${
+                    seedLength === 12 ? "bg-[#00A4E4] text-white" : "bg-background hover:bg-muted"
+                  }`}
+                  data-testid="button-seedlen-12"
+                >
+                  12 words
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSeedLength(24)}
+                  className={`px-3 py-1.5 text-sm font-semibold transition-colors border-l ${
+                    seedLength === 24 ? "bg-[#00A4E4] text-white" : "bg-background hover:bg-muted"
+                  }`}
+                  data-testid="button-seedlen-24"
+                >
+                  24 words
+                </button>
+              </div>
+            </div>
+
             <ModeCard
               icon={<Sparkles className="h-5 w-5" />}
               title="Generate a wallet for me"
-              subtitle="Recommended for first-timers. We create a fresh 12-word seed in your browser."
+              subtitle={`Recommended for first-timers. We create a fresh ${seedLength}-word seed in your browser.`}
               badge="Most common"
               onClick={() => handleModeSelect("generate")}
               testId="card-mode-generate"
@@ -443,10 +527,10 @@ export default function WalletCreate() {
                 <Shield className="h-5 w-5" /> Your seed phrase
               </CardTitle>
               <CardDescription>
-                These 12 words <strong>are</strong> your wallet — not a backup of it, they literally are it. Anyone who
-                sees them owns your crypto. Anyone who loses them loses access forever. This is the same way bearer
-                bonds and physical cash work. You are about to do something that puts you in the same position as a
-                1950s banker holding the keys to the vault.
+                These {mnemonicWords.length} words <strong>are</strong> your wallet — not a backup of it, they literally
+                are it. Anyone who sees them owns your crypto. Anyone who loses them loses access forever. This is the
+                same way bearer bonds and physical cash work. You are about to do something that puts you in the same
+                position as a 1950s banker holding the keys to the vault.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -530,8 +614,8 @@ export default function WalletCreate() {
                   data-testid="checkbox-acknowledged"
                 />
                 <label htmlFor="ack" className="text-sm leading-tight cursor-pointer">
-                  I have written down all 12 words in the correct order. I understand CryptoOwnBank cannot recover them
-                  if I lose them, and anyone who sees them can take my crypto.
+                  I have written down all {mnemonicWords.length} words in the correct order. I understand CryptoOwnBank
+                  cannot recover them if I lose them, and anyone who sees them can take my crypto.
                 </label>
               </div>
 
@@ -624,7 +708,7 @@ export default function WalletCreate() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="text-xs text-muted-foreground mb-1">XRPL address</div>
+                <div className="text-xs text-muted-foreground mb-1">Primary XRPL address</div>
                 <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
                   <code className="text-sm font-mono break-all flex-1" data-testid="text-wallet-address">
                     {address}
@@ -649,13 +733,110 @@ export default function WalletCreate() {
 
               <Alert className="border-[#00A4E4]/30 bg-[#00A4E4]/5">
                 <Sparkles className="h-4 w-4" />
-                <AlertTitle>Buy XRP with a card — coming soon</AlertTitle>
+                <AlertTitle>Buy crypto with a card — coming soon</AlertTitle>
                 <AlertDescription className="text-sm">
-                  We've applied for Stripe Crypto Onramp access so you'll be able to buy XRP directly to this wallet
-                  with a debit/credit card. Approval is pending. In the meantime, receive XRP from any source — it will
-                  appear here automatically once your wallet syncs.
+                  We've applied for Stripe Crypto Onramp access so you'll be able to buy XRP, ETH, BTC, SOL and more
+                  directly to these wallets with a debit/credit card. Approval is pending. In the meantime, receive
+                  funds from any source — they will appear here automatically once your wallets sync.
                 </AlertDescription>
               </Alert>
+
+              {derivedAll.length > 0 && (
+                <div className="rounded-md border border-[#00A4E4]/30 bg-gradient-to-br from-[#00A4E4]/5 to-emerald-500/5 p-4 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Globe className="h-5 w-5 text-[#00A4E4] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">Your seed unlocks ~22 chains — here are the addresses</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Same 12 words, different derivation paths. All computed in your browser, right now. Every
+                        address below is yours and works the moment it receives funds — even if CryptoOwnBank disappears
+                        tomorrow.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2" data-testid="list-derived-addresses">
+                    {derivedAll.map((d) => (
+                      <div
+                        key={d.chain}
+                        className="rounded-md border bg-background/60 p-3 space-y-1.5"
+                        data-testid={`row-derived-${d.chain}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono text-[10px]">
+                              {d.symbol}
+                            </Badge>
+                            <span className="text-sm font-semibold">{d.displayName}</span>
+                            {savedChains.has(d.chain) && (
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2"
+                            onClick={() => copy(d.address, `${d.symbol} address`)}
+                            data-testid={`button-copy-${d.chain}`}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <code className="block text-xs font-mono break-all text-muted-foreground" data-testid={`text-address-${d.chain}`}>
+                          {d.address}
+                        </code>
+                        {d.alsoCovers && d.alsoCovers.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            <span className="text-[10px] text-muted-foreground">Also covers:</span>
+                            {d.alsoCovers.map((c) => (
+                              <Badge key={c} variant="secondary" className="text-[10px] font-normal py-0">
+                                {c}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {d.notes && (
+                          <div className="text-[11px] text-muted-foreground italic">{d.notes}</div>
+                        )}
+                        <div className="text-[10px] text-muted-foreground/70 font-mono">{d.derivationPath}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    onClick={handleSaveAllChains}
+                    disabled={savingAll || savedChains.size >= derivedAll.length}
+                    className="w-full bg-[#00A4E4] hover:bg-[#0090c9] text-white"
+                    data-testid="button-save-all-chains"
+                  >
+                    {savingAll ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving addresses…</>
+                    ) : savedChains.size >= derivedAll.length ? (
+                      <><Check className="h-4 w-4 mr-2" /> All {derivedAll.length} addresses saved to your wallet list</>
+                    ) : (
+                      <>Save all {derivedAll.length} addresses to my wallet list</>
+                    )}
+                  </Button>
+
+                  <div className="text-[11px] text-muted-foreground border-t pt-2">
+                    <div className="flex items-start gap-1.5">
+                      <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <strong>Not literally every chain.</strong> The following chains use non-standard derivation
+                        — your seed still controls them mathematically, but you need their native wallet app to see
+                        them:{" "}
+                        {NON_DERIVABLE_CHAINS.map((c, i) => (
+                          <span key={c.name}>
+                            <span title={c.reason} className="underline decoration-dotted">{c.name}</span>
+                            {i < NON_DERIVABLE_CHAINS.length - 1 ? ", " : "."}
+                          </span>
+                        ))}{" "}
+                        See the FAQ for details.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Link href="/wallets">
