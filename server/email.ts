@@ -118,6 +118,84 @@ export async function sendEmail(to: string, subject: string, html: string, attac
   console.error(`[email] All from addresses failed for: ${to} — ${subject}`);
 }
 
+export async function sendWalletCreateAnnouncement(to: string, name: string) {
+  const greeting = name && name.trim() ? `Hi ${escapeHtml(name)},` : "Hi,";
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #666; margin: 5px 0 0;">Be Your Own Bank — Now and Forever</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333; margin-top: 0;">A front door that doesn't exist anywhere else</h2>
+        <p style="color: #555; line-height: 1.6;">${greeting}</p>
+        <p style="color: #555; line-height: 1.6;">
+          The hardest part of owning crypto has always been the same thing: <strong>getting in.</strong>
+          Sign up for an exchange. Upload an ID. Wait three days for verification. Link a bank. Wait three
+          more days. Buy your coins. Then, separately, figure out how to set up a wallet. Then transfer
+          your coins to yourself and hope you typed the address right. Ten days. Four companies. Half a
+          dozen places it can go wrong. Most people give up at step one. The ones who don't usually
+          stop at the exchange — which means the exchange owns their crypto, not them.
+        </p>
+        <p style="color: #555; line-height: 1.6;">
+          Crypto ATMs quietly solved this years ago. Walk up, feed in cash, the machine creates a
+          wallet for you on the spot, prints the keys on the receipt, and the coins go straight to that
+          wallet. Five minutes. You walk away owning it.
+        </p>
+        <p style="color: #555; line-height: 1.6;">
+          We just shipped that, online, for XRP — with one upgrade.
+        </p>
+        <div style="background: #f0f9ff; border-left: 4px solid #00A4E4; padding: 18px; margin: 25px 0; border-radius: 4px;">
+          <p style="margin: 0 0 8px 0; color: #00A4E4; font-weight: 600; font-size: 16px;">
+            New: Create a non-custodial XRPL wallet in 5 minutes
+          </p>
+          <p style="margin: 0; color: #555; line-height: 1.6;">
+            Three modes, depending on who you are:
+          </p>
+          <ul style="color: #555; line-height: 1.8; padding-left: 22px; margin: 10px 0 0 0;">
+            <li><strong>Generate</strong> — we create a fresh 12-word seed in your browser. ~90 seconds.</li>
+            <li><strong>Import</strong> — paste your existing Xaman, Ledger, or any BIP-39 seed and the same wallet shows up here. Nothing moves.</li>
+            <li><strong>Roll your own entropy</strong> — for the dice-and-coin crowd who don't trust software randomness.</li>
+          </ul>
+        </div>
+        <p style="color: #555; line-height: 1.6;">
+          Whichever mode you pick, the keys are generated on your device and stay there. We never see,
+          store, or transmit them. We literally cannot recover them if you lose them. That's not a
+          limitation — that's the point. You are the bank.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://cryptoownbank.com/wallet/create" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Create your wallet
+          </a>
+        </div>
+        <p style="color: #555; line-height: 1.6; font-size: 14px;">
+          <strong>What's next:</strong> we've applied for Stripe Crypto Onramp access so you'll soon be
+          able to buy XRP with a debit or credit card straight into your new wallet — no exchange in
+          the middle, no custody, no transfer-out step. Stripe handles the fiat conversion under their
+          licenses. We never touch the money or the keys, only pass them your address.
+        </p>
+        <p style="color: #555; line-height: 1.6; font-size: 14px;">
+          Thank you for being here. The whole point of this platform is to give ordinary people the
+          same kind of ownership a 1950s saver had with cash in a jar, but for digital assets. This
+          new front door is the most direct expression of that promise we've shipped yet.
+        </p>
+        <p style="color: #555; line-height: 1.6; margin-bottom: 0;">
+          — The CryptoOwnBank team
+        </p>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p style="margin: 0 0 6px 0;">
+          This is not financial advice. Not a bank. You control your keys and funds at all times.
+        </p>
+        <p style="margin: 0;">
+          CryptoOwnBank is operated by Wint Enterprises Inc. AGPL-3.0 source available.
+        </p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, "New: create a non-custodial wallet in 5 minutes", html);
+}
+
 export async function sendWelcomeEmail(to: string, name: string) {
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

@@ -242,6 +242,56 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     }
   });
 
+  app.post("/api/admin/announce-wallet-create", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const [adminUser] = await db.select({ email: users.email, isAdmin: users.isAdmin }).from(users).where(eq(users.id, userId));
+      if (!adminUser?.isAdmin && !ADMIN_EMAILS.includes(adminUser?.email?.toLowerCase() || "")) {
+        return res.status(403).json({ message: "Admin only" });
+      }
+      const { sendWalletCreateAnnouncement } = await import("./email");
+      const { testEmail, dryRun } = req.body || {};
+      if (testEmail && typeof testEmail === "string") {
+        if (dryRun) {
+          return res.json({ success: true, dryRun: true, wouldSendTo: [testEmail], count: 1 });
+        }
+        await sendWalletCreateAnnouncement(testEmail, "");
+        console.log(`[announce-wallet-create] test email sent to ${testEmail}`);
+        return res.json({ success: true, testEmail, count: 1 });
+      }
+      const recipients = await db
+        .select({ email: users.email, firstName: users.firstName })
+        .from(users)
+        .where(eq(users.emailVerified, true));
+      const valid = recipients.filter((r) => r.email && r.email.includes("@"));
+      if (dryRun) {
+        return res.json({
+          success: true,
+          dryRun: true,
+          count: valid.length,
+          sample: valid.slice(0, 5).map((r) => r.email),
+        });
+      }
+      let sent = 0;
+      let failed = 0;
+      for (const r of valid) {
+        try {
+          await sendWalletCreateAnnouncement(r.email!, r.firstName || "");
+          sent++;
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        } catch (err: any) {
+          failed++;
+          console.error(`[announce-wallet-create] failed for ${r.email}:`, err?.message);
+        }
+      }
+      console.log(`[announce-wallet-create] broadcast complete: ${sent} sent, ${failed} failed`);
+      res.json({ success: true, sent, failed, totalEligible: valid.length });
+    } catch (error: any) {
+      console.error("[announce-wallet-create] ERROR:", error);
+      res.status(500).json({ message: "Failed to send announcement" });
+    }
+  });
+
   app.get("/api/xaman-connections", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

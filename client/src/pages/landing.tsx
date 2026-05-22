@@ -1557,6 +1557,15 @@ export default function Landing() {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-8">
                 <div className="space-y-4">
+                  <a
+                    href="/wallet/create"
+                    className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00A4E4]/40 bg-gradient-to-r from-[#00A4E4]/10 to-emerald-500/10 hover:from-[#00A4E4]/20 hover:to-emerald-500/20 text-sm font-medium transition-colors"
+                    data-testid="banner-wallet-create-launch"
+                  >
+                    <span className="inline-flex items-center justify-center h-5 px-1.5 rounded-full bg-[#00A4E4] text-white text-[10px] font-bold tracking-wider">NEW</span>
+                    <span>Create a non-custodial wallet in 5 minutes</span>
+                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </a>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A4E4]/10 text-[#00A4E4] text-sm font-medium" data-testid="badge-non-custodial">
                     <Shield className="h-3.5 w-3.5" />
                     {t.hero.badge}
@@ -1580,8 +1589,14 @@ export default function Landing() {
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </a>
+                  <a href="/wallet/create">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto border-[#00A4E4]/40 hover:bg-[#00A4E4]/10" data-testid="button-create-wallet-hero">
+                      Create a wallet
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
                   <a href="#pricing">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-upgrade-hero">
+                    <Button size="lg" variant="ghost" className="w-full sm:w-auto" data-testid="button-upgrade-hero">
                       {t.hero.ctaUpgrade}
                     </Button>
                   </a>
