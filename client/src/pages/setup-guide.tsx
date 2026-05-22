@@ -40,6 +40,7 @@ import {
   FileText,
   Settings,
   HardDrive,
+  Sparkles,
 } from "lucide-react";
 
 interface ToolkitStep {
@@ -76,8 +77,8 @@ const toolkits: Toolkit[] = [
     bgColor: "bg-blue-500/10",
     borderColor: "border-blue-500/20",
     tagline: "Never owned crypto? Start here.",
-    description: "This guide walks you through everything from scratch — buying your first hardware wallet, setting up a phone wallet, funding your account, and earning yield. No prior knowledge needed.",
-    timeEstimate: "30-45 minutes + hardware wallet shipping",
+    description: "Two paths. (1) The fast path: create a non-custodial wallet right in your browser at /wallet/create — 90 seconds, no hardware needed, your keys never leave your device. Recommended if you just want to start. (2) The full ceremony below: buy a hardware cold wallet, set up Xaman as the mobile interface, fund your account, and earn yield. Recommended if you plan to hold larger amounts long-term. You can always start with path 1 and graduate to path 2 later.",
+    timeEstimate: "Fast path: 90 seconds. Full ceremony: 30-45 minutes + hardware wallet shipping.",
     requirements: [
       "A smartphone (iPhone or Android)",
       "An internet connection",

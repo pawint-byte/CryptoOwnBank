@@ -268,19 +268,34 @@ function buildSteps(
 
   if (needsHotWallet) {
     steps.push({
+      id: "create_wallet_browser",
+      phase: "foundation",
+      title: "Create a Wallet in Your Browser (90 seconds)",
+      subtitle: "Fastest path — no shipping, no app install",
+      description:
+        "The quickest way to get a working non-custodial XRPL wallet. Generate fresh, import an existing seed, or roll your own entropy with dice — all in your browser. Your keys are created on your device and never sent to our server. Recommended if you don't have a wallet yet.",
+      cta: "Create Wallet",
+      href: "/wallet/create",
+      icon: Sparkles,
+      iconColor: "text-[#00A4E4]",
+      autoCompleted: false,
+      requires: [],
+      parallelWith: ["get_hot_wallet"],
+    });
+    steps.push({
       id: "get_hot_wallet",
       phase: "foundation",
-      title: "Download Xaman Wallet",
-      subtitle: "Sign transactions on the go",
+      title: "Or Download Xaman Wallet",
+      subtitle: "Alternative — mobile app with cold wallet pairing",
       description:
-        "Xaman is the mobile wallet for XRPL. You'll use it to connect to CryptoOwnBank and sign vault deposits/withdrawals. Your cold wallet holds the keys — Xaman is just the interface.",
+        "Prefer a dedicated mobile app, or already own a Ledger you want to pair? Xaman is the mobile wallet for XRPL — it can run standalone or pair with your cold wallet so your hardware device holds the keys while Xaman acts as the interface.",
       cta: "Set Up Xaman",
       href: "/setup-guide",
       icon: Smartphone,
       iconColor: "text-blue-500",
       autoCompleted: false,
       requires: [],
-      parallelWith: needsColdWallet ? ["get_cold_wallet"] : undefined,
+      parallelWith: ["create_wallet_browser"].concat(needsColdWallet ? ["get_cold_wallet"] : []),
     });
   }
 

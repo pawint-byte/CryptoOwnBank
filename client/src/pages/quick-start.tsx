@@ -45,6 +45,7 @@ import {
   Info,
   CheckCircle,
   XCircle,
+  Sparkles,
 } from "lucide-react";
 
 type TemplateType = "portfolio" | "contacts" | "payees" | "treasury";
@@ -552,6 +553,36 @@ export default function QuickStart() {
             : "Add your first blockchain address to start tracking your portfolio. No private keys needed."}
         </p>
       </div>
+
+      {!hasWallets && (
+        <Card className="border-[#00A4E4]/40 bg-gradient-to-r from-[#00A4E4]/5 to-emerald-500/5" data-testid="card-create-wallet-front-door">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#00A4E4]">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              Don't have a wallet yet? Create one in 90 seconds
+              <span className="ml-2 inline-flex items-center justify-center h-5 px-1.5 rounded-full bg-[#00A4E4] text-white text-[10px] font-bold tracking-wider">NEW</span>
+            </CardTitle>
+            <CardDescription>
+              Generate a non-custodial XRPL wallet right in your browser. Three modes: fresh seed,
+              import an existing one (Xaman / Ledger / any BIP-39), or roll your own entropy with
+              physical dice. Keys never leave your device — we only see the public address.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/wallet/create">
+              <Button className="bg-[#00A4E4] hover:bg-[#0090c9] text-white" data-testid="button-quickstart-create-wallet">
+                Create my wallet now
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground mt-2">
+              Already have a wallet elsewhere? You can paste its seed in Import mode and it will appear here too.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card data-testid="card-add-wallet">
         <CardHeader>
