@@ -427,6 +427,7 @@ export interface IStorage {
   getUserActiveVoteCount(userId: string): Promise<number>;
   seedRoadmapItemsIfEmpty(items: InsertRoadmapItem[]): Promise<number>;
   addRoadmapItemIfMissing(item: InsertRoadmapItem): Promise<boolean>;
+  refreshRoadmapItemContentBySlug(slug: string, content: { title?: string; description?: string; category?: string }): Promise<boolean>;
   createWhisper(data: InsertWhisper & { token: string }): Promise<Whisper>;
   getWhisperByToken(token: string): Promise<Whisper | undefined>;
   listWhispersByOwner(ownerId: string): Promise<Whisper[]>;
@@ -1997,6 +1998,18 @@ export class DatabaseStorage implements IStorage {
     const [maxRow] = await db.select({ max: sql<number>`coalesce(max(${roadmapItems.sortOrder}), 0)`.mapWith(Number) }).from(roadmapItems);
     const nextSort = (maxRow?.max ?? 0) + 1;
     await db.insert(roadmapItems).values({ ...item, sortOrder: item.sortOrder ?? nextSort } as any);
+    return true;
+  }
+
+  async refreshRoadmapItemContentBySlug(slug: string, content: { title?: string; description?: string; category?: string }): Promise<boolean> {
+    const [existing] = await db.select({ id: roadmapItems.id, title: roadmapItems.title, description: roadmapItems.description, category: roadmapItems.category }).from(roadmapItems).where(eq(roadmapItems.slug, slug));
+    if (!existing) return false;
+    const updates: Record<string, any> = {};
+    if (content.title !== undefined && content.title !== existing.title) updates.title = content.title;
+    if (content.description !== undefined && content.description !== existing.description) updates.description = content.description;
+    if (content.category !== undefined && content.category !== (existing as any).category) updates.category = content.category;
+    if (Object.keys(updates).length === 0) return false;
+    await db.update(roadmapItems).set(updates).where(eq(roadmapItems.slug, slug));
     return true;
   }
 
