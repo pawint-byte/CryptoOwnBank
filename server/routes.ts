@@ -7,6 +7,7 @@ import { insertTransactionSchema, insertApiCredentialSchema, userSettings as use
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
 import { createOnrampSession, isValidAddressForNetwork } from "./stripe-onramp";
+import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "./thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
 import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey } from "./sovereignty-kit-html";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
@@ -5717,6 +5718,59 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     } catch (err: any) {
       console.error("Stripe onramp session error:", err?.message || err);
       res.status(500).json({ message: err?.message || "Failed to create onramp session" });
+    }
+  });
+
+  app.get("/api/thorchain/quote", async (req, res) => {
+    try {
+      const { fromAsset, toAsset, amount, destination, affiliateBps, affiliateAddress, toleranceBps } = req.query as Record<string, string>;
+      if (!fromAsset || !toAsset || !amount || !destination) {
+        return res.status(400).json({ message: "fromAsset, toAsset, amount, destination are required" });
+      }
+      let amt: bigint;
+      try {
+        amt = BigInt(amount);
+      } catch {
+        return res.status(400).json({ message: "amount must be an integer (1e8 base units)" });
+      }
+      if (amt <= 0n) {
+        return res.status(400).json({ message: "amount must be > 0" });
+      }
+      const quote = await getThorSwapQuote({
+        fromAsset,
+        toAsset,
+        amount: amt,
+        destination,
+        affiliateBps: affiliateBps ? Number(affiliateBps) : undefined,
+        affiliateAddress: affiliateAddress || undefined,
+        toleranceBps: toleranceBps ? Number(toleranceBps) : undefined,
+      });
+      res.json(quote);
+    } catch (err: any) {
+      console.error("THORChain quote error:", err?.message || err);
+      res.status(500).json({ message: err?.message || "Quote failed" });
+    }
+  });
+
+  app.get("/api/thorchain/inbound", async (_req, res) => {
+    try {
+      const addrs = await getThorInboundAddresses();
+      res.json(addrs);
+    } catch (err: any) {
+      console.error("THORChain inbound error:", err?.message || err);
+      res.status(500).json({ message: err?.message || "Inbound lookup failed" });
+    }
+  });
+
+  app.get("/api/thorchain/status", async (req, res) => {
+    try {
+      const txId = (req.query.txId as string) || "";
+      if (!txId) return res.status(400).json({ message: "txId is required" });
+      const data = await getThorSwapStatus(txId);
+      res.json(data);
+    } catch (err: any) {
+      console.error("THORChain status error:", err?.message || err);
+      res.status(500).json({ message: err?.message || "Status lookup failed" });
     }
   });
 

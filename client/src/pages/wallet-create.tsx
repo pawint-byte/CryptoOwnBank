@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { deriveAllAddresses, NON_DERIVABLE_CHAINS, type DerivedAddress } from "@/lib/multi-chain-derive";
+import { chainHasThorBridge } from "@/lib/thorchain";
+import { AutoBridgeModal } from "@/components/auto-bridge-modal";
 import {
   getStripeOptionsForChain,
   getExternalOnrampsForChain,
@@ -110,6 +112,7 @@ export default function WalletCreate() {
   const [savingAll, setSavingAll] = useState(false);
   const [savedChains, setSavedChains] = useState<Set<string>>(new Set());
   const [onrampLoading, setOnrampLoading] = useState<string | null>(null);
+  const [bridgeModalChain, setBridgeModalChain] = useState<string | null>(null);
 
   const handleBuyWithCard = useCallback(
     async (walletAddress: string, option: StripeOnrampOption) => {
@@ -782,7 +785,9 @@ export default function WalletCreate() {
                 </div>
 
                 {(() => {
-                  const supportedChains = derivedAll.filter((d) => chainHasAnyOnramp(d.chain));
+                  const supportedChains = derivedAll.filter(
+                    (d) => chainHasAnyOnramp(d.chain) || chainHasThorBridge(d.chain),
+                  );
                   if (supportedChains.length === 0) {
                     return (
                       <div className="text-xs text-muted-foreground italic">
@@ -795,6 +800,7 @@ export default function WalletCreate() {
                       {supportedChains.map((d) => {
                         const stripeOpts = getStripeOptionsForChain(d.chain);
                         const externalOpts = getExternalOnrampsForChain(d.chain);
+                        const bridgeEligible = chainHasThorBridge(d.chain) && d.chain.toLowerCase() !== "btc";
                         return (
                           <div key={d.chain} className="rounded-md border bg-background/60 p-3 space-y-2">
                             <div className="flex items-center gap-2">
@@ -856,6 +862,23 @@ export default function WalletCreate() {
                                 ))}
                               </div>
                             )}
+                            {bridgeEligible && (
+                              <div className="space-y-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setBridgeModalChain(d.chain)}
+                                  className="h-7 text-xs border-emerald-500/40 hover:bg-emerald-500/10"
+                                  data-testid={`button-bridge-${d.chain}`}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  Buy {d.symbol} with card (via THORChain)
+                                </Button>
+                                <div className="text-[10px] text-muted-foreground leading-snug">
+                                  Card → USDC (Stripe) → {d.symbol} (THORChain swap). Two steps, ~10 min, non-custodial.
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -866,7 +889,7 @@ export default function WalletCreate() {
                 <div className="text-[11px] text-muted-foreground border-t pt-2 flex items-start gap-1.5">
                   <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
                   <div>
-                    LTC, DOGE, BCH, TRX and ATOM don't have a one-click card rail yet — fund those from any exchange (Coinbase, Kraken, Binance) to the address shown above.
+                    LTC, DOGE, and BCH use a 2-step bridge (card → USDC → on-chain swap). TRX and ATOM don't have a card rail yet — fund those from any exchange (Coinbase, Kraken, Binance) to the address shown above.
                   </div>
                 </div>
               </div>
@@ -994,6 +1017,21 @@ export default function WalletCreate() {
           </Card>
         )}
       </main>
+
+      {bridgeModalChain && (() => {
+        const target = derivedAll.find((d) => d.chain === bridgeModalChain);
+        const evm = derivedAll.find((d) => d.chain === "evm");
+        if (!target || !evm) return null;
+        return (
+          <AutoBridgeModal
+            open={!!bridgeModalChain}
+            onOpenChange={(o) => { if (!o) setBridgeModalChain(null); }}
+            toChain={target.chain}
+            destinationAddress={target.address}
+            evmAddress={evm.address}
+          />
+        );
+      })()}
     </div>
   );
 }

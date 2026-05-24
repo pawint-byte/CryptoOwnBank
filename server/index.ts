@@ -51,6 +51,7 @@ app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/auth", authLimiter);
 app.use("/api/stripe/onramp-session", onrampLimiter);
+app.use("/api/thorchain", onrampLimiter);
 
 app.use(
   express.json({
