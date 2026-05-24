@@ -17,6 +17,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { deriveAllAddresses, NON_DERIVABLE_CHAINS, type DerivedAddress } from "@/lib/multi-chain-derive";
 import {
   getStripeOptionsForChain,
+  getExternalOnrampsForChain,
+  chainHasAnyOnramp,
   createOnrampSessionAndRedirect,
   STRIPE_ONRAMP_BY_CHAIN,
   type StripeOnrampOption,
@@ -780,18 +782,19 @@ export default function WalletCreate() {
                 </div>
 
                 {(() => {
-                  const supportedChains = derivedAll.filter((d) => getStripeOptionsForChain(d.chain).length > 0);
+                  const supportedChains = derivedAll.filter((d) => chainHasAnyOnramp(d.chain));
                   if (supportedChains.length === 0) {
                     return (
                       <div className="text-xs text-muted-foreground italic">
-                        Your derived addresses don't include any chains currently supported by Stripe Onramp (ETH/BTC/SOL/XLM/EVM). Fund from another wallet or exchange.
+                        None of your derived addresses have a card-purchase rail yet. Fund from any exchange or wallet to the addresses shown.
                       </div>
                     );
                   }
                   return (
                     <div className="space-y-2" data-testid="list-stripe-onramp">
                       {supportedChains.map((d) => {
-                        const opts = getStripeOptionsForChain(d.chain);
+                        const stripeOpts = getStripeOptionsForChain(d.chain);
+                        const externalOpts = getExternalOnrampsForChain(d.chain);
                         return (
                           <div key={d.chain} className="rounded-md border bg-background/60 p-3 space-y-2">
                             <div className="flex items-center gap-2">
@@ -801,30 +804,58 @@ export default function WalletCreate() {
                                 {d.address.slice(0, 12)}…{d.address.slice(-6)}
                               </code>
                             </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {opts.map((opt) => {
-                                const key = `${opt.currency}-${opt.network}`;
-                                const isLoading = onrampLoading === key;
-                                return (
-                                  <Button
-                                    key={key}
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleBuyWithCard(d.address, opt)}
-                                    disabled={onrampLoading !== null}
-                                    className="h-7 text-xs"
-                                    data-testid={`button-onramp-${d.chain}-${opt.currency}-${opt.network}`}
-                                  >
-                                    {isLoading ? (
-                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                    ) : (
-                                      <CreditCard className="h-3 w-3 mr-1" />
-                                    )}
-                                    Buy {opt.label}
-                                  </Button>
-                                );
-                              })}
-                            </div>
+                            {stripeOpts.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {stripeOpts.map((opt) => {
+                                  const key = `${opt.currency}-${opt.network}`;
+                                  const isLoading = onrampLoading === key;
+                                  return (
+                                    <Button
+                                      key={key}
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleBuyWithCard(d.address, opt)}
+                                      disabled={onrampLoading !== null}
+                                      className="h-7 text-xs"
+                                      data-testid={`button-onramp-${d.chain}-${opt.currency}-${opt.network}`}
+                                    >
+                                      {isLoading ? (
+                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                      ) : (
+                                        <CreditCard className="h-3 w-3 mr-1" />
+                                      )}
+                                      Buy {opt.label}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {externalOpts.length > 0 && (
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {externalOpts.map((opt) => (
+                                    <Button
+                                      key={opt.provider}
+                                      size="sm"
+                                      variant="outline"
+                                      asChild
+                                      className="h-7 text-xs"
+                                      data-testid={`button-external-onramp-${d.chain}-${opt.provider}`}
+                                    >
+                                      <a href={opt.url} target="_blank" rel="noopener noreferrer">
+                                        <Globe className="h-3 w-3 mr-1" />
+                                        {opt.label} →
+                                      </a>
+                                    </Button>
+                                  ))}
+                                </div>
+                                {externalOpts.map((opt) => (
+                                  <div key={`note-${opt.provider}`} className="text-[10px] text-muted-foreground leading-snug">
+                                    <span className="font-semibold">{opt.label}:</span> {opt.note}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -835,8 +866,7 @@ export default function WalletCreate() {
                 <div className="text-[11px] text-muted-foreground border-t pt-2 flex items-start gap-1.5">
                   <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
                   <div>
-                    XRP, ATOM, TRX, LTC, DOGE, BCH and other chains aren't yet supported by Stripe Crypto Onramp.
-                    Use the Buy Crypto page for those — or fund from any wallet/exchange to the address shown above.
+                    LTC, DOGE, BCH, TRX and ATOM don't have a one-click card rail yet — fund those from any exchange (Coinbase, Kraken, Binance) to the address shown above.
                   </div>
                 </div>
               </div>

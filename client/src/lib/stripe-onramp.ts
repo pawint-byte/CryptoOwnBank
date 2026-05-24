@@ -37,6 +37,38 @@ export function chainHasStripeOnramp(chain: string): boolean {
   return (STRIPE_ONRAMP_BY_CHAIN[chain]?.length ?? 0) > 0;
 }
 
+export interface ExternalOnrampOption {
+  provider: string;
+  label: string;
+  url: string;
+  note: string;
+}
+
+export const EXTERNAL_ONRAMP_BY_CHAIN: Record<string, ExternalOnrampOption[]> = {
+  xrp: [
+    {
+      provider: "xaman",
+      label: "Buy XRP in Xaman",
+      url: "https://xaman.app/",
+      note: "Import this seed into Xaman, then tap Buy. The card-bought XRP lands in this exact address.",
+    },
+    {
+      provider: "sologenic",
+      label: "Swap on Sologenic DEX",
+      url: "https://sologenic.org/trade",
+      note: "On-chain XRPL DEX — useful if you already hold IOUs or USD-pegged stablecoins on XRPL.",
+    },
+  ],
+};
+
+export function getExternalOnrampsForChain(chain: string): ExternalOnrampOption[] {
+  return EXTERNAL_ONRAMP_BY_CHAIN[chain] || [];
+}
+
+export function chainHasAnyOnramp(chain: string): boolean {
+  return chainHasStripeOnramp(chain) || getExternalOnrampsForChain(chain).length > 0;
+}
+
 export interface CreateOnrampParams {
   walletAddress: string;
   destinationCurrency: string;
