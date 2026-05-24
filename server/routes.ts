@@ -6,6 +6,7 @@ import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./repli
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
+import { createOnrampSession, isValidAddressForNetwork } from "./stripe-onramp";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
 import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey } from "./sovereignty-kit-html";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
@@ -5686,6 +5687,36 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
     } catch (error) {
       console.error("Stripe checkout error:", error);
       res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/stripe/onramp-session", async (req: any, res) => {
+    try {
+      const { walletAddress, destinationCurrency, destinationNetwork, sourceAmount } = req.body || {};
+      if (!walletAddress || typeof walletAddress !== "string" || walletAddress.trim().length < 10) {
+        return res.status(400).json({ message: "Valid walletAddress is required" });
+      }
+      if (!destinationCurrency || typeof destinationCurrency !== "string") {
+        return res.status(400).json({ message: "destinationCurrency is required" });
+      }
+      if (!destinationNetwork || typeof destinationNetwork !== "string") {
+        return res.status(400).json({ message: "destinationNetwork is required" });
+      }
+      if (!isValidAddressForNetwork(walletAddress.trim(), destinationNetwork)) {
+        return res.status(400).json({ message: `Invalid ${destinationNetwork} wallet address format` });
+      }
+      const amt = sourceAmount != null ? Number(sourceAmount) : undefined;
+      const session = await createOnrampSession({
+        walletAddress: walletAddress.trim(),
+        destinationCurrency: destinationCurrency.toLowerCase(),
+        destinationNetwork: destinationNetwork.toLowerCase(),
+        sourceAmount: amt && !isNaN(amt) && amt > 0 ? amt : undefined,
+        lockWalletAddress: true,
+      });
+      res.json(session);
+    } catch (err: any) {
+      console.error("Stripe onramp session error:", err?.message || err);
+      res.status(500).json({ message: err?.message || "Failed to create onramp session" });
     }
   });
 

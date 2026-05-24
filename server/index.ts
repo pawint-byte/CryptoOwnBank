@@ -38,10 +38,19 @@ const authLimiter = rateLimit({
   message: { message: "Too many login attempts, please try again later." },
 });
 
+const onrampLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many onramp requests, please slow down." },
+});
+
 app.use("/api/", apiLimiter);
 app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/auth", authLimiter);
+app.use("/api/stripe/onramp-session", onrampLimiter);
 
 app.use(
   express.json({

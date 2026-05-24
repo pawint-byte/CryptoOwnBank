@@ -16,6 +16,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { deriveAllAddresses, NON_DERIVABLE_CHAINS, type DerivedAddress } from "@/lib/multi-chain-derive";
 import {
+  getStripeOptionsForChain,
+  createOnrampSessionAndRedirect,
+  STRIPE_ONRAMP_BY_CHAIN,
+  type StripeOnrampOption,
+} from "@/lib/stripe-onramp";
+import {
   Wallet as WalletIcon,
   Shield,
   Dice5,
@@ -34,6 +40,7 @@ import {
   Globe,
   Loader2,
   Info,
+  CreditCard,
 } from "lucide-react";
 
 type Step = "mode" | "generate" | "import" | "entropy" | "verify" | "done";
@@ -100,6 +107,34 @@ export default function WalletCreate() {
   const [seedLength, setSeedLength] = useState<12 | 24>(12);
   const [savingAll, setSavingAll] = useState(false);
   const [savedChains, setSavedChains] = useState<Set<string>>(new Set());
+  const [onrampLoading, setOnrampLoading] = useState<string | null>(null);
+
+  const handleBuyWithCard = useCallback(
+    async (walletAddress: string, option: StripeOnrampOption) => {
+      const key = `${option.currency}-${option.network}`;
+      setOnrampLoading(key);
+      try {
+        await createOnrampSessionAndRedirect({
+          walletAddress,
+          destinationCurrency: option.currency,
+          destinationNetwork: option.network,
+        });
+        toast({
+          title: "Stripe onramp opened in new tab",
+          description: `Buying ${option.symbol} → ${walletAddress.slice(0, 10)}…${walletAddress.slice(-6)}. The crypto goes directly to your wallet. CryptoOwnBank never touches it.`,
+        });
+      } catch (err: any) {
+        toast({
+          title: "Could not open Stripe onramp",
+          description: err?.message || "Please try again or use a different funding method.",
+          variant: "destructive",
+        });
+      } finally {
+        setOnrampLoading(null);
+      }
+    },
+    [toast],
+  );
 
   const mnemonicWords = useMemo(() => (mnemonic ? mnemonic.split(" ") : []), [mnemonic]);
 
@@ -731,15 +766,80 @@ export default function WalletCreate() {
                 </Alert>
               )}
 
-              <Alert className="border-[#00A4E4]/30 bg-[#00A4E4]/5">
-                <Sparkles className="h-4 w-4" />
-                <AlertTitle>Buy crypto with a card — coming soon</AlertTitle>
-                <AlertDescription className="text-sm">
-                  We've applied for Stripe Crypto Onramp access so you'll be able to buy XRP, ETH, BTC, SOL and more
-                  directly to these wallets with a debit/credit card. Approval is pending. In the meantime, receive
-                  funds from any source — they will appear here automatically once your wallets sync.
-                </AlertDescription>
-              </Alert>
+              <div className="rounded-md border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-[#00A4E4]/5 p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <CreditCard className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">Fund your wallet with a debit or credit card</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Powered by Stripe. The crypto goes directly to your wallet address — CryptoOwnBank never touches
+                      it. Stripe verifies your identity (a regulatory requirement for fiat purchases). To stay fully
+                      anonymous, fund via a peer-to-peer trade or DEX swap instead.
+                    </div>
+                  </div>
+                </div>
+
+                {(() => {
+                  const supportedChains = derivedAll.filter((d) => getStripeOptionsForChain(d.chain).length > 0);
+                  if (supportedChains.length === 0) {
+                    return (
+                      <div className="text-xs text-muted-foreground italic">
+                        Your derived addresses don't include any chains currently supported by Stripe Onramp (ETH/BTC/SOL/XLM/EVM). Fund from another wallet or exchange.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-2" data-testid="list-stripe-onramp">
+                      {supportedChains.map((d) => {
+                        const opts = getStripeOptionsForChain(d.chain);
+                        return (
+                          <div key={d.chain} className="rounded-md border bg-background/60 p-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="font-mono text-[10px]">{d.symbol}</Badge>
+                              <span className="text-sm font-semibold">{d.displayName}</span>
+                              <code className="text-[10px] font-mono text-muted-foreground truncate">
+                                {d.address.slice(0, 12)}…{d.address.slice(-6)}
+                              </code>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {opts.map((opt) => {
+                                const key = `${opt.currency}-${opt.network}`;
+                                const isLoading = onrampLoading === key;
+                                return (
+                                  <Button
+                                    key={key}
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleBuyWithCard(d.address, opt)}
+                                    disabled={onrampLoading !== null}
+                                    className="h-7 text-xs"
+                                    data-testid={`button-onramp-${d.chain}-${opt.currency}-${opt.network}`}
+                                  >
+                                    {isLoading ? (
+                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                    ) : (
+                                      <CreditCard className="h-3 w-3 mr-1" />
+                                    )}
+                                    Buy {opt.label}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                <div className="text-[11px] text-muted-foreground border-t pt-2 flex items-start gap-1.5">
+                  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    XRP, ATOM, TRX, LTC, DOGE, BCH and other chains aren't yet supported by Stripe Crypto Onramp.
+                    Use the Buy Crypto page for those — or fund from any wallet/exchange to the address shown above.
+                  </div>
+                </div>
+              </div>
 
               {derivedAll.length > 0 && (
                 <div className="rounded-md border border-[#00A4E4]/30 bg-gradient-to-br from-[#00A4E4]/5 to-emerald-500/5 p-4 space-y-3">
