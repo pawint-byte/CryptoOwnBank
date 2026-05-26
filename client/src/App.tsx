@@ -23,6 +23,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import FAQ from "@/pages/faq";
 import Roadmap from "@/pages/roadmap";
+import Pricing from "@/pages/pricing";
 import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import Principles from "@/pages/principles";
@@ -311,6 +312,7 @@ function AuthenticatedRoutes() {
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/pricing" component={Pricing} />
         <Route path="/roadmap" component={Roadmap} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
@@ -348,6 +350,7 @@ function Router() {
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
         <Route path="/faq" component={FAQ} />
+        <Route path="/pricing" component={Pricing} />
         <Route path="/roadmap" component={Roadmap} />
         <Route path="/chain-guide" component={ChainGuide} />
         <Route path="/rwa-yields" component={RwaYields} />

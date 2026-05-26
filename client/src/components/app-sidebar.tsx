@@ -38,6 +38,7 @@ import {
   ChevronDown,
   ChevronRight,
   Pin,
+  Tag,
   Gem,
   ShieldCheck,
   Rocket,
@@ -616,6 +617,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/pricing"}
+                  data-testid="nav-pricing"
+                >
+                  <Link href="/pricing">
+                    <Tag className="h-4 w-4" />
+                    <span>Pricing & Plans</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
