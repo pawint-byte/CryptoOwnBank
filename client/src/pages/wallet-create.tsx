@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { SeoHead } from "@/components/seo-head";
+import { SovereigntyAcknowledgement } from "@/components/sovereignty-acknowledgement";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -747,6 +748,7 @@ export default function WalletCreate() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <SovereigntyAcknowledgement intent={mode === "import" ? "import" : "create"} />
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Primary XRPL address</div>
                 <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">

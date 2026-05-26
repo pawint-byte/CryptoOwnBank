@@ -94,75 +94,89 @@ const CHAIN_COLORS = {
   evm: "#F7931A",
 };
 
+// Foundation-first grouping (2026-05-26):
+//   home    - your starting point + your portfolio at a glance
+//   wallets - create / import / view / sign (the foundation)
+//   execute - any action that changes what you hold: buy, sell, swap, stake, earn
+//   backup  - protect what you have: sovereignty, recovery kit, legacy, family
+//   move    - send, receive, invoice, pay, spend (same asset, different person/place)
+//   protect - the analysis surface: tax, reconciliation, alerts, insurance, AI
+//   learn   - educational + supporting content
 const allItems: NavItem[] = [
-  { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "start" },
-  { title: "Overview", url: "/", icon: LayoutDashboard, group: "start" },
-  { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "start" },
-  { title: "Spend Crypto", url: "/crypto-debit-cards", icon: CreditCard, color: "#3b82f6", group: "start" },
-  { title: "Create Wallet", url: "/wallet/create", icon: Sparkles, color: "#00A4E4", group: "start" },
-  { title: "Wallets & Addresses", url: "/wallets", icon: Wallet, group: "start" },
-  { title: "Import Data", url: "/integrations", icon: Link2, group: "start" },
+  // FOUNDATION
+  { title: "Home", url: "/", icon: LayoutDashboard, group: "home" },
+  { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "home" },
+  { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "home" },
 
-  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "portfolio" },
-  { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "portfolio" },
-  { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "portfolio" },
-  { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "portfolio" },
-  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "portfolio" },
+  { title: "My Wallets", url: "/wallets", icon: Wallet, group: "wallets" },
+  { title: "Create New Wallet", url: "/wallet/create", icon: Sparkles, color: "#00A4E4", group: "wallets" },
+  { title: "Import Data", url: "/integrations", icon: Link2, group: "wallets" },
+  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, group: "wallets" },
 
-  { title: "Crypto News", url: "/crypto-news", icon: Newspaper, group: "market" },
-  { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "market" },
-  { title: "Whale Alerts", url: "/whale-alerts", icon: Fish, group: "market" },
-  { title: "Technical Analysis", url: "/technical-analysis", icon: BarChart3, group: "market" },
-  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "market" },
-  { title: "Earn & Yield", url: "/rwa-yields", icon: Gem, group: "market" },
-  { title: "AMM Pools", url: "/amm-pools", icon: Droplets, group: "market" },
-  { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "market" },
-  { title: "Flare FTSO", url: "/flare", icon: Flame, group: "market" },
+  // EXECUTE - anything that changes what you hold
+  { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "execute" },
+  { title: "XRPL Dashboard", url: "/ownbank", icon: Landmark, group: "execute", chain: "xrpl" },
+  { title: "Stellar Dashboard", url: "/stellar/wallet", icon: Landmark, group: "execute", chain: "stellar" },
+  { title: "XRPL Tokens", url: "/ownbank/tokens", icon: Coins, group: "execute", chain: "xrpl" },
+  { title: "Stellar Tokens", url: "/stellar/tokens", icon: Coins, group: "execute", chain: "stellar" },
+  { title: "XRPL DEX", url: "/ownbank/dex", icon: TrendingUp, group: "execute", chain: "xrpl" },
+  { title: "Stellar DEX", url: "/stellar/dex", icon: TrendingUp, group: "execute", chain: "stellar" },
+  { title: "XRPL DCA", url: "/ownbank/dca", icon: Repeat, group: "execute", chain: "xrpl" },
+  { title: "Stellar DCA", url: "/stellar/dca", icon: Repeat, group: "execute", chain: "stellar" },
+  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, group: "execute" },
+  { title: "Cross-Chain Swap", url: "/ownbank/cross-chain", icon: Route, group: "execute" },
+  { title: "XRPL Bridge", url: "/ownbank/xrpl-bridge", icon: GitCompareArrows, group: "execute", chain: "xrpl" },
+  { title: "Yield Vaults", url: "/ownbank/vaults", icon: Vault, group: "execute", chain: "xrpl" },
+  { title: "AMM Pools", url: "/amm-pools", icon: Droplets, group: "execute" },
+  { title: "Native Staking", url: "/native-staking", icon: Pickaxe, group: "execute" },
+  { title: "Flare FTSO", url: "/flare", icon: Flame, group: "execute" },
+  { title: "XLS-66 Lending", url: "/xls66-lending", icon: Gem, group: "execute", chain: "xrpl" },
+  { title: "Earn & Yield (RWA)", url: "/rwa-yields", icon: Gem, group: "execute" },
+  { title: "Token Research", url: "/token-research", icon: Search, group: "execute" },
+  { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, group: "execute", chain: "xrpl" },
+  { title: "Stablecoins", url: "/stablecoins", icon: DollarSign, group: "execute" },
+  // { title: "Token Buckets", url: "/token-buckets", icon: Layers, group: "execute", chain: "xrpl" }, // TODO: Hidden until cross-chain bucket execution is built
 
-  { title: "Dashboard", url: "/ownbank", icon: Landmark, group: "ownbank", chain: "xrpl" },
-  { title: "Yield Vaults", url: "/ownbank/vaults", icon: Vault, group: "ownbank", chain: "xrpl" },
-  { title: "Wallet", url: "/stellar/wallet", icon: Wallet, group: "ownbank", chain: "stellar" },
-  { title: "XRPL Tokens", url: "/ownbank/tokens", icon: Coins, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar Tokens", url: "/stellar/tokens", icon: Coins, group: "ownbank", chain: "stellar" },
-  { title: "XRPL DEX", url: "/ownbank/dex", icon: TrendingUp, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar DEX", url: "/stellar/dex", icon: TrendingUp, group: "ownbank", chain: "stellar" },
-  { title: "XRPL DCA", url: "/ownbank/dca", icon: Repeat, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar DCA", url: "/stellar/dca", icon: Repeat, group: "stellar", chain: "stellar" },
-  // { title: "Token Buckets", url: "/token-buckets", icon: Layers, group: "ownbank", chain: "xrpl" }, // TODO: Hidden until cross-chain bucket execution is built
-  { title: "Payments Hub", url: "/payments", icon: CreditCard, group: "ownbank" },
-  { title: "XRPL Send & Receive", url: "/ownbank/send", icon: Send, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar Send & Receive", url: "/stellar/send", icon: Send, group: "ownbank", chain: "stellar" },
-  { title: "Bitcoin & Lightning", url: "/bitcoin", icon: Send, group: "ownbank" },
-  { title: "XRPL Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar Invoices", url: "/stellar/invoices", icon: InvoiceIcon, group: "ownbank", chain: "stellar" },
-  { title: "XRPL Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar Payment Queue", url: "/stellar/payment-queue", icon: CloudUpload, group: "ownbank", chain: "stellar" },
-  { title: "XRPL Recurring", url: "/ownbank/recurring", icon: CalendarClock, group: "ownbank", chain: "xrpl" },
-  { title: "Stellar Recurring", url: "/stellar/recurring", icon: CalendarClock, group: "ownbank", chain: "stellar" },
-  { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, group: "ownbank", chain: "xrpl" },
-  { title: "OwnCoin POS", url: "/ownbank/my-card", icon: QrCode, group: "ownbank", chain: "xrpl" },
-  { title: "Vault Positions", url: "/ownbank/withdraw", icon: ArrowDownToLine, group: "ownbank", chain: "xrpl" },
-  { title: "History", url: "/ownbank/history", icon: History, group: "ownbank", chain: "xrpl" },
-  { title: "My Referrals", url: "/ownbank/referrals", icon: Users, group: "ownbank", chain: "xrpl" },
-  { title: "XLS-66 Lending", url: "/xls66-lending", icon: Gem, group: "ownbank", chain: "xrpl" },
-  { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, group: "ownbank", chain: "xrpl" },
-  { title: "Remittances", url: "/stellar/remittances", icon: Star, group: "ownbank", chain: "stellar" },
+  // BACK UP & RECOVER
+  { title: "Sovereignty", url: "/sovereignty", icon: KeyRound, group: "backup" },
+  { title: "Recovery Kit", url: "/sovereignty-kit", icon: FileText, group: "backup" },
+  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "backup" },
+  { title: "Family", url: "/family", icon: Users, group: "backup" },
 
-  { title: "Token Research", url: "/token-research", icon: Search, group: "bridges" },
-  { title: "EVM Swap", url: "/ownbank/evm-swap", icon: Zap, group: "bridges" },
-  { title: "Cross-Chain", url: "/ownbank/cross-chain", icon: Route, group: "bridges" },
-  { title: "XRPL Bridge", url: "/ownbank/xrpl-bridge", icon: GitCompareArrows, group: "bridges" },
+  // MOVE MONEY - same asset, different person/place
+  { title: "Payments Hub", url: "/payments", icon: CreditCard, group: "move" },
+  { title: "XRPL Send & Receive", url: "/ownbank/send", icon: Send, group: "move", chain: "xrpl" },
+  { title: "Stellar Send & Receive", url: "/stellar/send", icon: Send, group: "move", chain: "stellar" },
+  { title: "Bitcoin & Lightning", url: "/bitcoin", icon: Send, group: "move" },
+  { title: "XRPL Invoices", url: "/ownbank/invoices", icon: InvoiceIcon, group: "move", chain: "xrpl" },
+  { title: "Stellar Invoices", url: "/stellar/invoices", icon: InvoiceIcon, group: "move", chain: "stellar" },
+  { title: "XRPL Payment Queue", url: "/ownbank/payment-queue", icon: CloudUpload, group: "move", chain: "xrpl" },
+  { title: "Stellar Payment Queue", url: "/stellar/payment-queue", icon: CloudUpload, group: "move", chain: "stellar" },
+  { title: "XRPL Recurring", url: "/ownbank/recurring", icon: CalendarClock, group: "move", chain: "xrpl" },
+  { title: "Stellar Recurring", url: "/stellar/recurring", icon: CalendarClock, group: "move", chain: "stellar" },
+  { title: "Transfer", url: "/ownbank/transfer", icon: TransferIcon, group: "move", chain: "xrpl" },
+  { title: "OwnCoin POS", url: "/ownbank/my-card", icon: QrCode, group: "move", chain: "xrpl" },
+  { title: "Remittances", url: "/stellar/remittances", icon: Star, group: "move", chain: "stellar" },
+  { title: "Spend Crypto", url: "/crypto-debit-cards", icon: CreditCard, color: "#3b82f6", group: "move" },
 
-  { title: "AI Assistant", url: "/ai-assistant", icon: BrainCircuit, color: "#8b5cf6", group: "planning" },
-  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "planning" },
-  { title: "Family", url: "/family", icon: Users, group: "planning" },
-  { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "planning" },
-  { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "planning" },
-  { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "planning" },
+  // PLAN & PROTECT - the analysis surface
+  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "protect" },
+  { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "protect" },
+  { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "protect" },
+  { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "protect" },
+  { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "protect" },
+  { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "protect" },
+  { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "protect" },
+  { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "protect" },
+  { title: "AI Assistant", url: "/ai-assistant", icon: BrainCircuit, color: "#8b5cf6", group: "protect" },
+  { title: "History", url: "/ownbank/history", icon: History, group: "protect", chain: "xrpl" },
+  { title: "My Referrals", url: "/ownbank/referrals", icon: Users, group: "protect" },
 
+  // LEARN & DECIDE
   { title: "Our Principles", url: "/principles", icon: Heart, group: "learn" },
-  { title: "Sovereignty", url: "/sovereignty", icon: KeyRound, group: "learn" },
-  { title: "Recovery Kit", url: "/sovereignty-kit", icon: FileText, group: "learn" },
+  { title: "Crypto News", url: "/crypto-news", icon: Newspaper, group: "learn" },
+  { title: "Whale Alerts", url: "/whale-alerts", icon: Fish, group: "learn" },
+  { title: "Technical Analysis", url: "/technical-analysis", icon: BarChart3, group: "learn" },
   { title: "Roadmap & Voting", url: "/roadmap", icon: Rocket, group: "learn" },
   { title: "Chain Guide", url: "/chain-guide", icon: GitCompareArrows, group: "learn" },
   { title: "Migration Guide", url: "/migration-guide", icon: Route, group: "learn" },
@@ -359,14 +373,14 @@ export function AppSidebar() {
 
   const { favorites, toggle, isFav } = useFavorites();
 
-  const activeGroup = allItems.find((i) => i.url === location)?.group || "start";
+  const activeGroup = allItems.find((i) => i.url === location)?.group || "home";
   const defaultOpen: Record<string, boolean> = {
-    start: activeGroup === "start",
-    portfolio: activeGroup === "portfolio",
-    market: activeGroup === "market",
-    ownbank: activeGroup === "ownbank",
-    bridges: activeGroup === "bridges",
-    planning: activeGroup === "planning",
+    home: activeGroup === "home",
+    wallets: activeGroup === "wallets",
+    execute: activeGroup === "execute",
+    backup: activeGroup === "backup",
+    move: activeGroup === "move",
+    protect: activeGroup === "protect",
     learn: activeGroup === "learn",
   };
 
@@ -396,12 +410,12 @@ export function AppSidebar() {
   };
 
   const favoriteItems = allItems.filter((i) => favorites.includes(i.url));
-  const startItems = allItems.filter((i) => i.group === "start");
-  const portfolioItems = allItems.filter((i) => i.group === "portfolio");
-  const marketItems = allItems.filter((i) => i.group === "market");
-  const ownbankItems = filterByChain(allItems.filter((i) => i.group === "ownbank"));
-  const bridgeItems = allItems.filter((i) => i.group === "bridges");
-  const planningItems = allItems.filter((i) => i.group === "planning");
+  const homeItems = allItems.filter((i) => i.group === "home");
+  const walletItems = allItems.filter((i) => i.group === "wallets");
+  const executeItems = filterByChain(allItems.filter((i) => i.group === "execute"));
+  const backupItems = allItems.filter((i) => i.group === "backup");
+  const moveItems = filterByChain(allItems.filter((i) => i.group === "move"));
+  const protectItems = filterByChain(allItems.filter((i) => i.group === "protect"));
   const learnItems = allItems.filter((i) => i.group === "learn");
 
   const renderItem = (item: NavItem, testPrefix: string, showFavStar = true) => (
@@ -479,48 +493,50 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {renderCollapsibleGroup("start", "Getting Started", startItems)}
+        {/* FOUNDATION — always visible, the ladder every member climbs */}
+        {renderCollapsibleGroup("home", "Home", homeItems, "#00A4E4")}
 
-        {renderCollapsibleGroup("portfolio", "Portfolio", portfolioItems)}
-
-        {renderCollapsibleGroup("market", "Market & Yields", marketItems)}
+        {renderCollapsibleGroup("wallets", "My Wallets", walletItems, "#00A4E4")}
 
         <SidebarGroup>
           <SidebarGroupLabel
             className="cursor-pointer select-none hover:bg-accent/30 transition-colors rounded-md"
-            onClick={() => toggleGroup("ownbank")}
-            data-testid="group-toggle-ownbank"
+            onClick={() => toggleGroup("execute")}
+            data-testid="group-toggle-execute"
           >
             <span className="flex items-center gap-2 flex-1">
               <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#00A4E4] to-[#7B61FF]" />
-              OwnBank
+              Execute
               <Badge variant="outline" className="text-[9px] h-4 px-1 font-normal">
                 {chain === "all" ? "All" : chain === "xrpl" ? "XRPL" : "Stellar"}
               </Badge>
             </span>
-            {open["ownbank"] ? (
+            {open["execute"] ? (
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             )}
           </SidebarGroupLabel>
-          {open["ownbank"] && (
+          {open["execute"] && (
             <>
               <ChainSwitcher chain={chain} setChain={setChain} />
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {ownbankItems.map((item) => renderItem(item, "ownbank"))}
+                  {executeItems.map((item) => renderItem(item, "execute"))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </>
           )}
         </SidebarGroup>
 
-        {renderCollapsibleGroup("bridges", "Swap & Bridge", bridgeItems, "#F7931A")}
+        {renderCollapsibleGroup("backup", "Back Up & Recover", backupItems, "#f59e0b")}
 
-        {renderCollapsibleGroup("planning", "Planning & Tools", planningItems)}
+        {/* USE — built on top of the foundation */}
+        {renderCollapsibleGroup("move", "Move Money", moveItems, "#16a34a")}
 
-        {renderCollapsibleGroup("learn", "Learn", learnItems)}
+        {renderCollapsibleGroup("protect", "Plan & Protect", protectItems)}
+
+        {renderCollapsibleGroup("learn", "Learn & Decide", learnItems)}
 
         {adminStatus?.isAdmin && (
           <SidebarGroup>

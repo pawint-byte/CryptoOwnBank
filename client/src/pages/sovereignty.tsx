@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SeoHead } from "@/components/seo-head";
+import { SovereigntyAcknowledgement } from "@/components/sovereignty-acknowledgement";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Wallet,
   ArrowLeft,
@@ -135,6 +137,9 @@ export default function Sovereignty() {
               Take it. Print it. Keep it safe.
             </p>
           </div>
+
+          {/* One-time sovereignty acknowledgement (logged-in members only) */}
+          <SovereigntyAcknowledgementGate />
 
           {/* The promise */}
           <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5 mb-12" data-testid="card-promise">
@@ -510,6 +515,16 @@ export default function Sovereignty() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function SovereigntyAcknowledgementGate() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return (
+    <div className="mb-10">
+      <SovereigntyAcknowledgement intent="general" />
     </div>
   );
 }

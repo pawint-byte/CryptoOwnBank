@@ -11,6 +11,8 @@ import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { YieldEarningsTracker } from "@/components/yield-earnings-tracker";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { apiRequest } from "@/lib/queryClient";
+import { useUserData } from "@/hooks/use-user-data";
+import { KeyRound } from "lucide-react";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -220,6 +222,8 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <SovereigntyReminderBanner hasWallets={(walletsData?.length ?? 0) > 0} />
+
       <OnboardingChecklist
         walletCount={walletAddresses.length}
         hasExchangeData={exchangeBalances.length > 0}
@@ -396,5 +400,32 @@ export default function Dashboard() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function SovereigntyReminderBanner({ hasWallets }: { hasWallets: boolean }) {
+  const { data: acknowledgedAt, isLoading } = useUserData<string | null>(
+    "sovereignty_acknowledged_at",
+    null,
+  );
+  if (isLoading || acknowledgedAt || !hasWallets) return null;
+  return (
+    <Link href="/sovereignty">
+      <div
+        className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 flex items-start gap-3 hover-elevate cursor-pointer"
+        data-testid="banner-sovereignty-reminder"
+      >
+        <KeyRound className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <div className="font-semibold text-sm">Take 30 seconds: confirm you understand self-custody</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            You have wallets but haven't done the one-time sovereignty acknowledgement yet. It's the foundation everything else here stands on.
+          </div>
+        </div>
+        <div className="text-xs text-amber-700 dark:text-amber-400 font-medium flex-shrink-0 mt-0.5">
+          Open →
+        </div>
+      </div>
+    </Link>
   );
 }
