@@ -16,6 +16,7 @@ import {
   Globe2,
   HeartHandshake,
   Sparkles,
+  Eye,
 } from "lucide-react";
 
 const universalKeyChains = [
@@ -273,6 +274,89 @@ export default function Sovereignty() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* The second honest distinction — signing environment */}
+          <Card className="border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 mb-4" data-testid="card-signing-environment">
+            <CardContent className="p-6 flex gap-4 items-start">
+              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+                <Eye className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base mb-2">
+                  The second honest distinction: where your keys touch matters too.
+                </h3>
+                <p className="text-sm leading-relaxed">
+                  Holding your own seed phrase is half the security decision. The other half
+                  is the <em>environment</em> where that key is used to sign a transaction.
+                  Two wallets can both be &ldquo;non-custodial&rdquo; and still be very
+                  different in how exposed your key is when it actually does its job.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="grid gap-3 mb-12">
+            <Card className="border-amber-500/20" data-testid="card-bybit-lesson">
+              <CardContent className="p-5">
+                <p className="font-semibold text-sm mb-2">
+                  A lesson from the Bybit incident in February 2025.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                  Bybit&rsquo;s signers approved what looked like a routine internal
+                  transfer. They had hardware wallets. They had multisig. They followed the
+                  operational playbook the industry considers best practice. The transfer
+                  was drained anyway. According to published post-mortems, the transaction
+                  the signers actually approved was not the one their wallet interface
+                  appeared to be showing them &mdash; investigators have pointed to a
+                  compromise of the software the signers were using to construct the
+                  transaction. The loss is widely reported as the largest cryptocurrency
+                  theft to date.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  The lesson isn&rsquo;t that self-custody failed. The lesson is that
+                  self-custody plus a compromised signing environment is still only half a
+                  security decision. The screen you actually read before approving matters
+                  as much as the keys you hold.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-500/20" data-testid="card-verify-on-device">
+              <CardContent className="p-5">
+                <p className="font-semibold text-sm mb-2">
+                  Always verify on the device, not just on the website.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Whenever you sign a transaction &mdash; with Xaman, with a Ledger, with
+                  any wallet &mdash; the destination address and amount shown on the
+                  wallet&rsquo;s own screen are what you should trust. A website (ours
+                  included) can in principle be served compromised JavaScript without you
+                  ever knowing, and your wallet&rsquo;s confirmation screen is generally
+                  much harder for an attacker to alter than a webpage is. Before you
+                  approve, take a few seconds: read the address on the wallet, read the
+                  amount on the wallet, then approve. Never approve a transaction whose
+                  details you haven&rsquo;t actually read.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-500/20" data-testid="card-where-keys-touch">
+              <CardContent className="p-5">
+                <p className="font-semibold text-sm mb-2">
+                  Where does CryptoOwnBank ever touch your keys? Nowhere.
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  We never see your seed phrase. We never see your private keys. We never
+                  construct, sign, or broadcast a transaction that moves your funds &mdash;
+                  your wallet does all of that, on your device, with keys we have no way
+                  to reach. What our servers <em>do</em> hold is the account information
+                  you give us &mdash; your email, your settings, the public addresses you
+                  ask us to track &mdash; together with prices and balances anyone with a
+                  blockchain explorer can read. If our servers were compromised, an
+                  attacker could see that account information, but they could not move
+                  your assets, because the keys that authorise movement are not there to
+                  steal.
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Storage */}

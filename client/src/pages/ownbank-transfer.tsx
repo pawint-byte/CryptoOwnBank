@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { signPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
+import { VerifyOnDeviceNotice } from "@/components/verify-on-device-notice";
 import {
   ArrowRightLeft,
   ArrowDown,
@@ -552,6 +553,8 @@ export default function OwnBankTransfer() {
                   approve the transaction. Nothing happens until you sign.
                 </p>
               </div>
+
+              <VerifyOnDeviceNotice walletLabel="Xaman" />
             </div>
           )}
           <DialogFooter className="flex gap-2">

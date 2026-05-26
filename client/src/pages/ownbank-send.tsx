@@ -50,6 +50,7 @@ import {
 } from "@/lib/xrpl-client";
 import { signPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
+import { VerifyOnDeviceNotice } from "@/components/verify-on-device-notice";
 import {
   Send,
   ArrowDownToLine,
@@ -905,6 +906,8 @@ export default function OwnBankSend() {
                 Non-custodial. We never hold your funds or see your keys.
               </p>
             </div>
+
+            <VerifyOnDeviceNotice walletLabel={walletType === "xumm" ? "Xaman" : "your Ledger"} />
 
             <DialogFooter>
               <Button
