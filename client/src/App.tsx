@@ -28,6 +28,7 @@ import Legal from "@/pages/legal";
 import Privacy from "@/pages/privacy";
 import Principles from "@/pages/principles";
 import Sovereignty from "@/pages/sovereignty";
+import WealthArchitecture from "@/pages/wealth-architecture";
 import SovereigntyKit from "@/pages/sovereignty-kit";
 import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
@@ -296,6 +297,7 @@ function AuthenticatedRoutes() {
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/sovereignty-kit" component={SovereigntyKit} />
+        <Route path="/sovereignty/wealth-architecture" component={WealthArchitecture} />
         <Route path="/legacy-plan" component={LegacyPlan} />
         <Route path="/family" component={FamilyPage} />
         <Route path="/family/view/:seatId" component={FamilyViewPage} />
@@ -346,6 +348,7 @@ function Router() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/principles" component={Principles} />
         <Route path="/sovereignty" component={Sovereignty} />
+        <Route path="/sovereignty/wealth-architecture" component={WealthArchitecture} />
         <Route path="/setup-guide" component={SetupGuide} />
         <Route path="/signing-options" component={SigningOptions} />
         <Route path="/contact" component={Contact} />
@@ -396,6 +399,7 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/principles" component={Principles} />
       <Route path="/sovereignty" component={Sovereignty} />
+      <Route path="/sovereignty/wealth-architecture" component={WealthArchitecture} />
       <Route path="/setup-guide" component={SetupGuide} />
       <Route path="/signing-options" component={SigningOptions} />
       <Route path="/contact" component={Contact} />

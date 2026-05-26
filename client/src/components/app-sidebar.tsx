@@ -140,6 +140,7 @@ const allItems: NavItem[] = [
 
   // BACK UP & RECOVER
   { title: "Sovereignty", url: "/sovereignty", icon: KeyRound, group: "backup" },
+  { title: "Wealth Architecture", url: "/sovereignty/wealth-architecture", icon: Layers, group: "backup" },
   { title: "Recovery Kit", url: "/sovereignty-kit", icon: FileText, group: "backup" },
   { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, group: "backup" },
   { title: "Family", url: "/family", icon: Users, group: "backup" },
