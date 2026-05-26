@@ -21,6 +21,11 @@ import {
   roadmapItems,
   roadmapVotes,
   whispers,
+  apiUsageLog,
+  apiBudgets,
+  type ApiUsageLog,
+  type ApiBudget,
+  type InsertApiBudget,
   type RoadmapItem,
   type InsertRoadmapItem,
   type RoadmapVote,
@@ -440,6 +445,13 @@ export interface IStorage {
   getFamilyProposalsByProposer(proposedByUserId: string): Promise<FamilyProposal[]>;
   getFamilyProposal(id: string): Promise<FamilyProposal | undefined>;
   updateFamilyProposal(id: string, data: Partial<FamilyProposal>): Promise<FamilyProposal | undefined>;
+  getApiUsageSummary(periodHours: number): Promise<Array<{ provider: string; callCount: number; errorCount: number; totalCostCents: number; avgLatencyMs: number }>>;
+  getRecentApiFailures(limit: number): Promise<ApiUsageLog[]>;
+  getTopApiConsumers(periodHours: number, limit: number): Promise<Array<{ userId: string; email: string | null; callCount: number; costCents: number }>>;
+  getApiBudgetsWithSpend(): Promise<Array<ApiBudget & { currentSpendCents: number }>>;
+  upsertApiBudget(data: InsertApiBudget): Promise<ApiBudget>;
+  deleteApiBudget(id: number): Promise<void>;
+  resetApiBudgetAlerts(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2049,6 +2061,120 @@ export class DatabaseStorage implements IStorage {
       .update(whispers)
       .set({ viewCount: sql`COALESCE(${whispers.viewCount}, 0) + 1`, lastViewedAt: new Date() })
       .where(eq(whispers.id, id));
+  }
+
+  async getApiUsageSummary(periodHours: number): Promise<Array<{ provider: string; callCount: number; errorCount: number; totalCostCents: number; avgLatencyMs: number }>> {
+    const since = new Date(Date.now() - periodHours * 60 * 60 * 1000);
+    const rows = await db
+      .select({
+        provider: apiUsageLog.provider,
+        callCount: sql<string>`COUNT(*)`,
+        errorCount: sql<string>`SUM(CASE WHEN ${apiUsageLog.ok} = false THEN 1 ELSE 0 END)`,
+        totalMicroCents: sql<string>`COALESCE(SUM(${apiUsageLog.costMicroCents}), 0)`,
+        avgLatencyMs: sql<string>`COALESCE(AVG(${apiUsageLog.latencyMs}), 0)`,
+      })
+      .from(apiUsageLog)
+      .where(sql`${apiUsageLog.requestedAt} >= ${since}`)
+      .groupBy(apiUsageLog.provider)
+      .orderBy(sql`COALESCE(SUM(${apiUsageLog.costMicroCents}), 0) DESC`);
+    return rows.map(r => ({
+      provider: r.provider,
+      callCount: Number(r.callCount || 0),
+      errorCount: Number(r.errorCount || 0),
+      totalCostCents: Math.round(Number(r.totalMicroCents || 0) / 10_000),
+      avgLatencyMs: Number(r.avgLatencyMs || 0),
+    }));
+  }
+
+  async getRecentApiFailures(limit: number): Promise<ApiUsageLog[]> {
+    return await db
+      .select()
+      .from(apiUsageLog)
+      .where(eq(apiUsageLog.ok, false))
+      .orderBy(desc(apiUsageLog.requestedAt))
+      .limit(limit);
+  }
+
+  async getTopApiConsumers(periodHours: number, limit: number): Promise<Array<{ userId: string; email: string | null; callCount: number; costCents: number }>> {
+    const since = new Date(Date.now() - periodHours * 60 * 60 * 1000);
+    const rows = await db
+      .select({
+        userId: apiUsageLog.userId,
+        email: users.email,
+        callCount: sql<string>`COUNT(*)`,
+        totalMicroCents: sql<string>`COALESCE(SUM(${apiUsageLog.costMicroCents}), 0)`,
+      })
+      .from(apiUsageLog)
+      .leftJoin(users, eq(users.id, apiUsageLog.userId))
+      .where(sql`${apiUsageLog.requestedAt} >= ${since} AND ${apiUsageLog.userId} IS NOT NULL`)
+      .groupBy(apiUsageLog.userId, users.email)
+      .orderBy(sql`COALESCE(SUM(${apiUsageLog.costMicroCents}), 0) DESC`)
+      .limit(limit);
+    return rows
+      .filter(r => r.userId)
+      .map(r => ({
+        userId: r.userId!,
+        email: r.email,
+        callCount: Number(r.callCount || 0),
+        costCents: Math.round(Number(r.totalMicroCents || 0) / 10_000),
+      }));
+  }
+
+  async getApiBudgetsWithSpend(): Promise<Array<ApiBudget & { currentSpendCents: number }>> {
+    const budgets = await db.select().from(apiBudgets).orderBy(apiBudgets.provider, apiBudgets.period);
+    const PERIOD_MS: Record<string, number> = {
+      daily: 24 * 60 * 60 * 1000,
+      monthly: 30 * 24 * 60 * 60 * 1000,
+    };
+    const out: Array<ApiBudget & { currentSpendCents: number }> = [];
+    for (const b of budgets) {
+      const periodMs = PERIOD_MS[b.period] || 24 * 60 * 60 * 1000;
+      const since = new Date(Date.now() - periodMs);
+      const [row] = await db
+        .select({ total: sql<string>`COALESCE(SUM(${apiUsageLog.costMicroCents}), 0)` })
+        .from(apiUsageLog)
+        .where(and(eq(apiUsageLog.provider, b.provider), sql`${apiUsageLog.requestedAt} >= ${since}`));
+      out.push({ ...b, currentSpendCents: Math.round(Number(row?.total || 0) / 10_000) });
+    }
+    return out;
+  }
+
+  async upsertApiBudget(data: InsertApiBudget): Promise<ApiBudget> {
+    const existing = await db.select().from(apiBudgets).where(
+      and(eq(apiBudgets.provider, data.provider), eq(apiBudgets.period, data.period))
+    );
+    if (existing.length > 0) {
+      const [updated] = await db.update(apiBudgets).set({
+        softLimitCents: data.softLimitCents,
+        hardLimitCents: data.hardLimitCents,
+        alertEmail: data.alertEmail ?? null,
+        enforced: data.enforced ?? true,
+        updatedAt: new Date(),
+      }).where(eq(apiBudgets.id, existing[0].id)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(apiBudgets).values({
+      provider: data.provider,
+      period: data.period,
+      softLimitCents: data.softLimitCents,
+      hardLimitCents: data.hardLimitCents,
+      alertEmail: data.alertEmail ?? null,
+      enforced: data.enforced ?? true,
+    }).returning();
+    return created;
+  }
+
+  async deleteApiBudget(id: number): Promise<void> {
+    await db.delete(apiBudgets).where(eq(apiBudgets.id, id));
+  }
+
+  async resetApiBudgetAlerts(id: number): Promise<void> {
+    await db.update(apiBudgets).set({
+      softAlertSentAt: null,
+      hardAlertSentAt: null,
+      periodStartedAt: new Date(),
+      updatedAt: new Date(),
+    }).where(eq(apiBudgets.id, id));
   }
 }
 

@@ -1495,3 +1495,57 @@ export const insertWhisperSchema = createInsertSchema(whispers).omit({
 
 export type Whisper = typeof whispers.$inferSelect;
 export type InsertWhisper = z.infer<typeof insertWhisperSchema>;
+
+export const API_USAGE_PERIODS = ["daily", "monthly"] as const;
+export type ApiUsagePeriod = typeof API_USAGE_PERIODS[number];
+
+export const apiUsageLog = pgTable("api_usage_log", {
+  id: serial("id").primaryKey(),
+  provider: varchar("provider", { length: 40 }).notNull(),
+  endpoint: text("endpoint"),
+  userId: varchar("user_id"),
+  statusCode: integer("status_code"),
+  costMicroCents: integer("cost_micro_cents").notNull().default(0),
+  latencyMs: integer("latency_ms"),
+  ok: boolean("ok").notNull().default(true),
+  errorMessage: text("error_message"),
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_api_usage_provider_time").on(table.provider, table.requestedAt),
+  index("idx_api_usage_user_time").on(table.userId, table.requestedAt),
+]);
+
+export const apiBudgets = pgTable("api_budgets", {
+  id: serial("id").primaryKey(),
+  provider: varchar("provider", { length: 40 }).notNull(),
+  period: varchar("period", { length: 16 }).notNull(),
+  softLimitCents: integer("soft_limit_cents").notNull(),
+  hardLimitCents: integer("hard_limit_cents").notNull(),
+  alertEmail: varchar("alert_email", { length: 200 }),
+  enforced: boolean("enforced").notNull().default(true),
+  softAlertSentAt: timestamp("soft_alert_sent_at"),
+  hardAlertSentAt: timestamp("hard_alert_sent_at"),
+  periodStartedAt: timestamp("period_started_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  unique("uniq_api_budget_provider_period").on(table.provider, table.period),
+]);
+
+export const insertApiBudgetSchema = createInsertSchema(apiBudgets).omit({
+  id: true,
+  softAlertSentAt: true,
+  hardAlertSentAt: true,
+  periodStartedAt: true,
+  updatedAt: true,
+}).extend({
+  provider: z.string().trim().min(1).max(40),
+  period: z.enum(API_USAGE_PERIODS),
+  softLimitCents: z.number().int().min(0),
+  hardLimitCents: z.number().int().min(0),
+  alertEmail: z.string().email().nullable().optional(),
+  enforced: z.boolean().optional(),
+});
+
+export type ApiUsageLog = typeof apiUsageLog.$inferSelect;
+export type ApiBudget = typeof apiBudgets.$inferSelect;
+export type InsertApiBudget = z.infer<typeof insertApiBudgetSchema>;

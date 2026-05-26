@@ -1,0 +1,1 @@
+- [API Cost Watchdog](api-cost-watchdog.md) — every new external API in CoB MUST go through trackedFetch() or recordApiCall() from server/services/api-watchdog.ts for budget enforcement and admin visibility.

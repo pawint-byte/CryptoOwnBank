@@ -10,6 +10,8 @@ import { createOnrampSession, isValidAddressForNetwork } from "./stripe-onramp";
 import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "./thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
 import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey } from "./sovereignty-kit-html";
+import { invalidateBudgetCache } from "./services/api-watchdog";
+import { insertApiBudgetSchema } from "@shared/schema";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
 import multer from "multer";
 import { db } from "./db";
@@ -14145,6 +14147,103 @@ ${kitBody}
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to update error status" });
+    }
+  });
+
+  // ============ API Cost Watchdog ============
+  async function requireAdmin(req: any, res: any): Promise<boolean> {
+    const userId = req.user?.claims?.sub;
+    if (!userId) { res.status(401).json({ message: "Unauthorized" }); return false; }
+    const [u] = await db.select().from(users).where(eq(users.id, userId));
+    if (!u?.isAdmin && !ADMIN_EMAILS.includes(u?.email?.toLowerCase() || "")) {
+      res.status(403).json({ message: "Admin only" });
+      return false;
+    }
+    return true;
+  }
+
+  app.get("/api/admin/api-watch/summary", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const periodHours = Math.max(1, Math.min(720, parseInt(req.query.periodHours as string) || 24));
+      const summary = await storage.getApiUsageSummary(periodHours);
+      res.json({ summary, periodHours });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to load summary" });
+    }
+  });
+
+  app.get("/api/admin/api-watch/failures", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const limit = Math.max(1, Math.min(200, parseInt(req.query.limit as string) || 25));
+      const failures = await storage.getRecentApiFailures(limit);
+      res.json({ failures });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to load failures" });
+    }
+  });
+
+  app.get("/api/admin/api-watch/top-consumers", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const periodHours = Math.max(1, Math.min(720, parseInt(req.query.periodHours as string) || 24));
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 15));
+      const consumers = await storage.getTopApiConsumers(periodHours, limit);
+      res.json({ consumers });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to load consumers" });
+    }
+  });
+
+  app.get("/api/admin/api-watch/budgets", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const budgets = await storage.getApiBudgetsWithSpend();
+      res.json({ budgets });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to load budgets" });
+    }
+  });
+
+  app.post("/api/admin/api-watch/budgets", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const parsed = insertApiBudgetSchema.parse(req.body);
+      if (parsed.hardLimitCents < parsed.softLimitCents) {
+        return res.status(400).json({ message: "Hard limit must be >= soft limit" });
+      }
+      const saved = await storage.upsertApiBudget(parsed);
+      invalidateBudgetCache();
+      res.json(saved);
+    } catch (e: any) {
+      res.status(400).json({ message: e?.message || "Invalid budget" });
+    }
+  });
+
+  app.delete("/api/admin/api-watch/budgets/:id", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const id = parseInt(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+      await storage.deleteApiBudget(id);
+      invalidateBudgetCache();
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to delete" });
+    }
+  });
+
+  app.post("/api/admin/api-watch/budgets/:id/reset-alerts", isAuthenticated, async (req: any, res) => {
+    if (!await requireAdmin(req, res)) return;
+    try {
+      const id = parseInt(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+      await storage.resetApiBudgetAlerts(id);
+      invalidateBudgetCache();
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Failed to reset" });
     }
   });
 

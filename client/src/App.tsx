@@ -61,6 +61,7 @@ import OwnBankTransfer from "@/pages/ownbank-transfer";
 import Contact from "@/pages/contact";
 import AdminUsers from "@/pages/admin-users";
 import AdminMetrics from "@/pages/admin-metrics";
+import AdminApiWatch from "@/pages/admin-api-watch";
 import AdminVaultBlocklist from "@/pages/admin-vault-blocklist";
 import AdminAnnouncements from "@/pages/admin-announcements";
 import YieldCalculator from "@/pages/yield-calculator";
@@ -318,6 +319,7 @@ function AuthenticatedRoutes() {
         <Route path="/roadmap" component={Roadmap} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/metrics" component={AdminMetrics} />
+        <Route path="/admin/api-watch" component={AdminApiWatch} />
         <Route path="/admin/errors" component={AdminErrorMonitor} />
         <Route path="/admin/vault-blocklist" component={AdminVaultBlocklist} />
         <Route path="/admin/announcements" component={AdminAnnouncements} />
