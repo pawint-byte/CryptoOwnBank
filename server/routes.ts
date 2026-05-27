@@ -94,6 +94,8 @@ export async function registerRoutes(
     res.header("Content-Type", "text/plain");
     res.send(`User-agent: *
 Allow: /
+Allow: /faq-plain
+Allow: /faq.txt
 Disallow: /admin/
 Disallow: /api/
 Disallow: /ownbank/
@@ -104,6 +106,78 @@ Disallow: /stellar/dex
 Sitemap: https://cryptoownbank.com/sitemap.xml
 `);
   });
+
+  // Crawler-friendly FAQ: server-rendered plain HTML so AI fetchers (Perplexity,
+  // ChatGPT, Grok, etc.) that don't execute JavaScript can read the full FAQ.
+  // The interactive React version at /faq stays as-is.
+  {
+    const { faqGroups } = await import("@shared/faq-data");
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const stripHtml = (s: string) => s.replace(/<[^>]*>/g, "");
+
+    app.get("/faq-plain", (_req, res) => {
+      const sections = faqGroups
+        .map((group) => {
+          const items = group.items
+            .map(
+              (it) =>
+                `    <section>\n      <h3>${escapeHtml(it.q)}</h3>\n      <p>${it.a}</p>\n    </section>`
+            )
+            .join("\n");
+          return `  <section id="${escapeHtml(group.groupKey)}">\n    <h2>${escapeHtml(group.heading)}</h2>\n${items}\n  </section>`;
+        })
+        .join("\n");
+      const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqGroups.flatMap((g) =>
+          g.items.map((it) => ({
+            "@type": "Question",
+            name: it.q,
+            acceptedAnswer: { "@type": "Answer", text: stripHtml(it.a) },
+          }))
+        ),
+      };
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CryptoOwnBank FAQ (Plain) — Crawler-friendly</title>
+<meta name="description" content="Full FAQ for CryptoOwnBank rendered as plain HTML for AI fetchers and search crawlers. Interactive version at /faq.">
+<link rel="canonical" href="https://cryptoownbank.com/faq">
+<meta name="robots" content="index,follow">
+<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+</head>
+<body>
+<header>
+<h1>CryptoOwnBank — Frequently Asked Questions</h1>
+<p>This page is a plain-HTML mirror of <a href="https://cryptoownbank.com/faq">/faq</a> for AI assistants and crawlers that do not execute JavaScript. A machine-readable version is available at <a href="/faq.txt">/faq.txt</a>.</p>
+</header>
+<main>
+${sections}
+</main>
+</body>
+</html>`;
+      res.header("Content-Type", "text/html; charset=utf-8");
+      res.header("Cache-Control", "public, max-age=300");
+      res.send(html);
+    });
+
+    app.get("/faq.txt", (_req, res) => {
+      const body = faqGroups
+        .map((group) => {
+          const items = group.items
+            .map((it) => `Q: ${it.q}\nA: ${stripHtml(it.a)}`)
+            .join("\n\n");
+          return `## ${group.heading}\n\n${items}`;
+        })
+        .join("\n\n---\n\n");
+      res.header("Content-Type", "text/plain; charset=utf-8");
+      res.header("Cache-Control", "public, max-age=300");
+      res.send(`CryptoOwnBank FAQ\nSource: https://cryptoownbank.com/faq\n\n${body}\n`);
+    });
+  }
 
   app.get("/sitemap.xml", (_req, res) => {
     const baseUrl = "https://cryptoownbank.com";
@@ -120,6 +194,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
       { path: "/insurance", priority: "0.7", changefreq: "monthly" },
       { path: "/migration-guide", priority: "0.7", changefreq: "monthly" },
       { path: "/faq", priority: "0.8", changefreq: "monthly" },
+      { path: "/faq-plain", priority: "0.7", changefreq: "monthly" },
       { path: "/setup-guide", priority: "0.7", changefreq: "monthly" },
       { path: "/signing-options", priority: "0.6", changefreq: "monthly" },
       { path: "/contact", priority: "0.5", changefreq: "monthly" },

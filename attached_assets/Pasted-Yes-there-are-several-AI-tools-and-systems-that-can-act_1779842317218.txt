@@ -1,0 +1,14 @@
+Yes, there are several AI tools and systems that can actually interact with websites—not just read them, but click, scroll, fill forms, and navigate like a human would[browser-use +2]
+AI agents that can control browsers
+Browser Use — An open-source tool that gives AI agents the ability to complete tasks on any website by controlling a real browser  It can autonomously create accounts, navigate pages, and extract information through actual interaction[youtube +1]
+Browserbase — Provides AI agents with full browser access so they can log in, navigate interactive websites, fill forms, and handle dynamic content  It’s designed to let agents “use the web like a human” by giving them a real browser session[browserbase]
+Axiom.ai — A no-code browser automation tool that lets you build bots to automate website actions, clicking, typing, data entry, and web scraping on any site[axiom]
+Browse AI — A web scraping and monitoring platform that can extract and monitor data from any website without code[browse]
+AI research tools with web access
+Perplexity (which you’re using now) — Can search and read web content, but cannot interact with dynamic elements like buttons or forms[reddit +1]
+Perplexity Comet — Perplexity’s newer browser tool specifically designed for automating web browsing tasks[zapier]
+ChatGPT Atlas — OpenAI’s browser tool for ChatGPT users[zapier]
+Grok (which you mentioned) — X’s AI that has web browsing capabilities[reddit]
+For your specific use case
+If you need an AI to interact with cryptoownbank.com (logging in, clicking through the dashboard, testing features), you’d want one of the browser automation tools like Browser Use, Browserbase, or Axiom  These can actually manipulate the site’s interface[browser-use +2]
+If you just need to read the FAQ and documentation (which is what I’m trying to do), the simpler solution is to manually copy and paste the text from the FAQ page and share it with me, since my fetch tool is currently unable to access that specific page[browserbase +1]
