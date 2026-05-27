@@ -169,6 +169,7 @@ const allItems: NavItem[] = [
   { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "protect" },
   { title: "Insurance", url: "/insurance", icon: ShieldCheck, group: "protect" },
   { title: "DeFi Borrowing", url: "/defi-borrowing", icon: CircleDollarSign, group: "protect" },
+  { title: "Aave Hub", url: "/aave", icon: CircleDollarSign, group: "execute" },
   { title: "Yield Calculator", url: "/yield-calculator", icon: Calculator, group: "protect" },
   { title: "AI Assistant", url: "/ai-assistant", icon: BrainCircuit, color: "#8b5cf6", group: "protect" },
   { title: "History", url: "/ownbank/history", icon: History, group: "protect", chain: "xrpl" },

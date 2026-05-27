@@ -1,1 +1,1 @@
-- [API Cost Watchdog](api-cost-watchdog.md) — every new external API in CoB MUST go through trackedFetch() or recordApiCall() from server/services/api-watchdog.ts for budget enforcement and admin visibility.
+- [Aave Hub direct-to-Pool pattern](aave-hub.md) — talk to Aave v3 Pool via ethers v6 + existing wallet hook; skip AaveKit/indexers. MAX-withdraw/repay must use type(uint256).max; USDT-style approvals need approve(0) reset.
