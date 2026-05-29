@@ -769,12 +769,14 @@ export const userAddons = pgTable("user_addons", {
   paymentMethod: varchar("payment_method", { length: 20 }).notNull(),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   paidInChain: varchar("paid_in_chain", { length: 30 }),
+  externalRef: varchar("external_ref", { length: 255 }),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 }, (table) => [
   index("idx_user_addons_user").on(table.userId),
   index("idx_user_addons_status").on(table.status),
+  index("idx_user_addons_external_ref").on(table.externalRef),
 ]);
 
 export const insertUserAddonSchema = createInsertSchema(userAddons).omit({

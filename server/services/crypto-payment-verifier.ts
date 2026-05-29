@@ -796,6 +796,7 @@ export async function activateSubscription(payment: CryptoPayment) {
         paymentMethod: "crypto",
         stripeSubscriptionId: null,
         paidInChain: payment.chain,
+        externalRef: `crypto:${payment.id}`,
         expiresAt,
       });
     } else {

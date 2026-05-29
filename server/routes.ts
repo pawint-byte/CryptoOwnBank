@@ -5887,6 +5887,7 @@ ${sections}
                   addonKey,
                   paymentMethod: "stripe",
                   stripeSubscriptionId: session.subscription || null,
+                  externalRef: session.id ? `stripe:${session.id}` : null,
                   expiresAt: addonExpiresAt,
                 });
               } else {
@@ -5986,6 +5987,7 @@ ${sections}
                 addonKey,
                 paymentMethod: "stripe",
                 stripeSubscriptionId: session.subscription || null,
+                externalRef: session.id ? `stripe:${session.id}` : null,
                 expiresAt: addonExpiresAt,
               });
             } else {

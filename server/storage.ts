@@ -346,6 +346,7 @@ export interface IStorage {
     paymentMethod: string;
     stripeSubscriptionId?: string | null;
     paidInChain?: string | null;
+    externalRef?: string | null;
     expiresAt: Date | null;
   }): Promise<UserAddon>;
   getUserAddons(userId: string): Promise<UserAddon[]>;
@@ -1490,12 +1491,25 @@ export class DatabaseStorage implements IStorage {
     paymentMethod: string;
     stripeSubscriptionId?: string | null;
     paidInChain?: string | null;
+    externalRef?: string | null;
     expiresAt: Date | null;
   }): Promise<UserAddon> {
     const { LEGACY_ADDON_KEYS } = await import("./stripe");
     const legacyKeys = LEGACY_ADDON_KEYS as unknown as string[];
     return db.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${params.userId + ":legacy"}))`);
+      if (params.externalRef) {
+        const [already] = await tx
+          .select()
+          .from(userAddons)
+          .where(
+            and(
+              eq(userAddons.userId, params.userId),
+              eq(userAddons.externalRef, params.externalRef),
+            ),
+          );
+        if (already) return already;
+      }
       await tx
         .update(userAddons)
         .set({ status: "superseded", cancelledAt: new Date() })
@@ -1516,6 +1530,7 @@ export class DatabaseStorage implements IStorage {
           paymentMethod: params.paymentMethod,
           stripeSubscriptionId: params.stripeSubscriptionId ?? null,
           paidInChain: params.paidInChain ?? null,
+          externalRef: params.externalRef ?? null,
           expiresAt: params.expiresAt,
         })
         .returning();
