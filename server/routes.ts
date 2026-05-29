@@ -4066,6 +4066,30 @@ ${sections}
         });
       }
 
+      const acquiredDate = safeServerDate(new Date());
+      const buyTxn = await storage.createTransaction({
+        userId,
+        accountId: account.id,
+        assetSymbol: sym,
+        transactionType: "buy",
+        quantity: qty.toString(),
+        pricePerUnit: cost.toString(),
+        totalValue: totalCostBasis.toFixed(2),
+        fee: "0",
+        transactionDate: acquiredDate,
+        notes: "Added from Portfolio",
+      });
+
+      await storage.createTaxLot({
+        userId,
+        transactionId: buyTxn.id,
+        assetSymbol: sym,
+        acquiredDate,
+        originalQuantity: qty.toString(),
+        remainingQuantity: qty.toString(),
+        costBasisPerUnit: cost.toString(),
+      });
+
       res.json({ success: true, message: `Added ${qty} ${sym} to ${accountName}` });
     } catch (error) {
       console.error("Manual position error:", error);
