@@ -2069,7 +2069,7 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   hedera: { name: "Hedera", symbol: "HBAR", addressPattern: "^0\\.0\\.", example: "0.0.12345" },
   polkadot: { name: "Polkadot", symbol: "DOT", addressPattern: "^1[1-9A-HJ-NP-Za-km-z]{47}$", example: "1..." },
   vechain: { name: "VeChain", symbol: "VET", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
-  digibyte: { name: "DigiByte", symbol: "DGB", addressPattern: "^(D|dgb1)", example: "D..." },
+  digibyte: { name: "DigiByte", symbol: "DGB", addressPattern: "^(D[1-9A-HJ-NP-Za-km-z]{33}|dgb1[a-z0-9]+)$", example: "D..." },
   casper: { name: "Casper", symbol: "CSPR", addressPattern: "^0[12]", example: "01..." },
   cronos: { name: "Cronos", symbol: "CRO", addressPattern: "^(0x[a-fA-F0-9]{40}|cro1)", example: "0x..." },
   nervos: { name: "Nervos CKB", symbol: "CKB", addressPattern: "^ckb1", example: "ckb1q..." },
@@ -2170,7 +2170,7 @@ export function detectCorrectChain(storedChain: SupportedChain, address: string)
   const priorityOrder: SupportedChain[] = [
     "bitcoin", "ethereum", "solana", "xrp", "flare", "ton", "litecoin", "dogecoin",
     "tron", "cardano", "algorand", "cosmos", "hedera", "polkadot",
-    "stellar", "vechain", "cronos", "nervos", "zilliqa", "digibyte",
+    "stellar", "vechain", "cronos", "nervos", "zilliqa", "constellation", "digibyte",
     "casper", "verge", "avalanche", "xdc", "polygon", "bsc", "sui", "sonic", "fet",
     "base", "arbitrum", "optimism",
   ];

@@ -1704,7 +1704,7 @@ export default function Wallets() {
         "bitcoin", "ethereum", "solana", "xrp", "dogecoin", "litecoin",
         "cardano", "avalanche", "algorand", "cosmos", "tron", "hedera",
         "polkadot", "vechain", "digibyte", "casper", "cronos", "ton",
-        "nervos", "zilliqa", "stellar", "verge", "xdc", "polygon",
+        "nervos", "zilliqa", "stellar", "verge", "xdc", "polygon", "constellation",
       ];
       const normalized = chainAliases[chainParam.toLowerCase()] || chainParam.toLowerCase();
       if (validChains.includes(normalized)) {
