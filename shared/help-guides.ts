@@ -36,10 +36,10 @@ export const HELP_GUIDES: GuideMeta[] = [
   {
     slug: "buy-crypto",
     title: "Buy your first crypto",
-    blurb: "Use a debit card to put $20 of XRP into the wallet you just created.",
-    readMinutes: 2,
+    blurb: "Put $20 of XRP into the wallet you just made — paid with a normal debit card.",
+    readMinutes: 3,
     section: "start",
-    status: "coming",
+    status: "live",
     next: "soil-vault",
     sideways: { slug: "transfer-from-exchange", label: "Prefer to move existing crypto over instead?" },
   },

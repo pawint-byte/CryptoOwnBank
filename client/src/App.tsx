@@ -116,6 +116,7 @@ import BuyCrypto from "@/pages/buy-crypto";
 import WalletCreate from "@/pages/wallet-create";
 import HelpIndex from "@/pages/help-index";
 import HelpCreateWallet from "@/pages/help-create-wallet";
+import HelpBuyCrypto from "@/pages/help-buy-crypto";
 import CryptoDebitCards from "@/pages/crypto-debit-cards";
 import DecryptPage from "@/pages/decrypt";
 import AiAssistant from "@/pages/ai-assistant";
@@ -318,6 +319,7 @@ function AuthenticatedRoutes() {
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
+        <Route path="/help/buy-crypto" component={HelpBuyCrypto} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
@@ -382,6 +384,7 @@ function Router() {
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
+        <Route path="/help/buy-crypto" component={HelpBuyCrypto} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />

@@ -1,1 +1,1 @@
-- [Aave Hub direct-to-Pool pattern](aave-hub.md) — talk to Aave v3 Pool via ethers v6 + existing wallet hook; skip AaveKit/indexers. MAX-withdraw/repay must use type(uint256).max; USDT-style approvals need approve(0) reset.
+- [Card on-ramp chain coverage](onramp-chain-coverage.md) — Stripe/THORChain/external rails each cover different chains; XRP has NO instant card rail (use Xaman seed-import). Check before writing buy/fund copy.

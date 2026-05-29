@@ -197,6 +197,7 @@ ${sections}
       { path: "/faq-plain", priority: "0.7", changefreq: "monthly" },
       { path: "/help", priority: "0.7", changefreq: "weekly" },
       { path: "/help/create-wallet", priority: "0.6", changefreq: "monthly" },
+      { path: "/help/buy-crypto", priority: "0.6", changefreq: "monthly" },
       { path: "/setup-guide", priority: "0.7", changefreq: "monthly" },
       { path: "/signing-options", priority: "0.6", changefreq: "monthly" },
       { path: "/contact", priority: "0.5", changefreq: "monthly" },
