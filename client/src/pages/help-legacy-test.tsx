@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { GuideLayout } from "@/components/help/guide-layout";
+import decryptPageImg from "@assets/help-screenshots/decrypt-page.jpg";
 
 export default function HelpLegacyTest() {
   return (
@@ -29,6 +30,7 @@ export default function HelpLegacyTest() {
           title: "Try the recovery page yourself",
           body: <>Open the recovery page at <span className="font-mono">/decrypt</span>, paste an encrypted block, and enter the passphrase. This is exactly what your beneficiary will do when they receive the email — so it's worth seeing it once.</>,
           imageAlt: "Decrypt page with an encrypted block and passphrase field",
+          imageSrc: decryptPageImg,
         },
         {
           title: "Let your beneficiary rehearse",
