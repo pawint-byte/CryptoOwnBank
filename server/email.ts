@@ -1498,3 +1498,93 @@ export async function sendLegacyLastResortRelease(
   `);
   await sendEmail(to, `LAST-RESORT RELEASE — ${ownerName}'s Legacy Plan vault`, html);
 }
+
+function formatReceiptDate(d: Date): string {
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+// Receipt sent to the buyer after a successful Legacy Plan purchase (card or
+// crypto). Confirms the tier, amount paid, payment method, and the
+// renewal/expiry status appropriate to the SKU + rail.
+export async function sendLegacyPlanReceiptEmail(
+  to: string,
+  details: {
+    addonKey: string;
+    tierName: string;
+    amountPaid: string;
+    paymentMethodLabel: string;
+    paymentMethod: "card" | "crypto";
+    expiresAt: Date | null;
+    purchasedAt?: Date;
+  },
+) {
+  const { ADDONS } = await import("./stripe");
+  const addonConfig = ADDONS[details.addonKey as keyof typeof ADDONS];
+  const purchasedAt = details.purchasedAt || new Date();
+
+  let renewalLine: string;
+  let renewalLabel: string;
+  if (details.addonKey === "legacy-plan-lifetime") {
+    renewalLabel = "Never expires";
+    renewalLine = "This is a Member-for-Life plan — it never expires. Your seat passes to your primary beneficiary.";
+  } else if (details.addonKey === "legacy-plan-5yr") {
+    const exp = details.expiresAt || (() => { const d = new Date(purchasedAt); d.setFullYear(d.getFullYear() + 5); return d; })();
+    renewalLabel = `Expires ${formatReceiptDate(exp)}`;
+    renewalLine = `This is a one-time, 5-year plan. It stays active until <strong>${formatReceiptDate(exp)}</strong> and does not auto-renew. We'll remind you before it expires.`;
+  } else if (details.paymentMethod === "card") {
+    // Recurring card subscription (monthly/annual): auto-renews.
+    const next = new Date(purchasedAt);
+    if (addonConfig?.interval === "year") next.setFullYear(next.getFullYear() + 1);
+    else next.setDate(next.getDate() + 30);
+    renewalLabel = `Renews ${formatReceiptDate(next)}`;
+    renewalLine = `Your plan renews automatically on <strong>${formatReceiptDate(next)}</strong>. You can cancel anytime from your account.`;
+  } else {
+    // Crypto prepayment of a recurring term: fixed expiry, no auto-renew.
+    const exp = details.expiresAt || (() => {
+      const d = new Date(purchasedAt);
+      if (addonConfig?.interval === "year") d.setFullYear(d.getFullYear() + 1);
+      else d.setDate(d.getDate() + 30);
+      return d;
+    })();
+    renewalLabel = `Expires ${formatReceiptDate(exp)}`;
+    renewalLine = `You prepaid this term with crypto, so it does not auto-renew. It stays active until <strong>${formatReceiptDate(exp)}</strong>. We'll remind you before it expires.`;
+  }
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #10b981;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #10b981; margin: 5px 0 0; font-weight: 600;">Legacy Plan — Purchase Receipt</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333; margin-top: 0;">Thank you for your purchase</h2>
+        <p style="color: #555; line-height: 1.6;">
+          Your <strong>${escapeHtml(details.tierName)}</strong> is now active. This email is your receipt — keep it for your records.
+        </p>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;margin:20px 0;">
+          <tr style="background:#f9fafb;"><td style="padding:10px 12px;color:#999;font-size:13px;">Plan</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;">${escapeHtml(details.tierName)}</td></tr>
+          <tr><td style="padding:10px 12px;color:#999;font-size:13px;">Amount paid</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;">${escapeHtml(details.amountPaid)}</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:10px 12px;color:#999;font-size:13px;">Payment method</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;">${escapeHtml(details.paymentMethodLabel)}</td></tr>
+          <tr><td style="padding:10px 12px;color:#999;font-size:13px;">Purchased</td><td style="padding:10px 12px;font-size:13px;text-align:right;">${formatReceiptDate(purchasedAt)}</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:10px 12px;color:#999;font-size:13px;">Renewal</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;color:#00A4E4;">${escapeHtml(renewalLabel)}</td></tr>
+        </table>
+        <div style="background: #f0f9ff; border-left: 4px solid #00A4E4; padding: 15px; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0; color: #555; line-height: 1.6;">${renewalLine}</p>
+        </div>
+        <p style="color: #555; line-height: 1.6;">
+          The Legacy Plan helps your beneficiaries recover your self-custodied crypto if something happens to you — without ever handing custody to us. Set up or review your plan anytime:
+        </p>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="https://cryptoownbank.com/legacy-plan" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Manage your Legacy Plan
+          </a>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p style="margin: 0 0 6px 0;">This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+        <p style="margin: 0;">CryptoOwnBank is operated by Wint Enterprises Inc. AGPL-3.0 source available.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Your CryptoOwnBank Legacy Plan receipt — ${details.tierName}`, html);
+}

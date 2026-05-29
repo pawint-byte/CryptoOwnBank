@@ -1,7 +1,7 @@
 import { storage } from "../storage";
 import type { CryptoPayment } from "@shared/schema";
 import { ADMIN_EMAILS } from "@shared/constants";
-import { sendCryptoPaymentReceivedEmail, sendPremiumWelcomeEmail } from "../email";
+import { sendCryptoPaymentReceivedEmail, sendPremiumWelcomeEmail, sendLegacyPlanReceiptEmail } from "../email";
 
 const CHAIN_TO_ASSET: Record<string, string> = {
   bitcoin: "BTC",
@@ -787,6 +787,25 @@ export async function activateSubscription(payment: CryptoPayment) {
         externalRef: `crypto:${payment.id}`,
         expiresAt,
       });
+      try {
+        const { db } = await import("../db");
+        const { users } = await import("@shared/models/auth");
+        const { eq } = await import("drizzle-orm");
+        const [buyer] = await db.select().from(users).where(eq(users.id, payment.userId));
+        if (buyer?.email) {
+          const asset = CHAIN_TO_ASSET[payment.chain] || payment.expectedAsset || payment.chain.toUpperCase();
+          await sendLegacyPlanReceiptEmail(buyer.email, {
+            addonKey,
+            tierName: addonConfig.name,
+            amountPaid: `${payment.expectedAmount} ${asset} (~$${payment.usdAmount} USD)`,
+            paymentMethodLabel: `Crypto — ${asset}`,
+            paymentMethod: "crypto",
+            expiresAt,
+          });
+        }
+      } catch (err) {
+        console.error("[crypto-verify] Failed to send Legacy Plan receipt:", err);
+      }
     } else {
       await storage.createUserAddon({
         userId: payment.userId,

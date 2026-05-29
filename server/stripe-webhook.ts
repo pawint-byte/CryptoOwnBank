@@ -2,7 +2,9 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { userAddons as userAddonsTable, userSettings as userSettingsTable } from "@shared/schema";
-import { isLegacyAddon, computeLegacyAddonExpiry } from "./stripe";
+import { users } from "@shared/models/auth";
+import { isLegacyAddon, computeLegacyAddonExpiry, ADDONS } from "./stripe";
+import { sendLegacyPlanReceiptEmail } from "./email";
 
 // Shared handler for Stripe webhook events. The route is responsible for
 // obtaining/verifying the event (signed when STRIPE_WEBHOOK_SECRET is set,
@@ -29,6 +31,22 @@ export async function handleStripeWebhookEvent(event: any): Promise<void> {
             externalRef: session.id ? `stripe:${session.id}` : null,
             expiresAt: addonExpiresAt,
           });
+          try {
+            const [buyer] = await db.select().from(users).where(eq(users.id, userId));
+            const addonConfig = ADDONS[addonKey as keyof typeof ADDONS];
+            if (buyer?.email && addonConfig) {
+              await sendLegacyPlanReceiptEmail(buyer.email, {
+                addonKey,
+                tierName: addonConfig.name,
+                amountPaid: `$${(addonConfig.amount / 100).toFixed(2)}`,
+                paymentMethodLabel: "Credit / debit card",
+                paymentMethod: "card",
+                expiresAt: addonExpiresAt,
+              });
+            }
+          } catch (err) {
+            console.error("[stripe-webhook] Failed to send Legacy Plan receipt:", err);
+          }
         } else {
           const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
           if (!existingAddon) {

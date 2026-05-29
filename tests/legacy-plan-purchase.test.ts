@@ -165,9 +165,12 @@ vi.mock("../server/storage", () => ({
   },
 }));
 
+const sendLegacyPlanReceiptEmail = vi.fn(async () => undefined);
+
 vi.mock("../server/email", () => ({
   sendCryptoPaymentReceivedEmail: vi.fn(async () => undefined),
   sendPremiumWelcomeEmail: vi.fn(async () => undefined),
+  sendLegacyPlanReceiptEmail: (...args: any[]) => sendLegacyPlanReceiptEmail(...args),
 }));
 
 vi.mock("../server/db", () => ({
@@ -196,6 +199,8 @@ describe("crypto-verifier activateSubscription — Legacy add-on activation", ()
   beforeEach(async () => {
     activateLegacyAddon.mockClear();
     getCryptoPaymentAddresses.mockClear();
+    sendLegacyPlanReceiptEmail.mockClear();
+    dbRows = [{ id: "user-1", email: "buyer@example.com" }];
     ({ activateSubscription } = await import("../server/services/crypto-payment-verifier"));
   });
 
@@ -233,6 +238,36 @@ describe("crypto-verifier activateSubscription — Legacy add-on activation", ()
     const arg = activateLegacyAddon.mock.calls[0][0];
     expect(arg.addonKey).toBe("legacy-plan");
     expect(daysBetween(arg.expiresAt, before)).toBe(30);
+  });
+
+  it("emails the buyer a crypto receipt with tier, amount, method, and expiry", async () => {
+    await activateSubscription(makePayment("legacy-plan-yearly"));
+    expect(sendLegacyPlanReceiptEmail).toHaveBeenCalledTimes(1);
+    const [to, details] = sendLegacyPlanReceiptEmail.mock.calls[0] as [string, any];
+    expect(to).toBe("buyer@example.com");
+    expect(details.addonKey).toBe("legacy-plan-yearly");
+    expect(details.tierName).toBe(ADDONS["legacy-plan-yearly"].name);
+    expect(details.paymentMethod).toBe("crypto");
+    expect(details.paymentMethodLabel).toContain("BTC");
+    expect(details.amountPaid).toContain("BTC");
+    expect(details.amountPaid).toContain("29");
+    expect(details.expiresAt).toBeInstanceOf(Date);
+  });
+
+  it("does not send a Legacy receipt for non-legacy add-ons", async () => {
+    getUserAddonByKey.mockResolvedValueOnce(undefined);
+    await activateSubscription({
+      id: "pay-ta",
+      userId: "user-1",
+      plan: "addon:technical-analysis",
+      chain: "bitcoin",
+      expectedAmount: "0.001",
+      expectedAsset: "BTC",
+      usdAmount: "29",
+      toAddress: "addr",
+      txHash: "0xhash",
+    } as any);
+    expect(sendLegacyPlanReceiptEmail).not.toHaveBeenCalled();
   });
 });
 
@@ -296,7 +331,8 @@ describe("POST /api/stripe/webhook — card Legacy Plan activation", () => {
     createUserAddon.mockClear();
     cancelUserAddon.mockClear();
     upsertUserSettings.mockClear();
-    dbRows = [];
+    sendLegacyPlanReceiptEmail.mockClear();
+    dbRows = [{ id: "user-1", email: "buyer@example.com" }];
   });
 
   async function post(body: any) {
@@ -340,6 +376,19 @@ describe("POST /api/stripe/webhook — card Legacy Plan activation", () => {
     const arg = activateLegacyAddon.mock.calls[0][0];
     expect(arg.addonKey).toBe("legacy-plan");
     expect(arg.expiresAt).toBeNull();
+  });
+
+  it("emails the buyer a card receipt with tier, USD amount, method, and null expiry", async () => {
+    await post(checkoutEvent("legacy-plan-yearly"));
+    expect(sendLegacyPlanReceiptEmail).toHaveBeenCalledTimes(1);
+    const [to, details] = sendLegacyPlanReceiptEmail.mock.calls[0] as [string, any];
+    expect(to).toBe("buyer@example.com");
+    expect(details.addonKey).toBe("legacy-plan-yearly");
+    expect(details.tierName).toBe(ADDONS["legacy-plan-yearly"].name);
+    expect(details.paymentMethod).toBe("card");
+    expect(details.paymentMethodLabel).toBe("Credit / debit card");
+    expect(details.amountPaid).toBe("$29.00");
+    expect(details.expiresAt).toBeNull();
   });
 
   it("cancels the legacy add-on when its subscription is canceled", async () => {
