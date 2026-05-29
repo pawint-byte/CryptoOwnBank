@@ -1,3 +1,4 @@
 - [Help guide step accuracy](help-guide-accuracy.md) — verify exact UI labels in source before quoting in /help guides; explore agents paraphrase/invent controls.
+- [Vault "tested" gate integrity](legacy-vault-test-gate.md) — a client-side "passed test" flag guarding a save must reset whenever the payload changes, or a stale pass lets an untested vault through.
 - [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail; Stripe covers EVM/BTC/SOL/XLM, THORChain covers BTC/LTC/DOGE/BCH; XRP buyers use Xaman seed-import.
 - [Screenshot capture constraints](screenshot-capture-constraints.md) — only public top-of-page screens auto-capture (app_preview, logged-out); Chromium won't install, testing subagent exports no image files; gated/authed/external shots need the user.

@@ -32,13 +32,13 @@ export default function HelpLegacyBeneficiary() {
         },
         {
           title: "Lock it with a passphrase",
-          body: <>Turn on the <span className="font-medium text-foreground">Encrypted Recovery Vault</span> and set a passphrase. Anything you add is scrambled right in your browser before it's saved — we only ever store the locked version.</>,
-          imageAlt: "Encrypted Recovery Vault toggle with a passphrase field",
+          body: <>Turn on the <span className="font-medium text-foreground">Encrypted Recovery Vault</span>, add your recovery notes, set a passphrase, then click <span className="font-medium text-foreground">Encrypt Recovery Data</span>. Everything is scrambled right in your browser — we only ever store the locked version.</>,
+          imageAlt: "Encrypted Recovery Vault toggle with a passphrase field and an Encrypt Recovery Data button",
         },
         {
-          title: "Save",
-          body: <>Click <span className="font-medium text-foreground">Save Beneficiary</span>. Your beneficiary gets a friendly email letting them know they've been named — without revealing any sensitive details.</>,
-          imageAlt: "Saved beneficiary card and a sent-email confirmation",
+          title: "Test it, then save",
+          body: <>Click <span className="font-medium text-foreground">Test Decrypt</span> to confirm the vault really opens — this step is required, so your loved ones can never be locked out. Then click <span className="font-medium text-foreground">Save Beneficiary</span>. They get a friendly email letting them know they've been named — without revealing any sensitive details.</>,
+          imageAlt: "Test Decrypt confirmation followed by the Save Beneficiary button",
         },
       ]}
       closing={

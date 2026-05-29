@@ -1197,6 +1197,8 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     try {
       const encrypted = await encryptVault(vaultContent, vaultPassphrase);
       setEncryptedVaultResult(encrypted);
+      setVaultTestPassed(false);
+      setTestDecryptResult(null);
       const capsuleToken = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, "0")).join("");
       const capsule = await encryptVault(`OK:${capsuleToken}`, vaultPassphrase);
       setVerificationCapsule(capsule);
@@ -1276,7 +1278,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
     setDeviceInstructions(""); setSeedPhraseInstructions(""); setAdditionalNotes(""); setSplitPieces("");
     setTemplateFields({}); setWalletAssetSummary(""); setSelectedWalletIds([]);
     setVaultEnabled(false); setVaultContent(""); setVaultPassphrase(""); setVaultPassphraseConfirm("");
-    setVaultHint(""); setEncryptedVaultResult(""); setVerificationCapsule(""); setTestDecryptResult(null); setInitializedForId(null);
+    setVaultHint(""); setEncryptedVaultResult(""); setVerificationCapsule(""); setTestDecryptResult(null); setVaultTestPassed(false); setInitializedForId(null);
   };
 
   const walletCategories = [
@@ -1744,7 +1746,7 @@ function AddBeneficiaryDialog({ onAdd, splitEnabled, editBeneficiary, externalOp
                         <pre className="text-xs font-mono whitespace-pre-wrap">{testDecryptResult}</pre>
                       </div>
                     )}
-                    <Button variant="outline" size="sm" className="text-destructive" onClick={() => { setEncryptedVaultResult(""); setTestDecryptResult(null); }}>
+                    <Button variant="outline" size="sm" className="text-destructive" onClick={() => { setEncryptedVaultResult(""); setTestDecryptResult(null); setVaultTestPassed(false); }}>
                       Re-encrypt (start over)
                     </Button>
                   </div>
