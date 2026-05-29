@@ -787,16 +787,29 @@ export async function activateSubscription(payment: CryptoPayment) {
       expiresAt.setDate(expiresAt.getDate() + 30);
     }
 
-    await storage.createUserAddon({
-      userId: payment.userId,
-      addonType: addonConfig.type,
-      addonKey,
-      status: "active",
-      paymentMethod: "crypto",
-      stripeSubscriptionId: null,
-      paidInChain: payment.chain,
-      expiresAt,
-    });
+    const { isLegacyAddon } = await import("../stripe");
+    if (isLegacyAddon(addonKey)) {
+      await storage.activateLegacyAddon({
+        userId: payment.userId,
+        addonType: addonConfig.type,
+        addonKey,
+        paymentMethod: "crypto",
+        stripeSubscriptionId: null,
+        paidInChain: payment.chain,
+        expiresAt,
+      });
+    } else {
+      await storage.createUserAddon({
+        userId: payment.userId,
+        addonType: addonConfig.type,
+        addonKey,
+        status: "active",
+        paymentMethod: "crypto",
+        stripeSubscriptionId: null,
+        paidInChain: payment.chain,
+        expiresAt,
+      });
+    }
     console.log(`[crypto-verify] Activated addon ${addonKey} for user ${payment.userId} via ${payment.chain}, expires ${expiresAt ? expiresAt.toISOString() : "never (lifetime)"}`);
     await notifyAdminOfPayment(payment);
     return;

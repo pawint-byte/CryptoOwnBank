@@ -145,7 +145,7 @@ import {
   type InsertTokenBucketItem,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, sql, inArray } from "drizzle-orm";
 import crypto from "crypto";
 
 const ENCRYPTION_KEY = process.env.SESSION_SECRET!;
@@ -339,6 +339,15 @@ export interface IStorage {
   getErrorLogCount(options: { source?: string; status?: string; search?: string }): Promise<number>;
 
   createUserAddon(addon: InsertUserAddon): Promise<UserAddon>;
+  activateLegacyAddon(params: {
+    userId: string;
+    addonType: string;
+    addonKey: string;
+    paymentMethod: string;
+    stripeSubscriptionId?: string | null;
+    paidInChain?: string | null;
+    expiresAt: Date | null;
+  }): Promise<UserAddon>;
   getUserAddons(userId: string): Promise<UserAddon[]>;
   getActiveUserAddons(userId: string): Promise<UserAddon[]>;
   getUserAddon(id: string): Promise<UserAddon | undefined>;
@@ -1472,6 +1481,46 @@ export class DatabaseStorage implements IStorage {
   async createUserAddon(addon: InsertUserAddon): Promise<UserAddon> {
     const [result] = await db.insert(userAddons).values(addon).returning();
     return result;
+  }
+
+  async activateLegacyAddon(params: {
+    userId: string;
+    addonType: string;
+    addonKey: string;
+    paymentMethod: string;
+    stripeSubscriptionId?: string | null;
+    paidInChain?: string | null;
+    expiresAt: Date | null;
+  }): Promise<UserAddon> {
+    const { LEGACY_ADDON_KEYS } = await import("./stripe");
+    const legacyKeys = LEGACY_ADDON_KEYS as unknown as string[];
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${params.userId + ":legacy"}))`);
+      await tx
+        .update(userAddons)
+        .set({ status: "superseded", cancelledAt: new Date() })
+        .where(
+          and(
+            eq(userAddons.userId, params.userId),
+            eq(userAddons.status, "active"),
+            inArray(userAddons.addonKey, legacyKeys),
+          ),
+        );
+      const [result] = await tx
+        .insert(userAddons)
+        .values({
+          userId: params.userId,
+          addonType: params.addonType,
+          addonKey: params.addonKey,
+          status: "active",
+          paymentMethod: params.paymentMethod,
+          stripeSubscriptionId: params.stripeSubscriptionId ?? null,
+          paidInChain: params.paidInChain ?? null,
+          expiresAt: params.expiresAt,
+        })
+        .returning();
+      return result;
+    });
   }
 
   async getUserAddons(userId: string): Promise<UserAddon[]> {

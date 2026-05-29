@@ -5877,20 +5877,31 @@ ${sections}
             const addonKey = session.metadata?.addonKey;
             const addonType = session.metadata?.addonType;
             if (addonKey && addonType) {
-              const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
-              if (!existingAddon) {
+              if (isLegacyAddon(addonKey)) {
                 const addonExpiresAt = addonKey === "legacy-plan-5yr"
                   ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 5); return d; })()
                   : null;
-                await storage.createUserAddon({
+                await storage.activateLegacyAddon({
                   userId,
                   addonType,
                   addonKey,
-                  status: "active",
                   paymentMethod: "stripe",
                   stripeSubscriptionId: session.subscription || null,
                   expiresAt: addonExpiresAt,
                 });
+              } else {
+                const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
+                if (!existingAddon) {
+                  await storage.createUserAddon({
+                    userId,
+                    addonType,
+                    addonKey,
+                    status: "active",
+                    paymentMethod: "stripe",
+                    stripeSubscriptionId: session.subscription || null,
+                    expiresAt: null,
+                  });
+                }
               }
             }
           } else if (userId) {
@@ -5965,20 +5976,31 @@ ${sections}
           const addonKey = session.metadata?.addonKey;
           const addonType = session.metadata?.addonType;
           if (addonKey && addonType) {
-            const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
-            if (!existingAddon) {
+            if (isLegacyAddon(addonKey)) {
               const addonExpiresAt = addonKey === "legacy-plan-5yr"
                 ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 5); return d; })()
                 : null;
-              await storage.createUserAddon({
+              await storage.activateLegacyAddon({
                 userId,
                 addonType,
                 addonKey,
-                status: "active",
                 paymentMethod: "stripe",
                 stripeSubscriptionId: session.subscription || null,
                 expiresAt: addonExpiresAt,
               });
+            } else {
+              const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
+              if (!existingAddon) {
+                await storage.createUserAddon({
+                  userId,
+                  addonType,
+                  addonKey,
+                  status: "active",
+                  paymentMethod: "stripe",
+                  stripeSubscriptionId: session.subscription || null,
+                  expiresAt: null,
+                });
+              }
             }
           }
         } else if (userId) {
@@ -6085,19 +6107,19 @@ ${sections}
       const isLegacy = isLegacyAddon(addonKey);
       if (isLegacy) {
         if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
+        const now = new Date();
         for (const k of LEGACY_ADDON_KEYS) {
           const existingLegacy = await storage.getUserAddonByKey(userId, k);
-          if (existingLegacy && existingLegacy.status === "active") {
+          if (existingLegacy && existingLegacy.status === "active" && (!existingLegacy.expiresAt || new Date(existingLegacy.expiresAt) > now)) {
             return res.status(400).json({ message: "You already have an active Legacy Plan. Cancel it first to switch billing options." });
           }
         }
       } else {
         if (tier === "premium" || tier === "pro") return res.status(400).json({ message: "This feature is already included in your plan." });
-      }
-
-      const existing = await storage.getUserAddonByKey(userId, addonKey);
-      if (existing) {
-        return res.status(400).json({ message: "You already have this add-on active." });
+        const existing = await storage.getUserAddonByKey(userId, addonKey);
+        if (existing) {
+          return res.status(400).json({ message: "You already have this add-on active." });
+        }
       }
 
       const baseUrl = process.env.REPLIT_DOMAINS
@@ -6136,19 +6158,19 @@ ${sections}
       const isLegacy = isLegacyAddon(addonKey);
       if (isLegacy) {
         if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
+        const now = new Date();
         for (const k of LEGACY_ADDON_KEYS) {
           const existingLegacy = await storage.getUserAddonByKey(userId, k);
-          if (existingLegacy && existingLegacy.status === "active") {
+          if (existingLegacy && existingLegacy.status === "active" && (!existingLegacy.expiresAt || new Date(existingLegacy.expiresAt) > now)) {
             return res.status(400).json({ message: "You already have an active Legacy Plan. Cancel it first to switch billing options." });
           }
         }
       } else {
         if (tier === "premium" || tier === "pro") return res.status(400).json({ message: "This feature is already included in your plan." });
-      }
-
-      const existing = await storage.getUserAddonByKey(userId, addonKey);
-      if (existing) {
-        return res.status(400).json({ message: "You already have this add-on active." });
+        const existing = await storage.getUserAddonByKey(userId, addonKey);
+        if (existing) {
+          return res.status(400).json({ message: "You already have this add-on active." });
+        }
       }
 
       const pendingPayments = await storage.getCryptoPaymentsByUser(userId);
