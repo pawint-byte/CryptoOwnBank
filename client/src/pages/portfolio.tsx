@@ -152,6 +152,12 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
             data-testid="input-edit-cost-basis"
           />
         </div>
+        <div className="flex items-start gap-2 rounded-md border border-amber-400/40 bg-amber-50/50 dark:bg-amber-950/20 p-2.5" data-testid="note-cost-basis-why">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            You can save without this — nothing is blocked. But the cost basis (what you paid, or its value when you received it) is what we use to find your tax-loss savings. Without it, this holding can't be counted at tax time.
+          </p>
+        </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose} data-testid="button-cancel-edit">Cancel</Button>
           <Button onClick={handleSave} disabled={editMutation.isPending} data-testid="button-save-position">
@@ -701,7 +707,7 @@ export default function Portfolio() {
                     data-testid="input-manual-cost"
                   />
                   <p className="text-xs text-muted-foreground">
-                    If provided, a tax lot will be created for cost basis tracking.
+                    Optional — you won't be blocked if you skip it. But this is what you paid (or its value when you received it), and it's what lets us find your tax-loss savings. Without it, this holding can't be counted at tax time. You can always add it later.
                   </p>
                 </div>
                 <div className="space-y-2">
