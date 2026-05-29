@@ -2133,13 +2133,25 @@ export function registerPortfolioRoutes(app: Express) {
       );
       await storage.deleteGainEvent(ev.id);
     }
+    const affectedWalletBalances = new Set<string>();
     for (const [lotId, qty] of Array.from(restoredByLot.entries())) {
       const lot = lotById.get(lotId);
       if (lot) {
         await storage.updateTaxLot(lot.id, {
           remainingQuantity: (parseFloat(lot.remainingQuantity) + qty).toFixed(8),
         });
+        if (lot.walletBalanceId) affectedWalletBalances.add(lot.walletBalanceId);
       }
+    }
+    // Keep wallet-balance cost aggregates in sync after restoring lot quantities,
+    // matching the realize-sell and delete-sell paths (otherwise avg cost / total
+    // cost basis go stale until another recompute runs).
+    for (const wbId of Array.from(affectedWalletBalances)) {
+      const wbLots = await storage.getTaxLotsByWalletBalance(userId, wbId);
+      const totalRem = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+      const totalCb = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+      const avg = totalRem > 0 ? totalCb / totalRem : 0;
+      await storage.updateWalletBalanceCostData(wbId, avg.toFixed(8), totalCb.toFixed(2));
     }
   }
 
