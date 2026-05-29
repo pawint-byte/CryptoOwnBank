@@ -1863,6 +1863,14 @@ export default function Wallets() {
   };
 
   const [connectingStargazer, setConnectingStargazer] = useState(false);
+  const [stargazerAvailable, setStargazerAvailable] = useState(false);
+  useEffect(() => {
+    const check = () => setStargazerAvailable(typeof window !== "undefined" && !!(window as any).stargazer);
+    check();
+    const t1 = setTimeout(check, 600);
+    const t2 = setTimeout(check, 1800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
   const handleConnectStargazer = async () => {
     setConnectingStargazer(true);
     try {
@@ -2158,38 +2166,52 @@ export default function Wallets() {
                 </DialogDescription>
               </DialogHeader>
               <div className="rounded-md border border-[#3399FF]/40 bg-[#3399FF]/5 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">Have Constellation (DAG)?</p>
-                    <p className="text-xs text-muted-foreground">
-                      Connect Stargazer to fill in your DAG address automatically.
+                {stargazerAvailable ? (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Have Constellation (DAG)?</p>
+                        <p className="text-xs text-muted-foreground">
+                          Connect Stargazer to fill in your DAG address automatically.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 border-[#3399FF] text-[#3399FF] hover:bg-[#3399FF]/10"
+                        onClick={handleConnectStargazer}
+                        disabled={connectingStargazer}
+                        data-testid="button-connect-stargazer"
+                      >
+                        {connectingStargazer ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                            Connecting...
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="h-4 w-4 mr-1.5" />
+                            Connect Stargazer
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Or paste your DAG address below.
                     </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 border-[#3399FF] text-[#3399FF] hover:bg-[#3399FF]/10"
-                    onClick={handleConnectStargazer}
-                    disabled={connectingStargazer}
-                    data-testid="button-connect-stargazer"
-                  >
-                    {connectingStargazer ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                        Connecting...
-                      </>
-                    ) : (
-                      <>
-                        <Link2 className="h-4 w-4 mr-1.5" />
-                        Connect Stargazer
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Desktop only (Chrome/Brave with the Stargazer extension). On other devices, paste your DAG address below.
-                </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium">Have Constellation (DAG)?</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      On your phone, open the <span className="font-medium">Stargazer app</span> → tap <span className="font-medium">Receive</span> → copy your DAG address. Then pick <span className="font-medium">Constellation (DAG)</span> as the network below and paste it in.
+                    </p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      One-tap connect needs the Stargazer extension on a desktop browser (Chrome or Brave).
+                    </p>
+                  </>
+                )}
               </div>
 
               <Form {...form}>
