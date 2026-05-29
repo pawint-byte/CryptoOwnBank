@@ -48,6 +48,16 @@ import { UpgradePrompt } from "@/components/upgrade-prompt";
 import type { GainEvent, UserSettings } from "@shared/schema";
 import type { HarvestOpportunity } from "@shared/financial-math";
 
+type HarvestScanResult = {
+  locked: boolean;
+  count: number;
+  totalUnrealizedLoss: number;
+  estTaxSavings24: number;
+  estTaxSavings32: number;
+  estTaxSavings37: number;
+  opportunities: HarvestOpportunity[];
+};
+
 interface SubscriptionLimits {
   tier: string;
   billingCycle: string | null;
@@ -169,10 +179,19 @@ export default function TaxReports() {
     }
   }, [location]);
 
-  const { data: harvestData, isLoading: harvestLoading, refetch: refetchHarvest } = useQuery<HarvestOpportunity[]>({
+  const { data: harvestResult, isLoading: harvestLoading, refetch: refetchHarvest } = useQuery<HarvestScanResult>({
     queryKey: ["/api/tax/harvest-scan"],
-    enabled: !taxReportsLocked && harvestExpanded,
+    enabled: harvestExpanded,
   });
+  const harvestData = harvestResult?.opportunities ?? [];
+  const harvestLocked = harvestResult?.locked ?? false;
+  const summarySavings = harvestResult
+    ? selectedBracket === "24"
+      ? harvestResult.estTaxSavings24
+      : selectedBracket === "32"
+        ? harvestResult.estTaxSavings32
+        : harvestResult.estTaxSavings37
+    : 0;
 
   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
@@ -566,15 +585,13 @@ export default function TaxReports() {
                 </div>
               )}
             </div>
-            {taxReportsLocked ? (
-              <UpgradePrompt feature="Tax Harvest AI requires a Premium or Pro subscription to scan your portfolio for tax-loss harvesting opportunities." variant={upgradeVariant} />
-            ) : harvestLoading ? (
+            {harvestLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Skeleton key={i} className="h-16" />
                 ))}
               </div>
-            ) : !harvestData || harvestData.length === 0 ? (
+            ) : !harvestResult || harvestResult.count === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="h-14 w-14 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mb-3">
                   <TrendingUp className="h-7 w-7 text-emerald-500" />
@@ -639,25 +656,36 @@ export default function TaxReports() {
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="p-3 rounded-lg border bg-card">
                     <div className="text-xs text-muted-foreground">Opportunities Found</div>
-                    <div className="text-xl font-bold mt-1" data-testid="text-harvest-count">{harvestData.length}</div>
+                    <div className="text-xl font-bold mt-1" data-testid="text-harvest-count">{harvestResult.count}</div>
                   </div>
                   <div className="p-3 rounded-lg border bg-card">
                     <div className="text-xs text-muted-foreground">Total Unrealized Losses</div>
                     <div className="text-xl font-bold text-destructive mt-1" data-testid="text-harvest-total-loss">
-                      {formatCurrency(harvestData.reduce((sum, h) => sum + h.unrealizedLoss, 0))}
+                      {formatCurrency(harvestResult.totalUnrealizedLoss)}
                     </div>
                   </div>
                   <div className="p-3 rounded-lg border bg-card sm:col-span-2 lg:col-span-1">
                     <div className="text-xs text-muted-foreground">Est. Tax Savings ({selectedBracket}%)</div>
                     <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" data-testid="text-harvest-total-savings">
-                      {formatCurrency(harvestData.reduce((sum, h) => {
-                        const key = `estTaxSavings${selectedBracket}` as keyof HarvestOpportunity;
-                        return sum + (h[key] as number);
-                      }, 0))}
+                      {formatCurrency(summarySavings)}
                     </div>
                   </div>
                 </div>
 
+                {harvestLocked ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      The totals above are real — from your own holdings. Unlock Premium to see
+                      exactly which coins to harvest, your potential savings per coin, and the
+                      recommended action for each (sell &amp; rebuy, or a conservative swap).
+                    </p>
+                    <UpgradePrompt
+                      feature="Unlock Tax Harvest AI to see the full per-coin breakdown and suggested actions for every opportunity."
+                      variant={upgradeVariant}
+                    />
+                  </div>
+                ) : (
+                <>
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -751,6 +779,8 @@ export default function TaxReports() {
                     Refresh Scan
                   </Button>
                 </div>
+                </>
+                )}
 
                 <p className="text-[10px] text-muted-foreground/60 leading-relaxed italic">
                   Tax-Loss Harvesting is an informational tool only. We do not execute trades, provide tax advice, or guarantee results. Crypto wash-sale rules currently do not apply in the US, but tax laws change. Always consult a qualified CPA. Calculations are estimates based on current prices.

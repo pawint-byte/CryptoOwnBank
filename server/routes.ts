@@ -5716,9 +5716,7 @@ ${sections}
     try {
       const userId = req.user.claims.sub;
       const { tier } = await getEffectiveTier(userId);
-      if (tier === "free") {
-        return res.status(403).json({ message: "Tax Harvest AI requires a Premium or Pro subscription." });
-      }
+      const locked = tier === "free";
 
       const positionsData = await storage.getPositionsByUser(userId);
       const priceLookup: Record<string, number> = {};
@@ -5744,7 +5742,16 @@ ${sections}
       }));
 
       const opportunities = scanForHarvestOpportunities(positionsData, priceLookup, lotsForScan);
-      res.json(opportunities);
+      const summary = {
+        locked,
+        count: opportunities.length,
+        totalUnrealizedLoss: opportunities.reduce((s, o) => s + o.unrealizedLoss, 0),
+        estTaxSavings24: opportunities.reduce((s, o) => s + o.estTaxSavings24, 0),
+        estTaxSavings32: opportunities.reduce((s, o) => s + o.estTaxSavings32, 0),
+        estTaxSavings37: opportunities.reduce((s, o) => s + o.estTaxSavings37, 0),
+        opportunities: locked ? [] : opportunities,
+      };
+      res.json(summary);
     } catch (error) {
       console.error("Harvest scan error:", error);
       res.status(500).json({ message: "Failed to scan for harvest opportunities" });
