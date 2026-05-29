@@ -3569,6 +3569,13 @@ ${sections}
         return res.status(400).json({ message: "Invalid quantity or price" });
       }
 
+      if (data.transactionType === "sell" && data.disposalType === "swap") {
+        const swapToQtyNum = parseFloat(data.swapToQuantity);
+        if (!data.swapToSymbol || String(data.swapToSymbol).trim() === "" || isNaN(swapToQtyNum) || swapToQtyNum <= 0) {
+          return res.status(400).json({ message: "For a swap, enter the coin you received and how much of it you got." });
+        }
+      }
+
       const totalVal = qty * price;
 
       let accountId = data.accountId;

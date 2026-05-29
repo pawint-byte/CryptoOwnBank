@@ -242,6 +242,7 @@ Use your real account (pawint@me.com) to go through every feature. Goal: have re
 - [ ] **Chain Guide** — Read through, verify accuracy
 
 ### Account & Misc
+- [x] **One-entry Swap** — DONE (2026-05-29). Recording a Sell with "Swapped into another coin" now captures the coin received + amount in the SAME entry. Backend disposes the old coin (gain/loss vs lots) AND auto-creates the received coin (buy txn + position + tax lot) with cost basis = value given up, acquired at the swap date. No more adding the new coin separately as a Buy. Server-side validation rejects a swap missing the received coin/amount.
 - [ ] **Quick Start** — Walk through as if you're a new member
 - [x] **Buy Crypto** — DONE (2026-04-01). Changelly fiat on-ramp tested end-to-end: selected XRP, entered $500, Changelly routed through MoonPay, paid with USAA Visa, 100.319 XRP received in Xaman wallet. Notes: Uphold prepaid Visa was rejected (use a bank-issued card); MoonPay blocks some regions on the web but works through partner integrations (Xaman, Ledger Live, Changelly widget). Wallet address pre-fill feature added. FAQ updated with Changelly entry.
 - [ ] **Spend Crypto** — Check debit card info is current

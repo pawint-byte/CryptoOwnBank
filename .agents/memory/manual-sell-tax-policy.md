@@ -12,10 +12,14 @@ Policy decisions (not code-derivable rationale):
   tracked lot remainder. **Why:** we never silently assume a $0 cost basis or
   silently leave disposed quantity unmatched — that would produce a wrong tax
   report the member can't see. Better to tell them to record the missing buy(s).
-- A swap is recorded as a disposal of the OLD coin only (realizes its gain/loss).
-  The new coin is NOT auto-created; the member is told to add it as a separate
-  Buy so its fresh cost basis is tracked. **Why:** keeps the entry simple and
-  avoids guessing the new coin's acquisition price.
+- A swap is ONE entry that does both legs: it disposes the OLD coin (realizes
+  gain/loss vs lots) AND auto-creates the RECEIVED coin as a new holding (buy
+  txn + position + tax lot). The received coin's cost basis = the value given up
+  (old-coin proceeds = qty*price), acquired at the swap date. **Why:** a
+  crypto-to-crypto swap is simultaneously a taxable disposal and an acquisition;
+  forcing the member to add the new coin as a separate Buy was error-prone and
+  left holdings/tax reports incomplete. The received-coin fields are required
+  both client-side (zod superRefine) and server-side (400 if missing/≤0).
 - Method follows the member's userSettings.taxMethod (FIFO default; only FIFO and
   LIFO are supported — no HIFO/specific-lot).
 
