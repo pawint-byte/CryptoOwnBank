@@ -89,6 +89,7 @@ const transactionFormSchema = z.object({
   accountId: z.string().min(1, "Select an account"),
   assetSymbol: z.string().min(1, "Enter asset symbol").toUpperCase(),
   transactionType: z.enum(["buy", "sell"]),
+  disposalType: z.enum(["sale", "swap", "send"]).optional(),
   quantity: z.string().min(1, "Enter quantity"),
   pricePerUnit: z.string().min(1, "Enter price"),
   transactionDate: z.string().min(1, "Select date"),
@@ -303,6 +304,7 @@ export default function Transactions() {
       accountId: "manual",
       assetSymbol: "",
       transactionType: "buy",
+      disposalType: "sale",
       quantity: "",
       pricePerUnit: "",
       transactionDate: format(new Date(), "yyyy-MM-dd"),
@@ -317,10 +319,18 @@ export default function Transactions() {
         transactionDate: values.transactionDate + "T12:00:00",
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, values) => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Transaction added successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/tax-report"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tax/harvest-scan"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      toast({
+        title:
+          values.transactionType === "sell"
+            ? "Sale recorded — gain/loss added to your tax report"
+            : "Transaction added successfully",
+      });
       setIsDialogOpen(false);
       form.reset();
     },
@@ -510,7 +520,7 @@ export default function Transactions() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="buy">Buy</SelectItem>
-                              <SelectItem value="sell">Sell</SelectItem>
+                              <SelectItem value="sell">Sell / Swap</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -518,6 +528,41 @@ export default function Transactions() {
                       )}
                     />
                   </div>
+
+                  {form.watch("transactionType") === "sell" && (
+                    <div className="space-y-4 rounded-md border border-border bg-muted/40 p-4">
+                      <FormField
+                        control={form.control}
+                        name="disposalType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>What happened to it?</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || "sale"}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-disposal-type">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="sale">Sold for cash / stablecoin</SelectItem>
+                                <SelectItem value="swap">Swapped into another coin</SelectItem>
+                                <SelectItem value="send">Sent / spent it</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <p className="text-sm text-muted-foreground" data-testid="text-sell-explainer">
+                        Enter the price each coin was worth at the time you sold or swapped.
+                        We'll match it against your purchase history ({" "}
+                        {form.watch("disposalType") === "swap" ? "swap" : "sale"} date order)
+                        and add the gain or loss to your tax report automatically. If you swapped
+                        into a different coin, add that new coin separately as a <strong>Buy</strong>{" "}
+                        so its cost basis is tracked.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField

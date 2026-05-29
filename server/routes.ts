@@ -3587,10 +3587,36 @@ ${sections}
         accountId = manualAccount.id;
       }
 
+      const upperSymbol = data.assetSymbol.toUpperCase();
+
+      let sellMethod: "FIFO" | "LIFO" = "FIFO";
+      let sellSortedLots: Awaited<ReturnType<typeof storage.getTaxLotsByAsset>> = [];
+      if (data.transactionType === "sell") {
+        const settings = await storage.getUserSettings(userId);
+        sellMethod = settings?.taxMethod === "LIFO" ? "LIFO" : "FIFO";
+        const allLots = await storage.getTaxLotsByAsset(userId, upperSymbol);
+        const activeLots = allLots.filter(l => parseFloat(l.remainingQuantity) > 0);
+        const available = activeLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+
+        if (available <= 0.00000001) {
+          return res.status(400).json({
+            message: `No recorded purchases found for ${upperSymbol}. Add the buy(s) first so we can calculate the gain or loss.`,
+          });
+        }
+        if (qty > available + 0.00000001) {
+          return res.status(400).json({
+            message: `You're recording a sale of ${qty} ${upperSymbol}, but only ${available} is tracked from your recorded purchases. Record the missing buy(s) first, or reduce the amount.`,
+          });
+        }
+        sellSortedLots = sellMethod === "LIFO"
+          ? [...activeLots].sort((a, b) => new Date(b.acquiredDate).getTime() - new Date(a.acquiredDate).getTime())
+          : [...activeLots].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
+      }
+
       const transaction = await storage.createTransaction({
         userId,
         accountId,
-        assetSymbol: data.assetSymbol.toUpperCase(),
+        assetSymbol: upperSymbol,
         transactionType: data.transactionType,
         quantity: qty.toString(),
         pricePerUnit: price.toString(),
@@ -3639,6 +3665,76 @@ ${sections}
           remainingQuantity: qty.toString(),
           costBasisPerUnit: price.toString(),
         });
+      } else if (data.transactionType === "sell") {
+        const sellDate = safeServerDate(data.transactionDate);
+        const disposalType =
+          data.disposalType === "swap" ? "swap" : data.disposalType === "send" ? "send" : "sale";
+
+        const oneYear = 365 * 24 * 60 * 60 * 1000;
+        let remaining = qty;
+        let consumedCostBasis = 0;
+        for (const lot of sellSortedLots) {
+          if (remaining <= 0.00000001) break;
+          const lotRemaining = parseFloat(lot.remainingQuantity);
+          if (lotRemaining <= 0) continue;
+
+          const sellFromLot = Math.min(remaining, lotRemaining);
+          const proceeds = sellFromLot * price;
+          const costBasis = sellFromLot * parseFloat(lot.costBasisPerUnit);
+          const gainLoss = proceeds - costBasis;
+          const acquiredDate = new Date(lot.acquiredDate);
+          const isLongTerm = (sellDate.getTime() - acquiredDate.getTime()) >= oneYear;
+
+          await storage.createGainEvent({
+            userId,
+            sellTransactionId: transaction.id,
+            taxLotId: lot.id,
+            assetSymbol: upperSymbol,
+            quantity: sellFromLot.toString(),
+            proceeds: proceeds.toFixed(2),
+            costBasis: costBasis.toFixed(2),
+            gainLoss: gainLoss.toFixed(2),
+            isLongTerm,
+            taxMethod: sellMethod,
+            soldDate: sellDate,
+            acquiredDate,
+            disposalType,
+            disposalNote: data.notes || undefined,
+          });
+
+          await storage.updateTaxLot(lot.id, {
+            remainingQuantity: (lotRemaining - sellFromLot).toFixed(8),
+          });
+
+          if (lot.walletBalanceId) {
+            const wbLots = await storage.getTaxLotsByWalletBalance(userId, lot.walletBalanceId);
+            const totalRem = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+            const totalCb = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+            const avg = totalRem > 0 ? totalCb / totalRem : 0;
+            await storage.updateWalletBalanceCostData(lot.walletBalanceId, avg.toFixed(8), totalCb.toFixed(2));
+          }
+
+          consumedCostBasis += costBasis;
+          remaining -= sellFromLot;
+        }
+
+        if (existingPosition) {
+          const existingQty = parseFloat(existingPosition.quantity);
+          const existingCostBasis = parseFloat(existingPosition.totalCostBasis);
+          const newQty = Math.max(0, existingQty - qty);
+          const newCostBasis = Math.max(0, existingCostBasis - consumedCostBasis);
+          const newAvgCost = newQty > 0 ? newCostBasis / newQty : 0;
+
+          if (newQty <= 0.00000001) {
+            await storage.deletePosition(existingPosition.id);
+          } else {
+            await storage.updatePosition(existingPosition.id, {
+              quantity: newQty.toString(),
+              averageCost: newAvgCost.toString(),
+              totalCostBasis: newCostBasis.toFixed(2),
+            });
+          }
+        }
       }
 
       res.json(transaction);
