@@ -421,6 +421,27 @@ export default function Transactions() {
     setIsDialogOpen(true);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sellAsset = params.get("sell");
+    if (sellAsset) {
+      setEditingId(null);
+      form.reset({
+        accountId: "manual",
+        assetSymbol: sellAsset.toUpperCase(),
+        transactionType: "sell",
+        disposalType: "sale",
+        quantity: params.get("qty") || "",
+        pricePerUnit: params.get("price") || "",
+        transactionDate: format(new Date(), "yyyy-MM-dd"),
+        notes: "",
+      });
+      setIsDialogOpen(true);
+      window.history.replaceState({}, "", "/transactions");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const dbExternalIds = new Set(
     transactions.filter((t) => t.externalId).map((t) => t.externalId)
   );

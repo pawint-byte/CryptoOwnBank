@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2, ArrowLeftRight } from "lucide-react";
 import { WhisperShareDialog } from "@/components/whisper-share-dialog";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -201,6 +201,13 @@ export default function Portfolio() {
     }, 80);
   };
   const [editingPosition, setEditingPosition] = useState<PositionWithMarket | null>(null);
+  const [, setLocation] = useLocation();
+  const goSell = (symbol: string, qty?: number | string, price?: number) => {
+    const params = new URLSearchParams({ sell: symbol });
+    if (qty !== undefined && qty !== null && String(qty) !== "") params.set("qty", String(qty));
+    if (price && price > 0) params.set("price", String(price));
+    setLocation(`/transactions?${params.toString()}`);
+  };
   const [whisperingPosition, setWhisperingPosition] = useState<PositionWithMarket | null>(null);
   const [downloadingStatement, setDownloadingStatement] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -1120,6 +1127,16 @@ export default function Portfolio() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="text-muted-foreground hover:text-chart-2"
+                                    onClick={() => goSell(position.assetSymbol, position.quantity, position.currentPrice)}
+                                    data-testid={`button-sell-position-${position.id}`}
+                                    title={`Record a sale or swap of ${position.assetSymbol}`}
+                                  >
+                                    <ArrowLeftRight className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="text-muted-foreground hover:text-primary"
                                     onClick={() => setEditingPosition(position)}
                                     data-testid={`button-edit-position-${position.id}`}
@@ -1214,14 +1231,26 @@ export default function Portfolio() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right flex-shrink-0 ml-2">
-                            <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">{formatCurrency(item.totalValue)}</div>
-                            <div className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
-                              Avg: {formatCurrency(avgCost)} | Basis: {formatCurrency(item.totalCostBasis)}
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
+                            <div className="text-right">
+                              <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">{formatCurrency(item.totalValue)}</div>
+                              <div className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+                                Avg: {formatCurrency(avgCost)} | Basis: {formatCurrency(item.totalCostBasis)}
+                              </div>
+                              <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
+                                <span className="hidden sm:inline">{gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} </span>({gainPct.toFixed(2)}%)
+                              </div>
                             </div>
-                            <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
-                              <span className="hidden sm:inline">{gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} </span>({gainPct.toFixed(2)}%)
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-chart-2"
+                              onClick={() => goSell(item.symbol, item.totalQty, item.totalQty > 0 ? item.totalValue / item.totalQty : undefined)}
+                              data-testid={`button-sell-consolidated-${item.symbol}`}
+                              title={`Record a sale or swap of ${item.symbol}`}
+                            >
+                              <ArrowLeftRight className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
