@@ -3,8 +3,9 @@
 - [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail; Stripe covers EVM/BTC/SOL/XLM, THORChain covers BTC/LTC/DOGE/BCH; XRP buyers use Xaman seed-import.
 - [Manual sell/swap tax policy](manual-sell-tax-policy.md) — manual sells realize gain/loss vs lots; reject if no/insufficient recorded buys; swaps record old-coin disposal only.
 - [Legacy add-on expiry rules](legacy-addon-expiry.md) — same SKU expires differently by rail: card recurring=null (auto-renew), crypto recurring=prepaid term; use computeLegacyAddonExpiry.
-- [Screenshot capture constraints](screenshot-capture-constraints.md) — only public top-of-page screens auto-capture (app_preview, logged-out); Chromium won't install, testing subagent exports no image files; gated/authed/external shots need the user.
-- [Tax report route shape](tax-report-route-shape.md) — empty/zero data with `GET /api/x/2026/FIFO 200` returning HTML = route didn't match; join("/") fetcher needs path-based `:param` routes. Real data is in PROD, not dev DB.
-- [Editing/deleting transactions](transaction-edit-reconcile.md) — edit/delete must reconcile tax lots + gain events + positions; gate server-side; refuse partly-sold buys and no-gain-event sells.
-- [Sell reconciliation: lots vs positions](sell-account-lot-mismatch.md) — lots are asset-global, positions per-account; sell shortcuts must pass the row's real accountId, only on per-account rows, with server-side ownership check.
-- [Cost basis sources](cost-basis-sources.md) — harvest scan uses position.totalCostBasis (skips ≤0); CSV import/on-site trades/manual set it, exchange SYNC does NOT — don't claim exchange-connect improves harvesting.
+- [Screenshot capture constraints](screenshot-capture-constraints.md) — only public top-of-page screens auto-capture; Chromium won't install; gated/authed/external shots need the user.
+- [Tax report route shape](tax-report-route-shape.md) — HTML body on `GET /api/x/2026/FIFO 200` = route didn't match; join("/") fetcher needs `:param` routes. Real data is PROD-only.
+- [Editing/deleting transactions](transaction-edit-reconcile.md) — edit/delete must reconcile tax lots + gain events + positions; refuse partly-sold buys and no-gain-event sells.
+- [Sell reconciliation: lots vs positions](sell-account-lot-mismatch.md) — lots are asset-global, positions per-account; sell shortcuts must pass the row's real accountId with ownership check.
+- [Cost basis sources](cost-basis-sources.md) — harvest uses position.totalCostBasis; CSV/on-site/manual set it, exchange SYNC does NOT — connecting an exchange won't improve harvesting.
+- [Routes module extraction](routes-extraction.md) — splitting a giant async registerRoutes closure: tsc+boot are the only safety nets (curl 401s before handler); closure-level `await import` needs async register fn.
