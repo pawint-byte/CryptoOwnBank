@@ -3740,6 +3740,60 @@ ${sections}
             });
           }
         }
+
+        if (disposalType === "swap" && data.swapToSymbol && data.swapToQuantity) {
+          const toSym = String(data.swapToSymbol).toUpperCase().trim();
+          const toQty = parseFloat(data.swapToQuantity);
+          if (toSym && toSym.length <= 20 && !isNaN(toQty) && toQty > 0) {
+            const toCostBasis = totalVal;
+            const toPrice = toQty > 0 ? toCostBasis / toQty : 0;
+
+            const toTxn = await storage.createTransaction({
+              userId,
+              accountId,
+              assetSymbol: toSym,
+              transactionType: "buy",
+              quantity: toQty.toString(),
+              pricePerUnit: toPrice.toString(),
+              totalValue: toCostBasis.toFixed(2),
+              fee: "0",
+              transactionDate: sellDate,
+              notes: `Received from swapping ${qty} ${upperSymbol}`,
+            });
+
+            const toPosition = await storage.getPositionByUserAndAsset(userId, accountId, toSym);
+            if (toPosition) {
+              const eq = parseFloat(toPosition.quantity);
+              const ec = parseFloat(toPosition.totalCostBasis);
+              const nq = eq + toQty;
+              const nc = ec + toCostBasis;
+              await storage.updatePosition(toPosition.id, {
+                quantity: nq.toString(),
+                averageCost: (nq > 0 ? nc / nq : 0).toString(),
+                totalCostBasis: nc.toFixed(2),
+              });
+            } else {
+              await storage.createPosition({
+                userId,
+                accountId,
+                assetSymbol: toSym,
+                quantity: toQty.toString(),
+                averageCost: toPrice.toString(),
+                totalCostBasis: toCostBasis.toFixed(2),
+              });
+            }
+
+            await storage.createTaxLot({
+              userId,
+              transactionId: toTxn.id,
+              assetSymbol: toSym,
+              acquiredDate: sellDate,
+              originalQuantity: toQty.toString(),
+              remainingQuantity: toQty.toString(),
+              costBasisPerUnit: toPrice.toString(),
+            });
+          }
+        }
       }
 
       res.json(transaction);

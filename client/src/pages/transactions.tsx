@@ -106,6 +106,17 @@ const transactionFormSchema = z.object({
   pricePerUnit: z.string().min(1, "Enter price"),
   transactionDate: z.string().min(1, "Select date"),
   notes: z.string().optional(),
+  swapToSymbol: z.string().optional(),
+  swapToQuantity: z.string().optional(),
+}).superRefine((val, ctx) => {
+  if (val.transactionType === "sell" && val.disposalType === "swap") {
+    if (!val.swapToSymbol || val.swapToSymbol.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["swapToSymbol"], message: "Enter the coin you received" });
+    }
+    if (!val.swapToQuantity || !(parseFloat(val.swapToQuantity) > 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["swapToQuantity"], message: "Enter how much you received" });
+    }
+  }
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -335,6 +346,8 @@ export default function Transactions() {
       pricePerUnit: "",
       transactionDate: format(new Date(), "yyyy-MM-dd"),
       notes: "",
+      swapToSymbol: "",
+      swapToQuantity: "",
     },
   });
 
@@ -358,7 +371,9 @@ export default function Transactions() {
       toast({
         title:
           values.transactionType === "sell"
-            ? "Sale recorded — gain/loss added to your tax report"
+            ? values.disposalType === "swap"
+              ? "Swap recorded — old coin's gain/loss logged and the new coin added to your holdings"
+              : "Sale recorded — gain/loss added to your tax report"
             : "Transaction added successfully",
       });
       setIsDialogOpen(false);
@@ -417,6 +432,8 @@ export default function Transactions() {
       pricePerUnit: String(tx.price),
       transactionDate: format(tx.date, "yyyy-MM-dd"),
       notes: "",
+      swapToSymbol: "",
+      swapToQuantity: "",
     });
     setIsDialogOpen(true);
   };
@@ -435,6 +452,8 @@ export default function Transactions() {
         pricePerUnit: params.get("price") || "",
         transactionDate: format(new Date(), "yyyy-MM-dd"),
         notes: "",
+        swapToSymbol: "",
+        swapToQuantity: "",
       });
       setIsDialogOpen(true);
       window.history.replaceState({}, "", "/transactions");
@@ -693,15 +712,57 @@ export default function Transactions() {
                         )}
                       />
                       <p className="text-sm text-muted-foreground" data-testid="text-sell-explainer">
-                        <strong>First record the original purchase as a Buy</strong> — that's where
-                        the price you paid goes. Here, just enter how much you sold, the price each
-                        coin was worth at the time you sold or swapped, and the date. We'll match it
-                        against your purchase history ({" "}
-                        {form.watch("disposalType") === "swap" ? "swap" : "sale"} date order)
-                        and add the gain or loss to your tax report automatically. If you swapped
-                        into a different coin, add that new coin separately as a <strong>Buy</strong>{" "}
-                        so its cost basis is tracked.
+                        Enter how much you sold and the price each coin was worth at the time of the
+                        sale or swap, plus the date. We'll match it against your purchase history ({" "}
+                        {form.watch("disposalType") === "swap" ? "swap" : "sale"} date order) and add
+                        the gain or loss to your tax report automatically.
+                        {form.watch("disposalType") === "swap"
+                          ? " Tell us the coin you received below and we'll create that new holding for you in one step — its cost basis is set to the value of what you gave up."
+                          : ""}
                       </p>
+
+                      {form.watch("disposalType") === "swap" && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="swapToSymbol"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Coin you received</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="e.g. ETH"
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-swap-to-symbol"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="swapToQuantity"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Amount you received</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="any"
+                                    placeholder="0.00"
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-swap-to-quantity"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
