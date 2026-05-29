@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2, ArrowLeftRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { WhisperShareDialog } from "@/components/whisper-share-dialog";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -1023,10 +1023,23 @@ export default function Portfolio() {
                   </div>
                 ) : (
                   <div className="space-y-1">
+                    {(() => {
+                      const mb = cryptoFiltered.filter(p => !p.isAddressed && (parseFloat(p.totalCostBasis) || 0) <= 0 && parseFloat(p.quantity) > 0 && (p.currentValue || 0) >= 1).length;
+                      return mb > 0 ? (
+                        <div className="flex items-start gap-2 p-3 mb-2 rounded-lg border border-amber-400/50 bg-amber-50/50 dark:bg-amber-950/20" data-testid="banner-missing-basis">
+                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                          <div className="text-xs sm:text-sm">
+                            <span className="font-medium text-amber-700 dark:text-amber-300">{mb} holding{mb > 1 ? "s" : ""} missing a cost basis.</span>{" "}
+                            <span className="text-muted-foreground">Tap the amber <span className="font-medium">"Add cost basis"</span> tag on each one and enter what you paid (or its value when you received it). Keeping these current unlocks tax-loss savings and avoids a scramble at tax time.</span>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
                     {cryptoFiltered.map((position, idx) => {
                       const isDupe = duplicateSymbols.has(position.assetSymbol);
                       const isFirstOfGroup = sortBy === "name" && (idx === 0 || cryptoFiltered[idx - 1].assetSymbol !== position.assetSymbol);
                       const isAddr = position.isAddressed;
+                      const missingBasis = !isAddr && (parseFloat(position.totalCostBasis) || 0) <= 0 && parseFloat(position.quantity) > 0 && (position.currentValue || 0) >= 1;
                       const isGroupCollapsed = isDupe && sortBy === "name" && collapsedGroups.has(position.assetSymbol);
 
                       if (isGroupCollapsed && !isFirstOfGroup) return null;
@@ -1067,7 +1080,8 @@ export default function Portfolio() {
                                 "p-3 sm:p-4 rounded-lg border",
                                 isAddr && "opacity-50 bg-muted/30",
                                 !isAddr && isDupe && position.isImport && "border-l-4 border-l-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10",
-                                !isAddr && isDupe && !position.isImport && "border-l-4 border-l-emerald-400/60 bg-emerald-50/30 dark:bg-emerald-950/10"
+                                !isAddr && isDupe && !position.isImport && "border-l-4 border-l-emerald-400/60 bg-emerald-50/30 dark:bg-emerald-950/10",
+                                !isAddr && missingBasis && "border-l-4 border-l-amber-500 bg-amber-50/40 dark:bg-amber-950/20"
                               )}
                               data-testid={`position-${position.assetSymbol}-${position.id}`}
                             >
@@ -1093,6 +1107,19 @@ export default function Portfolio() {
                                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                           Addressed
                                         </Badge>
+                                      )}
+                                      {missingBasis && !isAddr && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingPosition(position)}
+                                          data-testid={`badge-missing-basis-${position.id}`}
+                                          title={`Add what you paid for ${position.assetSymbol} so tax savings can be calculated`}
+                                        >
+                                          <Badge className="text-[10px] px-1.5 py-0 bg-amber-500 hover:bg-amber-600 text-white cursor-pointer inline-flex items-center gap-1 border-transparent">
+                                            <AlertTriangle className="h-2.5 w-2.5" />
+                                            Add cost basis
+                                          </Badge>
+                                        </button>
                                       )}
                                     </div>
                                     <div className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
