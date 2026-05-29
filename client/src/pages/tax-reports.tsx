@@ -466,7 +466,10 @@ export default function TaxReports() {
             </Button>
           </div>
           <CardDescription>
-            Scan your portfolio for unrealized losses and find tax-saving opportunities
+            Scan your portfolio for unrealized losses and find tax-saving opportunities.
+            We can only spot savings for assets where we know what you paid — so the more
+            purchase prices you keep on record (by importing your history, entering what you
+            paid, or making trades on-site), the more opportunities we can find for you.
           </CardDescription>
         </CardHeader>
         {harvestExpanded && (
@@ -486,7 +489,14 @@ export default function TaxReports() {
                 </div>
                 <h3 className="text-base font-medium" data-testid="text-no-harvest">No harvest opportunities found</h3>
                 <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                  All your positions are currently at a gain or break-even. Check back when market conditions change.
+                  Either all your positions are currently at a gain or break-even, or we don't
+                  yet know what you paid for some of them. We can only scan assets with a
+                  recorded cost basis — anything missing its purchase price is skipped.
+                </p>
+                <p className="text-xs text-muted-foreground mt-2 max-w-md">
+                  Get the most out of this scan: import your purchase history, enter what you
+                  paid, or make trades on-site so each holding keeps its cost basis. The more
+                  purchase prices we have on record, the more savings we can find.
                 </p>
                 {adminStatus?.isAdmin && (
                   <div className="mt-4 space-y-2">
@@ -680,8 +690,11 @@ export default function TaxReports() {
                 <FileText className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium">No gain/loss events</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                No realized gains or losses found for {selectedYear}.
+              <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                No realized gains or losses found for {selectedYear}. This report is built from
+                sales we have on record with a known cost basis — so importing your purchase
+                history, entering what you paid, or making trades on-site keeps your tax picture
+                complete and accurate.
               </p>
             </div>
           ) : (

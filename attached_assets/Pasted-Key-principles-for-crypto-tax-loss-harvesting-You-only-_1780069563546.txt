@@ -1,0 +1,51 @@
+Key principles for crypto tax‑loss harvesting
+You only get a tax benefit when you realize the loss. That means selling, swapping, or spending the coin below your cost basis, not just holding while it’s down.
+
+Losses offset gains. Realized crypto losses can offset crypto/stock gains, then up to a set amount of ordinary income (e.g., $3,000 per year in the U.S., with the rest carried forward).
+
+No wash‑sale rule (in most current regimes). Because crypto is usually treated as property, wash‑sale rules don’t currently apply the way they do for stocks in the U.S., so you can sell at a loss and immediately buy back to keep exposure (some people wait 24 hours for safety).
+
+Lot selection matters. Using specific‑ID you can choose which “lots” you’re selling (e.g., the highest‑price buys) to maximize the loss you lock in.
+
+Always confirm details with a tax pro in your jurisdiction — rules can change, and some countries do treat frequent in‑and‑out as trading income.
+
+How to apply this to your massive watchlist
+Given your goal (max upside, minimize tax), a practical approach:
+
+1. Segment by conviction vs. loss
+For each token (XRP, PEAQ, XPL, NEAR, BONK, XPR, CRO, etc.) ask:
+
+High conviction, currently at a loss?
+
+Example: PEAQ, XPL, NEAR, AVAX, HBAR, XLM, ONDO, LINK, XDC if you’re long‑term bullish and they’re below your average cost.
+
+Play: Tax‑loss harvest but keep exposure.
+
+Sell enough of the high‑cost lots to realize a loss.
+
+Immediately (or after a short pause) rebuy the same or similar amount.
+
+You’ve banked a loss for tax purposes but still hold the asset for upside.
+
+Low or zero conviction, large unrealized loss?
+
+Example: dead/illiquid or “zombie” microcaps: WINGS, INSP, random ticker fragments with no volume or narrative.
+
+Play: Exit and don’t rebuy.
+
+Realize the loss and permanently free up capital to move into your higher‑conviction themes (XRPL, DePIN, AI, RWA).
+
+2. Prioritize biggest loss vs. relevance
+Start with:
+
+Tokens down heavily from your buy price and still liquid: lots of small‑caps and older L1s, plus any AI/meme bets that you no longer like.
+
+Avoid tinkering with positions that are currently big winners unless you specifically need to offset those gains.
+
+Tools and checklists from tax guides recommend:
+
+Export full transaction history.
+
+For each token, compute cost basis vs current price.
+
+Flag “ripe for harvest” positions (unrealized loss above a threshold).

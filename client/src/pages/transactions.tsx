@@ -714,8 +714,10 @@ export default function Transactions() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium">No transactions yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Connect an exchange or XRPL wallet, or add a transaction manually.
+              <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                Connect an exchange or XRPL wallet, or add a transaction manually. The more of
+                your buying and selling that's recorded here — along with what you paid — the
+                more complete and accurate your portfolio and tax reports become.
               </p>
             </div>
           ) : (
