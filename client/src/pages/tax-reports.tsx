@@ -153,6 +153,7 @@ export default function TaxReports() {
   const isPremium = settings?.subscriptionTier === "premium" || settings?.subscriptionTier === "pro" || settings?.subscriptionTier === "premium_annual";
 
   const [harvestExpanded, setHarvestExpanded] = useState(false);
+  const [harvestGuideOpen, setHarvestGuideOpen] = useState(false);
   const [selectedBracket, setSelectedBracket] = useState<"24" | "32" | "37">("32");
 
   const { data: harvestData, isLoading: harvestLoading, refetch: refetchHarvest } = useQuery<HarvestOpportunity[]>({
@@ -474,6 +475,84 @@ export default function TaxReports() {
         </CardHeader>
         {harvestExpanded && (
           <CardContent className="space-y-4">
+            <div className="rounded-lg border bg-muted/40">
+              <button
+                type="button"
+                onClick={() => setHarvestGuideOpen(!harvestGuideOpen)}
+                className="w-full flex items-center justify-between gap-2 p-3 text-left"
+                data-testid="button-toggle-harvest-guide"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <Info className="h-4 w-4 text-amber-500" />
+                  How to use this — with examples
+                </span>
+                {harvestGuideOpen ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+              </button>
+              {harvestGuideOpen && (
+                <div className="px-3 pb-3 space-y-3 text-sm" data-testid="content-harvest-guide">
+                  <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-3">
+                    <p className="font-medium text-emerald-800 dark:text-emerald-300">Enter your data once, benefit all year</p>
+                    <p className="text-emerald-800/90 dark:text-emerald-300/90 mt-1 text-[13px] leading-relaxed">
+                      Import however you've been tracking your buys and sells — or enter them by
+                      hand — then keep your activity here going forward. The same records do double
+                      duty: smarter tax-loss harvesting now, and ready-to-file tax reports at
+                      year-end. Set it up once and take advantage of everything we offer.
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="font-medium mb-2">Two common ways members use this</p>
+                    <div className="space-y-2">
+                      <div className="rounded-md border bg-card p-3">
+                        <p className="flex items-center gap-1.5 font-medium text-[13px]">
+                          <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                          Keep a coin you still believe in
+                        </p>
+                        <p className="text-muted-foreground mt-1 text-[13px] leading-relaxed">
+                          Example: you bought a token for $1,000 and it's now worth $400. If you
+                          still want to hold it, sell to lock in the $600 loss, then rebuy it — or
+                          use a <span className="font-medium text-foreground">Swap Suggestion</span> below
+                          as an idea for a similar asset to move into. You bank the loss for taxes
+                          but keep your exposure for the upside. (Suggestions are informational — we
+                          never trade for you.)
+                        </p>
+                      </div>
+                      <div className="rounded-md border bg-card p-3">
+                        <p className="flex items-center gap-1.5 font-medium text-[13px]">
+                          <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                          Clear out a coin you've given up on
+                        </p>
+                        <p className="text-muted-foreground mt-1 text-[13px] leading-relaxed">
+                          Example: you bought a token for $2,000 and it's now worth $150 with little
+                          chance of recovery. Sell it — or use{" "}
+                          <span className="font-medium text-foreground">Write-Off</span> on the lot if
+                          it's truly dead — to realize the $1,850 loss and free up that capital for
+                          higher-conviction ideas. No rebuy.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border bg-card p-3">
+                    <p className="font-medium text-[13px]">Why realizing a loss pays off</p>
+                    <p className="text-muted-foreground mt-1 text-[13px] leading-relaxed">
+                      In the US, realized losses first cancel out your gains, then can offset up to
+                      $3,000 of regular income per year — and anything left over carries into future
+                      years. Which coins get sold follows your accounting method
+                      (<span className="font-medium text-foreground">FIFO or LIFO</span>), which you
+                      can set in Settings before you sell.
+                    </p>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    These are illustrations with made-up numbers, not tax advice. As of 2026, US
+                    crypto has no wash-sale rule, so an immediate rebuy is allowed (some people wait
+                    24 hours to be safe). Rules vary by country and can change — always confirm with
+                    a qualified tax professional in your area.
+                  </p>
+                </div>
+              )}
+            </div>
             {taxReportsLocked ? (
               <UpgradePrompt feature="Tax Harvest AI requires a Premium or Pro subscription to scan your portfolio for tax-loss harvesting opportunities." variant={upgradeVariant} />
             ) : harvestLoading ? (
