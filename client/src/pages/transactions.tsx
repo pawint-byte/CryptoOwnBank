@@ -529,6 +529,19 @@ export default function Transactions() {
                     />
                   </div>
 
+                  {form.watch("transactionType") === "buy" && (
+                    <div className="rounded-md border border-border bg-muted/40 p-4">
+                      <p className="text-sm text-muted-foreground" data-testid="text-buy-explainer">
+                        This is your <strong>original purchase</strong> — it records what you paid
+                        (your cost basis). Enter how much you bought, the price you paid per coin,
+                        and the date you bought it. When you later sell or swap, add that as a
+                        separate <strong>Sell / Swap</strong> entry and we'll match it back to this
+                        purchase automatically to work out your gain or loss. You don't reopen this
+                        entry.
+                      </p>
+                    </div>
+                  )}
+
                   {form.watch("transactionType") === "sell" && (
                     <div className="space-y-4 rounded-md border border-border bg-muted/40 p-4">
                       <FormField
@@ -554,8 +567,10 @@ export default function Transactions() {
                         )}
                       />
                       <p className="text-sm text-muted-foreground" data-testid="text-sell-explainer">
-                        Enter the price each coin was worth at the time you sold or swapped.
-                        We'll match it against your purchase history ({" "}
+                        <strong>First record the original purchase as a Buy</strong> — that's where
+                        the price you paid goes. Here, just enter how much you sold, the price each
+                        coin was worth at the time you sold or swapped, and the date. We'll match it
+                        against your purchase history ({" "}
                         {form.watch("disposalType") === "swap" ? "swap" : "sale"} date order)
                         and add the gain or loss to your tax report automatically. If you swapped
                         into a different coin, add that new coin separately as a <strong>Buy</strong>{" "}
