@@ -21,6 +21,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { legacyTiers } from "@/lib/pricing-data";
+import { LegacyCheckout } from "@/components/legacy-checkout";
 import {
   HeartHandshake,
   Shield,
@@ -125,14 +127,14 @@ function ProGate() {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-6" data-testid="legacy-pro-gate">
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-8" data-testid="legacy-pro-gate">
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
         <Crown className="h-10 w-10 text-white" />
       </div>
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Legacy Plan</h1>
-        <p className="text-lg text-muted-foreground max-w-md">
-          Member for Life — your crypto doesn't die with you.
+        <h1 className="text-3xl font-bold">Legacy Plan — crypto inheritance</h1>
+        <p className="text-lg text-muted-foreground max-w-md mx-auto">
+          A non-custodial dead-man switch so your crypto doesn't die with you. Pick the plan that fits.
         </p>
       </div>
 
@@ -141,51 +143,55 @@ function ProGate() {
         <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Encrypted beneficiary instructions — no seed phrases stored</li>
         <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Grace period with secondary contact verification</li>
         <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Wallet-specific recovery guidance (CypheRock, Ledger, Xaman, etc.)</li>
-        <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /> Member for Life — plan stays active as long as your subscription</li>
       </ul>
 
-      <div className="grid gap-4 md:grid-cols-2 max-w-2xl w-full">
-        <Card className="border-2 border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Add-On</CardTitle>
-            <CardDescription>Add to any tier</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold">$9.99</span>
-              <span className="text-muted-foreground">/month</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Legacy Plan only — add it to Free or Premium</p>
-            <Button className="w-full" onClick={() => buyAddon.mutate()} disabled={buyAddon.isPending} data-testid="button-buy-addon">
-              {buyAddon.isPending ? "Loading..." : "Add Legacy Plan"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-amber-500 relative">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <Badge className="bg-amber-500 text-white">Best Value</Badge>
-          </div>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Upgrade to Pro</CardTitle>
-            <CardDescription>Legacy Plan + everything else</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold">$99</span>
-              <span className="text-muted-foreground">/month</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Legacy Plan included free, plus DeFi Borrowing, XLS-66 Lending, batch payments, team seats & more</p>
-            <Button className="w-full bg-amber-500 hover:bg-amber-600" asChild>
-              <a href="/settings" data-testid="link-upgrade-pro">Go Pro</a>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-3 max-w-4xl w-full">
+        {legacyTiers.map((tier) => (
+          <Card
+            key={tier.addonKey}
+            className={tier.highlight ? "border-2 border-pink-500 shadow-lg relative" : "border-2 border-border"}
+            data-testid={`gate-card-legacy-${tier.name.toLowerCase().replace(/\s+/g, "-")}`}
+          >
+            {tier.highlight && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-pink-600 text-white">Best Value</Badge>
+              </div>
+            )}
+            <CardContent className="p-6 text-left space-y-3">
+              <h3 className="text-lg font-bold">{tier.name}</h3>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-bold">{tier.price}</span>
+                <span className="text-muted-foreground text-sm">{tier.cadence}</span>
+              </div>
+              <p className="text-xs text-muted-foreground min-h-[2.5rem]">{tier.blurb}</p>
+              <LegacyCheckout tier={tier} isAuthed={true} />
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <p className="text-xs text-muted-foreground max-w-md">
-        Competitors charge $40–$250/yr for crypto inheritance alone. Our add-on is $9.99/mo, or get it free with Pro which includes 15+ additional features.
-      </p>
+      <div className="space-y-3 max-w-md text-sm text-muted-foreground">
+        <p>
+          Prefer to pay month to month? You can{" "}
+          <button
+            type="button"
+            className="text-primary underline"
+            onClick={() => buyAddon.mutate()}
+            disabled={buyAddon.isPending}
+            data-testid="button-buy-addon"
+          >
+            add Legacy Plan for $9.99/month
+          </button>{" "}
+          instead.
+        </p>
+        <p>
+          Or get it free with <a href="/settings" className="text-primary underline" data-testid="link-upgrade-pro">Pro ($99/month)</a>,
+          which includes Member for Life plus 15+ other features.
+        </p>
+        <p className="text-xs">
+          Only one Legacy Plan is active at a time. Crypto payments get 10% off (15% on BTC, ETH, SOL, XRP, RLUSD).
+        </p>
+      </div>
     </div>
   );
 }

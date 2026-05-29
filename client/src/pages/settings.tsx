@@ -1724,7 +1724,7 @@ export default function SettingsPage() {
                       </div>
                       <p className="text-[11px] text-muted-foreground mb-3 ml-6">Add extra chains, tools, or features to any paid plan</p>
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {Object.entries(addonCatalog).filter(([k]) => k !== "legacy-plan-yearly" && k !== "legacy-plan-lifetime").map(([key, addon]: [string, any]) => {
+                        {Object.entries(addonCatalog).filter(([k]) => k !== "legacy-plan-yearly" && k !== "legacy-plan-5yr" && k !== "legacy-plan-lifetime").map(([key, addon]: [string, any]) => {
                           const isActive = activeAddons.some((a: any) => a.addonKey === key);
                           const isIncludedInTier = selectedTier === "pro" || (selectedTier === "premium" && (addon.type === "multi_chain" || addon.type === "technical_analysis" || addon.type === "payments"));
                           const isSelected = selectedAddons.has(key);

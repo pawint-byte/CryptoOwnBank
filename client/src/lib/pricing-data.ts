@@ -50,3 +50,39 @@ export const proFeatures = [
   "Up to 5 team member seats",
   "XLS-65/66 Lending (pending validator vote)",
 ];
+
+export interface LegacyTier {
+  name: string;
+  addonKey: "legacy-plan-yearly" | "legacy-plan-5yr" | "legacy-plan-lifetime";
+  price: string;
+  cadence: string;
+  blurb: string;
+  highlight?: boolean;
+}
+
+export const legacyTiers: LegacyTier[] = [
+  {
+    name: "Annual",
+    addonKey: "legacy-plan-yearly",
+    price: "$29",
+    cadence: "/year",
+    blurb:
+      "The lowest-cost way to put crypto inheritance in place. Renews yearly until you cancel.",
+  },
+  {
+    name: "5-Year",
+    addonKey: "legacy-plan-5yr",
+    price: "$99",
+    cadence: "/5 years",
+    blurb: "Pay once for five years of coverage at a discount. No auto-renew.",
+    highlight: true,
+  },
+  {
+    name: "Member for Life",
+    addonKey: "legacy-plan-lifetime",
+    price: "$499",
+    cadence: "one-time",
+    blurb:
+      "Pay once, covered forever — no renewals, no future price increases. Included free with Pro.",
+  },
+];

@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
-import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain } from "./stripe";
+import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS } from "./stripe";
 import { createOnrampSession, isValidAddressForNetwork } from "./stripe-onramp";
 import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "./thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
@@ -5879,6 +5879,9 @@ ${sections}
             if (addonKey && addonType) {
               const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
               if (!existingAddon) {
+                const addonExpiresAt = addonKey === "legacy-plan-5yr"
+                  ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 5); return d; })()
+                  : null;
                 await storage.createUserAddon({
                   userId,
                   addonType,
@@ -5886,7 +5889,7 @@ ${sections}
                   status: "active",
                   paymentMethod: "stripe",
                   stripeSubscriptionId: session.subscription || null,
-                  expiresAt: null,
+                  expiresAt: addonExpiresAt,
                 });
               }
             }
@@ -5964,6 +5967,9 @@ ${sections}
           if (addonKey && addonType) {
             const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
             if (!existingAddon) {
+              const addonExpiresAt = addonKey === "legacy-plan-5yr"
+                ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 5); return d; })()
+                : null;
               await storage.createUserAddon({
                 userId,
                 addonType,
@@ -5971,7 +5977,7 @@ ${sections}
                 status: "active",
                 paymentMethod: "stripe",
                 stripeSubscriptionId: session.subscription || null,
-                expiresAt: null,
+                expiresAt: addonExpiresAt,
               });
             }
           }
@@ -6076,10 +6082,10 @@ ${sections}
       }
 
       const { tier } = await getEffectiveTier(userId);
-      const isLegacy = addonKey === "legacy-plan" || addonKey === "legacy-plan-yearly" || addonKey === "legacy-plan-lifetime";
+      const isLegacy = isLegacyAddon(addonKey);
       if (isLegacy) {
         if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
-        for (const k of ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"]) {
+        for (const k of LEGACY_ADDON_KEYS) {
           const existingLegacy = await storage.getUserAddonByKey(userId, k);
           if (existingLegacy && existingLegacy.status === "active") {
             return res.status(400).json({ message: "You already have an active Legacy Plan. Cancel it first to switch billing options." });
@@ -6098,11 +6104,13 @@ ${sections}
         ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
         : "http://localhost:5000";
 
+      const successPath = isLegacy ? "/legacy-plan?addon_success=true" : "/settings?addon_success=true";
+      const cancelPath = isLegacy ? "/pricing?addon_cancelled=true" : "/settings?addon_cancelled=true";
       const session = await createAddonCheckoutSession(
         userId,
         addonKey as AddonKey,
-        `${baseUrl}/settings?addon_success=true`,
-        `${baseUrl}/settings?addon_cancelled=true`
+        `${baseUrl}${successPath}`,
+        `${baseUrl}${cancelPath}`
       );
 
       res.json({ url: session.url });
@@ -6125,10 +6133,10 @@ ${sections}
       }
 
       const { tier } = await getEffectiveTier(userId);
-      const isLegacy = addonKey === "legacy-plan" || addonKey === "legacy-plan-yearly" || addonKey === "legacy-plan-lifetime";
+      const isLegacy = isLegacyAddon(addonKey);
       if (isLegacy) {
         if (tier === "pro") return res.status(400).json({ message: "Legacy Plan is already included in your Pro tier." });
-        for (const k of ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"]) {
+        for (const k of LEGACY_ADDON_KEYS) {
           const existingLegacy = await storage.getUserAddonByKey(userId, k);
           if (existingLegacy && existingLegacy.status === "active") {
             return res.status(400).json({ message: "You already have an active Legacy Plan. Cancel it first to switch billing options." });
@@ -9638,9 +9646,10 @@ Rules you MUST follow:
   async function hasLegacyAccess(userId: string): Promise<boolean> {
     const { tier } = await getEffectiveTier(userId);
     if (tier === "pro") return true;
-    for (const k of ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"]) {
+    const now = new Date();
+    for (const k of LEGACY_ADDON_KEYS) {
       const addon = await storage.getUserAddonByKey(userId, k);
-      if (addon && addon.status === "active") return true;
+      if (addon && addon.status === "active" && (!addon.expiresAt || new Date(addon.expiresAt) > now)) return true;
     }
     return false;
   }

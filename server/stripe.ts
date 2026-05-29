@@ -119,10 +119,19 @@ export const ADDONS = {
     name: "Legacy Plan — Annual",
     type: "legacy_plan",
     key: "legacy-plan-yearly",
-    amount: 7900,
+    amount: 2900,
     interval: "year" as const,
-    priceLabel: "$79/yr",
-    description: "Crypto inheritance dead-man switch — $79/yr (save $40 vs monthly)",
+    priceLabel: "$29/yr",
+    description: "Crypto inheritance dead-man switch — $29/yr. Renews yearly until you cancel.",
+  },
+  "legacy-plan-5yr": {
+    name: "Legacy Plan — 5-Year",
+    type: "legacy_plan",
+    key: "legacy-plan-5yr",
+    amount: 9900,
+    interval: null as null,
+    priceLabel: "$99 / 5 years",
+    description: "One-time payment covering 5 years of crypto inheritance — $99. No auto-renew.",
   },
   "legacy-plan-lifetime": {
     name: "Legacy Plan — Lifetime",
@@ -135,7 +144,7 @@ export const ADDONS = {
   },
 };
 
-export const LEGACY_ADDON_KEYS = ["legacy-plan", "legacy-plan-yearly", "legacy-plan-lifetime"] as const;
+export const LEGACY_ADDON_KEYS = ["legacy-plan", "legacy-plan-yearly", "legacy-plan-5yr", "legacy-plan-lifetime"] as const;
 export type LegacyAddonKey = typeof LEGACY_ADDON_KEYS[number];
 export function isLegacyAddon(key: string): key is LegacyAddonKey {
   return (LEGACY_ADDON_KEYS as readonly string[]).includes(key);

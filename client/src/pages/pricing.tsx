@@ -20,31 +20,9 @@ import {
   premiumFeatures,
   annualBonusFeatures,
   proFeatures,
+  legacyTiers,
 } from "@/lib/pricing-data";
-
-const LEGACY_PLAN_TIERS = [
-  {
-    name: "Annual",
-    price: "$29",
-    cadence: "/year",
-    blurb:
-      "The lowest-cost way to put crypto inheritance in place. Renews yearly until you cancel.",
-  },
-  {
-    name: "5-Year",
-    price: "$99",
-    cadence: "/5 years",
-    blurb: "Lock in 5 years of coverage at a discount. Best for steady setups.",
-    highlight: true,
-  },
-  {
-    name: "Member for Life",
-    price: "$499",
-    cadence: "one-time",
-    blurb:
-      "Pay once, covered forever — no renewals, no future price increases. Included free with Pro.",
-  },
-];
+import { LegacyCheckout } from "@/components/legacy-checkout";
 
 export default function Pricing() {
   const { user } = useAuth();
@@ -256,7 +234,7 @@ export default function Pricing() {
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {LEGACY_PLAN_TIERS.map((tier) => (
+              {legacyTiers.map((tier) => (
                 <Card
                   key={tier.name}
                   className={
@@ -275,26 +253,14 @@ export default function Pricing() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">{tier.blurb}</p>
-                    <Link href={user ? "/legacy-plan" : "/signup"}>
-                      <Button
-                        variant={tier.highlight ? "default" : "outline"}
-                        className={
-                          tier.highlight
-                            ? "w-full bg-pink-600 hover:bg-pink-700"
-                            : "w-full"
-                        }
-                        data-testid={`button-legacy-${tier.name.toLowerCase().replace(/\s+/g, "-")}`}
-                      >
-                        {user ? "Set up Legacy Plan" : "Get a free account first"}
-                      </Button>
-                    </Link>
+                    <LegacyCheckout tier={tier} isAuthed={!!user} />
                   </CardContent>
                 </Card>
               ))}
             </div>
             <p className="text-center text-xs text-muted-foreground mt-4">
               Pro members get <strong>Member for Life</strong> included free. Crypto
-              payments get the standard 10% discount.
+              payments get 10% off (15% on Bitcoin, Ethereum, Solana, XRP, and RLUSD).
             </p>
           </div>
 

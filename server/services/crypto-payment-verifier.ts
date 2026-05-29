@@ -776,6 +776,9 @@ export async function activateSubscription(payment: CryptoPayment) {
     let expiresAt: Date | null;
     if (addonKey === "legacy-plan-lifetime") {
       expiresAt = null;
+    } else if (addonKey === "legacy-plan-5yr") {
+      expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 5);
     } else if (addonConfig.interval === "year") {
       expiresAt = new Date();
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
