@@ -5,7 +5,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
-import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS } from "./stripe";
+import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "./stripe";
+import { handleStripeWebhookEvent } from "./stripe-webhook";
 import { createOnrampSession, isValidAddressForNetwork } from "./stripe-onramp";
 import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "./thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "./email";
@@ -5866,198 +5867,19 @@ ${sections}
       const sig = req.headers["stripe-signature"];
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+      let event: any;
       if (!webhookSecret) {
-        const event = req.body;
-        if (event.type === "checkout.session.completed") {
-          const session = event.data.object;
-          const userId = session.metadata?.userId;
-          const isAddon = session.metadata?.isAddon === "true";
-
-          if (isAddon && userId) {
-            const addonKey = session.metadata?.addonKey;
-            const addonType = session.metadata?.addonType;
-            if (addonKey && addonType) {
-              if (isLegacyAddon(addonKey)) {
-                const addonExpiresAt = addonKey === "legacy-plan-5yr"
-                  ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 5); return d; })()
-                  : null;
-                await storage.activateLegacyAddon({
-                  userId,
-                  addonType,
-                  addonKey,
-                  paymentMethod: "stripe",
-                  stripeSubscriptionId: session.subscription || null,
-                  externalRef: session.id ? `stripe:${session.id}` : null,
-                  expiresAt: addonExpiresAt,
-                });
-              } else {
-                const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
-                if (!existingAddon) {
-                  await storage.createUserAddon({
-                    userId,
-                    addonType,
-                    addonKey,
-                    status: "active",
-                    paymentMethod: "stripe",
-                    stripeSubscriptionId: session.subscription || null,
-                    expiresAt: null,
-                  });
-                }
-              }
-            }
-          } else if (userId) {
-            const plan = session.metadata?.plan || "monthly";
-            const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
-            const tier = session.metadata?.tier || "premium";
-            const existing = await storage.getUserSettings(userId);
-            await storage.upsertUserSettings({
-              userId,
-              taxMethod: existing?.taxMethod || "FIFO",
-              defaultCurrency: existing?.defaultCurrency || "USD",
-              subscriptionTier: tier,
-              subscriptionBillingCycle: billingCycle,
-              subscriptionPaymentMethod: "stripe",
-              subscriptionExpiresAt: null,
-              subscriptionRenewalWallet: existing?.subscriptionRenewalWallet || null,
-              stripeCustomerId: session.customer,
-              stripeSubscriptionId: session.subscription,
-            });
-          }
-        } else if (
-          event.type === "customer.subscription.deleted" ||
-          event.type === "customer.subscription.updated"
-        ) {
-          const subscription = event.data.object;
-          const status = subscription.status;
-          const customerId = subscription.customer;
-          if (status === "canceled" || status === "unpaid") {
-            const { userAddons: userAddonsTable } = await import("@shared/schema");
-            const addonSubs = await db.select().from(userAddonsTable).where(eq(userAddonsTable.stripeSubscriptionId, subscription.id as string));
-            for (const addon of addonSubs) {
-              await storage.cancelUserAddon(addon.id);
-            }
-
-            const allSettings = await db
-              .select()
-              .from(userSettingsTable)
-              .where(eq(userSettingsTable.stripeCustomerId, customerId as string));
-            for (const s of allSettings) {
-              if (s.stripeSubscriptionId === subscription.id) {
-                await storage.upsertUserSettings({
-                  userId: s.userId,
-                  taxMethod: s.taxMethod || "FIFO",
-                  defaultCurrency: s.defaultCurrency || "USD",
-                  subscriptionTier: "free",
-                  subscriptionBillingCycle: null,
-                  subscriptionPaymentMethod: null,
-                  subscriptionExpiresAt: null,
-                  stripeCustomerId: s.stripeCustomerId,
-                  stripeSubscriptionId: s.stripeSubscriptionId,
-                });
-              }
-            }
-          }
-        }
-        return res.json({ received: true });
+        event = req.body;
+      } else {
+        const { stripe } = await import("./stripe");
+        event = stripe.webhooks.constructEvent(
+          JSON.stringify(req.body),
+          sig,
+          webhookSecret
+        );
       }
 
-      const { stripe } = await import("./stripe");
-      const event = stripe.webhooks.constructEvent(
-        JSON.stringify(req.body),
-        sig,
-        webhookSecret
-      );
-
-      if (event.type === "checkout.session.completed") {
-        const session = event.data.object as any;
-        const userId = session.metadata?.userId;
-        const isAddon = session.metadata?.isAddon === "true";
-
-        if (isAddon && userId) {
-          const addonKey = session.metadata?.addonKey;
-          const addonType = session.metadata?.addonType;
-          if (addonKey && addonType) {
-            if (isLegacyAddon(addonKey)) {
-              const addonExpiresAt = addonKey === "legacy-plan-5yr"
-                ? (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 5); return d; })()
-                : null;
-              await storage.activateLegacyAddon({
-                userId,
-                addonType,
-                addonKey,
-                paymentMethod: "stripe",
-                stripeSubscriptionId: session.subscription || null,
-                externalRef: session.id ? `stripe:${session.id}` : null,
-                expiresAt: addonExpiresAt,
-              });
-            } else {
-              const existingAddon = await storage.getUserAddonByKey(userId, addonKey);
-              if (!existingAddon) {
-                await storage.createUserAddon({
-                  userId,
-                  addonType,
-                  addonKey,
-                  status: "active",
-                  paymentMethod: "stripe",
-                  stripeSubscriptionId: session.subscription || null,
-                  expiresAt: null,
-                });
-              }
-            }
-          }
-        } else if (userId) {
-          const plan = session.metadata?.plan || "monthly";
-          const billingCycle = (plan === "yearly" || plan === "pro-yearly") ? "yearly" : "monthly";
-          const tier = session.metadata?.tier || "premium";
-          const existing = await storage.getUserSettings(userId);
-          await storage.upsertUserSettings({
-            userId,
-            taxMethod: existing?.taxMethod || "FIFO",
-            defaultCurrency: existing?.defaultCurrency || "USD",
-            subscriptionTier: tier,
-            subscriptionBillingCycle: billingCycle,
-            subscriptionPaymentMethod: "stripe",
-            subscriptionExpiresAt: null,
-            subscriptionRenewalWallet: existing?.subscriptionRenewalWallet || null,
-            stripeCustomerId: session.customer,
-            stripeSubscriptionId: session.subscription,
-          });
-        }
-      } else if (
-        event.type === "customer.subscription.deleted" ||
-        event.type === "customer.subscription.updated"
-      ) {
-        const subscription = event.data.object as any;
-        const status = subscription.status;
-        const customerId = subscription.customer;
-        if (status === "canceled" || status === "unpaid") {
-          const { userAddons: userAddonsTable } = await import("@shared/schema");
-          const addonSubs = await db.select().from(userAddonsTable).where(eq(userAddonsTable.stripeSubscriptionId, subscription.id as string));
-          for (const addon of addonSubs) {
-            await storage.cancelUserAddon(addon.id);
-          }
-
-          const allSettings = await db
-            .select()
-            .from(userSettingsTable)
-            .where(eq(userSettingsTable.stripeCustomerId, customerId as string));
-          for (const s of allSettings) {
-            if (s.stripeSubscriptionId === subscription.id) {
-              await storage.upsertUserSettings({
-                userId: s.userId,
-                taxMethod: s.taxMethod || "FIFO",
-                defaultCurrency: s.defaultCurrency || "USD",
-                subscriptionTier: "free",
-                subscriptionBillingCycle: null,
-                subscriptionPaymentMethod: null,
-                subscriptionExpiresAt: null,
-                stripeCustomerId: s.stripeCustomerId,
-                stripeSubscriptionId: s.stripeSubscriptionId,
-              });
-            }
-          }
-        }
-      }
+      await handleStripeWebhookEvent(event);
 
       res.json({ received: true });
     } catch (error) {
@@ -9673,7 +9495,7 @@ Rules you MUST follow:
     const now = new Date();
     for (const k of LEGACY_ADDON_KEYS) {
       const addon = await storage.getUserAddonByKey(userId, k);
-      if (addon && addon.status === "active" && (!addon.expiresAt || new Date(addon.expiresAt) > now)) return true;
+      if (isLegacyAddonActive(addon, now)) return true;
     }
     return false;
   }

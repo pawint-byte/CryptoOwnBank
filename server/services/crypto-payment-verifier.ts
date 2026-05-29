@@ -773,21 +773,9 @@ export async function activateSubscription(payment: CryptoPayment) {
       return;
     }
 
-    let expiresAt: Date | null;
-    if (addonKey === "legacy-plan-lifetime") {
-      expiresAt = null;
-    } else if (addonKey === "legacy-plan-5yr") {
-      expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 5);
-    } else if (addonConfig.interval === "year") {
-      expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-    } else {
-      expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-    }
+    const { computeLegacyAddonExpiry, isLegacyAddon } = await import("../stripe");
+    const expiresAt = computeLegacyAddonExpiry(addonKey, "crypto");
 
-    const { isLegacyAddon } = await import("../stripe");
     if (isLegacyAddon(addonKey)) {
       await storage.activateLegacyAddon({
         userId: payment.userId,

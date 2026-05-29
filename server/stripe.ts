@@ -150,6 +150,50 @@ export function isLegacyAddon(key: string): key is LegacyAddonKey {
   return (LEGACY_ADDON_KEYS as readonly string[]).includes(key);
 }
 
+// Single source of truth for when a Legacy Plan add-on purchase expires.
+// Card ("stripe") purchases of recurring SKUs (monthly/annual) never set an
+// expiry — Stripe auto-renews them, so access is revoked via subscription
+// cancellation webhooks instead. Crypto purchases are one-time prepayments, so
+// they must carry a concrete expiry per term. One-time SKUs behave identically
+// for both rails: 5-Year prepays 5 years; Lifetime never expires.
+export function computeLegacyAddonExpiry(
+  addonKey: string,
+  paymentMethod: "stripe" | "crypto",
+  now: Date = new Date(),
+): Date | null {
+  if (addonKey === "legacy-plan-lifetime") return null;
+  if (addonKey === "legacy-plan-5yr") {
+    const d = new Date(now);
+    d.setFullYear(d.getFullYear() + 5);
+    return d;
+  }
+  // Recurring SKUs (legacy-plan-yearly, legacy-plan): card subscriptions
+  // auto-renew, so no fixed expiry is stored.
+  if (paymentMethod === "stripe") return null;
+  // Crypto prepays one term up front.
+  const addonConfig = ADDONS[addonKey as keyof typeof ADDONS];
+  const d = new Date(now);
+  if (addonConfig && addonConfig.interval === "year") {
+    d.setFullYear(d.getFullYear() + 1);
+  } else {
+    d.setDate(d.getDate() + 30);
+  }
+  return d;
+}
+
+// Predicate used to decide whether a stored add-on grants Legacy Plan access.
+// Access requires an active status and either no expiry (lifetime / live card
+// subscription) or an expiry still in the future.
+export function isLegacyAddonActive(
+  addon: { status: string; expiresAt: Date | string | null } | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!addon) return false;
+  if (addon.status !== "active") return false;
+  if (!addon.expiresAt) return true;
+  return new Date(addon.expiresAt) > now;
+}
+
 // "House Tier" chains get an extra 5% off (15% total vs 10% baseline) — they're
 // the assets we actually want to hold in treasury (BTC/ETH/SOL appreciate;
 // XRP/RLUSD are our home chain where the yield vaults run).
