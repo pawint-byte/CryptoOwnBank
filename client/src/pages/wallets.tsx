@@ -1334,7 +1334,7 @@ export default function Wallets() {
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean> | null>(null);
   const [expandedAssets, setExpandedAssets] = useState<Record<string, boolean>>({});
   const [assetSortMode, setAssetSortMode] = useState<"value" | "name">("value");
-  const [walletSortMode, setWalletSortMode] = useState<"value" | "name">("value");
+  const [walletSortMode, setWalletSortMode] = useState<"value" | "name">("name");
   const [detailSortMode, setDetailSortMode] = useState<"value" | "name" | "source" | "chain">("value");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -2778,7 +2778,7 @@ export default function Wallets() {
                         </CardHeader>
                         {!isCollapsed && (
                           <CardContent className="pt-0 space-y-3">
-                            {groupWallets.map((w) => {
+                            {[...groupWallets].sort((a, b) => (CHAIN_LABELS[a.chain] || a.chain).localeCompare(CHAIN_LABELS[b.chain] || b.chain)).map((w) => {
                               const totalVal = w.balances.reduce((s, b) => s + getEnrichedUsdValue(b.assetSymbol, parseFloat(b.balance), b.usdValue), 0);
                               const xamanLinked = w.chain === "xrp" && isXamanLinked(w.address);
                               const isXrpAddress = w.chain === "xrp";
