@@ -139,6 +139,7 @@ const CHAIN_LABELS: Record<string, string> = {
   sui: "SUI",
   sonic: "S",
   fet: "FET",
+  constellation: "DAG",
   manual: "MAN",
 };
 
@@ -172,6 +173,7 @@ const CHAIN_COLORS: Record<string, string> = {
   sui: "#4DA2FF",
   sonic: "#5A5AFF",
   fet: "#1B1464",
+  constellation: "#3399FF",
   manual: "#888888",
 };
 
@@ -408,6 +410,7 @@ function getExplorerUrl(chain: string, address: string): string {
     sui: `https://suiscan.xyz/mainnet/account/${address}`,
     sonic: `https://sonicscan.org/address/${address}`,
     fet: `https://www.mintscan.io/fetchai/address/${address}`,
+    constellation: `https://dagexplorer.io/search?term=${address}`,
   };
   return explorers[chain] || "#";
 }
@@ -1859,6 +1862,29 @@ export default function Wallets() {
     createMutation.mutate(values);
   };
 
+  const [connectingStargazer, setConnectingStargazer] = useState(false);
+  const handleConnectStargazer = async () => {
+    setConnectingStargazer(true);
+    try {
+      const { connectStargazerDag } = await import("@/lib/stargazer-connector");
+      const address = await connectStargazerDag();
+      form.setValue("chain", "constellation", { shouldValidate: true });
+      form.setValue("address", address, { shouldValidate: true });
+      if (!form.getValues("label")) {
+        form.setValue("label", "Stargazer");
+      }
+      toast({ title: "Stargazer connected", description: "Your DAG address was filled in. Press Add Address to track it." });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Could not connect Stargazer",
+        description: err?.message || "Please try again.",
+      });
+    } finally {
+      setConnectingStargazer(false);
+    }
+  };
+
   const handleCopy = (address: string) => {
     navigator.clipboard.writeText(address);
     setCopiedAddress(address);
@@ -2015,6 +2041,7 @@ export default function Wallets() {
     { value: "bsc", label: "BNB Smart Chain (BSC)" },
     { value: "cardano", label: "Cardano (ADA)" },
     { value: "casper", label: "Casper (CSPR)" },
+    { value: "constellation", label: "Constellation (DAG)" },
     { value: "cosmos", label: "Cosmos Hub (ATOM)" },
     { value: "cronos", label: "Cronos (CRO)" },
     { value: "digibyte", label: "DigiByte (DGB)" },
@@ -2130,6 +2157,41 @@ export default function Wallets() {
                   Paste a public address from any blockchain below. We'll pull the current balance and, for Bitcoin and Ethereum, your full transaction history with cost basis. We never need your private keys. This also works for AI agent wallets (Coinbase AgentKit, x402) — just paste the agent's public address.
                 </DialogDescription>
               </DialogHeader>
+              <div className="rounded-md border border-[#3399FF]/40 bg-[#3399FF]/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Have Constellation (DAG)?</p>
+                    <p className="text-xs text-muted-foreground">
+                      Connect Stargazer to fill in your DAG address automatically.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-[#3399FF] text-[#3399FF] hover:bg-[#3399FF]/10"
+                    onClick={handleConnectStargazer}
+                    disabled={connectingStargazer}
+                    data-testid="button-connect-stargazer"
+                  >
+                    {connectingStargazer ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <Link2 className="h-4 w-4 mr-1.5" />
+                        Connect Stargazer
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Desktop only (Chrome/Brave with the Stargazer extension). On other devices, paste your DAG address below.
+                </p>
+              </div>
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField

@@ -634,6 +634,25 @@ export async function getXrpBalance(address: string): Promise<ChainBalance[]> {
   }
 }
 
+export async function getConstellationBalance(address: string): Promise<ChainBalance[]> {
+  try {
+    const data = await fetchJson(`https://be-mainnet.constellationnetwork.io/addresses/${address}/balance`);
+    const raw = data?.data?.balance;
+    if (raw === undefined || raw === null) return [];
+    const dag = Number(raw) / 1e8;
+    if (!(dag > 0)) return [];
+    const prices = await getPrices(["DAG"]);
+    return [{
+      symbol: "DAG",
+      balance: dag,
+      usdValue: dag * (prices.DAG || 0),
+    }];
+  } catch (err) {
+    console.error("Constellation balance fetch error:", err);
+    return [];
+  }
+}
+
 export async function getDogeBalance(address: string): Promise<ChainBalance[]> {
   try {
     const data = await fetchJson(`https://dogecoin.atomicwallet.io/api/v2/address/${address}`);
@@ -2031,7 +2050,7 @@ export async function getEvmL2Balance(
   return balances;
 }
 
-export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "bsc" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon" | "sui" | "sonic" | "fet" | "base" | "arbitrum" | "optimism";
+export type SupportedChain = "bitcoin" | "ethereum" | "solana" | "xrp" | "flare" | "dogecoin" | "litecoin" | "cardano" | "avalanche" | "algorand" | "bsc" | "cosmos" | "tron" | "hedera" | "polkadot" | "vechain" | "digibyte" | "casper" | "cronos" | "nervos" | "zilliqa" | "ton" | "stellar" | "verge" | "xdc" | "polygon" | "sui" | "sonic" | "fet" | "constellation" | "base" | "arbitrum" | "optimism";
 
 export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string; addressPattern: string; example: string }> = {
   bitcoin: { name: "Bitcoin", symbol: "BTC", addressPattern: "^(1|3|bc1)", example: "bc1q..." },
@@ -2063,6 +2082,7 @@ export const CHAIN_CONFIG: Record<SupportedChain, { name: string; symbol: string
   sui: { name: "Sui", symbol: "SUI", addressPattern: "^0x[a-fA-F0-9]{64}$", example: "0x..." },
   sonic: { name: "Sonic", symbol: "S", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   fet: { name: "Fetch.ai / ASI", symbol: "FET", addressPattern: "^(fetch1|0x)", example: "fetch1..." },
+  constellation: { name: "Constellation", symbol: "DAG", addressPattern: "^DAG[a-zA-Z0-9]{36,40}$", example: "DAG..." },
   base: { name: "Base", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   arbitrum: { name: "Arbitrum One", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
   optimism: { name: "Optimism", symbol: "ETH", addressPattern: "^0x[a-fA-F0-9]{40}$", example: "0x..." },
@@ -2128,6 +2148,8 @@ export async function getWalletBalances(chain: SupportedChain, address: string):
       return getSonicBalance(address);
     case "fet":
       return getFetBalance(address);
+    case "constellation":
+      return getConstellationBalance(address);
     case "base":
       return getEvmL2Balance(address, "base");
     case "arbitrum":
