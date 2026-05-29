@@ -120,6 +120,7 @@ import HelpBuyCrypto from "@/pages/help-buy-crypto";
 import HelpTransferFromExchange from "@/pages/help-transfer-from-exchange";
 import HelpSoilVault from "@/pages/help-soil-vault";
 import HelpAaveBorrow from "@/pages/help-aave-borrow";
+import HelpTrackCostBasis from "@/pages/help-track-cost-basis";
 import HelpSovereigntyKit from "@/pages/help-sovereignty-kit";
 import HelpLegacyTier from "@/pages/help-legacy-tier";
 import HelpLegacyBeneficiary from "@/pages/help-legacy-beneficiary";
@@ -331,6 +332,7 @@ function AuthenticatedRoutes() {
         <Route path="/help/transfer-from-exchange" component={HelpTransferFromExchange} />
         <Route path="/help/soil-vault" component={HelpSoilVault} />
         <Route path="/help/aave-borrow" component={HelpAaveBorrow} />
+        <Route path="/help/track-cost-basis" component={HelpTrackCostBasis} />
         <Route path="/help/sovereignty-kit" component={HelpSovereigntyKit} />
         <Route path="/help/legacy-tier" component={HelpLegacyTier} />
         <Route path="/help/legacy-beneficiary" component={HelpLegacyBeneficiary} />
@@ -403,6 +405,7 @@ function Router() {
         <Route path="/help/transfer-from-exchange" component={HelpTransferFromExchange} />
         <Route path="/help/soil-vault" component={HelpSoilVault} />
         <Route path="/help/aave-borrow" component={HelpAaveBorrow} />
+        <Route path="/help/track-cost-basis" component={HelpTrackCostBasis} />
         <Route path="/help/sovereignty-kit" component={HelpSovereigntyKit} />
         <Route path="/help/legacy-tier" component={HelpLegacyTier} />
         <Route path="/help/legacy-beneficiary" component={HelpLegacyBeneficiary} />

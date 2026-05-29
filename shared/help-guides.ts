@@ -71,6 +71,15 @@ export const HELP_GUIDES: GuideMeta[] = [
     next: "sovereignty-kit",
   },
   {
+    slug: "track-cost-basis",
+    title: "Track your crypto for taxes",
+    blurb: "Tell us what you paid — so your tax reports and tax-savings scan actually work.",
+    readMinutes: 4,
+    section: "grow",
+    status: "live",
+    next: "sovereignty-kit",
+  },
+  {
     slug: "sovereignty-kit",
     title: "Generate your Sovereignty Recovery Kit",
     blurb: "One printable page your family can use to recover everything you own.",
