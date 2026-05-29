@@ -1125,16 +1125,18 @@ export default function Portfolio() {
                                       </span>
                                     </div>
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-muted-foreground hover:text-chart-2"
-                                    onClick={() => goSell(position.assetSymbol, position.accountId, position.quantity, position.currentPrice)}
-                                    data-testid={`button-sell-position-${position.id}`}
-                                    title={`Record a sale or swap of ${position.assetSymbol}`}
-                                  >
-                                    <ArrowLeftRight className="h-4 w-4" />
-                                  </Button>
+                                  {!position.isWallet && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-muted-foreground hover:text-chart-2"
+                                      onClick={() => goSell(position.assetSymbol, position.accountId, position.quantity, position.currentPrice)}
+                                      data-testid={`button-sell-position-${position.id}`}
+                                      title={`Record a sale or swap of ${position.assetSymbol}`}
+                                    >
+                                      <ArrowLeftRight className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="icon"
