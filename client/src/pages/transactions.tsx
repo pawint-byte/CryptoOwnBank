@@ -364,8 +364,8 @@ export default function Transactions() {
       setIsDialogOpen(false);
       form.reset();
     },
-    onError: () => {
-      toast({ title: "Failed to add transaction", variant: "destructive" });
+    onError: (e) => {
+      toast({ title: extractMessage(e, "Failed to add transaction"), variant: "destructive" });
     },
   });
 
@@ -427,7 +427,7 @@ export default function Transactions() {
     if (sellAsset) {
       setEditingId(null);
       form.reset({
-        accountId: "manual",
+        accountId: params.get("acct") || "manual",
         assetSymbol: sellAsset.toUpperCase(),
         transactionType: "sell",
         disposalType: "sale",

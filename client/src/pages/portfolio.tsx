@@ -202,8 +202,9 @@ export default function Portfolio() {
   };
   const [editingPosition, setEditingPosition] = useState<PositionWithMarket | null>(null);
   const [, setLocation] = useLocation();
-  const goSell = (symbol: string, qty?: number | string, price?: number) => {
+  const goSell = (symbol: string, accountId?: string, qty?: number | string, price?: number) => {
     const params = new URLSearchParams({ sell: symbol });
+    if (accountId) params.set("acct", accountId);
     if (qty !== undefined && qty !== null && String(qty) !== "") params.set("qty", String(qty));
     if (price && price > 0) params.set("price", String(price));
     setLocation(`/transactions?${params.toString()}`);
@@ -1128,7 +1129,7 @@ export default function Portfolio() {
                                     variant="ghost"
                                     size="icon"
                                     className="text-muted-foreground hover:text-chart-2"
-                                    onClick={() => goSell(position.assetSymbol, position.quantity, position.currentPrice)}
+                                    onClick={() => goSell(position.assetSymbol, position.accountId, position.quantity, position.currentPrice)}
                                     data-testid={`button-sell-position-${position.id}`}
                                     title={`Record a sale or swap of ${position.assetSymbol}`}
                                   >
@@ -1231,26 +1232,14 @@ export default function Portfolio() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
-                            <div className="text-right">
-                              <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">{formatCurrency(item.totalValue)}</div>
-                              <div className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
-                                Avg: {formatCurrency(avgCost)} | Basis: {formatCurrency(item.totalCostBasis)}
-                              </div>
-                              <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                <span className="hidden sm:inline">{gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} </span>({gainPct.toFixed(2)}%)
-                              </div>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <div className="font-mono font-medium text-xs sm:text-base whitespace-nowrap">{formatCurrency(item.totalValue)}</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+                              Avg: {formatCurrency(avgCost)} | Basis: {formatCurrency(item.totalCostBasis)}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-muted-foreground hover:text-chart-2"
-                              onClick={() => goSell(item.symbol, item.totalQty, item.totalQty > 0 ? item.totalValue / item.totalQty : undefined)}
-                              data-testid={`button-sell-consolidated-${item.symbol}`}
-                              title={`Record a sale or swap of ${item.symbol}`}
-                            >
-                              <ArrowLeftRight className="h-4 w-4" />
-                            </Button>
+                            <div className={cn("text-xs sm:text-sm", gainLoss > 0 ? "text-chart-2" : gainLoss < 0 ? "text-destructive" : "text-muted-foreground")}>
+                              <span className="hidden sm:inline">{gainLoss > 0 ? "+" : ""}{formatCurrency(gainLoss)} </span>({gainPct.toFixed(2)}%)
+                            </div>
                           </div>
                         </div>
                       </div>

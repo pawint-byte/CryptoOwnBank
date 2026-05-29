@@ -3585,6 +3585,11 @@ ${sections}
           });
         }
         accountId = manualAccount.id;
+      } else {
+        const account = await storage.getAccount(accountId);
+        if (!account || account.userId !== userId) {
+          return res.status(403).json({ message: "That account isn't linked to your profile. Pick one of your own accounts." });
+        }
       }
 
       const upperSymbol = data.assetSymbol.toUpperCase();
