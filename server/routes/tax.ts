@@ -76,7 +76,36 @@ export function registerTaxRoutes(app: Express) {
       const endDate = new Date(year, 11, 31, 23, 59, 59);
       
       const txns = await storage.getTransactionsByDateRange(userId, startDate, endDate);
-      const sellTxns = txns.filter(t => t.transactionType === "sell");
+      // Only finalized sales count. Outgoing transfers awaiting the user's review
+      // ("pending") must never be turned into taxable gain events.
+      const sellTxns = txns.filter(t => t.transactionType === "sell" && t.reviewStatus !== "pending");
+
+      // Make this endpoint idempotent: clicking "Calculate Taxes" repeatedly used to
+      // stack a fresh set of gain events on top of the old ones (doubling, tripling…)
+      // and over-consuming tax lots. Before recomputing, undo this year's existing
+      // gain events — restore the quantity they consumed back onto their tax lots,
+      // then delete them — so we always rebuild from a clean slate.
+      const existingEvents = await storage.getGainEventsByYear(userId, year);
+      if (existingEvents.length > 0) {
+        const allLots = await storage.getTaxLotsByUser(userId);
+        const lotById = new Map(allLots.map((l) => [l.id, l]));
+        const restoredByLot = new Map<string, number>();
+        for (const ev of existingEvents) {
+          restoredByLot.set(
+            ev.taxLotId,
+            (restoredByLot.get(ev.taxLotId) || 0) + parseFloat(ev.quantity),
+          );
+          await storage.deleteGainEvent(ev.id);
+        }
+        for (const [lotId, qty] of Array.from(restoredByLot.entries())) {
+          const lot = lotById.get(lotId);
+          if (lot) {
+            await storage.updateTaxLot(lot.id, {
+              remainingQuantity: (parseFloat(lot.remainingQuantity) + qty).toFixed(8),
+            });
+          }
+        }
+      }
 
       for (const sellTx of sellTxns) {
         const lots = await storage.getTaxLotsByAsset(userId, sellTx.assetSymbol);

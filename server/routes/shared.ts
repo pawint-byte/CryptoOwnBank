@@ -49,6 +49,30 @@ export const SOIL_VAULT_ADDRESSES = [
   // YIELD vault address — add here when Soil activates the pool
 ];
 export const SOIL_VAULT_ADDRESS = SOIL_VAULT_ADDRESSES[0];
+
+// Doppler vault addresses (deposit / treasury / withdrawal legs).
+export const DOPPLER_VAULT_ADDRESSES = [
+  "rEPQxsSVER2r4HeVR4APrVCB45K68rqgp2",
+  "rprFy94qJB5riJpMmnPDp3ttmVKfcrFiuq",
+  "rGuVpUBfprkb1cmKFGbL8c48fQWT3xEwyZ",
+];
+
+// All known yield-vault deposit/withdrawal addresses. An outgoing transfer to
+// one of these is a vault deposit (moving your own funds), NOT a taxable sale.
+export const KNOWN_VAULT_ADDRESSES = [
+  ...SOIL_VAULT_ADDRESSES,
+  ...DOPPLER_VAULT_ADDRESSES,
+];
+
+const KNOWN_VAULT_ADDRESS_SET = new Set(
+  KNOWN_VAULT_ADDRESSES.map((a) => a.toLowerCase()),
+);
+
+export function isKnownVaultAddress(address: string | null | undefined): boolean {
+  if (!address) return false;
+  return KNOWN_VAULT_ADDRESS_SET.has(address.toLowerCase());
+}
+
 export const RLUSD_CURRENCY_HEX = RLUSD.currency;
 
 export async function getEffectiveTier(userId: string): Promise<{ tier: string; billingCycle: string }> {

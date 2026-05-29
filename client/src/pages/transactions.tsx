@@ -81,6 +81,7 @@ import {
   SlidersHorizontal,
   Pencil,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
@@ -137,6 +138,8 @@ interface UnifiedTransaction {
   usdValue?: number;
   amount2?: string;
   currency2?: string;
+  reviewStatus?: string | null;
+  notes?: string | null;
 }
 
 type ColumnKey = "date" | "type" | "direction" | "asset" | "quantity" | "price" | "total" | "usdValue" | "fee" | "source" | "account" | "hash";
@@ -275,13 +278,23 @@ function dbTxToUnified(tx: Transaction, accounts: Account[]): UnifiedTransaction
     accountName: account?.accountName || undefined,
     direction: directionMap[tx.transactionType] || "buy",
     hash: tx.externalId || undefined,
+    reviewStatus: tx.reviewStatus,
+    notes: tx.notes,
   };
 }
+
+const REVIEW_OPTIONS: { value: string; label: string; help: string }[] = [
+  { value: "vault_deposit", label: "Deposit into a yield vault", help: "Moving coins into a vault — not a sale, no tax." },
+  { value: "own_transfer", label: "Transfer to my own wallet", help: "Sending to another wallet you control — not a sale, no tax." },
+  { value: "sale", label: "A sale", help: "You sold this for cash — counts as a taxable sale." },
+  { value: "swap", label: "A swap for another coin", help: "You traded it for a different coin — a taxable disposal." },
+];
 
 export default function Transactions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingTx, setDeletingTx] = useState<UnifiedTransaction | null>(null);
+  const [reviewingTx, setReviewingTx] = useState<UnifiedTransaction | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -418,6 +431,35 @@ export default function Transactions() {
     },
   });
 
+  const resolveReviewMutation = useMutation({
+    mutationFn: async ({ id, category }: { id: string; category: string }) =>
+      apiRequest("POST", `/api/transactions/${id}/resolve-review`, { category }),
+    onSuccess: () => {
+      invalidateTxQueries();
+      toast({ title: "Thanks — we've updated this transfer." });
+      setReviewingTx(null);
+    },
+    onError: (e) => {
+      toast({ title: extractMessage(e, "Couldn't update this transfer"), variant: "destructive" });
+    },
+  });
+
+  const flagImportedMutation = useMutation({
+    mutationFn: async () => apiRequest("POST", "/api/transactions/flag-imported-sells"),
+    onSuccess: async (res) => {
+      const data = await res.json().catch(() => ({ flagged: 0 }));
+      invalidateTxQueries();
+      toast({
+        title: data.flagged > 0
+          ? `${data.flagged} imported transfer${data.flagged === 1 ? "" : "s"} moved to review`
+          : "Nothing to review — your imported transfers look fine.",
+      });
+    },
+    onError: (e) => {
+      toast({ title: extractMessage(e, "Couldn't check imported sales"), variant: "destructive" });
+    },
+  });
+
   const isEditable = (tx: UnifiedTransaction) =>
     !tx.id.startsWith("xrpl-") && (tx.source === "manual" || tx.source.endsWith("_import"));
 
@@ -475,6 +517,15 @@ export default function Transactions() {
     (a, b) => b.date.getTime() - a.date.getTime()
   );
 
+  const pendingReview = unifiedDb.filter((tx) => tx.reviewStatus === "pending");
+  const importedSellsToFlag = unifiedDb.filter(
+    (tx) =>
+      tx.type === "sell" &&
+      tx.reviewStatus !== "pending" &&
+      typeof tx.notes === "string" &&
+      (tx.notes.startsWith("Imported from") || tx.notes.includes("(auto-synced)")),
+  );
+
   const sourceOptions = (() => {
     const sources = new Set<string>();
     allUnified.forEach((tx) => sources.add(tx.source));
@@ -529,6 +580,13 @@ export default function Transactions() {
       trust: { label: "TRUST", className: "" },
       cancel: { label: "CANCEL", className: "" },
     };
+    if (tx.reviewStatus === "pending") {
+      return (
+        <Badge variant="default" className="bg-amber-500 text-white">
+          NEEDS REVIEW
+        </Badge>
+      );
+    }
     const c = config[tx.direction] || { label: tx.type.toUpperCase(), className: "" };
     return (
       <Badge variant="default" className={c.className}>
@@ -554,6 +612,73 @@ export default function Transactions() {
           feature="Showing last 7 days of transactions. Upgrade to Premium for complete history."
         />
       )}
+
+      {pendingReview.length > 0 && (
+        <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/30" data-testid="card-review-banner">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-medium text-sm">
+                  {pendingReview.length} outgoing transfer{pendingReview.length === 1 ? "" : "s"} need{pendingReview.length === 1 ? "s" : ""} your label
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  We couldn't tell if {pendingReview.length === 1 ? "this was" : "these were"} a sale or just you moving your own coins. Until you label {pendingReview.length === 1 ? "it" : "them"}, {pendingReview.length === 1 ? "it" : "they"} won't count as a taxable sale.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {pendingReview.slice(0, 8).map((tx) => (
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between gap-3 rounded-md border bg-background p-3"
+                  data-testid={`row-review-${tx.id}`}
+                >
+                  <div className="text-sm">
+                    <span className="font-medium">{tx.quantity} {tx.asset}</span>
+                    <span className="text-muted-foreground ml-2">{format(tx.date, "MMM d, yyyy")}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setReviewingTx(tx)}
+                    data-testid={`button-review-${tx.id}`}
+                  >
+                    Label this
+                  </Button>
+                </div>
+              ))}
+              {pendingReview.length > 8 && (
+                <p className="text-xs text-muted-foreground">…and {pendingReview.length - 8} more below in the table.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {pendingReview.length === 0 && importedSellsToFlag.length > 0 && (
+        <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/30" data-testid="card-flag-imported-banner">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-medium text-sm">Check your imported sales</p>
+                <p className="text-sm text-muted-foreground">
+                  We found {importedSellsToFlag.length} auto-imported transfer{importedSellsToFlag.length === 1 ? "" : "s"} marked as a sale. Some of these may have been vault deposits or moves between your own wallets. Review them so they don't get taxed by mistake.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => flagImportedMutation.mutate()}
+              disabled={flagImportedMutation.isPending}
+              data-testid="button-flag-imported"
+              className="shrink-0"
+            >
+              {flagImportedMutation.isPending ? "Checking…" : "Review imported sales"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Transactions</h1>
@@ -1171,6 +1296,37 @@ export default function Transactions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!reviewingTx} onOpenChange={(open) => !open && setReviewingTx(null)}>
+        <DialogContent data-testid="dialog-review">
+          <DialogHeader>
+            <DialogTitle>What was this transfer?</DialogTitle>
+            <DialogDescription>
+              {reviewingTx
+                ? `You sent ${reviewingTx.quantity} ${reviewingTx.asset} on ${format(reviewingTx.date, "MMM d, yyyy")}. Tell us what it was so we tax it correctly.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {REVIEW_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={resolveReviewMutation.isPending}
+                onClick={() =>
+                  reviewingTx &&
+                  resolveReviewMutation.mutate({ id: reviewingTx.id, category: opt.value })
+                }
+                className="w-full text-left rounded-md border p-3 hover-elevate active-elevate-2 disabled:opacity-50"
+                data-testid={`button-review-option-${opt.value}`}
+              >
+                <p className="font-medium text-sm">{opt.label}</p>
+                <p className="text-sm text-muted-foreground">{opt.help}</p>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

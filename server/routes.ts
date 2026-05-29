@@ -24,7 +24,7 @@ import fs from "fs";
 import path from "path";
 
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
-import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./routes/shared";
+import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX, isKnownVaultAddress } from "./routes/shared";
 import { registerLegacyRoutes } from "./routes/legacy";
 import { registerChainsRoutes } from "./routes/chains";
 import { registerDcaRoutes } from "./routes/dca";
@@ -3344,7 +3344,30 @@ Rules you MUST follow:
                   const isStableAuto = STABLECOINS_AUTO.has(tx.asset.toUpperCase());
                   const pricePerUnit = isStableAuto ? 1.0 : (priceMapSync.get(`${tx.asset}:${dayKey}`) || 0);
                   const totalValue = tx.quantity * pricePerUnit;
-                  const txType = isOwnTransfer ? "transfer" : (tx.type === "receive" ? "buy" : "sell");
+                  // Classify the transaction. Incoming = buy. Outgoing needs care:
+                  // we must never silently invent a taxable "sale". Transfers to the
+                  // user's own wallets and known yield vaults are not sales; anything
+                  // else outgoing is HELD for the user to label before it can count.
+                  const isVaultDeposit = tx.type !== "receive" && isKnownVaultAddress(tx.recipientAddress);
+                  let txType: string;
+                  let reviewStatus: string | null = null;
+                  let txNotes: string;
+                  if (tx.type === "receive") {
+                    txType = "buy";
+                    txNotes = isOwnTransfer
+                      ? `Transfer between own wallets (auto-synced)`
+                      : `Imported from blockchain (auto-synced)`;
+                  } else if (isOwnTransfer) {
+                    txType = "transfer";
+                    txNotes = `Transfer between own wallets (auto-synced)`;
+                  } else if (isVaultDeposit) {
+                    txType = "transfer";
+                    txNotes = `Vault deposit (auto-synced)`;
+                  } else {
+                    txType = "sell";
+                    reviewStatus = "pending";
+                    txNotes = `Outgoing transfer — needs review (auto-synced)`;
+                  }
 
                   const transaction = await storage.createTransaction({
                     userId,
@@ -3357,9 +3380,8 @@ Rules you MUST follow:
                     fee: tx.fee.toString(),
                     transactionDate: tx.timestamp,
                     externalId: tx.hash,
-                    notes: isOwnTransfer
-                      ? `Transfer between own wallets (auto-synced)`
-                      : `Imported from blockchain (auto-synced)`,
+                    reviewStatus,
+                    notes: txNotes,
                   });
 
                   if (txType === "buy" && pricePerUnit > 0) {
@@ -3989,7 +4011,29 @@ Rules you MUST follow:
               const isStable = STABLECOINS_SET.has(tx.asset.toUpperCase());
               const pricePerUnit = isStable ? 1.0 : (priceMapByAssetDay.get(`${tx.asset}:${dayKey}`) || 0);
               const totalValue = tx.quantity * pricePerUnit;
-              const txType = isOwnTransfer ? "transfer" : (tx.type === "receive" ? "buy" : "sell");
+              // Classify the transaction. Incoming = buy. Outgoing is never silently
+              // treated as a taxable "sale": own-wallet and known-vault transfers are
+              // non-taxable; anything else outgoing is HELD for the user to label.
+              const isVaultDeposit = tx.type !== "receive" && isKnownVaultAddress(tx.recipientAddress);
+              let txType: string;
+              let reviewStatus: string | null = null;
+              let txNotes: string;
+              if (tx.type === "receive") {
+                txType = "buy";
+                txNotes = isOwnTransfer
+                  ? `Transfer between own wallets (${chainName})`
+                  : `Imported from ${chainName} blockchain`;
+              } else if (isOwnTransfer) {
+                txType = "transfer";
+                txNotes = `Transfer between own wallets (${chainName})`;
+              } else if (isVaultDeposit) {
+                txType = "transfer";
+                txNotes = `Vault deposit (${chainName})`;
+              } else {
+                txType = "sell";
+                reviewStatus = "pending";
+                txNotes = `Outgoing transfer — needs review (${chainName})`;
+              }
 
               const transaction = await storage.createTransaction({
                 userId,
@@ -4002,9 +4046,8 @@ Rules you MUST follow:
                 fee: tx.fee.toString(),
                 transactionDate: tx.timestamp,
                 externalId: tx.hash,
-                notes: isOwnTransfer
-                  ? `Transfer between own wallets (${chainName})`
-                  : `Imported from ${chainName} blockchain`,
+                reviewStatus,
+                notes: txNotes,
               });
 
               if (txType === "buy" && pricePerUnit > 0) {

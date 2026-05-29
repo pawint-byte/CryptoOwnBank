@@ -2115,6 +2115,112 @@ export function registerPortfolioRoutes(app: Express) {
     }
   });
 
+  // Shared helper: remove any gain events linked to a sell transaction and put the
+  // quantity they consumed back onto their tax lots. Used when a held "sale" turns
+  // out to be a non-taxable transfer, or when re-holding an imported sale.
+  async function clearGainEventsForSell(userId: string, sellTxId: string) {
+    const events = (await storage.getGainEventsByUser(userId)).filter(
+      (g) => g.sellTransactionId === sellTxId,
+    );
+    if (events.length === 0) return;
+    const allLots = await storage.getTaxLotsByUser(userId);
+    const lotById = new Map(allLots.map((l) => [l.id, l]));
+    const restoredByLot = new Map<string, number>();
+    for (const ev of events) {
+      restoredByLot.set(
+        ev.taxLotId,
+        (restoredByLot.get(ev.taxLotId) || 0) + parseFloat(ev.quantity),
+      );
+      await storage.deleteGainEvent(ev.id);
+    }
+    for (const [lotId, qty] of Array.from(restoredByLot.entries())) {
+      const lot = lotById.get(lotId);
+      if (lot) {
+        await storage.updateTaxLot(lot.id, {
+          remainingQuantity: (parseFloat(lot.remainingQuantity) + qty).toFixed(8),
+        });
+      }
+    }
+  }
+
+  // The user labels an outgoing transfer that the auto-sync held for review.
+  // "sale" / "swap" keep it as a taxable disposal; "own_transfer" / "vault_deposit"
+  // reclassify it as a non-taxable transfer so it never counts as a gain.
+  app.post("/api/transactions/:id/resolve-review", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tx = await storage.getTransaction(req.params.id);
+      if (!tx || tx.userId !== userId) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      if (tx.reviewStatus !== "pending") {
+        return res.status(400).json({ message: "This transaction isn't waiting for review." });
+      }
+
+      const category = String(req.body?.category || "");
+      const allowed = ["sale", "swap", "own_transfer", "vault_deposit"];
+      if (!allowed.includes(category)) {
+        return res.status(400).json({ message: "Pick how to label this transfer." });
+      }
+
+      if (category === "own_transfer" || category === "vault_deposit") {
+        // Not a sale — make sure no taxable gain is left behind.
+        await clearGainEventsForSell(userId, tx.id);
+        await storage.updateTransaction(tx.id, {
+          transactionType: "transfer",
+          reviewStatus: "resolved",
+          notes: category === "vault_deposit"
+            ? "Vault deposit (you labeled this)"
+            : "Transfer to your own wallet (you labeled this)",
+        });
+      } else {
+        // sale or swap — a taxable disposal. Keep it as a sell; it will be picked up
+        // the next time taxes are calculated.
+        await storage.updateTransaction(tx.id, {
+          transactionType: "sell",
+          reviewStatus: "resolved",
+          notes: category === "swap"
+            ? "Swap — taxable disposal (you labeled this)"
+            : "Sale — taxable disposal (you labeled this)",
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Resolve review error:", error);
+      res.status(500).json({ message: "Failed to update this transaction" });
+    }
+  });
+
+  // One-time cleanup: take every auto-synced/imported outgoing "sale" still counting
+  // as taxable and HOLD it for review instead, wiping the phantom gain events it
+  // created. This fixes historical data created before the auto-sync was corrected.
+  app.post("/api/transactions/flag-imported-sells", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const txns = await storage.getTransactionsByUser(userId);
+      const imported = txns.filter(
+        (t) =>
+          t.transactionType === "sell" &&
+          t.reviewStatus !== "pending" &&
+          typeof t.notes === "string" &&
+          (t.notes.startsWith("Imported from") || t.notes.includes("(auto-synced)")),
+      );
+
+      let flagged = 0;
+      for (const t of imported) {
+        await clearGainEventsForSell(userId, t.id);
+        await storage.updateTransaction(t.id, { reviewStatus: "pending" });
+        flagged++;
+      }
+
+      res.json({ success: true, flagged });
+    } catch (error) {
+      console.error("Flag imported sells error:", error);
+      res.status(500).json({ message: "Failed to flag imported sales for review" });
+    }
+  });
+
   app.get("/api/transactions/export", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
