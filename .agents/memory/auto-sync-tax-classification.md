@@ -21,4 +21,12 @@ Any operation that recomputes gain events (full year recompute, or converting a 
 
 **How to apply:** delete-owned-events → restore lot remainders → recompute. Skip reviewStatus==="pending" sells in any tax computation. A historical-cleanup path (flag imported/auto-synced sells → pending + wipe their phantom gains) lets already-corrupted data be fixed post-deploy, followed by Calculate Taxes + recalc-positions-from-lots.
 
+# Labeling a held transfer as a sale must realize gains immediately
+
+When a member labels a held transfer as sale/swap, run the FIFO/LIFO lot-matching disposal engine right then (gain events keyed to the sell tx id + lot decrements), idempotently (clear that sell's existing gain events + restore lots first). Don't just flip a flag and defer to the next "Calculate Taxes".
+
+**Why:** a review rejected deferring — the member expects the gain reflected on the spot, and deferring left the labeled sale silently unaccounted until a separate recompute. Crypto-to-crypto swaps are taxable disposals (consistent across manual-sell, record-sale, and the UI copy), so swap label = taxable, same as sale.
+
+**How to apply:** reuse one helper for label-time realization; it stays consistent with the yearly recompute because both are idempotent (clear-then-rebuild), so running both can't double-count.
+
 **Caveat:** these multi-step ops are non-transactional (matches the existing record-sale/import convention). Concurrent calls or mid-op failure can leave lots/events temporarily inconsistent — wrap in a DB transaction / per-user lock if revisited.
