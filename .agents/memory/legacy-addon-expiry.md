@@ -25,3 +25,14 @@ unlimited access for one payment.
 `computeLegacyAddonExpiry` — don't reinline date math in the webhook
 (`server/routes.ts`) or crypto verifier
 (`server/services/crypto-payment-verifier.ts`).
+
+## Pre-expiry warning sweep
+Only the SKUs with a stored (non-null) expiry that does NOT auto-renew get an
+advance warning email ~30 days out: `legacy-plan-5yr` (both rails) and
+crypto-paid `legacy-plan-yearly`. Lifetime (null) and card-paid recurring
+(null, auto-renews) are excluded — filtering by `expiresAt != null` naturally
+drops card-paid Annual. Crypto monthly is intentionally out of scope (a 30-day
+warning would fire at purchase). Sweep lives in
+`checkAndWarnLegacyExpiry()` (`server/services/subscription-renewal.ts`),
+de-dupes via `renewal_notifications` type `legacy_expiry` with a >30-day window
+so the 4h timer emails once per cycle, and links to `/pricing` to renew.

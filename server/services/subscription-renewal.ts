@@ -257,13 +257,129 @@ async function checkAndExpireAddons() {
   }
 }
 
+// Legacy Plan SKUs that carry a hard expiry and do NOT auto-renew: the 5-Year
+// one-time purchase (both rails) and the crypto-paid Annual (a one-time prepaid
+// term). Lifetime never expires; card-paid Annual/Monthly auto-renew via Stripe.
+// Those are excluded because their stored expiresAt is null.
+const LEGACY_WARN_ADDON_KEYS = ["legacy-plan-5yr", "legacy-plan-yearly"];
+const LEGACY_EXPIRY_WARN_DAYS = 30;
+const LEGACY_EXPIRY_WARN_TYPE = "legacy_expiry";
+
+function legacyAddonLabel(addonKey: string): string {
+  if (addonKey === "legacy-plan-5yr") return "5-Year Legacy Plan";
+  if (addonKey === "legacy-plan-yearly") return "Annual Legacy Plan";
+  return "Legacy Plan";
+}
+
+async function sendLegacyExpiryWarningEmail(
+  userId: string,
+  addonKey: string,
+  daysLeft: number,
+  expiresAt: Date,
+): Promise<boolean> {
+  try {
+    const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+    if (!user?.email) return false;
+
+    const planLabel = legacyAddonLabel(addonKey);
+    const pricingLink = `${getBaseUrl()}/pricing`;
+    const expiryDate = expiresAt.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const subject = `Your ${planLabel} expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
+
+    const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px;">
+          <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #00A4E4;">
+            <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+          </div>
+          <div style="padding: 30px 0;">
+            <h2 style="color: #1a1a1a; margin-bottom: 16px;">Your Legacy Plan is about to expire</h2>
+            <p style="color: #555; line-height: 1.6;">
+              Your <strong>${planLabel}</strong> expires on <strong>${expiryDate}</strong>
+              (in ${daysLeft} day${daysLeft === 1 ? "" : "s"}). This plan was a one-time
+              purchase and does <strong>not auto-renew</strong>, so your crypto inheritance
+              coverage will end unless you renew it.
+            </p>
+            <p style="color: #555; line-height: 1.6;">
+              Renew now to keep your beneficiaries protected without interruption.
+            </p>
+            <div style="margin: 24px 0;">
+              <a href="${pricingLink}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                Renew your Legacy Plan
+              </a>
+            </div>
+            <p style="color: #888; font-size: 13px;">
+              Or copy this link: <a href="${pricingLink}" style="color: #2563eb;">${pricingLink}</a>
+            </p>
+          </div>
+          <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+            <p>This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+          </div>
+        </div>
+      `;
+
+    await sendMainEmail(user.email, subject, html);
+    console.log(`[renewal] Sent Legacy Plan expiry warning to ${user.email} (user ${userId}, ${addonKey}, ${daysLeft}d left)`);
+    return true;
+  } catch (err) {
+    console.error("[renewal] Failed to send Legacy Plan expiry warning:", err);
+    return false;
+  }
+}
+
+async function checkAndWarnLegacyExpiry() {
+  try {
+    const expiringAddons = await storage.getExpiringAddons(LEGACY_EXPIRY_WARN_DAYS);
+    for (const addon of expiringAddons) {
+      if (!LEGACY_WARN_ADDON_KEYS.includes(addon.addonKey)) continue;
+      if (!addon.expiresAt) continue;
+
+      const daysLeft = getDaysUntilExpiry(new Date(addon.expiresAt));
+      // Only warn for plans still active and inside the warning window.
+      if (daysLeft <= 0 || daysLeft > LEGACY_EXPIRY_WARN_DAYS) continue;
+
+      // Send the warning at most once per expiry cycle (window covers the whole
+      // remaining term so the 4h sweep doesn't re-email daily).
+      const alreadySent = await storage.hasRecentRenewalNotification(
+        addon.userId,
+        LEGACY_EXPIRY_WARN_TYPE,
+        (LEGACY_EXPIRY_WARN_DAYS + 1) * 24,
+      );
+      if (alreadySent) continue;
+
+      const emailSent = await sendLegacyExpiryWarningEmail(
+        addon.userId,
+        addon.addonKey,
+        daysLeft,
+        new Date(addon.expiresAt),
+      );
+      if (!emailSent) continue;
+
+      await storage.createRenewalNotification({
+        userId: addon.userId,
+        type: LEGACY_EXPIRY_WARN_TYPE,
+        method: "email",
+        paymentId: null,
+      });
+    }
+  } catch (err) {
+    console.error("[renewal] Error checking Legacy Plan expiry warnings:", err);
+  }
+}
+
 export function startSubscriptionRenewalService() {
   const offsetMs = 150 * 60 * 1000;
   console.log("[renewal] Starting subscription renewal service (checks every 4h, offset 150min)");
   setTimeout(() => {
     checkAndRenewSubscriptions().catch(() => {});
     checkAndExpireAddons().catch(() => {});
+    checkAndWarnLegacyExpiry().catch(() => {});
     setInterval(checkAndRenewSubscriptions, 4 * 60 * 60 * 1000);
     setInterval(checkAndExpireAddons, 4 * 60 * 60 * 1000);
+    setInterval(checkAndWarnLegacyExpiry, 4 * 60 * 60 * 1000);
   }, offsetMs);
 }
