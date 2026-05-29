@@ -1,1 +1,2 @@
-- [Card on-ramp chain coverage](onramp-chain-coverage.md) — Stripe/THORChain/external rails each cover different chains; XRP has NO instant card rail (use Xaman seed-import). Check before writing buy/fund copy.
+- [Help guide step accuracy](help-guide-accuracy.md) — verify exact UI labels in source before quoting in /help guides; explore agents paraphrase/invent controls.
+- [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail; Stripe covers EVM/BTC/SOL/XLM, THORChain covers BTC/LTC/DOGE/BCH; XRP buyers use Xaman seed-import.

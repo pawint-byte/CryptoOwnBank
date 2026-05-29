@@ -117,6 +117,13 @@ import WalletCreate from "@/pages/wallet-create";
 import HelpIndex from "@/pages/help-index";
 import HelpCreateWallet from "@/pages/help-create-wallet";
 import HelpBuyCrypto from "@/pages/help-buy-crypto";
+import HelpTransferFromExchange from "@/pages/help-transfer-from-exchange";
+import HelpSoilVault from "@/pages/help-soil-vault";
+import HelpAaveBorrow from "@/pages/help-aave-borrow";
+import HelpSovereigntyKit from "@/pages/help-sovereignty-kit";
+import HelpLegacyTier from "@/pages/help-legacy-tier";
+import HelpLegacyBeneficiary from "@/pages/help-legacy-beneficiary";
+import HelpLegacyTest from "@/pages/help-legacy-test";
 import CryptoDebitCards from "@/pages/crypto-debit-cards";
 import DecryptPage from "@/pages/decrypt";
 import AiAssistant from "@/pages/ai-assistant";
@@ -320,6 +327,13 @@ function AuthenticatedRoutes() {
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
         <Route path="/help/buy-crypto" component={HelpBuyCrypto} />
+        <Route path="/help/transfer-from-exchange" component={HelpTransferFromExchange} />
+        <Route path="/help/soil-vault" component={HelpSoilVault} />
+        <Route path="/help/aave-borrow" component={HelpAaveBorrow} />
+        <Route path="/help/sovereignty-kit" component={HelpSovereigntyKit} />
+        <Route path="/help/legacy-tier" component={HelpLegacyTier} />
+        <Route path="/help/legacy-beneficiary" component={HelpLegacyBeneficiary} />
+        <Route path="/help/legacy-test" component={HelpLegacyTest} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/migration-guide" component={MigrationGuide} />
         <Route path="/faq" component={FAQ} />
@@ -385,6 +399,13 @@ function Router() {
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
         <Route path="/help/buy-crypto" component={HelpBuyCrypto} />
+        <Route path="/help/transfer-from-exchange" component={HelpTransferFromExchange} />
+        <Route path="/help/soil-vault" component={HelpSoilVault} />
+        <Route path="/help/aave-borrow" component={HelpAaveBorrow} />
+        <Route path="/help/sovereignty-kit" component={HelpSovereigntyKit} />
+        <Route path="/help/legacy-tier" component={HelpLegacyTier} />
+        <Route path="/help/legacy-beneficiary" component={HelpLegacyBeneficiary} />
+        <Route path="/help/legacy-test" component={HelpLegacyTest} />
         <Route path="/crypto-debit-cards" component={CryptoDebitCards} />
         <Route path="/yield-calculator" component={YieldCalculator} />
         <Route path="/pay" component={PayPage} />
