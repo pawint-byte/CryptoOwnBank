@@ -5752,7 +5752,7 @@ ${sections}
     }
   });
 
-  app.get("/api/tax-report", isAuthenticated, async (req: any, res) => {
+  app.get("/api/tax-report/:year/:method", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { tier: taxTier, billingCycle: taxCycle } = await getEffectiveTier(userId);
@@ -5760,7 +5760,7 @@ ${sections}
         return res.status(403).json({ message: "Tax reports require an Annual Premium plan ($199/yr). Monthly subscribers can upgrade to annual for full tax report access." });
       }
 
-      const year = parseInt(req.query.year as string) || new Date().getFullYear();
+      const year = parseInt(req.params.year as string) || new Date().getFullYear();
       
       const events = await storage.getGainEventsByYear(userId, year);
       
