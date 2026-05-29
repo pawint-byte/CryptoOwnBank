@@ -3744,6 +3744,200 @@ ${sections}
     }
   });
 
+  app.patch("/api/transactions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tx = await storage.getTransaction(req.params.id);
+      if (!tx || tx.userId !== userId) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      const txAccount = await storage.getAccount(tx.accountId);
+      const txProvider = txAccount?.provider || "manual";
+      if (txProvider !== "manual" && !txProvider.endsWith("_import")) {
+        return res.status(400).json({
+          message: "Only manual and imported entries can be edited here. On-chain wallet activity reflects the blockchain and can't be changed.",
+        });
+      }
+
+      if (tx.transactionType !== "buy" && tx.transactionType !== "income") {
+        return res.status(400).json({
+          message:
+            tx.transactionType === "sell"
+              ? "To change a sale, please delete it and add it again — that keeps your gain and loss calculations correct."
+              : "This type of entry can't be edited here. Delete it and add a new one instead.",
+        });
+      }
+
+      const data = req.body;
+      if (!data.quantity || !data.pricePerUnit || !data.transactionDate) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      const newQty = parseFloat(data.quantity);
+      const newPrice = parseFloat(data.pricePerUnit);
+      if (isNaN(newQty) || isNaN(newPrice) || newQty <= 0 || newPrice < 0) {
+        return res.status(400).json({ message: "Invalid quantity or price" });
+      }
+      const newTotal = newQty * newPrice;
+      const newDate = safeServerDate(data.transactionDate);
+
+      const lots = await storage.getTaxLotsByAsset(userId, tx.assetSymbol);
+      const lot = lots.find((l) => l.transactionId === tx.id);
+      if (lot && parseFloat(lot.remainingQuantity) < parseFloat(lot.originalQuantity) - 0.00000001) {
+        return res.status(400).json({
+          message: "This purchase is already matched to a sale you recorded. Delete that sale first, then edit this purchase.",
+        });
+      }
+
+      const oldQty = parseFloat(tx.quantity);
+      const oldTotal = parseFloat(tx.totalValue);
+
+      const updated = await storage.updateTransaction(tx.id, {
+        quantity: newQty.toString(),
+        pricePerUnit: newPrice.toString(),
+        totalValue: newTotal.toFixed(2),
+        transactionDate: newDate,
+        notes: data.notes ?? tx.notes,
+      });
+
+      if (lot) {
+        await storage.updateTaxLot(lot.id, {
+          originalQuantity: newQty.toString(),
+          remainingQuantity: newQty.toString(),
+          costBasisPerUnit: newPrice.toString(),
+          acquiredDate: newDate,
+        });
+      }
+
+      const position = await storage.getPositionByUserAndAsset(userId, tx.accountId, tx.assetSymbol);
+      if (position) {
+        const posQty = parseFloat(position.quantity) - oldQty + newQty;
+        const posCost = parseFloat(position.totalCostBasis) - oldTotal + newTotal;
+        if (posQty <= 0.00000001) {
+          await storage.deletePosition(position.id);
+        } else {
+          await storage.updatePosition(position.id, {
+            quantity: posQty.toString(),
+            averageCost: (posCost / posQty).toString(),
+            totalCostBasis: posCost.toFixed(2),
+          });
+        }
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Update transaction error:", error);
+      res.status(500).json({ message: "Failed to update transaction" });
+    }
+  });
+
+  app.delete("/api/transactions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tx = await storage.getTransaction(req.params.id);
+      if (!tx || tx.userId !== userId) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      const txAccount = await storage.getAccount(tx.accountId);
+      const txProvider = txAccount?.provider || "manual";
+      if (txProvider !== "manual" && !txProvider.endsWith("_import")) {
+        return res.status(400).json({
+          message: "Only manual and imported entries can be deleted here. On-chain wallet activity reflects the blockchain and can't be changed.",
+        });
+      }
+
+      const qty = parseFloat(tx.quantity);
+
+      if (tx.transactionType === "buy" || tx.transactionType === "income") {
+        const lots = await storage.getTaxLotsByAsset(userId, tx.assetSymbol);
+        const lot = lots.find((l) => l.transactionId === tx.id);
+        if (lot && parseFloat(lot.remainingQuantity) < parseFloat(lot.originalQuantity) - 0.00000001) {
+          return res.status(400).json({
+            message: "This purchase is already matched to a sale you recorded. Delete that sale first, then remove this purchase.",
+          });
+        }
+        if (lot) {
+          await storage.deleteTaxLot(lot.id);
+        }
+
+        const position = await storage.getPositionByUserAndAsset(userId, tx.accountId, tx.assetSymbol);
+        if (position) {
+          const posQty = parseFloat(position.quantity) - qty;
+          const posCost = parseFloat(position.totalCostBasis) - parseFloat(tx.totalValue);
+          if (posQty <= 0.00000001) {
+            await storage.deletePosition(position.id);
+          } else {
+            await storage.updatePosition(position.id, {
+              quantity: posQty.toString(),
+              averageCost: (Math.max(0, posCost) / posQty).toString(),
+              totalCostBasis: Math.max(0, posCost).toFixed(2),
+            });
+          }
+        }
+      } else if (tx.transactionType === "sell") {
+        const allLots = await storage.getTaxLotsByUser(userId);
+        const lotById = new Map(allLots.map((l) => [l.id, l]));
+        const events = (await storage.getGainEventsByUser(userId)).filter(
+          (g) => g.sellTransactionId === tx.id,
+        );
+
+        if (events.length === 0) {
+          return res.status(409).json({
+            message: "We couldn't find the gain/loss records linked to this sale, so deleting it could throw off your holdings. It's been left in place — please reach out before removing it.",
+          });
+        }
+
+        let restoredQty = 0;
+        let restoredCost = 0;
+        for (const ev of events) {
+          const lot = lotById.get(ev.taxLotId);
+          if (lot) {
+            await storage.updateTaxLot(lot.id, {
+              remainingQuantity: (parseFloat(lot.remainingQuantity) + parseFloat(ev.quantity)).toFixed(8),
+            });
+            if (lot.walletBalanceId) {
+              const wbLots = await storage.getTaxLotsByWalletBalance(userId, lot.walletBalanceId);
+              const totalRem = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
+              const totalCb = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
+              const avg = totalRem > 0 ? totalCb / totalRem : 0;
+              await storage.updateWalletBalanceCostData(lot.walletBalanceId, avg.toFixed(8), totalCb.toFixed(2));
+            }
+          }
+          restoredQty += parseFloat(ev.quantity);
+          restoredCost += parseFloat(ev.costBasis);
+          await storage.deleteGainEvent(ev.id);
+        }
+
+        const position = await storage.getPositionByUserAndAsset(userId, tx.accountId, tx.assetSymbol);
+        if (position) {
+          const posQty = parseFloat(position.quantity) + restoredQty;
+          const posCost = parseFloat(position.totalCostBasis) + restoredCost;
+          await storage.updatePosition(position.id, {
+            quantity: posQty.toString(),
+            averageCost: posQty > 0 ? (posCost / posQty).toString() : "0",
+            totalCostBasis: posCost.toFixed(2),
+          });
+        } else if (restoredQty > 0.00000001) {
+          await storage.createPosition({
+            userId,
+            accountId: tx.accountId,
+            assetSymbol: tx.assetSymbol,
+            quantity: restoredQty.toString(),
+            averageCost: (restoredCost / restoredQty).toString(),
+            totalCostBasis: restoredCost.toFixed(2),
+          });
+        }
+      }
+
+      await storage.deleteTransaction(tx.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete transaction error:", error);
+      res.status(500).json({ message: "Failed to delete transaction" });
+    }
+  });
+
   app.get("/api/transactions/export", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

@@ -50,6 +50,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useUserData } from "@/hooks/use-user-data";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -69,6 +79,8 @@ import {
   ArrowDownLeft,
   ArrowLeftRight,
   SlidersHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
@@ -217,6 +229,18 @@ function xrplTxToUnified(tx: XrplTransaction, walletAddress: string, xrpPrice: n
   };
 }
 
+function extractMessage(e: unknown, fallback: string): string {
+  const raw = e instanceof Error ? e.message : "";
+  const m = raw.match(/^\d+:\s*([\s\S]*)$/);
+  if (m) {
+    try {
+      const parsed = JSON.parse(m[1]);
+      if (parsed && typeof parsed.message === "string") return parsed.message;
+    } catch {}
+  }
+  return fallback;
+}
+
 function dbTxToUnified(tx: Transaction, accounts: Account[]): UnifiedTransaction {
   const account = accounts.find((a) => a.id === tx.accountId);
   const source = account?.provider || "manual";
@@ -245,6 +269,8 @@ function dbTxToUnified(tx: Transaction, accounts: Account[]): UnifiedTransaction
 
 export default function Transactions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingTx, setDeletingTx] = useState<UnifiedTransaction | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -312,6 +338,14 @@ export default function Transactions() {
     },
   });
 
+  const invalidateTxQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/tax-report"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/tax/harvest-scan"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+  };
+
   const createMutation = useMutation({
     mutationFn: async (values: TransactionFormValues) => {
       return apiRequest("POST", "/api/transactions", {
@@ -320,11 +354,7 @@ export default function Transactions() {
       });
     },
     onSuccess: (_data, values) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tax-report"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tax/harvest-scan"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      invalidateTxQueries();
       toast({
         title:
           values.transactionType === "sell"
@@ -338,6 +368,58 @@ export default function Transactions() {
       toast({ title: "Failed to add transaction", variant: "destructive" });
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: string; values: TransactionFormValues }) => {
+      return apiRequest("PATCH", `/api/transactions/${id}`, {
+        quantity: values.quantity,
+        pricePerUnit: values.pricePerUnit,
+        transactionDate: values.transactionDate + "T12:00:00",
+        notes: values.notes,
+      });
+    },
+    onSuccess: () => {
+      invalidateTxQueries();
+      toast({ title: "Transaction updated" });
+      setIsDialogOpen(false);
+      setEditingId(null);
+      form.reset();
+    },
+    onError: (e) => {
+      toast({ title: extractMessage(e, "Couldn't update this transaction"), variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/transactions/${id}`),
+    onSuccess: () => {
+      invalidateTxQueries();
+      toast({ title: "Transaction deleted" });
+      setDeletingTx(null);
+    },
+    onError: (e) => {
+      toast({ title: extractMessage(e, "Couldn't delete this transaction"), variant: "destructive" });
+      setDeletingTx(null);
+    },
+  });
+
+  const isEditable = (tx: UnifiedTransaction) =>
+    !tx.id.startsWith("xrpl-") && (tx.source === "manual" || tx.source.endsWith("_import"));
+
+  const openEdit = (tx: UnifiedTransaction) => {
+    setEditingId(tx.id);
+    form.reset({
+      accountId: "manual",
+      assetSymbol: tx.asset,
+      transactionType: tx.direction === "sell" ? "sell" : "buy",
+      disposalType: "sale",
+      quantity: String(tx.quantity),
+      pricePerUnit: String(tx.price),
+      transactionDate: format(tx.date, "yyyy-MM-dd"),
+      notes: "",
+    });
+    setIsDialogOpen(true);
+  };
 
   const dbExternalIds = new Set(
     transactions.filter((t) => t.externalId).map((t) => t.externalId)
@@ -370,7 +452,11 @@ export default function Transactions() {
   });
 
   const onSubmit = (values: TransactionFormValues) => {
-    createMutation.mutate(values);
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, values });
+    } else {
+      createMutation.mutate(values);
+    }
   };
 
   const handleExport = async () => {
@@ -445,18 +531,36 @@ export default function Transactions() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) {
+                setEditingId(null);
+                form.reset();
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button size="sm" data-testid="button-add-transaction">
+              <Button
+                size="sm"
+                data-testid="button-add-transaction"
+                onClick={() => {
+                  setEditingId(null);
+                  form.reset();
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Transaction
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Add Transaction</DialogTitle>
+                <DialogTitle>{editingId ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
                 <DialogDescription>
-                  Record a new buy or sell transaction
+                  {editingId
+                    ? "Update the amount, price, or date for this entry. To change the asset or type, delete it and add a new one."
+                    : "Record a new buy or sell transaction"}
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -467,7 +571,7 @@ export default function Transactions() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Account</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingId}>
                           <FormControl>
                             <SelectTrigger data-testid="select-account">
                               <SelectValue placeholder="Select account" />
@@ -498,6 +602,7 @@ export default function Transactions() {
                             <Input
                               placeholder="BTC, ETH, AAPL..."
                               {...field}
+                              disabled={!!editingId}
                               data-testid="input-asset-symbol"
                             />
                           </FormControl>
@@ -512,7 +617,7 @@ export default function Transactions() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={!!editingId}>
                             <FormControl>
                               <SelectTrigger data-testid="select-transaction-type">
                                 <SelectValue />
@@ -657,16 +762,26 @@ export default function Transactions() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setEditingId(null);
+                        form.reset();
+                      }}
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createMutation.isPending}
+                      disabled={createMutation.isPending || updateMutation.isPending}
                       data-testid="button-submit-transaction"
                     >
-                      {createMutation.isPending ? "Adding..." : "Add Transaction"}
+                      {editingId
+                        ? updateMutation.isPending
+                          ? "Saving..."
+                          : "Save Changes"
+                        : createMutation.isPending
+                          ? "Adding..."
+                          : "Add Transaction"}
                     </Button>
                   </div>
                 </form>
@@ -797,6 +912,7 @@ export default function Transactions() {
                     {isCol("account") && <TableHead className="hidden sm:table-cell">Account</TableHead>}
                     {isCol("source") && <TableHead className="hidden sm:table-cell">Source</TableHead>}
                     {isCol("hash") && <TableHead>Tx Link</TableHead>}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -898,6 +1014,36 @@ export default function Transactions() {
                           )}
                         </TableCell>
                       )}
+                      <TableCell className="text-right">
+                        {isEditable(tx) ? (
+                          <div className="flex justify-end gap-1">
+                            {(tx.direction === "buy" || tx.direction === "income") && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => openEdit(tx)}
+                                data-testid={`button-edit-${tx.id}`}
+                                aria-label="Edit transaction"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setDeletingTx(tx)}
+                              data-testid={`button-delete-${tx.id}`}
+                              aria-label="Delete transaction"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -912,6 +1058,37 @@ export default function Transactions() {
           XRP USD values based on current price: {formatUsd(xrpPrice)}
         </p>
       )}
+
+      <AlertDialog open={!!deletingTx} onOpenChange={(open) => !open && setDeletingTx(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingTx
+                ? `This removes your ${deletingTx.direction === "sell" ? "sale" : "purchase"} of ${deletingTx.quantity.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${deletingTx.asset}. ${
+                    deletingTx.direction === "sell"
+                      ? "The matching gain or loss will be removed from your tax report and the coins put back into your holdings."
+                      : "Its cost basis will be removed from your holdings and tax reports. This can't be undone."
+                  }`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deletingTx) deleteMutation.mutate(deletingTx.id);
+              }}
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

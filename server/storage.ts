@@ -185,6 +185,8 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
+  updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction | undefined>;
+  deleteTransaction(id: string): Promise<void>;
   getTransactionsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Transaction[]>;
 
   createPosition(position: InsertPosition): Promise<Position>;
@@ -205,6 +207,7 @@ export interface IStorage {
   createGainEvent(gainEvent: InsertGainEvent): Promise<GainEvent>;
   getGainEventsByUser(userId: string): Promise<GainEvent[]>;
   getGainEventsByYear(userId: string, year: number): Promise<GainEvent[]>;
+  deleteGainEvent(id: string): Promise<void>;
 
   getUserSettings(userId: string): Promise<UserSettings | undefined>;
   upsertUserSettings(settings: InsertUserSettings): Promise<UserSettings>;
@@ -552,6 +555,19 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction | undefined> {
+    const [result] = await db
+      .update(transactions)
+      .set(data)
+      .where(eq(transactions.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTransaction(id: string): Promise<void> {
+    await db.delete(transactions).where(eq(transactions.id, id));
+  }
+
   async getTransactionsByDateRange(
     userId: string,
     startDate: Date,
@@ -665,6 +681,10 @@ export class DatabaseStorage implements IStorage {
 
   async getGainEventsByUser(userId: string): Promise<GainEvent[]> {
     return db.select().from(gainEvents).where(eq(gainEvents.userId, userId));
+  }
+
+  async deleteGainEvent(id: string): Promise<void> {
+    await db.delete(gainEvents).where(eq(gainEvents.id, id));
   }
 
   async getGainEventsByYear(userId: string, year: number): Promise<GainEvent[]> {
