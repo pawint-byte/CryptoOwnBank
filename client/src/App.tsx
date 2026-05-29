@@ -259,6 +259,7 @@ function AuthenticatedRoutes() {
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/whispers" component={Whispers} />
         <Route path="/tax-reports" component={TaxReports} />
+        <Route path="/tax-harvest" component={TaxReports} />
         <Route path="/integrations" component={Integrations} />
         <Route path="/settings" component={Settings} />
         <Route path="/dvpn" component={DvpnDirectory} />

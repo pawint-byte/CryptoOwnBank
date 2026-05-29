@@ -164,6 +164,7 @@ const allItems: NavItem[] = [
   // PLAN & PROTECT - the analysis surface
   { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "protect" },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "protect" },
+  { title: "Tax Savings (Harvest)", url: "/tax-harvest", icon: Sparkles, color: "#f59e0b", group: "protect" },
   { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "protect" },
   { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "protect" },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "protect" },

@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -155,6 +156,18 @@ export default function TaxReports() {
   const [harvestExpanded, setHarvestExpanded] = useState(false);
   const [harvestGuideOpen, setHarvestGuideOpen] = useState(false);
   const [selectedBracket, setSelectedBracket] = useState<"24" | "32" | "37">("32");
+  const [location] = useLocation();
+  const harvestRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (location === "/tax-harvest") {
+      setHarvestExpanded(true);
+      const t = setTimeout(() => {
+        harvestRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [location]);
 
   const { data: harvestData, isLoading: harvestLoading, refetch: refetchHarvest } = useQuery<HarvestOpportunity[]>({
     queryKey: ["/api/tax/harvest-scan"],
@@ -444,7 +457,7 @@ export default function TaxReports() {
         </Card>
       </div>
 
-      <Card>
+      <Card ref={harvestRef} className="scroll-mt-4">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
