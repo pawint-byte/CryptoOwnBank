@@ -116,6 +116,7 @@ const allItems: NavItem[] = [
 
   // EXECUTE - anything that changes what you hold
   { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "execute" },
+  { title: "Tax Savings (Harvest)", url: "/tax-harvest", icon: Sparkles, color: "#f59e0b", group: "execute" },
   { title: "XRPL Dashboard", url: "/ownbank", icon: Landmark, group: "execute", chain: "xrpl" },
   { title: "Stellar Dashboard", url: "/stellar/wallet", icon: Landmark, group: "execute", chain: "stellar" },
   { title: "XRPL Tokens", url: "/ownbank/tokens", icon: Coins, group: "execute", chain: "xrpl" },
@@ -164,7 +165,6 @@ const allItems: NavItem[] = [
   // PLAN & PROTECT - the analysis surface
   { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, group: "protect" },
   { title: "Tax Reports", url: "/tax-reports", icon: FileText, group: "protect" },
-  { title: "Tax Savings (Harvest)", url: "/tax-harvest", icon: Sparkles, color: "#f59e0b", group: "protect" },
   { title: "Statement Insights", url: "/statement-insights", icon: FileSearch, group: "protect" },
   { title: "Reconciliation", url: "/reconciliation", icon: ReconcileIcon, group: "protect" },
   { title: "Price Alerts", url: "/price-alerts", icon: Bell, group: "protect" },
