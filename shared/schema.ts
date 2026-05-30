@@ -55,6 +55,7 @@ export const transactions = pgTable("transactions", {
   externalId: varchar("external_id", { length: 100 }),
   notes: text("notes"),
   reviewStatus: varchar("review_status", { length: 20 }),
+  counterpartyAddress: varchar("counterparty_address", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_transactions_user").on(table.userId),

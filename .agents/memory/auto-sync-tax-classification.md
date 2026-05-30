@@ -30,3 +30,15 @@ When a member labels a held transfer as sale/swap, run the FIFO/LIFO lot-matchin
 **How to apply:** reuse one helper for label-time realization; it stays consistent with the yearly recompute because both are idempotent (clear-then-rebuild), so running both can't double-count.
 
 **Caveat:** these multi-step ops are non-transactional (matches the existing record-sale/import convention). Concurrent calls or mid-op failure can leave lots/events temporarily inconsistent — wrap in a DB transaction / per-user lock if revisited.
+
+# Self-healing reclassification of transfers to recognized addresses
+
+Once an address is the member's own wallet (non-"manual" chain) or a known vault, every PAST and FUTURE outgoing "sell" to it must auto-flip to a non-taxable transfer. To do this retroactively the sync must store WHERE the money went: a `counterpartyAddress` column on `transactions`. Only auto-synced rows get it (sender for receives, recipient for sends), so manual sells/swaps — which have no counterpartyAddress — are structurally immune to being auto-converted.
+
+**Why:** the recognition that an address is "mine" can happen AFTER the transfer was already imported as a phantom sale. Without the stored destination there's nothing to match on later, so the correction can only ever be forward-looking. Storing it makes the rule heal old data too.
+
+**How to apply:**
+- Persist + backfill counterpartyAddress in BOTH sync paths (backgroundWalletSync and POST /api/wallets/:id/sync) — backfill on already-imported rows whose column is null, on the next sync of the SENDING wallet (so old held rows converge with a one-sync delay).
+- `selfCorrectKnownTransfers(userId)` (server/services/transfer-reconciliation.ts) finds type==="sell" rows whose counterpartyAddress is own/vault, clears phantom gains (shared `clearGainEventsForSell`), sets type="transfer"/reviewStatus="resolved". Call it after add-wallet and at the end of both syncs.
+- Address matching is chain-aware: exact match for case-sensitive chains (xrp/solana/cardano/cosmos/stellar), case-insensitive only for EVM — blind lowercasing risks false own-wallet matches.
+- Concurrency: selfCorrectKnownTransfers is serialized per-user via a module-level promise-chain map, because background sync + wallet-add + manual sync can all fire it at once and double-restore lots. (This is the per-user lock the caveat above asked for, applied to this path only.)

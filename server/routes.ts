@@ -25,6 +25,7 @@ import path from "path";
 
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX, isKnownVaultAddress } from "./routes/shared";
+import { selfCorrectKnownTransfers } from "./services/transfer-reconciliation";
 import { registerLegacyRoutes } from "./routes/legacy";
 import { registerChainsRoutes } from "./routes/chains";
 import { registerDcaRoutes } from "./routes/dca";
@@ -3293,6 +3294,11 @@ Rules you MUST follow:
                 const existingExternalIds = new Set(
                   existingTxns.filter(t => t.externalId && t.accountId === walletAccount!.id).map(t => t.externalId)
                 );
+                const existingTxByExtId = new Map(
+                  existingTxns
+                    .filter(t => t.externalId && t.accountId === walletAccount!.id)
+                    .map(t => [t.externalId, t])
+                );
 
                 const uniqueDates = new Map<string, Date>();
                 for (const tx of blockchainTxs) {
@@ -3334,7 +3340,16 @@ Rules you MUST follow:
                 let totalQuantityBought = 0;
 
                 for (const tx of blockchainTxs) {
-                  if (existingExternalIds.has(tx.hash)) continue;
+                  const cpAddr = tx.type === "receive" ? tx.senderAddress : tx.recipientAddress;
+                  if (existingExternalIds.has(tx.hash)) {
+                    // Backfill the destination on rows imported before we recorded it,
+                    // so the self-correcting reconciler can recognize own/vault transfers.
+                    const existingRow = existingTxByExtId.get(tx.hash);
+                    if (existingRow && !existingRow.counterpartyAddress && cpAddr) {
+                      await storage.updateTransaction(existingRow.id, { counterpartyAddress: cpAddr });
+                    }
+                    continue;
+                  }
                   const normalizeAddr = (addr: string) => isCaseSensitive ? addr : addr.toLowerCase();
                   const isOwnTransfer = tx.type === "receive"
                     ? tx.senderAddress && ownAddresses.has(normalizeAddr(tx.senderAddress))
@@ -3381,6 +3396,7 @@ Rules you MUST follow:
                     transactionDate: tx.timestamp,
                     externalId: tx.hash,
                     reviewStatus,
+                    counterpartyAddress: cpAddr || null,
                     notes: txNotes,
                   });
 
@@ -3424,6 +3440,13 @@ Rules you MUST follow:
         } catch (err: any) {
           console.error(`[auto-sync] Error syncing wallet ${wallet.id}:`, err.message);
         }
+      }
+
+      try {
+        const corrected = await selfCorrectKnownTransfers(userId);
+        if (corrected > 0) console.log(`[auto-sync] Self-corrected ${corrected} transfer(s) to recognized own/vault addresses for user ${userId.slice(0, 8)}`);
+      } catch (scErr: any) {
+        console.error(`[auto-sync] Self-correct failed for ${userId.slice(0, 8)}:`, scErr.message);
       }
 
       userLastAutoSync.set(userId, Date.now());
@@ -3602,6 +3625,15 @@ Rules you MUST follow:
         }
       } catch (autoErr: any) {
         console.warn("[legacy-auto-assign] Failed:", autoErr.message);
+      }
+
+      // Self-healing: now that this address is recognized as the member's own,
+      // reclassify any past outgoing transfers to it that were flagged as sales.
+      try {
+        const corrected = await selfCorrectKnownTransfers(userId);
+        if (corrected > 0) console.log(`[wallets] Self-corrected ${corrected} past transfer(s) to newly recognized address`);
+      } catch (scErr: any) {
+        console.warn("[wallets] Self-correct after add failed:", scErr.message);
       }
 
       res.json(wallet);
@@ -3953,6 +3985,11 @@ Rules you MUST follow:
             const existingExternalIds = new Set(
               existingTxns.filter(t => t.externalId && t.accountId === walletAccount!.id).map(t => t.externalId)
             );
+            const existingTxByExtId = new Map(
+              existingTxns
+                .filter(t => t.externalId && t.accountId === walletAccount!.id)
+                .map(t => [t.externalId, t])
+            );
 
             const uniqueDates = new Map<string, Date>();
             for (const tx of blockchainTxs) {
@@ -4000,7 +4037,15 @@ Rules you MUST follow:
             }
 
             for (const tx of blockchainTxs) {
-              if (existingExternalIds.has(tx.hash)) continue;
+              const cpAddr = tx.type === "receive" ? tx.senderAddress : tx.recipientAddress;
+              if (existingExternalIds.has(tx.hash)) {
+                // Backfill the destination on rows imported before we recorded it.
+                const existingRow = existingTxByExtId.get(tx.hash);
+                if (existingRow && !existingRow.counterpartyAddress && cpAddr) {
+                  await storage.updateTransaction(existingRow.id, { counterpartyAddress: cpAddr });
+                }
+                continue;
+              }
 
               const normalizeAddr = (addr: string) => isCaseSensitive ? addr : addr.toLowerCase();
               const isOwnTransfer = tx.type === "receive"
@@ -4047,6 +4092,7 @@ Rules you MUST follow:
                 transactionDate: tx.timestamp,
                 externalId: tx.hash,
                 reviewStatus,
+                counterpartyAddress: cpAddr || null,
                 notes: txNotes,
               });
 
@@ -4141,6 +4187,15 @@ Rules you MUST follow:
         }
       } catch (autoErr) {
         console.error("[sync-auto-assign] Failed:", autoErr);
+      }
+
+      // Self-healing: reclassify any past outgoing transfers to own/vault addresses
+      // that were flagged as sales, now that destinations are recorded.
+      try {
+        const corrected = await selfCorrectKnownTransfers(userId);
+        if (corrected > 0) console.log(`[wallet-sync] Self-corrected ${corrected} transfer(s) to recognized own/vault addresses`);
+      } catch (scErr: any) {
+        console.warn("[wallet-sync] Self-correct failed:", scErr.message);
       }
 
       const updatedWallet = await storage.getWallet(wallet.id);

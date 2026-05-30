@@ -24,6 +24,7 @@ import fs from "fs";
 import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
+import { clearGainEventsForSell } from "../services/transfer-reconciliation";
 
 export function registerPortfolioRoutes(app: Express) {
   app.post("/api/blend/sync", isAuthenticated, async (req: any, res) => {
@@ -2115,45 +2116,8 @@ export function registerPortfolioRoutes(app: Express) {
     }
   });
 
-  // Shared helper: remove any gain events linked to a sell transaction and put the
-  // quantity they consumed back onto their tax lots. Used when a held "sale" turns
-  // out to be a non-taxable transfer, or when re-holding an imported sale.
-  async function clearGainEventsForSell(userId: string, sellTxId: string) {
-    const events = (await storage.getGainEventsByUser(userId)).filter(
-      (g) => g.sellTransactionId === sellTxId,
-    );
-    if (events.length === 0) return;
-    const allLots = await storage.getTaxLotsByUser(userId);
-    const lotById = new Map(allLots.map((l) => [l.id, l]));
-    const restoredByLot = new Map<string, number>();
-    for (const ev of events) {
-      restoredByLot.set(
-        ev.taxLotId,
-        (restoredByLot.get(ev.taxLotId) || 0) + parseFloat(ev.quantity),
-      );
-      await storage.deleteGainEvent(ev.id);
-    }
-    const affectedWalletBalances = new Set<string>();
-    for (const [lotId, qty] of Array.from(restoredByLot.entries())) {
-      const lot = lotById.get(lotId);
-      if (lot) {
-        await storage.updateTaxLot(lot.id, {
-          remainingQuantity: (parseFloat(lot.remainingQuantity) + qty).toFixed(8),
-        });
-        if (lot.walletBalanceId) affectedWalletBalances.add(lot.walletBalanceId);
-      }
-    }
-    // Keep wallet-balance cost aggregates in sync after restoring lot quantities,
-    // matching the realize-sell and delete-sell paths (otherwise avg cost / total
-    // cost basis go stale until another recompute runs).
-    for (const wbId of Array.from(affectedWalletBalances)) {
-      const wbLots = await storage.getTaxLotsByWalletBalance(userId, wbId);
-      const totalRem = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
-      const totalCb = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
-      const avg = totalRem > 0 ? totalCb / totalRem : 0;
-      await storage.updateWalletBalanceCostData(wbId, avg.toFixed(8), totalCb.toFixed(2));
-    }
-  }
+  // clearGainEventsForSell now lives in ../services/transfer-reconciliation
+  // (shared with the self-correcting transfer reconciler) and is imported above.
 
   // Realize the gain/loss for a sell transaction right now, using the member's
   // FIFO/LIFO method against the asset's tax lots. Idempotent: it first clears any
