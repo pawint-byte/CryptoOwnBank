@@ -755,6 +755,10 @@ const faqGroups = [
     heading: "Getting Started & Transfers",
     items: [
       {
+        q: "What is the Route Planner and how does it work?",
+        a: "The Route Planner works backward from your goal. You tell it the coin you want to end up with \u2014 say Monero, Bitcoin, Ethereum, or XRP \u2014 and it lays out the exact, ordered steps to get there, with a button on each step that drops you straight into the right tool. For majors (BTC, ETH, SOL, USDC, XLM) it's a single card purchase delivered to your wallet. For XRP it buys a stablecoin with a card and bridges it to native XRP. For privacy coins like Monero, it gets you to Bitcoin with a card, then hands you a curated list of no-KYC services for the final private leg \u2014 we never hold it, never mix, and never touch that last step. Every route also tells you which steps are taxable: buying with a card isn't, but swapping or bridging a coin you already own counts as selling it, so there's a \u201cbuy fresh instead of swapping what I own\u201d switch if you'd rather avoid that. As always, you approve and sign every step in your own wallet \u2014 we never move funds for you. Find it in the sidebar under Execute, or go to /route-planner.",
+      },
+      {
         q: "How do I start earning yield on RLUSD?",
         a: "1) Buy RLUSD on a trusted exchange (Binance, Kraken, Coinbase, etc.) and withdraw it to your XRPL wallet. 2) Connect your cold wallet to the dashboard. 3) Deposit RLUSD into a Soil vault (Treasury-backed at 5.2% or CREDIT+ at 8.0%). 4) Earn fixed yield immediately — interest compounds daily. 5) When you're ready, withdraw your full position (principal + interest together) through Soil — then redeposit your principal to keep earning. No KYC on our end, no bank linking required.",
       },
@@ -1360,6 +1364,14 @@ export default function Landing() {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       mainEntity: [
+        {
+          "@type": "Question",
+          name: "How do I get from the crypto I have to the coin I want?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "CryptoOwnBank's Route Planner works backward from your goal. Pick the coin you want to end up with and it lays out an ordered, guided route using your existing holdings or a card purchase \u2014 buying majors like Bitcoin or Ethereum directly, bridging to native XRP, or getting you to Bitcoin then a no-KYC handoff for privacy coins like Monero. It flags which steps are taxable and lets you choose to buy fresh instead of swapping. Non-custodial \u2014 you sign every step in your own wallet.",
+          },
+        },
         {
           "@type": "Question",
           name: "What happens to my crypto when I die?",
