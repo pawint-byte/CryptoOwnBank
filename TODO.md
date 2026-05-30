@@ -8,6 +8,18 @@
 
 ---
 
+## SHIPPED — "Own It Privately" lane (Added & completed 2026-05-30)
+
+New page `/own-privately` (sidebar "execute" group, next to Buy Crypto) — the privacy-first counterpart to Buy Crypto. Founder's ask: be able to acquire/hold any asset privately ("own something and it doesn't tie back to me"), ideally "one step."
+
+- **What it is:** a non-custodial info + routing directory (same accepted pattern as `/dvpn` directory). CryptoOwnBank never holds funds, never runs the swap, never mixes — it only links to independent third-party services. Pure client page, no backend.
+- **Honest framing (Two-Filter Rule):** privacy depends on the *coin* (Monero = private by design; BTC/XRP/most = public/traceable), the first hop is where identity attaches (only cash P2P or earning avoid that), and "one step" = a no-KYC swap provider absorbs the middle hops (their brief in-flight custody, minutes) — we orchestrate nothing, we only point.
+- **Three directories:** no-KYC swaps (Trocador / Exch / ChangeNOW / SimpleSwap), P2P cash venues (Haveno / Bisq / Hodl Hodl / RoboSats), Monero wallets (Cake / Feather / Monero GUI).
+- **Why not a built-in "black box":** that = custody + mixer (Tornado/Samourai/ChipMixer were sanctioned/arrested). Monero itself IS the legal privacy layer. Fails Filter 1 if we run it; passes if we route.
+- **Architect review fixes applied before ship:** removed absolute anonymity claims ("bulletproof", "genuinely broken", "the only entries that don't tie back") → probabilistic wording + "no method is ever perfect"; dropped the unqualified "licensed job" claim → "policies vary by country"; tightened platform-role copy so it reads as referral-only ("we never run the swap; it happens directly between you and the third party"), not platform-orchestrated.
+
+---
+
 ## SHIPPED — All buy providers on one page (Added & completed 2026-05-30)
 
 Founder hit a MoonPay **"Not supported in your region"** error on hotel wifi while traveling in London, and asked to put **all** buy options on `/buy-crypto` so a member always has a working choice if one provider is blocked by region or has an outage.

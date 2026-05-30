@@ -44,6 +44,7 @@ import TaxReports from "@/pages/tax-reports";
 import Integrations from "@/pages/integrations";
 import Settings from "@/pages/settings";
 import DvpnDirectory from "@/pages/dvpn-directory";
+import OwnPrivately from "@/pages/own-privately";
 import OwnBankDashboard from "@/pages/ownbank-dashboard";
 import OwnBankVaults from "@/pages/ownbank-vaults";
 import OwnBankWithdraw from "@/pages/ownbank-withdraw";
@@ -325,6 +326,7 @@ function AuthenticatedRoutes() {
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/ai-assistant" component={AiAssistant} />
         <Route path="/buy-crypto" component={BuyCrypto} />
+        <Route path="/own-privately" component={OwnPrivately} />
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
@@ -398,6 +400,7 @@ function Router() {
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
         <Route path="/buy-crypto" component={BuyCrypto} />
+        <Route path="/own-privately" component={OwnPrivately} />
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />

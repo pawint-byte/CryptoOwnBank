@@ -57,6 +57,7 @@ import {
   Flame,
   Droplets,
   ShoppingCart,
+  EyeOff,
   CreditCard,
   Layers,
   BrainCircuit,
@@ -116,6 +117,7 @@ const allItems: NavItem[] = [
 
   // EXECUTE - anything that changes what you hold
   { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "execute" },
+  { title: "Own It Privately", url: "/own-privately", icon: EyeOff, color: "#7c3aed", group: "execute" },
   { title: "Tax Savings (Harvest)", url: "/tax-harvest", icon: Sparkles, color: "#f59e0b", group: "execute" },
   { title: "XRPL Dashboard", url: "/ownbank", icon: Landmark, group: "execute", chain: "xrpl" },
   { title: "Stellar Dashboard", url: "/stellar/wallet", icon: Landmark, group: "execute", chain: "stellar" },
