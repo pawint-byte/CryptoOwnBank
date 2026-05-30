@@ -13,4 +13,6 @@ A "do X to get Y" guided planner (e.g. the destination-first Route Planner) must
 - `/ownbank/cross-chain` (LI.FI): EVM↔EVM only — no native BTC/XRP/SOL destinations.
 - `/ownbank/xrpl-bridge` (Squid/Axelar): EVM asset → native XRP. This is the right tool for XRP, not the generic cross-chain page.
 - `/own-privately`: external no-KYC handoff for XMR/ZEC (we never custody; member picks the third party).
-Also always short-circuit when the member already holds the destination coin (return a "done" step, no buy/swap).
+Also always short-circuit when the member already holds the destination coin (return a "done" step, no buy/swap) — but let the member override this.
+
+**Tax override:** swaps/bridges are taxable disposals; buying with a card is not. Members may deliberately want to buy fresh even when they already hold a swappable coin (to avoid realizing a gain). The planner has a "Buy fresh instead of swapping what I own" toggle (default off) that makes `buildPlan` ignore holdings and prefer card buys, including overriding the already-hold-destination short-circuit. Honest nuance: XRP/XMR have no card rail to the final coin, so at least one swap/bridge is unavoidable — buying fresh immediately before it keeps the realized gain ~0.

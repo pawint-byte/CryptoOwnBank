@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Target,
   CreditCard,
@@ -82,7 +83,7 @@ function buyStep(n: number, coin: string): PlanStep {
     detail: `Use the card on-ramp to buy ${coin}. It lands straight in your own wallet — we never hold it.`,
     toolLabel: "Open Buy Crypto",
     href: TOOL.buy,
-    note: "Powered by Stripe. You pay with a card; the crypto is delivered to your address.",
+    note: "Pay with a card via your choice of provider (Stripe, Changelly, and others). The crypto is delivered straight to your address.",
   };
 }
 
@@ -105,7 +106,7 @@ function bridgeStep(n: number, from: string, to: string): PlanStep {
     detail: `Bridge your ${from} into native ${to}, delivered to your own ${to} wallet.`,
     toolLabel: "Open XRPL Bridge",
     href: TOOL.bridge,
-    note: "Powered by Squid Router / Axelar. Multi-step (not instant) and takes a few minutes.",
+    note: `Powered by Squid Router / Axelar. Heads up: a bridge is a swap, so it's a taxable disposal of your ${from}. Multi-step (not instant) and takes a few minutes.`,
   };
 }
 
@@ -119,17 +120,19 @@ function externalStep(n: number, from: string, dest: string, address: string): P
       : `Use a no-KYC swap service to turn your ${from} into ${dest}, sent to your own ${dest} address.`,
     toolLabel: "Open Own It Privately",
     href: TOOL.external,
-    note: `${dest} is private by design — no aggregator we use touches it and we never custody it. We get you to ${from}; the final private leg is done by a third party you choose.`,
+    note: `${dest} is private by design — no aggregator we use touches it and we never custody it. We get you to ${from}; the final private leg is done by a third party you choose. (Swapping ${from} → ${dest} is a taxable disposal of your ${from}.)`,
   };
 }
 
-function buildPlan(dest: string, held: string[], address: string) {
+function buildPlan(dest: string, held: string[], address: string, preferBuy: boolean) {
   const has = (s: string) => held.includes(s);
+  const useHeld = (s: string) => has(s) && !preferBuy;
   const steps: PlanStep[] = [];
   let n = 1;
 
-  // Already at the destination — nothing to do.
-  if (has(dest)) {
+  // Already at the destination — done, UNLESS the member would rather buy fresh
+  // (e.g. to avoid a taxable swap/disposal of an appreciated holding).
+  if (has(dest) && !preferBuy) {
     steps.push(haveStep(n++, dest));
     return steps;
   }
@@ -138,7 +141,7 @@ function buildPlan(dest: string, held: string[], address: string) {
   // We only buy BTC with a card here — our in-app swap tools are EVM-only and
   // cannot produce native BTC, so we never link a step a tool can't actually do.
   if (EXTERNAL_PRIVACY.includes(dest)) {
-    if (!has("BTC")) {
+    if (!useHeld("BTC")) {
       steps.push(buyStep(n++, "BTC"));
     }
     steps.push(externalStep(n++, "BTC", dest, address));
@@ -146,9 +149,11 @@ function buildPlan(dest: string, held: string[], address: string) {
   }
 
   // Native XRP: bridge from an EVM asset via the XRPL Bridge (Squid/Axelar).
+  // There's no card rail straight to XRP, so a swap/bridge is unavoidable —
+  // buying fresh first keeps the taxable gain on that bridge near zero.
   if (dest === "XRP") {
     const fromEvm = held.find((s) => EVM_ASSETS.includes(s));
-    if (fromEvm) {
+    if (fromEvm && !preferBuy) {
       steps.push(bridgeStep(n++, has("ETH") ? "ETH" : fromEvm, "XRP"));
     } else {
       steps.push(buyStep(n++, "USDC"));
@@ -179,6 +184,7 @@ export default function RoutePlanner() {
   const [destination, setDestination] = useState<string>("XMR");
   const [amount, setAmount] = useState<string>("");
   const [address, setAddress] = useState<string>("");
+  const [preferBuy, setPreferBuy] = useState<boolean>(false);
 
   const { data: positions, isLoading: positionsLoading } = useQuery<any[]>({
     queryKey: ["/api/positions"],
@@ -196,8 +202,8 @@ export default function RoutePlanner() {
   }, [positions]);
 
   const plan = useMemo(
-    () => buildPlan(destination, heldSymbols, address.trim()),
-    [destination, heldSymbols, address],
+    () => buildPlan(destination, heldSymbols, address.trim(), preferBuy),
+    [destination, heldSymbols, address, preferBuy],
   );
 
   const destMeta = DESTINATIONS.find((d) => d.symbol === destination);
@@ -262,6 +268,24 @@ export default function RoutePlanner() {
               data-testid="input-address"
             />
           </div>
+          <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="prefer-buy" className="cursor-pointer">
+                Buy fresh instead of swapping what I own
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Swapping a coin you already hold counts as selling it, which can create a taxable
+                gain. Turn this on to buy with a card instead — even if you already own something we
+                could have swapped.
+              </p>
+            </div>
+            <Switch
+              id="prefer-buy"
+              checked={preferBuy}
+              onCheckedChange={setPreferBuy}
+              data-testid="switch-prefer-buy"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -305,6 +329,17 @@ export default function RoutePlanner() {
           wallet — we never move funds for you.
         </p>
       </div>
+
+      <Alert data-testid="alert-tax">
+        <Info className="h-4 w-4" />
+        <AlertTitle>About taxes on these steps</AlertTitle>
+        <AlertDescription>
+          Buying with a card is not a taxable event. Swapping or bridging a coin you already hold
+          is — it counts as selling that coin and can create a taxable gain. If you'd rather not
+          trigger that, turn on “Buy fresh instead of swapping what I own” above and we'll route you
+          through a card buy where possible.
+        </AlertDescription>
+      </Alert>
 
       <ol className="space-y-3" data-testid="list-steps">
         {plan.map((step, idx) => (

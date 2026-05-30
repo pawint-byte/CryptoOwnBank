@@ -19,6 +19,7 @@ New page `/route-planner` ("Route Planner" in sidebar → execute group). Member
   - "Already hold the destination" short-circuit returns a done step — no needless buy/swap.
 - **Non-custodial framing:** member approves and signs every hop in their own wallet; estimates (not exact amounts) shown inside each tool; the final private leg is explicitly a third party they choose.
 - **v1 scope:** rule-based plan, no live per-leg quote amounts yet (the linked tools show live quotes at execution time).
+- **Update 2026-05-30 — "Buy fresh instead of swapping" override + tax awareness:** Founder flagged that swaps are taxable events, so a member may prefer to buy even if they already own a usable coin. Added a per-plan toggle ("Buy fresh instead of swapping what I own", default OFF) that makes `buildPlan` ignore existing holdings and route through a card buy where possible — including overriding the "you already hold the destination" short-circuit. Added a plain-language tax callout (buying with a card is NOT taxable; swapping/bridging a held coin IS — counts as selling it). Bridge/external swap step notes now say they're taxable disposals. Honest nuance kept: XRP/XMR have no card rail to the final coin, so at least one swap is unavoidable — buying fresh right before that swap keeps the taxable gain near zero.
 
 ---
 
