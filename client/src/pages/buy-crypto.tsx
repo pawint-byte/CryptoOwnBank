@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,9 @@ import {
   Globe,
   MessageCircle,
   Lock,
+  Loader2,
 } from "lucide-react";
+import { createOnrampSessionAndRedirect } from "@/lib/stripe-onramp";
 
 type Step = "token" | "wallet" | "address" | "instructions";
 
@@ -740,6 +742,35 @@ const tokenToChain: Record<string, string> = {
   FLR: "flare",
 };
 
+const STRIPE_BUY_BY_SYMBOL: Record<string, { currency: string; network: string }> = {
+  ETH: { currency: "eth", network: "ethereum" },
+  BTC: { currency: "btc", network: "bitcoin" },
+  SOL: { currency: "sol", network: "solana" },
+  XLM: { currency: "xlm", network: "stellar" },
+  AVAX: { currency: "avax", network: "avalanche" },
+  MATIC: { currency: "pol", network: "polygon" },
+};
+
+const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
+  XRP: ["xrp", "ripple"],
+  XLM: ["stellar", "xlm"],
+  ETH: ["ethereum", "evm", "eth"],
+  BTC: ["bitcoin", "btc"],
+  SOL: ["solana", "sol"],
+  ADA: ["cardano", "ada"],
+  ATOM: ["cosmos", "atom"],
+  DOT: ["polkadot", "dot"],
+  AVAX: ["avalanche", "evm", "avax"],
+  MATIC: ["polygon", "evm", "matic", "pol"],
+  TRX: ["tron", "trx"],
+  DOGE: ["dogecoin", "doge"],
+  LTC: ["litecoin", "ltc"],
+  HBAR: ["hedera", "hbar"],
+  ALGO: ["algorand", "algo"],
+  CRO: ["cronos", "cro"],
+  FLR: ["flare", "flr"],
+};
+
 const walletNameToKey: Record<string, string> = {
   "Xaman (XUMM)": "xaman",
   "CypheRock X1": "cypherock",
@@ -875,13 +906,67 @@ export default function BuyCrypto() {
     return savedWallets.find((w: any) => w.chain === chain) || null;
   }, [selectedToken, savedWallets]);
 
-  const changellyWalletAddress = useMemo(() => {
-    const symbol = changellyBuyCrypto.toUpperCase();
-    const chain = tokenToChain[symbol];
-    if (!chain) return "";
-    const wallet = savedWallets.find((w: any) => w.chain === chain);
-    return wallet?.address || "";
-  }, [changellyBuyCrypto, savedWallets]);
+  const resolveSavedAddress = useCallback(
+    (symbol: string): string => {
+      const aliases =
+        SYMBOL_CHAIN_ALIASES[symbol] ||
+        [tokenToChain[symbol]].filter(Boolean);
+      // Honour alias priority: try the exact chain (e.g. "polygon") first,
+      // then the generic "evm" fallback — don't depend on wallet list order.
+      for (const alias of aliases) {
+        const wallet = savedWallets.find(
+          (w: any) => (w.chain || "").toLowerCase() === alias,
+        );
+        if (wallet?.address) return wallet.address;
+      }
+      return "";
+    },
+    [savedWallets],
+  );
+
+  const changellyWalletAddress = useMemo(
+    () => resolveSavedAddress(changellyBuyCrypto.toUpperCase()),
+    [changellyBuyCrypto, resolveSavedAddress],
+  );
+
+  const [onrampLoading, setOnrampLoading] = useState(false);
+  const handleBuyWithStripe = useCallback(
+    async (
+      address: string,
+      opt: { currency: string; network: string; symbol: string },
+    ) => {
+      if (!address) {
+        toast({
+          title: "Add your wallet address first",
+          description: `Save your ${opt.symbol} wallet address so the coin has somewhere to land.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      setOnrampLoading(true);
+      try {
+        await createOnrampSessionAndRedirect({
+          walletAddress: address,
+          destinationCurrency: opt.currency,
+          destinationNetwork: opt.network,
+        });
+        toast({
+          title: "Stripe opened in a new tab",
+          description: `Buying ${opt.symbol} → your own wallet. CryptoOwnBank never touches it.`,
+        });
+      } catch (err: any) {
+        toast({
+          title: "Could not open Stripe",
+          description:
+            err?.message || "Try another provider below — your coins still land in the same wallet.",
+          variant: "destructive",
+        });
+      } finally {
+        setOnrampLoading(false);
+      }
+    },
+    [toast],
+  );
 
   const changellyBuyUrl = useMemo(() => {
     const addr = encodeURIComponent(changellyWalletAddress);
@@ -1046,7 +1131,135 @@ export default function BuyCrypto() {
         </Badge>
       </div>
 
-      <Card className="border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-blue-500/5">
+      <Card className="border-primary/40 bg-gradient-to-r from-primary/5 to-transparent">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-provider-chooser">
+            <CreditCard className="h-5 w-5 text-primary" />
+            Buy with card — your choice of provider
+          </CardTitle>
+          <CardDescription>
+            Pick a coin, then choose any provider you like. If one isn't available in your country or hits a snag while traveling, just switch to another — your coins still land in the same wallet.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">I want to buy</label>
+              <select
+                value={changellyBuyCrypto}
+                onChange={(e) => setChangellyBuyCrypto(e.target.value)}
+                className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+                data-testid="select-provider-buy-coin"
+              >
+                {tokens.map((t) => (
+                  <option key={t.symbol} value={t.symbol.toLowerCase()}>{t.symbol} — {t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Receiving wallet</label>
+              {changellyWalletAddress ? (
+                <div className="flex items-center gap-2 h-9 rounded-md border bg-green-500/10 border-green-500/30 px-3" data-testid="provider-wallet-prefilled">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm truncate font-mono">{changellyWalletAddress.slice(0, 8)}...{changellyWalletAddress.slice(-6)}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 h-9 rounded-md border bg-yellow-500/10 border-yellow-500/30 px-3" data-testid="provider-wallet-missing">
+                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">No {changellyBuyCrypto.toUpperCase()} wallet saved yet</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(() => {
+              const symbolUpper = changellyBuyCrypto.toUpperCase();
+              const stripeOpt = STRIPE_BUY_BY_SYMBOL[symbolUpper];
+              return (
+                <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-stripe">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-indigo-500" />
+                    <span className="font-medium text-sm">Stripe</span>
+                    <Badge variant="secondary" className="ml-auto text-[10px]">Card · Apple/Google Pay</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex-1">
+                    {stripeOpt
+                      ? "Built into the site. The coin is sent straight to your own wallet."
+                      : `Stripe doesn't cover ${symbolUpper} yet — try Changelly, MoonPay or Transak.`}
+                  </p>
+                  <Button
+                    size="sm"
+                    disabled={!stripeOpt || onrampLoading}
+                    onClick={() => stripeOpt && handleBuyWithStripe(changellyWalletAddress, { ...stripeOpt, symbol: symbolUpper })}
+                    data-testid="button-buy-stripe"
+                  >
+                    {onrampLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Buy {symbolUpper} with Stripe</>}
+                  </Button>
+                </div>
+              );
+            })()}
+
+            <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-changelly">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-violet-500" />
+                <span className="font-medium text-sm">Changelly</span>
+                <Badge variant="secondary" className="ml-auto text-[10px]">Embedded · 100+ coins</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground flex-1">
+                Runs right here on the page — never leaves the site. Widest coin coverage.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => document.getElementById("changelly-buy-widget")?.scrollIntoView({ behavior: "smooth" })}
+                data-testid="button-buy-changelly"
+              >
+                Open Changelly widget
+              </Button>
+            </div>
+
+            <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-moonpay">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-purple-500" />
+                <span className="font-medium text-sm">MoonPay</span>
+                <Badge variant="secondary" className="ml-auto text-[10px]">Card · bank</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground flex-1">
+                Card or bank. Availability changes by country — if it says "not supported in your region," use another option.
+              </p>
+              <Button asChild size="sm" variant="outline" data-testid="button-buy-moonpay">
+                <a href={buildMoonPayUrl({ token: changellyBuyCrypto, address: changellyWalletAddress })} target="_blank" rel="noopener noreferrer">
+                  Open MoonPay <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                </a>
+              </Button>
+            </div>
+
+            <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-transak">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-sky-500" />
+                <span className="font-medium text-sm">Transak</span>
+                <Badge variant="secondary" className="ml-auto text-[10px]">Card · bank · 100+ countries</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground flex-1">
+                Card or bank in 100+ countries. A reliable backup if MoonPay is blocked where you are.
+              </p>
+              <Button asChild size="sm" variant="outline" data-testid="button-buy-transak">
+                <a href={buildTransakUrl({ token: changellyBuyCrypto, address: changellyWalletAddress })} target="_blank" rel="noopener noreferrer">
+                  Open Transak <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground flex items-start gap-1.5 border-t pt-3" data-testid="text-region-note">
+            <Globe className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>Traveling or seeing "not supported in your region"? That's the provider's rule, not your account. Switch to another option above — your coins always land in the same wallet, and CryptoOwnBank never touches them.</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card id="changelly-buy-widget" className="border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-blue-500/5">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-changelly-widget">
             <CreditCard className="h-5 w-5 text-violet-600" />
@@ -1057,40 +1270,16 @@ export default function BuyCrypto() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">I want to buy</label>
-              <select
-                value={changellyBuyCrypto}
-                onChange={(e) => setChangellyBuyCrypto(e.target.value)}
-                className="w-full h-9 rounded-md border bg-background px-3 text-sm"
-                data-testid="select-changelly-buy-crypto"
-              >
-                {tokens.map((t) => (
-                  <option key={t.symbol} value={t.symbol.toLowerCase()}>{t.symbol} — {t.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Receiving wallet</label>
-              {changellyWalletAddress ? (
-                <div className="flex items-center gap-2 h-9 rounded-md border bg-green-500/10 border-green-500/30 px-3" data-testid="changelly-wallet-prefilled">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm truncate font-mono">{changellyWalletAddress.slice(0, 8)}...{changellyWalletAddress.slice(-6)}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 h-9 rounded-md border bg-yellow-500/10 border-yellow-500/30 px-3" data-testid="changelly-wallet-missing">
-                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">No {changellyBuyCrypto.toUpperCase()} wallet saved — you'll enter it in the widget</span>
-                </div>
-              )}
-            </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="changelly-buying-summary">
+            <span className="text-muted-foreground">Buying:</span>
+            <Badge variant="secondary">{changellyBuyCrypto.toUpperCase()}</Badge>
+            {changellyWalletAddress ? (
+              <span className="text-xs text-green-600 dark:text-green-400 font-mono truncate">→ {changellyWalletAddress.slice(0, 8)}…{changellyWalletAddress.slice(-6)}</span>
+            ) : (
+              <span className="text-xs text-muted-foreground">→ you'll enter your address in the widget</span>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">Change the coin in the chooser above ↑</span>
           </div>
-          {changellyWalletAddress && (
-            <p className="text-xs text-green-600 dark:text-green-400" data-testid="text-changelly-prefill-note">
-              Your saved {changellyBuyCrypto.toUpperCase()} wallet address will be pre-filled in the widget below.
-            </p>
-          )}
           <div className="rounded-lg overflow-hidden border" style={{ height: "450px" }} data-testid="changelly-widget-container">
             <iframe
               key={changellyBuyUrl}

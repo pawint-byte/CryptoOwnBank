@@ -8,6 +8,20 @@
 
 ---
 
+## SHIPPED — All buy providers on one page (Added & completed 2026-05-30)
+
+Founder hit a MoonPay **"Not supported in your region"** error on hotel wifi while traveling in London, and asked to put **all** buy options on `/buy-crypto` so a member always has a working choice if one provider is blocked by region or has an outage.
+
+- New **"Buy with card — your choice of provider"** card at the top of `/buy-crypto`. One coin selector + receiving-wallet display, then four provider tiles:
+  - **Stripe** — working in-site card button (mints `/api/stripe/onramp-session`, coin goes straight to the member's own wallet). Enabled for Stripe-supported coins (ETH/BTC/SOL/XLM/AVAX/MATIC→POL); shows a "not covered yet" note for the rest.
+  - **Changelly** — scrolls to the embedded widget below (never leaves the site, widest coin coverage).
+  - **MoonPay** / **Transak** — external links with the member's address pre-filled; clearly noted that regional availability varies and that Transak is a good backup when MoonPay is blocked.
+- Plain-language region note: *"That's the provider's rule, not your account — switch to another option, your coins still land in the same wallet."* Directly addresses the travel/region snag.
+- Robust address pre-fill: `resolveSavedAddress` matches saved wallets across naming styles (keygen `evm`/`btc`/`sol` vs manual `ethereum`/`bitcoin`/`solana`), exact-chain-first then generic-`evm` fallback (architect-flagged determinism fix). Removed the duplicate selector inside the Changelly card so coin choice has one source of truth.
+- **Two-Filter check:** non-custodial (coins go direct to member wallet, site never touches funds) ✓; works end-to-end (Stripe session is the same flow already live on `/wallet/create`; the others are real provider links/embeds) ✓.
+
+---
+
 ## SHIPPED — Smart Memory for transfer labels (Added & completed 2026-05-30)
 
 When a member labels an outgoing transfer to a destination address (own wallet / vault deposit / sale / swap), the platform now **remembers that address and reuses the label**:
