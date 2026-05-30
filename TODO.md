@@ -8,6 +8,20 @@
 
 ---
 
+## SHIPPED — Route Planner (destination-first) (Added & completed 2026-05-30)
+
+New page `/route-planner` ("Route Planner" in sidebar → execute group). Member names the coin they want to **end up with**; the site works backward from what they already hold (or can buy with a card) and lays out an ordered, guided route, deep-linking each hop to the existing tool.
+
+- **Truthful capability matrix** (architect-flagged before ship): the planner only emits steps the linked tool can actually perform.
+  - Privacy coins (XMR/ZEC): buy native **BTC with a card** (Stripe) → external no-KYC BTC→XMR handoff via `/own-privately`. We do **not** route ETH→BTC through the cross-chain page — that page is EVM-only and can't produce native BTC, so we never link a step a tool can't do.
+  - Native XRP: bridge from an EVM asset via the **XRPL Bridge** (`/ownbank/xrpl-bridge`, Squid/Axelar); buy USDC with a card first if the member holds no EVM asset.
+  - Card-buyable majors (USDC/ETH/BTC/SOL/XLM/POL/AVAX): buy directly via `/buy-crypto`.
+  - "Already hold the destination" short-circuit returns a done step — no needless buy/swap.
+- **Non-custodial framing:** member approves and signs every hop in their own wallet; estimates (not exact amounts) shown inside each tool; the final private leg is explicitly a third party they choose.
+- **v1 scope:** rule-based plan, no live per-leg quote amounts yet (the linked tools show live quotes at execution time).
+
+---
+
 ## SHIPPED — "Own It Privately" lane (Added & completed 2026-05-30)
 
 New page `/own-privately` (sidebar "execute" group, next to Buy Crypto) — the privacy-first counterpart to Buy Crypto. Founder's ask: be able to acquire/hold any asset privately ("own something and it doesn't tie back to me"), ideally "one step."

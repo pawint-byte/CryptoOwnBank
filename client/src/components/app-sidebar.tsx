@@ -64,6 +64,7 @@ import {
   Search,
   KeyRound,
   Sparkles,
+  Target,
 } from "lucide-react";
 import {
   Sidebar,
@@ -117,6 +118,7 @@ const allItems: NavItem[] = [
 
   // EXECUTE - anything that changes what you hold
   { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "execute" },
+  { title: "Route Planner", url: "/route-planner", icon: Target, color: "#0ea5e9", group: "execute" },
   { title: "Own It Privately", url: "/own-privately", icon: EyeOff, color: "#7c3aed", group: "execute" },
   { title: "Tax Savings (Harvest)", url: "/tax-harvest", icon: Sparkles, color: "#f59e0b", group: "execute" },
   { title: "XRPL Dashboard", url: "/ownbank", icon: Landmark, group: "execute", chain: "xrpl" },

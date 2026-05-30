@@ -14,3 +14,4 @@
 - [Delete-sell duplicate restore](delete-sell-duplicate-restore.md) — deleting a sell with duplicate gain_events under-restores the lot; repair via compensating buy at original cost/date, then re-record the full sale.
 - [Auto-sync tax classification](auto-sync-tax-classification.md) — outgoing crypto sync must HOLD ambiguous transfers for member review, not auto-tax as sales; tax recompute must clear+restore before recompute (idempotent).
 - [Smart memory address labels](smart-memory-address-labels.md) — remembered address→label reuse; EVM keys MUST be lowercased before storing or classification turns nondeterministic & tax-dangerous.
+- [Route Planner capability matrix](route-planner-capability-matrix.md) — a guided multi-step planner must only emit hops the linked tool can really do; in-app cross-chain is EVM-only (no native BTC/XRP).
