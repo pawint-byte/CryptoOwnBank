@@ -24,7 +24,7 @@ import fs from "fs";
 import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
-import { clearGainEventsForSell } from "../services/transfer-reconciliation";
+import { clearGainEventsForSell, resolveReviewWithMemory } from "../services/transfer-reconciliation";
 
 export function registerPortfolioRoutes(app: Express) {
   app.post("/api/blend/sync", isAuthenticated, async (req: any, res) => {
@@ -2119,78 +2119,8 @@ export function registerPortfolioRoutes(app: Express) {
   // clearGainEventsForSell now lives in ../services/transfer-reconciliation
   // (shared with the self-correcting transfer reconciler) and is imported above.
 
-  // Realize the gain/loss for a sell transaction right now, using the member's
-  // FIFO/LIFO method against the asset's tax lots. Idempotent: it first clears any
-  // gain events already linked to this sell (restoring the lots they consumed), so
-  // running it twice can't double-count. Mirrors the lot-matching used by the manual
-  // sell flow and the yearly tax recompute.
-  async function realizeSellGains(userId: string, sellTxId: string, disposalType: "sale" | "swap") {
-    const tx = await storage.getTransaction(sellTxId);
-    if (!tx) return;
-
-    // Clean slate first so re-labeling never stacks duplicate events.
-    await clearGainEventsForSell(userId, sellTxId);
-
-    const settings = await storage.getUserSettings(userId);
-    const method: "FIFO" | "LIFO" = settings?.taxMethod === "LIFO" ? "LIFO" : "FIFO";
-
-    const allLots = await storage.getTaxLotsByAsset(userId, tx.assetSymbol);
-    const activeLots = allLots.filter((l) => parseFloat(l.remainingQuantity) > 0);
-    const sortedLots = method === "LIFO"
-      ? [...activeLots].sort((a, b) => new Date(b.acquiredDate).getTime() - new Date(a.acquiredDate).getTime())
-      : [...activeLots].sort((a, b) => new Date(a.acquiredDate).getTime() - new Date(b.acquiredDate).getTime());
-
-    const sellDate = new Date(tx.transactionDate);
-    const sellPrice = parseFloat(tx.pricePerUnit);
-    const oneYear = 365 * 24 * 60 * 60 * 1000;
-    let remaining = parseFloat(tx.quantity);
-
-    for (const lot of sortedLots) {
-      if (remaining <= 0.00000001) break;
-      const lotRemaining = parseFloat(lot.remainingQuantity);
-      if (lotRemaining <= 0) continue;
-
-      const sellFromLot = Math.min(remaining, lotRemaining);
-      const proceeds = sellFromLot * sellPrice;
-      const costBasis = sellFromLot * parseFloat(lot.costBasisPerUnit);
-      const gainLoss = proceeds - costBasis;
-      const acquiredDate = new Date(lot.acquiredDate);
-      const isLongTerm = (sellDate.getTime() - acquiredDate.getTime()) >= oneYear;
-
-      await storage.createGainEvent({
-        userId,
-        sellTransactionId: sellTxId,
-        taxLotId: lot.id,
-        assetSymbol: tx.assetSymbol,
-        quantity: sellFromLot.toString(),
-        proceeds: proceeds.toFixed(2),
-        costBasis: costBasis.toFixed(2),
-        gainLoss: gainLoss.toFixed(2),
-        isLongTerm,
-        taxMethod: method,
-        soldDate: sellDate,
-        acquiredDate,
-        disposalType,
-        disposalNote: disposalType === "swap"
-          ? "Swap — taxable disposal (you labeled this)"
-          : "Sale — taxable disposal (you labeled this)",
-      });
-
-      await storage.updateTaxLot(lot.id, {
-        remainingQuantity: (lotRemaining - sellFromLot).toFixed(8),
-      });
-
-      if (lot.walletBalanceId) {
-        const wbLots = await storage.getTaxLotsByWalletBalance(userId, lot.walletBalanceId);
-        const totalRem = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity), 0);
-        const totalCb = wbLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
-        const avg = totalRem > 0 ? totalCb / totalRem : 0;
-        await storage.updateWalletBalanceCostData(lot.walletBalanceId, avg.toFixed(8), totalCb.toFixed(2));
-      }
-
-      remaining -= sellFromLot;
-    }
-  }
+  // realizeSellGains now lives in ../services/transfer-reconciliation (shared with
+  // smart-memory auto-application at sync time) and is used via resolveReviewWithMemory.
 
   // The user labels an outgoing transfer that the auto-sync held for review.
   // "sale" / "swap" keep it as a taxable disposal; "own_transfer" / "vault_deposit"
@@ -2212,31 +2142,16 @@ export function registerPortfolioRoutes(app: Express) {
         return res.status(400).json({ message: "Pick how to label this transfer." });
       }
 
-      if (category === "own_transfer" || category === "vault_deposit") {
-        // Not a sale — make sure no taxable gain is left behind.
-        await clearGainEventsForSell(userId, tx.id);
-        await storage.updateTransaction(tx.id, {
-          transactionType: "transfer",
-          reviewStatus: "resolved",
-          notes: category === "vault_deposit"
-            ? "Vault deposit (you labeled this)"
-            : "Transfer to your own wallet (you labeled this)",
-        });
-      } else {
-        // sale or swap — a taxable disposal. Realize the gain/loss now (FIFO/LIFO lot
-        // matching), so the member sees it reflected immediately instead of waiting for
-        // the next "Calculate Taxes" run.
-        await storage.updateTransaction(tx.id, {
-          transactionType: "sell",
-          reviewStatus: "resolved",
-          notes: category === "swap"
-            ? "Swap — taxable disposal (you labeled this)"
-            : "Sale — taxable disposal (you labeled this)",
-        });
-        await realizeSellGains(userId, tx.id, category === "swap" ? "swap" : "sale");
-      }
+      // Smart memory: apply the label to this transfer, remember the destination
+      // address for future syncs, and apply the same label to every other transfer
+      // still waiting for review that went to the same address.
+      const { alsoApplied } = await resolveReviewWithMemory(
+        userId,
+        tx,
+        category as "sale" | "swap" | "own_transfer" | "vault_deposit",
+      );
 
-      res.json({ success: true });
+      res.json({ success: true, alsoApplied });
     } catch (error) {
       console.error("Resolve review error:", error);
       res.status(500).json({ message: "Failed to update this transaction" });

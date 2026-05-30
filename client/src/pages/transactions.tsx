@@ -432,11 +432,18 @@ export default function Transactions() {
   });
 
   const resolveReviewMutation = useMutation({
-    mutationFn: async ({ id, category }: { id: string; category: string }) =>
-      apiRequest("POST", `/api/transactions/${id}/resolve-review`, { category }),
-    onSuccess: () => {
+    mutationFn: async ({ id, category }: { id: string; category: string }) => {
+      const res = await apiRequest("POST", `/api/transactions/${id}/resolve-review`, { category });
+      return res.json().catch(() => ({ alsoApplied: 0 }));
+    },
+    onSuccess: (data: { alsoApplied?: number }) => {
       invalidateTxQueries();
-      toast({ title: "Thanks — we've updated this transfer." });
+      const also = data?.alsoApplied ?? 0;
+      toast({
+        title: also > 0
+          ? `Saved — and applied the same label to ${also} more transfer${also === 1 ? "" : "s"} to that address.`
+          : "Thanks — we've updated this transfer.",
+      });
       setReviewingTx(null);
     },
     onError: (e) => {

@@ -62,6 +62,28 @@ export const transactions = pgTable("transactions", {
   index("idx_transactions_date").on(table.transactionDate),
 ]);
 
+// Smart memory: once a member labels an outgoing transfer to a destination
+// address, we remember that label so every other transfer to the same address
+// (past pending ones and future synced ones) gets the same treatment.
+export const recognizedAddresses = pgTable("recognized_addresses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  address: varchar("address", { length: 100 }).notNull(),
+  // own_transfer | vault_deposit | sale | swap
+  classification: varchar("classification", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_recognized_addresses_user").on(table.userId),
+  unique("uq_recognized_addresses_user_address").on(table.userId, table.address),
+]);
+
+export const insertRecognizedAddressSchema = createInsertSchema(recognizedAddresses).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertRecognizedAddress = z.infer<typeof insertRecognizedAddressSchema>;
+export type RecognizedAddress = typeof recognizedAddresses.$inferSelect;
+
 export const positions = pgTable("positions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),

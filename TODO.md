@@ -8,6 +8,17 @@
 
 ---
 
+## SHIPPED — Smart Memory for transfer labels (Added & completed 2026-05-30)
+
+When a member labels an outgoing transfer to a destination address (own wallet / vault deposit / sale / swap), the platform now **remembers that address and reuses the label**:
+- The label is applied to the transfer, the address→label mapping is saved (new `recognized_addresses` table, unique per user+address), and the **same label is auto-applied to every OTHER transfer still waiting for review that went to the same address** (the resolve toast reports how many more were updated).
+- **Going forward**, every wallet sync auto-labels new transfers to a remembered address — no re-asking. Own-wallet/vault destinations become non-taxable transfers; sale/swap destinations realize the taxable gain (only while still pending review).
+- `realizeSellGains` moved from `server/routes/portfolio.ts` into the shared `server/services/transfer-reconciliation.ts` (alongside `clearGainEventsForSell`); `resolveReviewWithMemory` + a unified address classifier (own wallets + known vaults + remembered addresses) drive both the retroactive backlog and the forward sync path. Per-user lock serializes all of it.
+- EVM (0x) addresses are stored lowercased (canonical) so casing can never create duplicate, conflicting remembered rows — flagged by architect review and fixed before ship.
+- **Honest limitation:** smart memory groups by the recorded destination address. Old imported transactions that never recorded a destination (pre-`counterpartyAddress`, e.g. 2021–2023 backlog) can't be grouped until a wallet re-sync backfills their destinations after publishing. Founder confirmed he has **never sold or paid** — only moved between his own wallets / into on-chain earning — so none of his pending items are taxable sales.
+
+---
+
 ## 🚨 THE TWO-FILTER RULE — APPLY BEFORE SUGGESTING OR BUILDING ANYTHING (Added 2026-04-22)
 
 **The user's stated principle, confirmed multiple times. Every feature, every suggestion, every "we could add X" must pass both filters in this order BEFORE you propose it, BEFORE you start building, and BEFORE you ask the user to test it.**

@@ -23,6 +23,7 @@ import {
   whispers,
   apiUsageLog,
   apiBudgets,
+  recognizedAddresses,
   type ApiUsageLog,
   type ApiBudget,
   type InsertApiBudget,
@@ -37,6 +38,7 @@ import {
   type InsertApiCredential,
   type Account,
   type InsertAccount,
+  type RecognizedAddress,
   type Transaction,
   type InsertTransaction,
   type Position,
@@ -186,6 +188,8 @@ export interface IStorage {
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction | undefined>;
+  getRecognizedAddresses(userId: string): Promise<RecognizedAddress[]>;
+  upsertRecognizedAddress(userId: string, address: string, classification: string): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   getTransactionsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Transaction[]>;
 
@@ -566,6 +570,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTransaction(id: string): Promise<void> {
     await db.delete(transactions).where(eq(transactions.id, id));
+  }
+
+  async getRecognizedAddresses(userId: string): Promise<RecognizedAddress[]> {
+    return db
+      .select()
+      .from(recognizedAddresses)
+      .where(eq(recognizedAddresses.userId, userId));
+  }
+
+  async upsertRecognizedAddress(userId: string, address: string, classification: string): Promise<void> {
+    await db
+      .insert(recognizedAddresses)
+      .values({ userId, address, classification })
+      .onConflictDoUpdate({
+        target: [recognizedAddresses.userId, recognizedAddresses.address],
+        set: { classification },
+      });
   }
 
   async getTransactionsByDateRange(

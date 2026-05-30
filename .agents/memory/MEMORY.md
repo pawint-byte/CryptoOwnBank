@@ -12,3 +12,4 @@
 - [Routes module extraction](routes-extraction.md) — splitting a giant async registerRoutes closure: tsc+boot are the only safety nets (curl 401s before handler); closure-level `await import` needs async register fn.
 - [Delete-sell duplicate restore](delete-sell-duplicate-restore.md) — deleting a sell with duplicate gain_events under-restores the lot; repair via compensating buy at original cost/date, then re-record the full sale.
 - [Auto-sync tax classification](auto-sync-tax-classification.md) — outgoing crypto sync must HOLD ambiguous transfers for member review, not auto-tax as sales; tax recompute must clear+restore before recompute (idempotent).
+- [Smart memory address labels](smart-memory-address-labels.md) — remembered address→label reuse; EVM keys MUST be lowercased before storing or classification turns nondeterministic & tax-dangerous.
