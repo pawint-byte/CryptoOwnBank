@@ -231,6 +231,20 @@ export function WalletCompatibilityMatrix({
             </p>
           </div>
 
+          <div className="rounded-md bg-[#00A4E4]/5 border border-[#00A4E4]/20 p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-[#00A4E4] shrink-0 mt-0.5" />
+            <p className="text-xs">
+              <span className="font-medium text-foreground">Not picking favorites:</span>{" "}
+              Ledger appears further along only because it's the one we've
+              already wired up and it talks directly to a desktop browser — not
+              because it's safer than the rest. For brand-new vault deposits,
+              every hardware wallet is in the same boat (blind signing at best)
+              until its maker ships a firmware update. Trezor, Keystone, Tangem
+              and others are strong candidates too — they just need to be wired
+              up and firmware-confirmed before they switch on here.
+            </p>
+          </div>
+
           <p className="text-xs">
             <span className="font-medium text-foreground">At launch:</span> Xaman
             carries everything from day one. Direct hardware options switch on

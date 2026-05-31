@@ -29,3 +29,15 @@ integrations are confirmed.
 **How to apply:** the capability matrix is the single source of truth keyed by
 signer × tx-type × fidelity. When firmware support changes, update the matrix
 data — don't scatter per-device `if` checks across signing flows.
+
+**Brand-neutral wallet positioning (durable principle):** never single out one
+hardware-wallet brand as "best." A wallet only appears further along because
+it's already integrated AND talks directly to a desktop browser — that's an
+engineering state, not a security endorsement. For brand-new tx types every
+hardware wallet is equal (blind-sign at best until firmware ships). Keep matrix
+copy framed as roadmap parity, not current capability parity, and avoid
+absolute claims like "highest security."
+**Factual anchors:** Trezor supports XRP (Safe family + Model T, NOT Model One)
+and connects via browser-USB like Ledger; Tangem/Arculus/D'CENT are mobile/NFC
+or Bluetooth (no desktop web); Keystone/Ellipal are air-gapped QR. Coldcard is
+BTC-only — never list it for XRP.
