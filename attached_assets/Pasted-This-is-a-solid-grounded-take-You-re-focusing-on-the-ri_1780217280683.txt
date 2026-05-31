@@ -1,0 +1,84 @@
+This is a solid, grounded take. You’re focusing on the right constraint (device firmware, not just connectivity), which is where most teams get caught out. A few comments to sharpen it and make it more actionable:
+What’s strong
+•	You correctly frame the problem as transaction support, not connection plumbing. That’s the key insight.
+•	The “three buckets” model is exactly how hardware wallet support plays out in reality.
+•	Keeping Xaman as a fallback is pragmatic and avoids blocking your rollout on third parties.
+Where it could be tighter
+1. Be more explicit about transaction construction vs signing
+Right now it slightly blurs two layers:
+•	Your app builds the XLS-66 transaction (e.g.  VaultDeposit ).
+•	The device only signs a serialized payload.
+Important nuance:  
+Even if Ledger doesn’t “understand” the transaction, it may still sign it if blind signing is enabled, because it’s just signing bytes.
+So the real gating is:
+•	Firmware support → needed for clear signing
+•	Blind signing → allows early support but weak UX/security
+You imply this, but I’d state it more directly so product decisions are clearer.
+---
+2. Add a product decision layer (not just technical states)
+Right now you describe the buckets, but not what you will do in each case. That’s where this becomes actionable.
+For example:
+•	Clear signing → fully supported, recommended
+•	Blind signing → allowed but gated behind:
+•	explicit warning
+•	maybe an “advanced mode” toggle
+•	Not supported → disable + explain
+Without this, engineering understands the situation, but product still has ambiguity.
+---
+3. One missing risk: transaction misrepresentation
+You hint at it, but it’s worth calling out more directly:
+With blind signing, the user is trusting:
+•	your frontend
+•	your transaction builder
+If either is compromised, funds could be redirected.
+That’s not just “weaker UX” — it’s a trust model shift:
+•	Clear signing → trust device
+•	Blind signing → trust your app
+Given your positioning (“verify on your own device”), this is a strategic tension, not just a UX detail.
+---
+4. Arculus/NFC is underspecified
+You mention NFC briefly, but in practice:
+•	Web NFC support is limited (especially on desktop)
+•	iOS browser support is constrained
+•	Most NFC wallet SDKs expect mobile-native flows
+So realistically:
+•	Ledger = viable web-first path
+•	Arculus = likely mobile-only integration initially
+That affects roadmap and user expectations.
+---
+5. Add timeline realism around XLS-66
+One subtle but important addition:
+Even after XLS-66 passes:
+•	Ledger support may lag weeks or months
+•	Early users will mostly rely on Xaman
+So your launch plan should assume:
+•	Day 0: Xaman dominates
+•	Ledger direct = staged rollout
+---
+Suggested refinement (core idea, tightened)
+If you wanted to compress your thinking into a sharper internal statement, it would look like:
+•	“We can support XLS-66 immediately via Xaman because it abstracts signing.”
+•	“Hardware wallets depend on firmware support for clear signing; until then, only blind signing is possible.”
+•	“Our product decision is whether we allow blind signing or wait for clear signing per device.”
+That framing makes the tradeoffs very explicit.
+---
+One concrete example (to make it real)
+User flow with Ledger before firmware support:
+1.	User connects Ledger via WebUSB
+2.	Your app builds  VaultDeposit  transaction
+3.	Device shows:
+•	“Unknown transaction”
+•	or raw hex blob
+4.	User must enable blind signing
+5.	Signs anyway
+Compare to after support:
+•	Device shows:  
+“Deposit 1,000 RLUSD into Vault X”
+That difference is exactly why your “three buckets” matter.
+---
+Bottom line
+You’re thinking about this the right way. The main upgrade needed is shifting from:
+•	“what’s technically possible”
+to
+•	“what we will allow, warn, or block in each scenario”
+If you want, I can turn this into a clean product spec (with UX states, warnings, and feature flags) so engineering and design can execute it without ambiguity.
