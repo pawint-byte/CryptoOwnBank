@@ -41,6 +41,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { SiRipple } from "react-icons/si";
+import { WalletCompatibilityMatrix } from "@/components/wallet-compatibility-matrix";
 
 interface OnLedgerVault {
   vaultId: string;
@@ -1389,10 +1390,14 @@ export default function XLS66LendingPage() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4" data-testid="xls66-tabs">
+        <TabsList className="grid w-full grid-cols-5" data-testid="xls66-tabs">
           <TabsTrigger value="vaults" data-testid="tab-vaults">
             <Vault className="h-4 w-4 mr-1.5" />
             Vaults
+          </TabsTrigger>
+          <TabsTrigger value="wallets" data-testid="tab-wallets">
+            <Wallet className="h-4 w-4 mr-1.5" />
+            Wallets
           </TabsTrigger>
           <TabsTrigger value="calculator" data-testid="tab-calculator">
             <Calculator className="h-4 w-4 mr-1.5" />
@@ -1469,6 +1474,10 @@ export default function XLS66LendingPage() {
 
         <TabsContent value="borrowing" className="mt-4">
           <BorrowingHub />
+        </TabsContent>
+
+        <TabsContent value="wallets" className="mt-4">
+          <WalletCompatibilityMatrix />
         </TabsContent>
       </Tabs>
 
