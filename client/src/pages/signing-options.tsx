@@ -14,6 +14,9 @@ import {
   Star,
   HeartHandshake,
   Split,
+  Layers,
+  Snowflake,
+  CreditCard,
 } from "lucide-react";
 
 const options = [
@@ -117,6 +120,73 @@ export default function SigningOptions() {
             convenience and maximum security. Choose the level that feels right
             for you — you can change anytime.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card data-testid="card-wallet-strategy">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Layers className="h-5 w-5 text-[#00A4E4]" />
+            Your wallet is a role in your strategy
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            The question isn't "which wallet is best." It's "what job is this
+            wallet doing for me?" Give each wallet one job and stick to it.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Snowflake className="h-4 w-4 text-[#00A4E4]" />
+              <span className="font-semibold text-sm">
+                Cold wallet — your vault
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Hardware or air-gapped, kept offline. This is your fireproof safe —
+              the bulk of your wealth, brought out rarely and carefully. You don't
+              connect it to every new site.
+            </p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard className="h-4 w-4 text-[#00A4E4]" />
+              <span className="font-semibold text-sm">
+                Working wallet — your debit card
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A wallet you connect to apps to lend, trade, and use features like
+              XLS-66 lending. Convenient and connected — but not where you keep
+              everything you own.
+            </p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Smartphone className="h-4 w-4 text-[#00A4E4]" />
+              <span className="font-semibold text-sm">
+                Hot wallet (Xaman) — in the middle
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Built to connect smoothly to the XRPL and show clear, readable
+              signing screens. A great working wallet: move funds in, sign, then
+              sweep back to cold storage when you're done.
+            </p>
+          </div>
+        </CardContent>
+        <CardContent className="pt-0">
+          <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">
+              The debit-card rule:
+            </span>{" "}
+            you don't keep your life savings on the card you shop online with —
+            you top it up with what you need. Do the same here: keep most of your
+            holdings on a cold wallet you almost never connect, move only what you
+            plan to use into a working wallet, then sweep the rest back. We design
+            for this — vault storage and lending are separate jobs, and we're
+            always explicit about clear signing vs. blind signing.
+          </div>
         </CardContent>
       </Card>
 
