@@ -88,20 +88,34 @@ export const SIGNERS: SignerCapability[] = [
     name: "Trezor (Safe 5 / Safe 3 / Model T)",
     connection: "USB cable — desktop browser",
     platform: "Desktop web (USB)",
-    integrated: false,
+    integrated: true,
     fidelity: {
       VaultDeposit: "unsupported",
       VaultWithdraw: "unsupported",
-      Payment: "unsupported",
+      Payment: "clear",
       TrustSet: "unsupported",
     },
-    note: "Supports XRP and connects straight to a desktop browser over USB — the same kind of path as Ledger. It's on our list to wire up. (The old Model One doesn't support XRP.) Like every hardware wallet, vault deposits also wait on a firmware update.",
+    note: "Connects through Trezor's own secure pop-up over USB (Chrome or Edge on desktop). You can connect and sign regular XRP payments today, with full details shown on the Trezor screen. Trustlines and XLS-66 vault deposits aren't available yet — Trezor's XRP support is payment-only for now, and vault signing also waits on a firmware update. (The old Model One doesn't support XRP.)",
   },
   {
     id: "keystone",
     name: "Keystone",
     connection: "Fully offline QR-code signing",
     platform: "Mobile or desktop (QR)",
+    integrated: true,
+    fidelity: {
+      VaultDeposit: "unsupported",
+      VaultWithdraw: "unsupported",
+      Payment: "clear",
+      TrustSet: "unsupported",
+    },
+    note: "Fully offline, air-gapped QR signing — the device never touches a cable or the internet. You scan a QR with the Keystone and scan its reply back. You can connect and sign regular XRP payments today, with full details shown on the Keystone screen. Trustlines and XLS-66 vault deposits aren't wired up yet and also wait on a Keystone firmware update.",
+  },
+  {
+    id: "cypherock",
+    name: "Cypherock X1",
+    connection: "USB cable — desktop browser",
+    platform: "Desktop web (USB)",
     integrated: false,
     fidelity: {
       VaultDeposit: "unsupported",
@@ -109,7 +123,7 @@ export const SIGNERS: SignerCapability[] = [
       Payment: "unsupported",
       TrustSet: "unsupported",
     },
-    note: "Supports XRP with fully offline, air-gapped QR signing (the device never touches a cable or the internet). On our list; vault-deposit support also waits on a Keystone firmware update.",
+    note: "Cypherock supports XRP over USB and is on our build list. Its official toolkit needs a software component that this project's security filter is currently blocking, so we can't switch it on yet — once that's lifted, it connects the same way as Ledger and Trezor.",
   },
   {
     id: "tangem",
@@ -151,13 +165,13 @@ export const SIGNERS: SignerCapability[] = [
       Payment: "unsupported",
       TrustSet: "unsupported",
     },
-    note: "NFC card wallet, mobile-first — doesn't work over desktop web. On the roadmap once vault-deposit support is confirmed.",
+    note: "An NFC tap-to-sign card that only signs through Arculus's own phone app — by design, no outside website can drive it. So it can't be wired into our web flow; you'd sign inside the Arculus app.",
   },
   {
     id: "other",
-    name: "Other wallets (Ellipal, SafePal, Cypherock…)",
-    connection: "Mostly QR or mobile apps",
-    platform: "Mostly mobile / QR",
+    name: "Maker-app-only wallets (SafePal, Ellipal…)",
+    connection: "Only through the maker's own phone app",
+    platform: "Mobile app only",
     integrated: false,
     fidelity: {
       VaultDeposit: "unsupported",
@@ -165,7 +179,7 @@ export const SIGNERS: SignerCapability[] = [
       Payment: "unsupported",
       TrustSet: "unsupported",
     },
-    note: "Several other wallets support XRP via QR or mobile apps. We'll add the ones members ask for most, once vault-deposit signing is confirmed. Tell us which you use.",
+    note: "Wallets like SafePal and Ellipal only ever sign inside their own maker's app — by design, no outside website (including ours) can send them a transaction to sign. They're fine wallets; they just can't be wired into CryptoOwnBank's web flow. To use one here, you'd move funds to a wallet we can talk to, or sign in their app directly.",
   },
 ];
 
@@ -215,7 +229,7 @@ export const LANE_META: Record<SignerLane, LaneMeta> = {
     id: "coming-soon",
     label: "Coming soon",
     description:
-      "Not available yet. We'll switch it on once it can sign vault transactions safely.",
+      "Not usable through our website right now. Some are on our build list or waiting on a firmware update; others (card and maker-app wallets) only sign inside their own maker's app, so no website can drive them. Check each wallet's note.",
   },
 };
 

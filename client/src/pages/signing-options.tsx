@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
+import { WalletTestPanel } from "@/components/wallet-test-panel";
 import {
   Shield,
   Smartphone,
@@ -118,6 +119,8 @@ export default function SigningOptions() {
           </p>
         </CardContent>
       </Card>
+
+      <WalletTestPanel />
 
       <div className="space-y-6">
         {options.map((option, index) => {

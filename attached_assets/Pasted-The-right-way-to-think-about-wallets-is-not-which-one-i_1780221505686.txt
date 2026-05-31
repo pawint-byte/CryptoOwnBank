@@ -1,0 +1,47 @@
+The right way to think about wallets is not “which one is best,” but “what job is this wallet doing for me?” Here’s a message you can use on the CryptoOwnBank site that puts that strategy in perspective.
+---
+Headline idea
+Your wallet isn’t just a device. It’s a role in your strategy.
+---
+Core message (site-ready copy)
+When you’re serious about self-custody, you don’t ask “Which wallet is best?”  
+You ask: “What job is this wallet doing for me?”
+Different wallets shine at different jobs:
+•	Cold wallets (hardware, air‑gapped, long-term vaults) are for survival  
+They’re the fireproof safe in your house. You keep the bulk of your wealth there, offline, with the strongest possible protection against hacks, app bugs, and everyday mistakes. You don’t connect them to every new site; you bring them out rarely and carefully, the way you’d open a safety deposit box.
+•	Utility wallets (mobile, browser, or hardware plugged into apps) are for participation  
+These are the wallets you actually use to lend, borrow, trade, and interact with protocols like XLS‑66 lending. They’re closer to a debit card than a vault: convenient, connected, and great for day‑to‑day activity — but not where you store everything you own.
+•	Hot wallets like Xaman sit in the middle  
+They’re designed to connect smoothly to the XRPL ecosystem, understand new transaction types quickly, and give you human‑readable signing screens. That makes them ideal “working wallets” for XLS‑66 lending: you can move assets in, sign clearly, and move assets back out to deep cold storage when you’re done.
+---
+The trade-off, plainly
+Every time you connect a wallet directly to a website, you’re making a trade:
+•	More security, less utility:  
+A deeply cold wallet gives you maximum safety, but minimum compatibility and convenience. It may only support blind signing at first for new transaction types, or need extra steps and cables to participate at all.
+•	More utility, more exposure:  
+A hot or semi‑hot wallet (like a mobile app or Xaman) gives you instant compatibility with new features like XLS‑66 lending — but it’s closer to the internet, so you don’t want your entire net worth sitting there.
+The smart move is not to pretend that one device magically does everything. It’s to assign each wallet a job and stick to it.
+---
+The “debit card” mental model
+Think of it the same way you already think about money in the bank:
+•	You don’t keep your life savings on the card you shop online with.
+•	You keep most funds in a secure account, and top up the card with what you need.
+•	If the card is ever compromised, the damage is limited to what was on it.
+Apply that exact pattern to your wallets:
+•	Keep the bulk of your XRP and long-term holdings on cold wallets you almost never connect.
+•	When you want to lend via XLS‑66, move only what you intend to use into a more connected wallet — for example, Xaman or a hardware wallet wired for our site.
+•	Use that “working wallet” to interact, sign, repay, and withdraw.
+•	When you’re done, sweep profits and unused funds back to cold storage.
+In other words: cold wallets are your vault; Xaman and compatible hardware are your debit cards.
+---
+Why this is the strategy we design for
+CryptoOwnBank is built around this layered approach, not against it:
+•	We treat vault storage and lending participation as two separate roles, even if you use the same brand of wallet in both places.
+•	We’re explicit about clear signing vs blind signing, so you understand exactly when your hardware wallet is showing you real details and when it isn’t.
+•	Our wallet matrix and policies are designed so you can:
+•	Keep most of your assets in the most conservative setup you’re comfortable with.
+•	Still participate in XLS‑66 lending without dragging your entire cold stack into every new connection.
+We don’t ask you to pick between “maximum security” and “full utility.”  
+We help you separate your savings from your spending, so you can have both.
+---
+If you tell me roughly how opinionated you want this to sound (calmly neutral vs strongly prescriptive), I can tighten this into a shorter, on-page block with a heading, subheading, and 3–4 punchy bullets.
