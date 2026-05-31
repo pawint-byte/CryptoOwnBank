@@ -288,6 +288,7 @@ const REVIEW_OPTIONS: { value: string; label: string; help: string }[] = [
   { value: "own_transfer", label: "Transfer to my own wallet", help: "Sending to another wallet you control — not a sale, no tax." },
   { value: "sale", label: "A sale", help: "You sold this for cash — counts as a taxable sale." },
   { value: "swap", label: "A swap for another coin", help: "You traded it for a different coin — a taxable disposal." },
+  { value: "lost", label: "Lost or stolen (scam, hack, theft)", help: "The coins are gone and you got nothing back. We'll remove them from your holdings and record a loss equal to what you paid — not a sale." },
 ];
 
 export default function Transactions() {
@@ -1331,6 +1332,9 @@ export default function Transactions() {
                 <p className="text-sm text-muted-foreground">{opt.help}</p>
               </button>
             ))}
+            <p className="text-xs text-muted-foreground pt-1" data-testid="text-review-tax-note">
+              Whether a lost or stolen-coin loss can lower your taxes depends on where you live and changes over time. We record the loss accurately — check with a tax professional before claiming it.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

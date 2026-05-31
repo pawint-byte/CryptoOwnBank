@@ -2,7 +2,7 @@ import { storage } from "../storage";
 import { isKnownVaultAddress } from "../routes/shared";
 import type { Transaction } from "@shared/schema";
 
-export type TransferCategory = "sale" | "swap" | "own_transfer" | "vault_deposit";
+export type TransferCategory = "sale" | "swap" | "own_transfer" | "vault_deposit" | "lost";
 
 // Shared helper: remove any gain events linked to a sell transaction and put the
 // quantity they consumed back onto their tax lots. Used when a held "sale" turns
@@ -51,7 +51,7 @@ export async function clearGainEventsForSell(userId: string, sellTxId: string) {
 export async function realizeSellGains(
   userId: string,
   sellTxId: string,
-  disposalType: "sale" | "swap",
+  disposalType: "sale" | "swap" | "lost",
 ) {
   const tx = await storage.getTransaction(sellTxId);
   if (!tx) return;
@@ -78,7 +78,9 @@ export async function realizeSellGains(
     if (lotRemaining <= 0) continue;
 
     const sellFromLot = Math.min(remaining, lotRemaining);
-    const proceeds = sellFromLot * sellPrice;
+    // A lost/stolen disposal has no proceeds — nothing was received in return —
+    // so the realized loss equals the cost basis of the coins that left.
+    const proceeds = disposalType === "lost" ? 0 : sellFromLot * sellPrice;
     const costBasis = sellFromLot * parseFloat(lot.costBasisPerUnit);
     const gainLoss = proceeds - costBasis;
     const acquiredDate = new Date(lot.acquiredDate);
@@ -100,6 +102,8 @@ export async function realizeSellGains(
       disposalType,
       disposalNote: disposalType === "swap"
         ? "Swap — taxable disposal (you labeled this)"
+        : disposalType === "lost"
+        ? "Lost or stolen — disposed at $0 proceeds (you labeled this)"
         : "Sale — taxable disposal (you labeled this)",
     });
 
@@ -141,7 +145,9 @@ async function applyCategoryToTx(
       reviewStatus: "resolved",
       notes: note,
     });
-    await realizeSellGains(userId, txId, category === "swap" ? "swap" : "sale");
+    const disposalType: "sale" | "swap" | "lost" =
+      category === "swap" ? "swap" : category === "lost" ? "lost" : "sale";
+    await realizeSellGains(userId, txId, disposalType);
   }
 }
 
@@ -177,6 +183,7 @@ const PRIMARY_NOTE: Record<TransferCategory, string> = {
   own_transfer: "Transfer to your own wallet (you labeled this)",
   swap: "Swap — taxable disposal (you labeled this)",
   sale: "Sale — taxable disposal (you labeled this)",
+  lost: "Lost or stolen — coins gone, recorded as a loss (you labeled this)",
 };
 
 const AUTO_NOTE: Record<TransferCategory, string> = {
@@ -184,6 +191,7 @@ const AUTO_NOTE: Record<TransferCategory, string> = {
   own_transfer: "Transfer to your own wallet (auto-applied from your saved label)",
   swap: "Swap — taxable disposal (auto-applied from your saved label)",
   sale: "Sale — taxable disposal (auto-applied from your saved label)",
+  lost: "Lost or stolen — coins gone, recorded as a loss (you labeled this)",
 };
 
 // Per-user serialization. The reconciliation steps below do multi-step,
@@ -219,6 +227,11 @@ export async function resolveReviewWithMemory(
 ): Promise<{ alsoApplied: number }> {
   return withUserLock(userId, async () => {
     await applyCategoryToTx(userId, tx.id, category, PRIMARY_NOTE[category]);
+
+    // A lost/stolen disposal is a deliberate one-off. Never remember the
+    // destination (a scam address shouldn't auto-classify future transfers) and
+    // never bulk-apply it to other pending transfers — each loss is reviewed alone.
+    if (category === "lost") return { alsoApplied: 0 };
 
     const dest = tx.counterpartyAddress;
     if (!dest) return { alsoApplied: 0 };

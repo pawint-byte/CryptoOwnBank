@@ -85,12 +85,21 @@ export function registerTaxRoutes(app: Express) {
       // and over-consuming tax lots. Before recomputing, undo this year's existing
       // gain events — restore the quantity they consumed back onto their tax lots,
       // then delete them — so we always rebuild from a clean slate.
+      // Preserve how each sell was disposed (sale / swap / lost) before we wipe
+      // the old events. The recompute below rebuilds proceeds from market price,
+      // which is wrong for a "lost or stolen" disposal — those have $0 proceeds
+      // and the loss equals the cost basis. Without this, recomputing would turn
+      // a correctly-recorded theft loss back into a normal sale.
+      const disposalByTx = new Map<string, string>();
       const existingEvents = await storage.getGainEventsByYear(userId, year);
       if (existingEvents.length > 0) {
         const allLots = await storage.getTaxLotsByUser(userId);
         const lotById = new Map(allLots.map((l) => [l.id, l]));
         const restoredByLot = new Map<string, number>();
         for (const ev of existingEvents) {
+          if (ev.sellTransactionId && ev.disposalType) {
+            disposalByTx.set(ev.sellTransactionId, ev.disposalType);
+          }
           restoredByLot.set(
             ev.taxLotId,
             (restoredByLot.get(ev.taxLotId) || 0) + parseFloat(ev.quantity),
@@ -110,7 +119,13 @@ export function registerTaxRoutes(app: Express) {
       for (const sellTx of sellTxns) {
         const lots = await storage.getTaxLotsByAsset(userId, sellTx.assetSymbol);
         const sortedLots = method === "LIFO" ? lots.reverse() : lots;
-        
+
+        // A "lost or stolen" disposal has no proceeds — nothing was received — so
+        // the realized loss equals the cost basis. Carry the disposal type through
+        // so recompute never overwrites a theft loss into a normal sale.
+        const disposalType = disposalByTx.get(sellTx.id) || "sale";
+        const isLost = disposalType === "lost";
+
         let remainingToSell = parseFloat(sellTx.quantity);
         const sellPrice = parseFloat(sellTx.pricePerUnit);
         const sellDate = new Date(sellTx.transactionDate);
@@ -123,7 +138,7 @@ export function registerTaxRoutes(app: Express) {
 
           const sellFromLot = Math.min(remainingToSell, lotRemaining);
           const costBasisPerUnit = parseFloat(lot.costBasisPerUnit);
-          const proceeds = sellFromLot * sellPrice;
+          const proceeds = isLost ? 0 : sellFromLot * sellPrice;
           const costBasis = sellFromLot * costBasisPerUnit;
           const gainLoss = proceeds - costBasis;
 
@@ -145,6 +160,12 @@ export function registerTaxRoutes(app: Express) {
             taxMethod: method,
             soldDate: sellDate,
             acquiredDate,
+            disposalType,
+            disposalNote: isLost
+              ? "Lost or stolen — disposed at $0 proceeds"
+              : disposalType === "swap"
+              ? "Swap — taxable disposal"
+              : undefined,
           });
 
           await storage.updateTaxLot(lot.id, {

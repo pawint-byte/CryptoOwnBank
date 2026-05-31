@@ -2137,18 +2137,19 @@ export function registerPortfolioRoutes(app: Express) {
       }
 
       const category = String(req.body?.category || "");
-      const allowed = ["sale", "swap", "own_transfer", "vault_deposit"];
+      const allowed = ["sale", "swap", "own_transfer", "vault_deposit", "lost"];
       if (!allowed.includes(category)) {
         return res.status(400).json({ message: "Pick how to label this transfer." });
       }
 
       // Smart memory: apply the label to this transfer, remember the destination
       // address for future syncs, and apply the same label to every other transfer
-      // still waiting for review that went to the same address.
+      // still waiting for review that went to the same address. ("lost" is the one
+      // exception — it's a one-off and is never remembered or bulk-applied.)
       const { alsoApplied } = await resolveReviewWithMemory(
         userId,
         tx,
-        category as "sale" | "swap" | "own_transfer" | "vault_deposit",
+        category as "sale" | "swap" | "own_transfer" | "vault_deposit" | "lost",
       );
 
       res.json({ success: true, alsoApplied });
