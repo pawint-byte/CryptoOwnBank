@@ -1,0 +1,28 @@
+Yes — here’s the full version, aimed at three audiences at once: what you need to prepare, what the site must communicate, and what visitors need to understand before they trust it. XLS-66 is an XRPL-native lending protocol layered around single-asset vaults, and amendments only activate after maintaining more than 80% validator support for two weeks, so your launch has to be built around uncertainty, readiness, and trust rather than a fixed calendar date.[xrpl +2]
+Launch frame
+You should think of this as four launches happening together: network activation, product activation, wallet-support activation, and trust activation.  Your code can be ready before validator approval, but your user experience is only truly ready when the amendment is active, your chosen wallet paths work predictably, and users can understand what they are doing without guessing.[xrpl +3]
+From your site’s point of view, the winning message is not “we launched first.” It is “the moment XRPL enables it, we provide the safest self-custody path we can, with clear support states and plain-English guidance.”[Memory +1]
+What you need
+You need a launch plan in six layers: network monitoring, wallet compatibility, transaction safety, vault education, support readiness, and staged rollout controls.  If even one of those layers is weak, users may still technically be able to deposit, but the experience will feel risky or unfinished, which is especially dangerous for a self-custody brand.[xrpl +5]
+1. Network readiness
+Before launch day, build an internal checklist for:
+•	Amendment status: not active, gained majority, active on mainnet.[xrpl]
+•	Server/library readiness: rippled version, SDK support, transaction builder support, parsing support for responses and ledger objects.[xrpl +1]
+•	Vault readiness: which assets you will support first, which vaults you will show, and whether you are allowing public vault discovery or only curated ones.[xrpl +1]
+Your site should have a visible status banner such as:
+•	“XLS-66 is not active on XRPL yet.”
+•	“XLS-66 has majority support but is not active yet.”
+•	“XLS-66 is active. Deposits are live for supported wallets.”[xrpl]
+That alone will reduce a lot of confusion.
+2. Wallet readiness
+Your users are split across:
+•	Hot wallets.
+•	Xaman/mobile signing.
+•	Hardware wallets like Ledger.
+•	Other hardware or QR/NFC-style signers.[Memory +1]
+Do not treat these as one “connect wallet” experience. Instead, create wallet lanes:
+•	“Recommended now.”
+•	“Supported.”
+•	“Advanced.”
+•	“Coming soon.”
+A simple matrix on the page will help:

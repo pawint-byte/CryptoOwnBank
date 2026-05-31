@@ -1,0 +1,25 @@
+Yes — wearing your site hat, customer hat, and product hat, the biggest thing you’re missing is that a great XLS-66 launch is not just “feature goes live, button appears.” It is a trust launch: readiness, wallet compatibility, risk framing, and a calm first-run experience for self-custody users all matter as much as the code itself.[Memory +3]
+Launch reality
+As of late May 2026, XLS-66 is still a draft amendment rather than an activated XRPL standard, and amendment activation depends on validator approval thresholds rather than your shipping timeline.  The XRPL lending model is also not “simple staking”; it is a lending primitive using pooled vault funds and off-chain underwriting, so users will need clearer explanations of risk, liquidity, and counterparties than they do for a normal wallet action.[opensource.ripple +3]
+Customer experience
+Your members prefer self-custody, and your site already positions itself around never holding user funds or keys, which is a major strength for this launch.  But self-custody users with hot wallets, cold wallets, Xaman, and hardware devices will each experience XLS-66 differently, so the product should not present “Connect wallet” as one generic path; it should present guided signing lanes such as Xaman, Ledger direct, and other hardware flows with plain-English explanations of what is supported today.[Memory +4]
+Hardware support
+The most important operational gap is device-signing support for any new XRPL transaction type: your site can construct the transaction immediately, but hardware wallets may still require blind signing or may not support the transaction cleanly until firmware/app updates arrive.  That means your launch plan should treat Xaman as the reliable day-one path, make Ledger direct available only when behavior is confirmed, and clearly separate “clear signed,” “blind signed,” and “not yet supported” states in the UI instead of burying that distinction in help text.[x +3]
+What to add
+You should prepare five launch layers, not one: a validator-watch status banner, wallet compatibility matrix, risk explainer, staged rollout controls, and post-signing visibility.  In practice, that means:[xrpl +2]
+•	“Amendment not active / active on XRPL” system status at the top of the page, so users know whether your button is waiting on the network or on them.[xrpl]
+•	A wallet matrix showing Xaman, Ledger, and other devices with status labels like “supported,” “blind sign only,” or “coming soon.”[x +1]
+•	A deposit preview screen that explains amount, asset, vault, expected share receipt, fees, lockup/liquidity constraints, and the fact that yield depends on borrower performance rather than protocol magic.[opensource.ripple +1]
+•	Feature flags so you can enable by wallet type, by cohort, or by vault partner instead of exposing everything to everyone at once.[Memory]
+•	A success state that immediately explains what happened on-ledger, what the user now owns, and where to monitor position, yield, and exits.[tests.xrpl-commons +1]
+Product stance
+From the product hat, your best launch message is not “earn on XRP instantly”; it is “self-custody access to XRPL-native lending, with clear signing where available and honest warnings where it isn’t.”  From the customer hat, the ideal experience is: connect preferred signer, see whether their setup is launch-ready, understand the vault and risk in one screen, sign once, and then land on a position page that feels transparent rather than experimental.[Memory +4]
+A practical checklist for you:
+•	Build a network activation watcher tied to XLS-66 status.[xls.xrpl +1]
+•	Launch first with the safest signer path, likely Xaman.[Memory]
+•	Add per-wallet compatibility gating, not one universal enable switch.[x +1]
+•	Write blunt copy for blind-sign scenarios: “Your device may not show full transaction details yet.”[ledger +1]
+•	Create a vault due-diligence panel, because users will judge who is borrowing and how defaults are handled, not just APY.[xrpl +1]
+•	Prepare support content for “why can’t my hardware wallet sign this yet?” before launch day.[x +1]
+What you are most likely missing is this: users will not measure the launch by how fast you shipped after amendment activation; they will measure it by whether they felt safe, informed, and still fully in control.  My recommendation is to treat XLS-66 launch as a staged trust rollout with compatibility labeling, safety-first defaults, and education built directly into the flow rather than around it.[Memory +3]
+Would you like me to turn this into a concrete launch plan with phases: pre-activation, activation day, first 2 weeks, and ongoing optimization?
