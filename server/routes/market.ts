@@ -182,6 +182,17 @@ export async function registerMarketRoutes(app: Express) {
     }
   });
 
+  app.get("/api/public/market-prices", async (_req: any, res) => {
+    try {
+      const { getCachedPrices } = await import("../services/market-data");
+      const prices = await getCachedPrices();
+      res.json(prices);
+    } catch (error) {
+      console.error("Public market prices error:", error);
+      res.status(500).json({ message: "Failed to fetch prices" });
+    }
+  });
+
   app.get("/api/market-data/yields", isAuthenticated, async (_req: any, res) => {
     try {
       const { getCachedYields } = await import("../services/market-data");

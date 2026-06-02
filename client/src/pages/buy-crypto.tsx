@@ -38,10 +38,30 @@ import {
   MessageCircle,
   Lock,
   Loader2,
+  Search,
+  Banknote,
+  Coins,
 } from "lucide-react";
 import { createOnrampSessionAndRedirect } from "@/lib/stripe-onramp";
 
-type Step = "token" | "wallet" | "address" | "instructions";
+type Step = "coin" | "method" | "destination" | "checkout";
+
+type MethodId =
+  | "card_instant"
+  | "card_widget"
+  | "card_external"
+  | "swap"
+  | "p2p"
+  | "privacy";
+
+interface BuyMethod {
+  id: MethodId;
+  title: string;
+  subtitle: string;
+  badge: string;
+  inSite: boolean;
+  needsAddress: boolean;
+}
 
 interface TokenOption {
   symbol: string;
@@ -89,6 +109,33 @@ const tokens: TokenOption[] = [
   { symbol: "FLR", name: "Flare", color: "#E42058" },
   { symbol: "XMR", name: "Monero", color: "#FF6600", privacyRoute: true },
 ];
+
+const COIN_BLURB: Record<string, string> = {
+  XRP: "Built for moving money across borders in seconds, with tiny fees.",
+  XLM: "Stellar's coin for cheap global payments and stablecoin transfers.",
+  ETH: "The leading smart-contract network — powers most DeFi and stablecoins.",
+  BTC: "The original cryptocurrency and the most widely held store of value.",
+  SOL: "A high-speed network known for low fees and fast apps.",
+  ADA: "Cardano's coin — a research-driven proof-of-stake network.",
+  ATOM: "Cosmos' coin — the hub of an 'internet of blockchains.'",
+  DOT: "Polkadot's coin — connects many specialized chains together.",
+  AVAX: "Avalanche's fast, low-fee smart-contract network.",
+  MATIC: "Polygon's coin — a low-cost network that scales Ethereum.",
+  TRX: "Tron's coin — widely used for low-fee stablecoin transfers.",
+  DOGE: "The original meme coin — fast, cheap, and widely accepted.",
+  LTC: "Litecoin — a fast, low-fee 'digital silver' to Bitcoin's gold.",
+  HBAR: "Hedera's coin — an enterprise-grade network with very low fees.",
+  ALGO: "Algorand's coin — a fast, low-fee proof-of-stake network.",
+  CRO: "Cronos' coin — tied to the Crypto.com ecosystem.",
+  FLR: "Flare's coin — brings data and smart contracts to assets like XRP.",
+  XMR: "The leading privacy coin — balances and transfers are private by design.",
+};
+
+function fmtPrice(p?: number): string | null {
+  if (p == null || Number.isNaN(p)) return null;
+  if (p >= 1) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `$${p.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
+}
 
 function buildMoonPayUrl(params: { token: string; address?: string }) {
   const coinCode = params.token.toLowerCase();
@@ -883,14 +930,17 @@ function getSwapAlternative(token: string, userChains: Set<string>): { message: 
 export default function BuyCrypto() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [step, setStep] = useState<Step>("token");
+  const [step, setStep] = useState<Step>("coin");
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
-  const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null);
-  const [selectedOnramp, setSelectedOnramp] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<MethodId | null>(null);
+  const [coinSearch, setCoinSearch] = useState("");
   const [showFaq, setShowFaq] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
-  const [changellyBuyCrypto, setChangellyBuyCrypto] = useState("xrp");
+
+  const { data: prices } = useQuery<Record<string, { usd: number; usd_24h_change: number }>>({
+    queryKey: ["/api/public/market-prices"],
+  });
 
   const { data: savedWallets = [] } = useQuery<any[]>({
     queryKey: ["/api/wallets"],
@@ -901,15 +951,8 @@ export default function BuyCrypto() {
   const userChains = useMemo(() => detectUserChains(savedWallets), [savedWallets]);
   const hasAnyWallets = userWallets.size > 0;
 
-  const savedAddressForToken = useMemo(() => {
-    if (!selectedToken) return null;
-    const chain = tokenToChain[selectedToken];
-    if (!chain) return null;
-    return savedWallets.find((w: any) => w.chain === chain) || null;
-  }, [selectedToken, savedWallets]);
-
-  const resolveSavedAddress = useCallback(
-    (symbol: string): string => {
+  const resolveSavedWallet = useCallback(
+    (symbol: string): any | null => {
       const aliases =
         SYMBOL_CHAIN_ALIASES[symbol] ||
         [tokenToChain[symbol]].filter(Boolean);
@@ -919,16 +962,26 @@ export default function BuyCrypto() {
         const wallet = savedWallets.find(
           (w: any) => (w.chain || "").toLowerCase() === alias,
         );
-        if (wallet?.address) return wallet.address;
+        if (wallet?.address) return wallet;
       }
-      return "";
+      return null;
     },
     [savedWallets],
   );
 
+  const savedAddressForToken = useMemo(
+    () => (selectedToken ? resolveSavedWallet(selectedToken) : null),
+    [selectedToken, resolveSavedWallet],
+  );
+
+  const resolveSavedAddress = useCallback(
+    (symbol: string): string => resolveSavedWallet(symbol)?.address || "",
+    [resolveSavedWallet],
+  );
+
   const changellyWalletAddress = useMemo(
-    () => resolveSavedAddress(changellyBuyCrypto.toUpperCase()),
-    [changellyBuyCrypto, resolveSavedAddress],
+    () => (selectedToken ? resolveSavedAddress(selectedToken) : ""),
+    [selectedToken, resolveSavedAddress],
   );
 
   const [onrampLoading, setOnrampLoading] = useState(false);
@@ -971,10 +1024,10 @@ export default function BuyCrypto() {
   );
 
   const changellyBuyUrl = useMemo(() => {
-    const addr = encodeURIComponent(changellyWalletAddress);
-    const to = changellyBuyCrypto.toLowerCase();
+    const addr = encodeURIComponent(changellyWalletAddress || newAddress.trim());
+    const to = (selectedToken || "xrp").toLowerCase();
     return `https://widget.changelly.com?from=*&to=*&amount=500&address=${addr}&fromDefault=usd&toDefault=${to}&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1`;
-  }, [changellyBuyCrypto, changellyWalletAddress]);
+  }, [selectedToken, changellyWalletAddress, newAddress]);
 
   const availableWallets = useMemo(() => {
     if (!selectedToken) return [];
@@ -999,7 +1052,7 @@ export default function BuyCrypto() {
       toast({ title: "Address saved!", description: "Your wallet address has been saved to your profile. It's ready for all future purchases." });
       setNewAddress("");
       setNewLabel("");
-      setStep("instructions");
+      setStep("checkout");
     },
     onError: (err: any) => {
       toast({ title: "Could not save address", description: err.message || "Please try again.", variant: "destructive" });
@@ -1019,59 +1072,36 @@ export default function BuyCrypto() {
     }, 1500);
   }
 
-  function handleTokenSelect(symbol: string) {
+  function handleCoinSelect(symbol: string) {
     setSelectedToken(symbol);
-    setSelectedWallet(null);
-    setSelectedOnramp(null);
+    setSelectedMethod(null);
     setNewAddress("");
     setNewLabel("");
-    const wallets = walletsByToken[symbol];
-    if (wallets && wallets.length === 1) {
-      setSelectedWallet(wallets[0]);
-      if (savedWallets.find((w: any) => w.chain === tokenToChain[symbol])) {
-        setStep("instructions");
-      } else {
-        setStep("address");
-      }
-    } else {
-      setStep("wallet");
-    }
+    setStep("method");
   }
 
-  function handleWalletSelect(wallet: WalletOption) {
-    setSelectedWallet(wallet);
-    setSelectedOnramp(null);
-    if (selectedToken && savedWallets.find((w: any) => w.chain === tokenToChain[selectedToken])) {
-      setStep("instructions");
-    } else {
-      setStep("address");
-    }
+  function handleMethodSelect(id: MethodId, needsAddress: boolean) {
+    setSelectedMethod(id);
+    setStep(needsAddress ? "destination" : "checkout");
   }
 
   function handleBack() {
-    if (step === "instructions") {
-      setStep("address");
-    } else if (step === "address") {
-      const wallets = selectedToken ? walletsByToken[selectedToken] || [] : [];
-      if (wallets.length === 1) {
-        setStep("token");
-        setSelectedToken(null);
-        setSelectedWallet(null);
-      } else {
-        setStep("wallet");
-        setSelectedWallet(null);
-      }
-    } else if (step === "wallet") {
-      setStep("token");
+    if (step === "checkout") {
+      const m = buyMethods.find((x) => x.id === selectedMethod);
+      setStep(m?.needsAddress ? "destination" : "method");
+    } else if (step === "destination") {
+      setStep("method");
+    } else if (step === "method") {
+      setStep("coin");
       setSelectedToken(null);
+      setSelectedMethod(null);
     }
   }
 
   function handleStartOver() {
-    setStep("token");
+    setStep("coin");
     setSelectedToken(null);
-    setSelectedWallet(null);
-    setSelectedOnramp(null);
+    setSelectedMethod(null);
     setNewAddress("");
     setNewLabel("");
   }
@@ -1087,10 +1117,80 @@ export default function BuyCrypto() {
     });
   }
 
+  // The address the coin will actually land in: a saved wallet if we have one,
+  // otherwise a one-time address the member pasted in this session (so logged-out
+  // members can still use Stripe / providers without an account).
+  const effectiveAddress = changellyWalletAddress || newAddress.trim();
+
   const tokenData = tokens.find((t) => t.symbol === selectedToken);
   const nextStep = selectedToken ? getNextStepLink(selectedToken) : null;
   const swapAlt = selectedToken ? getSwapAlternative(selectedToken, userChains) : null;
-  const isPrivacyCoin = tokens.find((t) => t.symbol.toLowerCase() === changellyBuyCrypto.toLowerCase())?.privacyRoute === true;
+  const stripeOpt = selectedToken ? STRIPE_BUY_BY_SYMBOL[selectedToken] : undefined;
+  const tokenPrice = selectedToken ? prices?.[selectedToken]?.usd : undefined;
+
+  const buyMethods = useMemo<BuyMethod[]>(() => {
+    if (!selectedToken) return [];
+    if (tokenData?.privacyRoute) {
+      return [
+        {
+          id: "privacy",
+          title: "Buy it privately",
+          subtitle: "Monero can't be bought with a card here — we'll point you to trusted private routes.",
+          badge: "Private",
+          inSite: false,
+          needsAddress: false,
+        },
+      ];
+    }
+    const list: BuyMethod[] = [];
+    if (STRIPE_BUY_BY_SYMBOL[selectedToken]) {
+      list.push({
+        id: "card_instant",
+        title: "Card, Apple Pay or Google Pay",
+        subtitle: "Fastest — finished right here on CryptoOwnBank. The coin lands in your own wallet.",
+        badge: "In-site · instant",
+        inSite: true,
+        needsAddress: true,
+      });
+    }
+    list.push({
+      id: "card_widget",
+      title: STRIPE_BUY_BY_SYMBOL[selectedToken] ? "Card or bank (more coins)" : "Card or bank",
+      subtitle: "Buy in the on-site widget — it never leaves CryptoOwnBank.",
+      badge: "In-site · 100+ coins",
+      inSite: true,
+      needsAddress: true,
+    });
+    list.push({
+      id: "card_external",
+      title: "MoonPay or Transak",
+      subtitle: "Opens in a new tab with your address already filled in. A reliable backup if a card is declined.",
+      badge: "External · backup",
+      inSite: false,
+      needsAddress: true,
+    });
+    if (swapAlt) {
+      list.push({
+        id: "swap",
+        title: "Swap crypto you already own",
+        subtitle: swapAlt.message,
+        badge: "No card needed",
+        inSite: true,
+        needsAddress: false,
+      });
+    }
+    list.push({
+      id: "p2p",
+      title: "Cash, gift cards & P2P",
+      subtitle: "Buy from a real person — no exchange account needed.",
+      badge: "Other ways",
+      inSite: false,
+      needsAddress: false,
+    });
+    return list;
+  }, [selectedToken, tokenData, swapAlt]);
+
+  const selectedMethodObj = buyMethods.find((m) => m.id === selectedMethod) || null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
@@ -1099,241 +1199,40 @@ export default function BuyCrypto() {
         description="Step-by-step guide to buying crypto with your card or bank account. Buy XRP, RLUSD, XLM, ETH, BTC, SOL, and more through trusted wallets with built-in on-ramps. Buy RLUSD on Binance or Kraken and earn 5-8% APR in Soil Protocol vaults."
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="heading-buy-crypto">
             <ShoppingCart className="h-6 w-6 text-green-600" />
             Buy Crypto
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Buy crypto with your card or bank account — we'll guide you to the right wallet and on-ramp
+            Pick a coin, choose how to pay, and finish — one simple step at a time, right here on CryptoOwnBank.
           </p>
         </div>
-        {step !== "token" && (
+        {step !== "coin" && (
           <Button variant="outline" size="sm" onClick={handleStartOver} data-testid="button-start-over">
             Start Over
           </Button>
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-sm flex-wrap">
-        <Badge variant={step === "token" ? "default" : "outline"} className="gap-1">
-          1. Choose Token
-        </Badge>
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-        <Badge variant={step === "wallet" ? "default" : "outline"} className="gap-1">
-          2. Pick Wallet
-        </Badge>
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-        <Badge variant={step === "address" ? "default" : "outline"} className="gap-1">
-          3. Save Address
-        </Badge>
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-        <Badge variant={step === "instructions" ? "default" : "outline"} className="gap-1">
-          4. Buy
-        </Badge>
+      <div className="flex items-center gap-1.5 text-sm flex-wrap" data-testid="step-progress">
+        {([
+          { key: "coin", label: "1. Coin" },
+          { key: "method", label: "2. How to pay" },
+          { key: "destination", label: "3. Your wallet" },
+          { key: "checkout", label: "4. Finish" },
+        ] as const).map((s, i) => (
+          <div key={s.key} className="flex items-center gap-1.5">
+            {i > 0 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+            <Badge variant={step === s.key ? "default" : "outline"} className="gap-1">
+              {s.label}
+            </Badge>
+          </div>
+        ))}
       </div>
 
-      <Card className="border-primary/40 bg-gradient-to-r from-primary/5 to-transparent">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-provider-chooser">
-            <CreditCard className="h-5 w-5 text-primary" />
-            Buy with card — your choice of provider
-          </CardTitle>
-          <CardDescription>
-            Pick a coin, then choose any provider you like. If one isn't available in your country or hits a snag while traveling, just switch to another — your coins still land in the same wallet.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">I want to buy</label>
-              <select
-                value={changellyBuyCrypto}
-                onChange={(e) => setChangellyBuyCrypto(e.target.value)}
-                className="w-full h-9 rounded-md border bg-background px-3 text-sm"
-                data-testid="select-provider-buy-coin"
-              >
-                {tokens.map((t) => (
-                  <option key={t.symbol} value={t.symbol.toLowerCase()}>{t.symbol} — {t.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Receiving wallet</label>
-              {changellyWalletAddress ? (
-                <div className="flex items-center gap-2 h-9 rounded-md border bg-green-500/10 border-green-500/30 px-3" data-testid="provider-wallet-prefilled">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                  <span className="text-sm truncate font-mono">{changellyWalletAddress.slice(0, 8)}...{changellyWalletAddress.slice(-6)}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 h-9 rounded-md border bg-yellow-500/10 border-yellow-500/30 px-3" data-testid="provider-wallet-missing">
-                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">No {changellyBuyCrypto.toUpperCase()} wallet saved yet</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(() => {
-              const symbolUpper = changellyBuyCrypto.toUpperCase();
-              const stripeOpt = STRIPE_BUY_BY_SYMBOL[symbolUpper];
-              return (
-                <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-stripe">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-indigo-500" />
-                    <span className="font-medium text-sm">Stripe</span>
-                    <Badge variant="secondary" className="ml-auto text-[10px]">Card · Apple/Google Pay</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground flex-1">
-                    {stripeOpt
-                      ? "Built into the site. The coin is sent straight to your own wallet."
-                      : `Stripe doesn't cover ${symbolUpper} yet — try Changelly, MoonPay or Transak.`}
-                  </p>
-                  <Button
-                    size="sm"
-                    disabled={!stripeOpt || onrampLoading}
-                    onClick={() => stripeOpt && handleBuyWithStripe(changellyWalletAddress, { ...stripeOpt, symbol: symbolUpper })}
-                    data-testid="button-buy-stripe"
-                  >
-                    {onrampLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Buy {symbolUpper} with Stripe</>}
-                  </Button>
-                </div>
-              );
-            })()}
-
-            <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-changelly">
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-violet-500" />
-                <span className="font-medium text-sm">Changelly</span>
-                <Badge variant="secondary" className="ml-auto text-[10px]">Embedded · 100+ coins</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground flex-1">
-                Runs right here on the page — never leaves the site. Widest coin coverage.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => document.getElementById("changelly-buy-widget")?.scrollIntoView({ behavior: "smooth" })}
-                data-testid="button-buy-changelly"
-              >
-                Open Changelly widget
-              </Button>
-            </div>
-
-            <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-moonpay">
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-purple-500" />
-                <span className="font-medium text-sm">MoonPay</span>
-                <Badge variant="secondary" className="ml-auto text-[10px]">Card · bank</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground flex-1">
-                Card or bank. Availability changes by country — if it says "not supported in your region," use another option.
-              </p>
-              <Button asChild size="sm" variant="outline" data-testid="button-buy-moonpay">
-                <a href={buildMoonPayUrl({ token: changellyBuyCrypto, address: changellyWalletAddress })} target="_blank" rel="noopener noreferrer">
-                  Open MoonPay <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                </a>
-              </Button>
-            </div>
-
-            <div className="rounded-lg border p-3 flex flex-col gap-2" data-testid="provider-tile-transak">
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-sky-500" />
-                <span className="font-medium text-sm">Transak</span>
-                <Badge variant="secondary" className="ml-auto text-[10px]">Card · bank · 100+ countries</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground flex-1">
-                Card or bank in 100+ countries. A reliable backup if MoonPay is blocked where you are.
-              </p>
-              <Button asChild size="sm" variant="outline" data-testid="button-buy-transak">
-                <a href={buildTransakUrl({ token: changellyBuyCrypto, address: changellyWalletAddress })} target="_blank" rel="noopener noreferrer">
-                  Open Transak <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                </a>
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground flex items-start gap-1.5 border-t pt-3" data-testid="text-region-note">
-            <Globe className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>Traveling or seeing "not supported in your region"? That's the provider's rule, not your account. Switch to another option above — your coins always land in the same wallet, and CryptoOwnBank never touches them.</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card id="changelly-buy-widget" className="border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-blue-500/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-changelly-widget">
-            <CreditCard className="h-5 w-5 text-violet-600" />
-            Buy Crypto Instantly
-          </CardTitle>
-          <CardDescription>
-            Buy crypto directly with your card or bank account. Powered by Changelly — fast, secure, and available worldwide.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="changelly-buying-summary">
-            <span className="text-muted-foreground">Buying:</span>
-            <Badge variant="secondary">{changellyBuyCrypto.toUpperCase()}</Badge>
-            {changellyWalletAddress ? (
-              <span className="text-xs text-green-600 dark:text-green-400 font-mono truncate">→ {changellyWalletAddress.slice(0, 8)}…{changellyWalletAddress.slice(-6)}</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">→ you'll enter your address in the widget</span>
-            )}
-            <span className="text-xs text-muted-foreground ml-auto">Change the coin in the chooser above ↑</span>
-          </div>
-          <div className="rounded-lg overflow-hidden border" style={{ height: "450px" }} data-testid="changelly-widget-container">
-            <iframe
-              key={changellyBuyUrl}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allow="camera"
-              src={changellyBuyUrl}
-              title="Changelly Buy Crypto Widget"
-              data-testid="changelly-widget-iframe"
-            >
-              Can't load widget
-            </iframe>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Changelly supports 100+ cryptocurrencies. Transactions are processed by Changelly — CryptoOwnBank never touches your funds.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="border-green-500/30 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2" data-testid="heading-changelly-swap-widget">
-            <ArrowRightLeft className="h-5 w-5 text-green-600" />
-            Exchange Crypto
-          </CardTitle>
-          <CardDescription>
-            Swap between 500+ cryptocurrencies instantly. No account needed — just select your pair and swap.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg overflow-hidden border" style={{ height: "450px" }} data-testid="changelly-swap-widget-container">
-            <iframe
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allow="camera"
-              src="https://widget.changelly.com?from=*&to=*&amount=0.1&address=&fromDefault=btc&toDefault=eth&merchant_id=17hPNKintbYkms_z&payment_id=&v=3"
-              title="Changelly Exchange Crypto Widget"
-              data-testid="changelly-swap-widget-iframe"
-            >
-              Can't load widget
-            </iframe>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Swap any crypto to any crypto. Powered by Changelly — best rates aggregated from multiple exchanges.
-          </p>
-        </CardContent>
-      </Card>
-
-      {step === "token" && (
+      {step === "coin" && (
         <div className="space-y-4">
           {hasAnyWallets && (
             <Card className="border-green-500/20 bg-green-500/5">
@@ -1356,57 +1255,82 @@ export default function BuyCrypto() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">What do you want to buy?</CardTitle>
-              <CardDescription>Select the cryptocurrency you want to purchase</CardDescription>
+              <CardDescription>Pick a coin to start — we'll handle the rest one step at a time.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {tokens.filter((t) => t.featured).length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Featured</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                      {tokens
-                        .filter((t) => t.featured)
-                        .map((token) => (
-                          <Button
-                            key={token.symbol}
-                            variant="outline"
-                            className={`h-16 flex flex-col gap-1 border-2 hover:border-green-500 transition-colors relative ${userChains.has(token.symbol) ? "border-green-500/50 bg-green-500/5" : ""}`}
-                            onClick={() => handleTokenSelect(token.symbol)}
-                            data-testid={`button-token-${token.symbol.toLowerCase()}`}
-                          >
-                            {userChains.has(token.symbol) && (
-                              <span className="absolute -top-1.5 -right-1.5 bg-green-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">You hold</span>
-                            )}
-                            <span className="font-bold text-base">{token.symbol}</span>
-                            <span className="text-xs text-muted-foreground">{token.name}</span>
-                          </Button>
-                        ))}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">All tokens</p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                    {tokens
-                      .filter((t) => !t.featured)
-                      .map((token) => (
-                        <Button
-                          key={token.symbol}
-                          variant="outline"
-                          className={`h-14 flex flex-col gap-0.5 hover:border-green-500 transition-colors relative ${userChains.has(token.symbol) ? "border-green-500/50 bg-green-500/5" : ""}`}
-                          onClick={() => handleTokenSelect(token.symbol)}
-                          data-testid={`button-token-${token.symbol.toLowerCase()}`}
-                        >
-                          {userChains.has(token.symbol) && (
-                            <span className="absolute -top-1.5 -right-1.5 bg-green-600 text-white text-[7px] px-1 py-0.5 rounded-full font-medium whitespace-nowrap">You hold</span>
-                          )}
-                          <span className="font-bold text-sm">{token.symbol}</span>
-                          <span className="text-[10px] text-muted-foreground truncate max-w-full">{token.name}</span>
-                        </Button>
-                      ))}
-                  </div>
-                </div>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or symbol (e.g. Bitcoin, XRP)"
+                  value={coinSearch}
+                  onChange={(e) => setCoinSearch(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-coin-search"
+                />
               </div>
+              {(() => {
+                const q = coinSearch.trim().toLowerCase();
+                const matches = (t: TokenOption) =>
+                  !q || t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q);
+                const featured = tokens.filter((t) => t.featured && matches(t));
+                const rest = tokens.filter((t) => !t.featured && matches(t));
+                const renderCoin = (token: TokenOption) => {
+                  const price = fmtPrice(prices?.[token.symbol]?.usd);
+                  const chg = prices?.[token.symbol]?.usd_24h_change;
+                  return (
+                    <button
+                      key={token.symbol}
+                      type="button"
+                      onClick={() => handleCoinSelect(token.symbol)}
+                      className={`text-left rounded-lg border p-3 hover:border-green-500 transition-colors relative ${userChains.has(token.symbol) ? "border-green-500/50 bg-green-500/5" : ""}`}
+                      data-testid={`button-token-${token.symbol.toLowerCase()}`}
+                    >
+                      {userChains.has(token.symbol) && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-green-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">You hold</span>
+                      )}
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-bold text-sm">{token.symbol}</span>
+                        {price && (
+                          <span className="text-xs font-medium" data-testid={`text-price-${token.symbol.toLowerCase()}`}>{price}</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">{token.name}</div>
+                      {typeof chg === "number" && (
+                        <div className={`text-[10px] font-medium ${chg >= 0 ? "text-green-600" : "text-red-500"}`}>
+                          {chg >= 0 ? "+" : ""}{chg.toFixed(2)}% 24h
+                        </div>
+                      )}
+                    </button>
+                  );
+                };
+                if (featured.length === 0 && rest.length === 0) {
+                  return (
+                    <p className="text-sm text-muted-foreground py-6 text-center" data-testid="text-no-coins">
+                      No coins match "{coinSearch}". Try a different name.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-4">
+                    {featured.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Popular</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {featured.map(renderCoin)}
+                        </div>
+                      </div>
+                    )}
+                    {rest.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">All coins</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {rest.map(renderCoin)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
 
@@ -1427,6 +1351,499 @@ export default function BuyCrypto() {
             </CardContent>
           </Card>
 
+          {!user && (
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="pt-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold mb-1">New here?</p>
+                    <p className="text-sm text-muted-foreground">
+                      Sign up free to save your wallet address once and have every future purchase land there automatically — plus track balances, trade, swap, and earn yield, all in one place.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/auth">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 gap-2 mt-1" data-testid="button-signup-cta">
+                    <Wallet className="h-4 w-4" />
+                    Sign Up Free
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {user && !hasAnyWallets && (
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="pt-5">
+                <div className="flex items-start gap-3">
+                  <Wallet className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold mb-1">Already bought crypto? Add your wallet to start tracking</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Once you add your wallet address, we'll automatically pull in your balances. You'll see everything on one dashboard — and unlock DEX trading, DCA orders, swaps, yield tools, and payment features.
+                    </p>
+                    <Link href="/wallets">
+                      <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-add-wallet-cta">
+                        <Plus className="h-4 w-4" /> Add My Wallet
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {step === "method" && selectedToken && (
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span
+                  className="inline-flex h-7 min-w-7 px-1 items-center justify-center rounded-full text-white text-[10px] font-bold"
+                  style={{ backgroundColor: tokenData?.color || "#00A4E4" }}
+                >
+                  {selectedToken}
+                </span>
+                How do you want to pay for {tokenData?.name || selectedToken}?
+              </CardTitle>
+              <CardDescription>
+                {tokenPrice
+                  ? `About ${fmtPrice(tokenPrice)} per ${selectedToken} right now — pick the option that suits you.`
+                  : "Pick the option that suits you. You can always come back and switch."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {buyMethods.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => handleMethodSelect(m.id, m.needsAddress)}
+                  className="w-full text-left rounded-lg border p-4 hover:border-green-500 transition-colors bg-background flex items-start gap-3"
+                  data-testid={`button-method-${m.id}`}
+                >
+                  <div className="mt-0.5 shrink-0 text-green-600">
+                    {(m.id === "card_instant" || m.id === "card_widget") && <CreditCard className="h-5 w-5" />}
+                    {m.id === "card_external" && <Banknote className="h-5 w-5" />}
+                    {m.id === "swap" && <ArrowRightLeft className="h-5 w-5" />}
+                    {m.id === "p2p" && <Users className="h-5 w-5" />}
+                    {m.id === "privacy" && <Lock className="h-5 w-5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{m.title}</span>
+                      <Badge variant={m.inSite ? "default" : "outline"} className="text-[10px]">{m.badge}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">{m.subtitle}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+
+          {COIN_BLURB[selectedToken] && (
+            <Card className="border-blue-500/20 bg-blue-500/5">
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">
+                  <strong>{tokenData?.name || selectedToken}:</strong> {COIN_BLURB[selectedToken]}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {step === "destination" && selectedToken && (
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-address">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+
+          {savedAddressForToken ? (
+            <Card className="border-green-500/20 bg-green-500/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Your {selectedToken} wallet is ready
+                </CardTitle>
+                <CardDescription>
+                  You already have a {tokenData?.name || selectedToken} address saved. Everything you buy lands here automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">{savedAddressForToken.label || "Wallet"}</p>
+                    <p className="text-sm font-mono truncate" data-testid="text-saved-address">{savedAddressForToken.address}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(savedAddressForToken.address);
+                      toast({ title: "Copied!", description: "Address copied to clipboard." });
+                    }}
+                    data-testid="button-copy-address"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Set up once, works forever — any time you buy {selectedToken}, it arrives here. You can also share this address with anyone who wants to send you {selectedToken}.
+                </p>
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                  onClick={() => setStep("checkout")}
+                  data-testid="button-continue-to-buy"
+                >
+                  Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ) : user ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-blue-600" />
+                  Where should your {selectedToken} land?
+                </CardTitle>
+                <CardDescription>
+                  Save your {tokenData?.name || selectedToken} receive address so the coin goes straight to a wallet you control. Set it up once — every future purchase lands here automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card className="border-blue-500/20 bg-blue-500/5">
+                  <CardContent className="pt-4">
+                    <p className="text-sm font-medium mb-2">Already have a wallet? Find your address:</p>
+                    <ol className="text-sm text-muted-foreground space-y-1.5">
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">1</span>
+                        Open your wallet app on your phone or computer
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">2</span>
+                        Tap <strong>Receive</strong> (or <strong>Deposit</strong>) for {selectedToken}
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">3</span>
+                        Copy the address shown (it's your public receive address — safe to share)
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">4</span>
+                        Paste it below and save — you only need to do this once
+                      </li>
+                    </ol>
+                  </CardContent>
+                </Card>
+
+                {availableWallets.length > 0 && (
+                  <details className="rounded-lg border p-3 group" data-testid="details-no-wallet">
+                    <summary className="text-sm font-medium cursor-pointer flex items-center gap-2 list-none">
+                      <Plus className="h-4 w-4 text-green-600" />
+                      Don't have a wallet yet? Set one up (2 minutes)
+                    </summary>
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        These free wallets hold {selectedToken} and only you control them. Install one, create a wallet, then come back and paste your receive address.
+                      </p>
+                      {availableWallets.map((wallet) => (
+                        <a
+                          key={wallet.name}
+                          href={wallet.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between rounded-md border p-3 hover:border-green-500 transition-colors"
+                          data-testid={`link-get-wallet-${wallet.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {wallet.type === "cold" ? (
+                              <Shield className="h-4 w-4 text-blue-600 shrink-0" />
+                            ) : (
+                              <Wallet className="h-4 w-4 text-green-600 shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <span className="text-sm font-medium">{wallet.name}</span>
+                              <p className="text-xs text-muted-foreground truncate">{wallet.description}</p>
+                            </div>
+                          </div>
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-2" />
+                        </a>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Your {selectedToken} address</label>
+                    <Input
+                      placeholder={`Paste your ${selectedToken} receive address here`}
+                      value={newAddress}
+                      onChange={(e) => setNewAddress(e.target.value)}
+                      className="font-mono text-sm"
+                      data-testid="input-wallet-address"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Label (optional)</label>
+                    <Input
+                      placeholder={`e.g., My ${selectedToken} wallet`}
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                      data-testid="input-wallet-label"
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                    disabled={!newAddress.trim() || addWalletMutation.isPending}
+                    onClick={handleSaveAddress}
+                    data-testid="button-save-address"
+                  >
+                    {addWalletMutation.isPending ? (
+                      "Saving..."
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" /> Save address & continue
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="border-t pt-3">
+                  <Button
+                    variant="ghost"
+                    className="w-full text-muted-foreground"
+                    onClick={() => setStep("checkout")}
+                    data-testid="button-skip-address"
+                  >
+                    Skip for now — I'll enter my address at checkout
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Tip:</strong> Sign in to save your {selectedToken} address once — then every purchase lands there automatically and we track your balance for you. You can still continue without an account.
+                </p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium block">Your {selectedToken} address</label>
+                  <Input
+                    placeholder={`Paste your ${selectedToken} receive address here`}
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    className="font-mono text-sm"
+                    data-testid="input-wallet-address"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    We'll fill it in for you at checkout — it's only kept on this device for now, not saved to an account.
+                  </p>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => setStep("checkout")}
+                  data-testid="button-continue-no-auth"
+                >
+                  Continue <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {step === "checkout" && selectedToken && selectedMethodObj && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-instructions">
+              <ArrowLeft className="h-4 w-4" /> Back
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleStartOver} className="gap-1 text-muted-foreground" data-testid="button-start-over-checkout">
+              <RefreshCcw className="h-3.5 w-3.5" /> Start over
+            </Button>
+          </div>
+
+          {effectiveAddress && selectedMethodObj.needsAddress && (
+            <Card className="border-green-500/10 bg-green-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Your {selectedToken} lands here</p>
+                    <p className="text-sm font-mono truncate" data-testid="text-address-reminder">{effectiveAddress}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 gap-1"
+                    onClick={() => {
+                      navigator.clipboard.writeText(effectiveAddress);
+                      toast({ title: "Copied!", description: "Address copied to clipboard." });
+                    }}
+                    data-testid="button-copy-address-instructions"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethodObj.needsAddress && !effectiveAddress && (
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-sm text-muted-foreground flex-1">
+                    No {selectedToken} address yet — the coin needs somewhere to land.{" "}
+                    <button onClick={() => setStep("destination")} className="text-amber-700 dark:text-amber-400 font-medium underline" data-testid="button-go-save-address">Add your address</button>{" "}
+                    {user ? "(we'll remember it) " : "to use it here "}
+                    or paste it directly into the provider when prompted.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "card_instant" && stripeOpt && (
+            <Card className="border-green-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-green-600" />
+                  Buy {selectedToken} with card — finish right here
+                </CardTitle>
+                <CardDescription>
+                  Pay with a card, Apple Pay or Google Pay through Stripe. The coin goes straight to your own wallet — CryptoOwnBank never touches it.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                  onClick={() => handleBuyWithStripe(effectiveAddress, { ...stripeOpt, symbol: selectedToken })}
+                  disabled={onrampLoading}
+                  data-testid="button-buy-stripe"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {onrampLoading ? "Opening Stripe..." : `Buy ${selectedToken} now`}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Opens Stripe in a new tab with your wallet address locked in. Non-custodial and self-custodied the whole way.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "card_widget" && (
+            <Card className="border-green-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-green-600" />
+                  Buy {selectedToken} — right here on CryptoOwnBank
+                </CardTitle>
+                <CardDescription>
+                  Pay by card or bank in the secure widget below. It never leaves this page, and your coin lands in your own wallet{effectiveAddress ? " (address pre-filled)" : ""}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <iframe
+                  src={changellyBuyUrl}
+                  className="w-full rounded-lg border"
+                  style={{ height: 480 }}
+                  title="Buy crypto"
+                  allow="camera; payment; clipboard-write"
+                  data-testid="iframe-changelly-buy"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "card_external" && (
+            <Card className="border-green-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Banknote className="h-5 w-5 text-green-600" />
+                  Buy {selectedToken} with MoonPay or Transak
+                </CardTitle>
+                <CardDescription>
+                  Opens in a new tab with your wallet address already filled in{effectiveAddress ? "" : " (paste it there if prompted)"}. A reliable backup if a card is declined elsewhere.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <a
+                  href={buildMoonPayUrl({ token: selectedToken, address: effectiveAddress || undefined })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-moonpay">
+                    <ExternalLink className="h-4 w-4" /> Buy {selectedToken} via MoonPay
+                  </Button>
+                </a>
+                <a
+                  href={buildTransakUrl({ token: selectedToken, address: effectiveAddress || undefined })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-buy-transak">
+                    <ExternalLink className="h-4 w-4" /> Buy {selectedToken} via Transak
+                  </Button>
+                </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "swap" && (swapAlt || nextStep) && (
+            <Card className="border-yellow-500/20 bg-yellow-500/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ArrowRightLeft className="h-5 w-5 text-yellow-600" />
+                  Swap into {selectedToken} — no card needed
+                </CardTitle>
+                <CardDescription>{swapAlt?.message || `Use crypto you already hold to get ${selectedToken}.`}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href={swapAlt?.url || nextStep?.url || "/ownbank/cross-chain"}>
+                  <Button className="w-full gap-2 bg-yellow-600 hover:bg-yellow-700" data-testid="button-go-swap">
+                    <ArrowRightLeft className="h-4 w-4" /> {swapAlt?.label || "Open swap"}
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "privacy" && (
+            <Card className="border-violet-500/20 bg-violet-500/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-violet-600" />
+                  Buy {selectedToken} privately
+                </CardTitle>
+                <CardDescription>
+                  {selectedToken} can't be bought with a card here. We'll point you to trusted no-KYC swap services, P2P cash venues, and private wallets — you stay in control the whole time.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/own-privately">
+                  <Button className="w-full gap-2 bg-violet-600 hover:bg-violet-700" data-testid="button-go-privacy">
+                    <Lock className="h-4 w-4" /> See private buying options
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "p2p" && (
+            <>
           <Card className="border-violet-500/20">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -1608,500 +2025,8 @@ export default function BuyCrypto() {
               </div>
             </CardContent>
           </Card>
-
-          {!user && (
-            <Card className="border-green-500/30 bg-green-500/5">
-              <CardContent className="pt-5 space-y-3">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold mb-1">New to crypto? Here's the game plan</p>
-                    <ol className="text-sm text-muted-foreground space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">1</span>
-                        <span><strong>Get a wallet</strong> — pick one above (Xaman for XRP, LOBSTR for Stellar, MetaMask for ETH). It takes 2 minutes.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">2</span>
-                        <span><strong>Buy your first crypto</strong> — use the wallet's built-in buy button, or grab some through NoOnes, ByBarter, or Telegram.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-xs">3</span>
-                        <span><strong>Sign up here and add your wallet</strong> — we'll automatically track your balances, show your portfolio value, and give you tools to trade, swap, earn yield, send payments, and more.</span>
-                      </li>
-                    </ol>
-                  </div>
-                </div>
-                <Link href="/auth">
-                  <Button className="w-full bg-green-600 hover:bg-green-700 gap-2 mt-2" data-testid="button-signup-cta">
-                    <Wallet className="h-4 w-4" />
-                    Sign Up Free — Start Managing Your Crypto
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            </>
           )}
-
-          {user && !hasAnyWallets && (
-            <Card className="border-green-500/30 bg-green-500/5">
-              <CardContent className="pt-5">
-                <div className="flex items-start gap-3">
-                  <Wallet className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold mb-1">Already bought crypto? Add your wallet to start tracking</p>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Once you add your wallet address, we'll automatically pull in your balances. You'll see everything on one dashboard — and unlock DEX trading, DCA orders, swaps, yield tools, and payment features.
-                    </p>
-                    <Link href="/wallets">
-                      <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-add-wallet-cta">
-                        <Plus className="h-4 w-4" /> Add My Wallet
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {step === "wallet" && selectedToken && (
-        <div className="space-y-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back">
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Button>
-
-          {swapAlt && (
-            <Card className="border-yellow-500/20 bg-yellow-500/5">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                  <Zap className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">Swap instead of buying</p>
-                    <p className="text-sm text-muted-foreground mb-2">{swapAlt.message}</p>
-                    <Link href={swapAlt.url}>
-                      <Button size="sm" className="gap-2 bg-yellow-600 hover:bg-yellow-700" data-testid="button-swap-alternative">
-                        <ArrowRightLeft className="h-4 w-4" /> {swapAlt.label}
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">How do you want to buy {selectedToken}?</CardTitle>
-              <CardDescription>
-                Choose the wallet you already have — or pick one to get started. Each has a built-in way to buy with your card or bank account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {availableWallets.map((wallet) => {
-                const wKey = walletNameToKey[wallet.name] || "";
-                const isOwned = userWallets.has(wKey);
-                return (
-                <button
-                  key={wallet.name}
-                  className={`w-full text-left rounded-lg border p-4 hover:border-green-500 transition-colors space-y-2 bg-background ${isOwned ? "border-green-500/50 bg-green-500/5 ring-1 ring-green-500/20" : ""}`}
-                  onClick={() => handleWalletSelect(wallet)}
-                  data-testid={`button-wallet-${wallet.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {wallet.type === "cold" ? (
-                        <Shield className="h-5 w-5 text-blue-600" />
-                      ) : (
-                        <Wallet className="h-5 w-5 text-green-600" />
-                      )}
-                      <span className="font-semibold">{wallet.name}</span>
-                      <Badge variant="outline" className="text-[10px]">
-                        {wallet.type === "cold" ? "Cold Storage" : "Hot Wallet"}
-                      </Badge>
-                      {isOwned && (
-                        <Badge className="bg-green-600 text-white text-[10px]">
-                          You have this
-                        </Badge>
-                      )}
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">{wallet.description}</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground">Buy via:</span>
-                    {wallet.onramps.map((ramp) => (
-                      <Badge key={ramp.name} variant="secondary" className="text-[10px]">
-                        {ramp.name}
-                      </Badge>
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-2">|</span>
-                    {wallet.platforms.map((p) => (
-                      <span key={p} className="text-xs text-muted-foreground flex items-center gap-0.5">
-                        {p === "mobile" && <Smartphone className="h-3 w-3" />}
-                        {p === "desktop" && <Monitor className="h-3 w-3" />}
-                        {p === "browser" && <Monitor className="h-3 w-3" />}
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                </button>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {step === "address" && selectedToken && selectedWallet && (
-        <div className="space-y-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-address">
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Button>
-
-          {savedAddressForToken ? (
-            <Card className="border-green-500/20 bg-green-500/5">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  Your {selectedToken} Address Is Ready
-                </CardTitle>
-                <CardDescription>
-                  You already have a {tokenData?.name || selectedToken} address saved. Tokens you buy will arrive at this address automatically.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">{savedAddressForToken.label || "Wallet"}</p>
-                    <p className="text-sm font-mono truncate" data-testid="text-saved-address">{savedAddressForToken.address}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(savedAddressForToken.address);
-                      toast({ title: "Copied!", description: "Address copied to clipboard." });
-                    }}
-                    data-testid="button-copy-address"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Set up once, works forever — any time you buy {selectedToken}, it arrives at this address. You can also share this address with anyone who wants to send you {selectedToken}.
-                </p>
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700 gap-2"
-                  onClick={() => setStep("instructions")}
-                  data-testid="button-continue-to-buy"
-                >
-                  Continue to Buy Instructions <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          ) : user ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-blue-600" />
-                  Save Your {selectedToken} Address
-                </CardTitle>
-                <CardDescription>
-                  Before you buy, save your {tokenData?.name || selectedToken} receive address here. Set it up once and it works forever — every future purchase lands at this address automatically.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Card className="border-blue-500/20 bg-blue-500/5">
-                  <CardContent className="pt-4">
-                    <p className="text-sm font-medium mb-2">How to find your address:</p>
-                    <ol className="text-sm text-muted-foreground space-y-1.5">
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">1</span>
-                        Open <strong>{selectedWallet.name}</strong> on your phone or computer
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">2</span>
-                        Tap <strong>Receive</strong> (or <strong>Deposit</strong>) for {selectedToken}
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">3</span>
-                        Copy the address shown (it's your public receive address — safe to share)
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs">4</span>
-                        Paste it below and save — you only need to do this once
-                      </li>
-                    </ol>
-                  </CardContent>
-                </Card>
-
-                {selectedWallet.deepLink && (() => {
-                  const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                  return isMobile ? (
-                    <a href={selectedWallet.deepLink} className="block">
-                      <Button variant="outline" className="w-full gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-wallet-app">
-                        <Smartphone className="h-4 w-4" />
-                        Open {selectedWallet.name} App
-                      </Button>
-                    </a>
-                  ) : (
-                    <a href={selectedWallet.downloadUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button variant="outline" className="w-full gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-wallet-app">
-                        <Monitor className="h-4 w-4" />
-                        Visit {selectedWallet.name} Website
-                      </Button>
-                    </a>
-                  );
-                })()}
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Your {selectedToken} Address</label>
-                    <Input
-                      placeholder={`Paste your ${selectedToken} receive address here`}
-                      value={newAddress}
-                      onChange={(e) => setNewAddress(e.target.value)}
-                      className="font-mono text-sm"
-                      data-testid="input-wallet-address"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Label (optional)</label>
-                    <Input
-                      placeholder={`e.g., My ${selectedWallet.name} ${selectedToken}`}
-                      value={newLabel}
-                      onChange={(e) => setNewLabel(e.target.value)}
-                      data-testid="input-wallet-label"
-                    />
-                  </div>
-                  <Button
-                    className="w-full bg-green-600 hover:bg-green-700 gap-2"
-                    disabled={!newAddress.trim() || addWalletMutation.isPending}
-                    onClick={handleSaveAddress}
-                    data-testid="button-save-address"
-                  >
-                    {addWalletMutation.isPending ? (
-                      "Saving..."
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4" /> Save Address & Continue
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                <div className="border-t pt-3">
-                  <Button
-                    variant="ghost"
-                    className="w-full text-muted-foreground"
-                    onClick={() => setStep("instructions")}
-                    data-testid="button-skip-address"
-                  >
-                    Skip for now — I'll add my address later
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Tip:</strong> Sign in to save your {selectedToken} address to your profile. Once saved, we'll automatically track your balance whenever you buy.
-                </p>
-                <Button
-                  className="w-full"
-                  onClick={() => setStep("instructions")}
-                  data-testid="button-continue-no-auth"
-                >
-                  Continue to Buy Instructions <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {step === "instructions" && selectedToken && selectedWallet && (
-        <div className="space-y-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-instructions">
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Button>
-
-          {swapAlt && (
-            <Card className="border-yellow-500/20 bg-yellow-500/5">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                  <Zap className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium mb-1">Quick alternative: Swap instead</p>
-                    <p className="text-sm text-muted-foreground mb-2">{swapAlt.message}</p>
-                    <Link href={swapAlt.url}>
-                      <Button size="sm" className="gap-2 bg-yellow-600 hover:bg-yellow-700" data-testid="button-swap-alt-instructions">
-                        <ArrowRightLeft className="h-4 w-4" /> {swapAlt.label}
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {savedAddressForToken && (
-            <Card className="border-green-500/10 bg-green-500/5">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">Your {selectedToken} address</p>
-                    <p className="text-sm font-mono truncate" data-testid="text-address-reminder">{savedAddressForToken.address}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0 gap-1"
-                    onClick={() => {
-                      navigator.clipboard.writeText(savedAddressForToken.address);
-                      toast({ title: "Copied!", description: "Address copied to clipboard." });
-                    }}
-                    data-testid="button-copy-address-instructions"
-                  >
-                    <Copy className="h-3.5 w-3.5" /> Copy
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="border-green-500/20">
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-green-600" />
-                    Buy {selectedToken} with {selectedWallet.name}
-                  </CardTitle>
-                  <CardDescription>{selectedWallet.description}</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {selectedWallet.type === "cold" ? "Cold Storage" : "Hot Wallet"}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedWallet.onramps.length > 1 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Choose your on-ramp provider</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {selectedWallet.onramps.map((ramp) => (
-                      <Button
-                        key={ramp.name}
-                        variant={selectedOnramp === ramp.name ? "default" : "outline"}
-                        size="sm"
-                        className={`gap-1.5 ${selectedOnramp === ramp.name ? "bg-green-600 hover:bg-green-700" : ""}`}
-                        onClick={() => setSelectedOnramp(ramp.name)}
-                        data-testid={`button-onramp-${ramp.name.toLowerCase().replace(/\s/g, "-")}`}
-                      >
-                        <CreditCard className="h-3.5 w-3.5" />
-                        {ramp.name}
-                        {ramp.buildUrl && <ExternalLink className="h-3 w-3 opacity-50" />}
-                      </Button>
-                    ))}
-                  </div>
-                  {selectedOnramp && (() => {
-                    const ramp = selectedWallet.onramps.find(r => r.name === selectedOnramp);
-                    if (ramp?.buildUrl) {
-                      const url = ramp.buildUrl({ token: selectedToken, address: savedAddressForToken?.address, walletName: selectedWallet.name });
-                      return (
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="block">
-                          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-via-provider">
-                            <ExternalLink className="h-4 w-4" />
-                            Buy {selectedToken} via {selectedOnramp}
-                            {savedAddressForToken && <span className="text-xs opacity-75">(address pre-filled)</span>}
-                          </Button>
-                        </a>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              )}
-
-              {selectedWallet.onramps.length === 1 && selectedWallet.onramps[0].buildUrl && (
-                <a
-                  href={selectedWallet.onramps[0].buildUrl({ token: selectedToken, address: savedAddressForToken?.address, walletName: selectedWallet.name })}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-direct">
-                    <ExternalLink className="h-4 w-4" />
-                    Buy {selectedToken} via {selectedWallet.onramps[0].name}
-                    {savedAddressForToken && <span className="text-xs opacity-75">(address pre-filled)</span>}
-                  </Button>
-                </a>
-              )}
-
-              <div className="border-t pt-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Step-by-step guide</p>
-                <ol className="space-y-3">
-                  {selectedWallet.steps.map((s, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400 font-bold text-sm">
-                        {i + 1}
-                      </div>
-                      <p className="text-sm text-muted-foreground pt-1">{s}</p>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2 flex-wrap">
-                {selectedWallet.deepLink && (() => {
-                  const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                  return isMobile ? (
-                    <a href={selectedWallet.deepLink}>
-                      <Button variant="outline" className="gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-app">
-                        <Smartphone className="h-4 w-4" />
-                        Open {selectedWallet.name} App
-                      </Button>
-                    </a>
-                  ) : (
-                    <a href={selectedWallet.downloadUrl} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" className="gap-2 border-green-500/30 text-green-700 hover:bg-green-500/10" data-testid="button-open-app">
-                        <Monitor className="h-4 w-4" />
-                        Visit {selectedWallet.name} Website
-                      </Button>
-                    </a>
-                  );
-                })()}
-                {!selectedWallet.deepLink && (
-                  <a
-                    href={selectedWallet.downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex"
-                  >
-                    <Button variant="outline" className="gap-2" data-testid="button-download-wallet">
-                      <ExternalLink className="h-4 w-4" />
-                      Get {selectedWallet.name}
-                    </Button>
-                  </a>
-                )}
-                {nextStep && (
-                  <Link href={nextStep.url}>
-                    <Button className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-next-step">
-                      <Sparkles className="h-4 w-4" />
-                      {nextStep.label}
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {user && savedAddressForToken && (
             <Card className="border-blue-500/20 bg-blue-500/5">
