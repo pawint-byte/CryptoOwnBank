@@ -31,7 +31,7 @@
 ### WATCH — GENIUS Act entrenches stablecoin issuers as freeze chokepoints (Added 2026-06-02)
 - **What:** The U.S. GENIUS Act (stablecoin law, signed July 2025) is in its implementation phase. It mandates 100% liquid reserves (good) but also locks in a few centralized issuers who can freeze funds.
 - **Why it matters to us:** Touches our fungibility / transaction-freedom principles and informs which stablecoins we lean on (e.g., RLUSD) and what we tell members about freeze risk.
-- **Status:** Watch — revisit as rulemaking milestones land through 2026. **ACTED 2026-06-02:** added a plain-language line to the `/stablecoins` intro — "Not every onchain dollar is equal… some stablecoins preserve issuer control, including the power to freeze or restrict funds. We show you which is which."
+- **Status:** Watch — revisit as rulemaking milestones land through 2026. **ACTED 2026-06-02:** added a plain-language line to the `/stablecoins` intro — "Not every onchain dollar is equal… some stablecoins preserve issuer control, including the power to freeze or restrict funds. We show you which is which." **EXPANDED 2026-06-02:** added a "Not every digital dollar is equal" control-spectrum section on `/stablecoins` (cash → bank deposit → stablecoin → CBDC), each showing *who owes you / who can freeze you / hops to a "no"* with a freeze-risk badge, plus the framing "stablecoins are private IOUs; CBDCs are state IOUs" and a self-custody close. Stays a neutral explainer ("we don't pick winners").
 - **Source:** https://trustwallet.com/blog/announcements/genius-act-in-action-how-regulatory-clarity-helps-safe-self-custody
 
 ### NOTE — XRPL & Stellar deep-dive (pull dated 2026-06-02): quiet month, nothing to act on

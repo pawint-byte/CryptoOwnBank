@@ -381,6 +381,49 @@ function StablecoinCard({ coin }: { coin: StablecoinEntry }) {
   );
 }
 
+const moneySpectrum = [
+  {
+    id: "cash",
+    icon: Banknote,
+    label: "Cash in hand",
+    owesYou: "Nobody — it's a bearer asset you physically hold.",
+    canFreeze: "No one. Possession is the whole story.",
+    hops: "Zero — there's no account to call.",
+    risk: "Freeze risk: none",
+    riskClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  },
+  {
+    id: "bank",
+    icon: CreditCard,
+    label: "Bank deposit",
+    owesYou: "Your bank — a private, regulated company.",
+    canFreeze: "Your bank, a court, or a regulator.",
+    hops: "A few — but all inside one company's system.",
+    risk: "Freeze risk: medium",
+    riskClass: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  },
+  {
+    id: "stablecoin",
+    icon: DollarSign,
+    label: "Stablecoin",
+    owesYou: "A private issuer (e.g. Circle, Tether) holding reserves.",
+    canFreeze: "The issuer can freeze or blacklist your address.",
+    hops: "One hop — the issuer, often nudged by a regulator.",
+    risk: "Freeze risk: high",
+    riskClass: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
+  },
+  {
+    id: "cbdc",
+    icon: Landmark,
+    label: "CBDC",
+    owesYou: "The central bank — the state itself.",
+    canFreeze: "The state, directly, by default.",
+    hops: "Zero hops — control is built into the ledger.",
+    risk: "Freeze risk: highest",
+    riskClass: "bg-red-500/15 text-red-700 dark:text-red-400",
+  },
+];
+
 export default function Stablecoins() {
   const [activeTab, setActiveTab] = useState("directory");
   const { rlusdBalance, vaultDeposits, isConnected: xrplConnected } = useXrplStore();
@@ -556,6 +599,65 @@ export default function Stablecoins() {
           </CardContent>
         </Card>
       )}
+
+      <Card data-testid="card-money-spectrum">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ArrowRightLeft className="h-5 w-5 text-primary" />
+            Not every digital dollar is equal
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Stablecoins are private IOUs; CBDCs are state IOUs. Both can be programmable,
+            monitored, and frozen under the right conditions — but they answer to different
+            masters. The same "digital dollar" in your portfolio can behave very differently
+            when something goes wrong. Here's who owes you, who can say "no," and how many
+            hops stand between you and a policy decision.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {moneySpectrum.map((m) => {
+              const Icon = m.icon;
+              return (
+                <div key={m.id} className="rounded-lg border p-4" data-testid={`spectrum-${m.id}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <span className="font-semibold text-sm">{m.label}</span>
+                    <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full ${m.riskClass}`}>
+                      {m.risk}
+                    </span>
+                  </div>
+                  <dl className="space-y-2 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Who owes you</dt>
+                      <dd className="font-medium">{m.owesYou}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Who can freeze you</dt>
+                      <dd className="font-medium">{m.canFreeze}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Hops to a "no"</dt>
+                      <dd className="font-medium">{m.hops}</dd>
+                    </div>
+                  </dl>
+                </div>
+              );
+            })}
+          </div>
+          <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
+            <p className="text-sm">
+              <span className="font-semibold">We don't pick winners.</span> We help you see how
+              money that looks identical in a portfolio view behaves when someone in power wants
+              something done — so you can choose with eyes open. Self-custodied crypto like
+              Bitcoin or XRP in your own wallet sits at the far end of this spectrum: no issuer,
+              no account to freeze — just your keys.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1 mb-4" data-testid="stablecoins-tabs">
