@@ -1,3 +1,4 @@
+- [School of CryptoOwnBank teach pattern](school-of-cryptoownbank-pattern.md) — every risky action = explain → verify-understanding → proceed; persona-agnostic; soft check, friction only at irreversible forks.
 - [Help guide step accuracy](help-guide-accuracy.md) — verify exact UI labels in source before quoting in /help guides; explore agents paraphrase/invent controls.
 - [Vault "tested" gate integrity](legacy-vault-test-gate.md) — a client-side "passed test" flag guarding a save must reset whenever the payload changes, or a stale pass lets an untested vault through.
 - [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail; Stripe covers EVM/BTC/SOL/XLM, THORChain covers BTC/LTC/DOGE/BCH; XRP buyers use Xaman seed-import.

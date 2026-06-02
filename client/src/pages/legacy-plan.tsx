@@ -6,6 +6,7 @@ import { LegacyReadinessPanel } from "@/components/legacy-readiness-panel";
 import { LegacyPlanSummary } from "@/components/legacy-plan-summary";
 import { LegacyPeopleView } from "@/components/legacy-people-view";
 import { LegacyWalletsView } from "@/components/legacy-wallets-view";
+import { UnderstandCheck } from "@/components/understand-check";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1837,6 +1838,7 @@ function SurvivabilityExportCard({ plan }: { plan: LegacyPlanData["plan"] }) {
 
 function LastResortFallbackSection({ plan }: { plan: LegacyPlanData["plan"] }) {
   const { toast } = useToast();
+  const [confirmDisable, setConfirmDisable] = useState(false);
   const enabled = plan.lastResortEnabled ?? true;
   const windowDays = plan.lastResortWindowDays ?? 365;
 
@@ -1875,7 +1877,13 @@ function LastResortFallbackSection({ plan }: { plan: LegacyPlanData["plan"] }) {
           <Button
             variant={enabled ? "default" : "outline"}
             size="sm"
-            onClick={() => update.mutate({ lastResortEnabled: !enabled })}
+            onClick={() => {
+              if (enabled) {
+                setConfirmDisable(true);
+              } else {
+                update.mutate({ lastResortEnabled: true });
+              }
+            }}
             disabled={update.isPending}
             data-testid="button-toggle-last-resort"
           >
@@ -1915,6 +1923,38 @@ function LastResortFallbackSection({ plan }: { plan: LegacyPlanData["plan"] }) {
           </Alert>
         )}
       </CardContent>
+
+      <UnderstandCheck
+        open={confirmDisable}
+        onOpenChange={setConfirmDisable}
+        testId="disable-last-resort"
+        title="Before you turn off the safety valve"
+        explanation={
+          <>
+            The Last-Resort Fallback is the final way your beneficiaries can reach your funds if
+            the SLIP-39 shards are never put back together. With it <strong>on</strong>, the vault
+            eventually opens to them (after the waiting period, with everyone able to object). With
+            it <strong>off</strong>, there is no second chance.
+          </>
+        }
+        question="If you turn this off and the shards are later lost, who can release the funds to your beneficiaries?"
+        options={[
+          { label: "Nobody — the funds stay locked forever." , correct: true },
+          { label: "The CryptoOwnBank team can release them on request." },
+          { label: "My secondary contact can override it." },
+        ]}
+        incorrectFeedback={
+          <>
+            Remember: CryptoOwnBank is non-custodial — we never hold your keys or your funds, so we
+            can't release anything, and no contact can override it. With the fallback off, if the
+            shards are lost the money is gone for good. That's the one thing to be sure of before
+            you switch it off.
+          </>
+        }
+        proceedLabel="I understand — turn it off"
+        cancelLabel="Keep it on"
+        onConfirmed={() => update.mutate({ lastResortEnabled: false })}
+      />
     </Card>
   );
 }
