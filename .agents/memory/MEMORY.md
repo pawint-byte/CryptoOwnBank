@@ -14,5 +14,6 @@
 - [Delete-sell duplicate restore](delete-sell-duplicate-restore.md) — deleting a sell with duplicate gain_events under-restores the lot; repair via compensating buy at original cost/date, then re-record the full sale.
 - [Auto-sync tax classification](auto-sync-tax-classification.md) — outgoing crypto sync must HOLD ambiguous transfers for member review, not auto-tax as sales; tax recompute must clear+restore before recompute (idempotent).
 - [Smart memory address labels](smart-memory-address-labels.md) — remembered address→label reuse; EVM keys MUST be lowercased before storing or classification turns nondeterministic & tax-dangerous.
+- [Industry radar ritual](industry-radar-ritual.md) — founder wants intel on-demand & founder-filtered (Perplexity→agent filter), keepers land in TODO.md RADAR section; NOT an automated member feed.
 - [Hardware signer clear-vs-blind fidelity](hardware-signer-fidelity.md) — new XRPL tx-type support is gated on device firmware, not site plumbing; blind-sign flips trust to our app, so gate it (Advanced opt-in only); Xaman is the safe day-one path.
 - [Route Planner capability matrix](route-planner-capability-matrix.md) — a guided multi-step planner must only emit hops the linked tool can really do; in-app cross-chain is EVM-only (no native BTC/XRP).
