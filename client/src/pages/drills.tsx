@@ -79,9 +79,9 @@ export default function DrillsCenter() {
     save(next);
   };
 
-  const passedCount = (["recovery", "send", "inheritance"] as DrillType[]).filter(
-    (t) => !!latestPass(results, t),
-  ).length;
+  const gotoDrill = (t: DrillType) => {
+    document.getElementById(`drill-${t}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -98,39 +98,163 @@ export default function DrillsCenter() {
         </p>
       </div>
 
-      {/* Progress */}
-      <Card data-testid="card-drills-progress">
-        <CardContent className="py-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-medium" data-testid="text-progress-label">
-              {passedCount} of 3 drills passed
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {passedCount === 3 ? "You're fully drilled." : "Each one matters."}
-            </span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${(passedCount / 3) * 100}%`, backgroundColor: "#00A4E4" }}
-              data-testid="bar-progress"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading your drill history…
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading your readiness…
         </div>
       ) : (
-        <div className="space-y-5">
-          <RecoveryDrill latest={latestPass(results, "recovery")} onPass={(d) => recordPass("recovery", d)} />
-          <SendDrill latest={latestPass(results, "send")} onPass={(d) => recordPass("send", d)} />
-          <InheritanceDrill latest={latestPass(results, "inheritance")} onPass={(d) => recordPass("inheritance", d)} />
-        </div>
+        <>
+          <ReadinessSnapshot results={results} onGoto={gotoDrill} />
+          <div className="space-y-5">
+            <RecoveryDrill latest={latestPass(results, "recovery")} onPass={(d) => recordPass("recovery", d)} />
+            <SendDrill latest={latestPass(results, "send")} onPass={(d) => recordPass("send", d)} />
+            <InheritanceDrill latest={latestPass(results, "inheritance")} onPass={(d) => recordPass("inheritance", d)} />
+          </div>
+        </>
       )}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* Readiness snapshot — one private view that rolls up all drills    */
+/* ---------------------------------------------------------------- */
+
+const DIMENSIONS: { type: DrillType; short: string; done: string; todo: string }[] = [
+  {
+    type: "recovery",
+    short: "Recovery",
+    done: "Your backup is proven to rebuild your wallet.",
+    todo: "Prove the words you wrote down really restore your wallet.",
+  },
+  {
+    type: "send",
+    short: "Sending",
+    done: "You've made a real send and know the safe steps.",
+    todo: "Do one tiny real send so the first big one isn't scary.",
+  },
+  {
+    type: "inheritance",
+    short: "Inheritance",
+    done: "You've confirmed your people could really get in.",
+    todo: "Prove the people you've chosen could actually access your crypto.",
+  },
+];
+
+function rowState(latest?: DrillResult): "passed" | "stale" | "todo" {
+  if (!latest) return "todo";
+  return daysSince(latest.passedAt) >= RE_TEST_DAYS ? "stale" : "passed";
+}
+
+function ReadinessSnapshot({ results, onGoto }: { results: DrillResult[]; onGoto: (t: DrillType) => void }) {
+  const rows = DIMENSIONS.map((d) => {
+    const latest = latestPass(results, d.type);
+    return { ...d, latest, state: rowState(latest) };
+  });
+  const ready = rows.filter((r) => r.state === "passed").length;
+  const stale = rows.filter((r) => r.state === "stale").length;
+  const proven = rows.filter((r) => r.state !== "todo").length;
+  const pct = (ready / 3) * 100;
+
+  let headline: string;
+  let sub: string;
+  if (ready === 3) {
+    headline = "You're ready — and current";
+    sub = "All three drills are passed and up to date, based on your own check-ins. Nothing to do right now.";
+  } else if (proven === 3 && stale > 0) {
+    headline = "A quick refresh is due";
+    sub = "You've passed all three before — one or more are a year or more old. Run them again to be sure nothing has drifted.";
+  } else if (proven === 0) {
+    headline = "Let's get you ready";
+    sub = "Three short, safe drills cover the things that — done wrong — can lose everything. Start with any one below.";
+  } else {
+    headline = "You're on your way";
+    sub = `${ready} of 3 done. Knock out the rest whenever you have a few minutes.`;
+  }
+
+  const next = rows.find((r) => r.state !== "passed");
+
+  return (
+    <Card data-testid="card-readiness">
+      <CardContent className="py-6 space-y-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5" style={{ color: "#00A4E4" }} />
+            <h2 className="text-lg font-semibold" data-testid="text-readiness-headline">{headline}</h2>
+          </div>
+          <p className="text-sm text-muted-foreground" data-testid="text-readiness-sub">{sub}</p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium" data-testid="text-readiness-count">{ready} of 3 ready</span>
+            {stale > 0 && (
+              <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-xs">
+                <Clock className="h-3 w-3" /> {stale} due for a re-test
+              </span>
+            )}
+          </div>
+          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: "#00A4E4" }} data-testid="bar-readiness" />
+          </div>
+        </div>
+
+        <div className="divide-y rounded-lg border">
+          {rows.map((r) => {
+            const meta = DRILL_META[r.type];
+            const Icon = meta.icon;
+            return (
+              <div key={r.type} className="flex items-center gap-3 p-3" data-testid={`readiness-row-${r.type}`}>
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${meta.accent}1a` }}>
+                  <Icon className="h-4 w-4" style={{ color: meta.accent }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{r.short}</span>
+                    {r.state === "passed" && <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />}
+                    {r.state === "stale" && <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {r.state === "todo"
+                      ? r.todo
+                      : r.state === "stale"
+                        ? `Last run ${formatDate(r.latest!.passedAt)} — a year or more ago.`
+                        : `${r.done} Last run ${formatDate(r.latest!.passedAt)}.`}
+                  </p>
+                </div>
+                {r.state === "todo" && (
+                  <Button size="sm" onClick={() => onGoto(r.type)} data-testid={`button-readiness-do-${r.type}`}>Do this</Button>
+                )}
+                {r.state === "stale" && (
+                  <Button size="sm" variant="outline" onClick={() => onGoto(r.type)} data-testid={`button-readiness-retest-${r.type}`}>
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" /> Re-test
+                  </Button>
+                )}
+                {r.state === "passed" && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 flex-shrink-0" data-testid={`pill-readiness-${r.type}`}>Ready</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {next && (
+          <div className="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2" data-testid="readiness-next">
+            <span className="text-sm min-w-0">
+              <span className="text-muted-foreground">Your next step: </span>
+              <span className="font-medium">{next.state === "stale" ? `Re-test ${next.short.toLowerCase()}` : next.todo}</span>
+            </span>
+            <Button size="sm" variant="ghost" className="flex-shrink-0" onClick={() => onGoto(next.type)} data-testid="button-readiness-next">
+              {next.state === "stale" ? "Re-test" : "Start"} <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground" data-testid="text-readiness-privacy">
+          This is just for you. CryptoOwnBank doesn't score, rank, or share your readiness with anyone — there's no leaderboard, and nothing leaves your account.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -167,7 +291,7 @@ function DrillShell({
   const meta = DRILL_META[type];
   const Icon = meta.icon;
   return (
-    <Card data-testid={`card-drill-${type}`}>
+    <Card id={`drill-${type}`} className="scroll-mt-20" data-testid={`card-drill-${type}`}>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
