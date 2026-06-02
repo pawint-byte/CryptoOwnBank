@@ -41,6 +41,16 @@
 
 ---
 
+## SHIPPED — Drills Center (`/drills`): three graded, hands-on practice drills (Added & completed 2026-06-02)
+
+Founder asked: "can/should we create a test for the user to help them do certain things and grade them so they have the confidence it works?" — and chose to build **all three** drills because "any one of these can kill it all if not done properly." This is the next step beyond the teach-verify checks (which *explain* at the scary moment): the Drills Center lets a member *actually do* the scary thing safely, get graded, and earn confidence. Tracked with dates + a once-a-year "time to re-test" nudge. Available to **all tiers** (mission = everyone graduates).
+
+- **Recovery Drill** — the strongest, fully verifiable: the member types their paper-backup words and we confirm they rebuild their real wallet address **entirely on their device** (`deriveAllAddresses`, match against any saved-wallet address). Words are never sent or saved, and are cleared on pass. No-match copy is honest about a possible non-standard derivation path (imported/hardware wallets) and does **not** tell them to move funds unless the backup truly restores nowhere.
+- **Send Drill** — guided real micro-send to their own address + a 4-item pre-flight checklist (verify address char-by-char, start tiny, sends are final, watch it arrive). Honestly self-attested (an italic note says so — their wallet stays private, we can't see the send from here); the value is they've done it once.
+- **Inheritance Drill** — owner stands in the beneficiary's shoes: generates a real **test** verification link (`?test=1`, doesn't touch readiness), confirms the passphrase unlocks on the dry-run page, and opens the survivor document to check it's clear/current. Honestly framed as "records what you confirmed with your own eyes." Free-tier users who don't have the Legacy Plan see an honest "this is a Pro/add-on feature" state with a link to plans (not a misleading "no plan yet").
+
+Persistence reuses the durable per-user `useUserData("drill_results")` store — no new DB table. Architect review run; fixed the three issues it raised (free-tier 403 handling, softened over-claiming copy on the two self-attested drills, honest recovery-failure guidance about derivation paths). Page at `/drills`, linked in the sidebar's "Back Up & Recover" group as "Practice Drills." Possible future upgrade: auto-verify the send drill on-chain and the inheritance passphrase test via a backend signal.
+
 ## SHIPPED — "School of CryptoOwnBank" teach-verify pattern, first applied to Legacy Plan (Added & completed 2026-06-02)
 
 Founder's frame: don't segment members by persona — *all* members should "graduate from the school of CryptoOwnBank so the thinking and behavior survives the day. The way you do anything is the way you do everything." The house rhythm for every risky/irreversible moment: **Explain → Check they got it → Proceed.** First scary moment chosen to prove it: **recovery & inheritance (Legacy Plan)**.

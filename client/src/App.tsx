@@ -30,6 +30,7 @@ import Principles from "@/pages/principles";
 import Sovereignty from "@/pages/sovereignty";
 import WealthArchitecture from "@/pages/wealth-architecture";
 import SovereigntyKit from "@/pages/sovereignty-kit";
+import DrillsCenter from "@/pages/drills";
 import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
@@ -314,6 +315,7 @@ function AuthenticatedRoutes() {
         <Route path="/aave" component={AavePage} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/sovereignty-kit" component={SovereigntyKit} />
+        <Route path="/drills" component={DrillsCenter} />
         <Route path="/sovereignty/wealth-architecture" component={WealthArchitecture} />
         <Route path="/legacy-plan" component={LegacyPlan} />
         <Route path="/family" component={FamilyPage} />
