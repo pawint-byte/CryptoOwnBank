@@ -1,0 +1,165 @@
+The highest‑impact actions on CryptoOwnBank are the ones that, if missed or done wrong, lead to permanent loss of funds or failure of their core goal for using you (protecting and passing on their crypto). Based on that, you want to focus your UX and education around identity/keys, recovery, and correct transaction behavior.
+
+Below I’ll frame “most important things” without saying that phrase, and tie each to: (1) what the user must do, (2) how to test/verify they did it right, and (3) how to re‑check their skills over time.
+
+1. Controlling access (keys, devices, logins)
+This is the foundation: if someone else can act as them, everything else collapses.
+
+What they need to do
+
+Secure their login and devices (strong password, 2FA, no password reuse, no shared devices).
+
+Understand that the wallet does not “hold coins” but controls private keys that unlock assets on‑chain.
+
+Recognize phishing and fake sites and always verify they are on cryptoownbank.com (URL, TLS, bookmarks).
+
+How to test/verify
+
+Quick in‑app quiz: “Which of these is the real site?” (show similar domains and UI variants).
+
+Onboarding checklist that forces: password strength check, enabling 2FA, confirming email/phone.
+
+A short simulated phishing banner or email inside the app (“Tap the safe choice”) and record their choice.
+
+Ongoing checks
+
+Quarterly micro‑quiz: 3–5 tap‑answers about phishing, URL checking, login hygiene.
+
+“Security health” scorecard in their dashboard with nudges when they weaken something (e.g., 2FA disabled).
+
+2. Recovery and loss‑proofing (seed phrase / legacy)
+The highest‑impact failure is: they lose access (death, device loss, forgotten login) and no one can recover the assets.
+
+What they need to do
+
+Create and safely store their recovery phrase / recovery method (whatever your architecture uses).
+
+Set up their legacy / inheritance plan so a trusted person can access assets if they die or become incapacitated.
+
+Understand that no support agent can restore a lost private key or seed phrase.
+
+How to test/verify
+
+After generating recovery info, force a “write‑back” step: user re‑enters a few words / characters in the right order.
+
+Ask them to choose storage options from a list (paper in safe, password manager, etc.), then show tailored warnings for weak choices.
+
+Legacy flow “dry run”: walk them through naming a beneficiary and confirming how that person would actually claim funds (no actual transfer, just a rehearsal).
+
+Ongoing checks
+
+Annual “Recovery Fire Drill”:
+
+Ask them to locate their recovery info (without entering it fully), confirm location type, and update if changed.
+
+Legacy plan review reminder every 12 months (beneficiary still right person, contact details still valid).
+
+Dashboard indicator like “Recovery readiness: Complete / Incomplete” with an action button.
+
+3. Correctly funding and sending (addresses, networks, amounts)
+The most common catastrophic user errors in crypto are sending to the wrong address or wrong network; those are often irreversible.
+
+What they need to do
+
+Double‑check recipient address and understand there are no “chargebacks” on‑chain.
+
+Understand networks: sending a token on the wrong chain can mean permanent loss.
+
+Start with small test amounts whenever sending to a new address or exchange.
+
+How to test/verify
+
+Guided first transaction:
+
+Force their first send to be a tiny “practice” amount with explicit prompts: “Paste address, verify first and last 4 characters, confirm network.”
+
+Interactive mini‑sim: show an address and three similar ones, ask which is correct and why.
+
+Network mismatch drill: show a token and ask which network is valid for that asset; explain the consequence for a wrong choice.
+
+Ongoing checks
+
+Periodic “Safe Sending Check”:
+
+Prompt them to do a small test transfer to a saved address now and then, with on‑screen reminders of each safety step.
+
+Randomized micro‑quiz when they initiate large transfers:
+
+One screen with 2–3 taps like “What is the safest next step when sending to a brand‑new address?”
+
+4. Understanding balances, fees, and confirmations
+People often get confused by pending transactions, network fees, or why balances differ between places; confusion here leads to panic and mistakes.
+
+What they need to do
+
+Know that a transaction isn’t final until it has enough confirmations on‑chain (you can define per network).
+
+Recognize that fees are separate from the amount sent and vary by network load.
+
+Understand why a wallet and an exchange might show different balances for a short time.
+
+How to test/verify
+
+“Interpret this screen” exercise: show a mocked transaction detail view and ask what it means (pending vs confirmed, fee vs amount).
+
+Tiny fee‑estimation question when they send: “If you send X, and fee is Y, how much will actually leave your wallet?”
+
+Short quiz: “Your transaction shows 0 confirmations after 1 minute, what do you do?”
+
+Ongoing checks
+
+When a user first hits a failed or stuck transaction, inject a contextual explainer plus a one‑question check to ensure the concept landed.
+
+Periodic “Confidence Check” survey: one‑screen, 3 questions on whether they feel clear about confirmations and fees; use answers to trigger education.
+
+5. Behavior and scam resistance
+Many users lose crypto not because of a bug but because of a social‑engineering attack.
+
+What they need to do
+
+Never share seed phrases, private keys, or one‑time codes with anyone, including “support.”
+
+Treat any unsolicited DMs, “giveaways,” or urgent messages about their wallet as suspicious.
+
+Verify any support communications via your official, in‑product channels only.
+
+How to test/verify
+
+Built‑in “scam simulator”:
+
+Show an example chat where “support” asks for a screenshot of their seed phrase; they must pick the safe response.
+
+At moments of vulnerability (failed tx, delayed confirmation) show a quick warning plus a one‑question check about not sharing secrets.
+
+A short pledge interaction: they tap through statements like “I will never share my recovery phrase with anyone,” and must answer one verification question.
+
+Ongoing checks
+
+Rotating weekly banner in‑app with one scam scenario and a tap question.
+
+Ask users who have been active for >6 months to retake an updated scam‑awareness micro‑quiz.
+
+How to bake this into CryptoOwnBank
+You can implement all of this as a recurring “resilience program” rather than a one‑time onboarding:
+
+Structured journeys
+
+Onboarding: focus on access control + recovery basics + a first safe send.
+
+Post‑onboarding (first 30 days): emphasize correct sending behavior and basic fee/confirmation understanding.
+
+Long‑term: yearly recovery/legacy “fire drills” and regular scam‑resistance refreshers.
+
+Scoring and feedback
+
+Give each user a private “Safety & Readiness” score composed of: login security, recovery setup, legacy setup, quiz performance, and transaction behavior.
+
+Use that score to personalize nudges and content, not as a public leaderboard.
+
+Micro‑interactions, not long courses
+
+Every critical action triggers one tiny test (1–3 taps) to verify understanding.
+
+Over time, you assemble a profile of where each member is strong or weak and adjust prompts accordingly.
+
+If you share a quick outline of your current legacy plan flow and wallet‑creation UX, I can turn this into specific screen‑level copy and quiz questions tailored to CryptoOwnBank.
