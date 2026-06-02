@@ -3336,8 +3336,7 @@ Rules you MUST follow:
                 for (const wb of walletBals) assetBalanceMap.set(wb.assetSymbol, wb.id);
 
                 let newTxCount = 0;
-                let totalCostBasis = 0;
-                let totalQuantityBought = 0;
+                const boughtAssets = new Set<string>();
 
                 for (const tx of blockchainTxs) {
                   const cpAddr = tx.type === "receive" ? tx.senderAddress : tx.recipientAddress;
@@ -3412,14 +3411,13 @@ Rules you MUST follow:
                       remainingQuantity: tx.quantity.toString(),
                       costBasisPerUnit: pricePerUnit.toFixed(2),
                     });
-                    totalCostBasis += totalValue;
-                    totalQuantityBought += tx.quantity;
+                    boughtAssets.add(tx.asset);
                   }
                   newTxCount++;
                 }
 
-                if (totalQuantityBought > 0) {
-                  const assetBal = walletBals.find(b => b.assetSymbol === asset);
+                for (const boughtAsset of Array.from(boughtAssets)) {
+                  const assetBal = walletBals.find(b => b.assetSymbol === boughtAsset);
                   if (assetBal) {
                     const allLots = await storage.getTaxLotsByWalletBalance(userId, assetBal.id);
                     const aggregateCost = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
@@ -4027,8 +4025,7 @@ Rules you MUST follow:
               if (lookupCount < uniqueAssetDates.size) await new Promise(r => setTimeout(r, 2500));
             }
 
-            let totalCostBasis = 0;
-            let totalQuantityBought = 0;
+            const boughtAssets = new Set<string>();
 
             const walletBals = await storage.getWalletBalances(wallet.id);
             const assetBalanceMap = new Map<string, string>();
@@ -4108,15 +4105,14 @@ Rules you MUST follow:
                   remainingQuantity: tx.quantity.toString(),
                   costBasisPerUnit: pricePerUnit.toFixed(2),
                 });
-                totalCostBasis += totalValue;
-                totalQuantityBought += tx.quantity;
+                boughtAssets.add(tx.asset);
               }
 
               newTransactions++;
             }
 
-            if (totalQuantityBought > 0) {
-              const assetBal = walletBals.find(b => b.assetSymbol === asset);
+            for (const boughtAsset of Array.from(boughtAssets)) {
+              const assetBal = walletBals.find(b => b.assetSymbol === boughtAsset);
               if (assetBal) {
                 const allLots = await storage.getTaxLotsByWalletBalance(userId, assetBal.id);
                 const aggregateCost = allLots.reduce((sum, l) => sum + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
