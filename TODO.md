@@ -19,7 +19,7 @@
 ### WATCH — CFPB may regulate self-custody wallets like banks (Added 2026-06-02)
 - **What:** A U.S. CFPB proposed rule (NPRM, ~late May 2026) would extend "electronic fund transfer" (Reg E) rules to "virtual currency wallets" used for payments — without distinguishing custodial services from self-hosted wallet software. Coin Center argues this exceeds CFPB authority and conflicts with free-speech protections for software.
 - **Why it matters to us:** Hits the core nerve of a non-custodial platform. Could shape how we describe "non-custodial" and what we tell members.
-- **Status:** Watch — no action yet; revisit if it advances toward a final rule.
+- **Status:** Watch — revisit if it advances toward a final rule. **ACTED 2026-06-02:** made the public positioning explicit and consistent in three places — the public landing footer, the logged-in app footer, and the `/legal` page intro now all lead with: "CryptoOwnBank is non-custodial software and education for self-directed users. We do not hold customer funds, keys, or seed phrases, and we are not a bank, exchange, broker, or wallet custodian." (Wording doesn't resolve regulation by itself; it keeps the distinction we're defending consistent.)
 - **Source:** https://www.coincenter.org/new-cfpb-rulemaking-makes-no-distinction-between-custodial-and-self-custody-wallets/
 
 ### STORY ANGLE — Basel 1,250% bank penalty quietly pushes people to self-custody (Added 2026-06-02)

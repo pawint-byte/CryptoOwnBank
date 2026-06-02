@@ -3168,7 +3168,7 @@ export default function Landing() {
           </div>
           <div className="border-t border-gray-800 pt-6 space-y-3">
             <p className="text-xs text-center leading-relaxed max-w-4xl mx-auto">
-              CryptoOwnBank is a non-custodial portfolio tracking and yield dashboard. We never hold, control, or have access to your funds, private keys, or seed phrases. All on-chain transactions are signed locally on your device using your own wallet (Xumm or Ledger). CryptoOwnBank is not a bank, broker, exchange, or financial institution.
+              CryptoOwnBank is non-custodial software and education for self-directed users. We do not hold customer funds, keys, or seed phrases, and we are not a bank, exchange, broker, or wallet custodian. All on-chain transactions are signed locally on your device using your own wallet (Xaman or Ledger).
             </p>
             <p className="text-xs text-center leading-relaxed max-w-4xl mx-auto">
               Nothing on this site constitutes financial, investment, tax, or legal advice. Cryptocurrency investments carry significant risk, including the potential loss of principal. Past performance is not indicative of future results. Yield rates shown are estimates provided by third-party protocols (Soil Protocol) and are not guaranteed by CryptoOwnBank. Always do your own research (DYOR) and consult a qualified professional before making financial decisions.

@@ -42,7 +42,7 @@ export default function Legal() {
 
           <div className="prose prose-gray dark:prose-invert max-w-none space-y-6">
             <p className="text-foreground leading-relaxed">
-              CryptoOwnBank.com is a <strong>non-custodial</strong>, open-source-inspired web dashboard that helps users
+              CryptoOwnBank.com is <strong>non-custodial software and education for self-directed users</strong> — an open-source-inspired web dashboard that helps you
               interact with public blockchains (primarily the XRP Ledger) and third-party protocols such as Soil.
               We do <strong>not</strong>:
             </p>
@@ -54,7 +54,7 @@ export default function Legal() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-muted-foreground mt-1.5 text-xs">&#9679;</span>
-                <span>Act as a bank, exchange, broker, money transmitter, investment adviser, or custodian</span>
+                <span>Act as a bank, exchange, broker, money transmitter, investment adviser, or wallet custodian</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-muted-foreground mt-1.5 text-xs">&#9679;</span>
