@@ -200,6 +200,7 @@ function ProGate() {
 function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [confirmSchedule, setConfirmSchedule] = useState(false);
   const [frequency, setFrequency] = useState("monthly");
   const [graceDays, setGraceDays] = useState("14");
   const [secondaryName, setSecondaryName] = useState("");
@@ -271,7 +272,7 @@ function SetupWizard({ onComplete }: { onComplete: () => void }) {
               </Select>
               <p className="text-xs text-muted-foreground">After a missed check-in, your secondary contact is notified. If you still don't respond within the grace period, beneficiary instructions are delivered.</p>
             </div>
-            <Button className="w-full" onClick={() => setStep(2)} data-testid="button-next-step">Next: Secondary Contact</Button>
+            <Button className="w-full" onClick={() => setConfirmSchedule(true)} data-testid="button-next-step">Next: Secondary Contact</Button>
           </CardContent>
         </Card>
       )}
@@ -333,6 +334,37 @@ function SetupWizard({ onComplete }: { onComplete: () => void }) {
           </CardContent>
         </Card>
       )}
+
+      <UnderstandCheck
+        open={confirmSchedule}
+        onOpenChange={setConfirmSchedule}
+        testId="schedule-check"
+        title="One thing to be sure of about your check-in schedule"
+        explanation={
+          <>
+            This is a <strong>dead-man switch</strong>. You'll quietly check in on your schedule. If
+            you ever stop — and stay quiet past your grace period — the system assumes something has
+            happened to you and begins delivering your instructions to your beneficiaries.
+          </>
+        }
+        question="So if you go quiet for longer than your check-in window plus the grace period, what happens?"
+        options={[
+          { label: "The process to deliver my instructions to my beneficiaries begins.", correct: true },
+          { label: "Nothing — I always have to approve any delivery by hand first." },
+          { label: "My account just locks until I log back in." },
+        ]}
+        incorrectFeedback={
+          <>
+            It's a switch that fires from your <em>silence</em>, not from a button. If you miss
+            check-ins past the grace period, your secondary contact is alerted and then your
+            beneficiaries receive your instructions. So before any long trip or hospital stay, check
+            in first — or pick a longer window. You can change these anytime.
+          </>
+        }
+        proceedLabel="Got it — continue"
+        cancelLabel="Let me adjust the timing"
+        onConfirmed={() => setStep(2)}
+      />
     </div>
   );
 }
@@ -2198,6 +2230,7 @@ const splitPieceLabels: Record<string, string> = {
 
 function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["plan"]; beneficiaries: LegacyPlanData["beneficiaries"] }) {
   const { toast } = useToast();
+  const [confirmEnableSplit, setConfirmEnableSplit] = useState(false);
   const splitEnabled = plan.splitDeliveryEnabled ?? false;
   const splitMode = plan.splitDeliveryMode ?? "all";
   const splitThreshold = plan.splitDeliveryThreshold ?? 2;
@@ -2236,7 +2269,13 @@ function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["p
           </div>
           <Switch
             checked={splitEnabled}
-            onCheckedChange={(checked) => toggleSplit.mutate(checked)}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setConfirmEnableSplit(true);
+              } else {
+                toggleSplit.mutate(false);
+              }
+            }}
             disabled={toggleSplit.isPending}
             data-testid="switch-split-delivery"
           />
@@ -2323,6 +2362,38 @@ function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["p
           </div>
         </CardContent>
       )}
+
+      <UnderstandCheck
+        open={confirmEnableSplit}
+        onOpenChange={setConfirmEnableSplit}
+        testId="enable-split-check"
+        title="Before you split the instructions across people"
+        explanation={
+          <>
+            Split delivery means <strong>no single person</strong> gets the whole picture — your
+            beneficiaries must come together and combine their pieces to unlock your instructions.
+            That's great protection, but it adds a dependency: your people have to be reachable and
+            willing to cooperate when the time comes.
+          </>
+        }
+        question="With split delivery on, what happens if too many of your beneficiaries can't be reached later?"
+        options={[
+          { label: "The pieces can't be combined, so the instructions stay locked — unless the Last-Resort Fallback is on.", correct: true },
+          { label: "CryptoOwnBank steps in and unlocks everything for them." },
+          { label: "Whoever is left automatically gets full access on their own." },
+        ]}
+        incorrectFeedback={
+          <>
+            Because we're non-custodial, we can't unlock anything for them. If the required number of
+            people can't combine their pieces, the instructions stay locked. So keep your
+            Last-Resort Fallback on as a safety net, and choose a threshold low enough that the
+            people you trust can still come together. You can turn this off anytime.
+          </>
+        }
+        proceedLabel="I understand — turn it on"
+        cancelLabel="Not now"
+        onConfirmed={() => toggleSplit.mutate(true)}
+      />
     </Card>
   );
 }
