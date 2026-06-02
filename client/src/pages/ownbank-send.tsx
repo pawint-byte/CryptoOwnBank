@@ -51,6 +51,7 @@ import {
 import { signPayment } from "@/lib/xumm-connector";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { VerifyOnDeviceNotice } from "@/components/verify-on-device-notice";
+import { UnderstandCheck } from "@/components/understand-check";
 import {
   Send,
   ArrowDownToLine,
@@ -132,6 +133,11 @@ export default function OwnBankSend() {
 
   const [copied, setCopied] = useState(false);
   const [loadingBalances, setLoadingBalances] = useState(false);
+  const [sendCheckOpen, setSendCheckOpen] = useState(false);
+  const [sendGraduated, setSendGraduated] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("ownbank-send-safety-v1") === "true";
+  });
 
   const fetchData = useCallback(async () => {
     if (!walletAddress) return;
@@ -208,7 +214,12 @@ export default function OwnBankSend() {
       toast({ title: "Reserve Required", description: "You must keep at least 10 XRP as the XRPL account reserve.", variant: "destructive" });
       return;
     }
-    setShowConfirm(true);
+    const isKnownContact = (contacts ?? []).some((c) => c.address === recipient.trim());
+    if (isKnownContact || sendGraduated) {
+      setShowConfirm(true);
+    } else {
+      setSendCheckOpen(true);
+    }
   }
 
   async function handleConfirmSend() {
@@ -995,6 +1006,41 @@ export default function OwnBankSend() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <UnderstandCheck
+        open={sendCheckOpen}
+        onOpenChange={setSendCheckOpen}
+        testId="send-safety-check"
+        title="You're sending to a new address — one thing first"
+        explanation={
+          <>
+            This payment goes straight to whoever owns that address. The moment you send, it's
+            <strong> final</strong> — there's no undo, no chargeback, and no one (not even us) who can
+            claw it back if the address is wrong or the person isn't who you think.
+          </>
+        }
+        question="If you send to the wrong address or get scammed, who can reverse it?"
+        options={[
+          { label: "No one — it's permanent, so I need to be sure the address and the person are right first.", correct: true },
+          { label: "CryptoOwnBank support can reverse it if I report it quickly." },
+          { label: "The XRPL network will refund me automatically if something's wrong." },
+        ]}
+        incorrectFeedback={
+          <>
+            Because this is non-custodial, no one holds your funds and no one can reverse a payment —
+            not us, not the network. Before you send to someone new: confirm the address through a
+            second channel you trust (not a link they sent you), and try a tiny test amount first. If
+            anything feels rushed or "too good," that's the scam.
+          </>
+        }
+        proceedLabel="I understand — review the payment"
+        cancelLabel="Let me double-check"
+        onConfirmed={() => {
+          setSendGraduated(true);
+          try { localStorage.setItem("ownbank-send-safety-v1", "true"); } catch {}
+          setShowConfirm(true);
+        }}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { SeoHead } from "@/components/seo-head";
 import { SovereigntyAcknowledgement } from "@/components/sovereignty-acknowledgement";
+import { UnderstandCheck } from "@/components/understand-check";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -114,6 +115,9 @@ export default function WalletCreate() {
   const [savedChains, setSavedChains] = useState<Set<string>>(new Set());
   const [onrampLoading, setOnrampLoading] = useState<string | null>(null);
   const [bridgeModalChain, setBridgeModalChain] = useState<string | null>(null);
+  const [revealCheckOpen, setRevealCheckOpen] = useState(false);
+  const [seedLessonPassed, setSeedLessonPassed] = useState(false);
+  const [importCheckOpen, setImportCheckOpen] = useState(false);
 
   const handleBuyWithCard = useCallback(
     async (walletAddress: string, option: StripeOnrampOption) => {
@@ -267,6 +271,27 @@ export default function WalletCreate() {
     } catch (err: any) {
       toast({ title: "Could not derive wallet", description: err?.message, variant: "destructive" });
     }
+  };
+
+  const handleRevealClick = () => {
+    if (seedLessonPassed) {
+      setShowSeed(true);
+      return;
+    }
+    setRevealCheckOpen(true);
+  };
+
+  const handleImportClick = () => {
+    const cleaned = importInput.trim().toLowerCase().replace(/\s+/g, " ");
+    if (!bip39.validateMnemonic(cleaned)) {
+      toast({
+        title: "That doesn't look like a valid seed phrase",
+        description: "Check spelling, word count (12, 15, 18, 21, or 24 words), and that words are from the BIP-39 list.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setImportCheckOpen(true);
   };
 
   const handleEntropySubmit = async () => {
@@ -549,7 +574,7 @@ export default function WalletCreate() {
                   <ArrowLeft className="h-4 w-4 mr-1" /> Back
                 </Button>
                 <Button
-                  onClick={handleImportSubmit}
+                  onClick={handleImportClick}
                   disabled={saveMutation.isPending}
                   className="flex-1"
                   data-testid="button-import-seed"
@@ -595,7 +620,7 @@ export default function WalletCreate() {
                 </div>
                 {!showSeed && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Button onClick={() => setShowSeed(true)} data-testid="button-reveal-seed">
+                    <Button onClick={handleRevealClick} data-testid="button-reveal-seed">
                       <Eye className="h-4 w-4 mr-1" /> Reveal seed
                     </Button>
                   </div>
@@ -1034,6 +1059,70 @@ export default function WalletCreate() {
           />
         );
       })()}
+
+      <UnderstandCheck
+        open={revealCheckOpen}
+        onOpenChange={setRevealCheckOpen}
+        testId="reveal-seed-check"
+        title="Before we show your seed words"
+        explanation={
+          <>
+            In a moment your {seedLength} secret words appear on this screen. They <strong>are</strong> your
+            wallet — anyone who sees them can take everything in it, instantly and permanently. There's no
+            password reset and no one to call.
+          </>
+        }
+        question="So who is safe to let see these words?"
+        options={[
+          { label: "Only me — no people nearby, no cameras, no screen-share or screen recording running.", correct: true },
+          { label: "Me and any CryptoOwnBank support agent who asks to help." },
+          { label: "Anyone I trust — I can text or email them a photo as a backup." },
+        ]}
+        incorrectFeedback={
+          <>
+            Nobody else — not even us. We will <em>never</em> ask for your words, and anyone who does is trying
+            to rob you. A photo in your texts or email can be stolen too. Before you reveal: glance around,
+            close any screen-share, and make sure no camera or recording can catch the screen.
+          </>
+        }
+        proceedLabel="I'm alone — reveal my words"
+        cancelLabel="Not yet"
+        onConfirmed={() => {
+          setSeedLessonPassed(true);
+          setShowSeed(true);
+        }}
+      />
+
+      <UnderstandCheck
+        open={importCheckOpen}
+        onOpenChange={setImportCheckOpen}
+        testId="import-seed-check"
+        title="One safety check before you paste a seed phrase"
+        explanation={
+          <>
+            You're about to type your secret words into a website. This is exactly the moment scammers
+            imitate — a fake site or "support agent" asks for your seed, and the instant you give it, your
+            wallet is emptied.
+          </>
+        }
+        question="When is it safe to type your seed words into a website?"
+        options={[
+          { label: "Only into your own wallet, after I've checked the address bar really says cryptoownbank.com.", correct: true },
+          { label: "Whenever a support agent, giveaway, or app asks me to, to verify my wallet." },
+          { label: "On any site that looks like the real one and has a padlock icon." },
+        ]}
+        incorrectFeedback={
+          <>
+            A padlock only means the connection is encrypted — it does <em>not</em> mean the site is honest.
+            No real service, person, or "verification" ever needs your seed words. Only ever enter them into
+            your own wallet, and only after you've read the address bar character-by-character to confirm
+            it's <strong>cryptoownbank.com</strong>.
+          </>
+        }
+        proceedLabel="I've checked — import my wallet"
+        cancelLabel="Not yet"
+        onConfirmed={handleImportSubmit}
+      />
     </div>
   );
 }
