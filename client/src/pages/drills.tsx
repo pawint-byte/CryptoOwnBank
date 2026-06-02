@@ -14,11 +14,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  ShieldCheck, KeyRound, Send, HeartHandshake, CheckCircle2, AlertCircle,
+  ShieldCheck, ShieldAlert, KeyRound, Send, HeartHandshake, CheckCircle2, AlertCircle,
   Loader2, Lock, Eye, EyeOff, RotateCcw, Trophy, Clock, ArrowRight, Wallet as WalletIcon,
 } from "lucide-react";
 
-type DrillType = "recovery" | "send" | "inheritance";
+type DrillType = "recovery" | "send" | "inheritance" | "scam";
 
 type DrillResult = {
   drillType: DrillType;
@@ -44,6 +44,12 @@ const DRILL_META: Record<DrillType, { title: string; icon: typeof KeyRound; acce
     icon: HeartHandshake,
     accent: "#7c3aed",
     oneLiner: "Prove the people you've chosen could actually get in.",
+  },
+  scam: {
+    title: "Scam-Resistance Drill",
+    icon: ShieldAlert,
+    accent: "#dc2626",
+    oneLiner: "Spot the tricks scammers use to talk your keys out of you.",
   },
 };
 
@@ -92,7 +98,7 @@ export default function DrillsCenter() {
         </div>
         <p className="text-muted-foreground leading-relaxed">
           Reading that something works is not the same as watching it work with your own hands.
-          These are safe, graded practice runs of the three things that — done wrong — can lose
+          These are safe, graded practice runs of the things that — done wrong — can lose
           everything. Do each one once, get your green check, and use your wallet with real confidence.
           We'll remind you to run them again once a year.
         </p>
@@ -109,6 +115,7 @@ export default function DrillsCenter() {
             <RecoveryDrill latest={latestPass(results, "recovery")} onPass={(d) => recordPass("recovery", d)} />
             <SendDrill latest={latestPass(results, "send")} onPass={(d) => recordPass("send", d)} />
             <InheritanceDrill latest={latestPass(results, "inheritance")} onPass={(d) => recordPass("inheritance", d)} />
+            <ScamDrill latest={latestPass(results, "scam")} onPass={(d) => recordPass("scam", d)} />
           </div>
         </>
       )}
@@ -139,6 +146,12 @@ const DIMENSIONS: { type: DrillType; short: string; done: string; todo: string }
     done: "You've confirmed your people could really get in.",
     todo: "Prove the people you've chosen could actually access your crypto.",
   },
+  {
+    type: "scam",
+    short: "Scam defense",
+    done: "You can spot the messages built to trick your words out of you.",
+    todo: "Learn to recognize the tricks scammers use to steal your keys.",
+  },
 ];
 
 function rowState(latest?: DrillResult): "passed" | "stale" | "todo" {
@@ -154,22 +167,23 @@ function ReadinessSnapshot({ results, onGoto }: { results: DrillResult[]; onGoto
   const ready = rows.filter((r) => r.state === "passed").length;
   const stale = rows.filter((r) => r.state === "stale").length;
   const proven = rows.filter((r) => r.state !== "todo").length;
-  const pct = (ready / 3) * 100;
+  const total = DIMENSIONS.length;
+  const pct = (ready / total) * 100;
 
   let headline: string;
   let sub: string;
-  if (ready === 3) {
+  if (ready === total) {
     headline = "You're ready — and current";
-    sub = "All three drills are passed and up to date, based on your own check-ins. Nothing to do right now.";
-  } else if (proven === 3 && stale > 0) {
+    sub = "Every drill is passed and up to date, based on your own check-ins. Nothing to do right now.";
+  } else if (proven === total && stale > 0) {
     headline = "A quick refresh is due";
-    sub = "You've passed all three before — one or more are a year or more old. Run them again to be sure nothing has drifted.";
+    sub = "You've passed them all before — one or more are a year or more old. Run them again to be sure nothing has drifted.";
   } else if (proven === 0) {
     headline = "Let's get you ready";
-    sub = "Three short, safe drills cover the things that — done wrong — can lose everything. Start with any one below.";
+    sub = "These short, safe drills cover the things that — done wrong — can lose everything. Start with any one below.";
   } else {
     headline = "You're on your way";
-    sub = `${ready} of 3 done. Knock out the rest whenever you have a few minutes.`;
+    sub = `${ready} of ${total} done. Knock out the rest whenever you have a few minutes.`;
   }
 
   const next = rows.find((r) => r.state !== "passed");
@@ -187,7 +201,7 @@ function ReadinessSnapshot({ results, onGoto }: { results: DrillResult[]; onGoto
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium" data-testid="text-readiness-count">{ready} of 3 ready</span>
+            <span className="font-medium" data-testid="text-readiness-count">{ready} of {total} ready</span>
             {stale > 0 && (
               <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-xs">
                 <Clock className="h-3 w-3" /> {stale} due for a re-test
@@ -649,6 +663,160 @@ function InheritanceDrill({ latest, onPass }: { latest?: DrillResult; onPass: (d
           <div className="flex flex-wrap gap-2">
             <Button onClick={finish} disabled={!verified || !reviewedDoc} data-testid="button-finish-inheritance"><CheckCircle2 className="h-4 w-4 mr-1" /> Mark passed</Button>
             <Button variant="ghost" onClick={() => setOpen(false)} data-testid="button-inheritance-cancel">Close</Button>
+          </div>
+        </div>
+      )}
+    </DrillShell>
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* 4. Scam-Resistance Drill                                          */
+/* ---------------------------------------------------------------- */
+
+type ScamScenario = {
+  prompt: string;
+  options: { text: string; safe: boolean; why: string }[];
+};
+
+const SCAM_SCENARIOS: ScamScenario[] = [
+  {
+    prompt: "A message from “CryptoOwnBank Support” says there’s a problem with your account and asks you to confirm your recovery words so they can restore it. What do you do?",
+    options: [
+      { text: "Send the words — it’s official support.", safe: false, why: "No real support — not ours, not any wallet’s — can ever ask for your recovery words. Anyone who does is trying to rob you." },
+      { text: "Don’t share them. Real support never needs your recovery words.", safe: true, why: "Exactly. Your recovery words are the keys to everything. We can’t see them and would never ask — and neither would any honest company." },
+      { text: "Send just the first few words to be safe.", safe: false, why: "Even part of your phrase is dangerous, and a real company would never ask for any of it. Share nothing." },
+    ],
+  },
+  {
+    prompt: "You get a message with a link to “claim a free airdrop — ends in 10 minutes!” The site asks you to enter your recovery phrase to connect. What’s the safe move?",
+    options: [
+      { text: "Enter the phrase fast before the offer ends.", safe: false, why: "The countdown is the trick — urgency is designed to stop you thinking. A real site never needs your recovery phrase." },
+      { text: "Close it. No legitimate site ever asks for your recovery phrase.", safe: true, why: "Right. Connecting a wallet never means typing your secret phrase into a website. Pressure plus “enter your phrase” equals a scam, every time." },
+      { text: "Enter a fake phrase to test if it’s real.", safe: false, why: "Don’t engage at all — just close it. There’s nothing to test; the ask itself is the red flag." },
+    ],
+  },
+  {
+    prompt: "Someone calls saying they’re from your wallet provider, that your funds are “at risk,” and they need the one-time code that was just sent to you. What do you do?",
+    options: [
+      { text: "Read them the code so they can secure your account.", safe: false, why: "A one-time code is for you alone. Anyone asking you to read it out is trying to get into your account right now." },
+      { text: "Hang up. No one legitimate asks for your one-time codes.", safe: true, why: "Correct. Hang up — and if you’re unsure, reach out through the official app yourself, never a number or link someone sent you." },
+    ],
+  },
+  {
+    prompt: "What’s the only place your recovery words should ever be typed?",
+    options: [
+      { text: "Into your own wallet app, on your own device, when restoring — and nowhere else, to no one.", safe: true, why: "That’s the rule. Your words go into your own wallet to restore it — never into a chat, a call, an email, or a website." },
+      { text: "Into an official-looking support chat when they ask.", safe: false, why: "No support chat ever needs them. “Official-looking” is exactly what a convincing scam is built to be." },
+      { text: "Into a site that offers to “check if your wallet is safe.”", safe: false, why: "That “safety check” is the theft. A site that wants your phrase is the danger, not the cure." },
+    ],
+  },
+];
+
+function ScamDrill({ latest, onPass }: { latest?: DrillResult; onPass: (detail?: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [picked, setPicked] = useState<number | null>(null);
+  const [done, setDone] = useState(false);
+
+  const scenario = SCAM_SCENARIOS[step];
+  const isLast = step === SCAM_SCENARIOS.length - 1;
+  const chosen = picked !== null ? scenario.options[picked] : null;
+  const correct = chosen?.safe === true;
+
+  const restart = () => { setStep(0); setPicked(null); setDone(false); };
+
+  const next = () => {
+    if (isLast) {
+      setDone(true);
+      onPass(`Handled all ${SCAM_SCENARIOS.length} scam scenarios safely`);
+    } else {
+      setStep((s) => s + 1);
+      setPicked(null);
+    }
+  };
+
+  return (
+    <DrillShell type="scam" latest={latest}>
+      {!open ? (
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Most stolen crypto isn’t taken by breaking the math — it’s talked out of people. A friendly
+            “support agent,” an urgent warning, a too-good airdrop. This drill walks you through the exact
+            tricks scammers use, so you recognize them instantly and never hand over the one thing that matters.
+          </p>
+          <Button onClick={() => { setOpen(true); restart(); }} data-testid="button-start-scam">
+            {latest ? "Run it again" : "Start the Scam-Resistance Drill"} <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      ) : done ? (
+        <div className="rounded-md border border-green-400/50 bg-green-50 dark:bg-green-950/20 p-4 text-center space-y-2" data-testid="result-scam-pass">
+          <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto" />
+          <p className="font-semibold">You can spot the trap.</p>
+          <p className="text-sm text-muted-foreground">
+            You handled every scenario the safe way. The one rule under all of them: your recovery words and
+            one-time codes go to no one, ever — no matter how official, urgent, or friendly the ask.
+          </p>
+          <Button variant="ghost" size="sm" onClick={() => { setOpen(false); restart(); }} data-testid="button-scam-close">Close</Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span data-testid="text-scam-step">Scenario {step + 1} of {SCAM_SCENARIOS.length}</span>
+            <span>Pick the safe response</span>
+          </div>
+
+          <div className="rounded-md border p-3 text-sm leading-relaxed" data-testid="text-scam-prompt">{scenario.prompt}</div>
+
+          <div className="space-y-2">
+            {scenario.options.map((opt, i) => {
+              const isPicked = picked === i;
+              const tone = isPicked
+                ? (opt.safe ? "border-green-500/60 bg-green-50 dark:bg-green-950/20" : "border-destructive/50 bg-destructive/5")
+                : "hover:bg-muted/50";
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setPicked(i)}
+                  disabled={correct}
+                  className={`w-full text-left rounded-md border p-3 text-sm transition-colors ${tone} ${correct && !isPicked ? "opacity-50" : ""}`}
+                  data-testid={`option-scam-${step}-${i}`}
+                >
+                  <div className="flex items-start gap-2">
+                    {isPicked
+                      ? (opt.safe
+                        ? <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                        : <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />)
+                      : <span className="h-4 w-4 rounded-full border flex-shrink-0 mt-0.5" />}
+                    <span>{opt.text}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {chosen && (
+            <div className={`rounded-md border p-3 text-sm flex gap-2 ${correct ? "border-green-500/50 bg-green-50 dark:bg-green-950/20" : "border-amber-400/50 bg-amber-50 dark:bg-amber-950/20"}`} data-testid="feedback-scam">
+              {correct
+                ? <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                : <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />}
+              <div>
+                <p className="font-medium">{correct ? "Safe choice." : "Not this one — here’s why."}</p>
+                <p className="text-muted-foreground text-xs mt-1">{chosen.why}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            {correct ? (
+              <Button onClick={next} data-testid="button-scam-next">
+                {isLast ? <><CheckCircle2 className="h-4 w-4 mr-1" /> Finish — mark passed</> : <>Next scenario <ArrowRight className="h-4 w-4 ml-1" /></>}
+              </Button>
+            ) : chosen ? (
+              <Button variant="outline" onClick={() => setPicked(null)} data-testid="button-scam-retry"><RotateCcw className="h-4 w-4 mr-1" /> Try again</Button>
+            ) : null}
+            <Button variant="ghost" onClick={() => { setOpen(false); restart(); }} data-testid="button-scam-cancel">Close</Button>
           </div>
         </div>
       )}
