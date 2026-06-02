@@ -991,10 +991,53 @@ export default function BuyCrypto() {
     [resolveSavedWallet],
   );
 
-  const changellyWalletAddress = useMemo(
-    () => (selectedToken ? resolveSavedAddress(selectedToken) : ""),
-    [selectedToken, resolveSavedAddress],
+  // ALL saved wallets that can receive the chosen coin (a member may have several
+  // — Ledger, Xaman, SafePal, etc.). The member picks which one the coin lands in.
+  const savedWalletsForToken = useMemo(() => {
+    if (!selectedToken) return [] as any[];
+    const aliases =
+      SYMBOL_CHAIN_ALIASES[selectedToken] ||
+      [tokenToChain[selectedToken]].filter(Boolean);
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const alias of aliases) {
+      for (const w of savedWallets) {
+        const addr = (w.address || "").trim();
+        if ((w.chain || "").toLowerCase() === alias && addr && !seen.has(addr)) {
+          seen.add(addr);
+          out.push(w);
+        }
+      }
+    }
+    return out;
+  }, [selectedToken, savedWallets]);
+
+  const [selectedSavedAddress, setSelectedSavedAddress] = useState<string>("");
+
+  // Default the picker to the member's first saved wallet for this coin, and keep
+  // the selection valid whenever the coin (and therefore the list) changes.
+  useEffect(() => {
+    if (savedWalletsForToken.length > 0) {
+      setSelectedSavedAddress((prev) =>
+        savedWalletsForToken.some((w) => w.address === prev)
+          ? prev
+          : savedWalletsForToken[0].address,
+      );
+    } else {
+      setSelectedSavedAddress("");
+    }
+  }, [savedWalletsForToken]);
+
+  const chosenSavedAddress = useMemo(
+    () =>
+      selectedSavedAddress &&
+      savedWalletsForToken.some((w) => w.address === selectedSavedAddress)
+        ? selectedSavedAddress
+        : savedWalletsForToken[0]?.address || "",
+    [selectedSavedAddress, savedWalletsForToken],
   );
+
+  const changellyWalletAddress = chosenSavedAddress;
 
   const [onrampLoading, setOnrampLoading] = useState(false);
   const handleBuyWithStripe = useCallback(
@@ -1059,8 +1102,11 @@ export default function BuyCrypto() {
       const res = await apiRequest("POST", "/api/wallets", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      // Honour the "Save & use this address" promise: make the coin land in the
+      // address the member just saved, not whichever was previously selected.
+      setSelectedSavedAddress(variables.address);
       toast({ title: "Address saved!", description: "Your wallet address has been saved to your profile. It's ready for all future purchases." });
       setNewAddress("");
       setNewLabel("");
@@ -1478,38 +1524,111 @@ export default function BuyCrypto() {
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
 
-          {savedAddressForToken ? (
+          {savedWalletsForToken.length > 0 ? (
             <Card className="border-green-500/20 bg-green-500/5">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                  Your {selectedToken} wallet is ready
+                  {savedWalletsForToken.length > 1
+                    ? `Which ${selectedToken} wallet should it land in?`
+                    : `Your ${selectedToken} wallet is ready`}
                 </CardTitle>
                 <CardDescription>
-                  You already have a {tokenData?.name || selectedToken} address saved. Everything you buy lands here automatically.
+                  {savedWalletsForToken.length > 1
+                    ? `You have ${savedWalletsForToken.length} ${tokenData?.name || selectedToken} addresses saved. Pick the one your purchase should land in.`
+                    : `You already have a ${tokenData?.name || selectedToken} address saved. Everything you buy lands here automatically.`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">{savedAddressForToken.label || "Wallet"}</p>
-                    <p className="text-sm font-mono truncate" data-testid="text-saved-address">{savedAddressForToken.address}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(savedAddressForToken.address);
-                      toast({ title: "Copied!", description: "Address copied to clipboard." });
-                    }}
-                    data-testid="button-copy-address"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-2">
+                  {savedWalletsForToken.map((w) => {
+                    const isSelected = chosenSavedAddress === w.address;
+                    return (
+                      <div
+                        key={w.id || w.address}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedSavedAddress(w.address)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedSavedAddress(w.address);
+                          }
+                        }}
+                        className={`flex items-center gap-3 rounded-lg p-3 border cursor-pointer transition-colors ${
+                          isSelected
+                            ? "border-green-500 bg-green-500/10 ring-1 ring-green-500"
+                            : "border-border bg-muted/40 hover:border-green-500/50"
+                        }`}
+                        data-testid={`button-select-wallet-${w.id || w.address}`}
+                      >
+                        <div
+                          className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            isSelected ? "border-green-600" : "border-muted-foreground/40"
+                          }`}
+                        >
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-green-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{w.label || "Wallet"}</p>
+                          <p className="text-sm font-mono truncate text-muted-foreground" data-testid={`text-saved-address-${w.id || w.address}`}>{w.address}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(w.address);
+                            toast({ title: "Copied!", description: "Address copied to clipboard." });
+                          }}
+                          data-testid={`button-copy-address-${w.id || w.address}`}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
+
+                <details className="rounded-lg border p-3 group" data-testid="details-add-another-address">
+                  <summary className="text-sm font-medium cursor-pointer flex items-center gap-2 list-none">
+                    <Plus className="h-4 w-4 text-green-600" />
+                    Send to a different {selectedToken} address
+                  </summary>
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">New {selectedToken} address</label>
+                      <Input
+                        placeholder={`Paste your ${selectedToken} receive address here`}
+                        value={newAddress}
+                        onChange={(e) => setNewAddress(e.target.value)}
+                        className="font-mono text-sm"
+                        data-testid="input-wallet-address-extra"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Label (optional)</label>
+                      <Input
+                        placeholder={`e.g., My ${selectedToken} wallet`}
+                        value={newLabel}
+                        onChange={(e) => setNewLabel(e.target.value)}
+                        data-testid="input-wallet-label-extra"
+                      />
+                    </div>
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 gap-2"
+                      disabled={!newAddress.trim() || addWalletMutation.isPending}
+                      onClick={handleSaveAddress}
+                      data-testid="button-save-address-extra"
+                    >
+                      {addWalletMutation.isPending ? "Saving..." : (<><Plus className="h-4 w-4" /> Save & use this address</>)}
+                    </Button>
+                  </div>
+                </details>
+
                 <p className="text-xs text-muted-foreground">
-                  Set up once, works forever — any time you buy {selectedToken}, it arrives here. You can also share this address with anyone who wants to send you {selectedToken}.
+                  Set up once, works forever — any time you buy {selectedToken}, it arrives in the wallet you pick. You can also share these addresses with anyone who wants to send you {selectedToken}.
                 </p>
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700 gap-2"

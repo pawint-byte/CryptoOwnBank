@@ -18,3 +18,5 @@
 - [Industry radar ritual](industry-radar-ritual.md) — founder wants intel on-demand & founder-filtered (Perplexity→agent filter), keepers land in TODO.md RADAR section; NOT an automated member feed.
 - [Hardware signer clear-vs-blind fidelity](hardware-signer-fidelity.md) — new XRPL tx-type support is gated on device firmware, not site plumbing; blind-sign flips trust to our app, so gate it (Advanced opt-in only); Xaman is the safe day-one path.
 - [Route Planner capability matrix](route-planner-capability-matrix.md) — a guided multi-step planner must only emit hops the linked tool can really do; in-app cross-chain is EVM-only (no native BTC/XRP).
+- [PWA stale bundle / cache version](pwa-stale-bundle.md) — installed PWAs serve old JS until you bump CACHE_VERSION in client/public/sw.js; a shipped UI fix can look broken in prod otherwise.
+- [Destination/buy wallet picker](buy-destination-picker.md) — buy/send flows must offer ALL saved wallets per coin (members have many), not just the first match; "save & use new" must select the new one.
