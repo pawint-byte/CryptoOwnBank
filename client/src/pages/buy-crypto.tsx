@@ -48,6 +48,7 @@ interface TokenOption {
   name: string;
   color: string;
   featured?: boolean;
+  privacyRoute?: boolean;
 }
 
 interface OnrampProvider {
@@ -86,6 +87,7 @@ const tokens: TokenOption[] = [
   { symbol: "ALGO", name: "Algorand", color: "#000000" },
   { symbol: "CRO", name: "Cronos", color: "#002D74" },
   { symbol: "FLR", name: "Flare", color: "#E42058" },
+  { symbol: "XMR", name: "Monero", color: "#FF6600", privacyRoute: true },
 ];
 
 function buildMoonPayUrl(params: { token: string; address?: string }) {
@@ -1088,6 +1090,7 @@ export default function BuyCrypto() {
   const tokenData = tokens.find((t) => t.symbol === selectedToken);
   const nextStep = selectedToken ? getNextStepLink(selectedToken) : null;
   const swapAlt = selectedToken ? getSwapAlternative(selectedToken, userChains) : null;
+  const isPrivacyCoin = tokens.find((t) => t.symbol.toLowerCase() === changellyBuyCrypto.toLowerCase())?.privacyRoute === true;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
