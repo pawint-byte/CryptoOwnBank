@@ -40,6 +40,7 @@ import {
   ChevronUp,
   BookOpen,
   ArrowRight,
+  ShoppingCart,
   HelpCircle,
   Copy,
   Users,
@@ -55,6 +56,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { BUYABLE_COIN_SYMBOLS } from "@/pages/buy-crypto";
 import { EVM_CHAINS } from "@/lib/evm-wallet";
 
 const CHAIN_EXPLORERS: Record<number, { name: string; url: string }> = {
@@ -682,6 +684,17 @@ export default function TokenResearch() {
                         )}
                         {token.platforms.length === 0 && (!token.allPlatforms || token.allPlatforms.length === 0) && (
                           <p className="text-xs text-muted-foreground italic">Contract data not available yet</p>
+                        )}
+                        {BUYABLE_COIN_SYMBOLS.includes((token.symbol || "").toUpperCase()) && (
+                          <Link
+                            href={`/buy-crypto?coin=${(token.symbol || "").toUpperCase()}`}
+                            className="block mt-1.5"
+                            data-testid={`link-buy-here-${token.id}`}
+                          >
+                            <Button size="sm" className="w-full h-8 text-xs bg-[#16a34a] hover:bg-[#15803d] text-white gap-1.5">
+                              <ShoppingCart className="h-3.5 w-3.5" /> Buy {(token.symbol || "").toUpperCase()} on CryptoOwnBank
+                            </Button>
+                          </Link>
                         )}
                         {!isTradeable && (
                           <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-2.5 mt-1.5 space-y-1.5">

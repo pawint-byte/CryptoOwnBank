@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -150,6 +150,8 @@ function buildTransakUrl(params: { token: string; address?: string }) {
   if (params.address) url += `&walletAddress=${encodeURIComponent(params.address)}`;
   return url;
 }
+
+export const BUYABLE_COIN_SYMBOLS: string[] = tokens.map((t) => t.symbol);
 
 const walletsByToken: Record<string, WalletOption[]> = {
   XRP: [
@@ -937,6 +939,16 @@ export default function BuyCrypto() {
   const [showFaq, setShowFaq] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
+
+  // Allow deep-linking from Token Research etc. with ?coin=SYMBOL: preselect
+  // the coin and jump straight to "How to pay".
+  useEffect(() => {
+    const coin = new URLSearchParams(window.location.search).get("coin")?.toUpperCase();
+    if (coin && tokens.some((t) => t.symbol === coin)) {
+      setSelectedToken(coin);
+      setStep("method");
+    }
+  }, []);
 
   const { data: prices } = useQuery<Record<string, { usd: number; usd_24h_change: number }>>({
     queryKey: ["/api/public/market-prices"],
