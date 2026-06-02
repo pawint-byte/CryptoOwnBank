@@ -476,6 +476,11 @@ export default function Stablecoins() {
                 They combine the speed and programmability of blockchain with the price stability of traditional money.
                 Use them for savings, payments, trading, and earning yield — without the volatility of Bitcoin or Ethereum.
               </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Not every onchain dollar is equal. Some stablecoins add reserve strength while still
+                preserving issuer control, including the power to freeze or restrict funds. We show you
+                which is which so you can choose with eyes open.
+              </p>
             </div>
           </div>
         </CardContent>

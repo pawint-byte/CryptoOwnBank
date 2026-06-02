@@ -19,19 +19,19 @@
 ### WATCH — CFPB may regulate self-custody wallets like banks (Added 2026-06-02)
 - **What:** A U.S. CFPB proposed rule (NPRM, ~late May 2026) would extend "electronic fund transfer" (Reg E) rules to "virtual currency wallets" used for payments — without distinguishing custodial services from self-hosted wallet software. Coin Center argues this exceeds CFPB authority and conflicts with free-speech protections for software.
 - **Why it matters to us:** Hits the core nerve of a non-custodial platform. Could shape how we describe "non-custodial" and what we tell members.
-- **Status:** Watch — revisit if it advances toward a final rule. **ACTED 2026-06-02:** made the public positioning explicit and consistent in three places — the public landing footer, the logged-in app footer, and the `/legal` page intro now all lead with: "CryptoOwnBank is non-custodial software and education for self-directed users. We do not hold customer funds, keys, or seed phrases, and we are not a bank, exchange, broker, or wallet custodian." (Wording doesn't resolve regulation by itself; it keeps the distinction we're defending consistent.)
+- **Status:** Watch — revisit if it advances toward a final rule. **ACTED 2026-06-02:** made the public positioning explicit and consistent in three places — the public landing footer, the logged-in app footer, and the `/legal` page intro now all lead with: "CryptoOwnBank is non-custodial software and education for self-directed users. We do not hold customer funds, keys, or seed phrases, and we are not a bank, exchange, broker, or wallet custodian." (Wording doesn't resolve regulation by itself; it keeps the distinction we're defending consistent.) Also added a "Self-custody is not custody by us" positioning card on `/principles` that pairs this with the software-vs-intermediary framing ("tools, visibility, education, and member-directed actions").
 - **Source:** https://www.coincenter.org/new-cfpb-rulemaking-makes-no-distinction-between-custodial-and-self-custody-wallets/
 
 ### STORY ANGLE — Basel 1,250% bank penalty quietly pushes people to self-custody (Added 2026-06-02)
 - **What:** The international Basel banking framework assigns a punitive 1,250% risk weight to banks holding Bitcoin on balance sheet, effectively deterring banks from offering Bitcoin custody/services.
 - **Why it matters to us:** Honest narrative fuel for "be your own bank" — the system itself nudges people toward self-custody. A content angle, not a build.
-- **Status:** Discuss / potential content. NOTE: current source is a lower-tier interview — verify against a primary source (BIS/Basel text) before publishing anything.
+- **Status:** Discuss / potential content. NOTE: current source is a lower-tier interview — verify against a primary source (BIS/Basel text) before publishing anything. **ACTED 2026-06-02:** added a plain-language line to the `/sovereignty` hero — "Banks are heavily discouraged from direct exposure to some crypto assets… one reason self-custody still matters." (Kept general/non-numeric so no source-accuracy risk.)
 - **Source (to verify):** https://www.youtube.com/watch?v=-wRviSSMEPU
 
 ### WATCH — GENIUS Act entrenches stablecoin issuers as freeze chokepoints (Added 2026-06-02)
 - **What:** The U.S. GENIUS Act (stablecoin law, signed July 2025) is in its implementation phase. It mandates 100% liquid reserves (good) but also locks in a few centralized issuers who can freeze funds.
 - **Why it matters to us:** Touches our fungibility / transaction-freedom principles and informs which stablecoins we lean on (e.g., RLUSD) and what we tell members about freeze risk.
-- **Status:** Watch — revisit as rulemaking milestones land through 2026.
+- **Status:** Watch — revisit as rulemaking milestones land through 2026. **ACTED 2026-06-02:** added a plain-language line to the `/stablecoins` intro — "Not every onchain dollar is equal… some stablecoins preserve issuer control, including the power to freeze or restrict funds. We show you which is which."
 - **Source:** https://trustwallet.com/blog/announcements/genius-act-in-action-how-regulatory-clarity-helps-safe-self-custody
 
 ### NOTE — XRPL & Stellar deep-dive (pull dated 2026-06-02): quiet month, nothing to act on

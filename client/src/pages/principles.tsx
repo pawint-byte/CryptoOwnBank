@@ -121,6 +121,23 @@ export default function Principles() {
             })}
           </div>
 
+          <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5 mb-12" data-testid="card-what-we-are">
+            <CardContent className="p-6 flex gap-4 items-start">
+              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-[#00A4E4]/15 text-[#00A4E4] flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base mb-2">Self-custody is not custody by us.</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  CryptoOwnBank helps you organize, understand, and act on your crypto without
+                  taking possession of your funds, keys, or recovery phrase. Policy can blur the
+                  line between software and financial intermediaries, so we stay clear about what
+                  we do: tools, visibility, education, and member-directed actions.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 mb-12" data-testid="card-honest-part">
             <CardContent className="p-6 flex gap-4 items-start">
               <div className="flex-shrink-0 h-10 w-10 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center">

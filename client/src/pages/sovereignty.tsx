@@ -133,6 +133,11 @@ export default function Sovereignty() {
               We built this so it's here the moment you need it &mdash; for whatever reason
               that day comes.
             </p>
+            <p className="text-base text-muted-foreground mt-4 max-w-2xl mx-auto">
+              Banks are heavily discouraged from direct exposure to some crypto assets &mdash;
+              one reason self-custody still matters for people who want direct ownership instead
+              of indirect access.
+            </p>
             <p className="text-base text-muted-foreground mt-4">
               Take it. Print it. Keep it safe.
             </p>
