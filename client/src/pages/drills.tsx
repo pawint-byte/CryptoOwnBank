@@ -766,9 +766,9 @@ function ScamDrill({ latest, onPass }: { latest?: DrillResult; onPass: (detail?:
             <span>Pick the safe response</span>
           </div>
 
-          <div className="rounded-md border p-3 text-sm leading-relaxed" data-testid="text-scam-prompt">{scenario.prompt}</div>
+          <div id={`scam-prompt-${step}`} className="rounded-md border p-3 text-sm leading-relaxed" data-testid="text-scam-prompt">{scenario.prompt}</div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" role="radiogroup" aria-labelledby={`scam-prompt-${step}`}>
             {scenario.options.map((opt, i) => {
               const isPicked = picked === i;
               const tone = isPicked
@@ -778,6 +778,8 @@ function ScamDrill({ latest, onPass }: { latest?: DrillResult; onPass: (detail?:
                 <button
                   key={i}
                   type="button"
+                  role="radio"
+                  aria-checked={isPicked}
                   onClick={() => setPicked(i)}
                   disabled={correct}
                   className={`w-full text-left rounded-md border p-3 text-sm transition-colors ${tone} ${correct && !isPicked ? "opacity-50" : ""}`}
@@ -797,7 +799,7 @@ function ScamDrill({ latest, onPass }: { latest?: DrillResult; onPass: (detail?:
           </div>
 
           {chosen && (
-            <div className={`rounded-md border p-3 text-sm flex gap-2 ${correct ? "border-green-500/50 bg-green-50 dark:bg-green-950/20" : "border-amber-400/50 bg-amber-50 dark:bg-amber-950/20"}`} data-testid="feedback-scam">
+            <div aria-live="polite" className={`rounded-md border p-3 text-sm flex gap-2 ${correct ? "border-green-500/50 bg-green-50 dark:bg-green-950/20" : "border-amber-400/50 bg-amber-50 dark:bg-amber-950/20"}`} data-testid="feedback-scam">
               {correct
                 ? <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                 : <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />}
