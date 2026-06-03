@@ -154,6 +154,50 @@ function buildTransakUrl(params: { token: string; address?: string }) {
 export const BUYABLE_COIN_SYMBOLS: string[] = tokens.map((t) => t.symbol);
 
 const walletsByToken: Record<string, WalletOption[]> = {
+  XMR: [
+    {
+      name: "Cake Wallet",
+      type: "hot",
+      onramps: [],
+      platforms: ["mobile", "desktop"],
+      downloadUrl: "https://cakewallet.com",
+      description: "Open-source Monero (and Bitcoin) wallet for phone and desktop. Easy to set up, with swaps built in. Your keys stay on your device.",
+      steps: [
+        "Download Cake Wallet from cakewallet.com (or the App/Play Store)",
+        "Create a new Monero wallet and write down your recovery phrase",
+        "Tap Receive to see your Monero address",
+        "Copy that address and paste it here to save it",
+      ],
+    },
+    {
+      name: "Feather Wallet",
+      type: "hot",
+      onramps: [],
+      platforms: ["desktop"],
+      downloadUrl: "https://featherwallet.org",
+      description: "Lightweight, open-source Monero desktop wallet. Fast and privacy-respecting, with optional Tor.",
+      steps: [
+        "Download Feather Wallet from featherwallet.org",
+        "Create a new wallet and back up your recovery phrase",
+        "Open the Receive tab to find your Monero address",
+        "Copy that address and paste it here to save it",
+      ],
+    },
+    {
+      name: "Monero GUI",
+      type: "hot",
+      onramps: [],
+      platforms: ["desktop"],
+      downloadUrl: "https://getmonero.org/downloads",
+      description: "The official Monero wallet from the core project. Maximum control, with the option to run your own node.",
+      steps: [
+        "Download Monero GUI from getmonero.org/downloads",
+        "Create a new wallet and securely save your recovery phrase",
+        "Open the Receive tab to find your Monero address",
+        "Copy that address and paste it here to save it",
+      ],
+    },
+  ],
   XRP: [
     {
       name: "Xaman (XUMM)",
