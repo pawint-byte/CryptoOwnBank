@@ -876,7 +876,10 @@ export const TROCADOR_DONE_STATES = new Set([
 ]);
 
 const STRIPE_BUY_BY_SYMBOL: Record<string, { currency: string; network: string }> = {
-  USDC: { currency: "usdc", network: "ethereum" },
+  // USDC defaults to Base: an Ethereum-compatible network with very low fees, so
+  // the member's next step (swapping USDC into what they want) stays cheap. The
+  // same 0x wallet address works on Base, and our swap engine covers Base.
+  USDC: { currency: "usdc", network: "base" },
   ETH: { currency: "eth", network: "ethereum" },
   BTC: { currency: "btc", network: "bitcoin" },
   SOL: { currency: "sol", network: "solana" },
@@ -901,7 +904,7 @@ function xamanInstallUrl(device: DeviceInfo): string {
 }
 
 export const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
-  USDC: ["usdc", "ethereum", "evm"],
+  USDC: ["usdc", "base", "ethereum", "evm"],
   XRP: ["xrp", "ripple"],
   XLM: ["stellar", "xlm"],
   ETH: ["ethereum", "evm", "eth"],
@@ -1384,18 +1387,6 @@ export default function BuyCrypto() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Deep-link support: /buy-crypto?coin=USDC preselects a coin and jumps to the
-  // "how to pay" step. Used by the Route Planner's "Buy USDC" step and our own
-  // "Buy USDC first" buttons so the on-ramp doctrine flows end to end.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const coin = new URLSearchParams(window.location.search).get("coin")?.toUpperCase();
-    if (coin && tokens.some((t) => t.symbol === coin)) {
-      handleCoinSelect(coin);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   async function handleConnectXaman() {
     setConnectingXaman(true);
     try {
@@ -1872,7 +1863,7 @@ export default function BuyCrypto() {
                   Where your USDC will live
                 </CardTitle>
                 <CardDescription>
-                  USDC runs on Ethereum, so it uses a normal Ethereum (EVM) address — the kind that starts with "0x". If you already have an ETH or MetaMask address, use that exact address. No wallet yet? Create one first, then come back.
+                  USDC uses a normal Ethereum-style (EVM) address — the kind that starts with "0x". We deliver it on Base, a cheaper Ethereum-compatible network, so swapping later costs you less. Your existing ETH or MetaMask address works on Base too — just use that exact address. No wallet yet? Create one first, then come back.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -2264,7 +2255,7 @@ export default function BuyCrypto() {
                 </p>
                 {selectedToken === "USDC" && (
                   <p className="text-xs text-muted-foreground">
-                    In the Stripe window, pick <strong>USDC</strong> and paste your own Ethereum (EVM) wallet address. If it defaults to ETH, that's fine too — ETH works just as well as your bridge coin for the next step.
+                    In the Stripe window, pick <strong>USDC on Base</strong> (the low-fee option) and paste your own Ethereum-style (0x) wallet address — the same one works on Base. If it defaults to ETH, that's fine too — ETH works just as well as your bridge coin for the next step.
                   </p>
                 )}
               </CardContent>
