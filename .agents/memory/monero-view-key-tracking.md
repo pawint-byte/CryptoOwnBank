@@ -13,7 +13,7 @@ A Monero **view-only wallet** exposes the **private view key** + address. Holdin
 - It breaks the core promise. The whole platform is non-custodial specifically so there is nothing a government could subpoena. A stored view key is exactly that — it reveals every payment a wallet ever received. Keeping it server-side would un-hide the one thing privacy users come to us to protect.
 - It is not even accurate. A view key sees incoming funds but is partly blind to outgoing (spends). True spendable balance needs periodic key-image import from the real spendable wallet, so a view-only figure can read too high without ongoing manual syncing.
 - It is irreversible. A view key cannot be rotated; once shared it is shared for the life of the wallet (only fix is moving all funds to a new wallet).
-- Founder value (Peter Wint, explicit): "easier should never be used to compromise privacy and anonymity." Making repeat buying faster is fine; doing it by holding keys is not.
+- Founder value (explicit): "easier should never be used to compromise privacy and anonymity." Making repeat buying faster is fine; doing it by holding keys is not.
 
 **How to apply:**
 - If anyone proposes Monero (or similar privacy-coin) live balance tracking, default to NO for any server-side key handling.

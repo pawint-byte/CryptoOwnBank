@@ -62,6 +62,61 @@ function guideFor(normalizedKey: string): ChainGuide | null {
   return CHAIN_GUIDES[normalizedKey] ?? null;
 }
 
+/**
+ * Manually-recorded holdings live in the portfolio `wallets` table with chain="manual"
+ * and are deliberately excluded from the settings-sync (a manual coin like Monero has no
+ * trackable on-chain address). Without this merge they would never appear in the recovery
+ * kit, so a survivor would get only the generic Monero reference and never learn the member
+ * actually held it. This surfaces each manual crypto holding under its real coin (by asset
+ * symbol) so it lands next to the correct restore guide. Only coins we have a restore guide
+ * for are included — that naturally filters out stocks, cash, and other non-crypto manual rows.
+ */
+export function mergeManualCryptoIntoWallets(
+  userWalletsList: UserWallet[],
+  portfolioWallets: Array<{ id: string; userId: string; chain: string; address: string; label: string | null }>,
+  balances: Array<{ walletId: string; assetSymbol: string }>,
+): UserWallet[] {
+  const symbolsByWallet = new Map<string, Set<string>>();
+  for (const b of balances) {
+    if (!symbolsByWallet.has(b.walletId)) symbolsByWallet.set(b.walletId, new Set());
+    symbolsByWallet.get(b.walletId)!.add(b.assetSymbol);
+  }
+
+  // Index existing settings wallets so we never double-list a coin the member already saved.
+  const existingKeys = new Set(
+    userWalletsList.map((w) => `${normalizeChainKey(w.chain)}|${(w.address || "").toLowerCase()}`),
+  );
+
+  const synthetic: UserWallet[] = [];
+  for (const w of portfolioWallets) {
+    if (w.chain !== "manual") continue;
+    const syms = symbolsByWallet.get(w.id);
+    if (!syms) continue;
+    for (const sym of Array.from(syms)) {
+      const key = normalizeChainKey(sym);
+      if (!guideFor(key)) continue; // only coins with a restore guide (BTC, ETH/EVM, XRPL, XLM, XMR)
+      const hasPublicAddr = !!w.address && !w.address.startsWith("manual-");
+      const addr = hasPublicAddr ? w.address : "";
+      const dedupeKey = `${key}|${addr.toLowerCase()}`;
+      if (existingKeys.has(dedupeKey)) continue;
+      existingKeys.add(dedupeKey);
+      synthetic.push({
+        id: `${w.id}:${sym}`,
+        userId: w.userId,
+        label: `${w.label || "Manual"} — ${sym.toUpperCase()}`,
+        address: addr,
+        chain: key,
+        purpose: "general",
+        destinationTag: null,
+        isPrimary: false,
+        createdAt: null,
+      } as UserWallet);
+    }
+  }
+
+  return [...userWalletsList, ...synthetic];
+}
+
 export function getSovereigntyKitStyles(): string {
   return `
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#222;line-height:1.55}
@@ -116,7 +171,7 @@ export function buildSovereigntyKitContent(opts: {
     const rows = grouped[chainKey].map((w) => `
         <tr>
           <td><strong>${escapeHtml(w.label)}</strong>${w.isPrimary ? ' <span class="primary-tag">primary</span>' : ""}</td>
-          <td class="addr">${escapeHtml(w.address)}${w.destinationTag ? `<br/><span class="muted">Destination tag: ${escapeHtml(w.destinationTag)}</span>` : ""}</td>
+          <td class="addr">${w.address ? escapeHtml(w.address) : `<span class="muted">No public address recorded &mdash; restore from the seed/keys (see guidance below)</span>`}${w.destinationTag ? `<br/><span class="muted">Destination tag: ${escapeHtml(w.destinationTag)}</span>` : ""}</td>
         </tr>`).join("");
     return `
       <section class="chain">

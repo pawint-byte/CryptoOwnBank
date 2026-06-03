@@ -10,7 +10,7 @@ import { handleStripeWebhookEvent } from "../stripe-webhook";
 import { createOnrampSession, isValidAddressForNetwork } from "../stripe-onramp";
 import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "../thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "../email";
-import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey } from "../sovereignty-kit-html";
+import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey, mergeManualCryptoIntoWallets } from "../sovereignty-kit-html";
 import { invalidateBudgetCache } from "../services/api-watchdog";
 import { insertApiBudgetSchema } from "@shared/schema";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
@@ -1298,7 +1298,10 @@ textarea,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;f
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
       const [owner] = await db.select({ firstName: users.firstName, lastName: users.lastName, email: users.email }).from(users).where(eq(users.id, userId));
       const ownerName = [owner?.firstName, owner?.lastName].filter(Boolean).join(" ") || owner?.email || "Plan Owner";
-      const ownerWallets = await storage.getUserWallets(userId);
+      const settingsWallets = await storage.getUserWallets(userId);
+      const portfolioWallets = await storage.getWalletsByUser(userId);
+      const allBalances = await storage.getWalletBalancesByUser(userId);
+      const ownerWallets = mergeManualCryptoIntoWallets(settingsWallets, portfolioWallets, allBalances);
       const now = new Date();
       // The Sovereignty Recovery Kit content is bundled below as an appendix so beneficiaries
       // get complete restore guidance in one document — no need to track down a second file.
@@ -1430,7 +1433,10 @@ ${kitAppendix}
       const userId = req.user.claims.sub;
       const [owner] = await db.select({ firstName: users.firstName, lastName: users.lastName, email: users.email }).from(users).where(eq(users.id, userId));
       const ownerName = [owner?.firstName, owner?.lastName].filter(Boolean).join(" ") || owner?.email || "Member";
-      const wallets = await storage.getUserWallets(userId);
+      const settingsWallets = await storage.getUserWallets(userId);
+      const portfolioWallets = await storage.getWalletsByUser(userId);
+      const allBalances = await storage.getWalletBalancesByUser(userId);
+      const wallets = mergeManualCryptoIntoWallets(settingsWallets, portfolioWallets, allBalances);
       const now = new Date();
 
       const grouped: Record<string, typeof wallets> = {};
