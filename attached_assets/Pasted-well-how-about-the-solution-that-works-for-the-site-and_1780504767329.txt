@@ -1,0 +1,85 @@
+well how about the solution that works for the site and the member. the member has a wallet and address to put the asset they buy into, we bring it in and park it there, then the member swaps it however they want, ... i just want the flow to work without losing critical information. this is how the asset will be bought. you will buy usdc through stripe, it will land in this wallet you own at this address. that transaction is complete. the flow continues where it says you have this wallet with this assset (usdc) and what do you want to trade it for. the member now (with the help of the site, calculates the best course to complete this part). the funds aint on the site it is still on chain and the member is still in control
+
+Yes — that is the version that makes sense.
+
+You’re no longer trying to force a magical “buy XRP directly everywhere” flow. Instead, you’re making the member’s entry asset the thing that needs maximum coverage, then letting the member swap from their own wallet after the buy settles. That is much more realistic and much more aligned with a non-custodial product. A non-custodial wallet means the member holds the keys and no third party can move the funds; the assets live onchain and the wallet controls access to them.
+
+Why this works better
+The key shift is:
+
+Step 1: buy something easy and widely supported, like USDC.
+
+Step 2: land it directly in the member’s own wallet and chosen address.
+
+Step 3: your site immediately continues the flow by saying: “You now have USDC here. What do you want to swap it into?”
+
+That avoids the worst part of the current setup, where the fiat provider must support the exact target coin, state, network, and partner combination. Instead, the provider only needs to support the entry asset, and USDC is usually much easier to buy than XRP, ADA, XMR, or other more constrained targets.
+
+Best product model
+The clean model is:
+
+Member selects a wallet and address first.
+
+Your site says plainly:
+“You are buying USDC through Stripe. It will land in this wallet at this address.”
+
+After the buy completes, your app detects or confirms the onchain balance and advances the member into a swap flow from that same wallet.
+
+The swap engine then helps the member choose the best path into XRP, ADA, XLM, or anything else.
+
+That preserves the critical information you care about:
+
+selected wallet,
+
+destination address,
+
+bought asset,
+
+next trade target,
+
+chain/network context.
+
+And importantly, it keeps the money off your platform balance sheet. The asset lands in the member’s wallet, not CryptoOwnBank’s custody. That is exactly the difference between a non-custodial flow and a custodial one.
+
+The main caveat
+The phrase “you will buy usdc through stripe, it will land in this wallet you own at this address” is only safe if “you own” means the member owns that wallet, not CryptoOwnBank. If CryptoOwnBank owns the receiving wallet or controls the keys, then you are no longer just orchestrating a non-custodial flow; you are acting much closer to a custodian. In a true self-custodial model, the member signs and controls the wallet, and no third party can move the funds.
+
+So the strong version is:
+
+member selects or connects their wallet,
+
+USDC lands there,
+
+then they swap from there.
+
+That is the safest and cleanest version of your idea.
+
+Recommendation
+I think this is the right architecture for CryptoOwnBank:
+
+Make USDC the default entry asset for “buy crypto.”
+
+Make the buy screen explicit:
+“Buy USDC first. Then swap it to what you really want.”
+
+Carry forward:
+
+wallet name,
+
+address,
+
+network,
+
+purchased amount,
+
+current balance,
+
+intended target asset.
+
+Then launch the member into a swap chooser powered by your partner stack.
+
+That is a much better answer for both the site and the member than trying to brute-force direct XRP/ADA/XLM buys through inconsistent fiat providers.
+
+The best summary is: separate the buy from the target coin, but keep the user experience continuous. The member still feels like they are doing one task, but under the hood you are using a high-coverage stablecoin entry followed by a self-custodial swap.
+
+The next thing to design is the actual UX state machine: Choose wallet → Buy USDC → Detect/confirm arrival → Choose target coin → Show best swap routes → Execute from connected wallet.
