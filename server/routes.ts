@@ -3674,10 +3674,11 @@ Rules you MUST follow:
   app.post("/api/wallets/manual", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { label, assetSymbol, balance, costPerUnit } = req.body;
+      const { label, assetSymbol, balance, costPerUnit, address: providedAddress } = req.body;
       if (!label || !assetSymbol || balance === undefined) {
         return res.status(400).json({ message: "label, assetSymbol, and balance are required" });
       }
+      const cleanAddress = typeof providedAddress === "string" ? providedAddress.trim().slice(0, 255) : "";
       const sym = assetSymbol.toUpperCase().trim();
       const balanceNum = parseFloat(balance);
       if (isNaN(balanceNum) || balanceNum < 0) {
@@ -3689,13 +3690,16 @@ Rules you MUST follow:
       const existingWallets = await storage.getWalletsByUser(userId);
       let wallet = existingWallets.find(w => w.chain === "manual" && w.label?.toLowerCase() === label.trim().toLowerCase());
       if (!wallet) {
-        const address = `manual-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
+        const walletAddress = cleanAddress || `manual-${label.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
         wallet = await storage.createWallet({
           userId,
           chain: "manual",
-          address,
+          address: walletAddress,
           label: label.trim(),
         });
+      } else if (cleanAddress && wallet.address.startsWith("manual-")) {
+        await db.update(wallets).set({ address: cleanAddress }).where(eq(wallets.id, wallet.id));
+        wallet = { ...wallet, address: cleanAddress };
       }
 
       const prices = await db.select().from(priceCacheTable);

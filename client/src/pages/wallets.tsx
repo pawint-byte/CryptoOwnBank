@@ -1329,7 +1329,7 @@ function LotRow({ lot, balanceId, onEdit, onDelete, moveTargets = [], onMove, is
 export default function Wallets() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
-  const [manualForm, setManualForm] = useState({ label: "", assetSymbol: "", balance: "" });
+  const [manualForm, setManualForm] = useState({ label: "", assetSymbol: "", balance: "", address: "" });
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean> | null>(null);
   const [expandedAssets, setExpandedAssets] = useState<Record<string, boolean>>({});
@@ -1748,7 +1748,7 @@ export default function Wallets() {
   });
 
   const createManualMutation = useMutation({
-    mutationFn: async (values: { label: string; assetSymbol: string; balance: string }) => {
+    mutationFn: async (values: { label: string; assetSymbol: string; balance: string; address?: string }) => {
       const res = await apiRequest("POST", "/api/wallets/manual", values);
       return res.json();
     },
@@ -1758,7 +1758,7 @@ export default function Wallets() {
       queryClient.invalidateQueries({ queryKey: ["/api/reconciliation"] });
       toast({ title: "Manual entry added" });
       setIsManualDialogOpen(false);
-      setManualForm({ label: "", assetSymbol: "", balance: "" });
+      setManualForm({ label: "", assetSymbol: "", balance: "", address: "" });
     },
     onError: (error: Error) => {
       toast({ title: "Failed to create manual entry", description: error.message, variant: "destructive" });
@@ -2444,6 +2444,19 @@ export default function Wallets() {
                     This balance is manually maintained — update it when your holdings change.
                   </p>
                 </div>
+                <div>
+                  <label className="text-sm font-medium">Wallet address <span className="text-muted-foreground font-normal">(optional)</span></label>
+                  <Input
+                    placeholder="Paste your receive address — e.g. your Monero address"
+                    value={manualForm.address}
+                    onChange={(e) => setManualForm({ ...manualForm, address: e.target.value })}
+                    className="h-8 text-sm mt-1 font-mono"
+                    data-testid="input-manual-address"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Just kept on record for you. Private coins like Monero can't be auto-tracked, so we never read this — it's only here so you have it in one place.
+                  </p>
+                </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setIsManualDialogOpen(false)}>Cancel</Button>
                   <Button
@@ -2908,9 +2921,29 @@ export default function Wallets() {
                                             </a>
                                           </div>
                                         ) : (
-                                          <p className="text-xs text-muted-foreground mt-0.5">
-                                            Balance manually maintained — not synced from blockchain
-                                          </p>
+                                          <div className="mt-0.5 space-y-0.5">
+                                            {!w.address.startsWith("manual-") && (
+                                              <div className="flex items-center gap-2">
+                                                <code className="text-xs text-muted-foreground truncate">
+                                                  {truncateAddress(w.address)}
+                                                </code>
+                                                <button
+                                                  onClick={() => handleCopy(w.address)}
+                                                  className="text-muted-foreground hover:text-foreground shrink-0"
+                                                  data-testid={`button-copy-${w.id}`}
+                                                >
+                                                  {copiedAddress === w.address ? (
+                                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                                  ) : (
+                                                    <Copy className="h-3 w-3" />
+                                                  )}
+                                                </button>
+                                              </div>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                              Balance manually maintained — not synced from blockchain
+                                            </p>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
@@ -3408,7 +3441,7 @@ export default function Wallets() {
                                             className="text-[9px] bg-amber-600 cursor-pointer hover:bg-amber-500 transition-colors"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)) });
+                                              setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)), address: "" });
                                               setIsManualDialogOpen(true);
                                             }}
                                             data-testid={`badge-unaccounted-${h.symbol.toLowerCase()}`}
@@ -3443,7 +3476,7 @@ export default function Wallets() {
                                             className="text-[10px] text-amber-700 dark:text-amber-400 cursor-pointer hover:underline"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)) });
+                                              setManualForm({ label: "", assetSymbol: h.symbol, balance: String(Math.abs(diff).toFixed(6)), address: "" });
                                               setIsManualDialogOpen(true);
                                             }}
                                             data-testid={`link-add-manual-${h.symbol.toLowerCase()}`}
