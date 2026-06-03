@@ -2268,32 +2268,6 @@ export default function BuyCrypto() {
           )}
 
           {selectedToken === "USDC" && (
-            <Card className="border-emerald-500/40 bg-emerald-500/5" data-testid="card-usdc-coinbase">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-emerald-600" />
-                  Most reliable in the US: buy USDC on Coinbase
-                </CardTitle>
-                <CardDescription>
-                  Card onramps like MoonPay and Transak sometimes block US buyers, certain regions, or VPNs — that's a wall on their side, not ours. Coinbase is the most dependable US route, and because Coinbase built the Base network, sending USDC there is cheap and fast. USDC is a stablecoin, so $1 buys about $1 — no price swings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <a href="https://coinbase.com/join/TT3HJ4K?src=ios-link" target="_blank" rel="noopener noreferrer" className="block">
-                  <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" data-testid="button-usdc-coinbase">
-                    <ExternalLink className="h-4 w-4" /> Buy USDC on Coinbase
-                  </Button>
-                </a>
-                <ol className="text-xs text-muted-foreground space-y-1 list-decimal pl-4">
-                  <li>In Coinbase, buy USDC with your card or bank.</li>
-                  <li>Tap <strong>Send</strong>, choose <strong>USDC</strong>, and pick the <strong>Base</strong> network.</li>
-                  <li>Paste your own 0x wallet address{effectiveAddress ? " (the same one you entered here)" : ""} and send — it's free or near-free on Base.</li>
-                </ol>
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedToken === "USDC" && (
             <Card className="border-blue-500/20" data-testid="card-usdc-bank">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
