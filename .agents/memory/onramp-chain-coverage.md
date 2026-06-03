@@ -42,3 +42,10 @@ the actual buy happens on the swap/P2P service.
 **Accuracy trap:** among the listed P2P venues, only **Haveno** buys Monero directly from
 cash. Bisq / Hodl Hodl / RoboSats are Bitcoin-first (buy BTC, then swap to XMR). Don't
 imply any P2P venue gives Monero-from-cash directly.
+
+**No fiat→XMR anywhere — it's always two moves.** No service sells Monero straight from
+dollars/card; a "Buy with US Dollars" box returns NO results for XMR. XMR acquisition is
+always: get an ordinary coin first, then SWAP that coin into Monero. On aggregators like
+Trocador this means the **Swap** tab, NOT the **Buy/Sell** (fiat) tab — a non-technical
+founder hit exactly this wall (typed "xmr" in the dollars Buy box, got nothing). Guidance
+must say this explicitly or members assume XMR is simply unavailable.

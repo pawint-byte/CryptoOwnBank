@@ -223,17 +223,31 @@ export default function OwnPrivately() {
             </span>
             <div className="text-sm">
               <p className="font-semibold">Now do the actual buy — pick your starting point.</p>
-              <ul className="mt-1 space-y-1 text-muted-foreground">
+              <p className="mt-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-muted-foreground" data-testid="text-no-direct-fiat">
+                <strong>Important:</strong> you can't buy Monero straight from dollars or a card —
+                no service offers it (that's why a "Buy with US Dollars" box shows{" "}
+                <strong>no results for XMR</strong>). The trick is always two moves:{" "}
+                <strong>get an ordinary coin first, then swap that coin into Monero.</strong>
+              </p>
+              <ul className="mt-2 space-y-1 text-muted-foreground">
                 <li>
                   <strong>Already own some crypto?</strong> Use a <strong>no-KYC swap service</strong>{" "}
-                  below (Trocador is easiest — it shops the others for you). Paste your Monero
+                  below (Trocador is easiest — it shops the others for you). On Trocador, use the{" "}
+                  <strong>"Swap" tab — not the "Buy/Sell" dollars tab</strong>. Paste your Monero
                   address, send the coin you hold, and Monero arrives in your wallet. No account.
                 </li>
                 <li>
-                  <strong>Starting from cash?</strong> Use a <strong>peer-to-peer venue</strong>{" "}
-                  below. For Monero from cash, <strong>Haveno</strong> is the direct route (the
-                  others listed are Bitcoin-first — you'd buy BTC, then swap it to Monero using a
-                  service above).
+                  <strong>Only have dollars / a card?</strong> First buy a liquid coin like{" "}
+                  <strong>Bitcoin or Litecoin</strong> (Trocador's own <strong>"Buy/Sell"</strong>{" "}
+                  dollars tab can do this, or any normal on-ramp), then <strong>swap that coin into
+                  Monero</strong> using the Swap tab above. Two steps, but it's the only way card →
+                  XMR exists.
+                </li>
+                <li>
+                  <strong>Starting from physical cash?</strong> Use a <strong>peer-to-peer
+                  venue</strong> below. For Monero from cash, <strong>Haveno</strong> is the direct
+                  route (the others listed are Bitcoin-first — you'd buy BTC, then swap it to Monero
+                  using a service above).
                 </li>
               </ul>
             </div>
