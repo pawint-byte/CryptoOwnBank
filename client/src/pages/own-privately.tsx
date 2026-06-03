@@ -190,6 +190,67 @@ export default function OwnPrivately() {
         </p>
       </div>
 
+      <Card className="mb-8 border-primary/30 bg-primary/5" data-testid="card-how-to-steps">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <ArrowRightLeft className="h-5 w-5 text-primary" />
+            How to actually do this — 3 steps
+          </CardTitle>
+          <CardDescription>
+            The buy finishes on a trusted outside service, not here on CryptoOwnBank — that's on
+            purpose. We never hold your coins, so the Monero goes straight into your own wallet,
+            never through us.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-3" data-testid="step-wallet">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              1
+            </span>
+            <div className="text-sm">
+              <p className="font-semibold">Get a Monero wallet first — this is just where the coin will land.</p>
+              <p className="text-muted-foreground">
+                Download one from <strong>"A private wallet to call home"</strong> below (Cake Wallet
+                is the easiest). Open it and copy your Monero <strong>receive address</strong>. The
+                wallet app is the home for the coin — it is <strong>not</strong> where you complete
+                the purchase.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3" data-testid="step-buy">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              2
+            </span>
+            <div className="text-sm">
+              <p className="font-semibold">Now do the actual buy — pick your starting point.</p>
+              <ul className="mt-1 space-y-1 text-muted-foreground">
+                <li>
+                  <strong>Already own some crypto?</strong> Use a <strong>no-KYC swap service</strong>{" "}
+                  below (Trocador is easiest — it shops the others for you). Paste your Monero
+                  address, send the coin you hold, and Monero arrives in your wallet. No account.
+                </li>
+                <li>
+                  <strong>Starting from cash?</strong> Use a <strong>peer-to-peer venue</strong>{" "}
+                  below (Haveno) to buy directly from a person, straight into your wallet.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex items-start gap-3" data-testid="step-done">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              3
+            </span>
+            <div className="text-sm">
+              <p className="font-semibold">That's it — the Monero is now in your wallet.</p>
+              <p className="text-muted-foreground">
+                Optional: paste that wallet's address back into CryptoOwnBank so it shows up in your
+                portfolio. We only watch the public info — we never hold it.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Alert className="mb-8 border-amber-500/40 bg-amber-500/5" data-testid="alert-disclaimer">
         <Shield className="h-4 w-4" />
         <AlertTitle>Read this first — the honest truth</AlertTitle>

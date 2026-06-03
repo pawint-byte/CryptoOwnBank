@@ -1960,13 +1960,13 @@ export default function BuyCrypto() {
                   Buy {selectedToken} privately
                 </CardTitle>
                 <CardDescription>
-                  {selectedToken} can't be bought with a card here. We'll point you to trusted no-KYC swap services, P2P cash venues, and private wallets — you stay in control the whole time.
+                  {selectedToken} can't be bought with a card here, and we never hold your coins — so the buy finishes on a trusted outside service and lands straight in your own wallet. The next page walks you through it in 3 steps: (1) get a Monero wallet, (2) swap a coin you own — or buy with cash — into it, (3) done. You stay in control the whole time.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/own-privately">
                   <Button className="w-full gap-2 bg-violet-600 hover:bg-violet-700" data-testid="button-go-privacy">
-                    <Lock className="h-4 w-4" /> See private buying options
+                    <Lock className="h-4 w-4" /> See the 3 steps to buy {selectedToken}
                   </Button>
                 </Link>
               </CardContent>
