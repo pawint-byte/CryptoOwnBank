@@ -63,6 +63,24 @@ export const EXTERNAL_ONRAMP_BY_CHAIN: Record<string, ExternalOnrampOption[]> = 
       kind: "swap",
     },
   ],
+  xlm: [
+    {
+      provider: "lobstr",
+      label: "Buy XLM in LOBSTR",
+      url: "https://lobstr.co/",
+      note: "Open LOBSTR, tap Buy, choose XLM, and pay by card or Apple/Google Pay. This in-app buy often works even when a website says \"not supported in your region\" — the XLM lands in your own LOBSTR wallet.",
+      kind: "buy",
+    },
+  ],
+  usdc: [
+    {
+      provider: "lobstr",
+      label: "Buy USDC in LOBSTR (on Stellar)",
+      url: "https://lobstr.co/",
+      note: "Open LOBSTR, tap Buy, choose USDC, and pay by card or Apple/Google Pay — in many places even with cash at a MoneyGram counter. The USDC lands in your own LOBSTR wallet on Stellar; CryptoOwnBank never touches it.",
+      kind: "buy",
+    },
+  ],
 };
 
 export function getExternalOnrampsForChain(chain: string): ExternalOnrampOption[] {

@@ -366,7 +366,7 @@ export default function PrimeThePump() {
           <div className="flex flex-wrap gap-2">
             <Button asChild size="sm" className="gap-2" data-testid="button-buy-usdc">
               <Link href="/buy-crypto?coin=USDC">
-                <CreditCard className="h-4 w-4" /> Buy USDC
+                <CreditCard className="h-4 w-4" /> Buy USDC in LOBSTR
               </Link>
             </Button>
             <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-plan-swap">
@@ -376,9 +376,10 @@ export default function PrimeThePump() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            USDC was never the finish line — it's just the bridge. You swap it straight into your target coin from
-            wherever it lands; no need to move it to another network first. Heads up: the card sites that sell USDC
-            (MoonPay, Transak) can be region-blocked too — if that happens, use the in-app wallet buys above instead.
+            USDC was never the finish line — it's just the bridge. The Buy USDC screen now leads with buying it{" "}
+            <span className="font-medium text-foreground">inside LOBSTR on Stellar</span> — that in-app buy often works
+            even when card websites (MoonPay, Transak) are region-blocked. Prefer Base? You can still buy USDC into an
+            EVM wallet there instead. Either way it lands in a wallet only you control, then you swap straight into your target.
           </p>
         </CardContent>
       </Card>

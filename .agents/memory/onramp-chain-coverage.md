@@ -91,3 +91,26 @@ instant Stripe button for ETH. All other coins route to external providers / swa
 **How to apply:** do NOT reintroduce the supported_* arrays unless Stripe confirms the
 v2 beta is enabled. Keep Stripe instant buys ETH-only until then. XRP is not a Stripe
 coin at all (use the Xaman in-app buy rail).
+
+## Chain-aware in-app wallet-app buy rail (LOBSTR for USDC/XLM, Xaman for XRP)
+
+The "Buy inside your wallet app" rail (the region-block-dodging path) is provider-driven,
+not hardcoded to Xaman. Each provider declares `landsInShownAddress`:
+- **Xaman = true** (XRP): the card buy delivers to the EXACT address we show (seed import),
+  so the destination/address step is kept and the address is displayed.
+- **LOBSTR = false** (USDC/XLM on Stellar): the buy lands in the member's own LOBSTR
+  Stellar wallet, NOT an address we hold.
+
+**Why (funds-safety, the whole point):** USDC's on-file address is **EVM/0x**
+(tokenToChain[USDC]=ethereum). USDC also lives on Stellar via LOBSTR. If the LOBSTR buy
+card showed that 0x address, a member could send Stellar-USDC to an Ethereum address →
+funds lost. So `landsInShownAddress=false` must (1) gate OFF any address display on the
+checkout card, and (2) set the method's `needsAddress=false` so the wizard SKIPS the
+address step entirely. Never put LOBSTR in `walletsByToken[USDC]` either — saving a Stellar
+address under the EVM USDC chain is the same trap.
+
+**How to apply:** new in-app wallet rails go in `WALLET_APP_META` + `EXTERNAL_ONRAMP_BY_CHAIN`
+(keyed by lowercased symbol, `kind:"buy"`). The lead-sort promotes wallet_app whenever the
+coin has any wallet-app buy (covers XRP/XLM/USDC). Honest copy only: guide up to the wallet's
+own Buy screen, never imply funds pass through us. Verified end-to-end (USDC→LOBSTR skips
+address step, no 0x shown; XRP→Xaman unchanged).

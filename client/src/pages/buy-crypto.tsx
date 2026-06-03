@@ -164,6 +164,43 @@ export function buildTrocadorUrl(params: { token: string }) {
 export const BUYABLE_COIN_SYMBOLS: string[] = tokens.map((t) => t.symbol);
 
 const walletsByToken: Record<string, WalletOption[]> = {
+  USDC: [
+    {
+      name: "MetaMask",
+      type: "hot",
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "usdc", address: p.address }) },
+        { name: "Transak", buildUrl: (p) => buildTransakUrl({ token: "USDC", address: p.address }) },
+      ],
+      platforms: ["browser", "mobile"],
+      deepLink: "metamask://",
+      downloadUrl: "https://metamask.io",
+      description: "Popular wallet for holding USDC on Base, Ethereum and other EVM networks. Your keys stay on your device.",
+      steps: [
+        "Install MetaMask (browser extension or phone app) and back up your recovery phrase",
+        "Switch the network to Base for the lowest fees (or keep Ethereum)",
+        "Tap Receive to copy your 0x address",
+        "Paste that 0x address here to save it — your USDC will land there",
+      ],
+    },
+    {
+      name: "Trust Wallet",
+      type: "hot",
+      onramps: [
+        { name: "MoonPay", buildUrl: (p) => buildMoonPayUrl({ token: "usdc", address: p.address }) },
+      ],
+      platforms: ["mobile"],
+      deepLink: "trust://",
+      downloadUrl: "https://trustwallet.com",
+      description: "Easy mobile wallet that holds USDC across many EVM networks. Self-custody — only you hold the keys.",
+      steps: [
+        "Install Trust Wallet from the App Store or Google Play and back up your recovery phrase",
+        "Open the USDC asset and choose the Base or Ethereum network",
+        "Tap Receive to copy your 0x address",
+        "Paste that 0x address here to save it — your USDC will land there",
+      ],
+    },
+  ],
   XMR: [
     {
       name: "Cake Wallet",
@@ -903,6 +940,46 @@ function xamanInstallUrl(device: DeviceInfo): string {
   return XAMAN_LINKS.web;
 }
 
+// Wallet apps with a built-in card buy. The in-app purchase uses a different
+// payment path than the wallet's website, so it often works even when a web
+// card site region-blocks the buy. `landsInShownAddress` is true only when the
+// buy delivers to the exact address we show (Xaman via seed import); for LOBSTR
+// the coin lands in the member's own LOBSTR wallet, so we must NOT show an
+// unrelated (e.g. EVM) address for it.
+type WalletAppMeta = {
+  name: string;
+  deepLink: string;
+  ios: string;
+  android: string;
+  web: string;
+  landsInShownAddress: boolean;
+};
+
+const WALLET_APP_META: Record<string, WalletAppMeta> = {
+  xaman: {
+    name: "Xaman",
+    deepLink: XAMAN_LINKS.deepLink,
+    ios: XAMAN_LINKS.ios,
+    android: XAMAN_LINKS.android,
+    web: XAMAN_LINKS.web,
+    landsInShownAddress: true,
+  },
+  lobstr: {
+    name: "LOBSTR",
+    deepLink: "lobstr://",
+    ios: "https://apps.apple.com/app/lobstr-stellar-lumens-wallet/id1404357892",
+    android: "https://play.google.com/store/apps/details?id=com.lobstr.client",
+    web: "https://lobstr.co",
+    landsInShownAddress: false,
+  },
+};
+
+function walletAppInstallUrl(meta: WalletAppMeta, device: DeviceInfo): string {
+  if (device.isIOS) return meta.ios;
+  if (device.isAndroid) return meta.android;
+  return meta.web;
+}
+
 export const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
   USDC: ["usdc", "base", "ethereum", "evm"],
   XRP: ["xrp", "ripple"],
@@ -1470,14 +1547,18 @@ export default function BuyCrypto() {
       inSite: true,
       needsAddress: true,
     });
-    if (getWalletAppBuysForChain((selectedToken || "").toLowerCase()).length > 0) {
+    const walletAppBuys = getWalletAppBuysForChain((selectedToken || "").toLowerCase());
+    if (walletAppBuys.length > 0) {
+      const appMeta = WALLET_APP_META[walletAppBuys[0].provider];
+      const appName = appMeta?.name || "your wallet app";
+      const landsSame = appMeta?.landsInShownAddress ?? false;
       list.push({
         id: "wallet_app",
-        title: `Buy ${selectedToken} inside your wallet app`,
-        subtitle: `Open Xaman, tap Buy, and pay by card. This often works even when a website says "not supported in your region" — and the ${selectedToken} lands in this same address.`,
-        badge: "Most reliable for XRP",
+        title: `Buy ${selectedToken} inside ${appName}`,
+        subtitle: `Open ${appName}, tap Buy, and pay by card or Apple/Google Pay. This often works even when a website says "not supported in your region" — and the ${selectedToken} lands in ${landsSame ? "this same address" : `your own ${appName} wallet`}.`,
+        badge: "Most reliable — gets past region blocks",
         inSite: false,
-        needsAddress: true,
+        needsAddress: landsSame,
       });
     }
     list.push({
@@ -1514,10 +1595,11 @@ export default function BuyCrypto() {
       inSite: false,
       needsAddress: true,
     });
-    // For XRP, lead with the Xaman wallet-app buy. Xaman's in-app card purchase
-    // is the most reliable XRP rail in regions where web card providers block it,
-    // and it delivers straight to the member's own XRP address.
-    if (selectedToken === "XRP") {
+    // Whenever a coin can be bought inside its wallet app (Xaman for XRP, LOBSTR
+    // for XLM and USDC-on-Stellar), lead with that. The in-app card buy is the
+    // most reliable rail in regions where web card providers block the purchase,
+    // and it delivers straight into a wallet the member controls.
+    if (walletAppBuys.length > 0) {
       list.sort(
         (a, b) => Number(b.id === "wallet_app") - Number(a.id === "wallet_app"),
       );
@@ -2407,62 +2489,77 @@ export default function BuyCrypto() {
             </Card>
           )}
 
-          {selectedMethod === "wallet_app" && (
+          {selectedMethod === "wallet_app" && (() => {
+            const buys = getWalletAppBuysForChain((selectedToken || "").toLowerCase());
+            const appMeta = buys[0] ? WALLET_APP_META[buys[0].provider] : undefined;
+            const appName = appMeta?.name || "your wallet app";
+            const landsSame = appMeta?.landsInShownAddress ?? false;
+            return (
             <Card className="border-green-500/20">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Smartphone className="h-5 w-5 text-green-600" />
-                  Buy {selectedToken} inside your wallet app
+                  Buy {selectedToken} inside {appName}
                 </CardTitle>
                 <CardDescription>
-                  Some card providers block {selectedToken} on the web in certain countries, but the same provider often works inside the wallet app. Install the app, import or open this wallet, then tap Buy.
+                  Some card sites block {selectedToken} in certain countries, but the Buy button inside {appName} uses a different payment path and often works anyway. We'll get you right up to {appName}'s own Buy screen — you finish the card payment inside the app, which only you control.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {effectiveAddress && (
+                {landsSame && effectiveAddress && (
                   <div className="rounded-lg border bg-muted/40 p-3 text-sm">
                     <p className="text-muted-foreground mb-1">Your {selectedToken} lands here — your own wallet:</p>
                     <p className="font-mono break-all" data-testid="text-walletapp-address">{effectiveAddress}</p>
                   </div>
                 )}
                 <ol className="list-decimal pl-5 text-sm text-muted-foreground space-y-1">
-                  <li>Install the wallet app and open (or import) this same wallet.</li>
-                  <li>Tap <strong>Buy</strong> inside the app and pay by card, Apple Pay or Google Pay.</li>
-                  <li>The {selectedToken} arrives in the address above — CryptoOwnBank never touches it.</li>
+                  {landsSame ? (
+                    <>
+                      <li>Install {appName} and open (or import) this same wallet.</li>
+                      <li>Tap <strong>Buy</strong> inside the app and pay by card, Apple Pay or Google Pay.</li>
+                      <li>The {selectedToken} arrives in the address above — CryptoOwnBank never touches it.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Install {appName} (free) and create or open your wallet — only you hold the keys.</li>
+                      <li>Tap <strong>Buy</strong> inside {appName}, choose <strong>{selectedToken}</strong>, and pay by card or Apple/Google Pay.</li>
+                      <li>The {selectedToken} lands in your {appName} wallet — CryptoOwnBank never touches it. Add that address here afterward and we'll track the balance for you.</li>
+                    </>
+                  )}
                 </ol>
-                {getWalletAppBuysForChain((selectedToken || "").toLowerCase()).map((opt) => {
-                  const isXaman = opt.provider === "xaman";
-                  const href = isXaman && device.isMobile ? XAMAN_LINKS.deepLink : opt.url;
+                {buys.map((opt) => {
+                  const meta = WALLET_APP_META[opt.provider];
+                  const href = meta && device.isMobile ? meta.deepLink : (meta?.web || opt.url);
                   return (
                     <div key={opt.provider} className="space-y-1">
                       <a href={href} target="_blank" rel="noopener noreferrer" className="block">
                         <Button
-                          variant={isXaman ? "default" : "outline"}
-                          className={`w-full gap-2 ${isXaman ? "bg-green-600 hover:bg-green-700" : ""}`}
+                          variant="default"
+                          className="w-full gap-2 bg-green-600 hover:bg-green-700"
                           data-testid={`button-walletapp-${opt.provider}`}
                         >
-                          {isXaman && device.isMobile ? <Smartphone className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-                          {isXaman && device.isMobile ? `Open Xaman to buy ${selectedToken}` : opt.label}
+                          {device.isMobile ? <Smartphone className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                          {meta && device.isMobile ? `Open ${meta.name} to buy ${selectedToken}` : opt.label}
                         </Button>
                       </a>
                       <p className="text-xs text-muted-foreground">{opt.note}</p>
-                      {isXaman && (
+                      {meta && (
                         device.isMobile ? (
                           <a
-                            href={xamanInstallUrl(device)}
+                            href={walletAppInstallUrl(meta, device)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs underline text-muted-foreground"
-                            data-testid="link-walletapp-install-xaman"
+                            data-testid={`link-walletapp-install-${opt.provider}`}
                           >
-                            Don't have Xaman? Install it free
+                            Don't have {meta.name}? Install it free
                           </a>
                         ) : (
                           <p className="text-xs text-muted-foreground">
-                            Xaman is a phone app — install it on your phone (
-                            <a href={XAMAN_LINKS.ios} target="_blank" rel="noopener noreferrer" className="underline">iPhone</a>
+                            {meta.name} is a phone app — install it on your phone (
+                            <a href={meta.ios} target="_blank" rel="noopener noreferrer" className="underline">iPhone</a>
                             {" · "}
-                            <a href={XAMAN_LINKS.android} target="_blank" rel="noopener noreferrer" className="underline">Android</a>
+                            <a href={meta.android} target="_blank" rel="noopener noreferrer" className="underline">Android</a>
                             ), open this wallet, then tap Buy.
                           </p>
                         )
@@ -2472,7 +2569,8 @@ export default function BuyCrypto() {
                 })}
               </CardContent>
             </Card>
-          )}
+            );
+          })()}
 
           {selectedMethod === "aggregator" && (
             <Card className="border-green-500/20">
