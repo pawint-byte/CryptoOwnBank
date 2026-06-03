@@ -842,6 +842,32 @@ const tokenToChain: Record<string, string> = {
   FLR: "flare",
 };
 
+const TROCADOR_NETWORK: Record<string, string> = {
+  MATIC: "Polygon",
+};
+
+const TROCADOR_STATUS_LABEL: Record<string, string> = {
+  anonpaynew: "Pick the coin you'll send on Trocador",
+  waiting: "Waiting for your deposit…",
+  confirming: "Deposit seen — confirming on-chain…",
+  sending: "Sending your coins…",
+  finished: "Done — coins sent to your wallet ✓",
+  "paid partially": "Partly paid — check Trocador for details",
+  failed: "Swap had a problem — contact Trocador support",
+  expired: "This swap expired — start a new one",
+  halted: "Swap paused — contact Trocador support",
+  refunded: "Refunded by the provider",
+};
+
+const TROCADOR_DONE_STATES = new Set([
+  "finished",
+  "expired",
+  "failed",
+  "halted",
+  "refunded",
+  "paid partially",
+]);
+
 const STRIPE_BUY_BY_SYMBOL: Record<string, { currency: string; network: string }> = {
   ETH: { currency: "eth", network: "ethereum" },
   BTC: { currency: "btc", network: "bitcoin" },
@@ -1133,6 +1159,55 @@ export default function BuyCrypto() {
     return `https://widget.changelly.com?from=*&to=*&amount=500&address=${addr}&fromDefault=usd&toDefault=${to}&merchant_id=U-FDw3yOEYkT06Im&payment_id=&v=3&type=no-rev-share&color=5f41ff&headerId=1&logo=hide&buyButtonTextId=1`;
   }, [selectedToken, changellyWalletAddress, newAddress]);
 
+  const [trocadorSessionUrl, setTrocadorSessionUrl] = useState<string | null>(null);
+  const [trocadorSessionId, setTrocadorSessionId] = useState<string | null>(null);
+  const [trocadorSessionAddress, setTrocadorSessionAddress] = useState<string | null>(null);
+
+  const startTrocadorMutation = useMutation({
+    mutationFn: async (vars: { tickerTo: string; networkTo: string; address: string }) => {
+      const res = await apiRequest("POST", "/api/trocador/anonpay-session", vars);
+      return (await res.json()) as { id: string; url: string };
+    },
+    onSuccess: (data, variables) => {
+      setTrocadorSessionId(data.id);
+      setTrocadorSessionUrl(data.url);
+      setTrocadorSessionAddress(variables.address);
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Couldn't start the in-site swap",
+        description: err?.message || "You can still open Trocador in a new tab below — just paste your address there before you send.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const trocadorStatusQuery = useQuery<{ id: string; status: string }>({
+    queryKey: ["/api/trocador/status", trocadorSessionId],
+    enabled: !!trocadorSessionId,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status;
+      if (s && TROCADOR_DONE_STATES.has(s)) return false;
+      return 15000;
+    },
+  });
+
+  function handleStartTrocador() {
+    if (!effectiveAddress) {
+      toast({
+        title: "Add your wallet address first",
+        description: `Save your ${selectedToken} address so the coins have somewhere to land.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    startTrocadorMutation.mutate({
+      tickerTo: selectedToken!,
+      networkTo: TROCADOR_NETWORK[selectedToken!] || "Mainnet",
+      address: effectiveAddress,
+    });
+  }
+
   const availableWallets = useMemo(() => {
     if (!selectedToken) return [];
     const wallets = walletsByToken[selectedToken] || [];
@@ -1179,16 +1254,24 @@ export default function BuyCrypto() {
     }, 1500);
   }
 
+  function resetTrocadorSession() {
+    setTrocadorSessionId(null);
+    setTrocadorSessionUrl(null);
+    setTrocadorSessionAddress(null);
+  }
+
   function handleCoinSelect(symbol: string) {
     setSelectedToken(symbol);
     setSelectedMethod(null);
     setNewAddress("");
     setNewLabel("");
+    resetTrocadorSession();
     setStep("method");
   }
 
   function handleMethodSelect(id: MethodId, needsAddress: boolean) {
     setSelectedMethod(id);
+    resetTrocadorSession();
     setStep(needsAddress ? "destination" : "checkout");
   }
 
@@ -1228,6 +1311,13 @@ export default function BuyCrypto() {
   // otherwise a one-time address the member pasted in this session (so logged-out
   // members can still use Stripe / providers without an account).
   const effectiveAddress = changellyWalletAddress || newAddress.trim();
+
+  // Only treat an in-site Trocador session as live if it was created for the
+  // address currently on screen. If the member changed their destination after
+  // starting a swap, the old iframe must not be shown — the coins would land in
+  // the wrong wallet.
+  const trocadorSessionValid =
+    !!trocadorSessionUrl && trocadorSessionAddress === effectiveAddress;
 
   const tokenData = tokens.find((t) => t.symbol === selectedToken);
   const nextStep = selectedToken ? getNextStepLink(selectedToken) : null;
@@ -1996,22 +2086,86 @@ export default function BuyCrypto() {
               <CardContent className="space-y-3">
                 {effectiveAddress && (
                   <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-                    <p className="text-muted-foreground mb-1">Send the {selectedToken} to your own wallet:</p>
+                    <p className="text-muted-foreground mb-1">Your {selectedToken} lands here — your own wallet:</p>
                     <p className="font-mono break-all" data-testid="text-aggregator-address">{effectiveAddress}</p>
                   </div>
                 )}
-                <a
-                  href={buildTrocadorUrl({ token: selectedToken })}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-trocador">
-                    <ExternalLink className="h-4 w-4" /> Open Trocador to swap into {selectedToken}
-                  </Button>
-                </a>
+
+                {!trocadorSessionValid && (
+                  <>
+                    <Button
+                      className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                      onClick={handleStartTrocador}
+                      disabled={startTrocadorMutation.isPending || !effectiveAddress}
+                      data-testid="button-start-trocador"
+                    >
+                      {startTrocadorMutation.isPending ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Starting your swap…</>
+                      ) : (
+                        <><Repeat className="h-4 w-4" /> Swap into {selectedToken} here</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      The swap runs right here on this page, with your {selectedToken} address already filled in. {selectedToken === "XRP" || selectedToken === "XLM" ? "If your wallet shows a destination tag/memo, add it on the next screen too." : ""}
+                    </p>
+                  </>
+                )}
+
+                {trocadorSessionValid && trocadorSessionUrl && (
+                  <div className="space-y-3">
+                    {trocadorStatusQuery.data?.status && (
+                      <div
+                        className="rounded-lg border bg-muted/40 p-3 text-sm flex items-center gap-2"
+                        data-testid="status-trocador"
+                      >
+                        {!TROCADOR_DONE_STATES.has(trocadorStatusQuery.data.status) && (
+                          <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                        )}
+                        <span>
+                          {TROCADOR_STATUS_LABEL[trocadorStatusQuery.data.status] || trocadorStatusQuery.data.status}
+                        </span>
+                      </div>
+                    )}
+                    <div className="overflow-hidden rounded-lg border">
+                      <iframe
+                        src={trocadorSessionUrl}
+                        title={`Swap into ${selectedToken} via Trocador`}
+                        className="w-full"
+                        style={{ height: 640 }}
+                        allow="clipboard-write"
+                        data-testid="iframe-trocador"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <a href={trocadorSessionUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                        <Button variant="outline" className="w-full gap-2" data-testid="button-trocador-newtab">
+                          <ExternalLink className="h-4 w-4" /> Open in a new tab
+                        </Button>
+                      </a>
+                      <Button
+                        variant="ghost"
+                        className="flex-1 gap-2"
+                        onClick={resetTrocadorSession}
+                        data-testid="button-trocador-restart"
+                      >
+                        <Repeat className="h-4 w-4" /> Start a new swap
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <p className="text-xs text-muted-foreground">
-                  On Trocador: choose the coin you're sending, paste your {selectedToken} address as the destination, and double-check it matches before you send. {selectedToken === "XRP" || selectedToken === "XLM" ? "If your wallet shows a destination tag/memo, add it too." : ""}
+                  Prefer the full Trocador site?{" "}
+                  <a
+                    href={buildTrocadorUrl({ token: selectedToken })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                    data-testid="link-buy-trocador"
+                  >
+                    Open it in a new tab
+                  </a>
+                  {" "}— just paste your {selectedToken} address there yourself before you send.
                 </p>
               </CardContent>
             </Card>

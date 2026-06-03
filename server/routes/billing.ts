@@ -9,6 +9,7 @@ import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "../stripe";
 import { handleStripeWebhookEvent } from "../stripe-webhook";
 import { createOnrampSession, isValidAddressForNetwork } from "../stripe-onramp";
+import { createAnonpaySession, getAnonpayStatus } from "../trocador";
 import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "../thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "../email";
 import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey } from "../sovereignty-kit-html";
@@ -152,6 +153,44 @@ export function registerBillingRoutes(app: Express) {
     } catch (err: any) {
       console.error("Stripe onramp session error:", err?.message || err);
       res.status(500).json({ message: err?.message || "Failed to create onramp session" });
+    }
+  });
+
+  app.post("/api/trocador/anonpay-session", async (req: any, res) => {
+    try {
+      const { tickerTo, networkTo, address, memo, amount, fiatEquiv, tickerFrom } = req.body || {};
+      if (!tickerTo || typeof tickerTo !== "string") {
+        return res.status(400).json({ message: "tickerTo is required" });
+      }
+      if (!address || typeof address !== "string" || address.trim().length < 10) {
+        return res.status(400).json({ message: "A valid receiving address is required" });
+      }
+      const amt = amount != null ? Number(amount) : undefined;
+      const session = await createAnonpaySession({
+        tickerTo: tickerTo.trim(),
+        networkTo: typeof networkTo === "string" && networkTo.trim() ? networkTo.trim() : "Mainnet",
+        address: address.trim(),
+        memo: typeof memo === "string" && memo.trim() ? memo.trim() : undefined,
+        amount: amt && !isNaN(amt) && amt > 0 ? amt : undefined,
+        fiatEquiv: typeof fiatEquiv === "string" && fiatEquiv.trim() ? fiatEquiv.trim() : undefined,
+        tickerFrom: typeof tickerFrom === "string" && tickerFrom.trim() ? tickerFrom.trim() : undefined,
+      });
+      res.json(session);
+    } catch (err: any) {
+      console.error("Trocador anonpay session error:", err?.message || err);
+      res.status(502).json({ message: err?.message || "Failed to start Trocador swap" });
+    }
+  });
+
+  app.get("/api/trocador/status/:id", async (req: any, res) => {
+    try {
+      const id = String(req.params.id || "").trim();
+      if (!id) return res.status(400).json({ message: "id is required" });
+      const status = await getAnonpayStatus(id);
+      res.json(status);
+    } catch (err: any) {
+      console.error("Trocador status error:", err?.message || err);
+      res.status(502).json({ message: err?.message || "Failed to fetch swap status" });
     }
   });
 
