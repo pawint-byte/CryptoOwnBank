@@ -118,6 +118,7 @@ const allItems: NavItem[] = [
   { title: "Signing Options", url: "/ownbank/signing-options", icon: Shield, group: "wallets" },
 
   // EXECUTE - anything that changes what you hold
+  { title: "Prime the Pump (Start)", url: "/start", icon: Rocket, color: "#16a34a", group: "execute" },
   { title: "Buy Crypto", url: "/buy-crypto", icon: ShoppingCart, color: "#16a34a", group: "execute" },
   { title: "Swap Any Pair", url: "/swap-any-pair", icon: Repeat, color: "#16a34a", group: "execute" },
   { title: "Route Planner", url: "/route-planner", icon: Target, color: "#0ea5e9", group: "execute" },

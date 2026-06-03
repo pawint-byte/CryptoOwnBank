@@ -115,6 +115,7 @@ import LegacyObject from "@/pages/legacy-object";
 import AmmPools from "@/pages/amm-pools";
 import FlareFtso from "@/pages/flare-ftso";
 import BuyCrypto from "@/pages/buy-crypto";
+import PrimeThePump from "@/pages/prime-the-pump";
 import SwapAnyPair from "@/pages/swap-any-pair";
 import RoutePlanner from "@/pages/route-planner";
 import WalletCreate from "@/pages/wallet-create";
@@ -329,6 +330,7 @@ function AuthenticatedRoutes() {
         <Route path="/flare" component={FlareFtso} />
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/ai-assistant" component={AiAssistant} />
+        <Route path="/start" component={PrimeThePump} />
         <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/swap-any-pair" component={SwapAnyPair} />
         <Route path="/route-planner" component={RoutePlanner} />
@@ -405,6 +407,7 @@ function Router() {
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/amm-pools" component={AmmPools} />
         <Route path="/flare" component={FlareFtso} />
+        <Route path="/start" component={PrimeThePump} />
         <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/swap-any-pair" component={SwapAnyPair} />
         <Route path="/route-planner" component={RoutePlanner} />
