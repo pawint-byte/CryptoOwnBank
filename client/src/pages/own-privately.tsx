@@ -14,6 +14,10 @@ import {
   Lock,
   AlertTriangle,
 } from "lucide-react";
+import guideTab from "@assets/guide/guide-1-tab.png";
+import guideSwap from "@assets/guide/guide-2-swap.png";
+import guideAddress from "@assets/guide/guide-3-address.png";
+import guideSend from "@assets/guide/guide-4-send.png";
 
 interface PrivacyProvider {
   id: string;
@@ -229,6 +233,20 @@ export default function OwnPrivately() {
                 <strong>no results for XMR</strong>). The trick is always two moves:{" "}
                 <strong>get an ordinary coin first, then swap that coin into Monero.</strong>
               </p>
+              <figure className="mt-3 overflow-hidden rounded-lg border border-border bg-muted/30">
+                <img
+                  src={guideTab}
+                  alt="Searching xmr in Trocador's Buy/Sell dollars tab returns no results"
+                  className="w-full"
+                  loading="lazy"
+                  data-testid="img-guide-tab"
+                />
+                <figcaption className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                  Searching <strong>"xmr"</strong> in the <strong>Buy/Sell</strong> (dollars) tab shows
+                  nothing — Monero can't be bought with a card. That's expected. The{" "}
+                  <strong>Swap</strong> tab is where it happens.
+                </figcaption>
+              </figure>
               <ul className="mt-2 space-y-1 text-muted-foreground">
                 <li>
                   <strong>Already own some crypto?</strong> Use a <strong>no-KYC swap service</strong>{" "}
@@ -287,6 +305,19 @@ export default function OwnPrivately() {
                 Choose the coin you already own as the "You send" coin (e.g. XRP), and set "You
                 receive" to <strong>Monero</strong>. Enter how much you want to send.
               </p>
+              <figure className="mt-3 overflow-hidden rounded-lg border border-border bg-muted/30">
+                <img
+                  src={guideSwap}
+                  alt="Trocador Swap tab with You send set to Ripple and trade for set to Monero"
+                  className="w-full"
+                  loading="lazy"
+                  data-testid="img-guide-swap"
+                />
+                <figcaption className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                  The <strong>Swap</strong> tab: set <strong>You send</strong> to the coin you own,{" "}
+                  <strong>To trade for</strong> to Monero, then press <strong>Exchange</strong>.
+                </figcaption>
+              </figure>
             </div>
           </div>
           <div className="flex items-start gap-3" data-testid="swap-step-2">
@@ -300,6 +331,19 @@ export default function OwnPrivately() {
                 enter an XRP (or other) address here — that one comes next, and it comes <em>from</em>{" "}
                 the swap site to you.
               </p>
+              <figure className="mt-3 overflow-hidden rounded-lg border border-border bg-muted/30">
+                <img
+                  src={guideAddress}
+                  alt="Trocador exchange list with a box to paste your Monero receiving address"
+                  className="w-full"
+                  loading="lazy"
+                  data-testid="img-guide-address"
+                />
+                <figcaption className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                  Pick an exchange row, then paste <strong>your Monero receiving address</strong> into
+                  the "receiving address" box and confirm. That's the only address you type.
+                </figcaption>
+              </figure>
             </div>
           </div>
           <div className="flex items-start gap-3" data-testid="swap-step-3">
@@ -317,6 +361,20 @@ export default function OwnPrivately() {
                 <strong>"Destination Tag"</strong> field, and send the <strong>exact amount</strong>{" "}
                 shown. You're sending from Uphold straight to the swap provider — never through us.
               </p>
+              <figure className="mt-3 overflow-hidden rounded-lg border border-border bg-muted/30">
+                <img
+                  src={guideSend}
+                  alt="Trocador checkout showing the deposit address and memo to send your coin to, with private details blanked out"
+                  className="w-full"
+                  loading="lazy"
+                  data-testid="img-guide-send"
+                />
+                <figcaption className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                  The swap site now gives you a <strong>deposit address</strong> and a{" "}
+                  <strong>Memo</strong> — copy both into Uphold's send screen. (We've blanked out the
+                  real address, memo and IDs in this example for privacy.)
+                </figcaption>
+              </figure>
             </div>
           </div>
           <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2" data-testid="text-address-direction">

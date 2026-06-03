@@ -21,3 +21,4 @@
 - [Route Planner capability matrix](route-planner-capability-matrix.md) — a guided multi-step planner must only emit hops the linked tool can really do; in-app cross-chain is EVM-only (no native BTC/XRP).
 - [PWA stale bundle / cache version](pwa-stale-bundle.md) — installed PWAs serve old JS until you bump CACHE_VERSION in client/public/sw.js; a shipped UI fix can look broken in prod otherwise.
 - [Destination/buy wallet picker](buy-destination-picker.md) — buy/send flows must offer ALL saved wallets per coin (members have many), not just the first match; "save & use new" must select the new one.
+- [Redacting member screenshots](redacting-member-screenshots.md) — member screenshots may hold live addresses/memos/tx-IDs; scrub with ImageMagick + re-read to verify, and overwrite the committed original, before any public embed.
