@@ -2041,6 +2041,36 @@ export default function BuyCrypto() {
                   allow="camera; payment; clipboard-write"
                   data-testid="iframe-changelly-buy"
                 />
+                <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-sm space-y-2" data-testid="callout-region-fallback">
+                  <p className="font-medium">Seeing "not supported in your region"?</p>
+                  <p className="text-muted-foreground">
+                    That's the card provider's own rule for buying {selectedToken} in your country — not a CryptoOwnBank limit. Any of these still get {selectedToken} into your own wallet:
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <a
+                      href={buildTransakUrl({ token: selectedToken!, address: effectiveAddress || undefined })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button variant="outline" size="sm" className="w-full gap-2" data-testid="button-fallback-transak">
+                        <ExternalLink className="h-4 w-4" /> Try Transak instead
+                      </Button>
+                    </a>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => setSelectedMethod("aggregator")}
+                      data-testid="button-fallback-swap"
+                    >
+                      <Repeat className="h-4 w-4" /> Swap a coin you own into {selectedToken}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tip: buying inside your wallet app{selectedToken === "XRP" ? " (like Xaman for XRP)" : ""} often works even when the website blocks your country — the provider's in-app integration bypasses some regional limits.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}
