@@ -75,21 +75,15 @@ export async function createOnrampSession(
     "transaction_details[destination_network]",
     input.destinationNetwork.toLowerCase(),
   );
-  // Lock the session to exactly this coin + network. Without these, Stripe
-  // treats destination_currency/network as a mere default and silently falls
-  // back to ETH on Ethereum when the chosen coin isn't available in the user's
-  // region — which would let someone buy ETH while thinking they bought XLM.
-  // NOTE: the restrict arrays are `destination_currencies` / `destination_networks`
-  // (plural). There is NO `supported_destination_*` field — Stripe silently
-  // ignores unknown params, which is why the lock previously did nothing.
-  params.append(
-    "transaction_details[destination_currencies][]",
-    input.destinationCurrency.toLowerCase(),
-  );
-  params.append(
-    "transaction_details[destination_networks][]",
-    input.destinationNetwork.toLowerCase(),
-  );
+  // IMPORTANT: This Stripe account's Crypto Onramp API does NOT accept the
+  // `destination_currencies` / `destination_networks` restrict arrays — they
+  // return `400 parameter_unknown` in every bracket form ([], [0], hash) and
+  // every Stripe-Version tested. Yet Stripe *requires* destination_networks to
+  // honor a locked wallet_address. The net effect: server-side coin+wallet
+  // locking is impossible on this account, and the singular destination_currency
+  // is only an overridable default that drifts to ETH when the coin/region
+  // isn't available. Sending the arrays here would hard-fail the endpoint, so we
+  // intentionally do NOT send them. See memory: stripe-onramp-cannot-lock.
   params.append(
     "transaction_details[source_currency]",
     input.sourceCurrency || "usd",

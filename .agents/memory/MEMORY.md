@@ -1,7 +1,8 @@
 - [School of CryptoOwnBank teach pattern](school-of-cryptoownbank-pattern.md) — every risky action = explain → verify-understanding → proceed; persona-agnostic; soft check, friction only at irreversible forks.
 - [Help guide step accuracy](help-guide-accuracy.md) — verify exact UI labels in source before quoting in /help guides; explore agents paraphrase/invent controls.
 - [Vault "tested" gate integrity](legacy-vault-test-gate.md) — a client-side "passed test" flag guarding a save must reset whenever the payload changes, or a stale pass lets an untested vault through.
-- [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail (use Xaman in-app buy); Stripe onramp silently falls back to ETH unless you send supported_destination_currencies/networks[] to lock the coin.
+- [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail (use Xaman in-app buy); MoonPay region-blocks XLM via Changelly doorway.
+- [Stripe onramp cannot lock](stripe-onramp-cannot-lock.md) — this account's Crypto Onramp rejects the restrict arrays in EVERY form/version; can't lock coin/wallet → drifts to ETH. `supported_destination_*` is a myth. Don't promise "lands in your own wallet".
 - [Monero view-key tracking](monero-view-key-tracking.md) — NEVER store/transmit Monero view keys; balances stay manual; "easier" must not compromise privacy; browsers can't detect installed wallet apps.
 - [Saved wallet chain naming](wallet-chain-naming.md) — savedWallets.chain is keygen-style (evm/btc/sol) OR manual tokenToChain (ethereum/bitcoin); resolve addresses via alias list, exact-chain first.
 - [Canonical holding location](canonical-holding-location.md) — location/source has 3 independent origins; unify only for NEW intake/members, never auto-migrate existing (that broke before); Stargazer connect is desktop-only.
