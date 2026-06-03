@@ -348,6 +348,11 @@ export default function OwnPrivately() {
                 and tick any "I will send using the provided memo" box before you send. If your coin
                 doesn't show a memo field, there's nothing to add — just send to the address.
               </p>
+              <p>
+                <strong>Heads up:</strong> some services (like Trocador) <strong>hide the deposit
+                address until you tick that memo box</strong> — that's on purpose, so you can't send
+                without seeing the memo first. Tick it and the address appears.
+              </p>
             </AlertDescription>
           </Alert>
           <div className="flex items-start gap-3" data-testid="swap-step-4">
