@@ -41,8 +41,10 @@ import {
   Search,
   Banknote,
   Coins,
+  Download,
 } from "lucide-react";
 import { createOnrampSessionAndRedirect, getWalletAppBuysForChain } from "@/lib/stripe-onramp";
+import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn } from "@/lib/xumm-connector";
 
 type Step = "coin" | "method" | "destination" | "checkout";
 
@@ -879,6 +881,21 @@ const STRIPE_BUY_BY_SYMBOL: Record<string, { currency: string; network: string }
   MATIC: { currency: "pol", network: "polygon" },
 };
 
+const XAMAN_LINKS = {
+  ios: "https://apps.apple.com/app/xaman/id1492302343",
+  android: "https://play.google.com/store/apps/details?id=com.xrpllabs.xumm",
+  web: "https://xaman.app",
+  deepLink: "xumm://",
+};
+
+type DeviceInfo = { isIOS: boolean; isAndroid: boolean; isMobile: boolean };
+
+function xamanInstallUrl(device: DeviceInfo): string {
+  if (device.isIOS) return XAMAN_LINKS.ios;
+  if (device.isAndroid) return XAMAN_LINKS.android;
+  return XAMAN_LINKS.web;
+}
+
 export const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
   XRP: ["xrp", "ripple"],
   XLM: ["stellar", "xlm"],
@@ -1317,6 +1334,72 @@ export default function BuyCrypto() {
     });
   }
 
+  // Device detection so the Xaman path adapts: phones deep-link straight into
+  // the app, desktops fall back to a QR code / install-on-phone guidance.
+  const device = useMemo<DeviceInfo>(() => {
+    if (typeof navigator === "undefined") {
+      return { isIOS: false, isAndroid: false, isMobile: false };
+    }
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const isAndroid = /Android/i.test(ua);
+    return { isIOS, isAndroid, isMobile: isIOS || isAndroid };
+  }, []);
+
+  const [connectingXaman, setConnectingXaman] = useState(false);
+
+  function applyConnectedXaman(address: string) {
+    setSelectedSavedAddress("");
+    setNewAddress(address);
+    setNewLabel((l) => l || "Xaman wallet");
+    apiRequest("POST", "/api/wallet", { walletAddress: address, walletType: "xumm" }).catch(() => {});
+    apiRequest("POST", "/api/xaman-connections", { xrpAddress: address })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["/api/wallets"] }))
+      .catch(() => {});
+    toast({
+      title: "Xaman connected",
+      description: `Your XRP address is filled in: ${address.slice(0, 8)}…${address.slice(-6)}`,
+    });
+  }
+
+  // On mobile, connectXumm() deep-links away to the app; when the member returns
+  // here we finish the pending sign-in and auto-fill their address.
+  useEffect(() => {
+    if (hasPendingXummSignIn()) {
+      setConnectingXaman(true);
+      completePendingXummSignIn().then((result) => {
+        if (result.success && result.address) {
+          applyConnectedXaman(result.address);
+        } else if (result.error && result.error !== "No pending sign-in") {
+          toast({ title: "Couldn't connect Xaman", description: result.error, variant: "destructive" });
+        }
+        setConnectingXaman(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleConnectXaman() {
+    setConnectingXaman(true);
+    try {
+      // connectXumm is device-aware: QR popup on desktop, app deep-link on mobile.
+      const result = await connectXumm();
+      if (result.success && result.address) {
+        applyConnectedXaman(result.address);
+      } else if (result.error) {
+        toast({ title: "Couldn't connect Xaman", description: result.error, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({
+        title: "Connection error",
+        description: err instanceof Error ? err.message : "Please try again, or paste your address instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setConnectingXaman(false);
+    }
+  }
+
   // The address the coin will actually land in: a saved wallet if we have one,
   // otherwise a one-time address the member pasted in this session (so logged-out
   // members can still use Stripe / providers without an account).
@@ -1692,6 +1775,47 @@ export default function BuyCrypto() {
           <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-address">
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
+
+          {selectedToken === "XRP" && (
+            <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-[#00A4E4]" />
+                  Easiest way: connect Xaman
+                </CardTitle>
+                <CardDescription>
+                  {device.isMobile
+                    ? "Opens the Xaman app on your phone and fills your XRP address in automatically — no copy-paste."
+                    : "Scan a QR code with Xaman on your phone and we'll fill your XRP address in automatically — no copy-paste."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  onClick={handleConnectXaman}
+                  disabled={connectingXaman}
+                  className="w-full gap-2 bg-[#00A4E4] hover:bg-[#0090cc] text-white"
+                  data-testid="button-connect-xaman"
+                >
+                  {connectingXaman ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Connecting…</>
+                  ) : (
+                    <><Smartphone className="h-4 w-4" /> {device.isMobile ? "Open Xaman & connect" : "Connect Xaman (scan QR)"}</>
+                  )}
+                </Button>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" /> don't have Xaman yet? <span className="h-px flex-1 bg-border" />
+                </div>
+                <a href={xamanInstallUrl(device)} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-get-xaman">
+                    <Download className="h-4 w-4" /> Get Xaman free{device.isIOS ? " (App Store)" : device.isAndroid ? " (Google Play)" : ""}
+                  </Button>
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Xaman is a free phone app and the most reliable way to buy XRP — its built-in card buy often works even when a website says "not supported in your region." Install it, then come back and tap Connect.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {savedWalletsForToken.length > 0 ? (
             <Card className="border-green-500/20 bg-green-500/5">
@@ -2146,24 +2270,46 @@ export default function BuyCrypto() {
                   <li>Tap <strong>Buy</strong> inside the app and pay by card, Apple Pay or Google Pay.</li>
                   <li>The {selectedToken} arrives in the address above — CryptoOwnBank never touches it.</li>
                 </ol>
-                {getWalletAppBuysForChain((selectedToken || "").toLowerCase()).map((opt) => (
-                  <a
-                    key={opt.provider}
-                    href={opt.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <Button
-                      variant={opt.provider === "xaman" ? "default" : "outline"}
-                      className={`w-full gap-2 ${opt.provider === "xaman" ? "bg-green-600 hover:bg-green-700" : ""}`}
-                      data-testid={`button-walletapp-${opt.provider}`}
-                    >
-                      <ExternalLink className="h-4 w-4" /> {opt.label}
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1 mb-1">{opt.note}</p>
-                  </a>
-                ))}
+                {getWalletAppBuysForChain((selectedToken || "").toLowerCase()).map((opt) => {
+                  const isXaman = opt.provider === "xaman";
+                  const href = isXaman && device.isMobile ? XAMAN_LINKS.deepLink : opt.url;
+                  return (
+                    <div key={opt.provider} className="space-y-1">
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="block">
+                        <Button
+                          variant={isXaman ? "default" : "outline"}
+                          className={`w-full gap-2 ${isXaman ? "bg-green-600 hover:bg-green-700" : ""}`}
+                          data-testid={`button-walletapp-${opt.provider}`}
+                        >
+                          {isXaman && device.isMobile ? <Smartphone className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                          {isXaman && device.isMobile ? `Open Xaman to buy ${selectedToken}` : opt.label}
+                        </Button>
+                      </a>
+                      <p className="text-xs text-muted-foreground">{opt.note}</p>
+                      {isXaman && (
+                        device.isMobile ? (
+                          <a
+                            href={xamanInstallUrl(device)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs underline text-muted-foreground"
+                            data-testid="link-walletapp-install-xaman"
+                          >
+                            Don't have Xaman? Install it free
+                          </a>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Xaman is a phone app — install it on your phone (
+                            <a href={XAMAN_LINKS.ios} target="_blank" rel="noopener noreferrer" className="underline">iPhone</a>
+                            {" · "}
+                            <a href={XAMAN_LINKS.android} target="_blank" rel="noopener noreferrer" className="underline">Android</a>
+                            ), open this wallet, then tap Buy.
+                          </p>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           )}

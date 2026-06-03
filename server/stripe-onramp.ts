@@ -79,12 +79,15 @@ export async function createOnrampSession(
   // treats destination_currency/network as a mere default and silently falls
   // back to ETH on Ethereum when the chosen coin isn't available in the user's
   // region — which would let someone buy ETH while thinking they bought XLM.
+  // NOTE: the restrict arrays are `destination_currencies` / `destination_networks`
+  // (plural). There is NO `supported_destination_*` field — Stripe silently
+  // ignores unknown params, which is why the lock previously did nothing.
   params.append(
-    "transaction_details[supported_destination_currencies][]",
+    "transaction_details[destination_currencies][]",
     input.destinationCurrency.toLowerCase(),
   );
   params.append(
-    "transaction_details[supported_destination_networks][]",
+    "transaction_details[destination_networks][]",
     input.destinationNetwork.toLowerCase(),
   );
   params.append(
