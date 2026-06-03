@@ -50,6 +50,7 @@ type MethodId =
   | "card_instant"
   | "card_widget"
   | "card_external"
+  | "aggregator"
   | "swap"
   | "p2p"
   | "privacy";
@@ -149,6 +150,10 @@ function buildTransakUrl(params: { token: string; address?: string }) {
   let url = `https://global.transak.com/?cryptoCurrencyCode=${cryptoCurrency}`;
   if (params.address) url += `&walletAddress=${encodeURIComponent(params.address)}`;
   return url;
+}
+
+function buildTrocadorUrl(params: { token: string }) {
+  return `https://trocador.app/en/?ticker_to=${params.token.toLowerCase()}&network_to=Mainnet`;
 }
 
 export const BUYABLE_COIN_SYMBOLS: string[] = tokens.map((t) => t.symbol);
@@ -1271,6 +1276,14 @@ export default function BuyCrypto() {
       inSite: false,
       needsAddress: true,
     });
+    list.push({
+      id: "aggregator",
+      title: "Exchange a coin you already own",
+      subtitle: `Swap any crypto you hold into ${selectedToken} through Trocador — it shops dozens of swap services for the best rate. Usually no account needed, and nothing passes through us.`,
+      badge: "Low-KYC · self-serve",
+      inSite: false,
+      needsAddress: true,
+    });
     if (swapAlt) {
       list.push({
         id: "swap",
@@ -1533,6 +1546,7 @@ export default function BuyCrypto() {
                   <div className="mt-0.5 shrink-0 text-green-600">
                     {(m.id === "card_instant" || m.id === "card_widget") && <CreditCard className="h-5 w-5" />}
                     {m.id === "card_external" && <Banknote className="h-5 w-5" />}
+                    {m.id === "aggregator" && <Repeat className="h-5 w-5" />}
                     {m.id === "swap" && <ArrowRightLeft className="h-5 w-5" />}
                     {m.id === "p2p" && <Users className="h-5 w-5" />}
                     {m.id === "privacy" && <Lock className="h-5 w-5" />}
@@ -1964,6 +1978,41 @@ export default function BuyCrypto() {
                     <ExternalLink className="h-4 w-4" /> Buy {selectedToken} via Transak
                   </Button>
                 </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "aggregator" && (
+            <Card className="border-green-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Repeat className="h-5 w-5 text-green-600" />
+                  Exchange into {selectedToken} via Trocador
+                </CardTitle>
+                <CardDescription>
+                  Trocador shops dozens of swap services and picks the best rate — you swap a coin you already own into {selectedToken}. Most swaps need no account, though some providers may ask for one depending on the amount or your country. The coins never pass through CryptoOwnBank. Best for crypto-to-crypto; to turn cash into crypto, use the card options.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {effectiveAddress && (
+                  <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                    <p className="text-muted-foreground mb-1">Send the {selectedToken} to your own wallet:</p>
+                    <p className="font-mono break-all" data-testid="text-aggregator-address">{effectiveAddress}</p>
+                  </div>
+                )}
+                <a
+                  href={buildTrocadorUrl({ token: selectedToken })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-buy-trocador">
+                    <ExternalLink className="h-4 w-4" /> Open Trocador to swap into {selectedToken}
+                  </Button>
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  On Trocador: choose the coin you're sending, paste your {selectedToken} address as the destination, and double-check it matches before you send. {selectedToken === "XRP" || selectedToken === "XLM" ? "If your wallet shows a destination tag/memo, add it too." : ""}
+                </p>
               </CardContent>
             </Card>
           )}
