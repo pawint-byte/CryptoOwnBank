@@ -57,3 +57,11 @@ arrives automatically. The dangerous step: send-coins that use a **Memo / Destin
 Tag** (XRP, XLM, ATOM, …) REQUIRE that tag alongside the deposit address — omitting it (or
 wrong tag) can lose the funds permanently. Any "how to swap into XMR" copy must call out
 the memo/tag explicitly for memo-chains; coins without a memo field have nothing to add.
+
+**#1 user mix-up: address DIRECTION.** Non-technical members get lost on which address goes
+where. The ONLY address you type INTO the swap site is your **Monero receiving address**.
+You do NOT enter your send-coin's address on the swap site. The swap site GIVES YOU the
+send-coin **deposit address + memo** on the next page, and you paste THOSE into your source
+(e.g. Uphold → Send / Withdraw crypto → To a crypto address + Destination Tag). Always
+state both directions explicitly: your-XMR-addr → into swap site; their deposit-addr+memo →
+into Uphold's send screen.

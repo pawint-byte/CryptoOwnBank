@@ -292,10 +292,13 @@ export default function OwnPrivately() {
           <div className="flex items-start gap-3" data-testid="swap-step-2">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">2</span>
             <div>
-              <p className="font-semibold">Enter your Monero address — where the XMR should land.</p>
+              <p className="font-semibold">Enter your Monero address — the ONLY address you type here.</p>
               <p className="text-muted-foreground">
                 Paste the <strong>receive address</strong> from your Monero wallet (Step 1 of the
-                card above). This is the only place the Monero will go. Double-check it.
+                card above) into the swap site's "receiving address" box, then confirm. This is the{" "}
+                <strong>only</strong> address you ever type on the swap site. You do <strong>not</strong>{" "}
+                enter an XRP (or other) address here — that one comes next, and it comes <em>from</em>{" "}
+                the swap site to you.
               </p>
             </div>
           </div>
@@ -303,14 +306,32 @@ export default function OwnPrivately() {
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">3</span>
             <div>
               <p className="font-semibold">
-                The service shows you a deposit address — send your coin there.
+                Now the swap site GIVES you a deposit address — paste it into Uphold (or wherever
+                your coin is) and send.
               </p>
               <p className="text-muted-foreground">
-                It gives you an address (and a deadline / rate). From your own wallet or exchange,
-                send the <strong>exact amount</strong> it asks for to that address. The address
-                belongs to the swap provider, not to us — you're sending it directly to them.
+                After you confirm, the next page shows a deposit address (and, for XRP/XLM/etc., a{" "}
+                <strong>Memo / Tag</strong>) plus a countdown. That address belongs to the swap
+                provider. Go to <strong>Uphold → Send / Withdraw crypto → "To a crypto address"</strong>,
+                paste <strong>that</strong> address, put the Memo/Tag in the{" "}
+                <strong>"Destination Tag"</strong> field, and send the <strong>exact amount</strong>{" "}
+                shown. You're sending from Uphold straight to the swap provider — never through us.
               </p>
             </div>
+          </div>
+          <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2" data-testid="text-address-direction">
+            <p className="font-semibold">Which address goes where? (this is the #1 mix-up)</p>
+            <ul className="mt-1 space-y-1 text-muted-foreground">
+              <li>
+                <strong>Your Monero address</strong> → you type it <strong>into the swap site</strong>{" "}
+                (so the XMR can come back to you).
+              </li>
+              <li>
+                <strong>The XRP deposit address + Memo</strong> → the <strong>swap site gives these
+                to you</strong>; you paste them <strong>into Uphold's send screen</strong> (so your
+                XRP gets to the swap).
+              </li>
+            </ul>
           </div>
           <Alert className="border-amber-500/50 bg-amber-500/10" data-testid="alert-memo-warning">
             <AlertTriangle className="h-4 w-4" />
