@@ -1433,11 +1433,16 @@ export default function BuyCrypto() {
       ];
     }
     const list: BuyMethod[] = [];
-    if (STRIPE_BUY_BY_SYMBOL[selectedToken]) {
+    // Stripe's hosted onramp on this account can't lock the coin or pre-fill the
+    // destination wallet (the crypto_onramp_beta=v2 entitlement isn't enabled),
+    // so for any NON-ETH coin it silently defaults to ETH — a member "buying XLM"
+    // would actually be buying ETH. Only offer it for ETH, where the default
+    // matches; everyone else uses a rail that delivers the right coin.
+    if (selectedToken === "ETH" && STRIPE_BUY_BY_SYMBOL[selectedToken]) {
       list.push({
         id: "card_instant",
         title: "Card, Apple Pay or Google Pay",
-        subtitle: "Fastest — finished right here on CryptoOwnBank. The coin lands in your own wallet.",
+        subtitle: "Fast — pay through Stripe. You'll confirm your own wallet address in the Stripe window.",
         badge: "In-site · instant",
         inSite: true,
         needsAddress: true,
@@ -1495,6 +1500,14 @@ export default function BuyCrypto() {
       inSite: false,
       needsAddress: true,
     });
+    // For XRP, lead with the Xaman wallet-app buy. Xaman's in-app card purchase
+    // is the most reliable XRP rail in regions where web card providers block it,
+    // and it delivers straight to the member's own XRP address.
+    if (selectedToken === "XRP") {
+      list.sort(
+        (a, b) => Number(b.id === "wallet_app") - Number(a.id === "wallet_app"),
+      );
+    }
     return list;
   }, [selectedToken, tokenData, swapAlt]);
 
@@ -2137,7 +2150,7 @@ export default function BuyCrypto() {
                   Buy {selectedToken} with card — finish right here
                 </CardTitle>
                 <CardDescription>
-                  Pay with a card, Apple Pay or Google Pay through Stripe. The coin goes straight to your own wallet — CryptoOwnBank never touches it.
+                  Pay with a card, Apple Pay or Google Pay through Stripe. You'll confirm your own wallet address in the Stripe window, so the coin stays self-custodied — CryptoOwnBank never touches it.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -2151,7 +2164,7 @@ export default function BuyCrypto() {
                   {onrampLoading ? "Opening Stripe..." : `Buy ${selectedToken} now`}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Opens Stripe in a new tab with your wallet address locked in. Non-custodial and self-custodied the whole way.
+                  Opens Stripe in a new tab. You enter your own wallet address there, so it stays self-custodied the whole way.
                 </p>
               </CardContent>
             </Card>

@@ -24,10 +24,14 @@ address — a member "buying XLM" can end up buying ETH to an un-locked destinat
   `lock_wallet_address` → `200 OK` but ALL read back null and `lock=false`;
   `destination_currencies` shows the full default list. i.e. silently ignored.
 
-**Why:** this is an account-level Crypto Onramp limitation/state, NOT a code bug
-and NOT a Stripe-Version issue. Stripe's public docs say the arrays exist; this
-account's onramp surface does not expose them. The onramp product itself is NOT
-deprecated (confirmed 2026) — it's specific to this account's configuration.
+**Root cause (confirmed):** the restrict arrays live behind the
+`crypto_onramp_beta=v2` access flag. Passing header
+`Stripe-Version: 2026-03-25.dahlia;crypto_onramp_beta=v2` returns
+`400 "You do not have permission to pass this beta header: crypto_onramp_beta."`
+So the params DO exist in Stripe's current onramp; this account simply isn't
+entitled to v2. **Resolution = Stripe support must enable `crypto_onramp_beta=v2`
+on the account.** Until then NO request shape can lock coin/wallet. This is NOT a
+code bug and NOT fixable client/server-side.
 
 **How to apply:**
 - Do NOT send the restrict arrays from server/stripe-onramp.ts — they hard-400
