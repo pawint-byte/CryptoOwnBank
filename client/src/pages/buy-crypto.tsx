@@ -1452,14 +1452,11 @@ export default function BuyCrypto() {
     // so for any NON-ETH coin it silently defaults to ETH — a member "buying XLM"
     // would actually be buying ETH. Only offer it for ETH, where the default
     // matches; everyone else uses a rail that delivers the right coin.
-    if ((selectedToken === "ETH" || selectedToken === "USDC") && STRIPE_BUY_BY_SYMBOL[selectedToken]) {
+    if (selectedToken === "ETH" && STRIPE_BUY_BY_SYMBOL[selectedToken]) {
       list.push({
         id: "card_instant",
         title: "Card, Apple Pay or Google Pay",
-        subtitle:
-          selectedToken === "USDC"
-            ? "Fast — pay through Stripe. Heads up: on our setup this delivers ETH (a fine bridge coin), not USDC. For actual USDC on the low-fee Base network, use \"Card or bank\" or MoonPay/Transak below."
-            : "Fast — pay through Stripe. You'll confirm your own wallet address in the Stripe window.",
+        subtitle: "Fast — pay through Stripe. You'll confirm your own wallet address in the Stripe window.",
         badge: "In-site · instant",
         inSite: true,
         needsAddress: true,
@@ -2266,11 +2263,6 @@ export default function BuyCrypto() {
                 <p className="text-xs text-muted-foreground">
                   Opens Stripe in a new tab. You enter your own wallet address there, so it stays self-custodied the whole way.
                 </p>
-                {selectedToken === "USDC" && (
-                  <p className="text-xs text-muted-foreground">
-                    Heads up: on our Stripe setup this instant card delivers <strong>ETH on the Ethereum network</strong>, not USDC — and it can't be switched in that window. ETH is a perfect bridge coin: it goes to the same 0x address and is ready to swap. If you specifically want <strong>USDC</strong>, or the cheaper <strong>Base</strong> network, go back and use "Card or bank" or MoonPay/Transak instead — those let you choose USDC and Base.
-                  </p>
-                )}
               </CardContent>
             </Card>
           )}
