@@ -1,18 +1,23 @@
 ---
 name: Route Planner capability matrix
-description: When generating guided multi-step crypto routes, only emit hops the linked tool can actually execute.
+description: When generating crypto acquisition routes, only emit hops the linked tool can actually execute, and only destinations the linked pages can actually select.
 ---
 
-A "do X to get Y" guided planner (e.g. the destination-first Route Planner) must never link a step to a tool that cannot perform that hop. A path that *looks* connected but sends the member to a tool that can't do the leg is worse than a shorter, honest path.
+The Route Planner is a **route selector**: for a chosen destination coin it generates every realistic candidate route, scores them by a member-chosen priority (balanced/cheapest/easiest/lowest-tax/most-private), and shows them ranked with a "Best for you" badge plus honest pros/cons. A path that *looks* connected but sends the member to a tool that can't do the leg — or can't even select that coin — is worse than a shorter honest path.
 
-**Why:** First draft routed privacy buys as buy USDC → swap USDC→ETH (1inch) → swap ETH→BTC (cross-chain) → external XMR. But the in-app cross-chain swap UI is **EVM-only** — its chain/token menus are EVM chains and EVM token lists (it offers WBTC, not native BTC). So the ETH→BTC hop was un-executable and misleading. The honest XMR route is just buy native **BTC with a card** (Stripe supports BTC) → external no-KYC BTC→XMR. Truthful + executable beats a longer fake "demo" of swaps.
+**Why:** Two separate failures hit this surface. (1) An early draft routed privacy buys through an EVM cross-chain hop the in-app cross-chain UI can't do (it's EVM-only, offers WBTC not native BTC). (2) The route-selector rebuild listed destinations (USDC/USDT/POL/BCH) that the linked pages can't actually deliver — the canonical coin grid uses `MATIC` (not `POL`) and has no USDC/USDT/BCH, so those routes pointed members at a Swap Any Pair / Buy Crypto screen where the coin isn't selectable.
 
-**How to apply:** Match each generated step to a real tool capability:
-- `/buy-crypto` (Stripe onramp): native delivery of USDC/ETH/BTC/SOL/XLM/POL/AVAX. NOT XRP/XMR.
-- `/ownbank/evm-swap` (1inch): same-chain EVM token swaps only.
-- `/ownbank/cross-chain` (LI.FI): EVM↔EVM only — no native BTC/XRP/SOL destinations.
-- `/ownbank/xrpl-bridge` (Squid/Axelar): EVM asset → native XRP. This is the right tool for XRP, not the generic cross-chain page.
-- `/own-privately`: external no-KYC handoff for XMR/ZEC (we never custody; member picks the third party).
-Also always short-circuit when the member already holds the destination coin (return a "done" step, no buy/swap) — but let the member override this.
+**How to apply:**
+- **Destinations must be a subset of the canonical `tokens` grid in `buy-crypto.tsx`** (both `/buy-crypto` and `/swap-any-pair` render their coin pickers from it). If a coin isn't in that grid, the planner must not offer it as a destination. Use `MATIC` (the grid symbol), never `POL` (Stripe's currency code).
+- Match each generated hop to a real tool capability:
+  - `/buy-crypto` (Stripe onramp): native card delivery of grid coins ETH/BTC/SOL/XLM/AVAX/MATIC (Stripe also does USDC, but USDC isn't in the grid). NOT XRP/XMR.
+  - `/ownbank/evm-swap` (1inch): same-chain EVM token swaps only — grid EVM coins are ETH/MATIC/AVAX.
+  - `/ownbank/cross-chain` (LI.FI): EVM↔EVM only — no native BTC/XRP/SOL destinations.
+  - `/ownbank/xrpl-bridge` (Squid/Axelar): EVM asset → native XRP. The right tool for XRP, not the generic cross-chain page.
+  - `/swap-any-pair` (Trocador all-pairs): the catch-all from any crypto you already hold to almost any grid coin; a third party briefly holds funds in-flight (we never custody).
+  - `/own-privately`: external no-KYC handoff for XMR/ZEC — privacy coins stay on this boundary and are NEVER routed through the Trocador aggregator.
+- **Use ETH as the card-buyable intermediate** for cash-start routes (buy ETH → bridge/swap). It's in the grid, Stripe-buyable, and EVM — so both the buy leg and the next hop are executable. (Avoid USDC as the intermediate: not in the grid.)
 
-**Tax override:** swaps/bridges are taxable disposals; buying with a card is not. Members may deliberately want to buy fresh even when they already hold a swappable coin (to avoid realizing a gain). The planner has a "Buy fresh instead of swapping what I own" toggle (default off) that makes `buildPlan` ignore holdings and prefer card buys, including overriding the already-hold-destination short-circuit. Honest nuance: XRP/XMR have no card rail to the final coin, so at least one swap/bridge is unavoidable — buying fresh immediately before it keeps the realized gain ~0.
+**Member-first scoring (honesty requirement):** for EVM↔EVM pairs the on-chain DEX route must out-rank the Swap Any Pair (Trocador) route under Balanced/Cheapest — the selector steers members to the cheaper, self-custodial rail, NOT the one we earn affiliate revenue from. `costScore` (cheaper=higher) + self-custody bonus drive this; verify it holds if weights change.
+
+**Tax nuance:** buying with a card is not a taxable disposal; swaps/bridges are (they realize gain/loss on the coin sold). The "Lowest tax bill" priority biases toward card buys / not selling held coins. XRP/XMR have no card rail straight to the final coin, so at least one swap/bridge is unavoidable for them.
