@@ -1875,7 +1875,7 @@ export default function BuyCrypto() {
                   <p>Both are "EVM" networks, so they use your exact same 0x address. The only real difference is cost:</p>
                   <p>• <strong className="text-foreground">Base</strong> — newer, very low fees (often pennies). What we recommend and default to.</p>
                   <p>• <strong className="text-foreground">Ethereum</strong> — the original network, same security, but fees can run $1–20+ per move.</p>
-                  <p>Whatever a provider sends you — USDC or ETH, on Base or Ethereum — it lands at the same 0x address you control, and you can swap it from there. If a provider only offers Ethereum, take it; you can bridge to Base later for pennies.</p>
+                  <p>Whatever a provider sends you — USDC or ETH, on Base or Ethereum — it lands at the same 0x address you control. Since USDC is only ever the bridge, you swap it <strong className="text-foreground">straight into your target coin</strong> from wherever it lands — no need to move it to another network first. The swap step handles any chain-to-chain hop in one move. We default to Base only because it makes that one swap cheaper; if a provider only offers Ethereum, take it and swap from there.</p>
                 </div>
                 <Button asChild variant="outline" className="w-full gap-2" data-testid="button-create-usdc-wallet">
                   <Link href="/wallet/create">
