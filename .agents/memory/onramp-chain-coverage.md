@@ -49,3 +49,11 @@ always: get an ordinary coin first, then SWAP that coin into Monero. On aggregat
 Trocador this means the **Swap** tab, NOT the **Buy/Sell** (fiat) tab — a non-technical
 founder hit exactly this wall (typed "xmr" in the dollars Buy box, got nothing). Guidance
 must say this explicitly or members assume XMR is simply unavailable.
+
+**The swap checkout flow must be spelled out, incl. the MEMO/TAG trap.** A no-account swap
+checkout asks for 4 things: (1) send-coin + receive=Monero + amount, (2) your XMR receive
+address, (3) send the exact amount to the provider's deposit address, (4) wait — XMR
+arrives automatically. The dangerous step: send-coins that use a **Memo / Destination
+Tag** (XRP, XLM, ATOM, …) REQUIRE that tag alongside the deposit address — omitting it (or
+wrong tag) can lose the funds permanently. Any "how to swap into XMR" copy must call out
+the memo/tag explicitly for memo-chains; coins without a memo field have nothing to add.

@@ -267,6 +267,87 @@ export default function OwnPrivately() {
         </CardContent>
       </Card>
 
+      <Card className="mb-8" data-testid="card-swap-walkthrough">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <ArrowRightLeft className="h-5 w-5 text-primary" />
+            What the swap screen will ask you — 4 things
+          </CardTitle>
+          <CardDescription>
+            Once you click into a swap service (like Trocador's <strong>Swap</strong> tab), this is
+            the whole process. It looks like a lot, but it's just four boxes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <div className="flex items-start gap-3" data-testid="swap-step-1">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">1</span>
+            <div>
+              <p className="font-semibold">Pick what you're sending and what you're getting.</p>
+              <p className="text-muted-foreground">
+                Choose the coin you already own as the "You send" coin (e.g. XRP), and set "You
+                receive" to <strong>Monero</strong>. Enter how much you want to send.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3" data-testid="swap-step-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">2</span>
+            <div>
+              <p className="font-semibold">Enter your Monero address — where the XMR should land.</p>
+              <p className="text-muted-foreground">
+                Paste the <strong>receive address</strong> from your Monero wallet (Step 1 of the
+                card above). This is the only place the Monero will go. Double-check it.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3" data-testid="swap-step-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">3</span>
+            <div>
+              <p className="font-semibold">
+                The service shows you a deposit address — send your coin there.
+              </p>
+              <p className="text-muted-foreground">
+                It gives you an address (and a deadline / rate). From your own wallet or exchange,
+                send the <strong>exact amount</strong> it asks for to that address. The address
+                belongs to the swap provider, not to us — you're sending it directly to them.
+              </p>
+            </div>
+          </div>
+          <Alert className="border-amber-500/50 bg-amber-500/10" data-testid="alert-memo-warning">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>If it gives you a "Memo" or "Tag" — you MUST include it</AlertTitle>
+            <AlertDescription className="mt-2 space-y-2 text-muted-foreground">
+              <p>
+                Some coins — <strong>XRP (Ripple), XLM (Stellar), ATOM, and others</strong> — need a
+                short <strong>Memo / Destination Tag</strong> number alongside the address. It's how
+                the exchange knows the incoming funds are yours.
+              </p>
+              <p>
+                <strong>Sending without the memo, or with the wrong one, can lose the coins for
+                good.</strong> Copy the address <em>and</em> the memo into your wallet's send screen,
+                and tick any "I will send using the provided memo" box before you send. If your coin
+                doesn't show a memo field, there's nothing to add — just send to the address.
+              </p>
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-start gap-3" data-testid="swap-step-4">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">4</span>
+            <div>
+              <p className="font-semibold">Wait — your Monero arrives on its own.</p>
+              <p className="text-muted-foreground">
+                Once your coin lands, the service swaps it and sends Monero to your address
+                automatically — usually minutes. You can close the tab; the "Refresh status" button
+                just lets you watch it. Nothing else to click.
+              </p>
+            </div>
+          </div>
+          <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+            <strong>Floating vs fixed rate:</strong> a <em>floating</em> rate can move a little
+            between now and when your coin arrives; a <em>fixed</em> rate locks the amount but can
+            cost slightly more. For a first try, either is fine.
+          </p>
+        </CardContent>
+      </Card>
+
       <Alert className="mb-8 border-amber-500/40 bg-amber-500/5" data-testid="alert-disclaimer">
         <Shield className="h-4 w-4" />
         <AlertTitle>Read this first — the honest truth</AlertTitle>
