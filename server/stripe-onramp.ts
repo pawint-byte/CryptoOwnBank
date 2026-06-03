@@ -57,12 +57,30 @@ export interface OnrampSessionResult {
   redirectUrl: string;
 }
 
+// This account cannot lock the destination coin (the crypto_onramp_beta=v2
+// entitlement isn't enabled), so the singular destination_currency is only an
+// overridable default. For every coin EXCEPT ETH, Stripe drifts to ETH —
+// meaning a member who asked for BTC/XLM/SOL could be silently delivered ETH.
+// ETH is the one coin whose default already matches the request, so it's the
+// only currency we allow through this server-side rail. Every other coin must
+// use an external provider or a swap. This guard is the single source of truth
+// that protects ALL callers (buy-crypto, wallet-create, future ones).
+const ONRAMP_LOCKABLE_CURRENCIES = new Set<string>(["eth"]);
+
 export async function createOnrampSession(
   input: CreateOnrampSessionInput,
 ): Promise<OnrampSessionResult> {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) {
     throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+
+  if (!ONRAMP_LOCKABLE_CURRENCIES.has(input.destinationCurrency.toLowerCase())) {
+    throw new Error(
+      `Instant card buys through Stripe are only available for ETH right now. ` +
+        `This Stripe account can't lock the destination coin, so a ${input.destinationCurrency.toUpperCase()} ` +
+        `purchase could default to ETH. Use an external card provider or a swap for ${input.destinationCurrency.toUpperCase()}.`,
+    );
   }
 
   const params = new URLSearchParams();

@@ -825,7 +825,13 @@ export default function WalletCreate() {
                   return (
                     <div className="space-y-2" data-testid="list-stripe-onramp">
                       {supportedChains.map((d) => {
-                        const stripeOpts = getStripeOptionsForChain(d.chain);
+                        // Only ETH can go through Stripe's instant rail — for any
+                        // other coin Stripe drifts to ETH on this account, so we
+                        // route those to external providers instead (see
+                        // server/stripe-onramp.ts ONRAMP_LOCKABLE_CURRENCIES).
+                        const stripeOpts = getStripeOptionsForChain(d.chain).filter(
+                          (o) => o.currency.toLowerCase() === "eth",
+                        );
                         const externalOpts = getExternalOnrampsForChain(d.chain);
                         const bridgeEligible = chainHasThorBridge(d.chain) && d.chain.toLowerCase() !== "btc";
                         return (

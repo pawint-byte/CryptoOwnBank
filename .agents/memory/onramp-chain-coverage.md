@@ -66,25 +66,28 @@ send-coin **deposit address + memo** on the next page, and you paste THOSE into 
 state both directions explicitly: your-XMR-addr → into swap site; their deposit-addr+memo →
 into Uphold's send screen.
 
-## Stripe onramp silently falls back to ETH — lock the coin
+## Stripe onramp silently falls back to ETH — and on this account it CANNOT be locked
 
 Stripe's `crypto/onramp_sessions` treats `transaction_details[destination_currency]`
 and `[destination_network]` as a *default*, not a constraint. When that coin isn't
-available in the buyer's region (e.g. XLM/Stellar is region-gated, not in NY), Stripe
-SILENTLY switches the session to its ETH-on-Ethereum default and asks for an Ethereum
-address — a member trying to buy XLM lands on an ETH purchase screen.
+available in the buyer's region, Stripe SILENTLY switches the session to its
+ETH-on-Ethereum default — a member trying to buy XLM/BTC/SOL lands on an ETH screen.
 
-**Fix:** also send single-value arrays
-`transaction_details[supported_destination_currencies][]` and
-`[supported_destination_networks][]`. These RESTRICT the allowed set (user can't
-override), so an unavailable coin produces a clean Stripe error instead of a wrong-asset
-fallback. `lock_wallet_address` alone does NOT prevent the coin swap.
+**SUPERSEDED earlier guidance:** previously this note said to send single-value
+`supported_destination_currencies[]` / `supported_destination_networks[]` arrays to
+restrict the set. That was DISPROVEN by direct API testing — see
+`stripe-onramp-cannot-lock.md`. Those arrays live behind the `crypto_onramp_beta=v2`
+entitlement, which this account does not have; sending them hard-400s the endpoint, and
+the singular fields are silently ignored (read back null, lock=false). Server-side
+coin/wallet locking is therefore IMPOSSIBLE on this account until Stripe support enables
+the v2 beta.
 
-**Why:** silent asset substitution in a buy flow is dangerous — someone could buy ETH
-thinking it's XLM. Also keep a server-side allowlist of currency:network pairs so a
-malformed payload can never reach Stripe.
+**Current resolution (the real fix shipped):** ETH is the only coin whose Stripe default
+already matches the request, so it cannot mis-deliver. The server `createOnrampSession`
+guard (`ONRAMP_LOCKABLE_CURRENCIES = {eth}`) rejects every non-ETH session as the single
+source of truth, and both UIs (`buy-crypto.tsx`, `wallet-create.tsx`) only show the
+instant Stripe button for ETH. All other coins route to external providers / swaps.
 
-**How to apply:** any change to the Stripe onramp must send the supported_* arrays in
-lockstep with the default currency/network. Stripe onramp supported coins: ETH(eth/base),
-BTC, SOL, AVAX, POL/MATIC(polygon), XLM(stellar), USDC(multi) — XRP is NOT supported
-(use the Xaman in-app buy rail instead).
+**How to apply:** do NOT reintroduce the supported_* arrays unless Stripe confirms the
+v2 beta is enabled. Keep Stripe instant buys ETH-only until then. XRP is not a Stripe
+coin at all (use the Xaman in-app buy rail).
