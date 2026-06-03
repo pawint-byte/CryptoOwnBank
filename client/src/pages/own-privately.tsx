@@ -231,7 +231,9 @@ export default function OwnPrivately() {
                 </li>
                 <li>
                   <strong>Starting from cash?</strong> Use a <strong>peer-to-peer venue</strong>{" "}
-                  below (Haveno) to buy directly from a person, straight into your wallet.
+                  below. For Monero from cash, <strong>Haveno</strong> is the direct route (the
+                  others listed are Bitcoin-first — you'd buy BTC, then swap it to Monero using a
+                  service above).
                 </li>
               </ul>
             </div>

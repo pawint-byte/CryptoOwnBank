@@ -26,3 +26,19 @@ same seed, same address, user keeps the keys).
 **How to apply:** When the chain is XRP, route to Xaman, never imply a one-tap Stripe or
 THORChain card buy. When it's an EVM coin / BTC / SOL / XLM, the one-tap Stripe button is
 real. Ground truth lives in the chain maps in the stripe-onramp and thorchain client libs.
+
+## Monero (XMR) / no-in-app-rail handoffs
+
+XMR has NO card rail and we're non-custodial, so the buy finishes on a third-party
+service (no-KYC swap or P2P), and the coin lands in the user's own wallet — never through
+us. The `/own-privately` page is the handoff target.
+
+**Lesson (from a non-technical founder getting lost):** a handoff to external services must
+lead with an ORDERED, numbered action path (get wallet → do the buy → done), not just a
+"wall of options" with honest concept copy. The confusion was thinking the downloaded
+wallet app was where you complete the purchase — the wallet is only where the coin LANDS;
+the actual buy happens on the swap/P2P service.
+
+**Accuracy trap:** among the listed P2P venues, only **Haveno** buys Monero directly from
+cash. Bisq / Hodl Hodl / RoboSats are Bitcoin-first (buy BTC, then swap to XMR). Don't
+imply any P2P venue gives Monero-from-cash directly.
