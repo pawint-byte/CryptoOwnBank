@@ -1101,15 +1101,21 @@ export default function BuyCrypto() {
     const aliases =
       SYMBOL_CHAIN_ALIASES[selectedToken] ||
       [tokenToChain[selectedToken]].filter(Boolean);
+    // USDC/ETH and the other EVM coins can only be received by a real 0x EVM
+    // address. Even though we filter by the saved network tag, a mis-tagged
+    // non-EVM address would be a funds-loss trap (an ERC-20 sent to a non-EVM
+    // address is gone), so we also verify the address format here.
+    const isEvmFamily = aliases.includes("evm");
+    const EVM_ADDR = /^0x[a-fA-F0-9]{40}$/;
     const seen = new Set<string>();
     const out: any[] = [];
     for (const alias of aliases) {
       for (const w of savedWallets) {
         const addr = (w.address || "").trim();
-        if ((w.chain || "").toLowerCase() === alias && addr && !seen.has(addr)) {
-          seen.add(addr);
-          out.push(w);
-        }
+        if ((w.chain || "").toLowerCase() !== alias || !addr || seen.has(addr)) continue;
+        if (isEvmFamily && !EVM_ADDR.test(addr)) continue;
+        seen.add(addr);
+        out.push(w);
       }
     }
     return out;
@@ -1452,7 +1458,7 @@ export default function BuyCrypto() {
         title: "Card, Apple Pay or Google Pay",
         subtitle:
           selectedToken === "USDC"
-            ? "Fast — pay through Stripe. In the Stripe window choose USDC and paste your own wallet address (if it shows ETH, that's fine too — both work as your bridge coin)."
+            ? "Fast — pay through Stripe. Heads up: on our setup this delivers ETH (a fine bridge coin), not USDC. For actual USDC on the low-fee Base network, use \"Card or bank\" or MoonPay/Transak below."
             : "Fast — pay through Stripe. You'll confirm your own wallet address in the Stripe window.",
         badge: "In-site · instant",
         inSite: true,
@@ -1866,7 +1872,14 @@ export default function BuyCrypto() {
                   USDC uses a normal Ethereum-style (EVM) address — the kind that starts with "0x". We deliver it on Base, a cheaper Ethereum-compatible network, so swapping later costs you less. Your existing ETH or MetaMask address works on Base too — just use that exact address. No wallet yet? Create one first, then come back.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
+                <div className="rounded-lg border border-blue-500/20 bg-background/60 p-3 space-y-1.5 text-xs text-muted-foreground" data-testid="block-base-vs-eth">
+                  <p className="font-medium text-foreground">Base vs Ethereum — same wallet, different fees</p>
+                  <p>Both are "EVM" networks, so they use your exact same 0x address. The only real difference is cost:</p>
+                  <p>• <strong className="text-foreground">Base</strong> — newer, very low fees (often pennies). What we recommend and default to.</p>
+                  <p>• <strong className="text-foreground">Ethereum</strong> — the original network, same security, but fees can run $1–20+ per move.</p>
+                  <p>Whatever a provider sends you — USDC or ETH, on Base or Ethereum — it lands at the same 0x address you control, and you can swap it from there. If a provider only offers Ethereum, take it; you can bridge to Base later for pennies.</p>
+                </div>
                 <Button asChild variant="outline" className="w-full gap-2" data-testid="button-create-usdc-wallet">
                   <Link href="/wallet/create">
                     <Plus className="h-4 w-4" /> Create a wallet for USDC
@@ -2255,7 +2268,7 @@ export default function BuyCrypto() {
                 </p>
                 {selectedToken === "USDC" && (
                   <p className="text-xs text-muted-foreground">
-                    In the Stripe window, pick <strong>USDC on Base</strong> (the low-fee option) and paste your own Ethereum-style (0x) wallet address — the same one works on Base. If it defaults to ETH, that's fine too — ETH works just as well as your bridge coin for the next step.
+                    Heads up: on our Stripe setup this instant card delivers <strong>ETH on the Ethereum network</strong>, not USDC — and it can't be switched in that window. ETH is a perfect bridge coin: it goes to the same 0x address and is ready to swap. If you specifically want <strong>USDC</strong>, or the cheaper <strong>Base</strong> network, go back and use "Card or bank" or MoonPay/Transak instead — those let you choose USDC and Base.
                   </p>
                 )}
               </CardContent>

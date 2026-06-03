@@ -606,9 +606,16 @@ export default function RoutePlanner() {
   // Crypto flow). Lets a member plan "use this stablecoin → swap into the target".
   const initialFrom = (() => {
     const f = new URLSearchParams(search).get("from")?.toUpperCase();
-    return f && /^[A-Z0-9]{2,10}$/.test(f) ? f : null;
+    return f && STABLE_STARTERS.includes(f) ? f : null;
   })();
   const [manualStart, setManualStart] = useState<string | null>(initialFrom);
+  // Keep the pre-checked stablecoin in sync when the member arrives via an in-app
+  // link that only changes ?from= (e.g. the Buy Crypto handoff). Manual toggles
+  // don't touch the URL, so they're preserved between query changes.
+  useEffect(() => {
+    const f = new URLSearchParams(search).get("from")?.toUpperCase();
+    setManualStart(f && STABLE_STARTERS.includes(f) ? f : null);
+  }, [search]);
 
   const { data: positions, isLoading: positionsLoading } = useQuery<any[]>({
     queryKey: ["/api/positions"],
@@ -785,6 +792,19 @@ export default function RoutePlanner() {
                 );
               })}
             </div>
+            {manualStart && !heldSymbols.includes(manualStart) && (
+              <p className="text-xs text-muted-foreground" data-testid="text-stable-not-held">
+                Don't have {manualStart} yet?{" "}
+                <Link
+                  href={`/buy-crypto?coin=${manualStart}`}
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  data-testid="link-buy-stable-first"
+                >
+                  Buy {manualStart} first
+                </Link>
+                , then come back to swap.
+              </p>
+            )}
           </div>
 
           {stableOnHand.length > 0 && stableOnHand[0].symbol !== destination && (
