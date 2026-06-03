@@ -840,6 +840,7 @@ export const tokenToChain: Record<string, string> = {
   ALGO: "algorand",
   CRO: "cronos",
   FLR: "flare",
+  XMR: "monero",
 };
 
 export const TROCADOR_NETWORK: Record<string, string> = {
@@ -895,6 +896,7 @@ export const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
   ALGO: ["algorand", "algo"],
   CRO: ["cronos", "cro"],
   FLR: ["flare", "flr"],
+  XMR: ["monero", "xmr"],
 };
 
 const walletNameToKey: Record<string, string> = {
@@ -1299,7 +1301,14 @@ export default function BuyCrypto() {
   function handleSaveAddress() {
     if (!selectedToken || !newAddress.trim()) return;
     const chain = tokenToChain[selectedToken];
-    if (!chain) return;
+    if (!chain) {
+      toast({
+        title: "Couldn't save just yet",
+        description: `We don't have ${selectedToken} set up for saving addresses yet. Please let us know and we'll add it.`,
+        variant: "destructive",
+      });
+      return;
+    }
     addWalletMutation.mutate({
       chain,
       address: newAddress.trim(),
