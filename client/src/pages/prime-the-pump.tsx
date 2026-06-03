@@ -100,6 +100,57 @@ export default function PrimeThePump() {
         </CardContent>
       </Card>
 
+      {/* Decision tree — where are you starting from? */}
+      <Card data-testid="card-decision-tree">
+        <CardHeader>
+          <CardTitle className="text-lg">Where are you starting from?</CardTitle>
+          <CardDescription>Pick the line that sounds like you — it points to the right playbook below.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2.5">
+          <div className="rounded-lg border p-3" data-testid="branch-zero">
+            <p className="font-medium text-sm">"I'm starting from zero."</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Pick one entry wallet below and buy your first coin inside it. Two easy on-ramps:{" "}
+              <span className="font-medium text-foreground">Xaman</span> (start with XRP or RLUSD) or{" "}
+              <span className="font-medium text-foreground">LOBSTR</span> (start with USDC on Stellar). Both are
+              wallets only you control — no exchange account needed.
+            </p>
+          </div>
+          <div className="rounded-lg border p-3" data-testid="branch-have-ledger">
+            <p className="font-medium text-sm">"I already hold XRP, RLUSD, or XLM."</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              You're already in play. Skip to swapping — route into EVM coins, Bitcoin, or Monero.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-branch-route-evm">
+                <Link href="/route-planner?to=ETH">
+                  <ArrowLeftRight className="h-4 w-4" /> Route into EVM / BTC
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-branch-route-xmr">
+                <Link href="/own-privately">
+                  <ArrowLeftRight className="h-4 w-4" /> Route into Monero
+                </Link>
+              </Button>
+            </div>
+          </div>
+          <div className="rounded-lg border p-3" data-testid="branch-have-usdc">
+            <p className="font-medium text-sm">"I already have USDC or ETH somewhere else."</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Perfect — those are the universal bridge coins. Send them to a wallet you control, then plug them
+              into the same routing logic to reach anything.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-branch-plug-in">
+                <Link href="/route-planner?from=USDC">
+                  <ArrowLeftRight className="h-4 w-4" /> Plan a swap from USDC
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Region-block honesty */}
       <Alert data-testid="alert-region-block">
         <AlertTriangle className="h-4 w-4" />
@@ -261,6 +312,12 @@ export default function PrimeThePump() {
               in-app buy often gets through when websites block you. Getting XLM in activates your Stellar account.
             </p>
             <p className="text-xs">
+              <span className="font-medium text-foreground">Prefer to start in dollars?</span> LOBSTR can also buy{" "}
+              <span className="font-medium text-foreground">USDC on Stellar</span> directly in-app — by card or
+              Apple/Google Pay, and in many places even with cash at a MoneyGram counter. That's a great dollar-first
+              start; just swap a little into XLM afterward to cover fees.
+            </p>
+            <p className="text-xs">
               Keep about 1–2 XLM in there for the network's small reserve, plus a little extra for each new coin you add.
             </p>
           </Step>
@@ -323,6 +380,45 @@ export default function PrimeThePump() {
             wherever it lands; no need to move it to another network first. Heads up: the card sites that sell USDC
             (MoonPay, Transak) can be region-blocked too — if that happens, use the in-app wallet buys above instead.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Route anywhere */}
+      <Card data-testid="card-route-anywhere">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ArrowLeftRight className="h-5 w-5 text-primary" />
+            From here to anywhere
+          </CardTitle>
+          <CardDescription>
+            Once you hold XRP, RLUSD, XLM, or USDC in your own wallet, that's your launchpad. Route it into whatever
+            you actually want — the planner picks the cheapest honest path, and a no-account swap (Trocador) is the
+            escape hatch for coins we can't reach in-app.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-anywhere-evm">
+              <Link href="/route-planner?to=ETH">
+                <ArrowRight className="h-4 w-4" /> EVM coins (ETH, USDC…)
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-anywhere-btc">
+              <Link href="/route-planner?to=BTC">
+                <ArrowRight className="h-4 w-4" /> Bitcoin
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-anywhere-xmr">
+              <Link href="/own-privately">
+                <ArrowRight className="h-4 w-4" /> Monero (private)
+              </Link>
+            </Button>
+            <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-anywhere-plan">
+              <Link href="/route-planner">
+                <ArrowLeftRight className="h-4 w-4" /> Plan any other coin
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

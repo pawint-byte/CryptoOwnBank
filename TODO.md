@@ -34,6 +34,21 @@
 
 ---
 
+## ✅ DONE 2026-06-03 — "Prime the Pump" starter playbook page (`/start`)
+
+New guided onboarding page (`client/src/pages/prime-the-pump.tsx`) that gets a member from zero to "in play" honestly, given the founder's USA region-blocks on web card onramps (MoonPay "not supported in your region", Transak Cloudflare-blocked). Leads with IN-APP wallet buys that bypass web geo-blocks.
+
+- **Two co-equal entry wallets** (founder's framing): Xaman = start with XRP/RLUSD on XRPL; LOBSTR = start with USDC on Stellar (in-app card / Apple-Google Pay / MoneyGram cash). Both non-custodial, no exchange account.
+- **Decision tree** ("Where are you starting from?"): zero → pick an entry wallet; already hold XRP/RLUSD/XLM → skip to swapping; already have USDC/ETH elsewhere → bring it in and route from there.
+- **Doctrine honored**: USDC is the bridge, never the finish line — swap straight into the target from wherever it lands (no bridge-to-Base detour).
+- **"From here to anywhere" routing card**: EVM (`/route-planner?to=ETH`), BTC (`?to=BTC`), Monero (`/own-privately` = Trocador no-account swap), plus open planner. Trocador = escape hatch, not front door.
+- **Region-block honesty Alert**: explains the "not supported in your region" message is the card company's rule, suggests turning off VPN + using in-app wallet buys.
+- Wired: route `/start` registered in `App.tsx` (both auth + unauth switches); sidebar "Prime the Pump (Start)" added to the EXECUTE group; service-worker `CACHE_VERSION` bumped cob-v40→v41.
+- Architect review fixed: removed `?from=XRP` from a decision-tree CTA — `/route-planner` only honors `from=USDC/USDT` (STABLE_STARTERS), so a non-stable `from` is silently ignored; the destination preset (`to=ETH`) is the truthful deep-link.
+- tsc clean; app boots; `/start` renders.
+
+---
+
 ## 📡 RADAR — Watching & To Discuss (industry intelligence) (Section added 2026-06-02)
 
 **How this works:** On demand, the agent queries Perplexity (live, sourced) on mission-aligned themes, filters out the noise, and the founder decides per item — ACT (lands here, dated, with source) or discuss-and-drop. This is NOT auto-published to members. The founder stays the editor.
