@@ -42,14 +42,18 @@ export async function createAnonpaySession(
   });
 
   const data: any = await res.json().catch(() => ({}));
-  if (!res.ok || !data?.id) {
+  // Trocador's AnonPay API returns the trade id under the capitalized key "ID"
+  // (and the status endpoint uses "Status"). Accept both casings so a 200 with a
+  // valid session isn't mistaken for a failure.
+  const id = data?.ID ?? data?.id;
+  if (!res.ok || !id) {
     const msg = data?.error || data?.message || `Trocador AnonPay error ${res.status}`;
     throw new Error(msg);
   }
 
   return {
-    id: String(data.id),
-    url: data.url || `https://trocador.app/anonpay/${data.id}`,
+    id: String(id),
+    url: data.url || `https://trocador.app/anonpay/${id}`,
   };
 }
 
@@ -66,5 +70,9 @@ export async function getAnonpayStatus(id: string): Promise<AnonpayStatus> {
   if (!res.ok) {
     throw new Error(data?.error || data?.message || `Trocador status error ${res.status}`);
   }
-  return { id, status: data?.status || "unknown" };
+  // Normalize the status VALUE to lowercase too — the client's status-label and
+  // "done" maps are keyed lowercase (e.g. "anonpaynew", "finished"), so a
+  // capitalized value from Trocador would otherwise miss and polling never stops.
+  const status = String(data?.Status || data?.status || "unknown").trim().toLowerCase();
+  return { id, status };
 }
