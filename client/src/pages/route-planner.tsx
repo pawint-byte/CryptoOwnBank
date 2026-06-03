@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import {
   Card,
   CardContent,
@@ -137,8 +137,8 @@ function buyStep(n: number, coin: string): PlanStep {
     kind: "buy",
     title: `Buy ${coin} with your card`,
     detail: `Use the card on-ramp to buy ${coin}. It lands straight in your own wallet — we never hold it.`,
-    toolLabel: "Open Buy Crypto",
-    href: TOOL.buy,
+    toolLabel: `Open Buy ${coin}`,
+    href: `${TOOL.buy}?coin=${coin}`,
     note: "Pay with a card via your choice of provider. The crypto is delivered straight to your address.",
   };
 }
@@ -289,8 +289,8 @@ function bridgeRoute(from: string, dest: string, withBuy: boolean): RouteOption 
 function cashThenSwapRoute(dest: string): RouteOption {
   return {
     id: "cash-swap",
-    rail: "Card buy → Swap Any Pair",
-    steps: [buyStep(1, "ETH"), swapAnyStep(2, "ETH", dest)],
+    rail: "Buy USDC → Swap Any Pair",
+    steps: [buyStep(1, "USDC"), swapAnyStep(2, "USDC", dest)],
     metric: {
       costMid: 5,
       costLabel: "card fee + ~1–2% swap spread",
@@ -300,8 +300,12 @@ function cashThenSwapRoute(dest: string): RouteOption {
       privacy: 1,
       speed: "minutes",
     },
-    pros: [`Reaches ${dest} even with no crypto to start`, "Lands in your own wallet"],
-    cons: ["Two steps and two sets of fees", "The swap is a taxable disposal of the ETH"],
+    pros: [
+      `Reaches ${dest} even with no crypto to start`,
+      "USDC is the easiest coin to buy, then swap from",
+      "Lands in your own wallet",
+    ],
+    cons: ["Two steps and two sets of fees", "The swap counts as a disposal of the USDC (tiny gain, since it's a stablecoin)"],
   };
 }
 
@@ -586,7 +590,12 @@ function RouteCard({
 }
 
 export default function RoutePlanner() {
-  const [destination, setDestination] = useState<string>("XMR");
+  const search = useSearch();
+  const initialDest = (() => {
+    const to = new URLSearchParams(search).get("to")?.toUpperCase();
+    return to && DESTINATIONS.some((d) => d.symbol === to) ? to : "XMR";
+  })();
+  const [destination, setDestination] = useState<string>(initialDest);
   const [amount, setAmount] = useState<string>("");
   const [address, setAddress] = useState<string>("");
   const [priority, setPriority] = useState<Priority>("balanced");

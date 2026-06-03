@@ -94,6 +94,7 @@ interface WalletOption {
 }
 
 export const tokens: TokenOption[] = [
+  { symbol: "USDC", name: "USD Coin (the bridge coin)", color: "#2775CA", featured: true },
   { symbol: "XRP", name: "XRP", color: "#23292F", featured: true },
   { symbol: "XLM", name: "Stellar Lumens", color: "#7B61FF", featured: true },
   { symbol: "ETH", name: "Ethereum", color: "#627EEA" },
@@ -115,6 +116,7 @@ export const tokens: TokenOption[] = [
 ];
 
 export const COIN_BLURB: Record<string, string> = {
+  USDC: "A dollar-pegged stablecoin — the easiest coin to buy and the best 'bridge' for swapping into almost anything else.",
   XRP: "Built for moving money across borders in seconds, with tiny fees.",
   XLM: "Stellar's coin for cheap global payments and stablecoin transfers.",
   ETH: "The leading smart-contract network — powers most DeFi and stablecoins.",
@@ -826,6 +828,7 @@ function getNextStepLink(token: string): { label: string; url: string } | null {
 }
 
 export const tokenToChain: Record<string, string> = {
+  USDC: "ethereum",
   XRP: "xrp",
   XLM: "stellar",
   ETH: "ethereum",
@@ -873,6 +876,7 @@ export const TROCADOR_DONE_STATES = new Set([
 ]);
 
 const STRIPE_BUY_BY_SYMBOL: Record<string, { currency: string; network: string }> = {
+  USDC: { currency: "usdc", network: "ethereum" },
   ETH: { currency: "eth", network: "ethereum" },
   BTC: { currency: "btc", network: "bitcoin" },
   SOL: { currency: "sol", network: "solana" },
@@ -897,6 +901,7 @@ function xamanInstallUrl(device: DeviceInfo): string {
 }
 
 export const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
+  USDC: ["usdc", "ethereum", "evm"],
   XRP: ["xrp", "ripple"],
   XLM: ["stellar", "xlm"],
   ETH: ["ethereum", "evm", "eth"],
@@ -1379,6 +1384,18 @@ export default function BuyCrypto() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Deep-link support: /buy-crypto?coin=USDC preselects a coin and jumps to the
+  // "how to pay" step. Used by the Route Planner's "Buy USDC" step and our own
+  // "Buy USDC first" buttons so the on-ramp doctrine flows end to end.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const coin = new URLSearchParams(window.location.search).get("coin")?.toUpperCase();
+    if (coin && tokens.some((t) => t.symbol === coin)) {
+      handleCoinSelect(coin);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleConnectXaman() {
     setConnectingXaman(true);
     try {
@@ -1438,11 +1455,14 @@ export default function BuyCrypto() {
     // so for any NON-ETH coin it silently defaults to ETH — a member "buying XLM"
     // would actually be buying ETH. Only offer it for ETH, where the default
     // matches; everyone else uses a rail that delivers the right coin.
-    if (selectedToken === "ETH" && STRIPE_BUY_BY_SYMBOL[selectedToken]) {
+    if ((selectedToken === "ETH" || selectedToken === "USDC") && STRIPE_BUY_BY_SYMBOL[selectedToken]) {
       list.push({
         id: "card_instant",
         title: "Card, Apple Pay or Google Pay",
-        subtitle: "Fast — pay through Stripe. You'll confirm your own wallet address in the Stripe window.",
+        subtitle:
+          selectedToken === "USDC"
+            ? "Fast — pay through Stripe. In the Stripe window choose USDC and paste your own wallet address (if it shows ETH, that's fine too — both work as your bridge coin)."
+            : "Fast — pay through Stripe. You'll confirm your own wallet address in the Stripe window.",
         badge: "In-site · instant",
         inSite: true,
         needsAddress: true,
@@ -1512,6 +1532,9 @@ export default function BuyCrypto() {
   }, [selectedToken, tokenData, swapAlt]);
 
   const selectedMethodObj = buyMethods.find((m) => m.id === selectedMethod) || null;
+  // USDC and ETH are the "bridge" entry assets you can buy directly; every other
+  // coin is best reached by buying USDC first and swapping (the on-ramp doctrine).
+  const isBridgeAsset = selectedToken === "USDC" || selectedToken === "ETH";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
@@ -1555,6 +1578,34 @@ export default function BuyCrypto() {
 
       {step === "coin" && (
         <div className="space-y-4">
+          <Card className="border-green-500/30 bg-gradient-to-br from-green-500/10 to-blue-500/5" data-testid="card-onramp-doctrine">
+            <CardContent className="pt-5">
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 rounded-full bg-green-600/15 p-2">
+                  <Coins className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="font-semibold">The simplest on-ramp: buy USDC into a wallet you control</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      USDC is a dollar-pegged coin and the easiest one to buy. Get USDC into your own wallet, and from there CryptoOwnBank helps you move it into whatever coins and chains you actually want. We never hold your funds.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button onClick={() => handleCoinSelect("USDC")} className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-onramp-buy-usdc">
+                      <Coins className="h-4 w-4" /> Buy USDC
+                    </Button>
+                    <Button asChild variant="outline" className="gap-2" data-testid="button-onramp-route">
+                      <Link href="/route-planner">
+                        <ArrowRightLeft className="h-4 w-4" /> I already own crypto — plan a swap
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {hasAnyWallets && (
             <Card className="border-green-500/20 bg-green-500/5">
               <CardContent className="pt-4">
@@ -1723,6 +1774,30 @@ export default function BuyCrypto() {
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
 
+          {!isBridgeAsset && (
+            <Card className="border-green-500/30 bg-green-500/5" data-testid="card-route-recommend">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-green-600" />
+                  Easiest way to get {selectedToken}: buy USDC, then swap
+                </CardTitle>
+                <CardDescription>
+                  {selectedToken} can be tricky to buy directly. The simplest path is to buy USDC (the bridge coin) into your own wallet, then let CryptoOwnBank route you to the best swap lane for {selectedToken}. Bring a coin you already own, or start with USDC.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2 sm:flex-row">
+                <Button asChild className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-plan-route">
+                  <Link href={`/route-planner?to=${selectedToken}`}>
+                    <ArrowRightLeft className="h-4 w-4" /> Plan my route to {selectedToken}
+                  </Link>
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={() => handleCoinSelect("USDC")} data-testid="button-switch-to-usdc">
+                  <Coins className="h-4 w-4" /> Buy USDC first
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -1788,6 +1863,27 @@ export default function BuyCrypto() {
           <Button variant="ghost" size="sm" onClick={handleBack} className="gap-1" data-testid="button-back-address">
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
+
+          {selectedToken === "USDC" && (
+            <Card className="border-blue-500/30 bg-blue-500/5" data-testid="card-usdc-address-help">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-blue-600" />
+                  Where your USDC will live
+                </CardTitle>
+                <CardDescription>
+                  USDC runs on Ethereum, so it uses a normal Ethereum (EVM) address — the kind that starts with "0x". If you already have an ETH or MetaMask address, use that exact address. No wallet yet? Create one first, then come back.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full gap-2" data-testid="button-create-usdc-wallet">
+                  <Link href="/wallet/create">
+                    <Plus className="h-4 w-4" /> Create a wallet for USDC
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {selectedToken === "XRP" && (
             <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5">
@@ -2165,6 +2261,40 @@ export default function BuyCrypto() {
                 </Button>
                 <p className="text-xs text-muted-foreground">
                   Opens Stripe in a new tab. You enter your own wallet address there, so it stays self-custodied the whole way.
+                </p>
+                {selectedToken === "USDC" && (
+                  <p className="text-xs text-muted-foreground">
+                    In the Stripe window, pick <strong>USDC</strong> and paste your own Ethereum (EVM) wallet address. If it defaults to ETH, that's fine too — ETH works just as well as your bridge coin for the next step.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedToken === "USDC" && (
+            <Card className="border-blue-500/20" data-testid="card-usdc-bank">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Banknote className="h-5 w-5 text-blue-600" />
+                  Prefer a bank transfer? (lower fees than a card)
+                </CardTitle>
+                <CardDescription>
+                  A card is instant but has the highest fee. To buy USDC by bank transfer (ACH/wire), open one of these providers and choose "Bank transfer" at checkout. The USDC lands in your own wallet — CryptoOwnBank never holds it.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <a href={buildMoonPayUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-usdc-bank-moonpay">
+                    <ExternalLink className="h-4 w-4" /> Buy USDC by bank transfer (MoonPay)
+                  </Button>
+                </a>
+                <a href={buildTransakUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-usdc-bank-transak">
+                    <ExternalLink className="h-4 w-4" /> Buy USDC by bank transfer (Transak)
+                  </Button>
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Bank transfers are cheaper but slower than a card (often 1–2 business days). Paste your own wallet address when prompted.
                 </p>
               </CardContent>
             </Card>

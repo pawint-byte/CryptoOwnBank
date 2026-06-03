@@ -1,0 +1,98 @@
+You can build a very strong on‑ramp around a small basket of stablecoins and chains, with USDC as the core. Here’s a concise ranking focused on practical use for you and your members — cost, availability, and ecosystem support.
+
+1. USDC – primary on‑ramp and bridge
+Role for CryptoOwnBank:
+Your main “buy into crypto” stablecoin and default bridge asset.
+
+Why:
+
+Widely supported by on‑ramps and off‑ramps (Stripe, Coinbase Onramp, MoonPay, Ramp, etc.).
+
+Strong regulatory posture; issued by Circle, backed by cash/Treasuries.
+
+Deep DeFi and exchange support.
+
+Best chains for USDC (in order):
+
+Base (USDC on Base) – best default for you
+
+EVM‑compatible, cheap fees, good integration with modern DeFi tooling.
+
+Plays nicely with your existing EVM/Li.Fi swap stack.
+
+Polygon (USDC.e / native USDC on Polygon)
+
+Very low fees, wide support on DEXes and bridges.
+
+Solana (USDC-SPL)
+
+Extremely fast and cheap; increasingly used for payments and remittances.
+
+Ethereum mainnet
+
+Highest liquidity, but expensive gas; treat as an advanced chain, not default.
+
+2. USDT – liquidity workhorse
+Role:
+Secondary rail for swaps where liquidity is king.
+
+Why:
+
+Largest stablecoin by market cap and trading volume.
+
+Universally listed on CEXes, DEXes, and bridges.
+
+Tradeoff:
+
+More debate around reserves and regulatory scrutiny versus USDC.
+
+Best chains:
+
+Tron USDT (TRC‑20) – extremely low fees, widely used for transfers.
+
+Ethereum USDT – highest liquidity but high fees; again, an advanced option.
+
+Use USDT as an option for experienced users and as a routing asset in swaps, but keep USDC as your primary “member‑facing” stablecoin.
+
+3. DAI – DeFi-native complement
+Role:
+Optional DeFi‑focused stablecoin for power users.
+
+Why:
+
+Over‑collateralized design and long DeFi history.
+
+Chain:
+
+Ethereum + L2 EVMs (Arbitrum, Optimism, Base, etc.) where DAI has strong on‑chain liquidity.
+
+You don’t need DAI for your core on‑ramp, but supporting it in your EVM swap tools makes sense.
+
+4. RLUSD – Ripple ecosystem stablecoin (what you hold)
+Role:
+XRPL‑native stablecoin and “house” asset inside XRP‑centric flows.
+
+Why:
+
+Ties neatly into the Ripple/XRPL ecosystem and can anchor XRPL‑based experiences as it grows.
+
+Chain:
+
+XRP Ledger (XRPL) only – that’s where it matters.
+
+Treat RLUSD as a specialist rail for XRPL (alongside XRP), not your main global on‑ramp coin.
+
+5. PYUSD – PayPal USD (optional)
+Role:
+
+Optional stablecoin if you ever integrate PayPal‑linked user flows.
+
+Why:
+
+Backed by PayPal + Paxos; used in PayPal’s own ecosystem.
+
+Chains:
+
+Ethereum and supported EVM networks.
+
+Nice‑to‑have, not essential for your basic member flow.
