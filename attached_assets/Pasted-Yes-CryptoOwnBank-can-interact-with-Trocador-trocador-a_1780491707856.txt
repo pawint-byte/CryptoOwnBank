@@ -1,0 +1,60 @@
+Yes, CryptoOwnBank can interact with Trocador (trocador.app) through an API — specifically via their AnonPay Indirect Method.
+Trocador is a privacy-focused cryptocurrency exchange aggregator (not a direct exchange). It compares rates across partner providers in real time and routes swaps without requiring users to create accounts or go through KYC on Trocador itself. It strongly emphasizes privacy (including an onion site) and lets you filter underlying providers by KYC rating.
+How the Integration Works (AnonPay Indirect Method)
+This is the main programmable interface Trocador provides. It is a lightweight, no-auth HTTP GET-based flow that returns JSON. It is designed exactly for platforms like non-custodial wallets, payment systems, or aggregators (they even have a BTCPay Server plugin and iframe examples).
+Key capabilities relevant to CryptoOwnBank:
+
+Users can swap from 1000+ supported cryptos and receive directly into their self-custody wallet (perfect for your non-custodial ethos).
+Supports XRP (and likely XLM/Stellar assets) as a receive target.
+Fixed or editable amounts, fiat equivalent display, customizable branding (colors, name, description — easy to match your Navy/Teal/Gold palette).
+Webhook support for real-time status updates in your backend.
+No API keys or authentication required.
+Transactions expire after 72 hours if not started.
+Max size ≈ 5 BTC equivalent (to help stay under KYC thresholds on partners).
+
+Basic Flow (Indirect/API Mode)
+
+Your backend (or secure frontend call) builds a URL with parameters + direct=False.
+Call the URL → Trocador returns JSON with a unique id and a url.
+You redirect the user to that url (or iframe/embed it) so they complete the swap on Trocador’s interface (they choose what to send, review rates/privacy scores, and send).
+Poll https://trocador.app/anonpay/status/<ID> or receive webhook POSTs for status updates (waiting → confirming → sending → finished, etc.).
+Funds arrive directly at the address you specified (user-controlled, non-custodial).
+
+Example URL (Indirect/API mode):
+texthttps://trocador.app/anonpay/?ticker_to=xrp&network_to=Mainnet&address=YOUR_USER_XRP_ADDRESS&amount=100&direct=False&name=CryptoOwnBank&bgcolor=0a2540&buttonbgcolor=00b4d8
+Example JSON response:
+JSON{
+  "id": "abc123xyz",
+  "url": "https://trocador.app/anonpay/status/abc123xyz"
+}
+Then check status at:
+texthttps://trocador.app/anonpay/status/abc123xyz
+They also provide a handy visual Payment Generator tool: https://trocador.app/en/anonpayurlgenerator
+Full parameter list and status codes are in the official docs: https://trocador.app/en/anonpaydocumentation
+Fit with CryptoOwnBank
+This aligns very well with your project:
+
+Non-custodial / self-sovereignty focus — Trocador never takes custody; funds go straight to the user’s wallet address you provide.
+On-ramps / swaps into XRP ecosystem — Users can bring in other cryptos and receive XRP, RLUSD, XLM, etc., directly. Great for deposits, MyOwnPOS flows, or portfolio top-ups.
+Payments / donations — You can generate payment requests where users pay in any supported coin and you receive your preferred asset.
+Privacy alignment — Both projects prioritize user control and minimal data collection.
+Branding & UX — Custom colors, descriptions, and simple_mode make it feel native inside CryptoOwnBank.
+Webhook + status polling — Easy to integrate into your backend for reliable transaction tracking.
+
+Limitations to note:
+
+Primarily directional toward a fixed ticker_to + address (payment/receive mode). For completely free-form user-driven swaps in both directions, you may want to also link out to Trocador’s main swap interface or evaluate other aggregators.
+Crypto-to-crypto only (no direct fiat on/off-ramps). The fiat_equiv parameter just shows an estimate.
+Depends on partner exchanges (Trocador is the smart router + privacy layer on top).
+
+Recommendation
+Yes — this is a strong integration candidate for CryptoOwnBank’s on-off ramp and payment features, especially while keeping everything non-custodial. It’s simple to implement (no API keys), privacy-friendly, and supports XRP.
+If you want to go deeper, I can help with:
+
+Specific URL construction for XRP/RLUSD flows
+Sample backend code (Python/FastAPI, Node, etc.)
+Webhook handling + status polling logic
+How to combine this with your existing portfolio/yield features
+Alternatives or complementary services if you need broader quote APIs or fiat ramps
+
+Would you like me to draft example integration code or a specific flow for MyOwnPOS / deposits? Just let me know your tech stack and the exact use case (e.g., “user deposits any crypto → receives XRP in
