@@ -1778,7 +1778,7 @@ export default function BuyCrypto() {
               </CardHeader>
               <CardContent className="flex flex-col gap-2 sm:flex-row">
                 <Button asChild className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-plan-route">
-                  <Link href={`/route-planner?to=${selectedToken}`}>
+                  <Link href={`/route-planner?to=${selectedToken}&from=USDC`}>
                     <ArrowRightLeft className="h-4 w-4" /> Plan my route to {selectedToken}
                   </Link>
                 </Button>
@@ -2287,6 +2287,27 @@ export default function BuyCrypto() {
                 <p className="text-xs text-muted-foreground">
                   Bank transfers are cheaper but slower than a card (often 1–2 business days). Paste your own wallet address when prompted.
                 </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedToken === "USDC" && (
+            <Card className="border-green-500/30 bg-green-500/5" data-testid="card-usdc-next-swap">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ArrowRightLeft className="h-5 w-5 text-green-600" />
+                  Got your USDC? Turn it into any coin
+                </CardTitle>
+                <CardDescription>
+                  Once your USDC lands in your own wallet, you can swap it into almost any coin or chain. CryptoOwnBank compares every lane and recommends the best one — you approve and sign each step yourself.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="gap-2 bg-green-600 hover:bg-green-700" data-testid="button-usdc-to-swap">
+                  <Link href="/route-planner?from=USDC">
+                    <ArrowRightLeft className="h-4 w-4" /> Swap my USDC into another coin
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           )}

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearch } from "wouter";
 import {
@@ -75,6 +75,9 @@ const EXTERNAL_PRIVACY = ["XMR", "ZEC"];
 // EVM coins usable by the on-chain DEX. Destination gating only ever hits the
 // grid EVM coins (ETH/MATIC/AVAX); the stables/others cover held source coins.
 const EVM_ASSETS = ["ETH", "MATIC", "AVAX", "USDC", "USDT", "DAI", "WBTC", "BNB", "ARB", "OP"];
+// Stablecoins a member can choose as the starting point for a route, even if they
+// don't hold one yet — USDC is the doctrine's universal bridge/on-ramp coin.
+const STABLE_STARTERS = ["USDC", "USDT"];
 
 const TOOL = {
   buy: "/buy-crypto",
@@ -599,6 +602,13 @@ export default function RoutePlanner() {
   const [amount, setAmount] = useState<string>("");
   const [address, setAddress] = useState<string>("");
   const [priority, setPriority] = useState<Priority>("balanced");
+  // Optional starting asset, pre-checked from ?from=USDC (handed off by the Buy
+  // Crypto flow). Lets a member plan "use this stablecoin → swap into the target".
+  const initialFrom = (() => {
+    const f = new URLSearchParams(search).get("from")?.toUpperCase();
+    return f && /^[A-Z0-9]{2,10}$/.test(f) ? f : null;
+  })();
+  const [manualStart, setManualStart] = useState<string | null>(initialFrom);
 
   const { data: positions, isLoading: positionsLoading } = useQuery<any[]>({
     queryKey: ["/api/positions"],
@@ -615,10 +625,38 @@ export default function RoutePlanner() {
     return Array.from(set);
   }, [positions]);
 
+  // Routes start from the member's tracked holdings PLUS any stablecoin they
+  // explicitly chose as a starting point.
+  const effectiveHeld = useMemo(
+    () => Array.from(new Set([...(manualStart ? [manualStart] : []), ...heldSymbols])),
+    [manualStart, heldSymbols],
+  );
+
+  // Stablecoins the member already holds, with a rough amount, so we can offer to
+  // turn that balance into the target instead of buying more.
+  const stableOnHand = useMemo(() => {
+    if (!Array.isArray(positions)) return [] as { symbol: string; amount: number }[];
+    const map = new Map<string, number>();
+    for (const p of positions) {
+      const sym = (p?.assetSymbol || p?.symbol || "").toString().toUpperCase();
+      if (!STABLE_STARTERS.includes(sym)) continue;
+      const qty = Number(p?.quantity ?? 0);
+      if (qty > 0) map.set(sym, (map.get(sym) ?? 0) + qty);
+    }
+    return Array.from(map.entries()).map(([symbol, amount]) => ({ symbol, amount }));
+  }, [positions]);
+
+  // True when the member already holds a non-stablecoin coin we can swap from, so
+  // we soften the stablecoin starter into an optional alternative rather than the lead.
+  const hasOtherAssets = useMemo(
+    () => heldSymbols.some((s) => !STABLE_STARTERS.includes(s) && s !== destination),
+    [heldSymbols, destination],
+  );
+
   const rankedRoutes = useMemo(() => {
-    const routes = generateRoutes(destination, heldSymbols, address.trim());
+    const routes = generateRoutes(destination, effectiveHeld, address.trim());
     return [...routes].sort((a, b) => scoreRoute(b.metric, priority) - scoreRoute(a.metric, priority));
-  }, [destination, heldSymbols, address, priority]);
+  }, [destination, effectiveHeld, address, priority]);
 
   const amountNum = useMemo(() => {
     const n = parseFloat(amount);
@@ -719,7 +757,56 @@ export default function RoutePlanner() {
             We start your route from these where possible, so you skip unnecessary steps and fees.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="space-y-2 rounded-lg border p-3" data-testid="block-stable-starter">
+            <p className="text-sm font-medium">
+              {hasOtherAssets ? "Or start fresh from a stablecoin" : "Start from a stablecoin"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {hasOtherAssets
+                ? `You already hold coins we can swap from (shown below) — those drive your route by default. Prefer not to touch them? Start fresh from a stablecoin instead, and we'll plan "use this stablecoin, then swap into ${destination}."`
+                : `USDC is the easiest coin to buy. Pick one to plan your route as "use this stablecoin, then swap into ${destination}." We'll start from it even if you're buying it fresh.`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {STABLE_STARTERS.map((s) => {
+                const active = manualStart === s;
+                return (
+                  <Button
+                    key={s}
+                    type="button"
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    onClick={() => setManualStart(active ? null : s)}
+                    className="gap-1"
+                    data-testid={`button-start-${s}`}
+                  >
+                    <Coins className="h-3.5 w-3.5" /> {s}{active ? " ✓" : ""}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {stableOnHand.length > 0 && stableOnHand[0].symbol !== destination && (
+            <Alert data-testid="alert-stable-holding">
+              <Coins className="h-4 w-4" />
+              <AlertTitle>You're already holding a stablecoin</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  You have about {stableOnHand[0].amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {stableOnHand[0].symbol}. Want to turn it into {destination}? We'll start your route from it — no need to buy more.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setManualStart(stableOnHand[0].symbol)}
+                  data-testid="button-use-stable-holding"
+                >
+                  Use my {stableOnHand[0].symbol} to get {destination}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {positionsLoading ? (
             <p className="text-sm text-muted-foreground" data-testid="text-holdings-loading">
               Checking your holdings…
