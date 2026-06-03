@@ -110,7 +110,13 @@ address step entirely. Never put LOBSTR in `walletsByToken[USDC]` either — sav
 address under the EVM USDC chain is the same trap.
 
 **How to apply:** new in-app wallet rails go in `WALLET_APP_META` + `EXTERNAL_ONRAMP_BY_CHAIN`
-(keyed by lowercased symbol, `kind:"buy"`). The lead-sort promotes wallet_app whenever the
-coin has any wallet-app buy (covers XRP/XLM/USDC). Honest copy only: guide up to the wallet's
-own Buy screen, never imply funds pass through us. Verified end-to-end (USDC→LOBSTR skips
-address step, no 0x shown; XRP→Xaman unchanged).
+(keyed by lowercased **symbol**, not chain — `rlusd`/`xrp`/`xlm`/`usdc` are symbol keys despite
+the `_BY_CHAIN` name; `kind:"buy"`). RLUSD = XRPL → Xaman (tokenToChain[RLUSD]="xrp", lands in
+shown XRPL r-address). Honest copy only: guide up to the wallet's own Buy screen, never imply
+funds pass through us.
+
+**Auto-select default (founder ask "it should launch Xaman/LOBSTR"):** picking a coin that has
+a wallet-app buy now auto-selects the `wallet_app` method and jumps straight to its launch
+screen — both in `handleCoinSelect` and the `?coin=` deep-link effect. `landsInShownAddress`
+true → go to `destination` step first (confirm the address the coin lands in); false (LOBSTR)
+→ straight to `checkout`. Don't revert this to the generic method list for these coins.

@@ -63,6 +63,22 @@ export const EXTERNAL_ONRAMP_BY_CHAIN: Record<string, ExternalOnrampOption[]> = 
       kind: "swap",
     },
   ],
+  rlusd: [
+    {
+      provider: "xaman",
+      label: "Buy RLUSD in Xaman",
+      url: "https://xaman.app/",
+      note: "Import this seed into Xaman. Inside Xaman you can buy XRP by card, then swap it to RLUSD on the built-in XRPL DEX — it all lands in this exact address.",
+      kind: "buy",
+    },
+    {
+      provider: "sologenic",
+      label: "Swap to RLUSD on Sologenic DEX",
+      url: "https://sologenic.org/trade",
+      note: "On-chain XRPL DEX — handy if you already hold XRP or other IOUs on the XRP Ledger and want to swap into RLUSD.",
+      kind: "swap",
+    },
+  ],
   xlm: [
     {
       provider: "lobstr",

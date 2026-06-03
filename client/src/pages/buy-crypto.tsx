@@ -96,6 +96,7 @@ interface WalletOption {
 export const tokens: TokenOption[] = [
   { symbol: "USDC", name: "USD Coin (the bridge coin)", color: "#2775CA", featured: true },
   { symbol: "XRP", name: "XRP", color: "#23292F", featured: true },
+  { symbol: "RLUSD", name: "Ripple USD (XRPL stablecoin)", color: "#0A2540", featured: true },
   { symbol: "XLM", name: "Stellar Lumens", color: "#7B61FF", featured: true },
   { symbol: "ETH", name: "Ethereum", color: "#627EEA" },
   { symbol: "BTC", name: "Bitcoin", color: "#F7931A" },
@@ -118,6 +119,7 @@ export const tokens: TokenOption[] = [
 export const COIN_BLURB: Record<string, string> = {
   USDC: "A dollar-pegged stablecoin — the easiest coin to buy and the best 'bridge' for swapping into almost anything else.",
   XRP: "Built for moving money across borders in seconds, with tiny fees.",
+  RLUSD: "Ripple's dollar-pegged stablecoin on the XRP Ledger — held and traded in your Xaman wallet.",
   XLM: "Stellar's coin for cheap global payments and stablecoin transfers.",
   ETH: "The leading smart-contract network — powers most DeFi and stablecoins.",
   BTC: "The original cryptocurrency and the most widely held store of value.",
@@ -867,6 +869,7 @@ function getNextStepLink(token: string): { label: string; url: string } | null {
 export const tokenToChain: Record<string, string> = {
   USDC: "ethereum",
   XRP: "xrp",
+  RLUSD: "xrp",
   XLM: "stellar",
   ETH: "ethereum",
   BTC: "bitcoin",
@@ -1125,6 +1128,15 @@ export default function BuyCrypto() {
   useEffect(() => {
     const coin = new URLSearchParams(window.location.search).get("coin")?.toUpperCase();
     if (coin && tokens.some((t) => t.symbol === coin)) {
+      const walletAppBuys = getWalletAppBuysForChain(coin.toLowerCase());
+      if (walletAppBuys.length > 0) {
+        const meta = WALLET_APP_META[walletAppBuys[0].provider];
+        const landsSame = meta?.landsInShownAddress ?? false;
+        setSelectedToken(coin);
+        setSelectedMethod("wallet_app");
+        setStep(landsSame ? "destination" : "checkout");
+        return;
+      }
       setSelectedToken(coin);
       setStep("method");
     }
@@ -1373,10 +1385,21 @@ export default function BuyCrypto() {
 
   function handleCoinSelect(symbol: string) {
     setSelectedToken(symbol);
-    setSelectedMethod(null);
     setNewAddress("");
     setNewLabel("");
     resetTrocadorSession();
+    // If this coin can be bought right inside its wallet app (Xaman for
+    // XRP/RLUSD, LOBSTR for XLM/USDC), jump straight to that launch screen —
+    // it's the most reliable rail and the one members ask for by name.
+    const walletAppBuys = getWalletAppBuysForChain(symbol.toLowerCase());
+    if (walletAppBuys.length > 0) {
+      const meta = WALLET_APP_META[walletAppBuys[0].provider];
+      const landsSame = meta?.landsInShownAddress ?? false;
+      setSelectedMethod("wallet_app");
+      setStep(landsSame ? "destination" : "checkout");
+      return;
+    }
+    setSelectedMethod(null);
     setStep("method");
   }
 
