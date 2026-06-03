@@ -1240,7 +1240,7 @@ export default function BuyCrypto() {
           subtitle: "Monero can't be bought with a card here — we'll point you to trusted private routes.",
           badge: "Private",
           inSite: false,
-          needsAddress: false,
+          needsAddress: true,
         },
       ];
     }
@@ -1278,7 +1278,7 @@ export default function BuyCrypto() {
         subtitle: swapAlt.message,
         badge: "No card needed",
         inSite: true,
-        needsAddress: false,
+        needsAddress: true,
       });
     }
     list.push({
@@ -1287,7 +1287,7 @@ export default function BuyCrypto() {
       subtitle: "Buy from a real person — no exchange account needed.",
       badge: "Other ways",
       inSite: false,
-      needsAddress: false,
+      needsAddress: true,
     });
     return list;
   }, [selectedToken, tokenData, swapAlt]);
@@ -1792,16 +1792,6 @@ export default function BuyCrypto() {
                   </Button>
                 </div>
 
-                <div className="border-t pt-3">
-                  <Button
-                    variant="ghost"
-                    className="w-full text-muted-foreground"
-                    onClick={() => setStep("checkout")}
-                    data-testid="button-skip-address"
-                  >
-                    Skip for now — I'll enter my address at checkout
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           ) : (
@@ -1820,11 +1810,12 @@ export default function BuyCrypto() {
                     data-testid="input-wallet-address"
                   />
                   <p className="text-xs text-muted-foreground">
-                    We'll fill it in for you at checkout — it's only kept on this device for now, not saved to an account.
+                    Kept on this device for this purchase — sign in to save it so it's there for every future buy.
                   </p>
                 </div>
                 <Button
                   className="w-full"
+                  disabled={!newAddress.trim()}
                   onClick={() => setStep("checkout")}
                   data-testid="button-continue-no-auth"
                 >
