@@ -42,6 +42,8 @@ export interface ExternalOnrampOption {
   label: string;
   url: string;
   note: string;
+  // "buy" = an in-app card/fiat buy rail; "swap" = a DEX/swap venue.
+  kind: "buy" | "swap";
 }
 
 export const EXTERNAL_ONRAMP_BY_CHAIN: Record<string, ExternalOnrampOption[]> = {
@@ -51,18 +53,24 @@ export const EXTERNAL_ONRAMP_BY_CHAIN: Record<string, ExternalOnrampOption[]> = 
       label: "Buy XRP in Xaman",
       url: "https://xaman.app/",
       note: "Import this seed into Xaman, then tap Buy. The card-bought XRP lands in this exact address.",
+      kind: "buy",
     },
     {
       provider: "sologenic",
       label: "Swap on Sologenic DEX",
       url: "https://sologenic.org/trade",
       note: "On-chain XRPL DEX — useful if you already hold IOUs or USD-pegged stablecoins on XRPL.",
+      kind: "swap",
     },
   ],
 };
 
 export function getExternalOnrampsForChain(chain: string): ExternalOnrampOption[] {
   return EXTERNAL_ONRAMP_BY_CHAIN[chain] || [];
+}
+
+export function getWalletAppBuysForChain(chain: string): ExternalOnrampOption[] {
+  return getExternalOnrampsForChain(chain).filter((o) => o.kind === "buy");
 }
 
 export function chainHasAnyOnramp(chain: string): boolean {

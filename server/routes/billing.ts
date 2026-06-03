@@ -8,7 +8,7 @@ import { insertTransactionSchema, insertApiCredentialSchema, userSettings as use
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "../stripe";
 import { handleStripeWebhookEvent } from "../stripe-webhook";
-import { createOnrampSession, isValidAddressForNetwork } from "../stripe-onramp";
+import { createOnrampSession, isValidAddressForNetwork, isSupportedOnrampPair } from "../stripe-onramp";
 import { createAnonpaySession, getAnonpayStatus } from "../trocador";
 import { getSwapQuote as getThorSwapQuote, getInboundAddresses as getThorInboundAddresses, getSwapStatus as getThorSwapStatus } from "../thorchain";
 import { sendFeedbackNotification, sendPriceAlertEmail, sendReEngagementEmail, sendInactivityReminderEmail, sendDexTradeConfirmation, sendDepositConfirmation, sendWithdrawalConfirmation, sendFeatureAnnouncementEmail, sendSecondaryContactVerification, sendBeneficiaryConfirmation, sendBeneficiaryHeartbeat, sendBeneficiaryFeedbackToOwner, sendEmail, escapeHtml } from "../email";
@@ -137,6 +137,9 @@ export function registerBillingRoutes(app: Express) {
       }
       if (!destinationNetwork || typeof destinationNetwork !== "string") {
         return res.status(400).json({ message: "destinationNetwork is required" });
+      }
+      if (!isSupportedOnrampPair(destinationCurrency, destinationNetwork)) {
+        return res.status(400).json({ message: `${String(destinationCurrency).toUpperCase()} on ${destinationNetwork} isn't supported by the card on-ramp` });
       }
       if (!isValidAddressForNetwork(walletAddress.trim(), destinationNetwork)) {
         return res.status(400).json({ message: `Invalid ${destinationNetwork} wallet address format` });

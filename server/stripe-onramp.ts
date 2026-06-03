@@ -16,6 +16,32 @@ export function isValidAddressForNetwork(address: string, network: string): bool
   return pattern.test(address);
 }
 
+// Currency+network pairs Stripe's crypto onramp can actually fulfil. Any pair
+// outside this set is rejected up front so a malformed payload can never reach
+// Stripe and trigger a silent fallback to a different asset.
+const SUPPORTED_ONRAMP_PAIRS = new Set<string>([
+  "eth:ethereum",
+  "eth:base",
+  "usdc:ethereum",
+  "usdc:base",
+  "usdc:polygon",
+  "usdc:avalanche",
+  "usdc:solana",
+  "usdc:stellar",
+  "btc:bitcoin",
+  "sol:solana",
+  "pol:polygon",
+  "matic:polygon",
+  "avax:avalanche",
+  "xlm:stellar",
+]);
+
+export function isSupportedOnrampPair(currency: string, network: string): boolean {
+  return SUPPORTED_ONRAMP_PAIRS.has(
+    `${currency.toLowerCase()}:${network.toLowerCase()}`,
+  );
+}
+
 export interface CreateOnrampSessionInput {
   walletAddress: string;
   destinationCurrency: string;
@@ -47,6 +73,18 @@ export async function createOnrampSession(
   );
   params.append(
     "transaction_details[destination_network]",
+    input.destinationNetwork.toLowerCase(),
+  );
+  // Lock the session to exactly this coin + network. Without these, Stripe
+  // treats destination_currency/network as a mere default and silently falls
+  // back to ETH on Ethereum when the chosen coin isn't available in the user's
+  // region — which would let someone buy ETH while thinking they bought XLM.
+  params.append(
+    "transaction_details[supported_destination_currencies][]",
+    input.destinationCurrency.toLowerCase(),
+  );
+  params.append(
+    "transaction_details[supported_destination_networks][]",
     input.destinationNetwork.toLowerCase(),
   );
   params.append(

@@ -42,7 +42,7 @@ import {
   Banknote,
   Coins,
 } from "lucide-react";
-import { createOnrampSessionAndRedirect } from "@/lib/stripe-onramp";
+import { createOnrampSessionAndRedirect, getWalletAppBuysForChain } from "@/lib/stripe-onramp";
 
 type Step = "coin" | "method" | "destination" | "checkout";
 
@@ -50,6 +50,7 @@ type MethodId =
   | "card_instant"
   | "card_widget"
   | "card_external"
+  | "wallet_app"
   | "aggregator"
   | "swap"
   | "p2p"
@@ -1367,6 +1368,16 @@ export default function BuyCrypto() {
       inSite: true,
       needsAddress: true,
     });
+    if (getWalletAppBuysForChain((selectedToken || "").toLowerCase()).length > 0) {
+      list.push({
+        id: "wallet_app",
+        title: `Buy ${selectedToken} inside your wallet app`,
+        subtitle: `Open Xaman, tap Buy, and pay by card. This often works even when a website says "not supported in your region" — and the ${selectedToken} lands in this same address.`,
+        badge: "Most reliable for XRP",
+        inSite: false,
+        needsAddress: true,
+      });
+    }
     list.push({
       id: "card_external",
       title: "MoonPay or Transak",
@@ -1644,6 +1655,7 @@ export default function BuyCrypto() {
                 >
                   <div className="mt-0.5 shrink-0 text-green-600">
                     {(m.id === "card_instant" || m.id === "card_widget") && <CreditCard className="h-5 w-5" />}
+                    {m.id === "wallet_app" && <Smartphone className="h-5 w-5" />}
                     {m.id === "card_external" && <Banknote className="h-5 w-5" />}
                     {m.id === "aggregator" && <Repeat className="h-5 w-5" />}
                     {m.id === "swap" && <ArrowRightLeft className="h-5 w-5" />}
@@ -2107,6 +2119,51 @@ export default function BuyCrypto() {
                     <ExternalLink className="h-4 w-4" /> Buy {selectedToken} via Transak
                   </Button>
                 </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedMethod === "wallet_app" && (
+            <Card className="border-green-500/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-green-600" />
+                  Buy {selectedToken} inside your wallet app
+                </CardTitle>
+                <CardDescription>
+                  Some card providers block {selectedToken} on the web in certain countries, but the same provider often works inside the wallet app. Install the app, import or open this wallet, then tap Buy.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {effectiveAddress && (
+                  <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+                    <p className="text-muted-foreground mb-1">Your {selectedToken} lands here — your own wallet:</p>
+                    <p className="font-mono break-all" data-testid="text-walletapp-address">{effectiveAddress}</p>
+                  </div>
+                )}
+                <ol className="list-decimal pl-5 text-sm text-muted-foreground space-y-1">
+                  <li>Install the wallet app and open (or import) this same wallet.</li>
+                  <li>Tap <strong>Buy</strong> inside the app and pay by card, Apple Pay or Google Pay.</li>
+                  <li>The {selectedToken} arrives in the address above — CryptoOwnBank never touches it.</li>
+                </ol>
+                {getWalletAppBuysForChain((selectedToken || "").toLowerCase()).map((opt) => (
+                  <a
+                    key={opt.provider}
+                    href={opt.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button
+                      variant={opt.provider === "xaman" ? "default" : "outline"}
+                      className={`w-full gap-2 ${opt.provider === "xaman" ? "bg-green-600 hover:bg-green-700" : ""}`}
+                      data-testid={`button-walletapp-${opt.provider}`}
+                    >
+                      <ExternalLink className="h-4 w-4" /> {opt.label}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1 mb-1">{opt.note}</p>
+                  </a>
+                ))}
               </CardContent>
             </Card>
           )}

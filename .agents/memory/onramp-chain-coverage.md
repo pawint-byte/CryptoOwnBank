@@ -65,3 +65,26 @@ send-coin **deposit address + memo** on the next page, and you paste THOSE into 
 (e.g. Uphold → Send / Withdraw crypto → To a crypto address + Destination Tag). Always
 state both directions explicitly: your-XMR-addr → into swap site; their deposit-addr+memo →
 into Uphold's send screen.
+
+## Stripe onramp silently falls back to ETH — lock the coin
+
+Stripe's `crypto/onramp_sessions` treats `transaction_details[destination_currency]`
+and `[destination_network]` as a *default*, not a constraint. When that coin isn't
+available in the buyer's region (e.g. XLM/Stellar is region-gated, not in NY), Stripe
+SILENTLY switches the session to its ETH-on-Ethereum default and asks for an Ethereum
+address — a member trying to buy XLM lands on an ETH purchase screen.
+
+**Fix:** also send single-value arrays
+`transaction_details[supported_destination_currencies][]` and
+`[supported_destination_networks][]`. These RESTRICT the allowed set (user can't
+override), so an unavailable coin produces a clean Stripe error instead of a wrong-asset
+fallback. `lock_wallet_address` alone does NOT prevent the coin swap.
+
+**Why:** silent asset substitution in a buy flow is dangerous — someone could buy ETH
+thinking it's XLM. Also keep a server-side allowlist of currency:network pairs so a
+malformed payload can never reach Stripe.
+
+**How to apply:** any change to the Stripe onramp must send the supported_* arrays in
+lockstep with the default currency/network. Stripe onramp supported coins: ETH(eth/base),
+BTC, SOL, AVAX, POL/MATIC(polygon), XLM(stellar), USDC(multi) — XRP is NOT supported
+(use the Xaman in-app buy rail instead).
