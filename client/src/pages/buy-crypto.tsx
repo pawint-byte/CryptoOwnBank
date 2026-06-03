@@ -64,7 +64,7 @@ interface BuyMethod {
   needsAddress: boolean;
 }
 
-interface TokenOption {
+export interface TokenOption {
   symbol: string;
   name: string;
   color: string;
@@ -90,7 +90,7 @@ interface WalletOption {
   steps: string[];
 }
 
-const tokens: TokenOption[] = [
+export const tokens: TokenOption[] = [
   { symbol: "XRP", name: "XRP", color: "#23292F", featured: true },
   { symbol: "XLM", name: "Stellar Lumens", color: "#7B61FF", featured: true },
   { symbol: "ETH", name: "Ethereum", color: "#627EEA" },
@@ -111,7 +111,7 @@ const tokens: TokenOption[] = [
   { symbol: "XMR", name: "Monero", color: "#FF6600", privacyRoute: true },
 ];
 
-const COIN_BLURB: Record<string, string> = {
+export const COIN_BLURB: Record<string, string> = {
   XRP: "Built for moving money across borders in seconds, with tiny fees.",
   XLM: "Stellar's coin for cheap global payments and stablecoin transfers.",
   ETH: "The leading smart-contract network — powers most DeFi and stablecoins.",
@@ -152,7 +152,7 @@ function buildTransakUrl(params: { token: string; address?: string }) {
   return url;
 }
 
-function buildTrocadorUrl(params: { token: string }) {
+export function buildTrocadorUrl(params: { token: string }) {
   return `https://trocador.app/en/?ticker_to=${params.token.toLowerCase()}&network_to=Mainnet`;
 }
 
@@ -822,7 +822,7 @@ function getNextStepLink(token: string): { label: string; url: string } | null {
   }
 }
 
-const tokenToChain: Record<string, string> = {
+export const tokenToChain: Record<string, string> = {
   XRP: "xrp",
   XLM: "stellar",
   ETH: "ethereum",
@@ -842,11 +842,11 @@ const tokenToChain: Record<string, string> = {
   FLR: "flare",
 };
 
-const TROCADOR_NETWORK: Record<string, string> = {
+export const TROCADOR_NETWORK: Record<string, string> = {
   MATIC: "Polygon",
 };
 
-const TROCADOR_STATUS_LABEL: Record<string, string> = {
+export const TROCADOR_STATUS_LABEL: Record<string, string> = {
   anonpaynew: "Pick the coin you'll send on Trocador",
   waiting: "Waiting for your deposit…",
   confirming: "Deposit seen — confirming on-chain…",
@@ -859,7 +859,7 @@ const TROCADOR_STATUS_LABEL: Record<string, string> = {
   refunded: "Refunded by the provider",
 };
 
-const TROCADOR_DONE_STATES = new Set([
+export const TROCADOR_DONE_STATES = new Set([
   "finished",
   "expired",
   "failed",
@@ -877,7 +877,7 @@ const STRIPE_BUY_BY_SYMBOL: Record<string, { currency: string; network: string }
   MATIC: { currency: "pol", network: "polygon" },
 };
 
-const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
+export const SYMBOL_CHAIN_ALIASES: Record<string, string[]> = {
   XRP: ["xrp", "ripple"],
   XLM: ["stellar", "xlm"],
   ETH: ["ethereum", "evm", "eth"],
