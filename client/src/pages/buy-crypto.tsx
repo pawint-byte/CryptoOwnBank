@@ -4,6 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SeoHead } from "@/components/seo-head";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -893,6 +900,41 @@ export const TROCADOR_NETWORK: Record<string, string> = {
   MATIC: "Polygon",
 };
 
+// Friendly, human-readable name for the network the destination coin arrives on,
+// shown so members can confirm the NETWORK, not just the coin.
+// Only list coins whose receiving network is unambiguous and matches the
+// networkTo we actually send to Trocador (their native chain, or Polygon for
+// MATIC). Multi-network / token assets (e.g. USDC, USDT, RLUSD) are deliberately
+// omitted so we never assert a network we can't guarantee — the UI falls back to
+// "check the network Trocador shows you" for those.
+export const DEST_NETWORK_LABEL: Record<string, string> = {
+  XMR: "Monero",
+  BTC: "Bitcoin",
+  ETH: "Ethereum",
+  LTC: "Litecoin",
+  SOL: "Solana",
+  XRP: "XRP Ledger",
+  XLM: "Stellar",
+  DOGE: "Dogecoin",
+  BCH: "Bitcoin Cash",
+  MATIC: "Polygon",
+};
+
+// Coins a member is most likely to already own and swap FROM into a privacy coin.
+// We only preselect the coin (ticker) on Trocador — the member still confirms the
+// network and amount there, so this is a convenience hint, never a lock.
+export const SWAP_FROM_COINS: { ticker: string; label: string }[] = [
+  { ticker: "BTC", label: "Bitcoin (BTC)" },
+  { ticker: "ETH", label: "Ethereum (ETH)" },
+  { ticker: "USDT", label: "Tether (USDT)" },
+  { ticker: "USDC", label: "USD Coin (USDC)" },
+  { ticker: "LTC", label: "Litecoin (LTC)" },
+  { ticker: "SOL", label: "Solana (SOL)" },
+  { ticker: "BNB", label: "BNB" },
+  { ticker: "XRP", label: "XRP" },
+  { ticker: "DOGE", label: "Dogecoin (DOGE)" },
+];
+
 export const TROCADOR_STATUS_LABEL: Record<string, string> = {
   anonpaynew: "Pick the coin you'll send on Trocador",
   waiting: "Waiting for your deposit…",
@@ -1285,9 +1327,10 @@ export default function BuyCrypto() {
   const [trocadorSessionUrl, setTrocadorSessionUrl] = useState<string | null>(null);
   const [trocadorSessionId, setTrocadorSessionId] = useState<string | null>(null);
   const [trocadorSessionAddress, setTrocadorSessionAddress] = useState<string | null>(null);
+  const [trocadorFromCoin, setTrocadorFromCoin] = useState<string>("");
 
   const startTrocadorMutation = useMutation({
-    mutationFn: async (vars: { tickerTo: string; networkTo: string; address: string }) => {
+    mutationFn: async (vars: { tickerTo: string; networkTo: string; address: string; tickerFrom?: string }) => {
       const res = await apiRequest("POST", "/api/trocador/anonpay-session", vars);
       return (await res.json()) as { id: string; url: string };
     },
@@ -1328,6 +1371,7 @@ export default function BuyCrypto() {
       tickerTo: selectedToken!,
       networkTo: TROCADOR_NETWORK[selectedToken!] || "Mainnet",
       address: effectiveAddress,
+      tickerFrom: trocadorFromCoin || undefined,
     });
   }
 
@@ -1518,6 +1562,9 @@ export default function BuyCrypto() {
   // otherwise a one-time address the member pasted in this session (so logged-out
   // members can still use Stripe / providers without an account).
   const effectiveAddress = changellyWalletAddress || newAddress.trim();
+  const aggregatorDestNetwork = selectedToken
+    ? DEST_NETWORK_LABEL[selectedToken] || ""
+    : "";
 
   // Only treat an in-site Trocador session as live if it was created for the
   // address currently on screen. If the member changed their destination after
@@ -2617,13 +2664,53 @@ export default function BuyCrypto() {
               <CardContent className="space-y-3">
                 {effectiveAddress && (
                   <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-                    <p className="text-muted-foreground mb-1">Your {selectedToken} lands here — your own wallet:</p>
+                    <p className="text-muted-foreground mb-1">
+                      Your {selectedToken} lands here — your own wallet
+                      {aggregatorDestNetwork ? (
+                        <> on the <span className="font-medium text-foreground">{aggregatorDestNetwork}</span> network</>
+                      ) : (
+                        <> (make sure this address is for the network Trocador shows you)</>
+                      )}:
+                    </p>
                     <p className="font-mono break-all" data-testid="text-aggregator-address">{effectiveAddress}</p>
                   </div>
                 )}
 
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm flex items-start gap-2" data-testid="warn-trocador-network">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-medium">Check the network, not just the coin.</p>
+                    <p className="text-muted-foreground">
+                      Many coins live on more than one network — for example USDC and USDT exist on Ethereum, Polygon, Solana and others. When Trocador shows you where to send the coin you're paying with, send it on the <span className="font-medium text-foreground">exact network Trocador asks for</span>. Sending on the wrong network can lose the coins for good, and no one can reverse it.
+                    </p>
+                    <p className="text-muted-foreground">
+                      Your {selectedToken} receiving address above is pre-filled for you on Trocador, so the part to double-check is the coin <span className="font-medium text-foreground">and its network</span> that you send.
+                    </p>
+                  </div>
+                </div>
+
                 {!trocadorSessionValid && (
                   <>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium" htmlFor="trocador-from-coin">
+                        Which coin are you paying with?
+                      </label>
+                      <Select value={trocadorFromCoin} onValueChange={setTrocadorFromCoin}>
+                        <SelectTrigger id="trocador-from-coin" data-testid="select-trocador-from">
+                          <SelectValue placeholder="Let me choose on Trocador" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SWAP_FROM_COINS.filter((c) => c.ticker !== selectedToken).map((c) => (
+                            <SelectItem key={c.ticker} value={c.ticker} data-testid={`option-from-${c.ticker}`}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        We'll preselect this on Trocador to save you a step — you can still change the coin, network, and amount there before you send.
+                      </p>
+                    </div>
                     <Button
                       className="w-full gap-2 bg-green-600 hover:bg-green-700"
                       onClick={handleStartTrocador}
