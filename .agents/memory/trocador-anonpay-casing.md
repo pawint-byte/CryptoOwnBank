@@ -20,19 +20,17 @@ two very different behaviors depending on `simple_mode`:
 There is **no API key** for Trocador's authenticated trade API (only an optional
 `TROCADOR_REF`).
 
-## Two real bugs that bit us (in order of discovery)
+## Non-obvious traps
 
-1. **The casing red herring.** First theory was "read `ID` not `id`". True but
-   insufficient — it didn't explain why members still failed after deploy.
-2. **The iframe trap (the actual member-facing bug).** The session URL was put in
-   an in-page `<iframe>`. Both the widget page AND the clean session page refuse
-   to be framed (`X-Frame-Options: DENY`), so the swap "just sits there" / blank.
-   **Fix: always open the session URL in a NEW TAB, never an iframe.**
-3. **XMR was unreachable in-app.** Monero has `privacyRoute: true` in the buy
-   flow, which short-circuited its method list to ONLY a "buy privately" links
-   directory — the in-app pre-filled Trocador swap was never exposed for the one
-   coin people most want it for. Fix: also expose the `aggregator` (Trocador swap)
-   method for privacy-route coins.
+- **Never iframe the session URL.** Both the widget page and the clean session
+  page set `X-Frame-Options: DENY`, so an embedded swap renders blank ("just sits
+  there"). Always open in a NEW TAB.
+- **Casing is a red herring on its own.** Reading `ID` vs `id` is necessary but
+  does NOT fix the blank-swap symptom — the iframe does.
+- **`privacyRoute` coins (e.g. XMR) hide the in-app swap.** That flag limits a
+  coin's method list to a "buy privately" links directory, so the pre-filled
+  Trocador swap is never exposed for the coin people most want it for. Expose the
+  `aggregator` method for privacy-route coins too.
 
 ## Correct integration (current)
 
