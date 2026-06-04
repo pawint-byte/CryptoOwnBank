@@ -37,24 +37,16 @@ export async function createAnonpaySession(
 
   params.set("direct", "False");
 
-  const res = await fetch(`${ANONPAY_API}?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-  });
-
-  const data: any = await res.json().catch(() => ({}));
-  // Trocador's AnonPay API returns the trade id under the capitalized key "ID"
-  // (and the status endpoint uses "Status"). Accept both casings so a 200 with a
-  // valid session isn't mistaken for a failure.
-  const id = data?.ID ?? data?.id;
-  if (!res.ok || !id) {
-    const msg = data?.error || data?.message || `Trocador AnonPay error ${res.status}`;
-    throw new Error(msg);
-  }
-
-  return {
-    id: String(id),
-    url: data.url || `https://trocador.app/anonpay/${id}`,
-  };
+  // AnonPay is a HOSTED widget page, not a JSON API: it 302-redirects to the
+  // localized page and serves it with `X-Frame-Options: DENY`, and there is no
+  // API key for Trocador's authenticated trade API. Fetching this URL
+  // server-side used to follow the redirect to the HTML page and then fail JSON
+  // parsing, which surfaced to members as a bogus "AnonPay error 200". So we
+  // simply build the pre-filled AnonPay URL and let the member open it in a new
+  // tab — the swap completes on Trocador's own secure page, still non-custodial,
+  // with their receiving address already filled in.
+  const url = `${ANONPAY_API}?${params.toString()}`;
+  return { id: "", url };
 }
 
 export interface AnonpayStatus {

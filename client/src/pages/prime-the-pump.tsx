@@ -112,8 +112,10 @@ export default function PrimeThePump() {
             <p className="text-xs text-muted-foreground mt-0.5">
               Pick one entry wallet below and buy your first coin inside it. Two easy on-ramps:{" "}
               <span className="font-medium text-foreground">Xaman</span> (start with XRP or RLUSD) or{" "}
-              <span className="font-medium text-foreground">LOBSTR</span> (start with USDC on Stellar). Both are
-              wallets only you control — no exchange account needed.
+              <span className="font-medium text-foreground">LOBSTR</span> (start with XLM on Stellar). Both are
+              wallets only you control — no exchange account needed. Prefer to start in dollars? Buy{" "}
+              <span className="font-medium text-foreground">USDC</span> with MoonPay or Transak (reliable across
+              the U.S.) into your own wallet, then swap.
             </p>
           </div>
           <div className="rounded-lg border p-3" data-testid="branch-have-ledger">
@@ -312,10 +314,11 @@ export default function PrimeThePump() {
               in-app buy often gets through when websites block you. Getting XLM in activates your Stellar account.
             </p>
             <p className="text-xs">
-              <span className="font-medium text-foreground">Prefer to start in dollars?</span> LOBSTR can also buy{" "}
-              <span className="font-medium text-foreground">USDC on Stellar</span> directly in-app — by card or
-              Apple/Google Pay, and in many places even with cash at a MoneyGram counter. That's a great dollar-first
-              start; just swap a little into XLM afterward to cover fees.
+              <span className="font-medium text-foreground">Prefer to start in dollars?</span> The most reliable way to
+              buy <span className="font-medium text-foreground">USDC</span> in the U.S. is with{" "}
+              <span className="font-medium text-foreground">MoonPay or Transak</span> (by card or bank), landing in your
+              own wallet — they're licensed across most states. LOBSTR's in-app USDC buy works in many countries too, but
+              some U.S. states still block it. Either way, swap a little into XLM afterward to cover fees.
             </p>
             <p className="text-xs">
               Keep about 1–2 XLM in there for the network's small reserve, plus a little extra for each new coin you add.
@@ -366,7 +369,7 @@ export default function PrimeThePump() {
           <div className="flex flex-wrap gap-2">
             <Button asChild size="sm" className="gap-2" data-testid="button-buy-usdc">
               <Link href="/buy-crypto?coin=USDC">
-                <CreditCard className="h-4 w-4" /> Buy USDC in LOBSTR
+                <CreditCard className="h-4 w-4" /> Buy USDC (card or bank)
               </Link>
             </Button>
             <Button asChild size="sm" variant="outline" className="gap-2" data-testid="button-plan-swap">
@@ -376,10 +379,11 @@ export default function PrimeThePump() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            USDC was never the finish line — it's just the bridge. The Buy USDC screen now leads with buying it{" "}
-            <span className="font-medium text-foreground">inside LOBSTR on Stellar</span> — that in-app buy often works
-            even when card websites (MoonPay, Transak) are region-blocked. Prefer Base? You can still buy USDC into an
-            EVM wallet there instead. Either way it lands in a wallet only you control, then you swap straight into your target.
+            USDC was never the finish line — it's just the bridge. The Buy USDC screen leads with{" "}
+            <span className="font-medium text-foreground">MoonPay or Transak</span> (card or bank), which are licensed
+            across most U.S. states and land the USDC straight in your own wallet. A few states are still blocked — if
+            yours is, the screen shows other ways too. Either way it lands in a wallet only you control, then you swap
+            straight into your target.
           </p>
         </CardContent>
       </Card>

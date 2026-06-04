@@ -1578,8 +1578,8 @@ export default function BuyCrypto() {
       list.push({
         id: "wallet_app",
         title: `Buy ${selectedToken} inside ${appName}`,
-        subtitle: `Open ${appName}, tap Buy, and pay by card or Apple/Google Pay. This often works even when a website says "not supported in your region" — and the ${selectedToken} lands in ${landsSame ? "this same address" : `your own ${appName} wallet`}.`,
-        badge: "Most reliable — gets past region blocks",
+        subtitle: `Open ${appName}, tap Buy, and pay by card or Apple/Google Pay. This often works in regions where web card sites block the buy — and the ${selectedToken} lands in ${landsSame ? "this same address" : `your own ${appName} wallet`}. (Some U.S. states are still limited; if you see an error, use a card option instead.)`,
+        badge: "Often gets past region blocks",
         inSite: false,
         needsAddress: landsSame,
       });
@@ -2431,25 +2431,25 @@ export default function BuyCrypto() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Banknote className="h-5 w-5 text-blue-600" />
-                  Prefer a bank transfer? (lower fees than a card)
+                  The reliable way to buy USDC (works across the U.S.)
                 </CardTitle>
                 <CardDescription>
-                  A card is instant but has the highest fee. To buy USDC by bank transfer (ACH/wire), open one of these providers and choose "Bank transfer" at checkout. The USDC lands in your own wallet — CryptoOwnBank never holds it.
+                  MoonPay and Transak are licensed across most U.S. states and deliver USDC straight to your own wallet. Open one, pay by <strong>card</strong> for an instant buy or pick <strong>bank transfer</strong> for lower fees — CryptoOwnBank never holds it. (These are far more dependable in the U.S. than the in-app LOBSTR buy, which some states still block.)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <a href={buildMoonPayUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button variant="outline" className="w-full gap-2" data-testid="button-usdc-bank-moonpay">
-                    <ExternalLink className="h-4 w-4" /> Buy USDC by bank transfer (MoonPay)
+                  <Button variant="default" className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-usdc-bank-moonpay">
+                    <ExternalLink className="h-4 w-4" /> Buy USDC with MoonPay (card or bank)
                   </Button>
                 </a>
                 <a href={buildTransakUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
                   <Button variant="outline" className="w-full gap-2" data-testid="button-usdc-bank-transak">
-                    <ExternalLink className="h-4 w-4" /> Buy USDC by bank transfer (Transak)
+                    <ExternalLink className="h-4 w-4" /> Buy USDC with Transak (card or bank)
                   </Button>
                 </a>
                 <p className="text-xs text-muted-foreground">
-                  Bank transfers are cheaper but slower than a card (often 1–2 business days). Paste your own wallet address when prompted.
+                  A card is instant (highest fee); a bank transfer is cheaper but slower (often 1–2 business days). Paste your own wallet address when prompted — your USDC lands there.
                 </p>
               </CardContent>
             </Card>
@@ -2525,7 +2525,7 @@ export default function BuyCrypto() {
                   Buy {selectedToken} inside {appName}
                 </CardTitle>
                 <CardDescription>
-                  Some card sites block {selectedToken} in certain countries, but the Buy button inside {appName} uses a different payment path and often works anyway. We'll get you right up to {appName}'s own Buy screen — you finish the card payment inside the app, which only you control.
+                  Some card sites block {selectedToken} in certain regions, and the Buy button inside {appName} uses a different payment path that often works anyway. We'll get you right up to {appName}'s own Buy screen — you finish the card payment inside the app, which only you control. Heads up: a few U.S. states still block this in-app buy too; if you hit an error, use a card option instead.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -2625,11 +2625,11 @@ export default function BuyCrypto() {
                       {startTrocadorMutation.isPending ? (
                         <><Loader2 className="h-4 w-4 animate-spin" /> Starting your swap…</>
                       ) : (
-                        <><Repeat className="h-4 w-4" /> Swap into {selectedToken} here</>
+                        <><Repeat className="h-4 w-4" /> Get my {selectedToken} swap ready</>
                       )}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      The swap runs right here on this page, with your {selectedToken} address already filled in. {selectedToken === "XRP" || selectedToken === "XLM" ? "If your wallet shows a destination tag/memo, add it on the next screen too." : ""}
+                      Opens on Trocador's secure page with your {selectedToken} address already filled in — you pick the best offer and send. {selectedToken === "XRP" || selectedToken === "XLM" ? "If your wallet shows a destination tag/memo, add it there too." : ""}
                     </p>
                   </>
                 )}
@@ -2649,20 +2649,13 @@ export default function BuyCrypto() {
                         </span>
                       </div>
                     )}
-                    <div className="overflow-hidden rounded-lg border">
-                      <iframe
-                        src={trocadorSessionUrl}
-                        title={`Swap into ${selectedToken} via Trocador`}
-                        className="w-full"
-                        style={{ height: 640 }}
-                        allow="clipboard-write"
-                        data-testid="iframe-trocador"
-                      />
+                    <div className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground" data-testid="text-trocador-ready">
+                      Your swap is ready. It opens on Trocador's secure page with your {selectedToken} address already filled in — pick the offer you like and send. Your {selectedToken} lands straight in your own wallet; nothing passes through CryptoOwnBank.
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <a href={trocadorSessionUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                        <Button variant="outline" className="w-full gap-2" data-testid="button-trocador-newtab">
-                          <ExternalLink className="h-4 w-4" /> Open in a new tab
+                        <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-trocador-newtab">
+                          <ExternalLink className="h-4 w-4" /> Open the {selectedToken} swap (new tab)
                         </Button>
                       </a>
                       <Button

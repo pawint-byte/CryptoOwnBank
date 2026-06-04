@@ -2,7 +2,7 @@
 - [Help guide step accuracy](help-guide-accuracy.md) — verify exact UI labels in source before quoting in /help guides; explore agents paraphrase/invent controls.
 - [Vault "tested" gate integrity](legacy-vault-test-gate.md) — a client-side "passed test" flag guarding a save must reset whenever the payload changes, or a stale pass lets an untested vault through.
 - [Onramp chain coverage](onramp-chain-coverage.md) — XRP has no instant card rail (use Xaman in-app buy); MoonPay region-blocks XLM via Changelly doorway; in-app wallet rail is provider-driven (LOBSTR=USDC/XLM, Xaman=XRP) — never show wrong-chain address (landsInShownAddress gates it).
-- [Trocador AnonPay key casing](trocador-anonpay-casing.md) — AnonPay returns capitalized keys (ID/Status); reading lowercase id/status turns a 200 success into "error 200" & never-ending polling.
+- [Trocador AnonPay is a hosted widget, not a JSON API](trocador-anonpay-casing.md) — AnonPay 302s to an HTML page (X-Frame-Options DENY); never fetch/iframe it — build the pre-filled URL & open in a new tab. Fetching it = bogus "AnonPay error 200".
 - [Route Planner deep-link contract](route-planner-deeplink-contract.md) — `?to=` honors any DESTINATIONS symbol; `?from=` ONLY honors USDC/USDT, other from-values silently ignored.
 - [Stripe onramp cannot lock](stripe-onramp-cannot-lock.md) — this account's Crypto Onramp rejects the restrict arrays in EVERY form/version; can't lock coin/wallet → drifts to ETH. `supported_destination_*` is a myth. Don't promise "lands in your own wallet".
 - [Monero view-key tracking](monero-view-key-tracking.md) — NEVER store/transmit Monero view keys; balances stay manual; "easier" must not compromise privacy; browsers can't detect installed wallet apps.
