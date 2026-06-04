@@ -2476,6 +2476,9 @@ export default function BuyCrypto() {
                   <p className="text-xs text-muted-foreground">
                     Tip: buying inside your wallet app{selectedToken === "XRP" ? " (like Xaman for XRP)" : ""} often works even when the website blocks your country — the provider's in-app integration bypasses some regional limits.
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    On a VPN? Turn it off first — card providers match your internet location to your card's billing address, and a mismatch can trigger a false "not supported in your region."
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -2486,7 +2489,7 @@ export default function BuyCrypto() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Banknote className="h-5 w-5 text-blue-600" />
-                  The reliable way to buy USDC (works across the U.S.)
+                  The reliable way to buy USDC (works in most U.S. states)
                 </CardTitle>
                 <CardDescription>
                   Transak and MoonPay are licensed across most U.S. states and deliver USDC straight to your own wallet. Open one, pay by <strong>card</strong> for an instant buy or pick <strong>bank transfer</strong> for lower fees — CryptoOwnBank never holds it. If one says <em>"not supported in your region,"</em> that's the provider's own state rule — try the other; they cover different states.
@@ -2504,7 +2507,11 @@ export default function BuyCrypto() {
                   </Button>
                 </a>
                 <p className="text-xs text-muted-foreground">
-                  A card is instant (highest fee); a bank transfer is cheaper but slower (often 1–2 business days). Paste your own wallet address when prompted — your USDC lands there. MoonPay just blocked your region, so start with Transak.
+                  A card is instant (highest fee); a bank transfer is cheaper but slower (often 1–2 business days). Paste your own wallet address when prompted — your USDC lands there. If one provider blocks your region, try the other — they cover different states.
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-500 flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>On a VPN? Turn it off first. Card providers compare your internet location to your card's billing address — a mismatch (e.g. tunneling through another state) triggers a false "not supported in your region," even where buying is allowed.</span>
                 </p>
               </CardContent>
             </Card>

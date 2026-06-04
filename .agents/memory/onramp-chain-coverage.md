@@ -92,6 +92,20 @@ instant Stripe button for ETH. All other coins route to external providers / swa
 v2 beta is enabled. Keep Stripe instant buys ETH-only until then. XRP is not a Stripe
 coin at all (use the Xaman in-app buy rail).
 
+## "Not supported in your region" is often a VPN false-positive, not a state block
+
+Card on-ramps (MoonPay/Transak/etc.) geolocate by **IP** AND cross-check the **card's
+billing address**. A VPN that exits in a different state than the card bills to creates a
+mismatch that trips a FALSE "not supported in your region" even where buying is fully
+allowed (a founder on a work PC tunneling through VA, card billing NJ/PA, hit this on USDC).
+
+**How to apply:** Before assuming a state is genuinely blocked, the first remedy is "turn
+the VPN off." Surface this tip wherever a region block can appear. Providers also cover
+DIFFERENT state sets, so leading with one (Transak) and offering the other (MoonPay) as a
+fallback genuinely helps — but keep it GENERAL, never hardcode a member's state. And when a
+member already holds any crypto, the region-proof non-custodial path is swapping a held coin
+into the target (no card, no provider geofence) — recommend that over fighting card rails.
+
 ## Chain-aware in-app wallet-app buy rail (LOBSTR for USDC/XLM, Xaman for XRP)
 
 The "Buy inside your wallet app" rail (the region-block-dodging path) is provider-driven,
