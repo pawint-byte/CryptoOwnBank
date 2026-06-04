@@ -470,7 +470,7 @@ export function registerPortfolioRoutes(app: Express) {
         if (totalQty > currentBal) {
           const prices = await db.select().from(priceCacheTable);
           const priceEntry = prices.find(p => p.symbol.toUpperCase() === balance.assetSymbol.toUpperCase());
-          const newUsd = priceEntry ? totalQty * parseFloat(priceEntry.price) : 0;
+          const newUsd = priceEntry ? totalQty * parseFloat(priceEntry.priceUsd) : 0;
           await db.update(walletBalances)
             .set({ balance: totalQty.toFixed(8), usdValue: newUsd.toFixed(2), updatedAt: new Date() })
             .where(eq(walletBalances.id, id));

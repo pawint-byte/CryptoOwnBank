@@ -187,7 +187,7 @@ ${sections}
     const zeroBalances = walletBals.filter(wb => {
       const usd = parseFloat(wb.usdValue || "0");
       const bal = parseFloat(wb.balance);
-      return usd === 0 && bal > 0 && !stablecoins.has(wb.assetSymbol) && !wb.assetSymbol.includes("(staked)");
+      return (!Number.isFinite(usd) || usd === 0) && bal > 0 && !stablecoins.has(wb.assetSymbol) && !wb.assetSymbol.includes("(staked)");
     });
 
     if (zeroBalances.length === 0) return walletBals;
@@ -203,7 +203,7 @@ ${sections}
     return walletBals.map(wb => {
       const usd = parseFloat(wb.usdValue || "0");
       const bal = parseFloat(wb.balance);
-      if (usd === 0 && bal > 0) {
+      if ((!Number.isFinite(usd) || usd === 0) && bal > 0) {
         if (stablecoins.has(wb.assetSymbol)) {
           return { ...wb, usdValue: bal.toString() };
         }
@@ -2453,8 +2453,8 @@ Rules you MUST follow:
       }
       if (!price || price <= 0) {
         const cached = await db.select().from(priceCacheTable).where(eq(priceCacheTable.symbol, assetSymbol.toUpperCase()));
-        if (cached.length > 0 && cached[0].price) {
-          price = parseFloat(cached[0].price);
+        if (cached.length > 0 && cached[0].priceUsd) {
+          price = parseFloat(cached[0].priceUsd);
         }
       }
       const userWallets = await storage.getWalletsByUser(userId);
@@ -3704,7 +3704,7 @@ Rules you MUST follow:
 
       const prices = await db.select().from(priceCacheTable);
       const priceEntry = prices.find(p => p.symbol.toUpperCase() === sym);
-      const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.price) : 0;
+      const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.priceUsd) : 0;
 
       const existingBalances = await storage.getWalletBalances(wallet.id);
       const existingBal = existingBalances.find(b => b.assetSymbol.toUpperCase() === sym);
@@ -3712,7 +3712,7 @@ Rules you MUST follow:
       let walletBalance;
       if (existingBal) {
         const newBalance = parseFloat(existingBal.balance) + balanceNum;
-        const newUsd = priceEntry ? newBalance * parseFloat(priceEntry.price) : parseFloat(existingBal.usdValue || "0") + usdValue;
+        const newUsd = priceEntry ? newBalance * parseFloat(priceEntry.priceUsd) : parseFloat(existingBal.usdValue || "0") + usdValue;
         const existingCostBasis = parseFloat(existingBal.totalCostBasis || "0");
         const addedCostBasis = costNum > 0 ? balanceNum * costNum : 0;
         const newCostBasis = existingCostBasis + addedCostBasis;
@@ -3777,7 +3777,7 @@ Rules you MUST follow:
             if (tq > parseFloat(walletBalance.balance || "0")) {
               const freshPrices = await db.select().from(priceCacheTable);
               const pe = freshPrices.find(p => p.symbol.toUpperCase() === sym);
-              const newUsd = pe ? tq * parseFloat(pe.price) : 0;
+              const newUsd = pe ? tq * parseFloat(pe.priceUsd) : 0;
               await db.update(walletBalances)
                 .set({ balance: tq.toFixed(8), usdValue: newUsd.toFixed(2), updatedAt: new Date() })
                 .where(eq(walletBalances.id, walletBalance.id));
@@ -3821,9 +3821,9 @@ Rules you MUST follow:
         return res.status(404).json({ message: "Wallet balance not found" });
       }
 
-      const prices = await storage.getCachedPrices();
+      const prices = await db.select().from(priceCacheTable);
       const priceEntry = prices.find(p => p.symbol.toUpperCase() === wb.assetSymbol.toUpperCase());
-      const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.price) : 0;
+      const usdValue = priceEntry ? balanceNum * parseFloat(priceEntry.priceUsd) : 0;
 
       await db.update(walletBalances)
         .set({ balance: balanceNum.toString(), usdValue: usdValue.toFixed(2), updatedAt: new Date() })
