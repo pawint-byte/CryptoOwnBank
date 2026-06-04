@@ -369,7 +369,8 @@ export default function OwnPrivately() {
                 />
                 <figcaption className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
                   Pick an exchange row, then paste <strong>your Monero receiving address</strong> into
-                  the "receiving address" box and confirm. That's the only address you type.
+                  the box outlined in <strong className="text-[#FFD400]">yellow</strong> and confirm.
+                  That's the only address you type.
                 </figcaption>
               </figure>
             </div>
@@ -398,9 +399,11 @@ export default function OwnPrivately() {
                   data-testid="img-guide-send"
                 />
                 <figcaption className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
-                  The swap site now gives you a <strong>deposit address</strong> and a{" "}
-                  <strong>Memo</strong> — copy both into Uphold's send screen. (We've blanked out the
-                  real address, memo and IDs in this example for privacy.)
+                  The box outlined in <strong className="text-[#FFD400]">yellow</strong> is the{" "}
+                  <strong>deposit address</strong>; the box in{" "}
+                  <strong className="text-[#22D3EE]">blue</strong> is the <strong>Memo</strong> — copy
+                  both into Uphold's send screen. (We've blanked out the real address, memo and IDs in
+                  this example for privacy.)
                 </figcaption>
               </figure>
             </div>
