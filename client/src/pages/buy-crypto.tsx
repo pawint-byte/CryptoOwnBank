@@ -2489,22 +2489,22 @@ export default function BuyCrypto() {
                   The reliable way to buy USDC (works across the U.S.)
                 </CardTitle>
                 <CardDescription>
-                  MoonPay and Transak are licensed across most U.S. states and deliver USDC straight to your own wallet. Open one, pay by <strong>card</strong> for an instant buy or pick <strong>bank transfer</strong> for lower fees — CryptoOwnBank never holds it. (These are far more dependable in the U.S. than the in-app LOBSTR buy, which some states still block.)
+                  Transak and MoonPay are licensed across most U.S. states and deliver USDC straight to your own wallet. Open one, pay by <strong>card</strong> for an instant buy or pick <strong>bank transfer</strong> for lower fees — CryptoOwnBank never holds it. If one says <em>"not supported in your region,"</em> that's the provider's own state rule — try the other; they cover different states.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                <a href={buildMoonPayUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button variant="default" className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-usdc-bank-moonpay">
-                    <ExternalLink className="h-4 w-4" /> Buy USDC with MoonPay (card or bank)
-                  </Button>
-                </a>
                 <a href={buildTransakUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button variant="outline" className="w-full gap-2" data-testid="button-usdc-bank-transak">
+                  <Button variant="default" className="w-full gap-2 bg-green-600 hover:bg-green-700" data-testid="button-usdc-bank-transak">
                     <ExternalLink className="h-4 w-4" /> Buy USDC with Transak (card or bank)
                   </Button>
                 </a>
+                <a href={buildMoonPayUrl({ token: "USDC", address: effectiveAddress || undefined })} target="_blank" rel="noopener noreferrer" className="block">
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-usdc-bank-moonpay">
+                    <ExternalLink className="h-4 w-4" /> Buy USDC with MoonPay (card or bank)
+                  </Button>
+                </a>
                 <p className="text-xs text-muted-foreground">
-                  A card is instant (highest fee); a bank transfer is cheaper but slower (often 1–2 business days). Paste your own wallet address when prompted — your USDC lands there.
+                  A card is instant (highest fee); a bank transfer is cheaper but slower (often 1–2 business days). Paste your own wallet address when prompted — your USDC lands there. MoonPay just blocked your region, so start with Transak.
                 </p>
               </CardContent>
             </Card>
