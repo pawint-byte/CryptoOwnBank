@@ -3,12 +3,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SeoHead } from "@/components/seo-head";
+import { Link } from "wouter";
 import {
   ExternalLink,
   Shield,
   EyeOff,
   Eye,
   ArrowRightLeft,
+  ArrowRight,
   Users,
   Wallet,
   Lock,
@@ -193,6 +195,32 @@ export default function OwnPrivately() {
           the value the whole way.
         </p>
       </div>
+
+      <Card className="mb-8 border-2 border-primary bg-primary/5" data-testid="card-start-swap-cta">
+        <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold" data-testid="text-start-swap-title">
+              Ready? Start your private Monero swap
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xl">
+              We'll open <strong>Trocador with your Monero address already filled in</strong> and the
+              coin you're paying with preselected — no blank screen, no guessing. You just confirm
+              and send. First time? Grab a Monero wallet from the list lower down, then come back.
+            </p>
+          </div>
+          <Button
+            asChild
+            size="lg"
+            className="shrink-0 gap-2"
+            data-testid="button-start-swap-top"
+          >
+            <Link href="/buy-crypto?coin=XMR&method=aggregator">
+              Start my Monero swap
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card className="mb-8 border-primary/30 bg-primary/5" data-testid="card-how-to-steps">
         <CardHeader>
@@ -429,6 +457,17 @@ export default function OwnPrivately() {
             between now and when your coin arrives; a <em>fixed</em> rate locks the amount but can
             cost slightly more. For a first try, either is fine.
           </p>
+          <div className="rounded-lg border-2 border-primary bg-primary/5 p-4 text-center" data-testid="card-start-swap-cta-mid">
+            <p className="mb-3 text-sm font-medium">
+              Got your Monero wallet address ready? Skip straight to the pre-filled swap.
+            </p>
+            <Button asChild size="lg" className="gap-2" data-testid="button-start-swap-mid">
+              <Link href="/buy-crypto?coin=XMR&method=aggregator">
+                Start my Monero swap
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -1225,10 +1225,21 @@ export default function BuyCrypto() {
   }, []);
 
   // Allow deep-linking from Token Research etc. with ?coin=SYMBOL: preselect
-  // the coin and jump straight to "How to pay".
+  // the coin and jump straight to "How to pay". An optional &method=aggregator
+  // (used by the "Own It Privately" page) drops the member straight onto the
+  // pre-filled Trocador swap path — they enter their address once and the next
+  // page opens Trocador with it already filled in, instead of a blank site.
   useEffect(() => {
-    const coin = new URLSearchParams(window.location.search).get("coin")?.toUpperCase();
+    const params = new URLSearchParams(window.location.search);
+    const coin = params.get("coin")?.toUpperCase();
+    const method = params.get("method")?.toLowerCase();
     if (coin && tokens.some((t) => t.symbol === coin)) {
+      if (method === "aggregator") {
+        setSelectedToken(coin);
+        setSelectedMethod("aggregator");
+        setStep("destination");
+        return;
+      }
       const walletAppBuys = getWalletAppBuysForChain(coin.toLowerCase());
       if (walletAppBuys.length > 0) {
         const meta = WALLET_APP_META[walletAppBuys[0].provider];
