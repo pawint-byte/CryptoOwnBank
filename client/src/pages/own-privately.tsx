@@ -536,6 +536,72 @@ export default function OwnPrivately() {
       </section>
 
       <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3 flex items-center gap-2" data-testid="text-section-exchange-trail">
+          <Wallet className="h-5 w-5 text-primary" />
+          Pulling crypto off an exchange — who can see it, who can stop it?
+        </h2>
+        <p className="text-muted-foreground text-sm mb-4">
+          Say you bought Monero (or any coin) on an ID-verified exchange like Kraken and want to
+          move it to your own wallet. Here's what's really exposed — and, more importantly, what
+          no one can touch once it's yours.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-amber-500/30 bg-amber-500/5" data-testid="card-exchange-knows">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Eye className="h-5 w-5 text-amber-500" />
+                <CardTitle className="text-lg">What the exchange knows</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>
+                The address you paste into the exchange does <strong>not</strong> show up on the
+                public blockchain. With Monero especially, every payment lands on a one-time
+                "stealth" address, so an outsider watching the chain can't see your wallet or link
+                it to anything.
+              </p>
+              <p>
+                But the <strong>exchange keeps its own private record</strong>: "this verified
+                person withdrew this much, to that address, at that time." The public can't see it —
+                the exchange (and anyone who can legally force the exchange) can. And honestly, that
+                link already existed the moment you bought the coin under your ID.
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-emerald-500/30 bg-emerald-500/5" data-testid="card-self-custody-shield">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-emerald-500" />
+                <CardTitle className="text-lg">What no one can do once it's in your wallet</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>
+                A company can only freeze, hold, or hand over what it's <strong>holding for
+                you</strong>. The moment your coins are in your own wallet, there's no middleman
+                left to serve a freeze order to.
+              </p>
+              <p>
+                That's the whole escape hatch: money you can still reach if you ever need it — even
+                just to buy milk — because no account can be locked to keep you from it. The
+                exchange can only ever stop what's still sitting <em>on</em> the exchange.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="mt-4 flex items-start gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground" data-testid="text-no-extra-hop">
+          <Shield className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+          <p>
+            <strong>You don't need an extra swap to "hide" Monero.</strong> Once it's in your
+            Monero wallet, the trail already goes dark by the blockchain's own math — bouncing it
+            through another swap service just adds fees and one more middleman. If you ever want to
+            put more distance between the exchange's record and your holding wallet, the simplest way
+            is one transfer <em>inside</em> Monero to a fresh address in your own wallet.
+          </p>
+        </div>
+      </section>
+
+      <section className="mb-10">
         <h2 className="text-xl font-semibold mb-3 flex items-center gap-2" data-testid="text-section-howitworks">
           <ArrowRightLeft className="h-5 w-5 text-primary" />
           The "one step," done honestly
