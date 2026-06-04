@@ -106,6 +106,32 @@ fallback genuinely helps — but keep it GENERAL, never hardcode a member's stat
 member already holds any crypto, the region-proof non-custodial path is swapping a held coin
 into the target (no card, no provider geofence) — recommend that over fighting card rails.
 
+## Geo-localizing on-ramp links (per-member country/currency)
+
+To offer the right provider/currency per location, detect country from the **browser
+locale** (`Intl.Locale(navigator.language).region`), NOT IP geolocation — a VPN changes the
+exit IP but not the device's locale, so locale survives the same VPN/state mismatch that
+trips false region blocks. Always give a manual country override (persisted in
+localStorage) for the cases locale guesses wrong, plus a "Not listed / Global" sentinel
+that clears the region. Transak honors `&countryCode=XX&fiatCurrency=YYY` (uppercase);
+MoonPay honors `baseCurrencyCode=yyy` (lowercase) but has no reliable URL country param.
+
+**Why the region must sync DURING render, not in an effect:** the buy page funnels every
+provider link (incl. the wallet-table buy closures) through shared URL builders that read a
+module-level `onrampRegion` default. If you set that default in a `useEffect`, links render
+with the stale/empty region first and only correct on a later unrelated rerender (architect
+caught exactly this). Assign the module region synchronously in the component body so the
+builders see the current region in the same render. It's a plain module assignment, not
+React state, so it won't loop.
+
+## Onramper aggregator rejected on cost
+
+Onramper is the widest aggregator (190+ countries, geo-routes + fallback) and the textbook
+"right" answer, but it requires a ~$199/mo minimum + KYB — too pricey for current volume.
+Founder rejected it 2026-03-23. Stay with the already-integrated free rails (Transak = free,
+no minimum, 160+ countries; MoonPay as outbound links) and localize those instead. Don't
+re-propose Onramper until volume justifies the floor.
+
 ## Chain-aware in-app wallet-app buy rail (LOBSTR for USDC/XLM, Xaman for XRP)
 
 The "Buy inside your wallet app" rail (the region-block-dodging path) is provider-driven,

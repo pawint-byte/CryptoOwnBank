@@ -51,6 +51,14 @@ import {
   Download,
 } from "lucide-react";
 import { createOnrampSessionAndRedirect, getWalletAppBuysForChain } from "@/lib/stripe-onramp";
+import {
+  COUNTRY_OPTIONS,
+  GLOBAL_CODE,
+  detectCountry,
+  getCountryName,
+  getFiatCurrency,
+  getRegionGuidance,
+} from "@/lib/region";
 import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn } from "@/lib/xumm-connector";
 
 type Step = "coin" | "method" | "destination" | "checkout";
@@ -152,17 +160,34 @@ function fmtPrice(p?: number): string | null {
   return `$${p.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
 }
 
-function buildMoonPayUrl(params: { token: string; address?: string }) {
+// Module-level region default so EVERY on-ramp link (incl. the wallet-table buy
+// links) localizes the fiat currency / country without threading params through
+// dozens of call sites. The component keeps this in sync with the member's
+// detected or manually-chosen location.
+let onrampRegion: { countryCode?: string; fiatCurrency?: string } = {};
+export function setOnrampRegion(r: { countryCode?: string; fiatCurrency?: string }) {
+  onrampRegion = r || {};
+}
+
+function buildMoonPayUrl(params: { token: string; address?: string; fiatCurrency?: string }) {
   const coinCode = params.token.toLowerCase();
+  const fiat = params.fiatCurrency ?? onrampRegion.fiatCurrency;
+  const qs: string[] = [];
+  if (params.address) qs.push(`walletAddress=${encodeURIComponent(params.address)}`);
+  if (fiat) qs.push(`baseCurrencyCode=${fiat.toLowerCase()}`);
   let url = `https://www.moonpay.com/buy/${coinCode}`;
-  if (params.address) url += `?walletAddress=${encodeURIComponent(params.address)}`;
+  if (qs.length) url += `?${qs.join("&")}`;
   return url;
 }
 
-function buildTransakUrl(params: { token: string; address?: string }) {
+function buildTransakUrl(params: { token: string; address?: string; countryCode?: string; fiatCurrency?: string }) {
   const cryptoCurrency = params.token.toUpperCase();
+  const country = params.countryCode ?? onrampRegion.countryCode;
+  const fiat = params.fiatCurrency ?? onrampRegion.fiatCurrency;
   let url = `https://global.transak.com/?cryptoCurrencyCode=${cryptoCurrency}`;
   if (params.address) url += `&walletAddress=${encodeURIComponent(params.address)}`;
+  if (country) url += `&countryCode=${country}`;
+  if (fiat) url += `&fiatCurrency=${fiat.toUpperCase()}`;
   return url;
 }
 
@@ -1165,6 +1190,40 @@ export default function BuyCrypto() {
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
 
+  // Member location → localizes every on-ramp link (fiat currency / country) and
+  // surfaces the right payment hint. Detected from the browser locale (which a VPN
+  // does NOT change), with a manual override the member can set if it's wrong.
+  const [regionOverride, setRegionOverride] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("buy-region-override-v1");
+      if (saved) setRegionOverride(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const effectiveCountry = useMemo(() => {
+    if (regionOverride === GLOBAL_CODE) return null;
+    return regionOverride || detectCountry();
+  }, [regionOverride]);
+  // Sync the module-level on-ramp region during render (NOT in an effect) so every
+  // MoonPay/Transak link — including the wallet-table closures that read the module
+  // default — is built with the current region in the SAME render cycle. Setting it
+  // in an effect would leave hrefs stale until an unrelated rerender.
+  setOnrampRegion({
+    countryCode: effectiveCountry || undefined,
+    fiatCurrency: getFiatCurrency(effectiveCountry) || undefined,
+  });
+  const regionGuidance = useMemo(() => getRegionGuidance(effectiveCountry), [effectiveCountry]);
+  const handleRegionChange = useCallback((code: string) => {
+    setRegionOverride(code);
+    try {
+      localStorage.setItem("buy-region-override-v1", code);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // Allow deep-linking from Token Research etc. with ?coin=SYMBOL: preselect
   // the coin and jump straight to "How to pay".
   useEffect(() => {
@@ -1711,6 +1770,38 @@ export default function BuyCrypto() {
           <Button variant="outline" size="sm" onClick={handleStartOver} data-testid="button-start-over">
             Start Over
           </Button>
+        )}
+      </div>
+
+      <div className="rounded-lg border bg-muted/40 p-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-3 gap-y-2" data-testid="region-banner">
+        <div className="flex items-center gap-2 shrink-0">
+          <Globe className="h-4 w-4 text-green-600" />
+          <span className="text-sm">
+            Showing buy options for{" "}
+            <span className="font-medium" data-testid="text-region-country">
+              {getCountryName(effectiveCountry)}
+            </span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Wrong location (e.g. on a VPN)?</span>
+          <Select value={regionOverride ?? effectiveCountry ?? GLOBAL_CODE} onValueChange={handleRegionChange}>
+            <SelectTrigger className="h-8 w-[190px]" data-testid="select-region">
+              <SelectValue placeholder="Choose your country" />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTRY_OPTIONS.map((c) => (
+                <SelectItem key={c.code} value={c.code} data-testid={`option-region-${c.code}`}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {regionGuidance.paymentHint && (
+          <p className="text-xs text-muted-foreground basis-full sm:order-last" data-testid="text-region-hint">
+            {regionGuidance.paymentHint}
+          </p>
         )}
       </div>
 
