@@ -187,7 +187,7 @@ ${sections}
     const zeroBalances = walletBals.filter(wb => {
       const usd = parseFloat(wb.usdValue || "0");
       const bal = parseFloat(wb.balance);
-      return (!Number.isFinite(usd) || usd === 0) && bal > 0 && !stablecoins.has(wb.assetSymbol) && !wb.assetSymbol.includes("(staked)");
+      return (!Number.isFinite(usd) || usd === 0) && bal > 0;
     });
 
     if (zeroBalances.length === 0) return walletBals;
@@ -3712,7 +3712,9 @@ Rules you MUST follow:
       let walletBalance;
       if (existingBal) {
         const newBalance = parseFloat(existingBal.balance) + balanceNum;
-        const newUsd = priceEntry ? newBalance * parseFloat(priceEntry.priceUsd) : parseFloat(existingBal.usdValue || "0") + usdValue;
+        const existingUsdParsed = parseFloat(existingBal.usdValue || "0");
+        const existingUsd = Number.isFinite(existingUsdParsed) ? existingUsdParsed : 0;
+        const newUsd = priceEntry ? newBalance * parseFloat(priceEntry.priceUsd) : existingUsd + usdValue;
         const existingCostBasis = parseFloat(existingBal.totalCostBasis || "0");
         const addedCostBasis = costNum > 0 ? balanceNum * costNum : 0;
         const newCostBasis = existingCostBasis + addedCostBasis;
