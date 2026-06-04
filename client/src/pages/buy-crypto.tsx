@@ -1537,9 +1537,17 @@ export default function BuyCrypto() {
     if (tokenData?.privacyRoute) {
       return [
         {
+          id: "aggregator",
+          title: `Swap a coin you own into ${selectedToken}`,
+          subtitle: `Already hold XLM, XRP, USDC or another coin? Swap it into ${selectedToken} through Trocador — it shops dozens of services for the best rate, no account needed, and the ${selectedToken} lands straight in your own wallet.`,
+          badge: "Low-KYC · self-serve",
+          inSite: false,
+          needsAddress: true,
+        },
+        {
           id: "privacy",
-          title: "Buy it privately",
-          subtitle: "Monero can't be bought with a card here — we'll point you to trusted private routes.",
+          title: "Other private ways to get it",
+          subtitle: `If you don't hold any crypto yet — buy with cash/P2P or use another no-KYC service. We'll point you to trusted private routes.`,
           badge: "Private",
           inSite: false,
           needsAddress: true,
