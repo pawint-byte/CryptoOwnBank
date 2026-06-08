@@ -1,0 +1,40 @@
+give members what’s realistically available today, but be explicit that exchanges are a temporary staging ground, and the real destination is self‑custody wallets with CryptoOwnBank as their cockpit.
+
+How I’d frame it in the product
+1. Set expectations about exchanges
+Language for your UI:
+
+“We’ll connect to exchanges where we can, but they change their rules often. Syncs can break, limits can change, and in some cases we may not be able to help you if the exchange locks you out.”
+
+“API connections are best‑effort only. The exchange is in control, not us — and not you.”
+
+That’s honest and matches reality: when an exchange holds the keys, your user just has an IOU.
+
+2. Make the destination crystal clear
+Then pivot hard to your core message:
+
+“When your assets sit in a self‑custody wallet, you hold the keys. Not an exchange, not us.”
+
+“CryptoOwnBank is designed to be the cockpit for those self‑custody wallets — one place where you can see everything you control and take action from it.”
+
+“If the exchange disappears, there’s often nothing we can do. If you hold the keys in a wallet you control, and you can see all of it in CryptoOwnBank, you’re in the best seat in the house.”
+
+This is fully aligned with how serious self‑custody providers define things: control of private keys = real ownership and no counterparty risk.
+
+3. Offer a gentle path, not a hard break
+Concrete approach:
+
+Short term:
+
+Support what obviously works now (Kraken, Binance.US, Crypto.com Exchange where the user can create read‑only keys) with very clear instructions.
+
+Always offer CSV import as the fallback: “Can’t or don’t want to make an API key? Export a file instead and upload once.”
+
+Medium term:
+
+Add more wallet‑first flows (Safe vaults, AA, approvals, on‑chain yield) so the cockpit value grows even without exchanges.
+
+That gives members immediate value today without pretending exchange connections are rock‑solid forever.
+
+Short version you can say to members
+“If your coins live on an exchange, that exchange controls the keys, and if they freeze or change something, we may not be able to help. Our goal is to help you see what you have there, then move what matters into wallets you control — and make CryptoOwnBank the place you see and manage it all. When you hold the keys and see everything in one cockpit, you’re in the best possible seat.”

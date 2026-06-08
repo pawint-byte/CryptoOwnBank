@@ -293,13 +293,15 @@ export function registerHoldingsRoutes(app: Express) {
         }
       }
 
-      const validProviders = [
-        "binance", "binance_us", "coinbase", "kraken", "crypto_com", "uphold",
-        "gemini", "kucoin", "bybit", "okx", "bitfinex", "bitstamp", "gate_io",
-        "nexo", "webull", "etoro", "robinhood", "fidelity",
-      ];
-      if (!validProviders.includes(provider)) {
-        return res.status(400).json({ message: "Invalid provider" });
+      // Only providers with a working read-only API AND a backend syncExchange
+      // implementation may be connected live. Everything else (Coinbase, Uphold,
+      // brokerages, etc.) is CSV-only and never reaches this route.
+      const liveProviders = ["kraken", "binance_us", "crypto_com"];
+      if (!liveProviders.includes(provider)) {
+        return res.status(400).json({
+          message:
+            "Live syncing isn't available for this exchange. Import a CSV export instead, or add your public wallet address to track it.",
+        });
       }
 
       const credential = await storage.createApiCredential({

@@ -34,7 +34,7 @@ import { IntegrationCard } from "@/components/integration-card";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Trash2, Database } from "lucide-react";
+import { Plus, Link2, Eye, EyeOff, ExternalLink, Info, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Trash2, Database, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SiBinance, SiCoinbase } from "react-icons/si";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -73,6 +73,8 @@ const EXCHANGE_OPTIONS = [
   { value: "fidelity", label: "Fidelity", icon: null },
 ];
 
+const LIVE_API_EXCHANGES = ["kraken", "binance_us", "crypto_com"];
+
 const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
   binance_us: {
     steps: "Log in to Binance.US > click your profile icon > API Management > Create API > choose 'System generated' > label it 'CryptoOwnBank' > complete 2FA > IMPORTANT: only enable 'Can Read' (disable trading/withdrawals) > copy your API Key and Secret Key. Note: Binance.US is the only Binance platform available to US residents.",
@@ -83,8 +85,8 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
     url: "https://www.binance.com/en/my/settings/api-management",
   },
   coinbase: {
-    steps: "Log in to Coinbase > Settings > API > New API Key > select all 'View' permissions only (wallet:accounts:read, wallet:transactions:read, etc.) > complete 2FA > copy your API Key and API Secret.",
-    url: "https://www.coinbase.com/settings/api",
+    steps: "Coinbase retired the simple API keys we used to support, so live syncing isn't available right now. To track your Coinbase holdings in CryptoOwnBank:\n\n1) CSV Import: In Coinbase, go to your profile > Reports (or Statements) > generate a transaction history report > download it as CSV. Then import it on the Transactions page.\n\n2) Blockchain Address Tracking: If you've sent crypto to a wallet you control, add that public address on the Blockchain Addresses page to track it automatically.",
+    url: "https://accounts.coinbase.com/statements",
   },
   kraken: {
     steps: "Log in to Kraken > Security > API > Add Key > name it 'CryptoOwnBank' > under Permissions check ONLY 'Query Funds' and 'Query Open Orders & Trades' > Generate Key > copy your API Key and Private Key.",
@@ -148,7 +150,7 @@ const API_KEY_GUIDES: Record<string, { steps: string; url: string }> = {
   },
 };
 
-const NO_API_EXCHANGES = ["uphold", "webull", "etoro", "robinhood", "fidelity"];
+const NO_API_EXCHANGES = ["coinbase", "uphold", "webull", "etoro", "robinhood", "fidelity"];
 
 const connectFormSchema = z.object({
   provider: z.string().min(1, "Select a provider"),
@@ -372,7 +374,7 @@ export default function Integrations() {
 
   const connectedProviders = credentials.map((c) => c.provider);
   const availableExchanges = EXCHANGE_OPTIONS.filter(
-    (e) => !connectedProviders.includes(e.value)
+    (e) => LIVE_API_EXCHANGES.includes(e.value) && !connectedProviders.includes(e.value)
   );
 
   return (
@@ -386,19 +388,29 @@ export default function Integrations() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-integration" disabled={exchangeAtLimit} className="hidden">
+            <Button data-testid="button-add-integration" disabled={exchangeAtLimit}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Integration
+              Connect Exchange
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Connect Exchange</DialogTitle>
               <DialogDescription>
-                Enter your read-only API credentials to connect your exchange account.
-                Your keys are encrypted with AES-256 and stored securely. We only need read-only access.
+                Enter your read-only API keys. They're encrypted before we store them, and we
+                only ever ask for read-only access — never trading or withdrawals.
               </DialogDescription>
             </DialogHeader>
+            <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-xs leading-relaxed">
+                <span className="font-semibold block mb-1">Exchange connections are best-effort only.</span>
+                We'll connect where we can, but exchanges change their rules often. Syncs can break,
+                limits can change, and if an exchange locks you out, there may be nothing we can do —
+                the exchange is in control, not us, and not you. The real destination is a self-custody
+                wallet where you hold the keys, with CryptoOwnBank as your cockpit to see and manage it all.
+              </AlertDescription>
+            </Alert>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -559,7 +571,22 @@ export default function Integrations() {
         </Dialog>
       </div>
 
-      {/* Exchange API connections hidden — code preserved for future use */}
+      <Card className="border-primary/20 bg-primary/5" data-testid="card-cockpit-message">
+        <CardContent className="flex gap-3 pt-6">
+          <Compass className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1 text-sm">
+            <p className="font-semibold">Exchanges are a starting point, not the destination.</p>
+            <p className="text-muted-foreground leading-relaxed">
+              If your coins live on an exchange, that exchange holds the keys — if they freeze or
+              change something, we may not be able to help. When your assets sit in a self-custody
+              wallet, <span className="font-medium text-foreground">you</span> hold the keys: not an
+              exchange, not us. CryptoOwnBank is built to be the cockpit for those wallets — one place
+              to see everything you control and act on it. Connect an exchange to see what you have
+              there, then move what matters into wallets you control.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card data-testid="card-csv-import">
         <CardHeader>

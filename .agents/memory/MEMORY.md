@@ -28,4 +28,5 @@
 - [Trocador pre-filled vs blank](trocador-prefilled-vs-blank.md) — "buy XMR privately" CTAs must deep-link `/buy-crypto?coin=XMR&method=aggregator` (pre-filled), NOT trocador.app (blank).
 - [Destination/buy wallet picker](buy-destination-picker.md) — buy/send flows must offer ALL saved wallets per coin (members have many), not just the first match; "save & use new" must select the new one.
 - [Redacting member screenshots](redacting-member-screenshots.md) — member screenshots may hold live addresses/memos/tx-IDs; scrub with ImageMagick + re-read to verify, and overwrite the committed original, before any public embed.
+- [Exchange key encryption & live-sync gating](credential-encryption.md) — one shared credential-crypto.ts (AES-GCM, random salt/IV, v2: format, dedicated-key-or-SESSION_SECRET); only offer live connect for exchanges the syncExchange switch really implements.
 - [Transaction notes tax isolation](transaction-notes-tax-isolation.md) — private per-tx notes live in own table keyed by txHash (history reads chain LIVE, not DB); NEVER in transactions.notes/tax path; Send save needs canonical 64-hex hash not UUID fallback.
