@@ -1,0 +1,46 @@
+This is a good operational read, and most of it lines up with what the exchanges publicly document. The strongest parts are: Binance.US rather than Binance.com for U.S. users, Crypto.com Exchange rather than the app, and Uphold being much less attractive for reliable portfolio sync than the others.
+
+What looks correct
+Binance
+Binance.US clearly has an API program with account and wallet endpoints, and third-party setup guides consistently show the same flow you described: use the web interface, go to API Management, create a key, and keep it read-only for portfolio tracking. Your point that U.S. users should be on Binance.US, not Binance.com, is also directionally right for a U.S.-focused product because Binance.com has long had U.S. access restrictions while Binance.US runs its own platform and docs.
+
+I would only soften one detail: the state-availability list may change over time, so I would treat blocked states as a dynamic compliance/support note rather than a hardcoded product truth unless you confirm it from Binance.US directly today.
+
+Crypto.com
+Your “two products” explanation is important and matches the docs. Crypto.com’s Exchange has API documentation and key creation, while the mainstream app experience often does not expose the same exchange-style API workflow users expect. So the practical member experience problem is real: many users think “I have Crypto.com” when what they actually have is the app, not the Exchange account your integration needs.
+
+That means your suggested fix—clear connect-screen instructions telling people they need the Exchange web account, not just the app—is exactly the right product response.
+
+Uphold
+Your caution on Uphold is warranted. Uphold’s support materials indicate API access through partner flows or personal access tokens, and older Uphold docs explicitly note that PATs are for personal usage and can grant broad account access, which is not a great long-term fit for a clean retail portfolio connector story. Even before considering any historical-limit issues, that alone makes Uphold a weaker, higher-friction integration than Kraken or Binance.US.
+
+What I’d slightly adjust
+The one place I’d be careful is saying “Kraken, Binance.US, and Crypto.com Exchange all work today” as a product certainty. It is fair to say they all have viable API/key paths for read access, but “works today” for CryptoOwnBank specifically still depends on your implementation, permission mapping, nonce/signing correctness, rate limits, and how well your connector handles account-history retrieval.
+
+So I’d phrase it as:
+
+Kraken, Binance.US, and Crypto.com Exchange are viable candidates for live sync today.
+
+Coinbase’s legacy path is obsolete and needs a new auth implementation.
+
+Uphold is available but not a strong first-class integration target.
+
+Best strategic takeaway
+I agree with your three conclusions.
+
+Per-exchange instructions are a cheap, high-impact win because much of the friction is simply users landing in the wrong product surface or the wrong UI path.
+
+Coinbase and likely Uphold are exactly the type of connectors where a maintained abstraction becomes valuable because auth and access rules change.
+
+CSV import remains your best universal fallback because it avoids auth fragility and still satisfies the core user need: see exchange-held assets and help the member move toward self-custody.
+
+My recommendation
+If you pursue exchange visibility at all, I’d prioritize like this:
+
+Priority	Exchange	Recommendation
+1	Kraken	Add clear key-creation instructions and test read-only sync thoroughly.
+2	Binance.US	Same approach; warn U.S. users to use Binance.US specifically.
+3	Crypto.com Exchange	Support it, but explicitly explain “Exchange only, not app.”
+4	Coinbase	Rebuild only with modern CDP/Advanced Trade auth, preferably through maintained abstraction.
+5	Uphold	Keep low priority; probably CSV-first rather than live sync.
+So yes: your analysis is mostly right and strategically useful. The biggest product lesson is that the user problem is not only technical integration—it is also exchange product confusion, and your UI needs to teach members exactly which product/account/version they need before they even try to connect
