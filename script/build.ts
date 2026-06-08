@@ -14,9 +14,14 @@ function run(
       env: { ...process.env, ...env },
     });
     child.on("error", reject);
-    child.on("exit", (code) => {
+    child.on("exit", (code, signal) => {
       if (code === 0) resolve();
-      else reject(new Error(`${command} ${args.join(" ")} exited with code ${code}`));
+      else
+        reject(
+          new Error(
+            `${command} ${args.join(" ")} exited with code ${code}${signal ? ` (signal ${signal})` : ""}`,
+          ),
+        );
     });
   });
 }
@@ -56,9 +61,11 @@ async function buildAll() {
 
   console.log("building client...");
   // Vite's in-process build runs out of heap on this large bundle (~7,600 modules),
-  // so run it in its own process with a raised memory ceiling.
-  await run("node", [
-    "--max-old-space-size=4096",
+  // so run it in its own process with a raised memory ceiling. The ceiling is
+  // configurable so it can be tuned for the build environment's available RAM.
+  const heapMb = process.env.VITE_MAX_OLD_SPACE_SIZE || "4096";
+  await run(process.execPath, [
+    `--max-old-space-size=${heapMb}`,
     "node_modules/vite/bin/vite.js",
     "build",
   ]);
