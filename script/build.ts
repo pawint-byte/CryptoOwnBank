@@ -1,6 +1,25 @@
 import { build as esbuild } from "esbuild";
-import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
+import { spawn } from "child_process";
+
+// Run a command as a child process, inheriting stdio, and reject on non-zero exit.
+function run(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv = {},
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: "inherit",
+      env: { ...process.env, ...env },
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${command} ${args.join(" ")} exited with code ${code}`));
+    });
+  });
+}
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -36,7 +55,13 @@ async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
-  await viteBuild();
+  // Vite's in-process build runs out of heap on this large bundle (~7,600 modules),
+  // so run it in its own process with a raised memory ceiling.
+  await run("node", [
+    "--max-old-space-size=4096",
+    "node_modules/vite/bin/vite.js",
+    "build",
+  ]);
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
