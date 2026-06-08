@@ -1,5 +1,18 @@
 # CryptoOwnBank — To-Do List & Decision Log
 
+## REVISIT SCHEDULE — check these on/after the date so nothing gets forgotten (Added 2026-06-08)
+
+| Revisit on | What to check | Where the detail lives |
+|------------|---------------|------------------------|
+| 2026-06-22 | **Reach out to Bitrefill** affiliate program (spend-crypto rail, strongest principles fit, no volume minimum) | "External Approvals" → Bitrefill |
+| 2026-07-08 | **Chase pending provider replies** — Changelly off-ramp (F2C) keys from Ana, Oobit, Guardarian | "External Approvals" / "Referral Links" |
+| 2026-09-08 | **Quarterly watch-list sweep** — Tier 4 items + Stellar Soroban/Sponsored Fees + stablecoin-legislation status | "Tier 4 — Watch List" / "Revisit When Legislation Passes" |
+| 2026-12-08 | **CCXT re-evaluation** — only worth it if we decide to support many exchanges again | top decision-log entry (2026-06-08 CCXT) |
+
+> How to use this: at the start of a session, glance at this table. If today is past a "Revisit on" date, either act on that row or push the date forward. When a row is truly done, move it into the history log below.
+
+---
+
 **Latest 2026-06-08 by main agent — DECISION (CCXT, deferred): Should we adopt CCXT for exchange connectivity? NO for now. Context: a Grok architecture review (attached_assets/Pasted-This-is-an-analysis-done-by-Grok-...txt) recommended replacing our hand-written per-exchange API + signing code with CCXT (one unified interface, fetchBalance/fetchMyTrades, unified errors, pagination, sandbox). It was a SUGGESTION ONLY — never adopted, never installed (not in package.json). Today exchange sync is still custom per-exchange (syncBinance/syncKraken/syncCryptoCom with direct HMAC signing in server/services/exchange-sync.ts). WHY WE DIDN'T: CCXT's main payoff is BREADTH (connect ~100+ exchanges cheaply), but we just deliberately narrowed live sync to 3 providers (Kraken, Binance.US, Crypto.com Exchange) with the explicit stance that exchanges are a temporary staging ground and self-custody is the destination — so the breadth value is largely moot for us. The smaller benefit (collapse 3 signing schemes into 1 dependency to maintain) is real but doesn't justify reworking 3 connections that already work, plus CCXT is a new dep to keep updated. RE-EVALUATE IF: we ever decide to support many exchanges again — then CCXT is the obvious tool to reach for. Previous work below.**
 
 **Previous 2026-06-08 by main agent — TURNED LIVE EXCHANGE SYNC BACK ON (3 working exchanges) + HARDENED stored API-key encryption + added founder's "cockpit / self-custody is the destination" messaging. Founder's call: give members what's realistically available today, but be explicit exchanges are a temporary staging ground and the real destination is self-custody wallets with CryptoOwnBank as the cockpit. (1) ENCRYPTION: replaced the old AES-256-CBC + hardcoded `"salt"` + SESSION_SECRET-reuse scheme (which lived duplicated in BOTH server/storage.ts and server/services/exchange-sync.ts) with a single shared module `server/credential-crypto.ts` using AES-256-GCM (authenticated), a random 16-byte salt + 12-byte IV per record, scrypt key derivation, and a `v2:` versioned payload format. Prefers a dedicated `CREDENTIAL_ENCRYPTION_KEY` secret, gracefully falls back to SESSION_SECRET (with a console warning) so dev/boot never breaks. Legacy CBC `iv:ciphertext` payloads still decrypt for back-compat — but the `api_credentials` table is currently EMPTY (verified), so there was zero migration risk. RECOMMENDED next step: add a dedicated `CREDENTIAL_ENCRYPTION_KEY` secret for full key separation. (2) UI un-hidden: the exchange Connect button on /integrations was hidden (className="hidden"); re-enabled it and RESTRICTED the live-connect dropdown to ONLY the 3 the backend genuinely supports AND that work today via `LIVE_API_EXCHANGES = ["kraken","binance_us","crypto_com"]`. Coinbase moved to CSV-only (added to NO_API_EXCHANGES; its legacy key method was retired by Coinbase May 2024 and our backend only speaks the dead method — guide rewritten to honest CSV/address-tracking). Uphold + all brokerages stay CSV. (3) HONEST WARNINGS: added an amber "Exchange connections are best-effort only — the exchange is in control, not us, and not you; syncs can break; if they lock you out there may be nothing we can do" alert inside the Connect dialog, plus a top-of-page cockpit banner ("Exchanges are a starting point, not the destination… you hold the keys… CryptoOwnBank is the cockpit"). Bumped service-worker CACHE_VERSION cob-v56→v57 — MUST RE-PUBLISH and reopen the PWA once. tsc clean on edited files (only pre-existing project-wide BigInt/ES-target + i18n/typing errors remain); app boots clean after restart; HMR applied to integrations.tsx. Previous work below.**
@@ -272,9 +285,9 @@ When a member labels an outgoing transfer to a destination address (own wallet /
 
 ---
 
-## PENDING — Principles Page & Member-Voted Roadmap (Added 2026-04-27)
+## SHIPPED — Principles Page & Member-Voted Roadmap (Added 2026-04-27, completed 2026-04-27)
 
-**Status (updated 2026-04-27 PM):** Phase 1 SHIPPED — `/principles` page live, AGPL-3.0 LICENSE file in repo root, footer link added site-wide (landing footer Resources column + authenticated app footer), landing-page teaser block added above the final CTA section. Three core principles enshrined in `replit.md`. Phase 2 (member-voted `/roadmap` build with the 14 starter items) is NOT YET BUILT — awaiting Peter Sr's green light.
+**Status (updated 2026-06-08):** BOTH PHASES SHIPPED. Phase 1 — `/principles` page live, AGPL-3.0 LICENSE file in repo root, footer link added site-wide (landing footer Resources column + authenticated app footer), landing-page teaser block added above the final CTA section, three core principles enshrined in `replit.md`. Phase 2 — member-voted `/roadmap` live with all 14 starter items seeded, one-account-one-vote, 10-vote cap, anti-gaming gate (email verify + 7-day age), status ladder, 30-day team-response, admin controls. Nothing pending here. (Reference copy/design decisions kept below for the record.)
 
 ### Three Core Principles (locked — to be enshrined in `replit.md` and on a public page)
 1. **Non-custodial.** We never hold member money. Nothing for any government to subpoena from us about balances because we don't have balances.
@@ -384,11 +397,11 @@ When a member labels an outgoing transfer to a destination address (own wallet /
 - **Never imply members vote = automatic build.** Vote totals are signal, not command. Some things can't be voted on. Keep the 30-day-response promise as the trust contract.
 - **Always include the honest disclaimer about responsibility.** If members lose keys without a family backup, the money is gone. This filter is healthy.
 
-### Outstanding Decisions for Peter Sr (when he returns)
-1. **License for the codebase** — recommended **AGPL-3.0** (protects mission against hostile/private forks). Alternatives: MIT (more permissive but lets censoring entities run our code privately) or SSPL.
-2. **Dashboard placement of the "Vote on what we build next" card** — prominent on main dashboard (more engagement, more noise) vs. footer link only (cleaner, less engagement).
-3. **Sequencing confirmation** — recommended order: (a) Principles page first, (b) Roadmap voting page with starter items loaded, (c) build top-voted items based on signal.
-4. **Whether to formally add these as project tasks** in the project task system (currently captured here in TODO.md as the canonical record).
+### Outstanding Decisions for Peter Sr — MOSTLY RESOLVED (updated 2026-06-08)
+1. ~~**License for the codebase**~~ — RESOLVED: **AGPL-3.0 chosen and applied** (LICENSE file in repo root, enshrined in `replit.md`).
+2. **Dashboard placement of the "Vote on what we build next" card** — STILL OPEN (minor): roadmap is reachable from the sidebar; decide if it also deserves a prominent dashboard card. Low priority.
+3. ~~**Sequencing confirmation**~~ — RESOLVED: executed in the recommended order (Principles page → Roadmap voting with starter items → build winners).
+4. ~~**Whether to formally add these as project tasks**~~ — RESOLVED: TODO.md is the canonical record (referenced in `replit.md`).
 
 ### Larger Strategic Frame from This Conversation
 - **Mission:** "Everyone at the table." Borderless commerce, fungible money, no jurisdictional gatekeeping at the protocol layer. Build-track infrastructure that survives political whiplash.
