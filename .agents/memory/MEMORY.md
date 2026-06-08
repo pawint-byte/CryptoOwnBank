@@ -1,3 +1,4 @@
+- [Wallet Security approvals scan](wallet-security-approvals-scan.md) — never trust one full-range eth_getLogs on public RPC; page backwards + surface a `partial` flag, else the tool under-reports approvals = false "all clear".
 - [Price cache field is priceUsd](price-cache-field-name.md) — price_cache value col = price_usd/`priceUsd`; reading `.price` = NaN → poisons stored usd_value as "NaN" → coins show $0; enrich self-heals non-finite usd on read.
 - [School of CryptoOwnBank teach pattern](school-of-cryptoownbank-pattern.md) — every risky action = explain → verify-understanding → proceed; persona-agnostic; soft check, friction only at irreversible forks.
 - [Help guide step accuracy](help-guide-accuracy.md) — verify exact UI labels in source before quoting in /help guides; explore agents paraphrase/invent controls.

@@ -73,6 +73,67 @@ export interface ChainScanResult {
   ok: boolean;
   error: string | null;
   approvals: TokenApproval[];
+  // True when we could NOT read this chain's full history (the public connection
+  // limited the range), so newer-only results may be missing older approvals.
+  partial: boolean;
+}
+
+// When a full-history log read is refused by the public RPC, we page backwards
+// from the latest block in windows. These bounds keep the load gentle.
+const CHUNK_MAX_WINDOW = 50_000;
+const CHUNK_MIN_WINDOW = 2_000;
+const CHUNK_MAX_QUERIES = 60;
+
+/**
+ * Fetch this owner's ERC-20 Approval logs. Tries one full-history call first
+ * (cheapest + most complete when the RPC allows it); if that's refused, pages
+ * backwards from the latest block in shrinking windows. Returns the logs found
+ * plus `partial = true` when we couldn't reach genesis (so the UI can warn).
+ */
+async function fetchApprovalLogs(
+  provider: ethers.JsonRpcProvider,
+  ownerTopic: string,
+): Promise<{ logs: ethers.Log[]; partial: boolean }> {
+  const filter = { topics: [APPROVAL_TOPIC, ownerTopic] };
+
+  try {
+    const logs = await provider.getLogs({ ...filter, fromBlock: 0, toBlock: "latest" });
+    return { logs, partial: false };
+  } catch {
+    // fall through to windowed paging
+  }
+
+  const latest = await provider.getBlockNumber();
+  const all: ethers.Log[] = [];
+  let toBlock = latest;
+  let window = CHUNK_MAX_WINDOW;
+  let queries = 0;
+  let reachedGenesis = false;
+
+  while (toBlock > 0 && queries < CHUNK_MAX_QUERIES) {
+    const fromBlock = Math.max(0, toBlock - window + 1);
+    try {
+      const logs = await provider.getLogs({ ...filter, fromBlock, toBlock });
+      all.push(...logs);
+      queries++;
+      if (fromBlock === 0) {
+        reachedGenesis = true;
+        break;
+      }
+      toBlock = fromBlock - 1;
+      // gently grow the window back up after a success
+      window = Math.min(CHUNK_MAX_WINDOW, window * 2);
+    } catch {
+      // window too large for this RPC — shrink and retry the same toBlock
+      if (window <= CHUNK_MIN_WINDOW) {
+        // even the smallest window failed; stop and report partial
+        break;
+      }
+      window = Math.max(CHUNK_MIN_WINDOW, Math.floor(window / 2));
+    }
+  }
+
+  return { logs: all, partial: !reachedGenesis };
 }
 
 async function runInBatches<T, R>(
@@ -99,18 +160,18 @@ export async function scanChainApprovals(chainId: number, owner: string): Promis
   const ownerTopic = ethers.zeroPadValue(ethers.getAddress(owner), 32);
 
   let logs: ethers.Log[];
+  let partial: boolean;
   try {
-    logs = await provider.getLogs({
-      topics: [APPROVAL_TOPIC, ownerTopic],
-      fromBlock: 0,
-      toBlock: "latest",
-    });
+    const res = await fetchApprovalLogs(provider, ownerTopic);
+    logs = res.logs;
+    partial = res.partial;
   } catch (err: any) {
     return {
       chainId,
       ok: false,
       error: err?.message || "This network's free connection wouldn't return the full history right now.",
       approvals: [],
+      partial: true,
     };
   }
 
@@ -168,7 +229,7 @@ export async function scanChainApprovals(chainId: number, owner: string): Promis
     return b.atRisk > a.atRisk ? 1 : b.atRisk < a.atRisk ? -1 : 0;
   });
 
-  return { chainId, ok: true, error: null, approvals };
+  return { chainId, ok: true, error: null, approvals, partial };
 }
 
 async function ensureChain(chainId: number) {

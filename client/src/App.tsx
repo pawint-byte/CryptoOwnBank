@@ -88,6 +88,7 @@ import QuickStart from "@/pages/quick-start";
 import Insurance from "@/pages/insurance";
 import DeFiBorrowing from "@/pages/defi-borrowing";
 import AavePage from "@/pages/aave";
+import WalletSecurity from "@/pages/wallet-security";
 import RecurringPayments from "@/pages/recurring-payments";
 import DcaOrders from "@/pages/dca-orders";
 import BitcoinLightning from "@/pages/bitcoin-lightning";
@@ -315,6 +316,7 @@ function AuthenticatedRoutes() {
         <Route path="/insurance" component={Insurance} />
         <Route path="/defi-borrowing" component={DeFiBorrowing} />
         <Route path="/aave" component={AavePage} />
+        <Route path="/wallet-security" component={WalletSecurity} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/sovereignty-kit" component={SovereigntyKit} />
         <Route path="/drills" component={DrillsCenter} />

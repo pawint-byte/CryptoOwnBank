@@ -225,6 +225,23 @@ function ProtocolCard({ protocol }: { protocol: LendingProtocol }) {
           </div>
         </div>
 
+        {protocol.id === "aave" && (
+          <div className="rounded-lg border border-[#00A4E4]/30 bg-[#00A4E4]/5 dark:bg-[#00A4E4]/10 p-3 flex flex-col sm:flex-row sm:items-center gap-2 justify-between" data-testid="banner-aave-live">
+            <div className="flex items-start gap-2">
+              <Zap className="h-4 w-4 text-[#00A4E4] shrink-0 mt-0.5" />
+              <p className="text-sm">
+                <span className="font-medium">You can do this right here.</span>{" "}
+                <span className="text-muted-foreground">Supply, borrow, and repay on Aave without leaving CryptoOwnBank — you sign every transaction in your own wallet.</span>
+              </p>
+            </div>
+            <Link href="/aave" data-testid="link-aave-hub-card">
+              <Button size="sm" className="bg-[#00A4E4] text-white border-[#00A4E4] shrink-0">
+                Open Aave Hub
+              </Button>
+            </Link>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 pt-1">
           <a href={protocol.link} target="_blank" rel="noopener noreferrer" data-testid={`link-protocol-${protocol.id}`}>
             <Button variant="outline" size="sm">
