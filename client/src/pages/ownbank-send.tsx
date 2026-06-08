@@ -117,6 +117,7 @@ export default function OwnBankSend() {
   const [currency, setCurrency] = useState("XRP");
   const [destinationTag, setDestinationTag] = useState("");
   const [memo, setMemo] = useState("");
+  const [privateNote, setPrivateNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -269,11 +270,22 @@ export default function OwnBankSend() {
         } catch (disposalErr) {
           console.warn("[send-disposal] Failed to record disposal:", disposalErr);
         }
+        const isCanonicalHash = !!result.txHash && /^[0-9A-Fa-f]{64}$/.test(result.txHash);
+        if (privateNote.trim() && isCanonicalHash) {
+          try {
+            await apiRequest("PUT", `/api/transaction-notes/${result.txHash}`, {
+              note: privateNote.trim(),
+            });
+          } catch (noteErr) {
+            console.warn("[send-note] Failed to save private note:", noteErr);
+          }
+        }
         setShowConfirm(false);
         setRecipient("");
         setAmount("");
         setDestinationTag("");
         setMemo("");
+        setPrivateNote("");
         setTimeout(() => fetchData(), 3000);
       } else {
         toast({
@@ -608,6 +620,21 @@ export default function OwnBankSend() {
                     onChange={(e) => setMemo(e.target.value)}
                     data-testid="input-memo"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The memo is recorded on-chain and anyone can see it.
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium mb-1.5 block">Private note (optional)</label>
+                  <Input
+                    placeholder="e.g. Rent to landlord, paid back Sam"
+                    value={privateNote}
+                    onChange={(e) => setPrivateNote(e.target.value)}
+                    data-testid="input-private-note"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Only you can see this. It stays private, is never put on-chain, and never affects your taxes.
+                  </p>
                 </div>
               </div>
 

@@ -84,6 +84,28 @@ export const insertRecognizedAddressSchema = createInsertSchema(recognizedAddres
 export type InsertRecognizedAddress = z.infer<typeof insertRecognizedAddressSchema>;
 export type RecognizedAddress = typeof recognizedAddresses.$inferSelect;
 
+// Private, off-chain free-text notes attached to a single on-chain transaction
+// (keyed by the blockchain tx hash). Intentionally SEPARATE from the tax ledger
+// `transactions.notes` so a note can NEVER influence sale-vs-self-transfer tax
+// classification. One note per (user, tx hash).
+export const transactionNotes = pgTable("transaction_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  txHash: varchar("tx_hash", { length: 100 }).notNull(),
+  note: text("note").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_transaction_notes_user").on(table.userId),
+  unique("uq_transaction_notes_user_hash").on(table.userId, table.txHash),
+]);
+
+export const insertTransactionNoteSchema = createInsertSchema(transactionNotes).omit({
+  id: true,
+  updatedAt: true,
+});
+export type InsertTransactionNote = z.infer<typeof insertTransactionNoteSchema>;
+export type TransactionNote = typeof transactionNotes.$inferSelect;
+
 export const positions = pgTable("positions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),

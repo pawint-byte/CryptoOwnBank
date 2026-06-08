@@ -1,10 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { useUserData } from "@/hooks/use-user-data";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -50,11 +60,15 @@ import {
   AlertCircle,
   XCircle,
   SlidersHorizontal,
+  Search,
+  StickyNote,
+  Tag,
+  Plus,
 } from "lucide-react";
 
 type TxFilter = "all" | "vault" | "payment" | "swap" | "trustset";
 
-type ColumnKey = "hash" | "type" | "direction" | "amount" | "usdValue" | "fee" | "address" | "date" | "status";
+type ColumnKey = "hash" | "type" | "direction" | "amount" | "usdValue" | "fee" | "address" | "memo" | "note" | "date" | "status";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "hash", label: "Tx Hash" },
@@ -64,13 +78,15 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "usdValue", label: "USD Value" },
   { key: "fee", label: "Fee" },
   { key: "address", label: "Address" },
+  { key: "memo", label: "Memo / Tag" },
+  { key: "note", label: "My Note" },
   { key: "date", label: "Date" },
   { key: "status", label: "Status" },
 ];
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["hash", "type", "direction", "amount", "usdValue", "fee", "address", "date", "status"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["hash", "type", "direction", "amount", "usdValue", "address", "memo", "note", "date", "status"];
 
-const MOBILE_HIDDEN_COLUMNS: ColumnKey[] = ["fee", "address", "usdValue", "status"];
+const MOBILE_HIDDEN_COLUMNS: ColumnKey[] = ["fee", "address", "usdValue", "status", "memo"];
 
 
 function truncateHash(hash: string): string {
@@ -177,14 +193,144 @@ function getTypeVariant(type: string): "default" | "secondary" | "outline" {
   }
 }
 
+interface HistoryContact {
+  name?: string;
+  address?: string;
+}
+
+function NoteCell({
+  txHash,
+  note,
+  onSave,
+  isSaving,
+  testId,
+}: {
+  txHash: string;
+  note: string;
+  onSave: (txHash: string, note: string) => void;
+  isSaving: boolean;
+  testId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(note);
+
+  useEffect(() => {
+    if (open) setDraft(note);
+  }, [open, note]);
+
+  const handleSave = () => {
+    onSave(txHash, draft);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {note ? (
+          <button
+            type="button"
+            className="flex items-start gap-1.5 text-left max-w-[180px] group"
+            data-testid={`button-edit-note-${testId}`}
+          >
+            <StickyNote className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+            <span className="text-sm text-foreground line-clamp-2 group-hover:underline">
+              {note}
+            </span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            data-testid={`button-add-note-${testId}`}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add note
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 space-y-2">
+        <p className="text-xs text-muted-foreground">
+          Private note — only you can see it. Notes never affect your taxes.
+        </p>
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="e.g. Rent to landlord, paid back Sam…"
+          rows={3}
+          data-testid={`textarea-note-${testId}`}
+        />
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setOpen(false)}
+            data-testid={`button-cancel-note-${testId}`}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving || draft === note}
+            data-testid={`button-save-note-${testId}`}
+          >
+            Save
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+interface TransactionNoteRecord {
+  txHash: string;
+  note: string;
+}
+
 export default function OwnBankHistory() {
   const { walletAddress, isConnected, connect } = useXrplStore();
+  const { toast } = useToast();
   const [transactions, setTransactions] = useState<XrplTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TxFilter>("all");
+  const [search, setSearch] = useState("");
   const [xrpPrice, setXrpPrice] = useState<number>(0);
   const { data: visibleColumns, save: saveColumnPrefs } = useUserData<ColumnKey[]>("xrpl_history_columns", DEFAULT_COLUMNS);
+  const { data: contacts } = useUserData<HistoryContact[]>("xrpl_contacts", []);
+
+  const { data: notesData } = useQuery<TransactionNoteRecord[]>({
+    queryKey: ["/api/transaction-notes"],
+  });
+
+  const noteMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of notesData ?? []) {
+      if (n.txHash) map.set(n.txHash, n.note);
+    }
+    return map;
+  }, [notesData]);
+
+  const contactNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of contacts ?? []) {
+      if (c.address && c.name) map.set(c.address.toLowerCase(), c.name);
+    }
+    return map;
+  }, [contacts]);
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async ({ txHash, note }: { txHash: string; note: string }) => {
+      await apiRequest("PUT", `/api/transaction-notes/${txHash}`, { note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/transaction-notes"] });
+      toast({ title: "Note saved" });
+    },
+    onError: () => {
+      toast({ title: "Couldn't save note", variant: "destructive" });
+    },
+  });
 
   const toggleColumn = (col: ColumnKey) => {
     const next = visibleColumns.includes(col)
@@ -220,19 +366,50 @@ export default function OwnBankHistory() {
     }
   }, [isConnected, walletAddress, fetchTransactions]);
 
+  const searchTerm = search.trim().toLowerCase();
+
   const filteredTransactions = transactions.filter((tx) => {
-    switch (filter) {
-      case "vault":
-        return isVaultTransaction(tx);
-      case "payment":
-        return tx.type === "Payment";
-      case "swap":
-        return tx.type === "OfferCreate";
-      case "trustset":
-        return tx.type === "TrustSet";
-      default:
-        return true;
-    }
+    const categoryMatch = (() => {
+      switch (filter) {
+        case "vault":
+          return isVaultTransaction(tx);
+        case "payment":
+          return tx.type === "Payment";
+        case "swap":
+          return tx.type === "OfferCreate";
+        case "trustset":
+          return tx.type === "TrustSet";
+        default:
+          return true;
+      }
+    })();
+    if (!categoryMatch) return false;
+    if (!searchTerm) return true;
+
+    const note = noteMap.get(tx.hash) || "";
+    const counterparty =
+      tx.source.toLowerCase() === (walletAddress || "").toLowerCase()
+        ? tx.destination
+        : tx.source;
+    const contactName = contactNameMap.get(counterparty.toLowerCase()) || "";
+    const haystack = [
+      tx.hash,
+      tx.type,
+      tx.amount,
+      tx.currency,
+      tx.amount2,
+      tx.currency2,
+      tx.source,
+      tx.destination,
+      tx.memo,
+      tx.destinationTag,
+      note,
+      contactName,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(searchTerm);
   });
 
   if (!isConnected || !walletAddress) {
@@ -297,6 +474,16 @@ export default function OwnBankHistory() {
             Transactions
           </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search notes, memo, tag, name…"
+                className="pl-8 w-[200px] sm:w-[240px]"
+                data-testid="input-search-history"
+              />
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="button-column-picker">
@@ -380,7 +567,9 @@ export default function OwnBankHistory() {
             >
               <History className="h-10 w-10 text-muted-foreground" />
               <p className="text-muted-foreground text-center">
-                {filter === "all"
+                {searchTerm
+                  ? "No transactions match your search."
+                  : filter === "all"
                   ? "No transactions found for this wallet."
                   : "No matching transactions found. Try a different filter."}
               </p>
@@ -397,6 +586,8 @@ export default function OwnBankHistory() {
                     {isColumnVisible("usdValue") && <TableHead className="text-right hidden sm:table-cell">USD Value</TableHead>}
                     {isColumnVisible("fee") && <TableHead className="text-right hidden md:table-cell">Fee</TableHead>}
                     {isColumnVisible("address") && <TableHead className="hidden md:table-cell">Address</TableHead>}
+                    {isColumnVisible("memo") && <TableHead className="hidden md:table-cell">Memo / Tag</TableHead>}
+                    {isColumnVisible("note") && <TableHead>My Note</TableHead>}
                     {isColumnVisible("date") && <TableHead>Date</TableHead>}
                     {isColumnVisible("status") && <TableHead className="hidden sm:table-cell">Status</TableHead>}
                   </TableRow>
@@ -542,6 +733,50 @@ export default function OwnBankHistory() {
                               <span className="text-sm text-muted-foreground">
                                 --
                               </span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isColumnVisible("memo") && (
+                          <TableCell className="hidden md:table-cell">
+                            {tx.memo || tx.destinationTag ? (
+                              <div className="flex flex-col gap-1 max-w-[180px]">
+                                {tx.memo && (
+                                  <span
+                                    className="text-sm text-foreground break-words"
+                                    data-testid={`text-tx-memo-${tx.hash || index}`}
+                                  >
+                                    {tx.memo}
+                                  </span>
+                                )}
+                                {tx.destinationTag && (
+                                  <span
+                                    className="flex items-center gap-1 text-xs text-muted-foreground font-mono"
+                                    data-testid={`text-tx-tag-${tx.hash || index}`}
+                                  >
+                                    <Tag className="h-3 w-3" />
+                                    Tag: {tx.destinationTag}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {isColumnVisible("note") && (
+                          <TableCell>
+                            {tx.hash ? (
+                              <NoteCell
+                                txHash={tx.hash}
+                                note={noteMap.get(tx.hash) || ""}
+                                onSave={(txHash, note) =>
+                                  saveNoteMutation.mutate({ txHash, note })
+                                }
+                                isSaving={saveNoteMutation.isPending}
+                                testId={tx.hash}
+                              />
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
                             )}
                           </TableCell>
                         )}

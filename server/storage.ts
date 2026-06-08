@@ -24,6 +24,8 @@ import {
   apiUsageLog,
   apiBudgets,
   recognizedAddresses,
+  transactionNotes,
+  type TransactionNote,
   type ApiUsageLog,
   type ApiBudget,
   type InsertApiBudget,
@@ -190,6 +192,8 @@ export interface IStorage {
   updateTransaction(id: string, data: Partial<Transaction>): Promise<Transaction | undefined>;
   getRecognizedAddresses(userId: string): Promise<RecognizedAddress[]>;
   upsertRecognizedAddress(userId: string, address: string, classification: string): Promise<void>;
+  getTransactionNotes(userId: string): Promise<TransactionNote[]>;
+  upsertTransactionNote(userId: string, txHash: string, note: string): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   getTransactionsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Transaction[]>;
 
@@ -586,6 +590,30 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({
         target: [recognizedAddresses.userId, recognizedAddresses.address],
         set: { classification },
+      });
+  }
+
+  async getTransactionNotes(userId: string): Promise<TransactionNote[]> {
+    return await db
+      .select()
+      .from(transactionNotes)
+      .where(eq(transactionNotes.userId, userId));
+  }
+
+  async upsertTransactionNote(userId: string, txHash: string, note: string): Promise<void> {
+    const trimmed = note.trim();
+    if (!trimmed) {
+      await db
+        .delete(transactionNotes)
+        .where(and(eq(transactionNotes.userId, userId), eq(transactionNotes.txHash, txHash)));
+      return;
+    }
+    await db
+      .insert(transactionNotes)
+      .values({ userId, txHash, note: trimmed })
+      .onConflictDoUpdate({
+        target: [transactionNotes.userId, transactionNotes.txHash],
+        set: { note: trimmed, updatedAt: new Date() },
       });
   }
 

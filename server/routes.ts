@@ -3539,6 +3539,41 @@ Rules you MUST follow:
     res.json(CHAIN_CONFIG);
   });
 
+  // Private, off-chain notes attached to an on-chain transaction by its hash.
+  // These are free-text context only and NEVER affect tax classification.
+  app.get("/api/transaction-notes", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notes = await storage.getTransactionNotes(userId);
+      res.json(notes);
+    } catch (error) {
+      console.error("[transaction-notes] load error:", error);
+      res.status(500).json({ message: "Failed to load transaction notes" });
+    }
+  });
+
+  app.put("/api/transaction-notes/:txHash", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const txHash = String(req.params.txHash || "").trim();
+      if (!txHash) {
+        return res.status(400).json({ message: "Missing transaction hash" });
+      }
+      if (txHash.length > 100) {
+        return res.status(400).json({ message: "Transaction hash too long" });
+      }
+      const note = typeof req.body?.note === "string" ? req.body.note : "";
+      if (note.length > 2000) {
+        return res.status(400).json({ message: "Note is too long (max 2000 characters)" });
+      }
+      await storage.upsertTransactionNote(userId, txHash, note);
+      res.json({ txHash, note: note.trim() });
+    } catch (error) {
+      console.error("[transaction-notes] save error:", error);
+      res.status(500).json({ message: "Failed to save transaction note" });
+    }
+  });
+
   app.post("/api/wallets", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

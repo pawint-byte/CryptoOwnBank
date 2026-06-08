@@ -91,6 +91,39 @@ export interface XrplTransaction {
   date: string;
   status: string;
   fee: string;
+  destinationTag: string;
+  memo: string;
+}
+
+// XRPL memos store their data as hex. Decode the first text memo to UTF-8 so it
+// can be displayed and searched. Returns "" if there is no readable memo.
+function decodeXrplMemo(memos: any): string {
+  if (!Array.isArray(memos)) return "";
+  for (const entry of memos) {
+    const memoData = entry?.Memo?.MemoData;
+    if (typeof memoData === "string" && memoData.length > 0) {
+      try {
+        const decoded = hexToUtf8(memoData).replace(/\0/g, "").trim();
+        if (decoded) return decoded;
+      } catch {
+        // ignore undecodable memo data
+      }
+    }
+  }
+  return "";
+}
+
+function hexToUtf8(hex: string): string {
+  const clean = hex.replace(/[^0-9a-fA-F]/g, "");
+  let str = "";
+  for (let i = 0; i + 1 < clean.length; i += 2) {
+    str += String.fromCharCode(parseInt(clean.substr(i, 2), 16));
+  }
+  try {
+    return decodeURIComponent(escape(str));
+  } catch {
+    return str;
+  }
 }
 
 function parseXrplAmount(amountField: any): { amount: string; currency: string } {
@@ -187,6 +220,11 @@ export async function getAccountTransactions(
         fee: txData.Fee
           ? (Number(txData.Fee) / 1_000_000).toFixed(6)
           : "0",
+        destinationTag:
+          txData.DestinationTag !== undefined && txData.DestinationTag !== null
+            ? String(txData.DestinationTag)
+            : "",
+        memo: decodeXrplMemo(txData.Memos),
       };
     });
   } catch {
