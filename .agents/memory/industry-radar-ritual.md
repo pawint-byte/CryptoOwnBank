@@ -30,6 +30,13 @@ ANGLE | NOTE) / Source URL. Non-keepers are just discussed and dropped (save not
 determine if we hold onto this to take action or we just discuss it and move on." The value is
 the conversation + his decision, not volume.
 
+## The evaluation lens (added 2026-06-09)
+Read every shared article/intel through one primary question: **"Does this point to something ON-CHAIN that a MEMBER could use to complete an expected action themselves — with just their own wallet/keys + code (computers), no human middleman, no gatekeeper, and without us holding anything?"** The more power stays with **member + computers** (trustless, self-executable) and the less it leans on an intermediary (including us), the more aligned it is.
+
+**Why:** founder's framing (2026-06-09) — "how can things on the blockchain be used by the member to complete expected actions on-chain… as much as we can keep the power just with the member and computers, the better." This nests with the consent doctrine (member-orchestration-consent-model.md): the platform aligns/assures, the member approves and executes.
+
+**How to apply:** the lens sits ON TOP of the two-filter rule (TODO.md) — must still pass Filter 1 (non-custodial, no regulatory trap) and Filter 2 (works end-to-end on a chain/standard we support). KEEP/ACT when the piece surfaces a concrete on-chain primitive/standard a member on a supported chain can self-execute; DROP/NOTE when it's narrative/price commentary, needs an intermediary or makes us a gatekeeper, or needs an unsupported chain/standard. (Cardano "trust layer" piece = NOTE/no-action: vision narrative, no member-executable capability, unsupported chain.)
+
 ## Honesty notes
 - Mark weak sources (e.g. a YouTube interview) as "verify before publishing."
 - Negative findings ("quiet month, nothing happened on XRPL/Stellar") are valid output — say so
