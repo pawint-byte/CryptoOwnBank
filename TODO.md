@@ -135,6 +135,13 @@ New guided onboarding page (`client/src/pages/prime-the-pump.tsx`) that gets a m
 - **Revisit trigger:** reconsider Cardano support ONLY if a member actually holds ADA/Cardano-native assets AND the ecosystem is visibly growing again (rising TVL, real tooling) — not before.
 - **Source:** https://defi-planet.com/2026/06/cardano-aims-to-become-global-trust-layer-as-hoskinson-outlines-long-term-vision/
 
+### KEEPER — Member-tagged asset types (e.g. "RWA") to group holdings by kind (Added 2026-06-09)
+- **What:** Let a member apply their OWN type label to a holding (Real-World Asset, Tokenized Security, Stablecoin, Crypto, etc.) and have the portfolio group + chart by it. Prompted by the Robinhood/Ripple "RWAs on XRPL" narrative the founder shared — members will increasingly hold XRPL issued tokens that are tokenized real assets and want to see them apart from pure crypto.
+- **Why it fits (action bucket = VERIFY / own-your-books):** Pure member-orchestration/consent — the MEMBER asserts the label, we only organize & display. We do NOT verify/certify that something is a "real" RWA — that would make us a gatekeeper and crack the non-custodial line. It's "your books, your labels."
+- **No overlap (checked 2026-06-09):** RWA Yield Discovery (`client/src/pages/rwa-yields.tsx`) is an external "where to FIND these" directory; this is "label what you ALREADY hold." Complementary, not duplicate.
+- **Scope if/when built (investigated 2026-06-09, NOT built per founder):** one new member-set field (e.g. `customCategory`) on `positions` + `wallet_balances` in `shared/schema.ts`; a PATCH route alongside the existing hold-reason route in `server/routes/portfolio.ts`; UI in `client/src/pages/portfolio.tsx` (EditPositionDialog + the `categoryData` useMemo, so a member tag overrides the default `getAssetCategory` from `shared/asset-categories.ts`) plus `client/src/components/allocation-chart.tsx`. For XRPL tokens, show the ISSUER next to the name (currency codes like "USD" are not unique). Free, no new services, works on any chain. Recommend tag-per-token-for-member (applies wherever held), not per-wallet-row.
+- **Status:** KEEPER — founder chose "keep exploring, don't build yet" (2026-06-09). Revisit when a member actually holds XRPL RWA tokens, or when we want a content + feature pairing off the RWA narrative.
+
 ---
 
 ## SHIPPED — Member-Orchestration / Consent doctrine now explained to members on the site (Added & completed 2026-06-09)
