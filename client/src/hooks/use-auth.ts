@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@shared/models/auth";
+import { useXrplStore } from "@/lib/xrpl-store";
 
 async function fetchUser(): Promise<User | null> {
   const response = await fetch("/api/auth/user", {
@@ -22,6 +23,14 @@ async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
+  // Clear any browser-local wallet connection so the next account that logs in
+  // on this device never inherits the previous member's connected wallet.
+  try {
+    useXrplStore.getState().resetWallet();
+    useXrplStore.setState({ ownerUserId: null });
+  } catch {
+    // non-fatal
+  }
   window.location.href = "/login";
 }
 

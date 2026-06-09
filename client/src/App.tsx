@@ -496,6 +496,18 @@ function ReferralDetector() {
   return null;
 }
 
+function XrplAccountGuard() {
+  const { user, isLoading } = useAuth();
+  const syncOwner = useXrplStore((s) => s.syncOwner);
+
+  useEffect(() => {
+    if (isLoading) return;
+    syncOwner(user?.id ?? null);
+  }, [user?.id, isLoading, syncOwner]);
+
+  return null;
+}
+
 installGlobalErrorHandlers();
 
 function App() {
@@ -505,6 +517,7 @@ function App() {
         <ThemeProvider defaultTheme="system" storageKey="cryptobroker-theme">
           <TooltipProvider>
             <ReferralDetector />
+            <XrplAccountGuard />
             <Toaster />
             <PWAInstallPrompt />
             <Router />

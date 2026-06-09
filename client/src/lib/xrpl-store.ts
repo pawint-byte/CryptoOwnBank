@@ -34,9 +34,12 @@ interface XrplState {
   referredBy: string | null;
   premiumCreditMonths: number;
   subscriptionTier: "free" | "premium";
+  ownerUserId: string | null;
 
   connect: (address: string, type: "xumm" | "ledger") => void;
   disconnect: () => void;
+  resetWallet: () => void;
+  syncOwner: (currentUserId: string | null) => void;
   setSpendingWallet: (address: string) => void;
   updateBalances: (xrp: number, rlusd: number) => void;
   addVaultDeposit: (deposit: VaultDeposit) => void;
@@ -71,6 +74,7 @@ export const useXrplStore = create<XrplState>()(
       referredBy: null,
       premiumCreditMonths: 0,
       subscriptionTier: "free",
+      ownerUserId: null,
 
       connect: (address, type) =>
         set({
@@ -91,6 +95,43 @@ export const useXrplStore = create<XrplState>()(
           balanceIncrease: null,
           balancePromptDismissed: false,
         }),
+
+      // Wipe every wallet-derived value back to defaults. Used when the browser's
+      // connected wallet belongs to a different account than the one now logged in.
+      resetWallet: () =>
+        set({
+          walletAddress: null,
+          isConnected: false,
+          walletType: null,
+          spendingWallet: "",
+          xrpBalance: 0,
+          rlusdBalance: 0,
+          previousRlusdBalance: null,
+          balanceIncrease: null,
+          balancePromptDismissed: false,
+          vaultDeposits: [],
+          referralCode: null,
+          referrals: [],
+          referredBy: null,
+          premiumCreditMonths: 0,
+          subscriptionTier: "free",
+        }),
+
+      // Tie the persisted (browser-local) wallet connection to the logged-in
+      // account. If a wallet is connected under a different account — or an
+      // unknown/legacy session we can't attribute — clear it so one member never
+      // sees another's wallet in the same browser.
+      syncOwner: (currentUserId) => {
+        const s = get();
+        if (!s.isConnected && !s.walletAddress) {
+          if (s.ownerUserId !== currentUserId) set({ ownerUserId: currentUserId });
+          return;
+        }
+        if (s.ownerUserId === null || s.ownerUserId !== currentUserId) {
+          get().resetWallet();
+          set({ ownerUserId: currentUserId });
+        }
+      },
 
       setSpendingWallet: (address) => set({ spendingWallet: address }),
 

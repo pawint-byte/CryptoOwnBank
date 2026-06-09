@@ -1,4 +1,5 @@
 - [Wallet Security approvals scan](wallet-security-approvals-scan.md) — never trust one full-range eth_getLogs on public RPC; page backwards + surface a `partial` flag, else the tool under-reports approvals = false "all clear".
+- [Browser-persisted wallet ↔ account binding](browser-persisted-wallet-account-binding.md) — Zustand-persist XRPL connection is per-browser; if not tagged w/ user id & cleared on logout it bleeds one account's wallet+balance into another in the same browser.
 - [Production build OOM (Vite in-process)](build-oom-vite-child-process.md) — deploy build dies with JS heap OOM after "N modules transformed"; fix runs Vite out-of-process w/ raised heap (VITE_MAX_OLD_SPACE_SIZE), not package.json edits.
 - [Price cache field is priceUsd](price-cache-field-name.md) — price_cache value col = price_usd/`priceUsd`; reading `.price` = NaN → poisons stored usd_value as "NaN" → coins show $0; enrich self-heals non-finite usd on read.
 - [School of CryptoOwnBank teach pattern](school-of-cryptoownbank-pattern.md) — every risky action = explain → verify-understanding → proceed; persona-agnostic; soft check, friction only at irreversible forks.
