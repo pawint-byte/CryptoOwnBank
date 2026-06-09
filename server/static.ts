@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
-import { pickLang, localizeIndexHtml } from "./seo-localize";
+import { localizeAndCanonicalize } from "./seo-localize";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
@@ -34,6 +34,6 @@ export function serveStatic(app: Express) {
     res.setHeader('Expires', '0');
     res.setHeader('Content-Type', 'text/html');
     const html = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
-    res.status(200).send(localizeIndexHtml(html, pickLang(req)));
+    res.status(200).send(localizeAndCanonicalize(html, req));
   });
 }

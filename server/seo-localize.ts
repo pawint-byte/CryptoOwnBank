@@ -112,3 +112,32 @@ export function localizeIndexHtml(html: string, lang: SeoLang): string {
   );
   return out;
 }
+
+// Primary brand domain. Both cryptoownbank.com and the spare lifenest.me serve
+// the same app, so we emit a canonical pointing at this origin no matter which
+// host answered — that tells Google to credit one domain instead of splitting
+// ranking across both.
+const PRIMARY_ORIGIN = "https://cryptoownbank.com";
+
+export function canonicalUrl(req: Request): string {
+  const rawPath = (req.originalUrl || "/").split("?")[0] || "/";
+  const path = rawPath === "/index.html" ? "/" : rawPath;
+  const lang = pickLang(req);
+  const query = lang !== "en" ? `?lang=${lang}` : "";
+  return `${PRIMARY_ORIGIN}${path}${query}`;
+}
+
+export function setCanonical(html: string, url: string): string {
+  const tag = `<link rel="canonical" href="${escapeAttr(url)}" />`;
+  if (/<link rel="canonical"[^>]*>/.test(html)) {
+    return html.replace(/<link rel="canonical"[^>]*>/, tag);
+  }
+  return html.replace(/<\/head>/, `    ${tag}\n  </head>`);
+}
+
+// One call that both localizes the head meta and sets the canonical for the
+// current request. Used by the dev (vite) and prod (static) document servers.
+export function localizeAndCanonicalize(html: string, req: Request): string {
+  const localized = localizeIndexHtml(html, pickLang(req));
+  return setCanonical(localized, canonicalUrl(req));
+}

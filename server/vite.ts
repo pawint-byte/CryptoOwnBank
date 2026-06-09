@@ -5,7 +5,7 @@ import viteConfig from "../vite.config";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
-import { pickLang, localizeIndexHtml } from "./seo-localize";
+import { localizeAndCanonicalize } from "./seo-localize";
 
 const viteLogger = createLogger();
 
@@ -50,7 +50,7 @@ export async function setupVite(server: Server, app: Express) {
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
       let page = await vite.transformIndexHtml(url, template);
-      page = localizeIndexHtml(page, pickLang(req));
+      page = localizeAndCanonicalize(page, req);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
