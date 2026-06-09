@@ -37,6 +37,15 @@ Read every shared article/intel through one primary question: **"Does this point
 
 **How to apply:** the lens sits ON TOP of the two-filter rule (TODO.md) — must still pass Filter 1 (non-custodial, no regulatory trap) and Filter 2 (works end-to-end on a chain/standard we support). KEEP/ACT when the piece surfaces a concrete on-chain primitive/standard a member on a supported chain can self-execute; DROP/NOTE when it's narrative/price commentary, needs an intermediary or makes us a gatekeeper, or needs an unsupported chain/standard. (Cardano "trust layer" piece = NOTE/no-action: vision narrative, no member-executable capability, unsupported chain.)
 
+**The five action buckets (founder's sharpened model, 2026-06-09 — sort every shared item into one; "best mental model for everything sent going forward"):** sharper question = *does this help the member PROVE, APPROVE, SIGN, AUTOMATE, or VERIFY something on-chain while control stays with the member + cryptographic systems, not us/another middleman?*
+- **PROVE** — prove a fact (age/residency/KYC-done/credential) without oversharing → identity stays user-owned (verifiable credentials / SSI / selective disclosure).
+- **APPROVE** — grant a *scoped, limited* permission (asset/amount/time/session limits), not a blank check → action without surrendering the wallet.
+- **SIGN** — member signs the real tx or delegated scope → non-custodial control preserved.
+- **AUTOMATE** — computers execute PRE-APPROVED actions inside cryptographic guardrails/rules → works while the member sleeps, only within limits they set.
+- **VERIFY** — member can later confirm, inspect, audit, and REVOKE → trust + cleanup after action.
+
+Useful = more trust in math/policy/signatures, less trust in people; **member intent first, machine execution second.** If an item doesn't strengthen one of the five (or shifts power to a middleman), discuss-and-drop.
+
 ## Honesty notes
 - Mark weak sources (e.g. a YouTube interview) as "verify before publishing."
 - Negative findings ("quiet month, nothing happened on XRPL/Stellar") are valid output — say so

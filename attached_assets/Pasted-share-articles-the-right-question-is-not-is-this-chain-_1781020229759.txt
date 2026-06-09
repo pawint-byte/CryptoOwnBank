@@ -1,0 +1,47 @@
+share articles, the right question is not “is this chain cool?” but “does this give the member a new way to complete a needed onchain action while keeping control in their own hands?”
+
+The lens to use
+Your working filter can be:
+
+Does this help the member prove, approve, sign, automate, or verify something onchain?
+
+Does the power stay mostly with the member and cryptographic systems, instead of shifting to your platform or another middleman? Self-sovereign identity and non-custodial wallet design both point in that direction: user-owned credentials, user-controlled keys, selective disclosure, and limited permissions.
+
+That means articles are valuable when they reveal better ways to do one of these jobs:
+
+User-owned identity proofs.
+
+Scoped wallet permissions and approvals.
+
+Smart-contract automation that still respects user policy and consent.
+
+Post-action verification, audit trails, and revocation.
+
+The five action buckets
+When you read anything blockchain-related, sort it into one of these five buckets for CryptoOwnBank:
+
+Bucket	What it means	Why it matters
+Prove	The member can prove something without oversharing, like age, residency, or credential status. 
+Keeps identity user-owned instead of platform-owned. 
+Approve	The member grants a limited permission to a dapp or workflow. 
+Lets action happen without surrendering the wallet. 
+Sign	The member signs the actual transaction or delegated scope. 
+Preserves non-custodial control. 
+Automate	Computers carry out pre-approved actions inside limits and rules. 
+Makes the system work while the member sleeps. 
+Verify	The member can later confirm what happened and revoke or inspect permissions. 
+Builds trust and cleanup after action. 
+That table is probably the best mental model for everything you send me going forward.
+
+What counts as useful
+A blockchain feature is useful to CryptoOwnBank if it helps the member do more with less trust in people and more trust in math, policy, and signatures.
+
+Good examples:
+
+Verifiable credentials / SSI so a user can present “over 18” or “KYC completed” without handing your platform their raw documents.
+
+Advanced permissions or session-based approvals so a user can authorize a narrow workflow once, with asset/amount/time limits, instead of blindly giving a blank check.
+
+Automation frameworks that execute only inside cryptographic guardrails and then return receipts.
+
+That is the sweet spot: member intent first, machine execution second.
