@@ -1,0 +1,60 @@
+what can we possible due from an architectural standpoint? is there a tool or software (hopefully free) that could run on the server to do this translation realtime to save me money on new langunages or fix the current situation
+Completed 3 steps
+Yes — from an architectural standpoint, you can improve this without fully hand-translating everything first, but the right answer is not “one magic plugin translates the whole app perfectly.” The practical options are a real i18n app architecture, a server-side translation proxy, or a hybrid of the two, and the hybrid is probably the best fit for your budget and current situation.
+
+Best path
+The cheapest sensible architecture is: keep English as the source of truth, extract all UI text into translation keys, use a self-hosted localization system to manage strings, and use machine translation only as a first draft for new languages. Tolgee is open-source, can be self-hosted for free, and its free self-hosted version includes core localization features with machine translation via your own API keys; LibreTranslate is also open-source, self-hosted, and offline-capable as a translation API.
+
+That means you do not pay to rewrite the whole app every time you add a language; instead, you pay once to make the app translatable, then future languages become mostly “add keys, auto-fill drafts, review important screens.” Tolgee is a translation management platform, while LibreTranslate is the engine/API that can generate draft translations.
+
+Two architectures
+Option	What it does	Cost profile	SEO	Risk
+App-level i18n	Refactor app text into translation keys and render the chosen locale inside the app 
+Higher upfront, lower long-term	Good if pages have real locale URLs and server-rendered content 
+Lowest long-term risk 
+Translation proxy	A reverse proxy serves translated HTML on the fly without deeply changing the app 
+Lower upfront, but quality/maintenance tradeoffs 
+Can be good only if server-side and indexable with real localized URLs 
+Medium to high, especially on dynamic apps 
+Browser/client translate widget	Translates in the browser after page load	Cheap-looking but weak	Poor for real multilingual SEO because search engines need real localized HTML, not just cosmetic overlays 
+High
+For CryptoOwnBank, a pure proxy is usually weaker because your product is not just a marketing site; it is an interactive app with dashboards, wallets, forms, FAQs, and likely dynamic state. Translation proxies are best when they behave like real localized sites, but dynamic app behavior and UI strings often still need proper app-level internationalization.
+
+What you can run free
+The most realistic free stack is:
+
+Tolgee self-hosted for translation management, key storage, workflows, and in-context localization; it is open-source, free to self-host, and supports unlimited keys with up to 10 seats on the free self-hosted version.
+
+LibreTranslate self-hosted for draft machine translations; it is free, open-source, self-hosted, and offline-capable.
+
+Your app framework’s i18n layer for runtime locale switching and localized routes; most modern stacks support this pattern, and browser language detection can be handled in middleware, but text still has to be moved out of hard-coded English into keys first.
+
+In plain English: Tolgee helps you organize and ship translations; LibreTranslate helps you generate them cheaply; neither one magically fixes a codebase where strings are hard-coded everywhere. The architectural work is still to centralize every visible string into a translatable layer.
+
+Smart hybrid plan
+I would not use real-time machine translation for security, legal, tax, or money-movement screens. Real-time MT is acceptable as a temporary layer for marketing copy, blog pages, low-risk help text, and maybe read-only dashboard labels, but critical actions should come from reviewed translation files.
+
+A good hybrid setup looks like this:
+
+Marketing pages: server-side translated or proxied so they are indexable for SEO.
+
+App UI: true i18n keys inside the codebase, loaded per locale.
+
+New language launch: machine-fill drafts using LibreTranslate, then review only the high-risk strings first.
+
+Legal/security screens: no raw machine translation pushed live without review.
+
+That gets you out of the current trap: the landing page can be multilingual for acquisition, while the app becomes multilingual progressively without pretending it is fully translated before it is.
+
+What I’d do first
+If money is tight, do this in order:
+
+Stop claiming languages you do not truly serve in SEO metadata and hreflang, because server-side localized HTML matters for multilingual SEO.
+
+Install a real i18n layer in the app and extract strings from the core member path first: sign-up, dashboard, wallet, send/receive, buy/manage.
+
+Self-host Tolgee for string management and LibreTranslate for cheap draft translations.
+
+Add Japanese only after the core flow works end to end in Japanese, not just the landing page.
+
+So the honest answer is: yes, there are free tools, but they save money only after you do the architectural cleanup. The free tools reduce future translation cost; they do not eliminate the need to internationalize the app properly in the first place.
