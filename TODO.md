@@ -119,6 +119,14 @@ New guided onboarding page (`client/src/pages/prime-the-pump.tsx`) that gets a m
 - **Stellar:** No fresh, dated Soroban upgrades, anchor/RWA incidents, or mainnet disruptions surfaced for the window — treated as unchanged. Coverage was thin; a narrower targeted sweep on specific anchors/issuers can be run on request.
 - **Sources:** https://xrpl.org/blog · https://xrpl.org/resources/known-amendments · https://ripple.com/insights/post-quantum-readiness-on-the-xrp-ledger/
 
+### NOTE — Cardano "global trust layer" vision (founder shared 2026-06-09): NO ACTION
+- **What:** Hoskinson framed Cardano as a global "trust layer / operating system" (four pillars: Ouroboros PoS, eUTXO, modular partner chains incl. Midnight, on-chain governance) and told the community to stop judging it by ADA price or TVL. Backdrop is weak: ADA at a ~5-year low (<$0.20), Cardano DeFi TVL falling sharply, and analytics tool TapTools shutting down after 4 years.
+- **Through the two filters:** Filter 1 fine (tracking a chain is non-custodial). Filter 2 / "ripe today" = FAILS for action — we don't support Cardano (XRPL/Stellar/EVM only), and the piece is a *contraction* signal (falling TVL + flagship tool closing), so adding the chain now is the opposite of ripe.
+- **The only real nugget:** philosophy match, not a feature — "measure trust/health, not price/TVL" is exactly what our Network Health & Growth Tracker already stands for (it avoids price predictions). Quiet validation / possible content angle, nothing to build.
+- **Watch (distant):** Midnight, Cardano's privacy-focused partner chain — privacy is in our lane. Watch only.
+- **Revisit trigger:** reconsider Cardano support ONLY if a member actually holds ADA/Cardano-native assets AND the ecosystem is visibly growing again (rising TVL, real tooling) — not before.
+- **Source:** https://defi-planet.com/2026/06/cardano-aims-to-become-global-trust-layer-as-hoskinson-outlines-long-term-vision/
+
 ---
 
 ## SHIPPED — Manual crypto (esp. Monero) now appears in the Legacy/Sovereignty recovery packet (Added & completed 2026-06-03)
