@@ -133,6 +133,10 @@ New guided onboarding page (`client/src/pages/prime-the-pump.tsx`) that gets a m
 
 ---
 
+## SHIPPED — Member-Orchestration / Consent doctrine now explained to members on the site (Added & completed 2026-06-09)
+
+The founder asked to share the consent doctrine on the site ("faq etc to help others"). Put it on two public surfaces in plain language: (1) new FAQ item in the "About CryptoOwnBank" group (`shared/faq-data.ts`) — "Does CryptoOwnBank control my money or make decisions for me?" answering with the four lines (be the table · explainer · checklist & tracker · you're the only one who says yes) plus the non-custodial promise; (2) new "How we work: we bring it to the table, you say yes." Card on `/principles` (`client/src/pages/principles.tsx`) with the four lines as a list. Bumped service-worker CACHE_VERSION cob-v57→v58 so installed PWAs pick it up. Architect review passed (additive, schema-consistent, faq-plain crawler route unaffected, messaging consent-accurate). Verified both pages render (/principles card + /faq?q=control my money search hit). Doctrine itself recorded in replit.md Architecture decisions and agent memory.
+
 ## SHIPPED — Manual crypto (esp. Monero) now appears in the Legacy/Sovereignty recovery packet (Added & completed 2026-06-03)
 
 The founder asked how to make Monero "known" to his family through the Legacy Plan while keeping it hidden from outsiders. Investigation found the gap: the recovery kit (`server/sovereignty-kit-html.ts`, used by both the survivor-facing Legacy Plan export and the member's own Sovereignty Recovery Kit) lists wallets from the `user_wallets` settings table, grouped by chain. Manual portfolio holdings (the `wallets` table, `chain="manual"` — where a typed-in Monero amount lives) are deliberately excluded from the settings-sync, so they never reached the kit. Result: a survivor got only a GENERIC Monero reference section and never learned the member actually held Monero.

@@ -138,6 +138,27 @@ export default function Principles() {
             </CardContent>
           </Card>
 
+          <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5 mb-12" data-testid="card-how-we-work">
+            <CardContent className="p-6 flex gap-4 items-start">
+              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-[#00A4E4]/15 text-[#00A4E4] flex items-center justify-center">
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base mb-2">How we work: we bring it to the table, you say yes.</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                  We're not here to hook into everyone and everything. Our job is simpler &mdash;
+                  and it always leaves you in charge:
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                  <li><strong className="text-foreground">We're the table.</strong> Everything you need to set up, review, and act on is gathered in one place.</li>
+                  <li><strong className="text-foreground">We're the explainer.</strong> We tell you in plain words what each step does before you do it.</li>
+                  <li><strong className="text-foreground">We're the checklist and tracker.</strong> We make sure nothing that needs doing gets missed &mdash; and you can follow along after.</li>
+                  <li><strong className="text-foreground">You're the only one who says yes.</strong> Nothing happens until you approve it with your own wallet. We never hold your money or your keys, and we never decide for you.</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 mb-12" data-testid="card-honest-part">
             <CardContent className="p-6 flex gap-4 items-start">
               <div className="flex-shrink-0 h-10 w-10 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center">
