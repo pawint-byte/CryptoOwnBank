@@ -43,6 +43,12 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  // Google Search Console site-ownership verification (HTML-file method).
+  app.get("/googlebffd332068aa715f.html", (_req, res) => {
+    res.header("Content-Type", "text/html; charset=utf-8");
+    res.send("google-site-verification: googlebffd332068aa715f.html");
+  });
+
   app.get("/robots.txt", (_req, res) => {
     res.header("Content-Type", "text/plain");
     res.send(`User-agent: *
