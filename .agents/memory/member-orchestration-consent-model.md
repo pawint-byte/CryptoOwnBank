@@ -7,6 +7,8 @@ description: Founder's confirmed core operating doctrine for how EVERYTHING on C
 
 CryptoOwnBank brings whatever a member needs **to the table** for them to **set up → review → approve → track after**. When a process needs several parties to each do their part, CryptoOwnBank *aligns* everything and *assures* nothing is missed — but the **member is always in control and is the only approver**. Apply this shape to all future builds.
 
+**The brand lane in the founder's words (2026-06-09):** be the table · be the explainer · be the checklist and tracker · let the member be the only one who says yes. (Differentiated, brand-consistent — NOT "hook into everyone and everything.")
+
 **Why:** Founder confirmed this (2026-06-09) as how everything should work. It crystallized while exploring whether a blockchain could be a "KYC hook… more hooks into everyone and everything." That phrasing is a SURVEILLANCE model (platform holds the power) and is the opposite of the mission — rejected. The founder reframed it to a CONSENT model (member holds the power). Same plumbing, opposite soul; only the consent version is allowed. The consent version is also just an extension of the pattern the app already uses (prepared action → member approves → their own wallet executes).
 
 **How to apply — four bright lines (if any breaks, the doctrine breaks):**
