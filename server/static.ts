@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
+import { pickLang, localizeIndexHtml } from "./seo-localize";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
@@ -11,6 +12,7 @@ export function serveStatic(app: Express) {
   }
 
   app.use(express.static(distPath, {
+    index: false,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -25,11 +27,13 @@ export function serveStatic(app: Express) {
     }
   }));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // fall through to index.html for all document routes, localized per ?lang=
+  app.use("*", (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.setHeader('Content-Type', 'text/html');
+    const html = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
+    res.status(200).send(localizeIndexHtml(html, pickLang(req)));
   });
 }
