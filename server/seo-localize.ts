@@ -129,8 +129,11 @@ export function canonicalUrl(req: Request): string {
 
 export function setCanonical(html: string, url: string): string {
   const tag = `<link rel="canonical" href="${escapeAttr(url)}" />`;
-  if (/<link rel="canonical"[^>]*>/.test(html)) {
-    return html.replace(/<link rel="canonical"[^>]*>/, tag);
+  // Tolerant of attribute order / quote style / case so a future index.html
+  // tweak can't silently leave a stale (or duplicate) canonical behind.
+  const canonicalRe = /<link\b[^>]*\brel=["']canonical["'][^>]*>/i;
+  if (canonicalRe.test(html)) {
+    return html.replace(canonicalRe, tag);
   }
   return html.replace(/<\/head>/, `    ${tag}\n  </head>`);
 }
