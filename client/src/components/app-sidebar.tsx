@@ -41,6 +41,7 @@ import {
   Tag,
   Gem,
   ShieldCheck,
+  Anchor,
   ShieldAlert,
   Rocket,
   CircleDollarSign,
@@ -149,6 +150,7 @@ const allItems: NavItem[] = [
 
   // BACK UP & RECOVER
   { title: "Sovereignty", url: "/sovereignty", icon: KeyRound, group: "backup" },
+  { title: "Home or Away", url: "/home-or-away", icon: Anchor, color: "#16a34a", group: "backup" },
   { title: "Wealth Architecture", url: "/sovereignty/wealth-architecture", icon: Layers, group: "backup" },
   { title: "Recovery Kit", url: "/sovereignty-kit", icon: FileText, group: "backup" },
   { title: "Practice Drills", url: "/drills", icon: Trophy, color: "#00A4E4", group: "backup" },

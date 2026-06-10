@@ -46,6 +46,7 @@ import Integrations from "@/pages/integrations";
 import Settings from "@/pages/settings";
 import DvpnDirectory from "@/pages/dvpn-directory";
 import OwnPrivately from "@/pages/own-privately";
+import HomeOrAway from "@/pages/home-or-away";
 import OwnBankDashboard from "@/pages/ownbank-dashboard";
 import OwnBankVaults from "@/pages/ownbank-vaults";
 import OwnBankWithdraw from "@/pages/ownbank-withdraw";
@@ -337,6 +338,7 @@ function AuthenticatedRoutes() {
         <Route path="/swap-any-pair" component={SwapAnyPair} />
         <Route path="/route-planner" component={RoutePlanner} />
         <Route path="/own-privately" component={OwnPrivately} />
+        <Route path="/home-or-away" component={HomeOrAway} />
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
@@ -414,6 +416,7 @@ function Router() {
         <Route path="/swap-any-pair" component={SwapAnyPair} />
         <Route path="/route-planner" component={RoutePlanner} />
         <Route path="/own-privately" component={OwnPrivately} />
+        <Route path="/home-or-away" component={HomeOrAway} />
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
