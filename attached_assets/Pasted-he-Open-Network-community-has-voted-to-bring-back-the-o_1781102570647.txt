@@ -1,0 +1,27 @@
+he Open Network community has voted to bring back the original name of its native asset. Toncoin will become Gram, and the ticker will change from TON to GRAM after 81.22% of the community supported the proposal.
+
+The change goes live at 12:00 UTC on June 15, 2026. The blockchain itself will continue to operate as The Open Network. Only the token’s name, ticker, and branding are changing.
+
+No Swap, No Migration, No Changes to Holdings
+The rename does not create a new token. Users do not need to swap, bridge, convert, or claim anything. Wallet balances, addresses, staking positions, NFTs, smart contracts, Jettons, and DeFi positions remain exactly as they are. A balance of 10 TON will simply appear as 10 GRAM.
+
+Gas fees will still be paid using the native asset, now displayed as GRAM. Deposit and withdrawal addresses remain unchanged, and exchanges do not need to create new assets or order books.
+
+The network warned users that any website or service asking people to “convert TON to GRAM” or “claim GRAM” is a scam.
+
+Telegram Proposal Wins Community Support
+Voting ran from June 1 to June 8 through the TON Vote governance platform developed by Orbs Network. Voting power was based on TON balances recorded on May 31, meaning tokens acquired later did not affect voting weight.
+
+Telegram submitted the proposal as a verified organization. Participants could vote for, against, or abstain. A simple majority decided the outcome, with 81.22% voting in favor.
+
+Ecosystem Update Begins
+The rollout starts immediately. Wallet providers, blockchain explorers, and exchanges are expected to update trading pairs, API responses, logos, and interface labels as the ecosystem transitions to the new branding. 
+
+Projects are being encouraged to temporarily display the asset as “Gram (prev. Toncoin)” during a three-month transition period to reduce confusion. By June 22, the ecosystem is expected to complete the transition and operate under the new branding.
+
+Trading pairs such as TON/USDT will become GRAM/USDT without interrupting order books or historical price data.
+
+Return to TON’s Original Identity
+The move brings back the name used in Telegram’s original 2018 white paper. Gram was the intended token for Telegram Open Network before the project was halted following the SEC case in 2020.
+
+According to the proposal, the rename is part of the “Make TON Great Again” initiative and comes as Telegram takes a larger role inside the ecosystem. Telegram has become the network’s largest validator and has been pushing technical upgrades.
