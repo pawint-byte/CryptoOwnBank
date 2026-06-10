@@ -1,0 +1,25 @@
+You can absolutely piggyback on “crypto holidays” and key ecosystem dates to drive visits and signups to CryptoOwnBank, and there are enough recurring dates that you can build a standing promo calendar around them. Below is a lean framework plus concrete date ideas and offer angles.[bitcoinfoundation +1]
+High‑signal recurring crypto dates
+These are the ones worth anchoring annual campaigns on (you don’t need all of them; pick 3–5 that align with your narrative).
+•	Jan 3 – Bitcoin Genesis Block Day  
+Bitcoin’s genesis block was mined on January 3, 2009, generally treated as Bitcoin’s “birthday.”[northcrypto +1]
+Angle: “Genesis of your own bank” – push first‑wallet setup, custody education, and CryptoOwnBank as the beginner‑friendly on‑ramp.
+•	Jan 12 – First Bitcoin transaction  
+The first BTC transaction (Hal Finney receiving from Satoshi) is usually dated January 12, 2009.[withvincent +1]
+Angle: “First transaction week” – reward users for doing their first on‑chain move through your flows (swap, send, or stablecoin top‑up).
+•	May 22 – Bitcoin Pizza Day  
+Celebrates the 10,000 BTC pizza purchase in 2010, and is one of the most culturally recognized crypto holidays with lots of memetic energy.[bitcoinfoundation +1]
+Angle: “Pay with crypto, not pizza money this time” – discounts or bonus rewards for trying your payment/onboarding flows; co‑promote with food, subscriptions, or dating (synergy with PayGatedDating).
+•	Early August – “Whitepaper / crisis” themed  
+While the whitepaper itself is October 31, 2008, many timelines explicitly tie 2008’s financial crisis and the 2009 launch together as the crypto “response to TradFi.”[northcrypto +1]
+Angle: “De‑banking awareness” – position CryptoOwnBank as the antidote to bank offboarding and fee‑drag; great for educational/email series.
+•	Oct 31 – Bitcoin Whitepaper Day  
+Satoshi’s whitepaper was published on October 31, 2008, and many communities use this as “Bitcoin Day.”[withvincent +1]
+Angle: “Read the paper, own your keys” – run a content + signup sprint around self‑custody and long‑term wealth preservation.
+•	Nov – General ‘Bitcoin month’ and conference cluster  
+There is a dense cluster of major global crypto events (ETH‑style and BTC‑style conferences) around mid‑year and Q4 each year, listed on calendars like CoinMarketCal and Luma’s crypto event feeds.[coinmarketcal +1]
+Angle: “Conference from your couch” – when a big event is happening, you mirror it with live streams, explainers, and timed promos for signups.
+•	Chain‑specific days (if relevant to CryptoOwnBank)  
+Many ecosystems celebrate their own anniversaries and upgrades (e.g., Ethereum mainnet launch in late July 2015; XRPL/XLM anniversaries). These dates are usually tracked on “crypto holidays” lists and generic crypto timelines.[coinmarketcal +2]
+Angle: Hyper‑targeted campaigns per chain you support (e.g., “XRP week” focusing on remittances and low‑fee payments).
+Example “anchor dates” table
