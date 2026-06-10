@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { FoundingBadge } from "@/components/founding-badge";
 import { Check, Wallet, ShieldCheck, Zap, Crown, ArrowRight, Lock } from "lucide-react";
 
@@ -213,7 +214,65 @@ export default function FoundingMemberPage() {
           </CardContent>
         </Card>
       )}
+
+      <FoundingFaq />
     </div>
+  );
+}
+
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: "Does it cost anything?",
+    a: "No. The Founding Member badge is free. There is no payment at any step, ever — and your number stays yours even if you never pay for a plan.",
+  },
+  {
+    q: "Do I have to verify my identity?",
+    a: "Never. There are no ID checks, no KYC, and no documents. CryptoOwnBank is non-custodial — we never hold your funds or your keys, so we have no reason to ask who you are.",
+  },
+  {
+    q: "What are the 3 steps?",
+    a: "Connect or import a wallet (a read-only watch address is fine), generate your Sovereignty Recovery Kit, and do one real action like setting a price alert or starting a Legacy Plan. All free, all non-custodial.",
+  },
+  {
+    q: "What is the Genesis Circle?",
+    a: "The first 100 of the 1,000 Founding Members get an extra cosmetic Genesis Circle tag on their badge. It's a keepsake for the earliest members — nothing you have to pay for or maintain.",
+  },
+  {
+    q: "Do I keep my number if I go quiet?",
+    a: "Yes. Once you claim it, your Founding Member number is permanent. It stays on your profile forever, even if you stop using the platform for a while. There's no clawback of the badge.",
+  },
+  {
+    q: "I've been a member for a while — do I get one automatically?",
+    a: "No automatic grant for anyone — existing members claim the same way as new ones, by finishing the same 3 free steps. We wanted every Founding badge to mean the same thing.",
+  },
+  {
+    q: "What happens when all 1,000 are gone?",
+    a: "That's it — the Founding Member badge is capped at 1,000 forever. The live counter at the top of this page shows exactly how many seats are left.",
+  },
+];
+
+function FoundingFaq() {
+  return (
+    <Card data-testid="card-founding-faq">
+      <CardHeader>
+        <CardTitle>Questions</CardTitle>
+        <CardDescription>The short, honest answers.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Accordion type="single" collapsible className="w-full">
+          {FAQ_ITEMS.map((item, i) => (
+            <AccordionItem key={i} value={`faq-${i}`} data-testid={`faq-item-${i}`}>
+              <AccordionTrigger className="text-left" data-testid={`faq-trigger-${i}`}>
+                {item.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground" data-testid={`faq-content-${i}`}>
+                {item.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 }
 

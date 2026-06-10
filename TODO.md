@@ -132,6 +132,8 @@ Existing/dormant members get NO auto-grant — everyone claims the same way — 
 
 Files: `shared/schema.ts` (foundingMembers / foundingOnboarding / foundingSeatCounter + consts), `server/storage.ts` (founding methods + atomic claim), `server/routes/founding.ts` (registered in `server/routes.ts`), `server/routes/legacy.ts` (kit-export now records the real onboarding signal), `client/src/pages/founding-member.tsx`, `client/src/components/founding-badge.tsx`, `client/src/App.tsx` (routes authed + logged-out + banner), `client/src/pages/settings.tsx`, `client/src/components/app-sidebar.tsx`. Brand accent #00A4E4, Genesis = amber. `npm run db:push` applied. Tasks #44 (referral) and #45 (crypto-date calendar) are the downstream follow-ups.
 
+Launch collateral (added 2026-06-10): (1) **FAQ** — 7-question accordion section now on the `/founding` page (cost, identity, the 3 steps, Genesis Circle, permanence, no auto-grant, sold-out). (2) **Announcement email** drafted at `.local/announcements/founding-member-email.md` (subject options, plain-text + HTML bodies, compliance + admin-send instructions, audience=all incl. dormant). (3) **HeyGen video script** at `.local/announcements/founding-member-heygen-script.md` (60s scene table + 30s cut + production/compliance notes). All three architect-reviewed for accuracy to the non-custodial / no-KYC / no-payment / 1,000-cap / no-auto-grant behavior.
+
 ---
 
 ## ✅ DONE 2026-06-03 — "Prime the Pump" starter playbook page (`/start`)
