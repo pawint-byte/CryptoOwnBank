@@ -35,6 +35,52 @@ export async function disconnectClient(): Promise<void> {
   connectionPromise = null;
 }
 
+/**
+ * Autofill an unsigned transaction (Sequence, Fee, LastLedgerSequence, etc.)
+ * using the shared mainnet connection. Used by the cold-wallet signing flow.
+ */
+export async function autofillTx(
+  tx: Record<string, any>,
+): Promise<Record<string, any>> {
+  const client = await getClient();
+  return client.autofill(tx as any) as Promise<Record<string, any>>;
+}
+
+export interface SubmitResult {
+  success: boolean;
+  hash?: string;
+  code?: string;
+  error?: string;
+}
+
+/**
+ * Broadcast an already-signed transaction blob and wait for validation.
+ * Returns a friendly success/failure shape — never throws on a tec/tem result.
+ */
+export async function submitSignedBlob(txBlob: string): Promise<SubmitResult> {
+  try {
+    const client = await getClient();
+    const res = await client.submitAndWait(txBlob);
+    const meta: any = res.result.meta;
+    const code =
+      meta && typeof meta === "object" ? meta.TransactionResult : undefined;
+    if (code === "tesSUCCESS") {
+      return { success: true, hash: res.result.hash, code };
+    }
+    return {
+      success: false,
+      hash: res.result.hash,
+      code,
+      error: code || "The transaction was not accepted by the network.",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error?.message || "Could not reach the XRP Ledger to submit.",
+    };
+  }
+}
+
 export interface XrplBalances {
   xrp: number;
   rlusd: number;
@@ -62,7 +108,8 @@ export async function getBalances(address: string): Promise<XrplBalances> {
 
       const rlusdLine = lines.result.lines.find(
         (line: any) =>
-          line.currency === RLUSD_CURRENCY || line.currency === "RLUSD"
+          (line.currency === RLUSD_CURRENCY || line.currency === "RLUSD") &&
+          line.account === RLUSD_ISSUER
       );
       if (rlusdLine) {
         rlusd = Math.max(0, Number(rlusdLine.balance));
@@ -467,7 +514,10 @@ export async function getAccountTrustlines(address: string): Promise<XrplTrustli
 
       for (const line of lines) {
         trustlines.push({
-          currency: line.currency === RLUSD_CURRENCY ? "RLUSD" : line.currency,
+          currency:
+            line.currency === RLUSD_CURRENCY && line.account === RLUSD_ISSUER
+              ? "RLUSD"
+              : line.currency,
           issuer: line.account,
           balance: line.balance,
           limit: line.limit,

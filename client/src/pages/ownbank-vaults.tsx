@@ -51,6 +51,8 @@ import {
 import { useStellarStore } from "@/lib/stellar-store";
 import { useRlusdPolling } from "@/hooks/use-rlusd-polling";
 import { signPayment, hasPendingXummPayment, completePendingXummPayment, clearPendingXummPayment } from "@/lib/xumm-connector";
+import { signRlusdPaymentWithLedger, isWebUSBSupported } from "@/lib/ledger-connector";
+import { VaultClearLane } from "@/components/vault-clear-lane";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useToast } from "@/hooks/use-toast";
 
@@ -472,11 +474,24 @@ export default function OwnBankVaults() {
           issuer: RLUSD_ISSUER,
         });
       } else if (walletType === "ledger") {
-        toast({
-          title: "Ledger Signing",
-          description: "Please confirm the transaction on your Ledger device.",
-        });
-        result = { success: true, txHash: `ledger-sim-${Date.now()}` };
+        const usb = await isWebUSBSupported();
+        if (!usb) {
+          result = {
+            success: false,
+            error:
+              "Your Ledger signs over USB, which phones can't do. Open this on Chrome or Edge on a desktop computer — or connect Xaman to deposit from your phone.",
+          };
+        } else {
+          toast({
+            title: "Confirm on your Ledger",
+            description:
+              "Check the amount and the vault address on the device screen, then approve.",
+          });
+          result = await signRlusdPaymentWithLedger(
+            { destination: selectedVault.address, amount: amount.toString() },
+            walletAddress || "",
+          );
+        }
       } else {
         result = { success: false, error: "No wallet connected" };
       }
@@ -1450,6 +1465,9 @@ export default function OwnBankVaults() {
 
           {!showPreview ? (
             <div className="space-y-4">
+              {selectedVault?.address && (
+                <VaultClearLane vaultName={selectedVault.name} />
+              )}
               <div>
                 <label className="text-sm font-medium mb-1.5 block">
                   Amount (RLUSD)
