@@ -1,0 +1,93 @@
+Stellar has comparable (and in several ways more mature) tooling that CryptoOwnBank can leverage for the Stellar/XLM side.
+While Ripple just dropped the official XRPL AI Starter Kit on June 10, Stellar has been building in this direction for longer through community + foundation efforts. Here's the clear picture:
+What Stellar Currently Offers for AI Agents
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+AreaStellar (Soroban) StatusXRPL Status (for comparison)Notes for CryptoOwnBankx402 SupportLive and well supportedJust added in new kitStrong on both chains nowAgentic Payment ProtocolsMPP (Machine Payments Protocol) + x402x402 (new)Stellar has an extra native option (MPP) with payment channelsAI Agent ToolingStellar AI Agent Kit (Community Fund projects) + MCP serversOfficial XRPL AI Starter Kit (Claude skills + MCP)Both have MCP + skills-style toolsProgrammable GuardrailsSoroban Smart Accounts (spending policies, delegated signers, rules)Built-in (multi-sig, escrow, DepositAuth)Big advantage for Stellar — more flexible on-chain policiesHigh-frequency agentsPayment channels via MPPPossible via existing featuresStellar easier for micro / frequent actionsWallet IntegrationFreighter + Stellar Wallets Kit (MCP examples exist)Xaman + new kit skillsBoth support non-custodial signing
+Key Stellar Assets You Can Use
+
+x402 on Stellar (already live)
+AI agents can pay for APIs, data, services, etc. directly with Stellar assets.
+There are ready MCP servers and starter templates.
+
+Machine Payments Protocol (MPP)
+Official Stellar protocol for agentic/HTTP-native payments.
+Supports both one-time payments and high-frequency off-chain payment channels (very useful for agents doing many small actions).
+
+Soroban Smart Accounts + Smart Account Kit
+This is the biggest differentiator right now.
+You can create accounts with programmable spending policies (max per day/week, whitelisted destinations, time windows, etc.).
+Agents can be given limited delegated signing power within rules the member sets.
+Projects like stellar-agent-gateway show real examples of agents discovering and paying for services while respecting on-chain policies.
+
+Stellar AI Agent Kit (Community Fund)
+Full-stack toolkit aimed at letting AI agents safely interact with Soroban contracts + MCP integration.
+
+
+How This Impacts CryptoOwnBank (Honest Take)
+Good news:
+
+You can build a symmetric AI Agent experience across both chains.
+Stellar actually gives you stronger on-chain guardrail options today via Soroban smart accounts. This helps with the Business Owner persona (recurring vendor payments with hard limits) or advanced yield strategies.
+x402 works on both → consistent story for agent-to-service micropayments.
+Everything can still follow your core doctrine: agent proposes / prepares → member reviews and signs in their wallet (Freighter on Stellar side).
+
+The custody-safe way to use it:
+
+Primary UX: Agent does research + drafts the transaction (or x402 payment) → member approves and signs in Freighter/Xaman. Same model as your current DCA flow.
+Advanced/optional layer: Use Soroban smart accounts to set member-defined policies that the agent must obey on-chain (e.g., “This agent can only move up to $X per day from the business reserve bucket, only to approved vendors”). This gives real autonomy for high-frequency/low-value actions without breaking non-custody.
+
+Recommendation for the site:
+
+Treat both chains consistently in the UI/roadmap.
+On the Stellar side you can go a bit further with on-chain policy guardrails earlier because the tooling is more mature.
+Market it as: “Intelligent assistance on both XRPL and Stellar — your keys, your rules, your agent does the homework.”
+
+Bottom Line
+Stellar currently has more production-ready tooling for sophisticated agentic payments and programmable guardrails than XRPL (thanks to Soroban + active x402/MPP work). Ripple’s new kit is catching up fast with official support.
+For CryptoOwnBank this is net positive — you get good options on both chains without compromising the “member always signs” principle.

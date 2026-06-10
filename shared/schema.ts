@@ -1620,10 +1620,38 @@ export const agentProposals = pgTable("agent_proposals", {
   fromAsset: varchar("from_asset", { length: 50 }),
   toAsset: varchar("to_asset", { length: 50 }),
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
+  // Outward-payment fields (null for inward yield proposals). These describe a
+  // real payment the member would sign in their own wallet — the agent never signs.
+  chain: varchar("chain", { length: 20 }),
+  toAddress: varchar("to_address", { length: 120 }),
+  destinationTag: varchar("destination_tag", { length: 30 }),
+  assetCode: varchar("asset_code", { length: 20 }),
+  issuer: varchar("issuer", { length: 120 }),
+  amount: decimal("amount", { precision: 36, scale: 12 }),
+  txHash: varchar("tx_hash", { length: 120 }),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_agent_proposals_user").on(table.userId),
+]);
+
+// Member-defined payees — the whitelist the agent draws outward payments from.
+// The agent can only ever draft a payment to an address the member saved here.
+export const agentPayees = pgTable("agent_payees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  chain: varchar("chain", { length: 20 }).notNull(), // "xrpl" | "stellar"
+  label: varchar("label", { length: 100 }).notNull(),
+  address: varchar("address", { length: 120 }).notNull(),
+  destinationTag: varchar("destination_tag", { length: 30 }),
+  assetCode: varchar("asset_code", { length: 20 }).notNull(), // XRP, RLUSD, XLM, USDC…
+  issuer: varchar("issuer", { length: 120 }), // required for issued tokens
+  amount: decimal("amount", { precision: 36, scale: 12 }).notNull(),
+  note: varchar("note", { length: 200 }),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_agent_payees_user").on(table.userId),
 ]);
 
 export const insertAgentMandateSchema = createInsertSchema(agentMandates).omit({
@@ -1631,6 +1659,13 @@ export const insertAgentMandateSchema = createInsertSchema(agentMandates).omit({
   updatedAt: true,
 });
 
+export const insertAgentPayeeSchema = createInsertSchema(agentPayees).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type AgentMandate = typeof agentMandates.$inferSelect;
 export type InsertAgentMandate = z.infer<typeof insertAgentMandateSchema>;
 export type AgentProposal = typeof agentProposals.$inferSelect;
+export type AgentPayee = typeof agentPayees.$inferSelect;
+export type InsertAgentPayee = z.infer<typeof insertAgentPayeeSchema>;

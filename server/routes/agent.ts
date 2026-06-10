@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import { isAuthenticated, isAdmin } from "../replit_integrations/auth";
 import { storage } from "../storage";
-import { generateProposals } from "../services/agent-proposals";
+import { generateProposals, generatePaymentProposals } from "../services/agent-proposals";
 
 // HIDDEN proposals-only prototype ("Agent Lab").
 // Every route is admin-gated, so it is invisible to regular members. There is no
@@ -14,6 +14,18 @@ const mandateBodySchema = z.object({
   floorUsd: z.coerce.number().min(0),
   maxMoveUsd: z.coerce.number().min(0),
   enabled: z.boolean(),
+});
+
+const payeeBodySchema = z.object({
+  chain: z.enum(["xrpl", "stellar"]),
+  label: z.string().min(1).max(100),
+  address: z.string().min(10).max(120),
+  destinationTag: z.string().max(30).optional().nullable(),
+  assetCode: z.string().min(1).max(20),
+  issuer: z.string().max(120).optional().nullable(),
+  amount: z.coerce.number().positive(),
+  note: z.string().max(200).optional().nullable(),
+  enabled: z.boolean().optional(),
 });
 
 export function registerAgentRoutes(app: Express) {
@@ -59,7 +71,11 @@ export function registerAgentRoutes(app: Express) {
         return res.json([]);
       }
       const positions = await storage.getPositionsByUser(userId);
-      const candidates = generateProposals(mandate, positions);
+      const payees = await storage.getAgentPayees(userId);
+      const candidates = [
+        ...generateProposals(mandate, positions),
+        ...generatePaymentProposals(payees, mandate, positions),
+      ];
       // Clear stale pending proposals before re-generating (keeps the inbox honest).
       await storage.deletePendingAgentProposals(userId);
       const created = [];
@@ -95,18 +111,80 @@ export function registerAgentRoutes(app: Express) {
   app.post("/api/agent/proposals/:id/approve", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const updated = await storage.updateAgentProposalStatus(req.params.id, userId, "approved");
+      // For payment proposals the member signs in their OWN wallet on the client;
+      // they pass back the resulting txHash so we can record it ("track after").
+      // The server never signs and never holds keys.
+      const txHash = typeof req.body?.txHash === "string" ? req.body.txHash : undefined;
+      const updated = await storage.updateAgentProposalStatus(req.params.id, userId, "approved", txHash ?? null);
       if (!updated) return res.status(404).json({ message: "Proposal not found" });
-      // PROTOTYPE: no signing/execution is wired. Nothing moves on-chain.
+      const signed = !!txHash;
       res.json({
         proposal: updated,
-        executed: false,
-        message:
-          "Prototype only — this records your approval but does NOT sign or move any funds. " +
-          "In the live version, this is where you'd review and sign the transaction in Xaman.",
+        executed: signed,
+        message: signed
+          ? "Recorded — you signed this in your own wallet. The agent never touched your keys or funds."
+          : "Recorded your approval. Yield moves aren't wired for signing in this prototype yet; " +
+            "outward payments to your saved payees are signed in your own wallet (Xaman / Freighter).",
       });
     } catch (e: any) {
       res.status(500).json({ message: e?.message ?? "Failed to approve proposal" });
+    }
+  });
+
+  // ── Payees (the member-controlled whitelist for outward payments) ──
+  app.get("/api/agent/payees", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      res.json(await storage.getAgentPayees(req.user.claims.sub));
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message ?? "Failed to load payees" });
+    }
+  });
+
+  app.post("/api/agent/payees", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const p = payeeBodySchema.parse(req.body);
+      const created = await storage.createAgentPayee({
+        userId,
+        chain: p.chain,
+        label: p.label,
+        address: p.address,
+        destinationTag: p.destinationTag ?? null,
+        assetCode: p.assetCode,
+        issuer: p.issuer ?? null,
+        amount: String(p.amount),
+        note: p.note ?? null,
+        enabled: p.enabled ?? true,
+      });
+      res.json(created);
+    } catch (e: any) {
+      if (e?.name === "ZodError") return res.status(400).json({ message: "Invalid payee", errors: e.errors });
+      res.status(500).json({ message: e?.message ?? "Failed to create payee" });
+    }
+  });
+
+  app.put("/api/agent/payees/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const p = payeeBodySchema.partial().parse(req.body);
+      const data: Record<string, any> = { ...p };
+      if (p.amount !== undefined) data.amount = String(p.amount);
+      const updated = await storage.updateAgentPayee(req.params.id, userId, data);
+      if (!updated) return res.status(404).json({ message: "Payee not found" });
+      res.json(updated);
+    } catch (e: any) {
+      if (e?.name === "ZodError") return res.status(400).json({ message: "Invalid payee", errors: e.errors });
+      res.status(500).json({ message: e?.message ?? "Failed to update payee" });
+    }
+  });
+
+  app.delete("/api/agent/payees/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const ok = await storage.deleteAgentPayee(req.params.id, req.user.claims.sub);
+      if (!ok) return res.status(404).json({ message: "Payee not found" });
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message ?? "Failed to delete payee" });
     }
   });
 }

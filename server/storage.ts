@@ -5,8 +5,11 @@ import {
   positions,
   agentMandates,
   agentProposals,
+  agentPayees,
   type AgentMandate,
   type AgentProposal,
+  type AgentPayee,
+  type InsertAgentPayee,
   taxLots,
   gainEvents,
   userSettings,
@@ -459,10 +462,15 @@ export interface IStorage {
   // Agent Lab (HIDDEN proposals-only prototype)
   getAgentMandate(userId: string): Promise<AgentMandate | undefined>;
   upsertAgentMandate(userId: string, data: { riskTolerance: string; floorUsd: string; maxMoveUsd: string; enabled: boolean }): Promise<AgentMandate>;
-  createAgentProposal(proposal: { userId: string; kind: string; title: string; rationale: string; fromAsset?: string | null; toAsset?: string | null; amountUsd?: string | null }): Promise<AgentProposal>;
+  createAgentProposal(proposal: Partial<AgentProposal> & { userId: string; kind: string; title: string; rationale: string }): Promise<AgentProposal>;
   getAgentProposals(userId: string): Promise<AgentProposal[]>;
-  updateAgentProposalStatus(id: string, userId: string, status: string): Promise<AgentProposal | undefined>;
+  updateAgentProposalStatus(id: string, userId: string, status: string, txHash?: string | null): Promise<AgentProposal | undefined>;
   deletePendingAgentProposals(userId: string): Promise<void>;
+  getAgentPayees(userId: string): Promise<AgentPayee[]>;
+  getAgentPayee(id: string, userId: string): Promise<AgentPayee | undefined>;
+  createAgentPayee(payee: InsertAgentPayee): Promise<AgentPayee>;
+  updateAgentPayee(id: string, userId: string, data: Partial<InsertAgentPayee>): Promise<AgentPayee | undefined>;
+  deleteAgentPayee(id: string, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2321,11 +2329,10 @@ export class DatabaseStorage implements IStorage {
     return m;
   }
 
-  async createAgentProposal(proposal: {
-    userId: string; kind: string; title: string; rationale: string;
-    fromAsset?: string | null; toAsset?: string | null; amountUsd?: string | null;
-  }): Promise<AgentProposal> {
-    const [p] = await db.insert(agentProposals).values(proposal).returning();
+  async createAgentProposal(
+    proposal: Partial<AgentProposal> & { userId: string; kind: string; title: string; rationale: string },
+  ): Promise<AgentProposal> {
+    const [p] = await db.insert(agentProposals).values(proposal as any).returning();
     return p;
   }
 
@@ -2337,10 +2344,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(agentProposals.createdAt));
   }
 
-  async updateAgentProposalStatus(id: string, userId: string, status: string): Promise<AgentProposal | undefined> {
+  async updateAgentProposalStatus(id: string, userId: string, status: string, txHash?: string | null): Promise<AgentProposal | undefined> {
+    const set: Record<string, any> = { status };
+    if (txHash !== undefined) set.txHash = txHash;
     const [p] = await db
       .update(agentProposals)
-      .set({ status })
+      .set(set)
       .where(and(eq(agentProposals.id, id), eq(agentProposals.userId, userId)))
       .returning();
     return p;
@@ -2350,6 +2359,44 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(agentProposals)
       .where(and(eq(agentProposals.userId, userId), eq(agentProposals.status, "pending")));
+  }
+
+  async getAgentPayees(userId: string): Promise<AgentPayee[]> {
+    return db
+      .select()
+      .from(agentPayees)
+      .where(eq(agentPayees.userId, userId))
+      .orderBy(desc(agentPayees.createdAt));
+  }
+
+  async getAgentPayee(id: string, userId: string): Promise<AgentPayee | undefined> {
+    const [p] = await db
+      .select()
+      .from(agentPayees)
+      .where(and(eq(agentPayees.id, id), eq(agentPayees.userId, userId)));
+    return p;
+  }
+
+  async createAgentPayee(payee: InsertAgentPayee): Promise<AgentPayee> {
+    const [p] = await db.insert(agentPayees).values(payee).returning();
+    return p;
+  }
+
+  async updateAgentPayee(id: string, userId: string, data: Partial<InsertAgentPayee>): Promise<AgentPayee | undefined> {
+    const [p] = await db
+      .update(agentPayees)
+      .set(data)
+      .where(and(eq(agentPayees.id, id), eq(agentPayees.userId, userId)))
+      .returning();
+    return p;
+  }
+
+  async deleteAgentPayee(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(agentPayees)
+      .where(and(eq(agentPayees.id, id), eq(agentPayees.userId, userId)))
+      .returning();
+    return result.length > 0;
   }
 }
 
