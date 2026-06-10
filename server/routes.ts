@@ -29,6 +29,7 @@ import { selfCorrectKnownTransfers } from "./services/transfer-reconciliation";
 import { registerLegacyRoutes } from "./routes/legacy";
 import { registerChainsRoutes } from "./routes/chains";
 import { registerDcaRoutes } from "./routes/dca";
+import { registerAgentRoutes } from "./routes/agent";
 import { registerMarketRoutes } from "./routes/market";
 import { registerAdminSubscriptionsRoutes } from "./routes/admin-subscriptions";
 import { registerBillingRoutes } from "./routes/billing";
@@ -4252,6 +4253,7 @@ Rules you MUST follow:
 
   registerLegacyRoutes(app);
   await registerDcaRoutes(app);
+  registerAgentRoutes(app);
   app.get("/api/wallets/portfolio", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

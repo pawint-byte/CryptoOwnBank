@@ -124,3 +124,38 @@ The founder (hands-on builder) is the baseline the engine is built around. The f
 
 ## If/when we build — first clean step
 Define the 3–5 personas above in config, each with: a default risk mandate, an allowed list of AI offer types, a signing model, and a plain-English promise. Start with the **Steady Saver** (closest to existing DCA) and the **Business Owner** (highest commercial upside) as the two pilot presets.
+
+---
+
+## Multi-agent coordination, hierarchy & conflict resolution
+
+The big idea that removes most danger: **our agents propose, they never execute.** A member can run several "agents" (really several mandates — a yield optimizer, a DCA accumulator, a treasury-reserve keeper). They cannot fight on-chain because none of them can move money. Worst case is competing suggestions in the inbox.
+
+**Hierarchy (agents are NOT at the top):**
+1. **The member** — the only one who says yes. Always top.
+2. **The guardrails/constraints** — floor, reserve, whitelists, kill switch. These sit *above* every agent; no agent may propose something that breaks them.
+3. **The agents** — peers, none commands another. Different jobs reading the same household budget.
+
+For a business, the "approval hierarchy" people expect is just the member's **multi-sig signer policy** (e.g. 2-of-3), not an agent hierarchy. Agents draft; the configured humans sign per that policy. We are the table, never the boss.
+
+**Conflict resolution within one member's account:**
+1. **Shared budget view** — all agents read one accounting of what's actually free (after the floor/reserve), so two proposals can't double-claim the same dollars.
+2. **Deterministic precedence** — hard rules win first (floor, reserve, already-approved plans), then new opportunity ideas. Safety beats opportunity.
+3. **The member breaks ties** — competing valid ideas surface side-by-side in plain English; the member picks. That *is* the resolution.
+
+**Conflict resolution between different members (the world-facing / "XRPL agents" case):**
+- No agent has authority over another member. My agent drafts my side, *I* sign; your agent drafts your side, *you* sign. Peer-to-peer, each approving their own half.
+- Disputes are settled by the instruments both sides signed (XRPL escrow / payment-channel release conditions), never by an agent's judgment. If terms aren't met, money simply doesn't move.
+- CryptoOwnBank aligns both sides and tracks after — it never forces an outcome or arbitrates (that would crack the non-custodial shield).
+
+**Honest limit:** there are no autonomous bots living *on-chain* in our model. The agent is off-chain — it reads the chain and drafts; the chain is just where the member's signed transaction settles. The only authority on-chain is the member's signature (and the multi-sig signer list they configured).
+
+---
+
+## Build status — Option A (hidden proposals-only prototype)
+
+Built and tested as an internal, unannounced prototype:
+- **Hidden & gated:** lives at `/agent-lab`, registered in `App.tsx` but **not** in the sidebar; every route in `server/routes/agent.ts` is admin-gated (`isAuthenticated` + `isAdmin`).
+- **Zero money risk:** the engine (`server/services/agent-proposals.ts`) is a deterministic rule engine (not an LLM) that only reads positions and writes PROPOSALS. "Approve" records the decision and explicitly does **not** sign or move funds.
+- **Data:** `agentMandates` (guardrails) + `agentProposals` tables in `shared/schema.ts`; CRUD in `server/storage.ts`.
+- **Scope:** inward only (idle stablecoins → Soil vault, within floor/cap, Treasury for conservative / CREDIT+ otherwise). The outward (world-facing payment) slice reuses the same propose→approve→sign machinery and is the next step.

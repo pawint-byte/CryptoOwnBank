@@ -120,6 +120,7 @@ import BuyCrypto from "@/pages/buy-crypto";
 import PrimeThePump from "@/pages/prime-the-pump";
 import SwapAnyPair from "@/pages/swap-any-pair";
 import RoutePlanner from "@/pages/route-planner";
+import AgentLab from "@/pages/agent-lab";
 import WalletCreate from "@/pages/wallet-create";
 import HelpIndex from "@/pages/help-index";
 import HelpCreateWallet from "@/pages/help-create-wallet";
@@ -362,6 +363,7 @@ function AuthenticatedRoutes() {
         <Route path="/admin/errors" component={AdminErrorMonitor} />
         <Route path="/admin/vault-blocklist" component={AdminVaultBlocklist} />
         <Route path="/admin/announcements" component={AdminAnnouncements} />
+        <Route path="/agent-lab" component={AgentLab} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>

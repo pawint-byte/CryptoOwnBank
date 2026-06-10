@@ -1597,3 +1597,40 @@ export const insertApiBudgetSchema = createInsertSchema(apiBudgets).omit({
 export type ApiUsageLog = typeof apiUsageLog.$inferSelect;
 export type ApiBudget = typeof apiBudgets.$inferSelect;
 export type InsertApiBudget = z.infer<typeof insertApiBudgetSchema>;
+
+// ── Agent Lab (HIDDEN proposals-only prototype) ──────────────────────────────
+// Stores a member's guardrails ("mandate") and the agent's PROPOSALS.
+// Nothing here signs or moves funds — proposals end at the member's signature.
+export const agentMandates = pgTable("agent_mandates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  riskTolerance: varchar("risk_tolerance", { length: 20 }).notNull().default("conservative"),
+  floorUsd: decimal("floor_usd", { precision: 18, scale: 2 }).notNull().default("0"),
+  maxMoveUsd: decimal("max_move_usd", { precision: 18, scale: 2 }).notNull().default("0"),
+  enabled: boolean("enabled").notNull().default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const agentProposals = pgTable("agent_proposals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  kind: varchar("kind", { length: 30 }).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  rationale: text("rationale").notNull(),
+  fromAsset: varchar("from_asset", { length: 50 }),
+  toAsset: varchar("to_asset", { length: 50 }),
+  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_agent_proposals_user").on(table.userId),
+]);
+
+export const insertAgentMandateSchema = createInsertSchema(agentMandates).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type AgentMandate = typeof agentMandates.$inferSelect;
+export type InsertAgentMandate = z.infer<typeof insertAgentMandateSchema>;
+export type AgentProposal = typeof agentProposals.$inferSelect;

@@ -3,6 +3,10 @@ import {
   accounts,
   transactions,
   positions,
+  agentMandates,
+  agentProposals,
+  type AgentMandate,
+  type AgentProposal,
   taxLots,
   gainEvents,
   userSettings,
@@ -451,6 +455,14 @@ export interface IStorage {
   upsertApiBudget(data: InsertApiBudget): Promise<ApiBudget>;
   deleteApiBudget(id: number): Promise<void>;
   resetApiBudgetAlerts(id: number): Promise<void>;
+
+  // Agent Lab (HIDDEN proposals-only prototype)
+  getAgentMandate(userId: string): Promise<AgentMandate | undefined>;
+  upsertAgentMandate(userId: string, data: { riskTolerance: string; floorUsd: string; maxMoveUsd: string; enabled: boolean }): Promise<AgentMandate>;
+  createAgentProposal(proposal: { userId: string; kind: string; title: string; rationale: string; fromAsset?: string | null; toAsset?: string | null; amountUsd?: string | null }): Promise<AgentProposal>;
+  getAgentProposals(userId: string): Promise<AgentProposal[]>;
+  updateAgentProposalStatus(id: string, userId: string, status: string): Promise<AgentProposal | undefined>;
+  deletePendingAgentProposals(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2286,6 +2298,58 @@ export class DatabaseStorage implements IStorage {
       periodStartedAt: new Date(),
       updatedAt: new Date(),
     }).where(eq(apiBudgets.id, id));
+  }
+
+  // ── Agent Lab (HIDDEN proposals-only prototype) ──
+  async getAgentMandate(userId: string): Promise<AgentMandate | undefined> {
+    const [m] = await db.select().from(agentMandates).where(eq(agentMandates.userId, userId));
+    return m;
+  }
+
+  async upsertAgentMandate(
+    userId: string,
+    data: { riskTolerance: string; floorUsd: string; maxMoveUsd: string; enabled: boolean },
+  ): Promise<AgentMandate> {
+    const [m] = await db
+      .insert(agentMandates)
+      .values({ userId, ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: agentMandates.userId,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return m;
+  }
+
+  async createAgentProposal(proposal: {
+    userId: string; kind: string; title: string; rationale: string;
+    fromAsset?: string | null; toAsset?: string | null; amountUsd?: string | null;
+  }): Promise<AgentProposal> {
+    const [p] = await db.insert(agentProposals).values(proposal).returning();
+    return p;
+  }
+
+  async getAgentProposals(userId: string): Promise<AgentProposal[]> {
+    return db
+      .select()
+      .from(agentProposals)
+      .where(eq(agentProposals.userId, userId))
+      .orderBy(desc(agentProposals.createdAt));
+  }
+
+  async updateAgentProposalStatus(id: string, userId: string, status: string): Promise<AgentProposal | undefined> {
+    const [p] = await db
+      .update(agentProposals)
+      .set({ status })
+      .where(and(eq(agentProposals.id, id), eq(agentProposals.userId, userId)))
+      .returning();
+    return p;
+  }
+
+  async deletePendingAgentProposals(userId: string): Promise<void> {
+    await db
+      .delete(agentProposals)
+      .where(and(eq(agentProposals.userId, userId), eq(agentProposals.status, "pending")));
   }
 }
 
