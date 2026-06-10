@@ -1492,6 +1492,16 @@ ${kitBody}
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Cache-Control", "no-store, max-age=0");
+      // Record a verifiable Founding Member onboarding signal: the member
+      // actually generated a kit that contains their own addresses. This is the
+      // real event, not a self-attested checkbox, so it can't be faked.
+      if (wallets.length > 0) {
+        try {
+          await storage.confirmFoundingKit(userId);
+        } catch (e) {
+          console.error("[founding] failed to record kit generation");
+        }
+      }
       res.send(html);
     } catch (error) {
       console.error("Sovereignty kit export error");

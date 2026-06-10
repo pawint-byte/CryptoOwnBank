@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useMutation } from "@tanstack/react-query";
+import { QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -30,6 +30,7 @@ import Principles from "@/pages/principles";
 import Sovereignty from "@/pages/sovereignty";
 import WealthArchitecture from "@/pages/wealth-architecture";
 import SovereigntyKit from "@/pages/sovereignty-kit";
+import FoundingMemberPage from "@/pages/founding-member";
 import DrillsCenter from "@/pages/drills";
 import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
@@ -209,6 +210,54 @@ function TosAcceptanceModal() {
   );
 }
 
+function FoundingHeadsUpBanner() {
+  const [location] = useLocation();
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem("founding-headsup-dismissed-v1") === "1",
+  );
+  const { data } = useQuery<{
+    member: unknown | null;
+    canClaim: boolean;
+    stats: { remaining: number };
+  }>({ queryKey: ["/api/founding/status"] });
+
+  // Hide on the page itself, once dismissed, once claimed, or when seats are gone.
+  if (
+    dismissed ||
+    location === "/founding" ||
+    !data ||
+    data.member ||
+    data.stats.remaining <= 0
+  ) {
+    return null;
+  }
+
+  return (
+    <div
+      className="flex items-center justify-center gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs px-4 py-1.5 border-b border-amber-200 dark:border-amber-800 shrink-0"
+      data-testid="banner-founding-headsup"
+    >
+      <span className="text-center">
+        <strong>Heads up:</strong> Founding Member seats (first 1,000) are open. Finish 3 free steps to claim your permanent number.{" "}
+        <Link href="/founding" className="underline font-semibold" data-testid="link-founding-headsup">
+          Claim your seat
+        </Link>
+      </span>
+      <button
+        onClick={() => {
+          localStorage.setItem("founding-headsup-dismissed-v1", "1");
+          setDismissed(true);
+        }}
+        className="shrink-0 opacity-70 hover:opacity-100"
+        aria-label="Dismiss"
+        data-testid="button-dismiss-founding-headsup"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const sidebarStyle = {
     "--sidebar-width": "16rem",
@@ -223,6 +272,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
           Beta — Early Access &middot; Your feedback shapes the product
         </div>
         <OfflineBanner />
+        <FoundingHeadsUpBanner />
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <div className="flex flex-col flex-1 overflow-hidden">
@@ -321,6 +371,7 @@ function AuthenticatedRoutes() {
         <Route path="/wallet-security" component={WalletSecurity} />
         <Route path="/xls66-lending" component={XLS66Lending} />
         <Route path="/sovereignty-kit" component={SovereigntyKit} />
+        <Route path="/founding" component={FoundingMemberPage} />
         <Route path="/drills" component={DrillsCenter} />
         <Route path="/sovereignty/wealth-architecture" component={WealthArchitecture} />
         <Route path="/legacy-plan" component={LegacyPlan} />
@@ -419,6 +470,7 @@ function Router() {
         <Route path="/route-planner" component={RoutePlanner} />
         <Route path="/own-privately" component={OwnPrivately} />
         <Route path="/home-or-away" component={HomeOrAway} />
+        <Route path="/founding" component={FoundingMemberPage} />
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />

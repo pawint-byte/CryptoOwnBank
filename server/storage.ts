@@ -154,6 +154,13 @@ import {
   type InsertTokenBucket,
   type TokenBucketItem,
   type InsertTokenBucketItem,
+  foundingMembers,
+  foundingOnboarding,
+  foundingSeatCounter,
+  FOUNDING_TOTAL_SEATS,
+  FOUNDING_GENESIS_COUNT,
+  type FoundingMember,
+  type FoundingOnboarding,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql, inArray } from "drizzle-orm";
@@ -316,6 +323,12 @@ export interface IStorage {
   createTokenBucketItem(item: InsertTokenBucketItem): Promise<TokenBucketItem>;
   getTokenBucketItems(bucketId: string): Promise<TokenBucketItem[]>;
   deleteTokenBucketItems(bucketId: string): Promise<void>;
+
+  getFoundingMember(userId: string): Promise<FoundingMember | undefined>;
+  getFoundingOnboarding(userId: string): Promise<FoundingOnboarding | undefined>;
+  confirmFoundingKit(userId: string): Promise<FoundingOnboarding>;
+  getFoundingStats(): Promise<{ claimed: number; remaining: number; total: number; genesisClaimed: number; genesisTotal: number }>;
+  claimFoundingSeat(userId: string, eligible: boolean): Promise<{ status: "claimed" | "already" | "incomplete" | "sold_out"; member?: FoundingMember }>;
 
   createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot>;
   getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined>;
@@ -2397,6 +2410,92 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(agentPayees.id, id), eq(agentPayees.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  // ── Founding Member program ──────────────────────────────────────────────
+  async getFoundingMember(userId: string): Promise<FoundingMember | undefined> {
+    const [m] = await db.select().from(foundingMembers).where(eq(foundingMembers.userId, userId));
+    return m;
+  }
+
+  async getFoundingOnboarding(userId: string): Promise<FoundingOnboarding | undefined> {
+    const [o] = await db.select().from(foundingOnboarding).where(eq(foundingOnboarding.userId, userId));
+    return o;
+  }
+
+  async confirmFoundingKit(userId: string): Promise<FoundingOnboarding> {
+    const [row] = await db
+      .insert(foundingOnboarding)
+      .values({ userId, kitConfirmed: true })
+      .onConflictDoUpdate({
+        target: foundingOnboarding.userId,
+        set: { kitConfirmed: true, updatedAt: new Date() },
+      })
+      .returning();
+    return row;
+  }
+
+  async getFoundingStats(): Promise<{
+    claimed: number;
+    remaining: number;
+    total: number;
+    genesisClaimed: number;
+    genesisTotal: number;
+  }> {
+    const [counter] = await db
+      .select()
+      .from(foundingSeatCounter)
+      .where(eq(foundingSeatCounter.id, 1));
+    const claimed = counter ? counter.lastSeat : 0;
+    return {
+      claimed,
+      remaining: Math.max(0, FOUNDING_TOTAL_SEATS - claimed),
+      total: FOUNDING_TOTAL_SEATS,
+      genesisClaimed: Math.min(claimed, FOUNDING_GENESIS_COUNT),
+      genesisTotal: FOUNDING_GENESIS_COUNT,
+    };
+  }
+
+  // Concurrency-safe seat allocation. Eligibility (all three onboarding steps)
+  // is verified by the caller from live data; this method enforces the one-seat
+  // -per-member rule and the 1,000 cap atomically.
+  async claimFoundingSeat(
+    userId: string,
+    eligible: boolean,
+  ): Promise<{ status: "claimed" | "already" | "incomplete" | "sold_out"; member?: FoundingMember }> {
+    const existing = await this.getFoundingMember(userId);
+    if (existing) return { status: "already", member: existing };
+    if (!eligible) return { status: "incomplete" };
+
+    return await db.transaction(async (tx) => {
+      // Re-check membership inside the transaction to close the double-claim race.
+      const [dup] = await tx
+        .select()
+        .from(foundingMembers)
+        .where(eq(foundingMembers.userId, userId));
+      if (dup) return { status: "already" as const, member: dup };
+
+      // Make sure the single counter row exists, then atomically take a seat.
+      await tx.execute(
+        sql`INSERT INTO founding_seat_counter (id, last_seat) VALUES (1, 0) ON CONFLICT (id) DO NOTHING`,
+      );
+      const bumped = await tx.execute(
+        sql`UPDATE founding_seat_counter SET last_seat = last_seat + 1 WHERE id = 1 AND last_seat < ${FOUNDING_TOTAL_SEATS} RETURNING last_seat`,
+      );
+      const rows = (bumped as any).rows ?? [];
+      if (rows.length === 0) return { status: "sold_out" as const };
+
+      const seatNumber = Number(rows[0].last_seat);
+      const [member] = await tx
+        .insert(foundingMembers)
+        .values({
+          userId,
+          seatNumber,
+          isGenesis: seatNumber <= FOUNDING_GENESIS_COUNT,
+        })
+        .returning();
+      return { status: "claimed" as const, member };
+    });
   }
 }
 

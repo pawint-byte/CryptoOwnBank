@@ -117,6 +117,23 @@
 
 ---
 
+## SHIPPED — Founding Member signup hook (first 1,000) (Added & completed 2026-06-10)
+
+New public page `/founding` (`client/src/pages/founding-member.tsx`) + `FoundingBadge` component. The first 1,000 members who finish a free, 3-step, fully non-custodial onboarding earn a permanent "Founding Member #N of 1,000" badge; the first 100 are the cosmetic "Genesis Circle." NO payment, NO identity verification — true to the non-custodial doctrine.
+
+The 3 steps are computed LIVE from real, non-fakeable data (no self-attestation):
+1. **Connect a wallet** — member has ≥1 saved wallet.
+2. **Generate a Sovereignty Recovery Kit** — the `kitConfirmed` flag is written ONLY by the real `GET /api/sovereignty-kit/export` path (and only when the kit actually contains the member's addresses). There is deliberately NO self-attest "I did it" endpoint — a code review caught that an earlier checkbox version could be faked with a direct API call, so it was removed.
+3. **Do one real action** — member has a price alert OR a Legacy Plan.
+
+Seat allocation is concurrency-safe: a single-row `founding_seat_counter` table is incremented inside a DB transaction (`UPDATE ... WHERE last_seat < 1000 RETURNING`), with a `unique(userId)` guard against double-claims and a re-check inside the transaction. Live public counter via `GET /api/founding/stats` (no auth — logged-out visitors see it too). Member status via `GET /api/founding/status`; claim via `POST /api/founding/claim`.
+
+Existing/dormant members get NO auto-grant — everyone claims the same way — but they get an early heads-up: a dismissible in-app banner (`FoundingHeadsUpBanner` in `App.tsx`, hidden once claimed/dismissed/sold-out) linking to `/founding`. (The 2 head-start emails are drafted but out of scope here.) Badge also shows on the Settings profile card and there's a sidebar link in the Home group.
+
+Files: `shared/schema.ts` (foundingMembers / foundingOnboarding / foundingSeatCounter + consts), `server/storage.ts` (founding methods + atomic claim), `server/routes/founding.ts` (registered in `server/routes.ts`), `server/routes/legacy.ts` (kit-export now records the real onboarding signal), `client/src/pages/founding-member.tsx`, `client/src/components/founding-badge.tsx`, `client/src/App.tsx` (routes authed + logged-out + banner), `client/src/pages/settings.tsx`, `client/src/components/app-sidebar.tsx`. Brand accent #00A4E4, Genesis = amber. `npm run db:push` applied. Tasks #44 (referral) and #45 (crypto-date calendar) are the downstream follow-ups.
+
+---
+
 ## ✅ DONE 2026-06-03 — "Prime the Pump" starter playbook page (`/start`)
 
 New guided onboarding page (`client/src/pages/prime-the-pump.tsx`) that gets a member from zero to "in play" honestly, given the founder's USA region-blocks on web card onramps (MoonPay "not supported in your region", Transak Cloudflare-blocked). Leads with IN-APP wallet buys that bypass web geo-blocks.

@@ -238,6 +238,50 @@ export type CustomVault = {
   addedAt: string;
 };
 
+// ── Founding Member program ───────────────────────────────────────────────
+// The first 1,000 members to finish the free, non-custodial onboarding earn a
+// permanent numbered "Founding Member #N of 1,000" badge. Seats are CLAIM-ONLY
+// (never auto-granted to dormant accounts) and the number is kept forever, even
+// if the account goes dormant. No payment and no identity verification, ever.
+export const FOUNDING_TOTAL_SEATS = 1000;
+export const FOUNDING_GENESIS_COUNT = 100;
+
+// One row per member who has claimed a seat.
+export const foundingMembers = pgTable("founding_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  seatNumber: integer("seat_number").notNull().unique(),
+  isGenesis: boolean("is_genesis").default(false).notNull(),
+  claimedAt: timestamp("claimed_at").defaultNow(),
+});
+
+// Per-member onboarding progress. The wallet and "one real action" steps are
+// recomputed live from real data (saved wallets, price alerts, Legacy Plan) so
+// they can never be faked; the Sovereignty Recovery Kit step is a sticky
+// member-confirmed flag persisted here.
+export const foundingOnboarding = pgTable("founding_onboarding", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  kitConfirmed: boolean("kit_confirmed").default(false).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Single-row atomic counter that hands out seat numbers. A row-level
+// `UPDATE ... WHERE last_seat < cap RETURNING` guarantees two concurrent claims
+// can never get the same number or exceed the 1,000 cap.
+export const foundingSeatCounter = pgTable("founding_seat_counter", {
+  id: integer("id").primaryKey(),
+  lastSeat: integer("last_seat").default(0).notNull(),
+});
+
+export const insertFoundingMemberSchema = createInsertSchema(foundingMembers).omit({
+  id: true,
+  claimedAt: true,
+});
+export type InsertFoundingMember = z.infer<typeof insertFoundingMemberSchema>;
+export type FoundingMember = typeof foundingMembers.$inferSelect;
+export type FoundingOnboarding = typeof foundingOnboarding.$inferSelect;
+
 export const priceHistory = pgTable("price_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   assetSymbol: varchar("asset_symbol", { length: 50 }).notNull(),

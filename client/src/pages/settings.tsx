@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { FoundingBadge } from "@/components/founding-badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -309,6 +310,13 @@ export default function SettingsPage() {
 
   const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({
     queryKey: ["/api/subscription"],
+  });
+
+  const { data: foundingStatus } = useQuery<{
+    member: { seatNumber: number; isGenesis: boolean } | null;
+    stats?: { total: number };
+  }>({
+    queryKey: ["/api/founding/status"],
   });
 
   const { data: cryptoAddresses = [] } = useQuery<any[]>({
@@ -845,6 +853,16 @@ export default function SettingsPage() {
                     : user?.email?.split("@")[0] || "User"}
                 </p>
                 <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+                {foundingStatus?.member && (
+                  <div className="mt-2">
+                    <FoundingBadge
+                      seatNumber={foundingStatus.member.seatNumber}
+                      isGenesis={foundingStatus.member.isGenesis}
+                      total={foundingStatus.stats?.total ?? 1000}
+                      size="sm"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <Separator />
