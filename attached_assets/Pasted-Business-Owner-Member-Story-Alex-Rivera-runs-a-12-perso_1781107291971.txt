@@ -1,0 +1,80 @@
+Business Owner Member Story
+Alex Rivera runs a 12-person digital agency (web design, branding, and some custom dev work). Revenue is project-based and lumpy — big client payments land, then there are stretches where cash goes out for contractors, software tools, payroll, and taxes. Alex keeps a meaningful portion of reserves in RLUSD because it earns yield while staying liquid and stable.
+Alex is not a full-time crypto person. They use CryptoOwnBank because:
+
+They want their business cash to work instead of sitting in a low-yield business checking account.
+They need to pay international contractors and some SaaS tools quickly and cheaply.
+They want the upside of yield without the risk of their operating money disappearing into DeFi experiments.
+Compliance and clean records matter (accountant + occasional investor updates).
+
+How they would use the AI agent layer:
+The agent becomes a smart treasury assistant that respects cash flow reality.
+
+It watches the business RLUSD positions and upcoming known outflows (Alex tags “payroll – June 15”, “contractor invoices due”, “quarterly tax reserve”).
+When idle reserves are sitting, it proposes conservative yield moves only inside the liquidity window the business actually has. Example proposal:
+
+“You have $47k in idle RLUSD. Your next major outflow is payroll in 11 days. A move of $35k into Blend (currently 1.2% higher APY than Soil, same risk band you set for operating reserves) would settle in ~4 seconds and still leave the full payroll amount liquid with a 7-day buffer. Approve and sign in Xaman?”
+
+For recurring business payments (contractors, tools, cloud services), the agent can prepare optimized x402 or direct XRPL payments and surface them for one-tap approval instead of Alex manually creating each one.
+Guardrails Alex sets once:
+Operating capital bucket: max 48-hour lock, very conservative yield only.
+Reserve bucket: slightly wider parameters, still hard-capped.
+Never touch funds within 5 business days of known large outflows unless explicitly overridden.
+Monthly “treasury review” summary the agent prepares for Alex (and can export for the accountant).
+
+
+Alex feels like they have a competent finance person on staff who never has signing authority. The business cash earns more than a bank account, payments are faster/cheaper than wires, and Alex stays in full control.
+How This Persona Is Different From the Others
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PersonaPrimary Emotional NeedHow the Agent HelpsKey Guardrail FocusSet It & Mostly Trust ItReduce decision fatigueOccasional high-quality proposalsSimplicity + safetyActive OptimizerSee and act on opportunitiesFrequent ranked suggestionsPersonal risk bandLegacy & Family StewardMulti-generational responsibilityProposals tied to family outcomesPer-person / inheritance rulesBusiness OwnerCash flow + professional responsibilityTreasury moves that respect payroll & obligationsLiquidity windows + operating vs reserve bucketsNew-to-Self-CustodyLower overwhelmVery conservative defaults + plain languageMaximum simplicity
+The Business Owner persona brings timing sensitivity and separation of capital types that the personal personas don’t need as strongly. It also opens natural use of x402 for business tooling and contractor payments.
+Guardrails That Make Sense for Business Owners
+
+Liquidity calendar awareness (upcoming known outflows)
+Operating capital vs. treasury/reserve separation
+Hard time buffers before payroll/tax/vendor runs
+Approval thresholds (small moves can be batched, larger ones always single approval)
+Exportable audit trail for accountant/bookkeeper
+Optional future multi-signer support (co-founder or bookkeeper can co-approve certain proposal types)
+
+This keeps the core doctrine intact: the agent does the analysis and drafting; the business owner (or authorized signer) is always the one who says yes and signs.
