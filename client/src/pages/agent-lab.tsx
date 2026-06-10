@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ShieldAlert, Sparkles, Lock, Check, X, Send, Trash2, PenLine } from "lucide-react";
+import { ShieldAlert, Sparkles, Lock, Check, X, Send, Trash2, PenLine, ExternalLink } from "lucide-react";
 import type { AgentMandate, AgentProposal, AgentPayee } from "@shared/schema";
 import { signPayment } from "@/lib/xumm-connector";
 import { buildAndSignPayment, getFreighterAddress, connectFreighter } from "@/lib/freighter-connector";
@@ -251,10 +251,11 @@ export default function AgentLab() {
       >
         <ShieldAlert className="h-5 w-5 shrink-0 text-amber-600" />
         <p>
-          <strong>The agent can't move money — only you can.</strong> Yield moves are draft-only in this
-          prototype (no signing wired yet). Outward <strong>payments</strong> to a payee you saved are signed
-          in <strong>your own wallet</strong> (Xaman for XRPL, Freighter for Stellar); the agent only prepares
-          the exact payment for you to review and sign.
+          <strong>The agent can't move money — only you can.</strong> Yield moves into the Soil vaults and
+          <strong> payments</strong> to a payee you saved are signed in <strong>your own wallet</strong> (Xaman
+          for XRPL, Freighter for Stellar). Blend supply is a Stellar smart-contract action you complete and
+          sign in the <strong>Blend app</strong> — the agent only surfaces the live rate and the right amount.
+          The agent never signs and never holds your funds.
         </p>
       </div>
 
@@ -446,21 +447,23 @@ export default function AgentLab() {
 
       <div className="space-y-4">
         {pending.map((p) => {
-          const isPayment = p.kind === "payment";
+          const isSignable = (p.kind === "payment" || p.kind === "yield_move") && !!p.chain && !!p.toAddress;
+          const isBlend = p.kind === "yield_blend";
           return (
             <Card key={p.id} data-testid={`card-proposal-${p.id}`}>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  {isPayment && <Send className="h-4 w-4" />}
+                  {isSignable && <Send className="h-4 w-4" />}
+                  {isBlend && <ExternalLink className="h-4 w-4" />}
                   {p.title}
                 </CardTitle>
                 {(p.fromAsset || p.toAsset) && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {p.fromAsset && <Badge variant="outline">From: {p.fromAsset}</Badge>}
                     {p.toAsset && <Badge variant="outline">To: {p.toAsset}</Badge>}
-                    {isPayment && p.amount && <Badge>{p.amount} {p.assetCode}</Badge>}
-                    {!isPayment && p.amountUsd && <Badge>${Number(p.amountUsd).toLocaleString()}</Badge>}
-                    {isPayment && p.chain && <Badge variant="secondary">{p.chain === "stellar" ? "Stellar" : "XRPL"}</Badge>}
+                    {isSignable && p.amount && <Badge>{p.amount} {p.assetCode}</Badge>}
+                    {!isSignable && p.amountUsd && <Badge>${Number(p.amountUsd).toLocaleString()}</Badge>}
+                    {(isSignable || isBlend) && p.chain && <Badge variant="secondary">{p.chain === "stellar" ? "Stellar" : "XRPL"}</Badge>}
                   </div>
                 )}
               </CardHeader>
@@ -468,7 +471,7 @@ export default function AgentLab() {
                 <p className="text-sm text-muted-foreground">{p.rationale}</p>
                 {p.kind !== "info" && (
                   <div className="flex gap-2">
-                    {isPayment ? (
+                    {isSignable ? (
                       <Button
                         size="sm"
                         onClick={() => signProposal(p)}
@@ -477,6 +480,14 @@ export default function AgentLab() {
                       >
                         <Send className="h-4 w-4 mr-1" />
                         {signingId === p.id ? "Opening your wallet…" : "Review & sign in your wallet"}
+                      </Button>
+                    ) : isBlend ? (
+                      <Button
+                        size="sm"
+                        onClick={() => window.open("https://mainnet.blend.capital", "_blank", "noopener,noreferrer")}
+                        data-testid={`button-open-blend-${p.id}`}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1" /> Open Blend to supply
                       </Button>
                     ) : (
                       <Button

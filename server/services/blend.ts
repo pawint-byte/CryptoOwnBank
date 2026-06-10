@@ -133,3 +133,41 @@ export async function fetchAllBlendPositions(stellarAddress: string): Promise<Fe
 export function buildPositionSymbol(poolKey: string, assetSymbol: string): string {
   return `${assetSymbol}-BLEND-${poolKey}`;
 }
+
+export interface BlendAssetApy {
+  assetId: string;
+  symbol: string;
+  supplyApy: number;
+}
+
+export interface BlendPoolApy {
+  poolKey: string;
+  poolName: string;
+  assets: BlendAssetApy[];
+}
+
+// Reads the LIVE supply APY for every reserve in every configured pool, without
+// needing a user address (we want the pool rate, not a member's position). Used
+// by the Agent Lab to surface real, current Blend yield in its proposals.
+export async function fetchBlendPoolApys(): Promise<BlendPoolApy[]> {
+  const network: Network = {
+    rpc: SOROBAN_RPC,
+    passphrase: Networks.PUBLIC,
+  };
+
+  const out: BlendPoolApy[] = [];
+  for (const pool of BLEND_POOLS) {
+    try {
+      const blendPool = await PoolV2.load(network, pool.poolId);
+      const assets: BlendAssetApy[] = [];
+      for (const [assetId, reserve] of Array.from(blendPool.reserves.entries())) {
+        const meta = STELLAR_ASSET_REGISTRY[assetId] || { symbol: `SAC:${assetId.slice(0, 6)}`, coingeckoId: "" };
+        assets.push({ assetId, symbol: meta.symbol, supplyApy: reserve.estSupplyApy || 0 });
+      }
+      out.push({ poolKey: pool.poolKey, poolName: pool.poolName, assets });
+    } catch (err: any) {
+      console.error(`[blend] Failed to load pool APYs for ${pool.poolKey}:`, err?.message || err);
+    }
+  }
+  return out;
+}

@@ -1,4 +1,5 @@
 import type { AgentMandate, Position, AgentPayee } from "@shared/schema";
+import type { BlendPoolApy } from "./blend";
 
 // HIDDEN proposals-only prototype.
 // Deterministic rule engine (intentionally NOT an LLM) so behavior is testable
@@ -9,6 +10,11 @@ import type { AgentMandate, Position, AgentPayee } from "@shared/schema";
 const STABLES = new Set([
   "RLUSD", "USDC", "USDT", "DAI", "USD", "USDP", "GUSD", "PYUSD", "TUSD", "USDD",
 ]);
+
+// Soil Protocol vault addresses (XRPL). A "yield move" deposit is simply an RLUSD
+// Payment to one of these — the member signs it themselves in Xaman.
+const SOIL_TREASURY_ADDRESS = "rnvp6FiucXE7kjR8LKRocosWmg8pGhFZa8";
+const SOIL_CREDITPLUS_ADDRESS = "rHKx9ngSgQUQGMSrP313hFKDukvJXdVfBX";
 
 export interface ProposalCandidate {
   kind: string;
@@ -41,6 +47,13 @@ export function generateProposals(mandate: AgentMandate, positions: Position[]):
     .filter((p) => STABLES.has((p.assetSymbol || "").toUpperCase()))
     .reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
 
+  // Soil vaults only accept RLUSD, and the member signs an RLUSD payment — so the
+  // amount we propose to sign must be backed by RLUSD they actually hold, not the
+  // aggregate stablecoin pile (which may be mostly USDC/USDT).
+  const rlusdQty = positions
+    .filter((p) => (p.assetSymbol || "").toUpperCase() === "RLUSD")
+    .reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
+
   const idle = stableQty - floor;
 
   if (idle <= 1) {
@@ -60,11 +73,30 @@ export function generateProposals(mandate: AgentMandate, positions: Position[]):
 
   let move = idle;
   if (maxMove > 0) move = Math.min(move, maxMove);
+  move = Math.min(move, rlusdQty);
   move = Math.floor(move * 100) / 100;
+
+  // Idle stablecoins exist, but not enough RLUSD to fund a Soil deposit the member
+  // could actually sign. Be honest: suggest converting, don't show a signable card.
+  if (move <= 1) {
+    proposals.push({
+      kind: "info",
+      title: "Convert some stablecoins to RLUSD to use the Soil vaults",
+      rationale:
+        `You have about ${money(idle)} in idle stablecoins, but the Soil vaults take RLUSD and you ` +
+        `currently hold about ${money(rlusdQty)} RLUSD. Swap some of your other stablecoins to RLUSD first, ` +
+        `then the agent can propose a deposit you can review and sign in Xaman.`,
+      fromAsset: "Stablecoins",
+      toAsset: "RLUSD",
+      amountUsd: null,
+    });
+    return proposals;
+  }
 
   // Conservative → Treasury (5.2%, no lock). Balanced/Aggressive → CREDIT+ (8.0%, 90-day lock).
   const conservative = mandate.riskTolerance === "conservative";
   const vault = conservative ? "Soil Treasury Vault" : "Soil CREDIT+ Vault";
+  const vaultAddress = conservative ? SOIL_TREASURY_ADDRESS : SOIL_CREDITPLUS_ADDRESS;
   const apr = conservative ? "5.2%" : "8.0%";
   const lockNote = conservative
     ? "Treasury-backed and no lock-up, so it's easy to exit."
@@ -77,11 +109,19 @@ export function generateProposals(mandate: AgentMandate, positions: Position[]):
       `You're holding about ${money(stableQty)} in stablecoins that are earning nothing. ` +
       `Keeping your ${money(floor)} liquid floor untouched leaves ${money(idle)} idle` +
       `${maxMove > 0 && idle > maxMove ? `, and your per-move cap is ${money(maxMove)}` : ""}. ` +
-      `This proposal moves ${money(move)} into the ${vault} (${apr} APR). ${lockNote} ` +
-      `You would review and sign this yourself in Xaman — nothing moves until you approve.`,
+      `This proposal deposits ${money(move)} of RLUSD into the ${vault} (${apr} APR). ${lockNote} ` +
+      `You review and sign this yourself in Xaman — the agent never signs and never holds your funds.`,
     fromAsset: "Stablecoins",
     toAsset: vault,
     amountUsd: String(move),
+    // On-chain deposit details so the member can sign it in Xaman: a Soil deposit
+    // is an RLUSD Payment to the vault address. issuer is left null — the client
+    // fills in the canonical RLUSD issuer from its constants.
+    chain: "xrpl",
+    toAddress: vaultAddress,
+    assetCode: "RLUSD",
+    issuer: null,
+    amount: String(move),
   });
 
   return proposals;
@@ -166,6 +206,67 @@ export function generatePaymentProposals(
       amount: payee.amount,
     });
   }
+
+  return out;
+}
+
+// ── Blend (Soroban lending on Stellar) ───────────────────────────────────────
+// Deepens Blend from passive position-tracking into an actively-surfaced yield
+// option: the agent proposes supplying idle stablecoins (USDC) to the best Blend
+// pool, using the LIVE supply APY read from the chain. Supplying to Blend is a
+// Soroban smart-contract action, so — honestly — the member completes and signs
+// it in the Blend app with their own Stellar wallet. We never sign, never hold
+// funds, and only ever promise what the standard actually delivers: we surface
+// the live rate and the amount that fits the member's guardrails.
+export function generateBlendProposals(
+  blendApys: BlendPoolApy[],
+  mandate: AgentMandate,
+  positions: Position[],
+): ProposalCandidate[] {
+  const out: ProposalCandidate[] = [];
+  if (!blendApys.length) return out;
+
+  const floor = Number(mandate.floorUsd) || 0;
+  const maxMove = Number(mandate.maxMoveUsd) || 0;
+
+  const stableQty = positions
+    .filter((p) => STABLES.has((p.assetSymbol || "").toUpperCase()))
+    .reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
+
+  const idle = stableQty - floor;
+  if (idle <= 1) return out;
+
+  let move = idle;
+  if (maxMove > 0) move = Math.min(move, maxMove);
+  move = Math.floor(move * 100) / 100;
+
+  // Pick the best live USDC supply rate across all configured pools.
+  let best: { apy: number; poolName: string } | null = null;
+  for (const pool of blendApys) {
+    for (const a of pool.assets) {
+      if ((a.symbol || "").toUpperCase() === "USDC" && (!best || a.supplyApy > best.apy)) {
+        best = { apy: a.supplyApy, poolName: pool.poolName };
+      }
+    }
+  }
+  if (!best) return out;
+
+  const aprPct = (best.apy * 100).toFixed(2);
+  out.push({
+    kind: "yield_blend",
+    title: `Optionally supply ${money(move)} USDC to ${best.poolName} (~${aprPct}% APR, live)`,
+    rationale:
+      `Another home for your idle stablecoins: Blend is a lending market on Stellar. Supplying USDC to ` +
+      `the ${best.poolName} currently earns about ${aprPct}% APR — this rate is read live from the chain and floats. ` +
+      `Supplying to Blend is a Stellar Soroban smart-contract action, so you complete and sign it yourself in the ` +
+      `Blend app with your own Stellar wallet — CryptoOwnBank never signs and never holds your funds. We only ` +
+      `surface the live rate and the amount that fits your ${money(floor)} liquid floor` +
+      `${maxMove > 0 ? ` and ${money(maxMove)} per-move cap` : ""}. Requires USDC on Stellar.`,
+    fromAsset: "Stablecoins (USDC on Stellar)",
+    toAsset: best.poolName,
+    amountUsd: String(move),
+    chain: "stellar",
+  });
 
   return out;
 }

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import { isAuthenticated, isAdmin } from "../replit_integrations/auth";
 import { storage } from "../storage";
-import { generateProposals, generatePaymentProposals } from "../services/agent-proposals";
+import { generateProposals, generatePaymentProposals, generateBlendProposals } from "../services/agent-proposals";
 
 // HIDDEN proposals-only prototype ("Agent Lab").
 // Every route is admin-gated, so it is invisible to regular members. There is no
@@ -72,9 +72,19 @@ export function registerAgentRoutes(app: Express) {
       }
       const positions = await storage.getPositionsByUser(userId);
       const payees = await storage.getAgentPayees(userId);
+      // Live Blend pool APYs, best-effort: if Soroban RPC is slow or down we just
+      // skip Blend proposals rather than failing the whole generate.
+      let blendApys: import("../services/blend").BlendPoolApy[] = [];
+      try {
+        const { fetchBlendPoolApys } = await import("../services/blend");
+        blendApys = await fetchBlendPoolApys();
+      } catch (err: any) {
+        console.error("[agent] Blend APY fetch failed, skipping Blend proposals:", err?.message || err);
+      }
       const candidates = [
         ...generateProposals(mandate, positions),
         ...generatePaymentProposals(payees, mandate, positions),
+        ...generateBlendProposals(blendApys, mandate, positions),
       ];
       // Clear stale pending proposals before re-generating (keeps the inbox honest).
       await storage.deletePendingAgentProposals(userId);
