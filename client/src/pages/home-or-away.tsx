@@ -18,6 +18,8 @@ import {
   HelpCircle,
   CheckCircle2,
   Coins,
+  Clock,
+  Receipt,
 } from "lucide-react";
 
 interface Coin {
@@ -150,6 +152,26 @@ export default function HomeOrAway() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Deadline warning — the part that bites */}
+      <Alert className="mb-8 border-amber-500/50 bg-amber-500/10" data-testid="alert-deadline">
+        <Clock className="h-4 w-4" />
+        <AlertTitle>Watch the deadline — it's the part that bites</AlertTitle>
+        <AlertDescription className="mt-1 space-y-2 text-muted-foreground">
+          <p>
+            A delisting email comes with a <strong>hard deadline</strong> ("sell or withdraw before
+            [date]"). If you do nothing, most exchanges don't freeze your coin — they{" "}
+            <strong>auto-convert it to cash or USDC at that day's market price</strong>. So you keep
+            the <em>value</em>, but you lose the choice of <em>when</em> and <em>what</em> to sell
+            into, and you're stuck with whatever the price happens to be that day.
+          </p>
+          <p>
+            <strong>Act a few days before the date, not on it.</strong> If the deadline has already
+            passed, don't panic — open your exchange account and look: your coin was most likely
+            turned into cash or USDC already, and <em>that</em> you can still bring home.
+          </p>
+        </AlertDescription>
+      </Alert>
 
       {/* Step 1: pick the coin */}
       <Card className="mb-6" data-testid="card-pick-coin">
@@ -333,6 +355,11 @@ export default function HomeOrAway() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
+            <p className="text-muted-foreground">
+              This is normal, not a failure. Custodial platforms (Uphold, eToro and friends) often
+              let you <em>trade or sell</em> a small coin but never <em>send it out</em> on its own
+              blockchain. So you rescue the value first, then bring <strong>that</strong> home.
+            </p>
             {[
               {
                 t: "Swap it (inside the exchange) into a coin you CAN withdraw.",
@@ -376,6 +403,37 @@ export default function HomeOrAway() {
                 buy what you want from your own wallet via <Link href="/buy-crypto" className="text-primary underline">Buy Crypto</Link>. Not ideal — but it beats being locked in.
               </AlertDescription>
             </Alert>
+            <Alert variant="destructive" data-testid="alert-fully-locked">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>"I can't transfer it AND I can't swap or sell it"</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  If every button is greyed out, the deadline has usually already passed and the
+                  exchange has switched the coin off. Here's the honest part: the exchange normally
+                  does <strong>not</strong> keep your money — it <strong>force-converts the coin into
+                  cash or USDC at that day's price</strong> and drops it into your account. The coin
+                  is gone, but the value comes back as something you <em>can</em> move.
+                </p>
+                <p className="font-semibold">What to do now:</p>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>Check your cash / USDC balance on the exchange — the converted money may be there already, or arrive within a few days.</li>
+                  <li>Once it shows up, withdraw it home: USDC to your own wallet, or cash to your bank.</li>
+                  <li>If nothing appears, message the exchange's support and ask when the delisted coin gets converted, and into what.</li>
+                  <li>It became a real sale at a loss — record it so it can cut your taxes (see the note below).</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2" data-testid="text-tax-note">
+              <Receipt className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div>
+                <p className="font-semibold">Silver lining: a loss can cut your taxes.</p>
+                <p className="text-muted-foreground">
+                  If a delisted coin is far below what you paid, selling it locks in a{" "}
+                  <em>real loss</em> that can offset gains elsewhere. Make sure the sale gets
+                  recorded, then see <Link href="/tax-harvest" className="text-primary underline">Tax Savings (Harvest)</Link>.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
