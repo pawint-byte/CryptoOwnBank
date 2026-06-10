@@ -176,6 +176,10 @@ export const faqGroups: FaqGroup[] = [
         a: "1) Install Xaman (App Store/Google Play) and Ledger Live. 2) Open Xaman \u2192 Settings \u2192 Hardware Wallets \u2192 Ledger \u2192 enable Bluetooth \u2192 unlock Ledger \u2192 open XRP app \u2192 pairs automatically. 3) Add RLUSD trust line: tap \u201C+\u201D Add Token \u2192 RLUSD \u2192 Setup Trust Line \u2192 sign on Ledger. 4) On CryptoOwnBank, click \u201CConnect Wallet\u201D \u2192 Xumm/Xaman \u2192 approve in Xaman (Ledger confirms if needed). Done — deposit RLUSD to Soil vaults and sign with your Ledger/Xaman combo. Full step-by-step toolkits for beginners, businesses, and more: /setup-guide",
       },
       {
+        q: "Which wallets can I use to deposit RLUSD into a vault?",
+        a: "A vault deposit is an RLUSD payment on the XRP Ledger, and RLUSD is an issued token (an \u201CIOU\u201D), which not every wallet can sign yet. Here's the honest breakdown so you don't hit a surprise: <strong>Xaman</strong> \u2014 works on both phone and desktop. This is the simplest path for most members and the only mobile option. <strong>Ledger (Nano X / Nano S Plus) over USB</strong> \u2014 works on a <em>desktop</em> computer using Chrome or Edge. Phones can't connect a Ledger over USB, so if you're on your phone with a Ledger, either switch to a desktop or use Xaman instead. We'll tell you this up front \u2014 we never let a deposit silently fail. <strong>Keystone and Trezor</strong> \u2014 not yet. These devices can sign plain XRP today but can't sign an RLUSD IOU payment yet (it depends on their firmware, not on us). Use Xaman for RLUSD vault deposits until their firmware adds support. In every case, your keys stay on your own device \u2014 CryptoOwnBank builds the transaction and you approve and sign it yourself.",
+      },
+      {
         q: "Do I need a destination tag/memo when transferring RLUSD?",
         a: "No — RLUSD on XRPL does not require tags or memos (unlike XLM on Stellar). Just send to your correct XRPL address (starts with \u201Cr\u2026\u201D). Always double-check the address before sending.",
       },

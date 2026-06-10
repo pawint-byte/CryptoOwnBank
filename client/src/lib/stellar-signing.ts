@@ -52,6 +52,7 @@ export async function buildSignSubmitStellar(
   buildTx: (sdk: any, account: any, networkPassphrase: string) => any,
   signer: StellarSigner,
   net: StellarNetwork,
+  fallbackError = "Transaction failed",
 ): Promise<StellarSubmitResult> {
   try {
     const StellarSdk = await import("@stellar/stellar-sdk");
@@ -73,7 +74,7 @@ export async function buildSignSubmitStellar(
   } catch (err: any) {
     const msg = err?.response?.data?.extras?.result_codes
       ? JSON.stringify(err.response.data.extras.result_codes)
-      : err?.message || "Transaction failed";
+      : err?.message || fallbackError;
     return { success: false, error: msg };
   }
 }
