@@ -81,3 +81,19 @@ export function aliasGroup(symbol: string): string[] {
   const r = canonicalToRename.get(canon);
   return r ? [r.from.toUpperCase(), r.to.toUpperCase()] : [canon];
 }
+
+/** The rename record covering this ticker (old or new name), or null. */
+export function getRename(symbol: string): TokenRename | null {
+  if (!symbol) return null;
+  return canonicalToRename.get(canonicalSymbol(symbol)) || null;
+}
+
+/**
+ * True only when the stored ticker is the OLD (pre-rename) name — e.g. a
+ * holding saved as "TON" after the coin became "GRAM". This is the case where
+ * the displayed name looks out of date and we gently nudge the member.
+ */
+export function isLegacyName(symbol: string): boolean {
+  const r = getRename(symbol);
+  return !!r && symbol.toUpperCase() === r.from.toUpperCase();
+}

@@ -7,10 +7,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
-import { displayLabel } from "@shared/token-aliases";
+import { getRename, isLegacyName } from "@shared/token-aliases";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTokenRenamePrefs } from "@/lib/token-rename-prefs";
+import { useAuth } from "@/hooks/use-auth";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2, ArrowLeftRight, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2, ArrowLeftRight, AlertTriangle, Sparkles } from "lucide-react";
 import { WhisperShareDialog } from "@/components/whisper-share-dialog";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -179,6 +182,8 @@ export default function Portfolio() {
   const [showAddressed, setShowAddressed] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const { prefs: renamePrefs, setDecision: setRenameDecision } = useTokenRenamePrefs(user?.id);
   const [collapsedSections, setCollapsedSections] = useState<Set<SectionKey>>(() => {
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem(COLLAPSED_SECTIONS_KEY) : null;
@@ -1049,6 +1054,14 @@ export default function Portfolio() {
                       const missingBasis = !isAddr && (parseFloat(position.totalCostBasis) || 0) <= 0 && parseFloat(position.quantity) > 0 && (position.currentValue || 0) >= 1;
                       const isGroupCollapsed = isDupe && sortBy === "name" && collapsedGroups.has(position.assetSymbol);
 
+                      const rename = getRename(position.assetSymbol);
+                      const renameIsLegacy = isLegacyName(position.assetSymbol);
+                      const renameDecision = rename ? renamePrefs[rename.from.toUpperCase()] : undefined;
+                      const showRenameNudge = !!rename && renameIsLegacy && !renameDecision;
+                      const nameLabel = rename && renameIsLegacy && renameDecision === "accepted"
+                        ? rename.displayName
+                        : position.assetSymbol;
+
                       if (isGroupCollapsed && !isFirstOfGroup) return null;
                       const hideRow = isGroupCollapsed && isFirstOfGroup;
 
@@ -1101,7 +1114,64 @@ export default function Portfolio() {
                                   </div>
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="font-semibold text-sm sm:text-base">{displayLabel(position.assetSymbol)}</span>
+                                      <span className="font-semibold text-sm sm:text-base">{nameLabel}</span>
+                                      {showRenameNudge && rename && (
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <button
+                                              type="button"
+                                              data-testid={`button-rename-nudge-${position.id}`}
+                                              title={`${rename.from} may now be called ${rename.to}`}
+                                              className="inline-flex items-center gap-1 rounded-full border border-amber-400/60 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                                            >
+                                              <Sparkles className="h-2.5 w-2.5" />
+                                              Name update
+                                            </button>
+                                          </PopoverTrigger>
+                                          <PopoverContent align="start" className="w-80 text-sm">
+                                            <div className="space-y-3">
+                                              <p className="font-semibold" data-testid={`text-rename-title-${position.id}`}>
+                                                {rename.from} is now called {rename.to}
+                                              </p>
+                                              <p className="text-muted-foreground text-xs leading-relaxed">
+                                                Your coin hasn't changed at all — same address, same network, same balance
+                                                {rename.effective ? ` (as of ${new Date(rename.effective + "T00:00:00").toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })})` : ""}.
+                                                {" "}Only the name shown here would change.
+                                              </p>
+                                              <div className="flex flex-col gap-2">
+                                                <Button
+                                                  size="sm"
+                                                  className="w-full"
+                                                  data-testid={`button-rename-accept-${position.id}`}
+                                                  onClick={() => setRenameDecision(rename.from, "accepted")}
+                                                >
+                                                  Update to {rename.displayName}
+                                                </Button>
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    data-testid={`button-rename-keep-${position.id}`}
+                                                    onClick={() => setRenameDecision(rename.from, "kept")}
+                                                  >
+                                                    Keep as {rename.from}
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="flex-1"
+                                                    data-testid={`button-rename-dismiss-${position.id}`}
+                                                    onClick={() => setRenameDecision(rename.from, "dismissed")}
+                                                  >
+                                                    Don't remind me
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </PopoverContent>
+                                        </Popover>
+                                      )}
                                       {position.source && (
                                         <Badge variant={position.isImport ? "secondary" : "default"} className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
                                           {position.source}
