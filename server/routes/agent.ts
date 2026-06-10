@@ -113,8 +113,14 @@ export function registerAgentRoutes(app: Express) {
       const userId = req.user.claims.sub;
       // For payment proposals the member signs in their OWN wallet on the client;
       // they pass back the resulting txHash so we can record it ("track after").
-      // The server never signs and never holds keys.
-      const txHash = typeof req.body?.txHash === "string" ? req.body.txHash : undefined;
+      // The server never signs and never holds keys. The hash is for the audit
+      // trail only — it never moves funds — but we still validate its shape so the
+      // history can't be poisoned with arbitrary strings.
+      const rawHash = req.body?.txHash;
+      if (rawHash !== undefined && rawHash !== null && (typeof rawHash !== "string" || !/^[A-Za-z0-9]{16,128}$/.test(rawHash))) {
+        return res.status(400).json({ message: "Invalid transaction hash" });
+      }
+      const txHash = typeof rawHash === "string" ? rawHash : undefined;
       const updated = await storage.updateAgentProposalStatus(req.params.id, userId, "approved", txHash ?? null);
       if (!updated) return res.status(404).json({ message: "Proposal not found" });
       const signed = !!txHash;

@@ -159,6 +159,11 @@ export default function AgentLab() {
       const code = (p.assetCode ?? "").toUpperCase();
       let result: { success: boolean; txHash?: string; error?: string };
 
+      if (p.chain !== "xrpl" && p.chain !== "stellar") {
+        toast({ title: "Can't sign this", description: "This proposal has no recognized network.", variant: "destructive" });
+        return;
+      }
+
       if (p.chain === "xrpl") {
         let amountField: string | { currency: string; value: string; issuer: string };
         if (code === "XRP") {
