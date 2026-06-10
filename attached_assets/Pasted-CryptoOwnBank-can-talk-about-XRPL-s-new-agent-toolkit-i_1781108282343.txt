@@ -1,46 +1,46 @@
-CryptoOwnBank can talk about XRPL’s new agent toolkit in a way that feels member-first, not hype-first. Here are FAQs you can use (site copy, email, or video scripts) tailored to your doctrine that the member always says yes.
+CryptoOwnBank can talk about XRPL's new agent direction in a way that feels member-first, not hype-first. Here are FAQs you can use (site copy, email, or video scripts) tailored to your doctrine that the member always says yes.
 
-Why is CryptoOwnBank using the XRPL agent toolkit?
-We’re using the XRPL agent toolkit because it lets smart agents do the legwork while you stay in control of approvals. The toolkit makes it easier to have an AI assistant watch your balances, draft on-chain actions, and prepare one-tap transactions without ever holding your keys or moving money without your consent.
+(Note on tense: anything marked "coming" is on our roadmap, not live today. We don't claim a feature is built until it is.)
+
+Why is CryptoOwnBank leaning into XRPL's agent direction?
+Because XRPL's new agent direction is exactly the model we already follow: smart agents do the legwork, and you stay in control of approvals. We're building agent flows — reusing the rails you already own (like our DCA flow, which drafts a transaction that you sign in Xaman) — that let an AI assistant watch your balances, draft on-chain actions, and prepare one-tap transactions without ever holding your keys or moving money without your consent.
 
 Does this mean AI will spend my money on its own?
-No. Our line is clear: the agent can propose, you
-sign
-.CryptoOwnBank will not run fully autonomous agents that hold a wallet or sign on your behalf. The toolkit helps us build “draft and prepare” flows (like DCA, yield moves, or rebalances) so that everything still ends with your signature in Xaman or your hardware wallet.
+No. Our line is clear: the agent can propose, you sign. CryptoOwnBank will not run fully autonomous agents that hold a wallet or sign on your behalf. We build "draft and prepare" flows (like DCA, yield moves, or rebalances) so that everything still ends with your signature — in Xaman as the everyday path, or an advanced hardware-wallet signature where your device supports it.
 
-What does the XRPL agent toolkit actually do for me?
-It gives us a clean way to let your AI assistant:
+What does an agent actually do for me?
+It gives your AI assistant a clean, safe job:
 
-Watch your XRPL balances and positions.
+Watch your balances and positions (XRPL first, but also your other chains — Stellar, EVM, Bitcoin).
 
-Spot opportunities within your risk rules (better yield, cheaper routes, rebalances).
+Spot opportunities within your own risk rules (better yield, cheaper routes, rebalances).
 
 Draft ready-to-sign transactions and show them to you in plain English before you approve.
 
 The benefit to you is less manual work and fewer clicks, without giving up control.
 
 How does this help with RLUSD, XRP, and my stablecoins?
-XRPL is where RLUSD and XRP live, and the agent toolkit is designed to work natively with them. That means your assistant can:
+XRPL is where RLUSD and XRP live, so XRPL is the natural home for these flows. Your assistant can (coming as we roll this out):
 
-Suggest moves like “shift part of idle RLUSD into a yield vault you already approved.”
+Suggest moves like "shift part of idle RLUSD into a yield vault" — which you then approve and sign.
 
 Prepare XRPL-based payments or transfers that keep your stablecoin stack organized.
 
-You still decide what gets signed and when; the toolkit just makes those flows smoother.
+You still decide what gets signed and when; the agent just makes those flows smoother.
 
 Is my custody or non-custodial status changing?
 No. CryptoOwnBank remains non-custodial:
 
 Your assets stay in wallets you control.
 
-We don’t take deposits.
+We don't take deposits.
 
-We don’t hold your keys.
+We don't hold your keys.
 
-The agent tooling lives “around” your wallet: it reads what you let it read, suggests actions, and then hands you a transaction to sign directly in your wallet.
+The agent lives "around" your wallet: it reads what you let it read, suggests actions, and then hands you a transaction to sign directly in your wallet.
 
 Why build on XRPL instead of only on other chains?
-We’re multichain by design, but XRPL gives a few advantages:
+We're multichain by design, but XRPL gives a few advantages for the world-facing payment side:
 
 Fast, low-cost settlement for everyday moves.
 
@@ -48,21 +48,21 @@ Native support for assets we already use (XRP, RLUSD).
 
 Mature features like escrow, payment channels, and trust lines that fit our planning and guardrail model.
 
-The agent toolkit lets us tap those XRPL features in a way that’s friendly to AI and still member-controlled.
+These let us build agent flows that are friendly to AI and still fully member-controlled.
 
-How does this help business owners who use CryptoOwnBank?
-For business owners, the agent toolkit lets us build a “crypto treasury assistant” that:
+How will this help business owners who use CryptoOwnBank? (coming)
+For business owners, we want to build a "crypto treasury assistant" that:
 
 Watches operating balances and keeps a minimum reserve.
 
-Sweeps excess into pre-approved assets or vaults within your limits.
+Drafts moves to sweep excess into pre-approved assets or vaults within your limits.
 
 Prepares tax or year-end reserve moves you can approve with one tap.
 
-Again: the agent watches and drafts; you or your signer account approve.
+Again: the agent watches and drafts; you or your designated signers approve.
 
 Will there be pre-authorized or recurring actions?
-We’ll always default to “you sign every transaction.” For members who want more automation, we’ll only use pre-authorized plans that:
+We'll always default to "you sign every transaction." For members who want more automation, we'll only use pre-authorized plans that:
 
 Have clear floors and ceilings (max per day, week, or month).
 
@@ -70,31 +70,30 @@ Are time-limited (expire unless you renew).
 
 Use explicit whitelists (only specified assets and destinations).
 
-Even then, the underlying XRPL tools (like escrow or channels) are structured so you can shut off or close any authorization from your own wallet.
+Come with a one-tap stop. Every pre-approved plan has a kill switch, and you can close it from your own wallet at any time. This matters because a plan you approved earlier can't react to new conditions on its own — so you always keep the override.
 
-Does using an agent toolkit increase my risk?
+Does using an agent increase my risk?
 Used correctly, it can lower certain risks:
 
-Fewer “forgotten” rebalances or yield moves.
+Fewer "forgotten" rebalances or yield moves.
 
 Less manual copy–paste, which is where many mistakes happen.
 
 Clear, repeatable rules around what the agent is allowed to propose.
 
-The risk goes up only when platforms let agents sign or hold funds; that’s the line we’re not crossing.
+The one honest caveat: a pre-approved plan acts on the consent you gave earlier, which can't adapt to a changing market by itself — that's exactly why every plan has a kill switch you control. The risk only goes up when platforms let agents sign or hold funds; that's the line we're not crossing.
 
-How does this fit with CryptoOwnBank’s philosophy?
-Our core belief is: “The member is the only one who says yes.”
-The XRPL agent toolkit gives us a way to honor that while still giving you modern automation. It lets the machines do more of the thinking and preparing, without ever taking your place as the final approver.
+How does this fit with CryptoOwnBank's philosophy?
+Our core belief is: "The member is the only one who says yes."
+This agent direction lets us honor that while still giving you modern automation. The machines do more of the thinking and preparing, without ever taking your place as the final approver.
 
 Do I have to use any AI features to use CryptoOwnBank?
 No. All AI/agent features are opt-in. You can:
 
 Use CryptoOwnBank as a pure dashboard and planning tool.
 
-Turn on “assistant-only” mode (suggestions, no drafted transactions).
+Turn on "assistant-only" mode (suggestions, no drafted transactions).
 
-Turn on full “proposal mode” (ready-to-sign actions with your guardrails).
+Turn on full "proposal mode" (ready-to-sign actions with your guardrails).
 
 You pick how much help you want and you can change that any time.
-
