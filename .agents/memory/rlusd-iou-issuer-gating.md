@@ -28,7 +28,18 @@ native-XRP-only today (no IOU). Phones can't do WebUSB, so a Ledger member on
 mobile must be routed to desktop or Xaman — never a silent fail or fake success.
 
 **Proving the signing pipeline:** `scripts/test-xrpl-signing.ts` funds XRPL
-Testnet wallets and asserts our hand-assembled blob (build → autofill → set
-SigningPubKey → encode → sign → attach → submit) is **byte-identical** to xrpl
-`Wallet.sign` for native XRP, TrustSet, and IOU Payment, and that all land
-tesSUCCESS. Run with `npx tsx scripts/test-xrpl-signing.ts`.
+Testnet wallets and asserts our hand-assembled blob is **byte-identical** to xrpl
+`Wallet.sign`, AND drives the **real production orchestrator**
+`assembleSignSubmit` (xrpl-signing.ts) with a software-keypair `TxSigner` + a
+Testnet `TxNetwork` adapter — the SAME function the live Ledger path calls. A
+hardware wallet's only job is "reveal address + produce signature", so making
+the signer injectable lets the harness exercise the real flow (not a copy):
+TrustSet + IOU + native XRP land tesSUCCESS and the expected-address mismatch
+guard refuses the wrong wallet. Run `npx tsx scripts/test-xrpl-signing.ts`.
+
+**Irreducible (un-automatable) gaps:** the device's own signature production
+(physical Ledger button / Keystone QR scan) and a **mainnet** submit (needs real
+funds). Also note `autofillTx`/`submitSignedBlob` in xrpl-client.ts are thin
+wrappers bound to the shared MAINNET client, so the harness injects its own
+testnet autofill/submit — those two wrappers are validated by inspection, not
+exercised on mainnet.

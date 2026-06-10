@@ -123,7 +123,7 @@ async function signAndSubmitWithLedger(
   }
 
   const { autofillTx, submitSignedBlob } = await import("./xrpl-client");
-  const { encodeForDevice, attachSignature } = await import("./xrpl-signing");
+  const { assembleSignSubmit, encodeForDevice } = await import("./xrpl-signing");
 
   let transport: any = null;
   try {
@@ -133,31 +133,43 @@ async function signAndSubmitWithLedger(
     transport = await TransportWebUSB.create();
     const xrp = new Xrp(transport);
 
-    const { address, publicKey } = await xrp.getAddress(XRP_PATH);
-    if (expectedAddress && address !== expectedAddress) {
+    // The Ledger device, expressed as a TxSigner: reveal its address, and sign
+    // the device blob (Ledger applies the signing prefix internally).
+    const ledgerSigner = {
+      getAddress: async () => {
+        const { address, publicKey } = await xrp.getAddress(XRP_PATH);
+        return { address, publicKey };
+      },
+      signPrepared: (prepared: Record<string, any>) =>
+        xrp.signTransaction(XRP_PATH, encodeForDevice(prepared)),
+    };
+
+    const net = {
+      autofill: (tx: Record<string, any>) => autofillTx(tx),
+      submit: (txBlob: string) => submitSignedBlob(txBlob),
+    };
+
+    const result = await assembleSignSubmit(
+      baseTxFor,
+      ledgerSigner,
+      net,
+      expectedAddress,
+    );
+
+    if (result.stage === "mismatch") {
       return {
         success: false,
         error:
           "This Ledger holds a different XRP address than the one you connected. Switch to the matching account and try again.",
       };
     }
-
-    const baseTx = baseTxFor(address);
-    const prepared = await autofillTx(baseTx);
-    prepared.SigningPubKey = publicKey.toUpperCase();
-
-    const deviceBlob = encodeForDevice(prepared);
-    const signature = await xrp.signTransaction(XRP_PATH, deviceBlob);
-
-    const { txBlob } = attachSignature(prepared, signature);
-    const res = await submitSignedBlob(txBlob);
-    if (!res.success) {
+    if (!result.success) {
       return {
         success: false,
-        error: `The XRP Ledger didn't accept it (${res.code || res.error}). Nothing left your wallet.`,
+        error: `The XRP Ledger didn't accept it (${result.code || result.error}). Nothing left your wallet.`,
       };
     }
-    return { success: true, txHash: res.hash };
+    return { success: true, txHash: result.txHash };
   } catch (error: any) {
     return { success: false, error: friendlyLedgerError(error?.message || "") };
   } finally {

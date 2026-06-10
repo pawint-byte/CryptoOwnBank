@@ -1,15 +1,20 @@
 // Farthest-point test of the cold-wallet signing pipeline, run against XRPL
-// Testnet with software stand-in wallets (the part a real hardware wallet plays
-// is "produce a signature" — which a software key replicates exactly).
+// Testnet with software stand-in wallets. A hardware wallet's only job is to
+// "reveal an address and produce a signature" — a software key replicates that
+// exactly, so we can prove everything up to and through the cryptography.
 //
 // What this proves, for real, with no hardware:
 //   1. Our build -> sign -> assemble path is BYTE-IDENTICAL to xrpl's own
 //      reference signer (Wallet.sign) for both native XRP and IOU payments.
-//   2. The assembled blob actually lands on the ledger (tesSUCCESS) on testnet.
-//   3. buildRlusdPayment produces a well-formed tx that encode/decode round-trips.
+//   2. The REAL production orchestrator `assembleSignSubmit` — the same function
+//      the live Ledger path calls — drives a transaction onto the ledger
+//      (tesSUCCESS) when handed a software signer + a testnet network adapter.
+//   3. The expected-address mismatch guard refuses to sign for the wrong wallet.
+//   4. buildRlusdPayment produces a well-formed tx that encode/decode round-trips.
 //
-// The ONLY thing this cannot do is press the physical button on a Ledger — the
-// cryptography and the submission are identical to the live path.
+// The ONLY things this cannot do are press the physical Ledger button / scan a
+// QR — i.e. the device's own signature production and the mainnet submit (which
+// needs real funds). Everything else is the real code path.
 //
 // Run: npx tsx scripts/test-xrpl-signing.ts
 
@@ -20,6 +25,9 @@ import {
   buildTrustSet,
   signingMessage,
   attachSignature,
+  assembleSignSubmit,
+  type TxSigner,
+  type TxNetwork,
 } from "../client/src/lib/xrpl-signing";
 
 const TESTNET = "wss://s.altnet.rippletest.net:51233";
@@ -43,10 +51,45 @@ function softwareSignToBlob(prepared: Record<string, any>, wallet: Wallet): stri
   return attachSignature(prepared, signature).txBlob;
 }
 
+/**
+ * A software stand-in for a Ledger, satisfying the SAME TxSigner interface the
+ * real device adapter implements. This is the crux: production injects a Ledger
+ * here, the test injects this — the orchestrator code in between is identical.
+ */
+function softwareSigner(wallet: Wallet): TxSigner {
+  return {
+    getAddress: async () => ({
+      address: wallet.classicAddress,
+      publicKey: wallet.publicKey,
+    }),
+    // A raw key signs the signingMessage (encodeForSigning); a Ledger would sign
+    // encodeForDevice. Each signer owns its own input — exactly as in production.
+    signPrepared: async (prepared) => sign(signingMessage(prepared), wallet.privateKey),
+  };
+}
+
+/** A TxNetwork bound to the live Testnet client (production binds to mainnet). */
+function testnetNetwork(client: Client): TxNetwork {
+  return {
+    autofill: (tx) => client.autofill(tx as any) as Promise<Record<string, any>>,
+    submit: async (txBlob) => {
+      const res = await client.submitAndWait(txBlob);
+      const code = (res.result.meta as any)?.TransactionResult;
+      return {
+        success: code === "tesSUCCESS",
+        hash: res.result.hash,
+        code,
+        error: code,
+      };
+    },
+  };
+}
+
 async function main() {
   console.log("Connecting to XRPL Testnet…");
   const client = new Client(TESTNET);
   await client.connect();
+  const net = testnetNetwork(client);
 
   try {
     console.log("Funding test wallets (faucet)…");
@@ -55,8 +98,8 @@ async function main() {
     console.log(`  Alice: ${alice.classicAddress}`);
     console.log(`  Bob:   ${bob.classicAddress}`);
 
-    // --- Test 1: native XRP Payment ---------------------------------------
-    console.log("\n[1] Native XRP Payment (build -> sign -> assemble -> submit)");
+    // --- Test 1: native XRP Payment, byte-identity ------------------------
+    console.log("\n[1] Native XRP Payment — byte-identity vs xrpl Wallet.sign");
     {
       const tx: Record<string, any> = {
         TransactionType: "Payment",
@@ -70,42 +113,69 @@ async function main() {
       const mine = softwareSignToBlob(prepared as any, alice);
       const reference = alice.sign(prepared as any).tx_blob;
       check("our blob is byte-identical to xrpl Wallet.sign", mine === reference);
-
-      const res = await client.submitAndWait(mine);
-      const code = (res.result.meta as any)?.TransactionResult;
-      check("native XRP payment lands on ledger (tesSUCCESS)", code === "tesSUCCESS", `got ${code}`);
     }
 
-    // --- Test 2: IOU Payment (same shape as an RLUSD deposit) -------------
-    console.log("\n[2] IOU Payment — Alice issues USD, Bob trusts, Alice pays Bob");
+    // --- Test 2: IOU Payment via the REAL orchestrator --------------------
+    // Same Amount-object shape as an RLUSD deposit. Alice issues USD, Bob
+    // trusts it, Alice pays Bob — every step goes through assembleSignSubmit,
+    // the exact function the live Ledger deposit path calls.
+    console.log("\n[2] IOU Payment via REAL assembleSignSubmit (the live code path)");
     {
-      // Bob trusts Alice's USD.
-      const trust = buildTrustSet(bob.classicAddress, "USD", alice.classicAddress, "1000000");
-      const trustPrepared = await client.autofill(trust as any);
-      (trustPrepared as any).SigningPubKey = bob.publicKey;
-      const trustBlob = softwareSignToBlob(trustPrepared as any, bob);
-      check("TrustSet blob is byte-identical to Wallet.sign", trustBlob === bob.sign(trustPrepared as any).tx_blob);
-      const trustRes = await client.submitAndWait(trustBlob);
-      check("TrustSet lands on ledger", (trustRes.result.meta as any)?.TransactionResult === "tesSUCCESS");
+      // Bob opens a trust line through the real orchestrator.
+      const trustRes = await assembleSignSubmit(
+        (account) => buildTrustSet(account, "USD", alice.classicAddress, "1000000"),
+        softwareSigner(bob),
+        net,
+      );
+      check("orchestrator: TrustSet lands on ledger (tesSUCCESS)", trustRes.success, JSON.stringify(trustRes));
 
-      // Alice sends 25 USD (IOU) to Bob — same Amount-object shape as RLUSD.
-      const pay: Record<string, any> = {
-        TransactionType: "Payment",
-        Account: alice.classicAddress,
-        Destination: bob.classicAddress,
-        Amount: { currency: "USD", issuer: alice.classicAddress, value: "25" },
-      };
-      const payPrepared = await client.autofill(pay as any);
-      (payPrepared as any).SigningPubKey = alice.publicKey;
-      const mine = softwareSignToBlob(payPrepared as any, alice);
-      check("IOU payment blob is byte-identical to Wallet.sign", mine === alice.sign(payPrepared as any).tx_blob);
-      const res = await client.submitAndWait(mine);
-      const code = (res.result.meta as any)?.TransactionResult;
-      check("IOU payment lands on ledger (tesSUCCESS)", code === "tesSUCCESS", `got ${code}`);
+      // Alice pays Bob 25 USD (IOU) through the real orchestrator.
+      const payRes = await assembleSignSubmit(
+        (account) => ({
+          TransactionType: "Payment",
+          Account: account,
+          Destination: bob.classicAddress,
+          Amount: { currency: "USD", issuer: alice.classicAddress, value: "25" },
+        }),
+        softwareSigner(alice),
+        net,
+      );
+      check("orchestrator: IOU payment lands on ledger (tesSUCCESS)", payRes.success, JSON.stringify(payRes));
+      check("orchestrator returns a real tx hash", !!payRes.txHash && payRes.txHash.length === 64);
     }
 
-    // --- Test 3: buildRlusdPayment is well-formed + round-trips -----------
-    console.log("\n[3] buildRlusdPayment structure + encode/decode round-trip");
+    // --- Test 3: native XRP through the orchestrator + mismatch guard -----
+    console.log("\n[3] Native XRP via orchestrator + expected-address guard");
+    {
+      const okRes = await assembleSignSubmit(
+        (account) => ({
+          TransactionType: "Payment",
+          Account: account,
+          Destination: bob.classicAddress,
+          Amount: "1000000",
+        }),
+        softwareSigner(alice),
+        net,
+        alice.classicAddress, // expectedAddress matches -> allowed
+      );
+      check("orchestrator: native XRP lands when address matches", okRes.success, JSON.stringify(okRes));
+
+      const blocked = await assembleSignSubmit(
+        (account) => ({
+          TransactionType: "Payment",
+          Account: account,
+          Destination: bob.classicAddress,
+          Amount: "1000000",
+        }),
+        softwareSigner(alice),
+        net,
+        bob.classicAddress, // expectedAddress is the WRONG wallet
+      );
+      check("orchestrator refuses to sign for the wrong wallet (mismatch)", !blocked.success && blocked.stage === "mismatch");
+    }
+
+    // --- Test 4: buildRlusdPayment is well-formed + round-trips -----------
+    console.log("\n[4] buildRlusdPayment structure + encode/decode round-trip");
     {
       const tx = buildRlusdPayment({
         account: alice.classicAddress,
