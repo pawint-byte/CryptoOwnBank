@@ -25,6 +25,7 @@ interface EvmWalletState {
 
   connect: () => Promise<void>;
   connectWalletConnect: () => Promise<void>;
+  switchAccount: () => Promise<void>;
   disconnect: () => void;
   switchChain: (chainId: number) => Promise<void>;
   setError: (error: string | null) => void;
@@ -148,6 +149,32 @@ export const useEvmWallet = create<EvmWalletState>()(
           });
         } catch (err: any) {
           set({ error: err.message || "Failed to connect via WalletConnect", isConnecting: false });
+        }
+      },
+
+      switchAccount: async () => {
+        const { walletProvider } = get();
+        if (walletProvider === "walletconnect") {
+          set({ error: "To use a different account on a mobile wallet, switch the active account inside your wallet app — this page will follow it automatically." });
+          return;
+        }
+        if (typeof window === "undefined" || !(window as any).ethereum) {
+          set({ error: "MetaMask not detected." });
+          return;
+        }
+        set({ error: null });
+        try {
+          const ethereum = (window as any).ethereum;
+          await ethereum.request({
+            method: "wallet_requestPermissions",
+            params: [{ eth_accounts: {} }],
+          });
+          const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+          if (accounts && accounts.length > 0) {
+            set({ address: accounts[0] });
+          }
+        } catch (err: any) {
+          if (err?.code !== 4001) set({ error: err.message || "Failed to switch account" });
         }
       },
 

@@ -90,6 +90,7 @@ export default function AavePage() {
     isConnecting,
     connect,
     connectWalletConnect,
+    switchAccount,
     disconnect,
     switchChain,
     walletProvider,
@@ -294,9 +295,18 @@ export default function AavePage() {
               {chainId !== selectedChain ? (
                 <Badge variant="destructive" data-testid="badge-chain-mismatch">Switch wallet to {CHAIN_LABEL[selectedChain]}</Badge>
               ) : null}
+              {walletProvider === "metamask" ? (
+                <Button variant="outline" size="sm" onClick={switchAccount} data-testid="button-switch-account">Switch wallet</Button>
+              ) : null}
               <Button variant="ghost" size="sm" onClick={disconnect} data-testid="button-disconnect">Disconnect</Button>
             </div>
           )}
+          {isConnected ? (
+            <p className="text-xs text-muted-foreground" data-testid="text-wallet-help">
+              This reads whichever account is active in your wallet. To use a different one, click "Switch wallet" (or change the active account inside MetaMask) — the page updates automatically. {walletProvider !== "metamask" ? "On a mobile wallet, switch accounts inside the wallet app." : ""}
+            </p>
+          ) : null}
+          {walletError && isConnected ? <p className="text-sm text-destructive w-full" data-testid="text-wallet-error">{walletError}</p> : null}
         </CardContent>
       </Card>
 
