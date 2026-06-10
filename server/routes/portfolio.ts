@@ -14,6 +14,7 @@ import { buildSovereigntyKitContent, getSovereigntyKitStyles, normalizeChainKey 
 import { invalidateBudgetCache } from "../services/api-watchdog";
 import { insertApiBudgetSchema } from "@shared/schema";
 import { scanForHarvestOpportunities } from "@shared/financial-math";
+import { canonicalSymbol } from "@shared/token-aliases";
 import multer from "multer";
 import { db } from "../db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -219,8 +220,10 @@ export function registerPortfolioRoutes(app: Express) {
         posPriceCacheLookup[row.symbol.toUpperCase()] = parseFloat(row.priceUsd);
       }
       for (const pos of positionsData) {
-        let currentPrice = assetPriceMap.get(pos.assetSymbol.toUpperCase()) || 0;
-        if (currentPrice <= 0) currentPrice = posPriceCacheLookup[pos.assetSymbol.toUpperCase()] || 0;
+        const symUpper = pos.assetSymbol.toUpperCase();
+        const canonSym = canonicalSymbol(pos.assetSymbol);
+        let currentPrice = assetPriceMap.get(symUpper) || assetPriceMap.get(canonSym) || 0;
+        if (currentPrice <= 0) currentPrice = posPriceCacheLookup[symUpper] || posPriceCacheLookup[canonSym] || 0;
         if (currentPrice <= 0) currentPrice = parseFloat(pos.averageCost) || 0;
         const qty = parseFloat(pos.quantity);
         if (currentPrice <= 0 && qty > 0) {

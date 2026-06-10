@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { AllocationChart } from "@/components/allocation-chart";
+import { displayLabel } from "@shared/token-aliases";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, TrendingDown, Minus, Trash2, Search, Filter, CheckCircle, Eye, EyeOff, Layers, BarChart3, ChevronDown, ChevronRight, ChevronUp, Plus, Lock, Pencil, Home, MapPin, Calendar, DollarSign, Building2, FileSearch, FileText, Coins, Briefcase, Share2, ArrowLeftRight, AlertTriangle } from "lucide-react";
@@ -1100,7 +1101,7 @@ export default function Portfolio() {
                                   </div>
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="font-semibold text-sm sm:text-base">{position.assetSymbol}</span>
+                                      <span className="font-semibold text-sm sm:text-base">{displayLabel(position.assetSymbol)}</span>
                                       {position.source && (
                                         <Badge variant={position.isImport ? "secondary" : "default"} className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
                                           {position.source}

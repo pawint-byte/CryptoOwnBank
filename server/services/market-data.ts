@@ -1,4 +1,5 @@
 import { storage } from "../storage";
+import { TOKEN_RENAMES } from "@shared/token-aliases";
 
 const COINGECKO_IDS: Record<string, string> = {
   BTC: "bitcoin", ETH: "ethereum", XDC: "xdcinnetwork", MATIC: "polygon-ecosystem-token",
@@ -73,6 +74,18 @@ async function fetchCoinGeckoPrices(): Promise<Record<string, any>> {
   } catch (err) {
     console.warn(`[market-data] CoinGecko fetch error:`, err);
   }
+
+  // Token rename/alias fan-out: a renamed coin (e.g. TON -> GRAM) keeps the same
+  // chain and one price. Copy the canonical price onto every alias ticker so a
+  // holding recorded under either name resolves automatically — no per-page
+  // changes, no migration. See shared/token-aliases.ts to add a future rebrand.
+  for (const r of TOKEN_RENAMES) {
+    const from = r.from.toUpperCase();
+    const to = r.to.toUpperCase();
+    if (results[from] && !results[to]) results[to] = results[from];
+    else if (results[to] && !results[from]) results[from] = results[to];
+  }
+
   return results;
 }
 
@@ -124,6 +137,14 @@ export async function getCachedPrices(): Promise<Record<string, any>> {
   const result: Record<string, any> = {};
   for (const entry of entries) {
     result[entry.symbol] = entry.data;
+  }
+  // Read-time alias synthesis: a renamed ticker resolves to the canonical price
+  // immediately, even before the next scheduled refresh writes both keys.
+  for (const r of TOKEN_RENAMES) {
+    const from = r.from.toUpperCase();
+    const to = r.to.toUpperCase();
+    if (result[from] && !result[to]) result[to] = result[from];
+    else if (result[to] && !result[from]) result[from] = result[to];
   }
   return result;
 }
