@@ -5,9 +5,9 @@ description: Where the in-app Admin "Feature Announcements" Ready-to-Send drafts
 
 The in-app Admin → **Feature Announcements** tool ("Ready-to-Send Drafts") does NOT read from the `.local/announcements/*.md` files. Those markdown files are reference/launch-collateral only (for HeyGen scripts, email copy, social posts) and never feed any UI.
 
-**Where drafts really live:** a hardcoded `SAVED_DRAFTS: AnnouncementDraft[]` array near the top of `client/src/pages/admin-announcements.tsx`. To make a new announcement appear as a Ready-to-Send draft, add an entry there with shape `{ title, description, ctaLabel, ctaUrl, audienceTier }`.
+**Where drafts really live:** a hardcoded `SAVED_DRAFTS` array in `client/src/pages/admin-announcements.tsx`. To make a new announcement appear as a Ready-to-Send draft, add an entry there. (Convention also recorded in `replit.md`.)
 
-**Sent vs unsent:** computed by EXACT title match — `sentTitles = new Set(announcements.map(a => a.title))` where `announcements` come from the persisted table (CRUD in `server/routes/billing.ts`, ~lines 232/279/316). A draft with a title not in that set renders as "Not sent" and sorts to the top. So keep a draft's title stable after sending or dedupe breaks.
+**Sent vs unsent:** computed by EXACT title match against the persisted announcements table. A draft whose title is not yet in that table renders as "Not sent" and sorts to the top. So keep a draft's title stable after sending or the sent/unsent dedupe breaks.
 
 **Why:** founder expected an email drafted as a markdown file to show up in this admin tool; it didn't, because the two are unrelated systems. Always add to the array, not just a markdown file.
 
