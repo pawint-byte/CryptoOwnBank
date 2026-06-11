@@ -69,6 +69,7 @@ import {
   Target,
   Trophy,
   Crown,
+  Compass,
 } from "lucide-react";
 import {
   Sidebar,
@@ -112,6 +113,7 @@ const CHAIN_COLORS = {
 const allItems: NavItem[] = [
   // FOUNDATION
   { title: "Home", url: "/", icon: LayoutDashboard, group: "home" },
+  { title: "Sovereignty Cockpit", url: "/cockpit", icon: Compass, color: "#00A4E4", group: "home" },
   { title: "Founding Members", url: "/founding", icon: Crown, color: "#00A4E4", group: "home" },
   { title: "Quick Start", url: "/quick-start", icon: Rocket, group: "home" },
   { title: "Portfolio", url: "/portfolio", icon: PieChart, group: "home" },

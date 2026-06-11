@@ -30,6 +30,7 @@ import Principles from "@/pages/principles";
 import Sovereignty from "@/pages/sovereignty";
 import WealthArchitecture from "@/pages/wealth-architecture";
 import SovereigntyKit from "@/pages/sovereignty-kit";
+import Cockpit from "@/pages/cockpit";
 import FoundingMemberPage from "@/pages/founding-member";
 import PromoCampaign from "@/pages/promo-campaign";
 import DrillsCenter from "@/pages/drills";
@@ -316,6 +317,7 @@ function AuthenticatedRoutes() {
     <AuthenticatedLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/cockpit" component={Cockpit} />
         <Route path="/transactions" component={Transactions} />
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/whispers" component={Whispers} />
