@@ -71,3 +71,9 @@ id = "JAglI_km70R6ug1rdyCFd"
 uri = "file://attached_assets/generated_images/pwa_mockup_bottom_sheet.png"
 type = "image"
 title = "4. Bottom sheet dialog — Pay With Crypto sliding up like a native iOS modal"
+
+[[outputs]]
+id = "DXGXj3U0acj1B3Kh45w0I"
+uri = "file://.local/announcements/founding-member-heygen-script.md"
+type = "text"
+title = "Founding Members — HeyGen Video Script"
