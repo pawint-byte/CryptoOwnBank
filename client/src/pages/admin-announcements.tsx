@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Send, Eye, Users, CheckCircle, XCircle, Clock, AlertTriangle, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import type { FeatureAnnouncement } from "@shared/schema";
+import { getCampaignAnnouncementDrafts } from "@shared/promo-calendar";
 
 type AnnouncementDraft = {
   title: string;
@@ -259,7 +260,15 @@ export default function AdminAnnouncements() {
 
   const sentTitles = new Set(announcements.map((a) => a.title));
 
-  const sortedDrafts = [...SAVED_DRAFTS].sort((a, b) => {
+  // Hardcoded founder drafts + auto-generated drafts for every crypto-date
+  // campaign (one source of truth in shared/promo-calendar.ts), so every
+  // promo opportunity also shows here ready to send by hand.
+  const allDrafts: AnnouncementDraft[] = [
+    ...SAVED_DRAFTS,
+    ...getCampaignAnnouncementDrafts().map(({ slug: _slug, ...d }) => d),
+  ];
+
+  const sortedDrafts = [...allDrafts].sort((a, b) => {
     const aSent = sentTitles.has(a.title);
     const bSent = sentTitles.has(b.title);
     if (aSent !== bSent) return aSent ? 1 : -1;
@@ -293,7 +302,7 @@ export default function AdminAnnouncements() {
                     Ready-to-Send Drafts
                   </CardTitle>
                   <CardDescription>
-                    {SAVED_DRAFTS.length} drafts — {SAVED_DRAFTS.filter(d => !sentTitles.has(d.title)).length} not yet sent
+                    {allDrafts.length} drafts — {allDrafts.filter(d => !sentTitles.has(d.title)).length} not yet sent
                   </CardDescription>
                 </div>
                 {showDrafts ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}

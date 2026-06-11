@@ -4986,6 +4986,9 @@ Rules you MUST follow:
   const { startInactivityReminder } = await import("./services/inactivity-reminder");
   startInactivityReminder();
 
+  const { startPromoAutoAnnounce } = await import("./services/promo-auto-announce");
+  startPromoAutoAnnounce();
+
   return httpServer;
 }
 

@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
+import { PromoBanner } from "@/components/promo-banner";
 
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
@@ -275,6 +276,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
           Beta — Early Access &middot; Your feedback shapes the product
         </div>
         <OfflineBanner />
+        <PromoBanner />
         <FoundingHeadsUpBanner />
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />

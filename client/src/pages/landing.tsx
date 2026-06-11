@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PromoBanner } from "@/components/promo-banner";
 import heroVideoUrl from "@assets/CryptoOwnBank__1-Min_Pitch_(Security_&_Control)_1080p_caption_1774019224403.mp4";
 import legacyVideoEn from "@assets/CryptoOwnBank__Secure_Your_Legacy_1080p_captionEnglish_1774530497459.mp4";
 import legacyVideoEs from "@assets/Legacy_Plan_-_CryptoOwnBank.com_1080p_caption_Spanish_1774530497458.mp4";
@@ -1434,6 +1435,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PromoBanner />
       <SeoHead
         title="CryptoOwnBank — Self-Custody Crypto Platform | Inherit, Earn Yield, Send Globally"
         description="Non-custodial crypto platform with automated inheritance (Legacy Plan), 5-8% RLUSD yield vaults, XRPL & Stellar DEX trading, global remittances, and cold wallet portfolio tracking. Your keys, your crypto — even after you're gone."

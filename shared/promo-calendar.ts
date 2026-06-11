@@ -244,3 +244,82 @@ export function getUpcomingCampaigns(
     .filter((x): x is { campaign: PromoCampaign; date: Date } => x.date !== null)
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 }
+
+// ---------------------------------------------------------------------------
+// Distribution helpers — shared by the in-app banner, the admin "Ready-to-Send
+// Drafts" list, AND the server-side auto-announcer. One source of truth so the
+// member sees the same words everywhere and we never double-send.
+// ---------------------------------------------------------------------------
+
+/** Canonical public origin used in announcement CTA links. */
+export const PROMO_SITE_ORIGIN = "https://cryptoownbank.com";
+
+/**
+ * UTC start of the window that is active *right now* for a fixed/birthday
+ * campaign, or null if no window is currently open. Used by the auto-announcer
+ * to dedupe sends to one-per-occurrence. Anniversary campaigns are per-user and
+ * are deliberately excluded from global auto-distribution.
+ */
+export function activeWindowStart(c: PromoCampaign, now: Date = new Date()): Date | null {
+  const matchFixed = (month: number, day: number): Date | null => {
+    const t = now.getTime();
+    for (const yr of [now.getUTCFullYear(), now.getUTCFullYear() - 1]) {
+      const start = Date.UTC(yr, month - 1, day);
+      const end = start + Math.max(1, c.windowDays) * DAY_MS;
+      if (t >= start && t < end) return new Date(start);
+    }
+    return null;
+  };
+  if (c.kind === "fixed" && c.month && c.day) return matchFixed(c.month, c.day);
+  if (c.kind === "cryptoOwnBankBirthday") {
+    return matchFixed(CRYPTOOWNBANK_BIRTHDAY.month, CRYPTOOWNBANK_BIRTHDAY.day);
+  }
+  return null;
+}
+
+export interface CampaignAnnouncement {
+  title: string;
+  description: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  audienceTier: string;
+}
+
+/**
+ * Compose the member-facing email/announcement for a campaign from its existing
+ * marketing copy — no per-campaign duplication, so any new campaign added above
+ * automatically gets a draft and an auto-send. Doctrine: the free Founding seat
+ * is always free; the crypto bonus is only ever a thank-you on a paid upgrade.
+ */
+export function buildCampaignAnnouncement(c: PromoCampaign): CampaignAnnouncement {
+  const pct = Math.round((c.cryptoBonusDiscount || 0) * 100);
+  const parts: string[] = [c.body];
+
+  if (pct > 0) {
+    parts.push(
+      `For this short window only, paying with crypto when you upgrade stacks an extra ${pct}% on top of the usual crypto discount — our way of marking the day.`,
+    );
+  }
+  parts.push(
+    "Claiming your free Founding seat is always free. The bonus is only ever a thank-you on a paid upgrade, never a toll on signing up.",
+  );
+  parts.push(
+    "As always, everything stays non-custodial: we never hold your funds, your keys, or your identity.",
+  );
+
+  return {
+    title: `${c.emoji} ${c.headline}`,
+    description: parts.join("\n\n"),
+    ctaLabel: "See what's special today",
+    ctaUrl: `${PROMO_SITE_ORIGIN}/promo/${c.slug}`,
+    audienceTier: "all",
+  };
+}
+
+/** Global (non-anniversary) campaigns as ready-to-send announcement drafts. */
+export function getCampaignAnnouncementDrafts(): Array<CampaignAnnouncement & { slug: string }> {
+  return CAMPAIGNS.filter((c) => c.kind !== "memberAnniversary").map((c) => ({
+    slug: c.slug,
+    ...buildCampaignAnnouncement(c),
+  }));
+}
