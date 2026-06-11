@@ -858,11 +858,16 @@ export async function activateSubscription(payment: CryptoPayment) {
   console.log(`[crypto-verify] Activated ${billingCycle} ${tier} for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
 
   // Conversion-gated referral reward: credit the referrer (if any) on a real
-  // paid crypto upgrade to Premium/Pro. Never blocks the upgrade.
-  try {
-    await storage.attributeReferralConversion(payment.userId);
-  } catch (err) {
-    console.error("[crypto-verify] Referral attribution failed:", err);
+  // paid crypto upgrade to Premium/Pro. We require an EXPLICIT known paid plan
+  // — unknown plan values must never credit a referral. Never blocks the
+  // upgrade. (Addon purchases already returned early above.)
+  const PAID_SUBSCRIPTION_PLANS = ["monthly", "yearly", "pro-monthly", "pro-yearly"];
+  if (PAID_SUBSCRIPTION_PLANS.includes(payment.plan)) {
+    try {
+      await storage.attributeReferralConversion(payment.userId);
+    } catch (err) {
+      console.error("[crypto-verify] Referral attribution failed:", err);
+    }
   }
 
   await notifyAdminOfPayment(payment);

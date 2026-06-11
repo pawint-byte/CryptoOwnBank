@@ -80,8 +80,11 @@ export async function handleStripeWebhookEvent(event: any): Promise<void> {
         stripeSubscriptionId: session.subscription,
       });
       // Conversion-gated referral reward: credit the referrer (if any) on a
-      // real paid upgrade to Premium/Pro. Never blocks the upgrade.
-      if (tier === "premium" || tier === "pro") {
+      // real paid upgrade to Premium/Pro. We require an EXPLICIT paid tier in
+      // the checkout metadata — a missing/unknown tier must never credit a
+      // referral. Never blocks the upgrade.
+      const explicitTier = session.metadata?.tier;
+      if (explicitTier === "premium" || explicitTier === "pro") {
         try {
           await storage.attributeReferralConversion(userId);
         } catch (err) {

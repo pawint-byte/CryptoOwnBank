@@ -117,6 +117,24 @@
 
 ---
 
+## SHIPPED — Member referral system (#44) (Added & completed 2026-06-11)
+
+Part 2 of the 3-part Founding Member program (after the signup hook #43). Members now get ONE stable, server-side referral code (replaces the old browser-only code), shareable as `?ref=CODE`. Rewards are strictly **conversion-gated**: a referrer is credited ONLY when their invitee makes a real paid upgrade to Premium/Pro — never on signup alone, so there's no incentive to spam empty signups.
+
+How it works:
+- **Stable code:** `getOrCreateReferralCode` mints one code per member and returns the same one forever.
+- **Signup capture:** `/api/auth/signup` reads `referralCode` from the body (frontend pulls it from the `?ref=` capture in `App.tsx` → `useXrplStore.referredBy`). Guards live in storage: unknown code = no-op, no self-referral, each invitee can be referred at most once (unique `referred_user_id`). Attribution is wrapped in try/catch and NEVER blocks signup.
+- **`baptizedByFounder`** is snapshotted at signup (true if the referrer was a Founding Member then).
+- **Conversion reward:** hooked at BOTH paid paths — `server/stripe-webhook.ts` and `server/services/crypto-payment-verifier.ts`. Founding referrers earn 2× points (REFERRAL_FOUNDING_MULTIPLIER), regular 1×; the reward is snapshotted on the referral row at conversion and is idempotent (only flips rows still in `signed_up`). Both gates require an EXPLICIT paid tier/plan (architect-flagged hardening) — a missing/unknown tier or plan never credits a referral.
+- **Lineage Score** = count of converted (premium) referrals. Reaching 3 (REFERRAL_BOOST_THRESHOLD) unlocks a boosted tier + the right to designate one Legacy heir (derived flag only; inheritance wiring is out of scope).
+- **Stats API:** `GET /api/referrals/stats` (authed) powers the rewritten `/referrals` page (server-backed, no longer browser-only).
+
+Verified: 7-case end-to-end DB test passed (stable code, self-referral block, signup tracking, baptized snapshot, duplicate dedupe, founder 2× on conversion, idempotent conversion). Non-custodial doctrine preserved — no identity gating, no funds held.
+
+Files: `shared/schema.ts` (referralCodes / referrals tables + REFERRAL_* consts), `server/storage.ts` (getOrCreateReferralCode / recordReferralSignup / attributeReferralConversion / getReferralStats), `server/routes/referrals.ts` (registered in `server/routes.ts`), `server/stripe-webhook.ts`, `server/services/crypto-payment-verifier.ts`, `server/replit_integrations/auth/routes.ts`, `client/src/pages/signup.tsx`, `client/src/pages/ownbank-referrals.tsx`. `npm run db:push` applied. Next: #45 (crypto-date promotional calendar).
+
+---
+
 ## SHIPPED — Founding Member signup hook (first 1,000) (Added & completed 2026-06-10)
 
 New public page `/founding` (`client/src/pages/founding-member.tsx`) + `FoundingBadge` component. The first 1,000 members who finish a free, 3-step, fully non-custodial onboarding earn a permanent "Founding Member #N of 1,000" badge; the first 100 are the cosmetic "Genesis Circle." NO payment, NO identity verification — true to the non-custodial doctrine.
