@@ -71,6 +71,40 @@ Same product, different first screen and different "what matters most right now.
 3. **Archetype-aware first screen** — route each member's home to their calling.
 4. Existing modules (visibility, security, recovery, legacy, records) become the cockpit's panels, each showing "last checked / needs attention."
 
+## The Cadence Layer — how a member shows they're in control and in the know
+
+The cadence is **not** the point — a **visible, current posture is**. A member feels *in control* when they can see their readiness and see it's *fresh*; *in the know* when nothing changed behind their back. So every prompt exists only to keep a posture board current. That keeps it gravity, not nagging.
+
+### Reuse the six stages as the scoreboard
+The **Wealth Architecture** stages (Secured → Documented → Continuous → Productive → Liquid → Tested) already define the posture model. Make each stage *live*: a status (fresh / due / overdue) and a "last verified on DATE." One board = the "am I in control?" answer at a glance.
+
+### Each thing maps to its honest rhythm (most are NOT daily)
+
+| Cadence | What the member does | Ties to existing feature |
+|---|---|---|
+| **Every visit (passive)** | Glance — "all here, nothing changed." Reassurance, no task. | Cockpit map + "what changed" digest |
+| **Monthly (light, ~2 min)** | Label new activity, glance net worth, clear any flag | Portfolio, transaction labels |
+| **Quarterly (~15 min)** | Security-drift sweep, quick access check, confirm Legacy Plan current | Wallet security scan, Legacy Plan |
+| **Annual (keystone)** | Full Sovereignty Drill — test recovery per wallet, verify backups, confirm beneficiaries | Recovery Kit + drill |
+| **Event-driven (highest value)** | Added a wallet → record how to reach it · swapped → label it · coin delisted → home/away · started yield → note it | New-wallet flow, Home-or-Away, vaults |
+
+The event-driven row is the secret weapon: prompts fire the moment the member *generated* the thing, while it's fresh — when recording it is effortless and most valuable.
+
+### Derived honestly (no calendar-nagging)
+Each pillar has a **recommended interval + a last-verified timestamp** → the system derives *fresh / due / overdue*. The member sees "due" on the board (pull). Optional, **opt-in, calm** reminders for overdue items only — framed as their checklist, one-tap snooze, fully disableable. No streaks, no guilt, no "you broke your chain."
+
+### How "in control / in the know" shows up
+- **Posture board** — six stages with freshness; one look = "I'm current."
+- **"What changed since last visit"** — the in-the-know feed.
+- **Proof log** — "you tested Wallet B recovery on June 11" — the receipt you *did* it; doubles as the survivor artifact (Recovery Kit / Legacy export already produces this).
+- **Opens on their calling** — Escapee sees "is it really mine yet?", Provider sees "is my plan current?"
+
+### Motivation (doctrine-safe)
+Status for themselves ("Sovereignty posture: current") — not tradable, no cash value · optional crypto-payment **discount window** when posture is current (reuse promo engine; never gates the free seat) · peace of mind + a real survivor artifact. No points-with-cash-value, loot boxes, or streak mechanics.
+
+### Shape of the build (when greenlit)
+A thin **cadence engine** (last-verified + interval + event triggers) feeding a **live posture board** (the six stages), surfaced in the cockpit, rewarded with status + optional discount, measured by posture-current.
+
 ## Bright lines (must hold)
 
-Non-custodial always; we hold the **map, never the keys or funds**. No streak-guilt / loot-box / FOMO mechanics. Rewards = status + the existing modest crypto-payment discount, never money/points-with-cash-value. Most checks are self-attested (we don't surveil external wallets) — so rewards stay small enough that gaming them doesn't matter. Success metric = **sovereignty posture improved** (backups tested, Legacy Plans current, drift cleared), not raw DAU.
+Non-custodial always; we hold the **map, never the keys or funds**. No streak-guilt / loot-box / FOMO mechanics. Rewards = status + the existing modest crypto-payment discount, never money/points-with-cash-value. Most checks are self-attested (we don't surveil external wallets) — so rewards stay small enough that gaming them doesn't matter. Success metric = **sovereignty posture improved** (backups tested, Legacy Plans current, drift cleared), not raw daily-active-users (DAU).
