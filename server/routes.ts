@@ -37,6 +37,7 @@ import { registerHoldingsRoutes } from "./routes/holdings";
 import { registerVaultsRoutes } from "./routes/vaults";
 import { registerPortfolioRoutes } from "./routes/portfolio";
 import { registerFoundingRoutes } from "./routes/founding";
+import { registerReferralRoutes } from "./routes/referrals";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -934,6 +935,7 @@ ${sections}
 
   registerPortfolioRoutes(app);
   registerFoundingRoutes(app);
+  registerReferralRoutes(app);
   app.get("/api/portfolio", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

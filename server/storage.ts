@@ -161,6 +161,11 @@ import {
   FOUNDING_GENESIS_COUNT,
   type FoundingMember,
   type FoundingOnboarding,
+  referralCodes,
+  referrals,
+  REFERRAL_FOUNDING_MULTIPLIER,
+  REFERRAL_REGULAR_MULTIPLIER,
+  REFERRAL_BOOST_THRESHOLD,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, gte, lte, sql, inArray } from "drizzle-orm";
@@ -329,6 +334,22 @@ export interface IStorage {
   confirmFoundingKit(userId: string): Promise<FoundingOnboarding>;
   getFoundingStats(): Promise<{ claimed: number; remaining: number; total: number; genesisClaimed: number; genesisTotal: number }>;
   claimFoundingSeat(userId: string, eligible: boolean): Promise<{ status: "claimed" | "already" | "incomplete" | "sold_out"; member?: FoundingMember }>;
+
+  getOrCreateReferralCode(userId: string): Promise<string>;
+  recordReferralSignup(code: string, referredUserId: string): Promise<void>;
+  attributeReferralConversion(referredUserId: string): Promise<void>;
+  getReferralStats(userId: string): Promise<{
+    code: string;
+    totalReferrals: number;
+    premiumReferrals: number;
+    rewardPoints: number;
+    lineageScore: number;
+    boostUnlocked: boolean;
+    canDesignateHeir: boolean;
+    boostThreshold: number;
+    isFounding: boolean;
+    wasBaptizedByFounder: boolean;
+  }>;
 
   createPortfolioSnapshot(data: { userId: string; token: string; totalValue: string; holdings: any; businessName?: string; businessLogo?: string; expiresAt: Date }): Promise<PortfolioSnapshot>;
   getPortfolioSnapshotByToken(token: string): Promise<PortfolioSnapshot | undefined>;
@@ -2496,6 +2517,110 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return { status: "claimed" as const, member };
     });
+  }
+
+  // ── Member referral system ───────────────────────────────────────────────
+  async getOrCreateReferralCode(userId: string): Promise<string> {
+    const [existing] = await db
+      .select()
+      .from(referralCodes)
+      .where(eq(referralCodes.userId, userId));
+    if (existing) return existing.code;
+
+    // Short, readable, collision-checked code.
+    const gen = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const code = gen();
+      try {
+        const [row] = await db
+          .insert(referralCodes)
+          .values({ userId, code })
+          .onConflictDoNothing({ target: referralCodes.userId })
+          .returning();
+        if (row) return row.code;
+        // userId conflict: another request created it concurrently — return that.
+        const [now] = await db
+          .select()
+          .from(referralCodes)
+          .where(eq(referralCodes.userId, userId));
+        if (now) return now.code;
+      } catch {
+        // code collision — retry with a fresh code
+      }
+    }
+    throw new Error("Could not allocate a referral code");
+  }
+
+  // Records the referral relationship at signup time. Silently no-ops on any
+  // guard failure (unknown code, self-referral, already referred) — a bad code
+  // must never block a signup.
+  async recordReferralSignup(code: string, referredUserId: string): Promise<void> {
+    if (!code) return;
+    const [owner] = await db
+      .select()
+      .from(referralCodes)
+      .where(eq(referralCodes.code, code.trim().toUpperCase()));
+    if (!owner) return;
+    if (owner.userId === referredUserId) return; // no self-referral
+
+    const founder = await this.getFoundingMember(owner.userId);
+    await db
+      .insert(referrals)
+      .values({
+        referrerUserId: owner.userId,
+        referredUserId,
+        baptizedByFounder: !!founder,
+      })
+      .onConflictDoNothing({ target: referrals.referredUserId });
+  }
+
+  // Conversion gate: flips a referred member's row to premium exactly once and
+  // snapshots the reward multiplier (Founding referrer earns more).
+  async attributeReferralConversion(referredUserId: string): Promise<void> {
+    const [ref] = await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referredUserId, referredUserId));
+    if (!ref || ref.status === "premium") return;
+
+    const founder = await this.getFoundingMember(ref.referrerUserId);
+    const points = founder ? REFERRAL_FOUNDING_MULTIPLIER : REFERRAL_REGULAR_MULTIPLIER;
+    await db
+      .update(referrals)
+      .set({ status: "premium", rewardPoints: points, convertedAt: new Date() })
+      .where(and(eq(referrals.id, ref.id), eq(referrals.status, "signed_up")));
+  }
+
+  async getReferralStats(userId: string) {
+    const code = await this.getOrCreateReferralCode(userId);
+    const rows = await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referrerUserId, userId));
+
+    const premium = rows.filter((r) => r.status === "premium");
+    const premiumReferrals = premium.length;
+    const rewardPoints = premium.reduce((sum, r) => sum + (r.rewardPoints || 0), 0);
+    const boostUnlocked = premiumReferrals >= REFERRAL_BOOST_THRESHOLD;
+
+    const isFounding = !!(await this.getFoundingMember(userId));
+    const [myReferral] = await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referredUserId, userId));
+
+    return {
+      code,
+      totalReferrals: rows.length,
+      premiumReferrals,
+      rewardPoints,
+      lineageScore: premiumReferrals,
+      boostUnlocked,
+      canDesignateHeir: boostUnlocked,
+      boostThreshold: REFERRAL_BOOST_THRESHOLD,
+      isFounding,
+      wasBaptizedByFounder: !!myReferral?.baptizedByFounder,
+    };
   }
 }
 

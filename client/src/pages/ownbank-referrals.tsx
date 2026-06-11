@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
-import { useXrplStore } from "@/lib/xrpl-store";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { AFFILIATE_LINKS, WALLET_AFFILIATE_LINKS } from "@/lib/xrpl-client";
 import {
   Users,
@@ -14,20 +15,30 @@ import {
   Gift,
   Crown,
   UserPlus,
-  Coins,
   ExternalLink,
   Share2,
   ShieldCheck,
   Smartphone,
+  Sparkles,
+  Award,
+  Sprout,
 } from "lucide-react";
 import { SiBinance, SiCoinbase, SiUphold } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { SocialShare } from "@/components/social-share";
 
-function truncateAddress(address: string): string {
-  if (address.length <= 12) return address;
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
+type ReferralStats = {
+  code: string;
+  totalReferrals: number;
+  premiumReferrals: number;
+  rewardPoints: number;
+  lineageScore: number;
+  boostUnlocked: boolean;
+  canDesignateHeir: boolean;
+  boostThreshold: number;
+  isFounding: boolean;
+  wasBaptizedByFounder: boolean;
+};
 
 const exchangeCards = [
   {
@@ -79,23 +90,16 @@ const exchangeCards = [
 export default function OwnBankReferrals() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const {
-    referralCode,
-    referrals,
-    premiumCreditMonths,
-    generateReferralCode,
-  } = useXrplStore();
   const [copied, setCopied] = useState(false);
   const [copiedExchange, setCopiedExchange] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user && !referralCode) {
-      generateReferralCode();
-    }
-  }, [user, referralCode, generateReferralCode]);
+  const { data: stats, isLoading } = useQuery<ReferralStats>({
+    queryKey: ["/api/referrals/stats"],
+    enabled: !!user,
+  });
 
   const SITE_DOMAIN = "https://cryptoownbank.com";
-  const referralLink = referralCode ? `${SITE_DOMAIN}/?ref=${referralCode}` : null;
+  const referralLink = stats?.code ? `${SITE_DOMAIN}/?ref=${stats.code}` : null;
 
   const handleCopyLink = async () => {
     if (!referralLink) return;
@@ -134,20 +138,13 @@ export default function OwnBankReferrals() {
     }
   };
 
-  const totalReferrals = referrals.length;
-  const referralsWithDeposits = referrals.filter(
-    (r) => r.depositCount > 0,
-  ).length;
-  const totalEstimatedSeed = referrals.reduce(
-    (sum, r) => sum + r.estimatedSeed,
-    0,
-  );
-  const premiumUpgrades = referrals.filter(
-    (r) => r.upgradedToPremium,
-  ).length;
-
   const hasAffiliateLinks =
     AFFILIATE_LINKS.binance && AFFILIATE_LINKS.kraken && AFFILIATE_LINKS.coinbase;
+
+  const boostThreshold = stats?.boostThreshold ?? 3;
+  const premiumReferrals = stats?.premiumReferrals ?? 0;
+  const progressToBoost = Math.min(premiumReferrals, boostThreshold);
+  const remainingForBoost = Math.max(0, boostThreshold - premiumReferrals);
 
   return (
     <div className="space-y-6">
@@ -156,24 +153,55 @@ export default function OwnBankReferrals() {
           className="text-2xl font-bold"
           data-testid="text-referrals-title"
         >
-          Your Referral Links — Earn Rewards When Others Join
+          Invite Members — Grow Your Lineage, Earn Real Rewards
         </h1>
         <p className="text-muted-foreground mt-1 max-w-2xl">
-          Share these links with friends. When they sign up, buy RLUSD, or join
-          Soil via your link, you may earn rewards (affiliate commissions or SEED
-          points). At no extra cost to them.
+          Share your personal link. When someone joins through it and later
+          upgrades to a paid plan, you earn a reward — and they join your
+          lineage. Founding Members earn double. Rewards are only credited on a
+          real paid upgrade, never just a signup.
         </p>
       </div>
+
+      {stats?.wasBaptizedByFounder && (
+        <Card
+          className="border-amber-500/30 bg-amber-500/5"
+          data-testid="card-baptized-welcome"
+        >
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">
+                Welcomed by a Founding Member
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                You joined CryptoOwnBank through one of our Founding Members —
+                you're part of their lineage.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5 text-[#00A4E4]" />
-            Invite Friends to CryptoOwnBank
+            Your Member Referral Link
+            {stats?.isFounding && (
+              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                <Crown className="h-3 w-3 mr-1" />
+                Founding · 2× rewards
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {referralLink ? (
+          {isLoading ? (
+            <Skeleton className="h-11 w-full" data-testid="skeleton-referral-link" />
+          ) : referralLink ? (
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div
@@ -227,16 +255,264 @@ export default function OwnBankReferrals() {
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
               <p className="text-muted-foreground text-sm text-center">
-                Generating your referral link...
+                Sign in to get your personal referral link.
               </p>
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            When friends sign up and deposit RLUSD, you both earn bonus SEED
-            points. If they upgrade to Premium, you get 1 free month.
+            Friends pay nothing extra. You earn a reward only when they upgrade
+            to a paid plan — and they become part of your lineage.
           </p>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Referrals
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <div
+                className="text-2xl font-bold"
+                data-testid="text-total-referrals"
+              >
+                {stats?.totalReferrals ?? 0}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Members who joined via your link
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Went Premium</CardTitle>
+            <Crown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <div
+                className="text-2xl font-bold"
+                data-testid="text-premium-referrals"
+              >
+                {stats?.premiumReferrals ?? 0}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Referrals on a paid plan
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reward Points</CardTitle>
+            <Gift className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <div
+                className="text-2xl font-bold"
+                data-testid="text-reward-points"
+              >
+                {(stats?.rewardPoints ?? 0).toLocaleString()}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Earned on paid upgrades
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Lineage Score</CardTitle>
+            <Sprout className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <div
+                className="text-2xl font-bold"
+                data-testid="text-lineage-score"
+              >
+                {stats?.lineageScore ?? 0}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Paid members tracing to you
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card data-testid="card-lineage-privileges">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-[#00A4E4]" />
+            Lineage Privileges
+          </CardTitle>
+          {stats?.boostUnlocked ? (
+            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+              Unlocked
+            </Badge>
+          ) : (
+            <Badge variant="secondary">Locked</Badge>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Bring <span className="font-semibold text-foreground">{boostThreshold}</span>{" "}
+            members to a paid plan to unlock a boosted reward tier and the right
+            to name one Legacy heir.
+          </p>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Progress to boost</span>
+              <span data-testid="text-boost-progress">
+                {progressToBoost} / {boostThreshold}
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#00A4E4] transition-all"
+                style={{
+                  width: `${(progressToBoost / boostThreshold) * 100}%`,
+                }}
+                data-testid="bar-boost-progress"
+              />
+            </div>
+            {!stats?.boostUnlocked && (
+              <p className="text-xs text-muted-foreground">
+                {remainingForBoost} more paid referral
+                {remainingForBoost !== 1 ? "s" : ""} to unlock.
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div
+              className={`rounded-md border p-3 ${
+                stats?.boostUnlocked
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-muted bg-muted/30"
+              }`}
+              data-testid="privilege-boosted-rewards"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles
+                  className={`h-4 w-4 ${
+                    stats?.boostUnlocked
+                      ? "text-emerald-500"
+                      : "text-muted-foreground"
+                  }`}
+                />
+                <p className="text-sm font-semibold">Boosted reward tier</p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Higher reward rate on every future paid referral.
+              </p>
+            </div>
+
+            <div
+              className={`rounded-md border p-3 ${
+                stats?.canDesignateHeir
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-muted bg-muted/30"
+              }`}
+              data-testid="privilege-legacy-heir"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldCheck
+                  className={`h-4 w-4 ${
+                    stats?.canDesignateHeir
+                      ? "text-emerald-500"
+                      : "text-muted-foreground"
+                  }`}
+                />
+                <p className="text-sm font-semibold">Name one Legacy heir</p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                The right to designate a successor in your Legacy Plan. You
+                always stay in control and approve everything yourself.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {referralLink && (
+        <Card className="border-[#00A4E4]/20 bg-[#00A4E4]/5" data-testid="card-share-cta">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-[#00A4E4]/10 flex items-center justify-center shrink-0">
+                  <UserPlus className="h-5 w-5 text-[#00A4E4]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Invite more members to grow your lineage</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Every member who upgrades to a paid plan earns you a reward and joins your lineage.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                {typeof navigator !== "undefined" && navigator.share && (
+                  <Button
+                    size="sm"
+                    className="bg-[#00A4E4] text-white"
+                    onClick={async () => {
+                      try {
+                        await navigator.share({
+                          title: "CryptoOwnBank — Earn Yield on RLUSD",
+                          text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.",
+                          url: referralLink,
+                        });
+                      } catch {}
+                    }}
+                    data-testid="button-cta-native-share"
+                  >
+                    <Smartphone className="h-4 w-4 mr-1.5" />
+                    Send to a Friend
+                  </Button>
+                )}
+                <SocialShare
+                  url={referralLink}
+                  text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
+                  buttonLabel="Post on Social"
+                  data-testid="button-cta-social-share"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  data-testid="button-cta-copy"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 mr-1" />
+                  ) : (
+                    <Copy className="h-4 w-4 mr-1" />
+                  )}
+                  {copied ? "Copied" : "Copy Link"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -247,9 +523,9 @@ export default function OwnBankReferrals() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Share these links so friends can sign up on an exchange, buy RLUSD,
-            and get started. You earn a commission when they join through your
-            link.
+            Separate from your member referral above: share these so friends can
+            sign up on an exchange, buy RLUSD, and get started. You earn a
+            commission when they join through your link.
           </p>
 
           {hasAffiliateLinks ? (
@@ -471,263 +747,6 @@ export default function OwnBankReferrals() {
                     </p>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Referrals
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className="text-2xl font-bold"
-              data-testid="text-total-referrals"
-            >
-              {totalReferrals}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Friends who signed up
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Depositors
-            </CardTitle>
-            <Coins className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className="text-2xl font-bold"
-              data-testid="text-active-depositors"
-            >
-              {referralsWithDeposits}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Referrals with deposits
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Est. SEED Earned
-            </CardTitle>
-            <Gift className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className="text-2xl font-bold"
-              data-testid="text-estimated-seed"
-            >
-              {totalEstimatedSeed.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Bonus SEED from referrals
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Premium Credits
-            </CardTitle>
-            <Crown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className="text-2xl font-bold"
-              data-testid="text-premium-credits"
-            >
-              {premiumCreditMonths}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Free months earned
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {referralLink && (
-        <Card className="border-[#00A4E4]/20 bg-[#00A4E4]/5" data-testid="card-share-cta">
-          <CardContent className="p-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-[#00A4E4]/10 flex items-center justify-center shrink-0">
-                  <UserPlus className="h-5 w-5 text-[#00A4E4]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Invite more friends to earn rewards</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Every friend who joins earns you SEED points. If they go Premium, you get a free month.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                {typeof navigator !== "undefined" && navigator.share && (
-                  <Button
-                    size="sm"
-                    className="bg-[#00A4E4] text-white"
-                    onClick={async () => {
-                      try {
-                        await navigator.share({
-                          title: "CryptoOwnBank — Earn Yield on RLUSD",
-                          text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning.",
-                          url: referralLink,
-                        });
-                      } catch {}
-                    }}
-                    data-testid="button-cta-native-share"
-                  >
-                    <Smartphone className="h-4 w-4 mr-1.5" />
-                    Send to a Friend
-                  </Button>
-                )}
-                <SocialShare
-                  url={referralLink}
-                  text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
-                  buttonLabel="Post on Social"
-                  data-testid="button-cta-social-share"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  data-testid="button-cta-copy"
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 mr-1" />
-                  ) : (
-                    <Copy className="h-4 w-4 mr-1" />
-                  )}
-                  {copied ? "Copied" : "Copy Link"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-[#00A4E4]" />
-            Premium Referral Bonus
-          </CardTitle>
-          <Badge variant="secondary">Bonus</Badge>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            If your referral upgrades to Premium, you get{" "}
-            <span className="font-semibold text-foreground">1 free month</span>{" "}
-            of Premium added to your account. The more friends you refer who
-            upgrade, the more free months you earn.
-          </p>
-          {premiumUpgrades > 0 && (
-            <p className="text-sm text-[#00A4E4]">
-              {premiumUpgrades} referral{premiumUpgrades !== 1 ? "s" : ""}{" "}
-              upgraded — you've earned {premiumUpgrades} free month
-              {premiumUpgrades !== 1 ? "s" : ""}.
-            </p>
-          )}
-          {referralLink && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-muted">
-              {typeof navigator !== "undefined" && navigator.share && (
-                <Button
-                  size="sm"
-                  className="bg-[#00A4E4] text-white"
-                  onClick={async () => {
-                    try {
-                      await navigator.share({
-                        title: "CryptoOwnBank — Earn Yield on RLUSD",
-                        text: "Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC required, just connect your cold wallet and start earning.",
-                        url: referralLink,
-                      });
-                    } catch {}
-                  }}
-                  data-testid="button-bonus-native-share"
-                >
-                  <Smartphone className="h-4 w-4 mr-1.5" />
-                  Share & Earn
-                </Button>
-              )}
-              <SocialShare
-                url={referralLink}
-                text="Earn 5–8% fixed yield on RLUSD with full self-custody. No KYC, no seed phrases — just connect your cold wallet and start earning."
-                buttonLabel="Post on Social"
-                data-testid="button-bonus-social-share"
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {referrals.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-[#00A4E4]" />
-              Referred Users
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {referrals.map((referral, index) => (
-                <div
-                  key={referral.referredAddress}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
-                  data-testid={`row-referral-${index}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#00A4E4]/10">
-                      <Users className="h-4 w-4 text-[#00A4E4]" />
-                    </div>
-                    <div>
-                      <p
-                        className="text-sm font-mono font-medium"
-                        data-testid={`text-referral-address-${index}`}
-                      >
-                        {truncateAddress(referral.referredAddress)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Joined{" "}
-                        {new Date(referral.joinedDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {referral.depositCount > 0 ? (
-                      <Badge variant="default">
-                        {referral.depositCount} deposit
-                        {referral.depositCount !== 1 ? "s" : ""}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">No deposits</Badge>
-                    )}
-                    {referral.upgradedToPremium && (
-                      <Badge variant="default">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Premium
-                      </Badge>
-                    )}
-                    {referral.estimatedSeed > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        +{referral.estimatedSeed} SEED
-                      </span>
-                    )}
-                  </div>
-                </div>
               ))}
             </div>
           </CardContent>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SeoHead } from "@/components/seo-head";
 import { useMutation } from "@tanstack/react-query";
+import { useXrplStore } from "@/lib/xrpl-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,8 @@ export default function Signup() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const referredBy = useXrplStore((s) => s.referredBy);
+  const setReferredBy = useXrplStore((s) => s.setReferredBy);
 
   const signupMutation = useMutation({
     mutationFn: async () => {
@@ -35,6 +38,7 @@ export default function Signup() {
           utmSource: localStorage.getItem("utm_source") || undefined,
           utmMedium: localStorage.getItem("utm_medium") || undefined,
           utmCampaign: localStorage.getItem("utm_campaign") || undefined,
+          referralCode: referredBy || undefined,
         }),
       });
       const data = await res.json();
@@ -45,6 +49,7 @@ export default function Signup() {
     },
     onSuccess: () => {
       setSuccess(true);
+      setReferredBy("");
     },
     onError: (err: Error) => {
       setError(err.message);

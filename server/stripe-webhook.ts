@@ -79,6 +79,15 @@ export async function handleStripeWebhookEvent(event: any): Promise<void> {
         stripeCustomerId: session.customer,
         stripeSubscriptionId: session.subscription,
       });
+      // Conversion-gated referral reward: credit the referrer (if any) on a
+      // real paid upgrade to Premium/Pro. Never blocks the upgrade.
+      if (tier === "premium" || tier === "pro") {
+        try {
+          await storage.attributeReferralConversion(userId);
+        } catch (err) {
+          console.error("[stripe-webhook] Referral attribution failed:", err);
+        }
+      }
     }
   } else if (
     event.type === "customer.subscription.deleted" ||

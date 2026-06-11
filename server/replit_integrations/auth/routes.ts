@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { authStorage } from "./storage";
+import { storage } from "../../storage";
 import { isAuthenticated, isAdmin } from "./replitAuth";
 import { users } from "@shared/models/auth";
 import { db } from "../../db";
@@ -58,7 +59,7 @@ export function registerAuthRoutes(app: Express): void {
 
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, firstName, lastName, utmSource, utmMedium, utmCampaign } = req.body;
+      const { email, password, firstName, lastName, utmSource, utmMedium, utmCampaign, referralCode } = req.body;
 
       if (!email || !password || !firstName) {
         return res.status(400).json({ message: "Email, password, and first name are required" });
@@ -104,6 +105,16 @@ export function registerAuthRoutes(app: Express): void {
           utmCampaign: utmCampaign || null,
         })
         .returning();
+
+      // Attribute the referral relationship (no-ops safely on a bad/missing
+      // code). Must never block account creation.
+      if (referralCode) {
+        try {
+          await storage.recordReferralSignup(referralCode, newUser.id);
+        } catch (err) {
+          console.error("Failed to record referral signup:", err);
+        }
+      }
 
       if (isAdminEmail) {
         const user = { claims: { sub: newUser.id }, authProvider: "email" };

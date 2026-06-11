@@ -857,6 +857,14 @@ export async function activateSubscription(payment: CryptoPayment) {
   });
   console.log(`[crypto-verify] Activated ${billingCycle} ${tier} for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
 
+  // Conversion-gated referral reward: credit the referrer (if any) on a real
+  // paid crypto upgrade to Premium/Pro. Never blocks the upgrade.
+  try {
+    await storage.attributeReferralConversion(payment.userId);
+  } catch (err) {
+    console.error("[crypto-verify] Referral attribution failed:", err);
+  }
+
   await notifyAdminOfPayment(payment);
 }
 

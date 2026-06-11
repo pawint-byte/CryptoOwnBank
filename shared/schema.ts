@@ -282,6 +282,43 @@ export type InsertFoundingMember = z.infer<typeof insertFoundingMemberSchema>;
 export type FoundingMember = typeof foundingMembers.$inferSelect;
 export type FoundingOnboarding = typeof foundingOnboarding.$inferSelect;
 
+// ── Member referral system ────────────────────────────────────────────────
+// Real, server-side member-to-member referral tracking (replaces the old
+// browser-only code). One code per member; one relationship row per referred
+// member. Rewards are CONVERSION-GATED — credited only when a referred member
+// actually upgrades to Premium/Pro — and the system NEVER gates identity.
+export const REFERRAL_FOUNDING_MULTIPLIER = 2; // Founding Members earn 2x per conversion
+export const REFERRAL_REGULAR_MULTIPLIER = 1;
+export const REFERRAL_BOOST_THRESHOLD = 3; // 3 Premium referrals → boost + the right to name one Legacy heir
+
+// One stable code per member, generated on first use.
+export const referralCodes = pgTable("referral_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// One row per referred member (a member can be referred at most once).
+// `baptizedByFounder` is a snapshot taken at signup of whether the referrer
+// was a Founding Member; `status` flips signed_up → premium on conversion, and
+// `rewardPoints` snapshots the multiplier applied at that moment.
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerUserId: varchar("referrer_user_id").notNull(),
+  referredUserId: varchar("referred_user_id").notNull().unique(),
+  baptizedByFounder: boolean("baptized_by_founder").default(false).notNull(),
+  status: varchar("status", { length: 20 }).default("signed_up").notNull(),
+  rewardPoints: integer("reward_points").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  convertedAt: timestamp("converted_at"),
+}, (table) => [
+  index("idx_referrals_referrer").on(table.referrerUserId),
+]);
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type Referral = typeof referrals.$inferSelect;
+
 export const priceHistory = pgTable("price_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   assetSymbol: varchar("asset_symbol", { length: 50 }).notNull(),
