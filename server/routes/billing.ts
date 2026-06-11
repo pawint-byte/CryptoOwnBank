@@ -25,6 +25,7 @@ import https from "https";
 import fs from "fs";
 import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
+import { getActiveCampaigns, getActiveCryptoBonus } from "@shared/promo-calendar";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
 
 export function registerBillingRoutes(app: Express) {
@@ -392,7 +393,8 @@ export function registerBillingRoutes(app: Express) {
       }
 
       const addonConfig = ADDONS[addonKey as AddonKey];
-      const usdAmount = applyCryptoDiscount(addonConfig.amount / 100, chain);
+      const [addonUser] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId));
+      const usdAmount = applyCryptoDiscount(addonConfig.amount / 100, chain, { joinDate: addonUser?.createdAt ?? null });
 
       const ALL_SUPPORTED_CHAINS = [
         "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
@@ -484,6 +486,27 @@ export function registerBillingRoutes(app: Express) {
     }
   });
 
+  app.get("/api/promo/active", async (_req, res) => {
+    try {
+      const now = new Date();
+      const active = getActiveCampaigns(now).filter((c) => c.kind !== "memberAnniversary");
+      res.json({
+        bonus: getActiveCryptoBonus(now),
+        campaigns: active.map((c) => ({
+          slug: c.slug,
+          name: c.name,
+          emoji: c.emoji,
+          accent: c.accent,
+          headline: c.headline,
+          cryptoBonusDiscount: c.cryptoBonusDiscount,
+        })),
+      });
+    } catch (error) {
+      console.error("Active promo fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch active promotions" });
+    }
+  });
+
   app.post("/api/addons/:id/cancel", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -558,7 +581,8 @@ export function registerBillingRoutes(app: Express) {
         "pro-monthly": 99,
         "pro-yearly": 799,
       };
-      const usdAmount = applyCryptoDiscount(FULL_USD[plan], chain);
+      const [planUser] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId));
+      const usdAmount = applyCryptoDiscount(FULL_USD[plan], chain, { joinDate: planUser?.createdAt ?? null });
 
       const CHAIN_TO_COINGECKO: Record<string, string> = {
         bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",

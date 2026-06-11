@@ -31,6 +31,7 @@ import Sovereignty from "@/pages/sovereignty";
 import WealthArchitecture from "@/pages/wealth-architecture";
 import SovereigntyKit from "@/pages/sovereignty-kit";
 import FoundingMemberPage from "@/pages/founding-member";
+import PromoCampaign from "@/pages/promo-campaign";
 import DrillsCenter from "@/pages/drills";
 import SetupGuide from "@/pages/setup-guide";
 import Login from "@/pages/login";
@@ -68,6 +69,7 @@ import AdminMetrics from "@/pages/admin-metrics";
 import AdminApiWatch from "@/pages/admin-api-watch";
 import AdminVaultBlocklist from "@/pages/admin-vault-blocklist";
 import AdminAnnouncements from "@/pages/admin-announcements";
+import AdminPromoCalendar from "@/pages/admin-promo-calendar";
 import YieldCalculator from "@/pages/yield-calculator";
 import PriceAlerts from "@/pages/price-alerts";
 import WalletsPage from "@/pages/wallets";
@@ -414,6 +416,7 @@ function AuthenticatedRoutes() {
         <Route path="/admin/errors" component={AdminErrorMonitor} />
         <Route path="/admin/vault-blocklist" component={AdminVaultBlocklist} />
         <Route path="/admin/announcements" component={AdminAnnouncements} />
+        <Route path="/admin/promo-calendar" component={AdminPromoCalendar} />
         <Route path="/agent-lab" component={AgentLab} />
         <Route component={NotFound} />
       </Switch>
@@ -471,6 +474,7 @@ function Router() {
         <Route path="/own-privately" component={OwnPrivately} />
         <Route path="/home-or-away" component={HomeOrAway} />
         <Route path="/founding" component={FoundingMemberPage} />
+        <Route path="/promo/:slug" component={PromoCampaign} />
         <Route path="/wallet/create" component={WalletCreate} />
         <Route path="/help" component={HelpIndex} />
         <Route path="/help/create-wallet" component={HelpCreateWallet} />
@@ -525,6 +529,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
+      <Route path="/promo/:slug" component={PromoCampaign} />
       <Route><AuthenticatedRoutes /></Route>
     </Switch>
   );

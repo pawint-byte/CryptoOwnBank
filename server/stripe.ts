@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { getActiveCryptoBonus } from "@shared/promo-calendar";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" as any })
@@ -205,8 +206,28 @@ export function isHouseChain(chain: string): chain is HouseChain {
 export function getCryptoDiscountRate(chain: string): number {
   return isHouseChain(chain) ? 0.15 : 0.10;
 }
-export function applyCryptoDiscount(usdAmount: number, chain: string): number {
-  return Math.round(usdAmount * (1 - getCryptoDiscountRate(chain)) * 100) / 100;
+
+// Promo-calendar windows can add an EXTRA crypto-payment discount on top of the
+// baseline (e.g. +10% during Whitepaper Day). Total is capped so stacking can
+// never run away. The free signup path is never affected by any of this.
+const MAX_CRYPTO_DISCOUNT = 0.30;
+
+export interface CryptoDiscountContext {
+  now?: Date;
+  /** Member's account creation date — enables the personal join-anniversary window. */
+  joinDate?: Date | null;
+}
+
+export function getEffectiveCryptoDiscountRate(chain: string, ctx?: CryptoDiscountContext): number {
+  const base = getCryptoDiscountRate(chain);
+  const bonus = getActiveCryptoBonus(ctx?.now ?? new Date(), ctx?.joinDate ?? null);
+  return Math.min(base + bonus, MAX_CRYPTO_DISCOUNT);
+}
+
+// Backward compatible: existing 2-arg callers still work and automatically pick
+// up any active GLOBAL promo window (anniversary needs joinDate via ctx).
+export function applyCryptoDiscount(usdAmount: number, chain: string, ctx?: CryptoDiscountContext): number {
+  return Math.round(usdAmount * (1 - getEffectiveCryptoDiscountRate(chain, ctx)) * 100) / 100;
 }
 
 export type AddonKey = keyof typeof ADDONS;
