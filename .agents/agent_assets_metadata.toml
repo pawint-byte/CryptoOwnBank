@@ -83,3 +83,21 @@ id = "HeKo9sRQH7cORkzqgvwH4"
 uri = "file://docs/cockpit-thesis.md"
 type = "text"
 title = "The Cockpit Thesis"
+
+[[outputs]]
+id = "a5tqRcBd-pmd3LPsnHj2L"
+uri = "file://.local/announcements/cockpit-launch-heygen-script.md"
+type = "text"
+title = "Cockpit — HeyGen Video Script"
+
+[[outputs]]
+id = "a5asZNq5Bryy0cPsbgzLA"
+uri = "file://.local/announcements/cockpit-launch-social-post.md"
+type = "text"
+title = "Cockpit — Social Media Posts"
+
+[[outputs]]
+id = "qpKUspI5NK5rryghNXn3U"
+uri = "file://.local/announcements/cockpit-launch-email.md"
+type = "text"
+title = "Cockpit — Email (long-form reference)"
