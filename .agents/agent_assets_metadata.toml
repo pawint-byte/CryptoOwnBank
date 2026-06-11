@@ -77,3 +77,9 @@ id = "DXGXj3U0acj1B3Kh45w0I"
 uri = "file://.local/announcements/founding-member-heygen-script.md"
 type = "text"
 title = "Founding Members — HeyGen Video Script"
+
+[[outputs]]
+id = "HeKo9sRQH7cORkzqgvwH4"
+uri = "file://docs/cockpit-thesis.md"
+type = "text"
+title = "The Cockpit Thesis"
