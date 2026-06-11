@@ -133,6 +133,8 @@ Verified: 7-case end-to-end DB test passed (stable code, self-referral block, si
 
 Files: `shared/schema.ts` (referralCodes / referrals tables + REFERRAL_* consts), `server/storage.ts` (getOrCreateReferralCode / recordReferralSignup / attributeReferralConversion / getReferralStats), `server/routes/referrals.ts` (registered in `server/routes.ts`), `server/stripe-webhook.ts`, `server/services/crypto-payment-verifier.ts`, `server/replit_integrations/auth/routes.ts`, `client/src/pages/signup.tsx`, `client/src/pages/ownbank-referrals.tsx`. `npm run db:push` applied. Next: #45 (crypto-date promotional calendar).
 
+Launch collateral (added 2026-06-11): (1) **FAQ** — 7-question accordion now on the `/referrals` page (cost to friend, when reward is earned, Founding 2×, Lineage Score, naming a Legacy heir, non-custodial/no-ID, where the link is). (2) **Announcement email** at `.local/announcements/referral-program-email.md` (subject options, plain-text + HTML, compliance notes, audience=all incl. dormant). (3) **HeyGen video script** at `.local/announcements/referral-program-heygen-script.md` (60s scene table + 30s cut + production/compliance notes). (4) **Social write-up** at `.local/announcements/referral-program-social-post.md` (X/LinkedIn/IG versions to post with the video). All worded to keep the reward tied to a *paid upgrade* (never signup), no earnings promises, non-custodial framing intact.
+
 ---
 
 ## SHIPPED — Founding Member signup hook (first 1,000) (Added & completed 2026-06-10)

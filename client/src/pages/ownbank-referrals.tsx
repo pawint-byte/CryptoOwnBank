@@ -3,6 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { XrplDisclaimer } from "@/components/xrpl-disclaimer";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -22,10 +28,42 @@ import {
   Sparkles,
   Award,
   Sprout,
+  HelpCircle,
 } from "lucide-react";
 import { SiBinance, SiCoinbase, SiUphold } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { SocialShare } from "@/components/social-share";
+
+const referralFaq = [
+  {
+    q: "How much does it cost my friend to join?",
+    a: "Nothing. Joining CryptoOwnBank through your link is free, and there's no payment or identity check to sign up. They only pay if they choose a paid plan later — and even then, it never costs them extra for using your link.",
+  },
+  {
+    q: "When do I actually earn a reward?",
+    a: "Only when someone you invited upgrades to a paid plan (Premium or Pro). A signup alone earns nothing. This keeps the program honest — we reward real, happy members, not empty signups.",
+  },
+  {
+    q: "What do Founding Members get?",
+    a: "Founding Members earn double reward points on every paid referral. The bonus is locked in at the moment your invitee upgrades.",
+  },
+  {
+    q: "What is a Lineage Score?",
+    a: "It's the number of people you brought in who went on to a paid plan. Think of it as your living family tree on the platform. Bring three paid members and you unlock a boosted reward tier plus the right to name one Legacy heir.",
+  },
+  {
+    q: "What does 'name a Legacy heir' mean?",
+    a: "Once you unlock it, you get the right to designate one successor in your Legacy Plan. As always, you stay fully in control — you approve and sign everything yourself. We never hold your funds or your keys.",
+  },
+  {
+    q: "Is any of this custodial? Do you check IDs?",
+    a: "No. CryptoOwnBank never holds your funds, never asks for ID, and never gates who you can invite. The referral program is just a link and a reward — it changes none of that.",
+  },
+  {
+    q: "Where's my referral link?",
+    a: "Right at the top of this page once you're signed in. It's a permanent personal link (ending in ?ref=yourcode) — share it by message, social, or copy and paste anywhere.",
+  },
+];
 
 type ReferralStats = {
   code: string;
@@ -752,6 +790,29 @@ export default function OwnBankReferrals() {
           </CardContent>
         </Card>
       )}
+
+      <Card data-testid="card-referral-faq">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5 text-[#00A4E4]" />
+            Referral FAQ
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {referralFaq.map((item, i) => (
+              <AccordionItem key={i} value={`faq-${i}`} data-testid={`faq-item-${i}`}>
+                <AccordionTrigger className="text-left text-sm" data-testid={`faq-trigger-${i}`}>
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground" data-testid={`faq-content-${i}`}>
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
 
       <XrplDisclaimer />
     </div>
