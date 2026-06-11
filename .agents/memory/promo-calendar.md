@@ -14,6 +14,6 @@ The promotional calendar anchors campaigns to crypto dates to drive FREE signups
 
 **Date math:** windows are UTC, check current + previous year so year-boundary windows work; member-anniversary skips roughly the first year so a brand-new signup isn't "celebrating".
 
-**`CRYPTOOWNBANK_BIRTHDAY` is a placeholder** — founder must set the real launch date.
+**Founding Day = Jan 13** (`CRYPTOOWNBANK_BIRTHDAY` = {month:1, day:13}, `CRYPTOOWNBANK_FOUNDED_YEAR` = 2026) — the date the site first went live (found via the earliest "Published your App" checkpoint in git history). The birthday campaign ("Founding Day") shows an "Est. 2026 · Year N" badge. This is a chosen brand anchor, not a hard constraint — founder can rename/move it.
 
 **Why:** founder's framing is "promote/market for signups via crypto dates + referrals"; the whole program was approved at once. Splitting into sub-tasks is for our bookkeeping only and must never turn into re-asking the user to approve something already greenlit.

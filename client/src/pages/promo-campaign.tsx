@@ -10,6 +10,7 @@ import {
   getCampaignBySlug,
   isCampaignActive,
   campaignFixedDate,
+  CRYPTOOWNBANK_FOUNDED_YEAR,
   type PromoCampaign,
 } from "@shared/promo-calendar";
 
@@ -95,6 +96,8 @@ export default function PromoCampaign() {
   const active = isCampaignActive(campaign, new Date());
   const bonusPct = Math.round(campaign.cryptoBonusDiscount * 100);
   const accent = campaign.accent;
+  const isBirthday = campaign.kind === "cryptoOwnBankBirthday";
+  const birthdayYear = Math.max(1, new Date().getFullYear() - CRYPTOOWNBANK_FOUNDED_YEAR + 1);
 
   return (
     <div className="min-h-screen" data-testid={`promo-${campaign.slug}`}>
@@ -108,14 +111,24 @@ export default function PromoCampaign() {
         <div className="max-w-3xl mx-auto px-6 py-16 sm:py-24 text-center">
           <div className="text-6xl mb-6" aria-hidden>{campaign.emoji}</div>
 
-          <Badge
-            variant="secondary"
-            className="mb-5"
-            style={{ backgroundColor: hexToRgba(accent, 0.15), color: accent, borderColor: hexToRgba(accent, 0.4) }}
-            data-testid="badge-promo-date"
-          >
-            {formatDate(campaign)}
-          </Badge>
+          <div className="mb-5 flex items-center justify-center gap-2 flex-wrap">
+            <Badge
+              variant="secondary"
+              style={{ backgroundColor: hexToRgba(accent, 0.15), color: accent, borderColor: hexToRgba(accent, 0.4) }}
+              data-testid="badge-promo-date"
+            >
+              {formatDate(campaign)}
+            </Badge>
+            {isBirthday && (
+              <Badge
+                variant="outline"
+                style={{ color: accent, borderColor: hexToRgba(accent, 0.4) }}
+                data-testid="badge-promo-founded"
+              >
+                Est. {CRYPTOOWNBANK_FOUNDED_YEAR} · Year {birthdayYear}
+              </Badge>
+            )}
+          </div>
 
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4" data-testid="text-promo-headline">
             {campaign.headline}

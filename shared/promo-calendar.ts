@@ -37,8 +37,11 @@ export interface PromoCampaign {
   usesWhisper?: boolean;
 }
 
-// TODO(founder): set the REAL CryptoOwnBank launch date here. Placeholder below.
-export const CRYPTOOWNBANK_BIRTHDAY = { month: 6, day: 11 } as const;
+// Founding Day — the date CryptoOwnBank first went live (Jan 13, 2026).
+// This anchors the annual birthday campaign; the year is implicit (recurs every Jan 13).
+export const CRYPTOOWNBANK_BIRTHDAY = { month: 1, day: 13 } as const;
+// The year we were founded — used for "Year N" copy on the birthday campaign.
+export const CRYPTOOWNBANK_FOUNDED_YEAR = 2026 as const;
 
 const FREE_SEAT_CTA = { ctaLabel: "Claim your Founding seat — free", ctaHref: "/founding" };
 
@@ -136,14 +139,14 @@ export const CAMPAIGNS: PromoCampaign[] = [
   },
   {
     slug: "cryptoownbank-birthday",
-    name: "CryptoOwnBank Birthday",
+    name: "Founding Day (Jan 13)",
     kind: "cryptoOwnBankBirthday",
-    windowDays: 3,
+    windowDays: 7,
     accent: "#EC4899",
     emoji: "🎂",
-    headline: "Happy Birthday, CryptoOwnBank",
-    subheadline: "We're celebrating another year of helping people be their own bank.",
-    body: "Thank you for being part of a community that believes your money should answer to you. Claim your free Founding seat and join us for the next year.",
+    headline: "January 13 — the day we became our own bank",
+    subheadline: "On this day in 2026, CryptoOwnBank went live. Every year we mark it the only way that matters: more people holding their own keys.",
+    body: "Founding Day is our birthday and our promise — your money should answer to you, not to us. Claim your free Founding seat to celebrate with us, and if you upgrade this week, paying with crypto gets you a Founding Day bonus on top.",
     ...FREE_SEAT_CTA,
     cryptoBonusDiscount: 0.10,
   },
