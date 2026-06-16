@@ -1,0 +1,422 @@
+so no public information from these trusted validators as to what is going on in their head to vote for or should we read them not voting yes as they are voting no?Good question. Here's the honest reality:
+What Is Public vs. Private
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+AspectPublicly Visible?DetailsWhich validators are voting YesYesYou can see the exact list of validators voting Yes on sites like xrpscan.com/amendmentsWhich validators are voting NoPartiallyIf they're explicitly voting No, it shows. Many just don't vote Yes yet.Why they are voting Yes or NoAlmost neverIndividual validators rarely publish detailed reasoningTheir internal discussionsNoPrivate between validator operators
+Should We Read "Not Voting Yes" as "Voting No"?
+Not exactly. Here's how it usually works:
+
+When a new amendment (like XLS-66) first becomes available for voting, the default position for most validators is No (or they simply don't vote Yes yet).
+Many validators treat this as a serious responsibility. They often stay in a "watching / evaluating" mode while they:
+Review the code and specs
+Wait for audits and security reviews
+Test on devnet/testnet
+Discuss internally or with other operators
+Assess risks (especially with something as big as native lending)
+
+
+So when you see only ~23% Yes on XLS-66 right now, it doesn’t necessarily mean 77% are actively opposed. A good portion are likely still in "not ready to say Yes yet" mode rather than strong "No".
+How Transparent Are Validators About Their Thinking?
+Generally low transparency.
+
+Most of the 35 trusted validators do not publish public statements explaining why they are or aren’t voting Yes on amendments.
+A few bigger or more community-facing operators occasionally post on X, blogs, or forums when they have a strong opinion, but this is not common and not expected.
+There is no requirement for validators to explain their votes.
+This is one of the criticisms of the current XRPL governance model — while the vote tally is public, the reasoning behind the votes is mostly opaque.
+
+Current Situation with XLS-66
+As of right now:
+
+Only about 8 validators are publicly voting Yes.
+We don’t have clear public statements from most of the other ~27 explaining exactly why they haven’t flipped to Yes yet.
+The low percentage is widely interpreted in the community as caution, not active opposition. Many validators appear to be taking their time with a feature that introduces native lending.
+
+Bottom Line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+QuestionAnswerCan we see who is voting Yes?YesCan we see detailed reasons why?Almost neverDoes "not voting Yes" = "voting No"?Not always — many are still evaluatingIs there good transparency on reasoning?No, it's generally quite opaque
+This is one area where XRPL governance is less transparent than some people would like. The vote itself is on-chain and verifiable, but the "why" behind each validator’s decision is mostly private.
+Would you like me to show you how to check the current Yes voters for XLS-66 on xrpscan, or explain how some validators have communicated in the past when they did take a public stance?so can you speculate a bit for me? does where the validator exist play a part in them voting yes or not voting? for instance would certain laws in one country where a validator lives play a part in this? i know some arabic countries do not like to charge interest on loans or money so i am curious would such a thing cause a validator to not vote for something even though it might not be for themYes, location and regulatory/cultural environment can plausibly play a role — though we have to be careful here because this is mostly speculation. We don’t have public statements from most of the 35 trusted validators explaining their current position on XLS-66.
+Here’s a balanced breakdown of how geography and local laws could influence voting behavior:
+1. Regulatory Environment (Strongest Likely Factor)
+Validators (or the organizations running them) operate under the laws of the country where they are based. Enabling a native lending protocol like XLS-66 introduces new financial activity on the ledger.
+
+In highly regulated jurisdictions (United States, European Union, UK, Singapore, etc.), operators are often very cautious about anything involving lending, credit, or financial products. They may worry about:
+Future regulatory scrutiny
+Licensing requirements
+Legal liability if something goes wrong
+How this affects their exchange, university, or business operations
+
+Validators in more permissive or crypto-friendly jurisdictions might be more comfortable voting Yes earlier.
+
+This is probably one of the bigger reasons some validators are still holding back — not because they personally dislike lending, but because they’re being careful about regulatory risk.
+2. Religious / Cultural Considerations (Your Specific Example)
+You mentioned Arabic/Muslim-majority countries and rules around interest (riba). This is a legitimate point to consider.
+
+In Islamic finance, charging or earning interest is generally prohibited under Sharia.
+Some validators (or the organizations/institutions behind them) may be based in countries or have strong cultural/religious ties where supporting a lending feature could conflict with internal policies or values — even if the lending itself happens off-chain via underwriting.
+A validator doesn’t have to personally use the feature. They might still hesitate if they feel enabling it on the public ledger goes against principles they follow.
+
+However, we have no public evidence that this is currently a major factor holding back XLS-66 votes. It’s possible, but we shouldn’t assume it’s driving the current low ~23% Yes rate without more information.
+3. Other Location-Related Factors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FactorHow It Could Influence VotingLikelihoodRegulatory cautionHigh caution in strict jurisdictionsHighReligious / cultural valuesCould cause hesitation on interest-related featuresMedium (possible but unconfirmed)Risk tolerance of operatorUniversities or conservative organizations tend to be slowerHighBusiness modelExchanges or financial entities may have different incentivesMediumGeographic diversity goalXRPL Foundation tries to spread validators across regionsAlready built into the system
+Important Reality Check
+The XRPL Foundation deliberately tries to maintain geographic diversity in the default UNL of 35 validators. This is intentional — they want operators from different countries and data centers so the network isn’t overly concentrated in one region.
+Because of this diversity, you will have validators operating under very different legal and cultural environments. That diversity is generally seen as a strength for resilience, but it can also mean slower consensus on controversial or complex features like native lending.
+My Honest Speculation
+Right now, I believe the biggest reasons for the slow XLS-66 vote are:
+
+General caution around a major new DeFi primitive (security, smart contract-like risks, economic design).
+Regulatory uncertainty in stricter jurisdictions.
+Waiting for more testing/audits and seeing how the community reacts.
+
+Religious or interest-related objections are possible for some validators (especially those with strong ties to Islamic finance principles), but I don’t think they’re the main driver based on what we’ve seen publicly so far. Most validators appear to be taking a “let’s be careful and deliberate” approach rather than having strong ideological objections.
+Would you like me to explore this from another angle — for example, how other big amendments have moved through voting in the past, or what kind of public signals we have seen from some validators? Or are you mainly curious about the Islamic finance angle specifically?i am just concern since my business, cryptoownbank, is highly dependent on this feature to survive. not sure what the due diligence is needed since it was tested in test dev environment and somethings can only be further tested in the wild than a control environment. i think this is crazy that something was created for the community to use is being held up by othersI hear you. This is a real and valid concern.
+You're building CryptoOwnBank around XRPL capabilities, and XLS-66 (the native Lending Protocol) is something you've been counting on for meaningful on-chain yield and functionality. Watching it sit at only ~23% validator support after being in voting since January feels frustrating — especially when you believe the core work has already been done in test/dev environments.
+Let me be direct and honest with you:
+Why It's Moving Slowly (Even If It Feels Crazy)
+You're right that some things can only be properly tested in production ("in the wild"). However, validators are looking at this through a different lens:
+
+XLS-66 is not a small feature. It introduces native lending, vaults, and uncollateralized credit mechanics directly into the protocol. This is one of the biggest changes to XRPL in years.
+Major financial primitives carry real risks: economic attacks, smart-contract-like bugs, user fund risks, and regulatory exposure.
+Many of the 35 trusted validators are run by universities, exchanges, or conservative operators. Their default posture on something this significant is extreme caution.
+They want to see:
+Multiple independent security audits
+Economic modeling and stress testing
+Clear understanding of failure modes
+Some level of regulatory comfort in major jurisdictions
+Evidence that the ecosystem (wallets, explorers, services like yours) is ready
+
+
+The fact that it was tested on devnet/testnet helps, but it doesn't fully satisfy validators who feel responsible for the health of the entire network.
+The "Held Up by Others" Feeling
+This is one of the inherent tensions in XRPL's governance model.
+The system is deliberately designed so that no single group (including the people who built the feature) can force activation. It requires broad consensus from the trusted validator set. This protects against rushed or controversial changes — but it also means features that some parts of the community really want can get stuck for a long time if enough validators remain unconvinced or cautious.
+You're not wrong to feel frustrated. Many builders feel the same way when a feature they need sits in voting limbo.
+Realistic Perspective Right Now
+As of today (June 16, 2026):
+
+XLS-66 is still far from the 80% threshold.
+There is no clear public signal that it's about to accelerate dramatically.
+Some features in XRPL history have taken many months (or longer) to activate once they entered voting.
+Others have eventually passed after more testing, education, and validator comfort built up.
+
+Bottom line: There is no guarantee this activates quickly. It could gain momentum in the coming weeks/months if more validators become comfortable, or it could stay slow for a while.
+What This Means for CryptoOwnBank
+This is the hard part. Since your business is highly dependent on this feature, you’re in a vulnerable position.
+A few thoughts:
+
+Diversification of roadmap — Are there other yield mechanisms, integrations (e.g., existing protocols on Flare, other chains, or current XRPL features like AMMs), or phased approaches that don’t fully rely on XLS-66 being live?
+Monitoring + engagement — Keep watching the vote count on xrpscan. Some validators do respond to thoughtful, constructive engagement from builders (though many stay quiet).
+Risk management — It might be wise to plan scenarios where XLS-66 takes significantly longer than hoped (or, in a worst case, faces more resistance).
+
+Would you be open to sharing (at a high level) how exactly CryptoOwnBank plans to use XLS-66? Understanding the specific dependency might help me give more targeted thoughts on workarounds or monitoring strategies.
+You're in a tough spot as a builder. The governance process exists for good reasons, but it doesn't always align with the speed builders need. I'm not going to sugarcoat it — this could still take time.
+How are you thinking about contingency plans in the meantime?i hate gatekeepers. if you dont want to use it then dont use it but dont stop others from using it.I get it. That frustration is real.
+You’re building something you believe in, and it feels like a small group of validators is standing in the way of something that could benefit users who want to use it. The “if you don’t like it, just don’t use it” mindset makes a lot of sense on the surface — especially in crypto, where self-sovereignty and optionality are core values.
+But here’s the uncomfortable truth about how XRPL currently works:
+Why XRPL Doesn’t Work That Way
+XRPL amendments like XLS-66 aren’t optional smart contracts that people can choose to interact with or ignore.
+When an amendment activates, it changes the protocol itself for the entire network. Every validator, every node, every wallet, every exchange, and every user is affected by the new rules. It’s not like deploying a DeFi protocol on Ethereum where only the people who want to use it interact with it.
+Because of that design, the community (through the trusted validators) decided long ago that major protocol changes should require broad consensus before they’re turned on for everyone. The 80% + 2-week rule is the current expression of that philosophy.
+So while your view (“let people opt in if they want”) is reasonable, it doesn’t fully align with how XRPL’s governance is structured today. Validators aren’t just deciding for themselves — they’re deciding whether the entire ledger should gain this new capability.
+The Gatekeeper Problem
+You’re not the only one who feels this way. A lot of builders get frustrated when features they need get stuck behind validator hesitation. It can feel slow, conservative, and sometimes anti-innovation — especially when the code has already been written and tested.
+At the same time, the counter-argument validators often use (even if they don’t say it publicly) is:
+
+“We’re responsible for the security and stability of the whole network.”
+“Once this is on, we can’t easily turn it off.”
+“Better to be slow than to enable something that later causes problems for everyone.”
+
+Whether that justification feels valid or like overreach depends on your perspective.
+The Real Tension
+This is the core conflict:
+
+Your side: You want the freedom to build and let users choose. Gatekeeping at the protocol level feels wrong.
+Validator side: They see themselves as stewards of a shared financial infrastructure, not just passive nodes. They’re cautious about enabling powerful new financial primitives.
+
+Both views have merit. The problem is they’re often in conflict when it comes to big features like native lending.
+
+I’m not going to tell you the system is perfect or that you should just be patient. A lot of people in your position feel the same frustration you’re expressing right now.
+If you want, we can talk about this more directly:
+
+Do you see this as a fundamental flaw in XRPL’s design that needs to change long-term?
+Or are you mainly focused on how to navigate the current reality for CryptoOwnBank while this plays out?
+
+I’m here either way. No judgment.so play it out then since you want to stand behind that position. If you take a million years to approve it and something still goes wrong, do i get to send you to jail forever since all your testing and delays still did not produce a perfect, faultless systemFair question. Let's play it out honestly instead of dodging it.
+The Hypothetical
+You’re asking:
+If validators take forever to approve something, and it still ends up having problems later, do they get to claim “we were just being responsible” forever? Or should they be held accountable for the damage caused by excessive delay?
+My answer: No, they don’t get a free pass forever. And yes, your point has real weight.
+Playing It Out Realistically
+Let’s break down what actually happens in these situations:
+
+Delays don’t eliminate risk — they just change the type of risk
+Very slow activation reduces the chance of an early exploit or bug.
+But it increases other risks: opportunity cost, lost adoption, builders going broke or leaving the ecosystem, users missing out on functionality, and the network falling behind competitors.
+In your case, if CryptoOwnBank struggles or fails partly because XLS-66 took too long, that damage is real — even if no smart contract bug ever happens.
+
+No amount of testing creates a perfect system
+You’re right. Even if validators waited “a million years,” something could still go wrong later (economic attack, edge case, regulatory change, user error, etc.).
+The idea that more delay = guaranteed safety is mostly an illusion. It’s risk shifting, not risk removal.
+
+Accountability is messy in decentralized systems
+In practice, no one gets sent to jail for voting No on an amendment (or for voting Yes and something later breaking). At worst:
+Validators might face reputational damage.
+In extreme cases, legal exposure if gross negligence can be proven.
+The bigger consequence is usually that the network suffers (loss of trust, users, or relevance).
+
+So your point stands: the people making the conservative call often face very little direct downside when their caution hurts builders and innovation. The cost is mostly borne by others.
+
+The opposite problem also exists
+If they activated things too fast and something bad happened (hack, major exploit, regulatory crackdown), those same validators would get heavily criticized for being reckless.
+This creates a strong incentive toward caution, even when that caution has real costs.
+
+
+The Core Problem
+You’re highlighting a genuine flaw in this model:
+The current system gives validators significant power to block or delay features, but it gives them very little skin in the game when their delay causes damage to builders and users. There’s no real mechanism to hold them accountable for excessive conservatism.
+At the same time, there’s also no clean way to let people “just opt in” to major protocol changes without affecting the whole network.
+This is one reason some people strongly prefer platforms where new functionality can be added in a more permissionless way (smart contracts, app-chains, etc.) instead of requiring network-wide validator approval for every meaningful upgrade.
+Straight Answer to Your Question
+No, validators don’t get to hide behind “we were just being careful” indefinitely if their delays cause real, ongoing harm. The problem is that in practice, there’s almost no accountability mechanism for being too slow. The system is heavily weighted toward avoiding bad things happening after activation, while under-weighting the damage caused by things not being activated.
+This is a legitimate criticism of XRPL’s current governance approach.
+
+I’m not going to defend the status quo here just because it’s how the system works. Your frustration is understandable, especially when your business is directly impacted.
+Do you want to go deeper on this? For example:
+
+Whether this is fixable within XRPL’s current model, or
+How other chains handle similar situations, or
+What realistic paths forward exist for features like XLS-66
+
+I’ll be straight with you either way.i mean we are doing blockchain because the old system is slow and lacks innovation. why should we still live by the very thing we are saying does not serve us wellYou're touching on one of the biggest contradictions in crypto right now.
+You're right.
+We built blockchain because the old financial and institutional systems were slow, bureaucratic, risk-averse, full of gatekeepers, and resistant to innovation. The promise was: faster iteration, less permission needed, more sovereignty, and the ability to build without waiting for someone's approval.
+Yet here we are with XRPL — and many other chains — where major upgrades still require a small group of validators to sign off, often moving at a pace that feels painfully slow and conservative. It starts to look a lot like the very system we said we were escaping.
+Why This Happens
+This isn't unique to XRPL. A lot of blockchain projects eventually recreate versions of the problems they were trying to solve:
+
+Fear of real consequences: Once real money, real users, and real regulatory exposure are involved, people (even in crypto) become much more cautious. A bug or exploit isn't just theoretical anymore.
+Human nature + incentives: Validators, foundations, and core teams often have more to lose from something going wrong than they have to gain from fast innovation. So they default to delay and caution.
+Coordination problems: When changes affect the entire network (like XRPL amendments do), someone has to coordinate. That coordination often turns into gatekeeping.
+The "serious money" phase: Early crypto was more experimental and chaotic. As bigger money and institutions got involved, the culture shifted toward "responsibility" and risk management — which often looks a lot like traditional finance.
+
+So yes — in many cases, we're still living by the slow, gatekept logic we originally rejected. We just changed who the gatekeepers are.
+The XRPL Version of This Problem
+XRPL made a deliberate design choice: protocol-level changes require broad validator consensus. This gives it more coordination and (arguably) safety than fully permissionless systems, but it also creates exactly the bottleneck you're experiencing with XLS-66.
+Other chains went the opposite route (Ethereum-style smart contracts, app-chains, etc.) and accepted more chaos, more exploits, and faster iteration in exchange for fewer gatekeepers. Neither approach is perfect.
+The Hard Truth
+Blockchain didn't magically remove gatekeeping. It just changed the form of it.
+In many projects, we've replaced banks, regulators, and slow institutions with:
+
+Validator sets
+Foundations
+Core teams
+Large token holders
+"Community governance" that often still has concentrated power
+
+Sometimes these new gatekeepers move faster. Sometimes they move slower. Sometimes they're more ideological. But the underlying dynamic (a relatively small group controlling major decisions) often remains.
+Your frustration is valid. The original vision was supposed to reduce these kinds of dependencies, not recreate them under a new name.
+
+Would you say your bigger issue right now is specifically with XRPL's model, or is this a broader disillusionment with how a lot of blockchain governance has evolved?
+I'm asking because your answer changes what kind of realistic paths forward actually exist for you and CryptoOwnBank.i want to know about others who are thinking or believing what i am saying right now. I would like to know which platforms are working to remove this bs from the process. is there a blockchain and or token out there that gives the power and control to its users so the users are the system and they decideI understand exactly what you're looking for.
+You're tired of validator sets, foundations, or small groups acting as gatekeepers on major upgrades. You want systems where users (or token holders) actually hold meaningful power — not just symbolic votes, but real control over the direction and features of the chain.
+Here's a clear-eyed answer:
+1. Are Other People Thinking Like You?
+Yes. A decent number of builders and users share your frustration. You'll find them in these spaces:
+
+Parts of Crypto Twitter / X that criticize "validator cartels", "foundation capture", and slow on-chain governance.
+Builders who left more conservative chains (like XRPL, some Cosmos chains, or even early Ethereum governance) because upgrades felt too slow or controlled.
+Communities that strongly believe in permissionless innovation — the idea that anyone should be able to build and deploy without needing approval from a central group.
+People who argue that blockchain should be closer to "users are the system" rather than "a small set of validators decides what the system can become."
+
+This view is especially common among people building DeFi, consumer apps, or infrastructure who got burned by slow governance.
+2. Blockchains/Platforms That Try to Reduce Gatekeeping
+Here are the ones that come closest to what you're describing — where users/token holders have more real power and new features don't require slow validator approval:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Platform / ChainHow Much "Users Decide"Permissionless Innovation?Notes / Trade-offsAlignment with Your ViewEthereum + L2s (Base, Arbitrum, Optimism, etc.)High at application layerVery HighAnyone can deploy smart contracts without network approval. Protocol upgrades still need governance, but most innovation happens permissionlessly.StrongSolanaMedium-HighVery HighExtremely fast iteration. New programs can be deployed without asking anyone. Governance exists but is lighter for most changes.StrongPolkadot (with OpenGov)HighMedium-HighUses referenda + conviction voting. Token holders have direct say on upgrades. More decentralized than many validator-heavy chains.GoodCosmos SDK chains (many app-chains)Varies (can be high)HighEach chain can design its own governance. Some are very community-driven.Good (depends on the chain)HyperliquidMediumHighVery fast-moving. Focuses on performance and minimal friction for builders.DecentFuel / other execution-focused chainsMedium-HighHighDesigned around giving more power to users/builders rather than heavy protocol governance.PromisingInternet Computer (ICP)Medium-HighHighAims for "world computer" model with more on-chain everything. Less reliance on external validators for many functions.InterestingArweave + AOHighVery HighVery different architecture. Heavy focus on permanent data + permissionless compute.Strong philosophically
+Best Matches for "Users Are the System"
+If you want the closest thing to "users decide, not gatekeepers":
+
+Ethereum ecosystem (especially L2s): This is currently the strongest example. Smart contracts mean you don't need validator approval to add new functionality. Governance mainly affects the base protocol, not every new app or feature.
+Solana: Extremely permissionless at the program/deployment level. Things move fast because there's less gatekeeping on what can be built.
+Polkadot OpenGov: One of the more serious attempts at giving token holders direct, on-chain control over upgrades instead of relying on a small validator set.
+Sovereign app-chains (built with Cosmos SDK or similar): The chain can be governed however its users want. Some are very community-controlled.
+
+Important Reality Check
+Even in the more "user-powered" systems above, there are still issues:
+
+Whales and DAOs often end up with disproportionate power.
+Low voter participation is common.
+"Users decide" can turn into "a small group of large token holders decide."
+More permissionless systems usually have more hacks, exploits, and chaos (this is the trade-off).
+
+There is no perfect system yet where regular users truly run everything without power concentrating somewhere. But some chains are clearly trying harder than others to reduce gatekeeping.
+
+Quick Recommendation
+If you want to explore platforms that better match your philosophy right now, I would look at:
+
+Solana – Fastest real-world example of permissionless building.
+Ethereum L2s (especially Base or Arbitrum) – Best balance of security + permissionless innovation.
+Polkadot OpenGov – If you want on-chain token holder voting on upgrades.
+
+Would you like me to go deeper on any of these? For example:
+
+Which ones have the most active "anti-gatekeeper" communities?
+Specific projects or tokens that are explicitly trying to solve this problem?
+Or comparisons between how upgrades actually happen on these chains vs XRPL?
+
+Tell me how deep you want to go.
