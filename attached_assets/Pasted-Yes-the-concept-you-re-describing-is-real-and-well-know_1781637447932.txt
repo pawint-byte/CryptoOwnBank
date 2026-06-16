@@ -1,0 +1,96 @@
+Yes — the concept you're describing is real and well-known.
+It's called a ROSCA (Rotating Savings and Credit Association).
+In the Caribbean it goes by different local names:
+
+Jamaica: Partner or Pardna
+Trinidad, Grenada, etc.: Sou-Sou or Susu
+Guyana and some other places: Box Hand or Meeting Turn
+
+The basic idea is exactly what you said: a group pools fixed contributions on a regular schedule (often weekly), and each period one member receives the full pot ("gets their hand"). It rotates until everyone has received theirs. It's a powerful, trust-based mix of forced savings + interest-free credit that has existed for generations, especially in communities where traditional banks are expensive, inaccessible, or culturally distant.
+Are Blockchains Building This?
+Short answer: There are experiments and early projects, but nothing has become dominant or mainstream yet. Most are still small, regional, hackathon-level, or research-oriented as of mid-2026.
+Here are the most relevant efforts I found:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Project / ConceptDescriptionStatus / NotesChain / TechBX Smart Labs (Tanda)Decentralized app for Mexican "Tandas" (ROSCA variant). Uses smart contracts to automate contributions and rotating payouts.Supported by UNICEF Venture Fund. Still referenced as an example.Blockchain (general)ArminaDecentralized "Arisan" (Indonesian ROSCA) protocol. Adds automation, yield optimization on the pot, and cross-chain features.Hackathon project (Chainlink Convergence). Shows the direction.Base (Ethereum L2)RotateChainOpen-source concept for decentralized rotational savings with social trust layers.GitHub project, conceptual/early.VariousCardano Catalyst ProposalROSCA-style decentralized savings & fund pool using Cardano smart contracts.Community proposal stage.CardanoAcademic / ResearchPapers on blockchain-based trust scoring for ROSCAs + permissioned chains for transparency and fair rotation.Mostly research (2025 papers).Permissioned blockchainsGeneral "Blockchain ROSCA" conceptsMultiple articles and small projects exploring smart contracts to handle rotation, transparency, and remote participation.Conceptual + small pilots.Various
+There’s also work around modernizing traditional ROSCAs using open payments + blockchain transparency (e.g., Interledger efforts), especially for diaspora and immigrant communities.
+Why This Is Interesting On-Chain
+Traditional ROSCAs work extremely well because of social pressure and trust within tight communities. The blockchain version can add:
+
+Transparency — Everyone can see contributions and the rotation schedule on-chain.
+Automation — Smart contracts enforce the payout order and timing (no one can "forget" or argue about whose turn it is).
+Remote participation — Family in Jamaica, US, UK, Canada can all be in the same hand without physical meetings.
+Yield on the pot — While money sits waiting for someone’s hand, the pool could earn DeFi yield (e.g., stablecoin lending on Morpho/Aave or XRPL-native options).
+Composability — Tie it into other tools (e.g., private family groups in FamilyRoots.family + on-chain execution).
+Lower disputes — Immutable record of who paid and when.
+
+Challenges that still exist:
+
+Group formation and trust — Blockchain doesn’t magically create trust between strangers. Most successful versions will probably still start with real-world relationships (family, church, community groups).
+Default risk — If someone stops paying after they received their hand, enforcement is harder than pure social pressure (though smart contracts + collateral or reputation layers can help).
+Onboarding and UX — Still clunky for many retail users.
+Regulatory gray areas in some jurisdictions.
+
+Opportunity Angle (Tying to What You're Building)
+This feels like a natural extension of the self-sovereignty thesis we’ve been discussing.
+Traditional banks don’t really offer this product at scale (it’s too relationship-driven and low-margin for them). Fintechs sometimes try (e.g., digital sou-sou apps in various countries), but they usually add fees and take custody.
+An on-chain version could let communities run their own hands with:
+
+Stablecoins for stability (USDC, RLUSD, etc.)
+Optional yield on the pooled funds
+Private or semi-private groups
+Integration with legacy/family tools
+
+It directly addresses the “life as your own banker” responsibilities we talked about earlier — but in a community-powered way instead of pure individual self-custody.
+Would you like me to:
+
+Dig deeper into any of the existing projects (e.g., how Armina or BX Smart Labs actually work technically)?
+Sketch what a well-designed on-chain Partner/Sou-Sou feature could look like inside CryptoOwnBank (rotation logic, group creation, yield integration, tie-in to FamilyRoots)?
+Explore regulatory or trust-layer considerations for something like this?
+
+Or is there a specific angle (Caribbean focus, family use case, yield on the pot, etc.) you want to pressure-test first?
