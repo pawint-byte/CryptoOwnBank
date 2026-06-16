@@ -8,8 +8,29 @@
 | 2026-07-08 | **Chase pending provider replies** — Changelly off-ramp (F2C) keys from Ana, Oobit, Guardarian | "External Approvals" / "Referral Links" |
 | 2026-09-08 | **Quarterly watch-list sweep** — Tier 4 items + Stellar Soroban/Sponsored Fees + stablecoin-legislation status | "Tier 4 — Watch List" / "Revisit When Legislation Passes" |
 | 2026-12-08 | **CCXT re-evaluation** — only worth it if we decide to support many exchanges again | top decision-log entry (2026-06-08 CCXT) |
+| 2026-07-15 | **Re-read Founder's Operating Principles** (2026-06-15 entry) — still the table, not the toll booth? has any ONE chain quietly become load-bearing-without-a-backup? quick said-vs-did check | decision-log entry 2026-06-15 |
 
 > How to use this: at the start of a session, glance at this table. If today is past a "Revisit on" date, either act on that row or push the date forward. When a row is truly done, move it into the history log below.
+
+---
+
+**2026-06-15 (Founder's Operating Principles — morning strategy session, NO code changes) by main agent — REFERENCE / REMINDER.** Founder asked to capture the durable principles from a long morning conversation so he can re-read them and not drift "when the human takes over." These are decision guardrails, not tasks to build. Re-read at the start of a session when feeling stuck, frustrated by a gatekeeper, or tempted to overcorrect.
+
+1. **Be the table, not the toll booth.** The day CryptoOwnBank guards access to stay relevant, it becomes the gatekeeper we exist to replace. We bring everything to the table; the member sets up → reviews → approves → tracks; the member is the ONLY one who says yes, signs with their own keys; we never hold funds/keys or verify/gate identity.
+
+2. **Leverage everything, depend on nothing.** Assimilate the best open, permissionless, non-custodial-compatible building blocks (chains; lending like Aave/Morpho/Soil; swaps via 1inch/LI.FI/Squid; wallets; data; RLUSD/USDC). Build ONLY the connective tissue + sovereignty UX + honesty + teaching — the moat custodial competitors structurally can't copy. Reflex before building anything: (a) what's the job? (b) does an open standard already do it? (c) can the member keep their keys? If yes → integrate, don't invent.
+
+3. **Never let one chain be load-bearing-without-a-backup (the XLS-66 lesson).** Don't bet survival on a single chain's governance/amendment vote. Keep every integration swappable so no single rail can kill us. XRP/XLM = excellent payment/settlement rails; for permissionless build + already-live DeFi (lending/yield), EVM L2s are the better-fit rail — used as one MORE rail on the table, NOT a migration off XRPL.
+
+4. **Two kinds of gates — tell them apart before spending energy.** Private/self-interested gates (exchanges, custodians, KYC middlemen, one wallet) = route around them; that's the moat. Protocol/law gates (amendment votes, tax, sanctions) = the gate IS the road; change rails or stay sovereign WITHIN them — don't rage, and don't put your head in the sand OR your neck in a noose.
+
+5. **Build the exit, not a following.** Make every member as 100%-responsible and un-gatekeepable as the founder — allies who hold their own keys and own their own outcomes, NOT disciples who just transfer dependence from the government to us. The tell of a real movement: people get MORE sovereign by joining. "For us, by us."
+
+6. **Stop enabling; keep the door open (personal).** You've already removed every tool barrier for the people you help (wallets, funds, knowledge). Readiness is theirs to give, not yours to buy. Don't gate help at the moment of need; do the onboarding at calm moments. Door open, hand extended — but the step is theirs.
+
+7. **Said vs. did.** For each thing you said you'd do, ask "what's the observable proof I actually did it?" — a test tx that settled, a recovery you actually walked, an invoice that went out crypto-first. No proof = still a plan, not a practice.
+
+8. **Run-the-business north star.** Tell the table what you want → it assembles → you approve. Guardrails: is it SAFE + is it NECESSARY (and + TRUTHFUL the moment it touches other people). Friction ONLY at irreversible forks (money out, key exposed); zero nagging on anything reversible.
 
 ---
 
