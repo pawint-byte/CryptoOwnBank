@@ -14,6 +14,27 @@
 
 ---
 
+**2026-06-17 (Hybrid catalog-curation system — "self-aware then acted on") by main agent — TO DISCUSS / NOT YET BUILT.** Founder's idea, refined together. Problem: hardcoded token/chain menus require the founder to NOTICE an upstream change (e.g. Squid expands RLUSD chains) and TELL the agent to reflect it — not scalable. Proposed solution = curated-but-current catalog with a review queue:
+- **Loop:** live provider feed (LI.FI `/tokens`, `/chains` already exist server-side) → daily sync job → DIFF against our catalog table → new items surface as "pending" in the admin dashboard (badge/notification) → founder approves/rejects → approved flips a status flag → menu reflects it instantly.
+- **KEY CORRECTION:** approved items go into a DATABASE TABLE, not back into hardcoded source code (no rebuild/redeploy per approval; instant + reversible). "The list stops being code and becomes data."
+- **Whitelist vs blacklist PER SURFACE by risk:** tokens = whitelist / default-deny (scam risk); chains = blacklist / default-allow (only ~50 serious chains, low risk, "flow freely" + block button).
+- **Make-or-break = the PRE-FILTER:** only provider-verified + meaningful-liquidity items reach the queue, else it's an unusable firehose (thousands of tokens). Filter does 95% of the work; founder adjudicates only quality new arrivals.
+- **Honest overhead:** chains a handful/yr (≈0 work on auto-flow); tokens a few/month after filter (seconds each); daily sync cheap/cached. Net steady state = glance at a small queue ~2x/month and click.
+- **Honest boundary:** solves ONLY feed-backed changes (Bucket 1). NO feed = can't diff (Squid integrator ID, partnerships, blog posts, governance votes = Bucket 2) → still needs the founder's radar ritual.
+- **Cost:** real build (catalog table + daily sync job + admin review screen slotting next to Announcements/Promo Calendar + rewire menus to read from table). Build-once; overkill for a single token (just add RLUSD by hand for that).
+- **Recommended phased path:** (1) PROOF = token menu only (live feed already exists) so founder feels real queue volume before committing; (2) extend to chains (blacklist) + Route Planner if it feels good.
+- **NEXT:** founder wants to discuss more. Agent queried Perplexity (2026-06-17) on how others solve this — findings below.
+- **PERPLEXITY FINDINGS (how the ecosystem actually does it — our plan is validated as standard):**
+  - **(NEW OPTION) Uniswap "Token Lists" standard** = the de-facto template. Externalize the catalog into a signed, versioned JSON registry instead of hardcoding in app code. Consumers SUBSCRIBE to multiple vetted lists — i.e. curation can be partly OUTSOURCED to reputable maintainers, and/or we publish our OWN list. This is a THIRD path beyond "hardcode" vs "build our own queue."
+  - **Signals-based auto-approval = a BUNDLE, not one metric:** liquidity/TVL, verified-contract flag, on-chain age, holder distribution, audit/issuer reputation, canonical-origin hints, AND cross-source confirmation (same asset present in multiple reputable registries). Strong signals → auto-approve; only uncertain deltas → human queue. Sharpens our "pre-filter."
+  - **RLUSD-specific rule:** if it's the same verified issuer + canonical bridge metadata, a new-chain entry can be auto-approved (or low-priority queued) — token rep still review-gated if policy requires.
+  - **Store PROVENANCE per item:** which upstream source introduced it, when, why approved (audit trail).
+  - **Confirmed split:** block-first-expand-later for TOKENS (allowlist); broader auto-flow for CHAINS (chain identity is easy to validate, token legitimacy is not).
+  - Real systems named: Uniswap Token Lists + Token Lists Standard, LI.FI, Squid (100+ chains), MetaMask/Rabby wallet registries (multi-source + safety filters + scam denylist).
+- **DECISION FOR FOUNDER (the widened spectrum):** (A) keep hardcoded; (B) consume an open Token-List standard (least upkeep, least control); (C) our own daily-sync + review-queue (most control); (D) hybrid of B+C — ingest standard lists AND our own discovery, both through one review queue with signal-based auto-approve. Agent leans D long-term, C/proof first.
+
+---
+
 **2026-06-17 (Aave Hub — dead-RPC fix, error UI, full-wallet signpost + first TESTED-CONFIRMED log entry) by main agent — DONE.**
 - **Bug fixed:** Aave Hub showed "no balances / all 0.00% APY" because two public RPCs were dead — `eth.llamarpc.com` (HTTP 521) and `polygon-rpc.com` (HTTP 401, needs key). Swapped all 4 Aave chains in `client/src/lib/evm-wallet.ts` `EVM_CHAINS` to publicnode endpoints (ethereum-rpc / polygon-bor-rpc / arbitrum-one-rpc / base-rpc .publicnode.com — all verified live + browser CORS `*`). Added load/positions/markets error cards with Retry in `client/src/pages/aave.tsx` so a failed read never again silently renders $0. Bumped SW `CACHE_VERSION` cob-v59→v60 (stale PWA bundle was serving old dead-RPC code). Founder republished; balance confirmed showing.
 - **Signpost added:** one line under the Aave Hub subtitle clarifying it shows only Aave lending markets one chain at a time, linking to the **Dashboard** (`/`) for the full all-chains wallet view — kills the "why is this a subset?" expectation mismatch without duplicating the Dashboard.
