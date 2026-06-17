@@ -1,0 +1,142 @@
+Here is the complete access and feature review for Peter's (pawint@me.com) CryptoOwnBank account, compared against Andrew's earlier session.
+
+***
+
+## Account Overview: Peter (pawint@me.com)
+
+- **Logged in** as Peter with PW avatar[pawint@me.com, logged in]
+- **Account level**: Premium — Unlimited (visible on Price Alerts page) [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/)
+- **Onboarding Progress**: 3 of 6 complete (vs. Andrew's 2 of 6) [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/)
+- **Three onboarding steps completed**: Add Wallet Addresses, Import Exchange Data, Connect XRPL Wallet — all marked "Done"
+- **Three steps still pending**: Deposit & Start Earning Yield (Ready, "Already done"), Get Your Portfolio Evaluated (Ready), and one more step
+
+***
+
+## Complete Feature Status — Working Pages
+
+| Section | Sub-Section | URL | Status |
+|---------|-------------|-----|--------|
+| **My Tools** | Home (Dashboard) | / | Working |
+| | Portfolio | /portfolio | Working |
+| | Earn & Yield (RWA) | /rwa-yields | Working — 22 protocols listed, live rates from 13 [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/) |
+| | Stablecoins | /stablecoins | Working — Command Center with 7 major stablecoins |
+| | Chain Guide | /chain-guide | Working |
+| | FAQ | /faq | Working |
+| | Contact & Feedback | /contact | Working |
+| **Back Up & Recover** | Sovereignty | /sovereignty | Working |
+| | Home or Away | (sub-page) | Working |
+| | Wealth Architecture | /sovereignty/wealth-architecture | Working — 6-stage framework |
+| | Recovery Kit | (sub-page) | Working |
+| | Practice Drills | (sub-page) | Working |
+| | Legacy Plan | (sub-page) | Working |
+| | Family | (sub-page) | Working |
+| **Move Money** | Payments Hub | /payments | Working — 6+ payment options |
+| | XRPL Send & Receive | /ownbank/send | Working — requires Xaman wallet connect |
+| | Stellar Send & Receive | /stellar/send | Working |
+| | Bitcoin & Lightning | /bitcoin | Working |
+| | XRPL Invoices | /ownbank/invoices | Working |
+| | Stellar Invoices | /stellar/invoices | Working |
+| | XRPL Payment Queue | /ownbank/payment-queue | Working |
+| | Stellar Payment Queue | /stellar/payment-queue | Working |
+| | XRPL Recurring | /ownbank/recurring | Working |
+| | Stellar Recurring | /stellar/recurring | Working |
+| | Transfer XRP | /ownbank/transfer | Working |
+| | OwnCoin POS | /ownbank/my-card | Working |
+| | Remittances | /stellar/remittances | Working |
+| | Spend Crypto (Debit Cards) | /crypto-debit-cards | Working |
+| | DEX Trading | /ownbank/dex | Working |
+| | Stellar DEX | /stellar-dex | Working |
+| **Plan & Protect** | Transactions | /transactions | Working — 278 assets, 441 entries |
+| | Tax Reports | /tax-reports | Working — 2026 net loss -$1,326.18 |
+| | Statement Insights | /statement-insights | Working — has disclaimer modal |
+| | Reconciliation | /reconciliation | Working — 104 possible duplicates |
+| | Price Alerts | /price-alerts | Working — 1 active alert (XRP > $10) |
+| | Insurance | /insurance | Working — 4 DeFi insurance protocols |
+| | DeFi Borrowing | /defi-borrowing | Working — 4 lending protocols |
+| | Yield Calculator | /yield-calculator | Working |
+| | AI Assistant | /ai-assistant | Working — unlimited conversations |
+| | XRPL History | /ownbank/history | Working — needs wallet connect |
+| | My Referrals | /referrals | **404 — BROKEN** |
+| | Security Center | /security-center | **404 — BROKEN** |
+| | History (general) | /history | **404 — BROKEN** |
+| **Learn & Decide** | Our Principles | /principles | Working |
+| | Crypto News | (sub-page) | Working |
+| | Whale Alerts | (sub-page) | Working |
+| | Technical Analysis | (sub-page) | Working |
+| | Roadmap & Voting | /roadmap | Working |
+| | Migration Guide | /migration-guide | Working |
+| | Pricing & Plans | /pricing | Working |
+| | dVPN Partners | /dvpn | Working |
+| | Settings | /settings | Working |
+| **Admin (Peter has access)** | Metrics | /admin/metrics | Working |
+| | User Management | /admin/users | Working — shows 2 users |
+| | Error Monitor | /admin/errors | Working |
+| | Vault Blocklist | /admin/vault-blocklist | Working |
+| | Announcements | /admin/announcements | Working |
+
+***
+
+## Broken / 404 Pages (Fix Needed)
+
+| URL | Issue |
+|-----|-------|
+| /swap | Page Not Found [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/portfolio) |
+| /move-money | Page Not Found (used as parent category only) [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/portfolio) |
+| /tax-savings | Page Not Found |
+| /claim | Page Not Found |
+| /signing | Page Not Found |
+| /recovery | Page Not Found |
+| /security-center | Page Not Found |
+| /security | Page Not Found |
+| /learn-decide | Page Not Found (category only) |
+| /history | Page Not Found (redirects to /ownbank/history) |
+| /referrals | Page Not Found |
+
+***
+
+## Key Differences: Peter vs. Andrew
+
+| Feature | Peter (pawint@me.com) | Andrew (previous session) |
+|---------|----------------------|---------------------------|
+| Onboarding | 3 of 6 complete | 2 of 6 complete |
+| Portfolio Total | Higher (multi-asset with real estate, stocks) | Lower |
+| Tax Reports Net | -$1,326.18 (2026) | Different data |
+| Price Alerts | 1 active (XRP > $10) | Different or none |
+| Transactions | 278 assets, 441 entries | Fewer |
+| Reconciliation | 104 possible duplicates | Fewer |
+| Reconciliation Stats | 220 Manual/Imports, 0 Zero Balance | Different |
+| Premium Badge | "Premium — Unlimited" visible | Different status |
+| Admin Access | Full admin panel visible | Same |
+| XRPL Wallet | Needs connecting (via Xaman) | Same |
+| Soil Vault | "Already done" for deposit | Same |
+
+***
+
+## Notable Observations
+
+1. **Premium Access**: Peter shows "Premium — Unlimited" badge on Price Alerts page, indicating he has full access to all features [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/price-alerts)
+
+2. **Admin Access**: Both users have the same admin panel access (Metrics, User Management, Error Monitor, Vault Blocklist, Announcements), suggesting multi-account admin privileges
+
+3. **Soil Vaults tied to RLUSD**: The deposit vault action shows "Already done" meaning Peter has already deposited RLUSD into a Soil vault earning yield
+
+4. **Move Money Section**: This is the most feature-rich section with 14+ sub-pages — the root /move-money returns 404 but all individual sub-pages work
+
+5. **XRPL-First Design**: The platform heavily emphasizes XRPL with dedicated pages (Send, DEX, Invoices, Recurring, History, Transfer) — all requiring Xaman wallet connection
+
+6. **Wealth Architecture Framework**: Under Back Up & Recover is a 6-stage self-custody progression (Peter is at 0 of 6 stages), ranging from basic self-custody through to inheritance planning and sovereignty
+
+7. **Statement Button**: The Statement button on the dashboard generates a report — confirmed working for Peter [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/)
+
+8. **No 404 from Sidebar Links**: Importantly, every sidebar link that Peter can see navigates to a working page — the broken URLs are from internal links/banners that need fixing (e.g., /claim, /signing, /recovery)
+
+***
+
+## Priority Fixes Recommended
+
+1. **Fix /referrals link** in sidebar (My Referrals under Plan & Protect) — currently 404
+2. **Fix /security-center link** in sidebar — currently 404  
+3. **Fix banner claim link** (/claim → 404) — previously documented
+4. **Fix /swap, /move-money, /tax-savings, /signing, /recovery** internal links
+5. **Update /history link** to redirect to /ownbank/history
+6. **Security Center** needs to be built or removed from navigation

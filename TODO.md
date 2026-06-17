@@ -14,6 +14,17 @@
 
 ---
 
+**2026-06-17 (Automated crawler "broken pages" report — TRIAGED, FALSE ALARM, no code change) by main agent.** Founder ran a 3rd-party site-crawler tool (Peter/pawint account) that listed ~11 "404/broken" URLs (/referrals, /security-center, /history, /swap, /move-money, /tax-savings, /claim, /signing, /recovery, /security, /learn-decide) and two "priority" sidebar fixes. **VERIFIED AGAINST SOURCE — every one is a false positive.** The crawler tested URLs it *guessed* from sidebar category/label names, not the app's actual link targets:
+- Diffed ALL sidebar `url:` values (app-sidebar.tsx) against ALL registered `<Route path=>` (App.tsx): **zero mismatches** — every visible sidebar link resolves to a real route.
+- The two flagged "sidebar" links are mislabeled: real links are **My Referrals → `/ownbank/referrals`** (registered) and **Security Center → `/wallet-security`** (registered). `/referrals` and `/security-center` are NOT used anywhere.
+- Robust grep for internal links/banners (`href=`/`<Link`/`setLocation`/`navigate`/`url:`) to any dead path: **none found** (only legit `/ownbank/referrals` + external DEX swap URLs in settings).
+- All 24 email-announcement `ctaUrl`s point to registered routes (Security Center CTA correctly → `/wallet-security`).
+- `/token-buckets` is intentionally commented out in BOTH sidebar and route ("hidden until cross-chain bucket execution built") — not a 404.
+- Honest note for founder: unregistered URLs typed directly fall through to the catch-all (Landing for logged-in) rather than a dedicated in-app "Not Found" — minor, nothing in the UI links there, left as-is (not requested).
+- **CONCLUSION: no broken links reachable through the app. No code change made.** Treat external crawler reports as leads to verify, not ground truth.
+
+---
+
 **2026-06-17 (Live-app QA fixes — 6 issues from founder's published-app pass) by main agent — ✅ SHIPPED.** Founder QA'd the published site and listed 6 items. Triaged each (real bug vs intentional vs already-wired):
 - **#1 Signup no visible validation — FIXED.** `client/src/pages/signup.tsx` previously kept the "Create Account" button DISABLED until terms were checked, so an empty-form click did nothing (no feedback). Now: button always enabled, `noValidate` on the form, and submit runs explicit client-side validation with inline per-field error messages (firstName/email/password-strength/confirm-match/terms).
 - **#2 "Connect Wallet — Free" CTA went to /login — FIXED.** Hero primary CTA relabeled to "Get Started — Free" across all 7 i18n files and pointed to `/signup`. The separate "Create a wallet" → `/wallet/create` button already covers the wallet path, so the label now matches the destination.
