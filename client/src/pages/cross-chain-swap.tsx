@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { SeoHead } from "@/components/seo-head";
@@ -38,12 +38,15 @@ import {
   DollarSign,
   Route,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useEvmWallet, EVM_CHAINS, sendEvmTransaction, getExplorerTxUrl, shortenAddress } from "@/lib/evm-wallet";
 import { SiWalletconnect } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
+import { TokenPicker } from "@/components/token-picker";
+import { GRANDFATHERED_TOKENS, grandfatheredFor, mergeCatalog, type LifiTokenLike } from "@/lib/token-catalog";
 
 interface LifiChain {
   id: number;
@@ -145,42 +148,6 @@ const CHAIN_NATIVE_TOKENS: Record<number, { address: string; symbol: string; dec
   56: { address: "0x0000000000000000000000000000000000000000", symbol: "BNB", decimals: 18 },
 };
 
-const POPULAR_TOKENS_PER_CHAIN: Record<number, { address: string; symbol: string; name: string; decimals: number }[]> = {
-  1: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "ETH", name: "Ether", decimals: 18 },
-    { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", symbol: "USDC", name: "USD Coin", decimals: 6 },
-    { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", symbol: "USDT", name: "Tether", decimals: 6 },
-    { address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", symbol: "DAI", name: "Dai", decimals: 18 },
-    { address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", symbol: "WBTC", name: "Wrapped BTC", decimals: 8 },
-  ],
-  137: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "POL", name: "POL", decimals: 18 },
-    { address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", symbol: "USDC", name: "USD Coin", decimals: 6 },
-    { address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", symbol: "USDT", name: "Tether", decimals: 6 },
-  ],
-  42161: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "ETH", name: "Ether", decimals: 18 },
-    { address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", symbol: "USDC", name: "USD Coin", decimals: 6 },
-    { address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", symbol: "USDT", name: "Tether", decimals: 6 },
-  ],
-  10: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "ETH", name: "Ether", decimals: 18 },
-    { address: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", symbol: "USDC", name: "USD Coin", decimals: 6 },
-  ],
-  8453: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "ETH", name: "Ether", decimals: 18 },
-    { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", name: "USD Coin", decimals: 6 },
-  ],
-  43114: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "AVAX", name: "Avalanche", decimals: 18 },
-    { address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", symbol: "USDC", name: "USD Coin", decimals: 6 },
-  ],
-  56: [
-    { address: "0x0000000000000000000000000000000000000000", symbol: "BNB", name: "BNB", decimals: 18 },
-    { address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", symbol: "USDC", name: "USD Coin", decimals: 18 },
-  ],
-};
-
 function formatTokenAmount(amount: string, decimals: number): string {
   const num = parseFloat(amount) / (10 ** decimals);
   if (num >= 1000) return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -231,15 +198,32 @@ export default function CrossChainSwap() {
   });
   const availableChains = chainsData?.chains?.filter(c => POPULAR_CHAINS.includes(c.id)) || [];
 
-  const fromTokens = POPULAR_TOKENS_PER_CHAIN[fromChainId] || [];
-  const toTokens = POPULAR_TOKENS_PER_CHAIN[toChainId] || [];
+  // Open approved feed (LI.FI) for the selected chains — merged on top of our
+  // grandfathered, CryptoOwnBank-verified list so the menu stays current without manual upkeep.
+  const { data: fromFeed } = useQuery<{ tokens: Record<string, LifiTokenLike[]> }>({
+    queryKey: ["/api/cross-chain/tokens", fromChainId],
+    queryFn: () => fetch(`/api/cross-chain/tokens?chains=${fromChainId}`).then(r => r.ok ? r.json() : { tokens: {} }),
+  });
+  const { data: toFeed } = useQuery<{ tokens: Record<string, LifiTokenLike[]> }>({
+    queryKey: ["/api/cross-chain/tokens", toChainId],
+    queryFn: () => fetch(`/api/cross-chain/tokens?chains=${toChainId}`).then(r => r.ok ? r.json() : { tokens: {} }),
+  });
 
-  const fromTokenInfo = fromTokens.find(t => t.address === fromToken);
-  const toTokenInfo = toTokens.find(t => t.address === toToken);
+  const fromTokens = useMemo(
+    () => mergeCatalog(fromChainId, fromFeed?.tokens?.[String(fromChainId)]),
+    [fromChainId, fromFeed],
+  );
+  const toTokens = useMemo(
+    () => mergeCatalog(toChainId, toFeed?.tokens?.[String(toChainId)]),
+    [toChainId, toFeed],
+  );
+
+  const fromTokenInfo = fromTokens.find(t => t.address.toLowerCase() === fromToken.toLowerCase());
+  const toTokenInfo = toTokens.find(t => t.address.toLowerCase() === toToken.toLowerCase());
 
   useEffect(() => {
-    const tokens = POPULAR_TOKENS_PER_CHAIN[fromChainId];
-    if (tokens?.length) {
+    const tokens = grandfatheredFor(fromChainId);
+    if (tokens.length) {
       setFromToken(tokens[0].address);
     }
     setQuote(null);
@@ -247,8 +231,8 @@ export default function CrossChainSwap() {
   }, [fromChainId]);
 
   useEffect(() => {
-    const tokens = POPULAR_TOKENS_PER_CHAIN[toChainId];
-    if (tokens?.length) {
+    const tokens = grandfatheredFor(toChainId);
+    if (tokens.length) {
       setToToken(tokens.length > 1 ? tokens[1].address : tokens[0].address);
     }
     setQuote(null);
@@ -307,7 +291,7 @@ export default function CrossChainSwap() {
 
   const fetchQuote = useCallback(async () => {
     if (!fromToken || !toToken || !amount || parseFloat(amount) <= 0 || !address) return;
-    const srcInfo = fromTokens.find(t => t.address === fromToken);
+    const srcInfo = fromTokens.find(t => t.address.toLowerCase() === fromToken.toLowerCase());
     if (!srcInfo) return;
 
     setIsQuoting(true);
@@ -626,18 +610,12 @@ export default function CrossChainSwap() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={fromToken} onValueChange={v => { setFromToken(v); setQuote(null); }}>
-                      <SelectTrigger className="flex-1" data-testid="select-from-token">
-                        <SelectValue placeholder="Token" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fromTokens.map(t => (
-                          <SelectItem key={t.address} value={t.address} data-testid={`option-from-token-${t.symbol}`}>
-                            {t.symbol} — {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <TokenPicker
+                      tokens={fromTokens}
+                      value={fromToken}
+                      onChange={v => { setFromToken(v); setQuote(null); }}
+                      testIdPrefix="from-token"
+                    />
                   </div>
                   <Input
                     type="number"
@@ -702,19 +680,17 @@ export default function CrossChainSwap() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={toToken} onValueChange={v => { setToToken(v); setQuote(null); }}>
-                      <SelectTrigger className="flex-1" data-testid="select-to-token">
-                        <SelectValue placeholder="Token" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {toTokens.map(t => (
-                          <SelectItem key={t.address} value={t.address} data-testid={`option-to-token-${t.symbol}`}>
-                            {t.symbol} — {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <TokenPicker
+                      tokens={toTokens}
+                      value={toToken}
+                      onChange={v => { setToToken(v); setQuote(null); }}
+                      testIdPrefix="to-token"
+                    />
                   </div>
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3 text-primary flex-shrink-0" />
+                    <span className="text-foreground font-medium">Verified</span> tokens are curated by CryptoOwnBank · others flow in live via LI.FI
+                  </p>
                 </div>
 
                 {fromChainId === toChainId && (
