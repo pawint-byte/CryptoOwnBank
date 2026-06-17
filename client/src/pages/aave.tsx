@@ -167,14 +167,17 @@ export default function AavePage() {
     setBusy(true);
     setTxHash(null);
     try {
-      if (actionKind === "supply" || actionKind === "repay") {
+      const { ethers } = await import("ethers");
+      const provider = new ethers.JsonRpcProvider(EVM_CHAINS[selectedChain].rpcUrl);
+      const needsApproval = actionKind === "supply" || actionKind === "repay";
+      if (needsApproval) {
         const allowance = await fetchAllowance(selectedChain, actionAsset.address, address);
         if (allowance < amount) {
-          toast({ title: "Approving token", description: "Sign the approval in your wallet (step 1 of 2)." });
+          toast({ title: "Approve first (step 1 of 2)", description: "Your wallet will pop up to approve the token. Confirm it." });
           const approveHash = await sendApprove(selectedChain, actionAsset.address, amount, address);
-          toast({ title: "Approval submitted", description: `Tx: ${shortenAddress(approveHash)}` });
-          const provider = await import("ethers").then(m => new m.ethers.JsonRpcProvider(EVM_CHAINS[selectedChain].rpcUrl));
+          toast({ title: "Approval submitted", description: "Waiting for it to confirm on-chain…" });
           await provider.waitForTransaction(approveHash, 1, 120_000).catch(() => null);
+          toast({ title: "Approved (step 2 of 2)", description: "Your wallet will pop up again to sign the deposit. Confirm it." });
         }
       }
       let hash = "";
@@ -184,8 +187,16 @@ export default function AavePage() {
       else if (actionKind === "borrow") hash = await sendBorrow(selectedChain, actionAsset.address, amount, address);
       else if (actionKind === "repay") hash = await sendRepay(selectedChain, actionAsset.address, sentinel, address);
       setTxHash(hash);
-      toast({ title: `${labelOf(actionKind)} submitted`, description: `Tx: ${shortenAddress(hash)}` });
-      setTimeout(() => { positionsQ.refetch(); summaryQ.refetch(); }, 5000);
+      toast({ title: `${labelOf(actionKind)} submitted`, description: "Confirming on-chain — this can take a moment…" });
+      const receipt = await provider.waitForTransaction(hash, 1, 180_000).catch(() => null);
+      await Promise.all([positionsQ.refetch(), summaryQ.refetch()]);
+      if (receipt) {
+        toast({ title: `${labelOf(actionKind)} confirmed`, description: "Your balances are updated." });
+        setAmountInput("");
+        setActionOpen(false);
+      } else {
+        toast({ title: "Still confirming", description: "Taking longer than usual — your balances will refresh shortly. You can safely close this window." });
+      }
     } catch (e: any) {
       const msg = e?.message || "Transaction failed";
       toast({ title: `${labelOf(actionKind)} failed`, description: msg.slice(0, 200), variant: "destructive" });
