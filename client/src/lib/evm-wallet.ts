@@ -2,11 +2,11 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export const EVM_CHAINS: Record<number, { name: string; shortName: string; rpcUrl: string; explorerUrl: string; nativeCurrency: { name: string; symbol: string; decimals: number } }> = {
-  1: { name: "Ethereum", shortName: "ETH", rpcUrl: "https://eth.llamarpc.com", explorerUrl: "https://etherscan.io", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
-  137: { name: "Polygon", shortName: "MATIC", rpcUrl: "https://polygon-rpc.com", explorerUrl: "https://polygonscan.com", nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 } },
-  42161: { name: "Arbitrum", shortName: "ARB", rpcUrl: "https://arb1.arbitrum.io/rpc", explorerUrl: "https://arbiscan.io", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
+  1: { name: "Ethereum", shortName: "ETH", rpcUrl: "https://ethereum-rpc.publicnode.com", explorerUrl: "https://etherscan.io", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
+  137: { name: "Polygon", shortName: "MATIC", rpcUrl: "https://polygon-bor-rpc.publicnode.com", explorerUrl: "https://polygonscan.com", nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 } },
+  42161: { name: "Arbitrum", shortName: "ARB", rpcUrl: "https://arbitrum-one-rpc.publicnode.com", explorerUrl: "https://arbiscan.io", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
   10: { name: "Optimism", shortName: "OP", rpcUrl: "https://mainnet.optimism.io", explorerUrl: "https://optimistic.etherscan.io", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
-  8453: { name: "Base", shortName: "BASE", rpcUrl: "https://mainnet.base.org", explorerUrl: "https://basescan.org", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
+  8453: { name: "Base", shortName: "BASE", rpcUrl: "https://base-rpc.publicnode.com", explorerUrl: "https://basescan.org", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 } },
   43114: { name: "Avalanche", shortName: "AVAX", rpcUrl: "https://api.avax.network/ext/bc/C/rpc", explorerUrl: "https://snowtrace.io", nativeCurrency: { name: "Avalanche", symbol: "AVAX", decimals: 18 } },
   56: { name: "BNB Chain", shortName: "BNB", rpcUrl: "https://bsc-dataseed.binance.org", explorerUrl: "https://bscscan.com", nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 } },
 };

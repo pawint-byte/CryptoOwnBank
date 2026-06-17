@@ -310,6 +310,19 @@ export default function AavePage() {
         </CardContent>
       </Card>
 
+      {isConnected && positionsQ.isError ? (
+        <Card className="border-destructive/50 bg-destructive/5" data-testid="card-load-error">
+          <CardContent className="pt-6 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm space-y-2 flex-1">
+              <p className="font-medium">Couldn't load {CHAIN_LABEL[selectedChain]} data.</p>
+              <p className="text-muted-foreground">The connection to the {CHAIN_LABEL[selectedChain]} network failed — your balances aren't actually zero. This is usually a temporary network hiccup. Retry, or switch to another chain.</p>
+              <Button size="sm" variant="outline" onClick={() => { positionsQ.refetch(); summaryQ.refetch(); }} data-testid="button-retry-load">Retry</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {isConnected && summaryQ.data ? (
         <Card data-testid="card-account-summary">
           <CardHeader><CardTitle>Account on {CHAIN_LABEL[selectedChain]}</CardTitle></CardHeader>
@@ -346,6 +359,8 @@ export default function AavePage() {
             <Card><CardContent className="p-8 text-center text-muted-foreground">Connect your wallet to see your Aave positions.</CardContent></Card>
           ) : positionsQ.isLoading ? (
             <Card><CardContent className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></CardContent></Card>
+          ) : positionsQ.isError ? (
+            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground" data-testid="text-positions-error">Couldn't load your positions on {CHAIN_LABEL[selectedChain]} — the network connection failed (your balances aren't zero). <Button variant="ghost" size="sm" className="px-2 h-auto underline" onClick={() => { positionsQ.refetch(); summaryQ.refetch(); }} data-testid="button-retry-positions">Retry</Button></CardContent></Card>
           ) : (
             <>
               <Card data-testid="card-supplied">
@@ -394,6 +409,12 @@ export default function AavePage() {
               <CardDescription>Live rates from the Aave v3 Pool contract. Updated every minute.</CardDescription>
             </CardHeader>
             <CardContent>
+              {isConnected && positionsQ.isError ? (
+                <div className="p-6 text-center text-sm text-muted-foreground" data-testid="text-markets-error">
+                  Couldn't load market data for {CHAIN_LABEL[selectedChain]} — the network connection failed.{" "}
+                  <Button variant="ghost" size="sm" className="px-2 h-auto underline" onClick={() => { positionsQ.refetch(); summaryQ.refetch(); }} data-testid="button-retry-markets">Retry</Button>
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -425,6 +446,7 @@ export default function AavePage() {
                   </tbody>
                 </table>
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
