@@ -75,7 +75,7 @@ export const useEvmWallet = create<EvmWalletState>()(
 
       connect: async () => {
         if (typeof window === "undefined" || !(window as any).ethereum) {
-          set({ error: "MetaMask not detected. Please install MetaMask to use EVM swaps." });
+          set({ error: "No browser wallet detected. On your phone, tap \"WalletConnect (mobile)\" below — it connects MetaMask Mobile and 50+ other wallets (phone browsers and installed apps can't open wallet apps directly, even when MetaMask is installed). On desktop, install the MetaMask browser extension, then refresh." });
           return;
         }
         set({ isConnecting: true, error: null });
@@ -159,7 +159,7 @@ export const useEvmWallet = create<EvmWalletState>()(
           return;
         }
         if (typeof window === "undefined" || !(window as any).ethereum) {
-          set({ error: "MetaMask not detected." });
+          set({ error: "No browser wallet detected in this browser. On a mobile wallet, switch the active account inside your wallet app instead." });
           return;
         }
         set({ error: null });
