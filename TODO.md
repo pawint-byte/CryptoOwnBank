@@ -32,6 +32,10 @@
   - **Confirmed split:** block-first-expand-later for TOKENS (allowlist); broader auto-flow for CHAINS (chain identity is easy to validate, token legitimacy is not).
   - Real systems named: Uniswap Token Lists + Token Lists Standard, LI.FI, Squid (100+ chains), MetaMask/Rabby wallet registries (multi-source + safety filters + scam denylist).
 - **DECISION FOR FOUNDER (the widened spectrum):** (A) keep hardcoded; (B) consume an open Token-List standard (least upkeep, least control); (C) our own daily-sync + review-queue (most control); (D) hybrid of B+C — ingest standard lists AND our own discovery, both through one review queue with signal-based auto-approve. Agent leans D long-term, C/proof first.
+- **✅ DECISION MADE (founder, 2026-06-17): Option D.** Leverage other people's work AND have our own efforts recognized too. This adds a NEW requirement = TWO-WAY ATTRIBUTION / RECOGNITION:
+  - **Consume:** ingest reputable upstream Token Lists + provider feeds (LI.FI/Squid) so we inherit others' curation (least upkeep).
+  - **Contribute / be recognized:** (1) per-item PROVENANCE in the UI — show source per token ("via Uniswap list" / "via LI.FI" / **"CryptoOwnBank-verified"** badge for items WE personally vetted or added); (2) PUBLISH OUR OWN signed `tokenlist.json` to the open standard so other wallets/aggregators can subscribe to CryptoOwnBank's curation — our work becomes a public good others build on. Strategic fit: "for us, by us" / "build the exit, not a following" / compounding reputation (others leverage US).
+  - **Still TO DISCUSS before building:** scope of first proof (token menu), which upstream lists to trust first, what earns the "CryptoOwnBank-verified" badge, whether to publish our list in phase 1 or later.
 
 ---
 
