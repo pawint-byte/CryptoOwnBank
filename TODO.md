@@ -14,6 +14,14 @@
 
 ---
 
+**2026-06-17 (Aave Hub — dead-RPC fix, error UI, full-wallet signpost + first TESTED-CONFIRMED log entry) by main agent — DONE.**
+- **Bug fixed:** Aave Hub showed "no balances / all 0.00% APY" because two public RPCs were dead — `eth.llamarpc.com` (HTTP 521) and `polygon-rpc.com` (HTTP 401, needs key). Swapped all 4 Aave chains in `client/src/lib/evm-wallet.ts` `EVM_CHAINS` to publicnode endpoints (ethereum-rpc / polygon-bor-rpc / arbitrum-one-rpc / base-rpc .publicnode.com — all verified live + browser CORS `*`). Added load/positions/markets error cards with Retry in `client/src/pages/aave.tsx` so a failed read never again silently renders $0. Bumped SW `CACHE_VERSION` cob-v59→v60 (stale PWA bundle was serving old dead-RPC code). Founder republished; balance confirmed showing.
+- **Signpost added:** one line under the Aave Hub subtitle clarifying it shows only Aave lending markets one chain at a time, linking to the **Dashboard** (`/`) for the full all-chains wallet view — kills the "why is this a subset?" expectation mismatch without duplicating the Dashboard.
+- **✅ TESTED & CONFIRMED WORKING (by founder, 2026-06-17):** Real Aave supply — **$80 USDT supplied to earn yield, succeeded.** The end-to-end supply flow (wallet connect → approve → supply, signed by member's own wallet) works in production.
+- **Strategic note (no code):** Founder asked why platform features feel "half/incomplete/subset." Honest read recorded in chat — the "full view" already exists (Dashboard aggregates live multi-chain wallet scan + exchange + off-chain); the real gap is FRAGMENTATION/disconnection between features, not missing features. Recommendation: make the Dashboard the spine ("be the table"), hang Aave/swap/vault actions off it. Deferred as a future scoping task, not built.
+
+---
+
 **2026-06-15 (Founder's Operating Principles — morning strategy session, NO code changes) by main agent — REFERENCE / REMINDER.** Founder asked to capture the durable principles from a long morning conversation so he can re-read them and not drift "when the human takes over." These are decision guardrails, not tasks to build. Re-read at the start of a session when feeling stuck, frustrated by a gatekeeper, or tempted to overcorrect.
 
 1. **Be the table, not the toll booth.** The day CryptoOwnBank guards access to stay relevant, it becomes the gatekeeper we exist to replace. We bring everything to the table; the member sets up → reviews → approves → tracks; the member is the ONLY one who says yes, signs with their own keys; we never hold funds/keys or verify/gate identity.

@@ -239,6 +239,10 @@ export default function AavePage() {
           <p className="text-muted-foreground mt-1" data-testid="text-page-subtitle">
             Supply for yield, borrow against collateral. Your wallet, your keys, your signatures — we never touch your funds.
           </p>
+          <p className="text-sm text-muted-foreground mt-2" data-testid="text-full-wallet-hint">
+            This shows only your Aave lending markets, one chain at a time. See your full wallet across every chain on the{" "}
+            <Link href="/" className="text-primary underline underline-offset-2" data-testid="link-dashboard">Dashboard</Link>.
+          </p>
         </div>
       </div>
 
