@@ -14,6 +14,10 @@
 
 ---
 
+**2026-06-17 (Legacy Plan check-in surfaced on Home dashboard — founder couldn't find it) by main agent — ✅ SHIPPED.** Founder said the "I'm Still Here" check-in button (Legacy Plan dead-man switch) was hard to find — it was buried mid-page on `/legacy-plan` below the readiness panel and plan summary. Fix: new self-contained widget `client/src/components/legacy-checkin-card.tsx` dropped on the Home dashboard (`client/src/pages/dashboard.tsx`, right after the OnboardingChecklist). It reuses the existing `["/api/legacy-plan"]` query + `POST /api/legacy-plan/check-in` mutation, renders NOTHING unless the member has a non-triggered plan (query `retry:false` so free/no-plan members silently get null), and is color-coded by urgency: green when fresh, amber when due ≤7 days, red when due-now or in grace (with grace-days-left). Always shows the "I'm Still Here" button + a "Manage" link to `/legacy-plan`. Bumped PWA `CACHE_VERSION` cob-v61 → cob-v62. No backend/schema change.
+
+---
+
 **2026-06-17 (Etherscan free-tier 1000-records/request change, effective 2026-07-01 — CHECKED, already compliant) by main agent.** Etherscan notice: free-tier max records/request drops 10000 → 1000 on 2026-07-01 for list endpoints (txlist, tokentx, event logs, internal txs, token-holder list, etc.). Audited all 3 Etherscan callers:
 - `server/services/blockchain-transactions.ts` — uses `txlist` (Normal Txs) + `tokentx` (ERC20 Transfers), both on the affected list. Already requests `offset=1000` with a real pagination loop (`page++` until `result.length < pageSize`), capped by MAX_TRANSACTIONS=500. **Already at the new limit — no behavior change needed.** Added a guard comment so nobody raises pageSize back toward 10000.
 - `server/services/crypto-payment-verifier.ts` (`checkEvmPayment`, also reused for Polygon/Snowtrace/Cronos/XDC) — `txlist` with `offset=20`. Well under limit.

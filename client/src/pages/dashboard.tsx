@@ -8,6 +8,7 @@ import { AllocationChart } from "@/components/allocation-chart";
 import { TransactionsTable } from "@/components/transactions-table";
 import { RecommendationsHub } from "@/components/recommendations-hub";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { LegacyCheckInCard } from "@/components/legacy-checkin-card";
 import { YieldEarningsTracker } from "@/components/yield-earnings-tracker";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { apiRequest } from "@/lib/queryClient";
@@ -229,6 +230,8 @@ export default function Dashboard() {
         hasExchangeData={exchangeBalances.length > 0}
         hasXrplWallet={walletAddresses.some((w: any) => w.chain?.toLowerCase() === "xrpl" || w.chain?.toLowerCase() === "xrp")}
       />
+
+      <LegacyCheckInCard />
 
       {subStatus?.paymentMethod === "crypto" && subStatus.daysRemaining !== null && subStatus.daysRemaining <= 7 && (
         <div
