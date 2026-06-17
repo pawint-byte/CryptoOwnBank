@@ -19,6 +19,8 @@ export async function getEthTransactions(address: string): Promise<BlockchainTra
   const results: BlockchainTransaction[] = [];
   const addr = address.toLowerCase();
   let page = 1;
+  // Etherscan free-tier cap is 1000 records/request (effective 2026-07-01; was 10000).
+  // Keep this at <= 1000 — the loop below paginates, so do NOT raise it.
   const pageSize = 1000;
 
   try {

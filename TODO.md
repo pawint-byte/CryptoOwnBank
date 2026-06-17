@@ -14,6 +14,14 @@
 
 ---
 
+**2026-06-17 (Etherscan free-tier 1000-records/request change, effective 2026-07-01 — CHECKED, already compliant) by main agent.** Etherscan notice: free-tier max records/request drops 10000 → 1000 on 2026-07-01 for list endpoints (txlist, tokentx, event logs, internal txs, token-holder list, etc.). Audited all 3 Etherscan callers:
+- `server/services/blockchain-transactions.ts` — uses `txlist` (Normal Txs) + `tokentx` (ERC20 Transfers), both on the affected list. Already requests `offset=1000` with a real pagination loop (`page++` until `result.length < pageSize`), capped by MAX_TRANSACTIONS=500. **Already at the new limit — no behavior change needed.** Added a guard comment so nobody raises pageSize back toward 10000.
+- `server/services/crypto-payment-verifier.ts` (`checkEvmPayment`, also reused for Polygon/Snowtrace/Cronos/XDC) — `txlist` with `offset=20`. Well under limit.
+- `server/routes/chains.ts` — `EXPLORER_API_URLS` map is DEFINED BUT UNUSED (dead config); makes no affected call.
+- **CONCLUSION: no disruption expected on 2026-07-01. Only change = a defensive code comment.** (Note: paid endpoints like polygonscan/arbiscan/basescan/snowtrace/bscscan are separate providers with their own limits, but our offsets there are also small.)
+
+---
+
 **2026-06-17 (Automated crawler "broken pages" report — TRIAGED, FALSE ALARM, no code change) by main agent.** Founder ran a 3rd-party site-crawler tool (Peter/pawint account) that listed ~11 "404/broken" URLs (/referrals, /security-center, /history, /swap, /move-money, /tax-savings, /claim, /signing, /recovery, /security, /learn-decide) and two "priority" sidebar fixes. **VERIFIED AGAINST SOURCE — every one is a false positive.** The crawler tested URLs it *guessed* from sidebar category/label names, not the app's actual link targets:
 - Diffed ALL sidebar `url:` values (app-sidebar.tsx) against ALL registered `<Route path=>` (App.tsx): **zero mismatches** — every visible sidebar link resolves to a real route.
 - The two flagged "sidebar" links are mislabeled: real links are **My Referrals → `/ownbank/referrals`** (registered) and **Security Center → `/wallet-security`** (registered). `/referrals` and `/security-center` are NOT used anywhere.
