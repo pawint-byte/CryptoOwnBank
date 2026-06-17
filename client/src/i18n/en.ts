@@ -15,7 +15,7 @@ export const en = {
     title2: "Bank",
     subtitle: "The migration to on-chain finance is already happening. The only question is whether you're ahead of it or behind it. Get your money on the blockchain. Get everyone you do business with on the blockchain. Keep the value there.",
     description: "Earn 5\u20138% fixed yield on RLUSD. Trade on native DEXs. Pay anyone, anywhere, in seconds. Choose your security level. All the work is done for you. And it doesn't end \u2014 your Legacy Plan makes sure your crypto passes to your family. Even if you leave, your crypto stays in your wallet.",
-    ctaStart: "Connect Wallet \u2014 Free",
+    ctaStart: "Get Started \u2014 Free",
     ctaUpgrade: "Upgrade to Premium",
     freeTier: "Free forever tier",
     walletSupport: "Ledger + Xumm supported",

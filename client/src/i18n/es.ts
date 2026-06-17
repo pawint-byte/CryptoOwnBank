@@ -15,7 +15,7 @@ export const es = {
     title2: "Banco",
     subtitle: "La migracion hacia las finanzas on-chain ya esta ocurriendo. La unica pregunta es si estas adelante o detras. Pon tu dinero en la blockchain. Haz que todos con quienes haces negocios esten en la blockchain. Mantiene el valor ahi.",
     description: "Gana 5\u20138% de rendimiento fijo en RLUSD. Opera en DEXs nativos. Paga a cualquiera, en cualquier lugar, en segundos. Elige tu nivel de seguridad. Todo el trabajo esta hecho para ti. Y no termina \u2014 tu Plan Legado asegura que tu crypto pase a tu familia.",
-    ctaStart: "Conectar Wallet \u2014 Gratis",
+    ctaStart: "Comienza \u2014 Gratis",
     ctaUpgrade: "Actualizar a Premium",
     freeTier: "Nivel gratuito para siempre",
     walletSupport: "Ledger + Xumm compatibles",

@@ -14,6 +14,17 @@
 
 ---
 
+**2026-06-17 (Live-app QA fixes — 6 issues from founder's published-app pass) by main agent — ✅ SHIPPED.** Founder QA'd the published site and listed 6 items. Triaged each (real bug vs intentional vs already-wired):
+- **#1 Signup no visible validation — FIXED.** `client/src/pages/signup.tsx` previously kept the "Create Account" button DISABLED until terms were checked, so an empty-form click did nothing (no feedback). Now: button always enabled, `noValidate` on the form, and submit runs explicit client-side validation with inline per-field error messages (firstName/email/password-strength/confirm-match/terms).
+- **#2 "Connect Wallet — Free" CTA went to /login — FIXED.** Hero primary CTA relabeled to "Get Started — Free" across all 7 i18n files and pointed to `/signup`. The separate "Create a wallet" → `/wallet/create` button already covers the wallet path, so the label now matches the destination.
+- **#3 Dark-mode toggle unresponsive — FIXED (real bug).** `theme-toggle.tsx` compared against the stored `"system"` value, so the FIRST click was a no-op whenever the OS prefers dark. Now flips based on the actual rendered `.dark` class on `documentElement` — first click always changes. (Provider + `.dark` CSS vars were already correct.)
+- **#4 Secondary nav links "broken" — NOT A BUG (by design).** "Payments / XRPL Tools / Multi-Chain / etc." are homepage TABS/sections (`activeTab` state + anchor scroll on landing), not standalone routes. Real routes (Getting Started → /setup-guide, Yield Calculator → /yield-calculator) work. No change.
+- **#5 Homepage video auto-plays — FIXED.** Hero `<video>` no longer `autoPlay`/`loop`; now `controls` + `poster` + `preload="metadata"` so it sits paused at 0:00 with a play button.
+- **#6 Forgot Password / Sign Up / Contact "need backend" — ALREADY WIRED (founder's "no backend" assumption was wrong).** Full Express backend + Resend exist: `/api/auth/forgot-password` generates a reset token and sends via `sendPasswordReset`; `/api/auth/signup` sends verification email. These send real emails today.
+- Also bumped service-worker `CACHE_VERSION` cob-v60 → cob-v61 so installed PWAs pick up these UI fixes. **VERIFIED:** architect-reviewed (Pass, no regressions), signup + homepage screenshots confirm new CTA label, enabled button, and paused video.
+
+---
+
 **2026-06-17 (Hybrid catalog-curation system — "self-aware then acted on") by main agent — TO DISCUSS / NOT YET BUILT.** Founder's idea, refined together. Problem: hardcoded token/chain menus require the founder to NOTICE an upstream change (e.g. Squid expands RLUSD chains) and TELL the agent to reflect it — not scalable. Proposed solution = curated-but-current catalog with a review queue:
 - **Loop:** live provider feed (LI.FI `/tokens`, `/chains` already exist server-side) → daily sync job → DIFF against our catalog table → new items surface as "pending" in the admin dashboard (badge/notification) → founder approves/rejects → approved flips a status flag → menu reflects it instantly.
 - **KEY CORRECTION:** approved items go into a DATABASE TABLE, not back into hardcoded source code (no rebuild/redeploy per approval; instant + reversible). "The list stops being code and becomes data."

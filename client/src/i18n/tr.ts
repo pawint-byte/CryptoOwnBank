@@ -15,7 +15,7 @@ export const tr = {
     title2: "Bankan Ol",
     subtitle: "On-chain finansa gecis zaten yasiyor. Tek soru, onunde mi yoksa arkasinda mi oldugun. Parani blockchain'e koy. Is yaptigin herkesi blockchain'e al. Degeri orada tut.",
     description: "RLUSD uzerinde %5-8 sabit getiri kazan. Yerel DEX'lerde islem yap. Herkese, her yere, saniyeler icinde ode. Guvenlik seviyeni sec. Tum isler senin icin yapiliyor. Ve bitmez \u2014 Miras Planin kripton ailene gecmesini saglar.",
-    ctaStart: "Cuzdan Bagla \u2014 Ucretsiz",
+    ctaStart: "Hemen Basla \u2014 Ucretsiz",
     ctaUpgrade: "Premium'a Yukselt",
     freeTier: "Sonsuza kadar ucretsiz",
     walletSupport: "Ledger + Xumm destekli",

@@ -19,6 +19,7 @@ export default function Signup() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const referredBy = useXrplStore((s) => s.referredBy);
   const setReferredBy = useXrplStore((s) => s.setReferredBy);
 
@@ -59,6 +60,23 @@ export default function Signup() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const errs: Record<string, string> = {};
+    if (!firstName.trim()) errs.firstName = "First name is required";
+    if (!email.trim()) errs.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Enter a valid email address";
+    if (!password) errs.password = "Password is required";
+    else if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/[0-9]/.test(password)
+    )
+      errs.password = "Password must be at least 8 characters with an uppercase, lowercase, and number";
+    if (!confirmPassword) errs.confirmPassword = "Please confirm your password";
+    else if (password !== confirmPassword) errs.confirmPassword = "Passwords do not match";
+    if (!acceptedTerms) errs.terms = "You must agree to the Terms of Service and Privacy Policy";
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     signupMutation.mutate();
   };
 
@@ -141,7 +159,7 @@ export default function Signup() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
@@ -152,6 +170,9 @@ export default function Signup() {
                     required
                     data-testid="input-first-name"
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-xs text-destructive" data-testid="error-first-name">{fieldErrors.firstName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
@@ -175,6 +196,9 @@ export default function Signup() {
                   required
                   data-testid="input-email"
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-destructive" data-testid="error-email">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -215,6 +239,9 @@ export default function Signup() {
                     One number
                   </p>
                 </div>
+                {fieldErrors.password && (
+                  <p className="text-xs text-destructive" data-testid="error-password">{fieldErrors.password}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -228,8 +255,10 @@ export default function Signup() {
                   required
                   data-testid="input-confirm-password"
                 />
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs text-destructive">Passwords do not match</p>
+                {(fieldErrors.confirmPassword || (confirmPassword && password !== confirmPassword)) && (
+                  <p className="text-xs text-destructive" data-testid="error-confirm-password">
+                    {fieldErrors.confirmPassword || "Passwords do not match"}
+                  </p>
                 )}
               </div>
 
@@ -253,11 +282,14 @@ export default function Signup() {
                   </a>
                 </label>
               </div>
+              {fieldErrors.terms && (
+                <p className="text-xs text-destructive" data-testid="error-terms">{fieldErrors.terms}</p>
+              )}
 
               <Button
                 type="submit"
                 className="w-full bg-[#00A4E4] hover:bg-[#0090c9]"
-                disabled={signupMutation.isPending || !acceptedTerms}
+                disabled={signupMutation.isPending}
                 data-testid="button-signup-submit"
               >
                 {signupMutation.isPending ? "Creating Account..." : "Create Account"}

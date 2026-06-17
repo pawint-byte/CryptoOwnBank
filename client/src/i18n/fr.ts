@@ -15,7 +15,7 @@ export const fr = {
     title2: "Banque",
     subtitle: "La migration vers la finance on-chain est deja en cours. La seule question est de savoir si vous etes en avance ou en retard. Mettez votre argent sur la blockchain. Faites en sorte que tous ceux avec qui vous faites affaire soient sur la blockchain. Gardez la valeur la.",
     description: "Gagnez 5\u20138% de rendement fixe sur RLUSD. Tradez sur des DEX natifs. Payez n'importe qui, n'importe ou, en quelques secondes. Choisissez votre niveau de securite. Tout le travail est fait pour vous. Et ca ne s'arrete pas \u2014 votre Plan Heritage assure que votre crypto passe a votre famille.",
-    ctaStart: "Connecter un Portefeuille \u2014 Gratuit",
+    ctaStart: "Commencer \u2014 Gratuit",
     ctaUpgrade: "Passer a Premium",
     freeTier: "Niveau gratuit pour toujours",
     walletSupport: "Ledger + Xumm supportes",

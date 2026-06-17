@@ -1550,7 +1550,7 @@ export default function Landing() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <a href="/login">
+                  <a href="/signup">
                     <Button size="lg" className="w-full sm:w-auto bg-[#00A4E4] hover:bg-[#0090c9]" data-testid="button-get-started">
                       {t.hero.ctaStart}
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -1590,9 +1590,7 @@ export default function Landing() {
                   <video
                     className="w-full h-auto rounded-xl"
                     controls
-                    autoPlay
-                    muted
-                    loop
+                    preload="metadata"
                     playsInline
                     poster="/logo.png"
                     data-testid="video-hero-pitch"
