@@ -35,6 +35,8 @@ interface PositionWithMarket extends Position {
   isImport?: boolean;
   isAddressed?: boolean;
   isWallet?: boolean;
+  storedCostBasis?: string;
+  isDuplicate?: boolean;
 }
 
 interface PortfolioData {
@@ -72,9 +74,10 @@ type ViewMode = "holdings" | "consolidated" | "category";
 
 function EditPositionDialog({ position, onClose }: { position: PositionWithMarket; onClose: () => void }) {
   const { toast } = useToast();
+  const baselineCostBasisRaw = position.storedCostBasis ?? position.totalCostBasis;
   const [quantity, setQuantity] = useState(parseFloat(position.quantity).toString());
   const [averageCost, setAverageCost] = useState(position.averageCost ? parseFloat(position.averageCost).toString() : "0");
-  const [totalCostBasis, setTotalCostBasis] = useState(position.totalCostBasis ? parseFloat(position.totalCostBasis).toString() : "0");
+  const [totalCostBasis, setTotalCostBasis] = useState(baselineCostBasisRaw ? parseFloat(baselineCostBasisRaw).toString() : "0");
 
   const isWalletPosition = !!position.isWallet;
 
@@ -99,6 +102,8 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/portfolio"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({ title: `Updated ${position.assetSymbol}` });
       onClose();
     },
@@ -112,7 +117,7 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
     const newCost = parseFloat(totalCostBasis);
     if (!isNaN(newQty) && newQty.toString() !== parseFloat(position.quantity).toString()) updates.quantity = newQty.toString();
     if (!isNaN(newAvg) && newAvg.toString() !== (position.averageCost ? parseFloat(position.averageCost).toString() : "0")) updates.averageCost = newAvg.toString();
-    if (!isNaN(newCost) && newCost.toString() !== (position.totalCostBasis ? parseFloat(position.totalCostBasis).toString() : "0")) updates.totalCostBasis = newCost.toString();
+    if (!isNaN(newCost) && newCost.toString() !== (baselineCostBasisRaw ? parseFloat(baselineCostBasisRaw).toString() : "0")) updates.totalCostBasis = newCost.toString();
     if (Object.keys(updates).length === 0) {
       onClose();
       return;
@@ -162,6 +167,14 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
             You can save without this — nothing is blocked. But the cost basis (what you paid, or its value when you received it) is what we use to find your tax-loss savings. Without it, this holding can't be counted at tax time.
           </p>
         </div>
+        {position.isDuplicate && (
+          <div className="flex items-start gap-2 rounded-md border border-sky-400/40 bg-sky-50/50 dark:bg-sky-950/20 p-2.5" data-testid="note-duplicate-holding">
+            <AlertTriangle className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              You already track {position.assetSymbol} somewhere else too, so this copy isn't added to your totals (to avoid counting the same holding twice). Your cost basis here still saves and is kept for your records.
+            </p>
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose} data-testid="button-cancel-edit">Cancel</Button>
           <Button onClick={handleSave} disabled={editMutation.isPending} data-testid="button-save-position">
@@ -488,8 +501,8 @@ export default function Portfolio() {
   const cryptoFiltered = useMemo(() => filtered.filter(p => !isStockOrETF(p.assetSymbol)), [filtered]);
   const stockFiltered = useMemo(() => filtered.filter(p => isStockOrETF(p.assetSymbol)), [filtered]);
 
-  const stockTotalValue = useMemo(() => stockFiltered.reduce((sum, p) => sum + (p.currentValue || 0), 0), [stockFiltered]);
-  const stockTotalCostBasis = useMemo(() => stockFiltered.reduce((sum, p) => sum + parseFloat(p.totalCostBasis), 0), [stockFiltered]);
+  const stockTotalValue = useMemo(() => stockFiltered.reduce((sum, p) => sum + (p.isDuplicate ? 0 : (p.currentValue || 0)), 0), [stockFiltered]);
+  const stockTotalCostBasis = useMemo(() => stockFiltered.reduce((sum, p) => sum + (p.isDuplicate ? 0 : parseFloat(p.totalCostBasis)), 0), [stockFiltered]);
 
   const consolidated = useMemo(() => {
     const map = new Map<string, {
@@ -1493,7 +1506,18 @@ export default function Portfolio() {
                         {position.assetSymbol.slice(0, 2)}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm">{position.assetSymbol}</p>
+                        <p className="font-medium text-sm flex items-center gap-1.5">
+                          {position.assetSymbol}
+                          {position.isDuplicate && (
+                            <span
+                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-sky-400"
+                              title="Also tracked elsewhere — not counted in your totals to avoid double-counting"
+                              data-testid={`badge-duplicate-${position.assetSymbol}`}
+                            >
+                              Duplicate
+                            </span>
+                          )}
+                        </p>
                         <p className="text-xs text-muted-foreground">{parseFloat(position.quantity).toLocaleString(undefined, { maximumFractionDigits: 4 })} shares</p>
                       </div>
                     </div>

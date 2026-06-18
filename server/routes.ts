@@ -1042,6 +1042,7 @@ ${sections}
           quantity: wb.balance,
           averageCost: avgCost.toString(),
           totalCostBasis: usableCostBasis.toFixed(2),
+          storedCostBasis: costBasis.toFixed(2),
           updatedAt: wb.updatedAt,
           currentPrice: price,
           currentValue: usdVal,
@@ -1051,6 +1052,7 @@ ${sections}
           isImport: false,
           isAddressed: false,
           isWallet: true,
+          isDuplicate: alreadyInPositions,
         };
       }));
 
