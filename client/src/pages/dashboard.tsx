@@ -8,6 +8,7 @@ import { AllocationChart } from "@/components/allocation-chart";
 import { TransactionsTable } from "@/components/transactions-table";
 import { RecommendationsHub } from "@/components/recommendations-hub";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { WelcomeModal } from "@/components/welcome-modal";
 import { LegacyCheckInCard } from "@/components/legacy-checkin-card";
 import { YieldEarningsTracker } from "@/components/yield-earnings-tracker";
 import { useXrplStore } from "@/lib/xrpl-store";
@@ -49,11 +50,11 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard"],
   });
 
-  const { data: walletsData } = useQuery<any[]>({
+  const { data: walletsData, isLoading: walletsLoading } = useQuery<any[]>({
     queryKey: ["/api/wallets"],
   });
 
-  const { data: portfolioData } = useQuery<any>({
+  const { data: portfolioData, isLoading: portfolioLoading } = useQuery<any>({
     queryKey: ["/api/portfolio"],
   });
 
@@ -184,6 +185,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <WelcomeModal hasData={hasData} dataReady={!walletsLoading && !portfolioLoading} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
