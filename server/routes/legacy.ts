@@ -1493,9 +1493,15 @@ ${kitBody}
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Cache-Control", "no-store, max-age=0");
       // Record a verifiable Founding Member onboarding signal: the member
-      // actually generated a kit that contains their own addresses. This is the
-      // real event, not a self-attested checkbox, so it can't be faked.
-      if (wallets.length > 0) {
+      // actually generated a kit while having at least one real wallet. This is
+      // the real event, not a self-attested checkbox, so it can't be faked.
+      // NOTE: gate on the SAME wallet definition that Founding step 1 uses
+      // (portfolioWallets = getWalletsByUser) OR settings wallets — NOT the
+      // kit-display `wallets` merge, which only includes settings wallets plus
+      // synthetic chain==="manual" entries. A member whose only wallet is a
+      // normal-chain portfolio/watch address has step 1 "Done" but produces an
+      // empty `wallets` merge, which previously left this step stuck forever.
+      if (wallets.length > 0 || portfolioWallets.length > 0) {
         try {
           await storage.confirmFoundingKit(userId);
         } catch (e) {

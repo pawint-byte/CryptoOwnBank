@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,6 +45,10 @@ export default function SovereigntyKitPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      // Generating the kit is the real event that completes Founding step 2.
+      // Refresh the founding status so the 3-step flow reflects it without a
+      // hard reload when the member returns to the claim page.
+      queryClient.invalidateQueries({ queryKey: ["/api/founding/status"] });
       toast({
         title: "Sovereignty Kit downloaded",
         description: "Print it and keep it with your seed phrase. Re-download anytime as wallets change.",
