@@ -10,14 +10,6 @@ export interface VaultDeposit {
   txHash?: string;
 }
 
-export interface Referral {
-  referredAddress: string;
-  depositCount: number;
-  estimatedSeed: number;
-  joinedDate: string;
-  upgradedToPremium: boolean;
-}
-
 interface XrplState {
   walletAddress: string | null;
   isConnected: boolean;
@@ -29,8 +21,6 @@ interface XrplState {
   balanceIncrease: number | null;
   balancePromptDismissed: boolean;
   vaultDeposits: VaultDeposit[];
-  referralCode: string | null;
-  referrals: Referral[];
   referredBy: string | null;
   premiumCreditMonths: number;
   subscriptionTier: "free" | "premium";
@@ -44,16 +34,10 @@ interface XrplState {
   updateBalances: (xrp: number, rlusd: number) => void;
   addVaultDeposit: (deposit: VaultDeposit) => void;
   removeVaultDeposit: (vaultId: string) => void;
-  generateReferralCode: () => string;
-  addReferral: (referral: Referral) => void;
   setReferredBy: (code: string) => void;
   addPremiumCredit: () => void;
   setSubscriptionTier: (tier: "free" | "premium") => void;
   dismissBalancePrompt: () => void;
-}
-
-function generateShortId(): string {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
 export const useXrplStore = create<XrplState>()(
@@ -69,8 +53,6 @@ export const useXrplStore = create<XrplState>()(
       balanceIncrease: null,
       balancePromptDismissed: false,
       vaultDeposits: [],
-      referralCode: null,
-      referrals: [],
       referredBy: null,
       premiumCreditMonths: 0,
       subscriptionTier: "free",
@@ -81,7 +63,6 @@ export const useXrplStore = create<XrplState>()(
           walletAddress: address,
           isConnected: true,
           walletType: type,
-          referralCode: get().referralCode || `${address.slice(0, 6)}${address.slice(-4)}`,
         }),
 
       disconnect: () =>
@@ -110,8 +91,6 @@ export const useXrplStore = create<XrplState>()(
           balanceIncrease: null,
           balancePromptDismissed: false,
           vaultDeposits: [],
-          referralCode: null,
-          referrals: [],
           referredBy: null,
           premiumCreditMonths: 0,
           subscriptionTier: "free",
@@ -169,20 +148,6 @@ export const useXrplStore = create<XrplState>()(
       removeVaultDeposit: (vaultId) =>
         set((state) => ({
           vaultDeposits: state.vaultDeposits.filter((d) => d.vaultId !== vaultId),
-        })),
-
-      generateReferralCode: () => {
-        const address = get().walletAddress;
-        const code = address
-          ? `${address.slice(0, 6)}${address.slice(-4)}`
-          : generateShortId();
-        set({ referralCode: code });
-        return code;
-      },
-
-      addReferral: (referral) =>
-        set((state) => ({
-          referrals: [...state.referrals, referral],
         })),
 
       setReferredBy: (code) => set({ referredBy: code }),

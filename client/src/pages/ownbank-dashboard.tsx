@@ -79,12 +79,14 @@ export default function OwnBankDashboard() {
     xrpBalance,
     rlusdBalance,
     vaultDeposits,
-    referralCode,
     connect,
     disconnect,
     updateBalances,
-    generateReferralCode,
   } = useXrplStore();
+
+  const { data: referralStats } = useQuery<{ code: string }>({
+    queryKey: ["/api/referrals/stats"],
+  });
 
   const { data: trackerXrpWallets = [] } = useQuery<Array<{ id: string; chain: string; address: string; label: string | null }>>({
     queryKey: ["/api/wallets"],
@@ -440,18 +442,13 @@ export default function OwnBankDashboard() {
   }
 
   const SITE_DOMAIN = "https://cryptoownbank.com";
-  const referralLink = referralCode
-    ? `${SITE_DOMAIN}/?ref=${referralCode}`
+  const referralLink = referralStats?.code
+    ? `${SITE_DOMAIN}/?ref=${referralStats.code}`
     : null;
 
   const handleCopyReferral = async () => {
-    if (!referralLink) {
-      const code = generateReferralCode();
-      const link = `${SITE_DOMAIN}/?ref=${code}`;
-      await navigator.clipboard.writeText(link);
-    } else {
-      await navigator.clipboard.writeText(referralLink);
-    }
+    if (!referralLink) return;
+    await navigator.clipboard.writeText(referralLink);
     setCopied(true);
     toast({ title: "Referral link copied!" });
     setTimeout(() => setCopied(false), 2000);
@@ -1261,7 +1258,7 @@ export default function OwnBankDashboard() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Share this link with friends — when they sign up and deposit RLUSD, you both earn bonus SEED points.
+            Share this link with friends — when someone you refer upgrades to Premium, you earn a referral reward.
           </p>
           <div className="space-y-3">
             <div className="flex items-center gap-2 flex-wrap">

@@ -551,7 +551,7 @@ function ReferralDetector() {
       toast({
         title: "Welcome via referral!",
         description:
-          "Thanks for coming via referral! Your referrer gets bonus points when you deposit.",
+          "Thanks for coming via referral! Your referrer earns a reward if you upgrade to Premium.",
       });
       const url = new URL(window.location.href);
       url.searchParams.delete("ref");

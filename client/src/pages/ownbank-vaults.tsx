@@ -88,7 +88,6 @@ export default function OwnBankVaults() {
     connect,
     vaultDeposits,
     addVaultDeposit,
-    referredBy,
     rlusdBalance,
   } = useXrplStore();
 
@@ -515,19 +514,6 @@ export default function OwnBankVaults() {
             walletType: walletType || "xumm",
           });
         } catch {}
-
-        if (referredBy) {
-          const isFirstDeposit = vaultDeposits.length === 0;
-          if (isFirstDeposit) {
-            console.log(
-              `[Referral] First deposit by referred user. Referrer code: ${referredBy}. Deposit: ${amount} RLUSD to ${selectedVault.name}`
-            );
-            const existingData = localStorage.getItem("ownbank-referral-deposits");
-            const deposits = existingData ? JSON.parse(existingData) : {};
-            deposits[referredBy] = (deposits[referredBy] || 0) + 1;
-            localStorage.setItem("ownbank-referral-deposits", JSON.stringify(deposits));
-          }
-        }
 
         toast({
           title: "Deposit Successful",
