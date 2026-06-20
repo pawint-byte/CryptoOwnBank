@@ -7,6 +7,8 @@ description: How crypto-date promo campaigns surface to members (banner) and aut
 
 Crypto-date campaigns (defined in `shared/promo-calendar.ts`) reach members three ways, all fed from that one file so copy never diverges: an in-app banner, founder-sendable drafts, and an automatic email when a window opens.
 
+**Shared-link previews (4th surface):** `/promo/:slug` pages set their head meta client-side (`promo-campaign.tsx`), but social scrapers (Twitter/FB/LinkedIn) don't run JS, so a shared campaign link would show the generic homepage card. `applyCampaignMeta()` in `server/seo-localize.ts` (wired into `localizeAndCanonicalize`, used by dev `vite.ts` + prod `static.ts`) rewrites the SERVED html head per campaign. Campaign copy is English and intentionally overrides the 7-language localization on these pages. Guard `decodeURIComponent` so a malformed `/promo/%xx` no-ops instead of 500ing. **Why:** viral reach is the whole point of these links — a broken preview kills the share.
+
 ## Rules that must hold
 
 - **Single source of truth for copy.** Announcement wording is composed once by `buildCampaignAnnouncement(c)`; the admin drafts list and the auto-sender both consume it. Add a campaign and it automatically gets a banner, a draft, and an auto-send — never hand-duplicate per-campaign copy.

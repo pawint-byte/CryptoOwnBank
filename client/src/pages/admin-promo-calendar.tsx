@@ -35,10 +35,10 @@ export default function AdminPromoCalendar() {
         <CardContent className="p-4 text-sm text-muted-foreground flex items-start gap-3">
           <Sparkles className="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
           <span>
-            <strong>Set your real birthday:</strong> the CryptoOwnBank Birthday is currently a
-            placeholder ({MONTHS[CRYPTOOWNBANK_BIRTHDAY.month - 1]} {CRYPTOOWNBANK_BIRTHDAY.day}).
-            Update <code>CRYPTOOWNBANK_BIRTHDAY</code> in <code>shared/promo-calendar.ts</code> to the
-            real launch date. Each member also gets a personal join-anniversary window automatically.
+            <strong>Founding Day is {MONTHS[CRYPTOOWNBANK_BIRTHDAY.month - 1]}{" "}
+            {CRYPTOOWNBANK_BIRTHDAY.day}</strong> — the day CryptoOwnBank first went live. To move it,
+            edit <code>CRYPTOOWNBANK_BIRTHDAY</code> in <code>shared/promo-calendar.ts</code>. Each member
+            also gets a personal join-anniversary window automatically.
           </span>
         </CardContent>
       </Card>

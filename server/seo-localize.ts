@@ -1,4 +1,5 @@
 import { type Request } from "express";
+import { getCampaignBySlug } from "@shared/promo-calendar";
 
 export const SEO_LANGS = ["en", "es", "pt", "fr", "tr", "hi", "zh"] as const;
 export type SeoLang = (typeof SEO_LANGS)[number];
@@ -138,9 +139,50 @@ export function setCanonical(html: string, url: string): string {
   return html.replace(/<\/head>/, `    ${tag}\n  </head>`);
 }
 
+// Crypto-date campaign pages live at /promo/<slug>. Social scrapers (Twitter,
+// Facebook, LinkedIn) don't run our client JS, so the per-campaign <head> that
+// promo-campaign.tsx sets at runtime is invisible to them — a shared campaign
+// link would otherwise fall back to the generic homepage card. This rewrites the
+// served HTML head with the campaign's own title/description/OG so shared links
+// carry the right preview. Campaign copy is English (agent-authored marketing),
+// so it overrides any language localization on these specific pages.
+function promoSlugFromReq(req: Request): string | null {
+  const path = (req.originalUrl || "/").split("?")[0] || "/";
+  const m = path.match(/^\/promo\/([^/]+)\/?$/);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    // Malformed percent-encoding — treat as "no campaign" so we safely no-op.
+    return null;
+  }
+}
+
+export function applyCampaignMeta(html: string, req: Request): string {
+  const slug = promoSlugFromReq(req);
+  if (!slug) return html;
+  const c = getCampaignBySlug(slug);
+  if (!c) return html;
+
+  const title = `${c.headline} | CryptoOwnBank`;
+  let out = html;
+  out = out.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeAttr(title)}</title>`);
+  out = replaceMeta(out, 'name="description"', c.subheadline);
+  out = replaceMeta(out, 'property="og:title"', c.headline);
+  out = replaceMeta(out, 'property="og:description"', c.subheadline);
+  out = replaceMeta(out, 'name="twitter:title"', c.headline);
+  out = replaceMeta(out, 'name="twitter:description"', c.subheadline);
+  out = out.replace(
+    /(<meta property="og:url" content=")[^"]*("\s*\/>)/,
+    `$1${escapeAttr(`${PRIMARY_ORIGIN}/promo/${c.slug}`)}$2`,
+  );
+  return out;
+}
+
 // One call that both localizes the head meta and sets the canonical for the
 // current request. Used by the dev (vite) and prod (static) document servers.
 export function localizeAndCanonicalize(html: string, req: Request): string {
   const localized = localizeIndexHtml(html, pickLang(req));
-  return setCanonical(localized, canonicalUrl(req));
+  const withCampaign = applyCampaignMeta(localized, req);
+  return setCanonical(withCampaign, canonicalUrl(req));
 }
