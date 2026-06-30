@@ -1,0 +1,34 @@
+The conversation context is rich and actionable. Based on everything discussed — the leverage-over-build principle, the invoice autopilot, and the new insight about on-chain pending objects (XRPL Checks, Claimable Balances, multisig queues) — you're now asking about one specific product decision: can you build an "Approval Inbox" that surfaces on-chain pending objects natively, the way a DEX queue works?
+
+The answer is yes, and here's exactly how the pieces fit.
+
+The On-Chain Pending Object Model
+The key insight from your DEX comparison is right — blockchains don't just record history, they hold live, pending state. A DEX offer on XRPL is an object sitting on the ledger that any counterparty can act on. The same object model applies across the chains you're already on:
+
+Object	Chain	Created by	Actioned by	Expires?
+Check	XRPL	Sender	Recipient (Cash or Cancel)	Optional Expiration field
+Escrow	XRPL	Sender	Fulfiller or Owner (Finish/Cancel)	Time or crypto-condition
+DEX Offer	XRPL	Owner	Any counterparty	Until canceled/filled
+NFT Offer	XRPL	Buyer/Seller	Counterparty	Optional Expiration
+Claimable Balance	Stellar	Sender	Claimant (Claim)	Predicate-based
+Multisig queue	Gnosis Safe (EVM)	Proposer	Co-signers (Approve/Reject/Execute)	Until executed or vetoed
+An XRPL Check is the closest native analog to a Zelle request: the sender creates a Check object on the ledger for a specific amount to a specific recipient. It sits there — visible, on-chain, with a destination tag — until the recipient cashes it or it expires. Your member's payer never pulls without signing; the member initiates, and the payer acts.
+
+What the Approval Inbox Actually Is
+This is not a new build — it's a read + route layer over data that already exists on public ledgers. The architecture follows your leverage rule exactly:
+
+What you read (no custody, no build): Query account_objects on XRPL for Checks, Escrows, Offers; getClaimableBalances on Stellar Horizon; Safe transaction queue via the Safe API. All public, no keys needed to read.
+
+What you display: A unified list of pending items with type, amount, counterparty, expiry, and a one-tap action button.
+
+What happens on "Approve/Claim/Cancel": You construct the transaction, hand it to Xaman/Freighter/MetaMask to sign. You never hold keys — the member signs on their own device.
+
+What you actually build (small): The polling/webhook layer to fetch these objects per account, the unified UI rendering them in one list, and the transaction construction helpers (not signers).
+
+The Agent Lab Integration Is the Real Win
+The thing that ties this to your north star: Agent Lab proposals slot into this same queue as a first-class item. When the AI drafts a vault rebalance or batch payment, it doesn't execute — it drops a proposed transaction into the member's Approval Inbox. The member sees it alongside their XRPL Checks and multisig items. One screen, one "yes" surface, doctrine-perfect.
+
+This is the table made literal: every pending claim on the member's money, in one place, requiring exactly one decision.
+
+The One Honest Constraint
+XRPL Checks require the sender to fund the Check creation (a small reserve). This means for invoice collections, your member is asking the payer to create a Check — which only works if the payer is also an XRPL user. For non-XRPL payers, the flow falls back to the existing pay-link + ledger-watch pattern from the invoice autopilot conversation. So: Check-based "request" is a power feature for XRPL-native payers; the link-based flow is the universal fallback. Both are honest — you only expose what the chain can deliver.
