@@ -70,6 +70,7 @@ import {
   Trophy,
   Crown,
   Compass,
+  ListChecks,
 } from "lucide-react";
 import {
   Sidebar,
@@ -162,6 +163,7 @@ const allItems: NavItem[] = [
   { title: "Family", url: "/family", icon: Users, group: "backup" },
 
   // MOVE MONEY - same asset, different person/place
+  { title: "Get Paid or Pay", url: "/flows", icon: ListChecks, color: "#00A4E4", group: "move" },
   { title: "Payments Hub", url: "/payments", icon: CreditCard, group: "move" },
   { title: "XRPL Send & Receive", url: "/ownbank/send", icon: Send, group: "move", chain: "xrpl" },
   { title: "Stellar Send & Receive", url: "/stellar/send", icon: Send, group: "move", chain: "stellar" },

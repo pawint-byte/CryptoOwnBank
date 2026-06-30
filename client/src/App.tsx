@@ -79,6 +79,7 @@ import StatementInsights from "@/pages/statement-insights";
 import Reconciliation from "@/pages/reconciliation";
 import MigrationGuide from "@/pages/migration-guide";
 import OwnBankInvoices from "@/pages/ownbank-invoices";
+import FlowsPage from "@/pages/flows";
 import PayPage from "@/pages/pay";
 import StellarRemittances from "@/pages/stellar-remittances";
 import StellarSend from "@/pages/stellar-send";
@@ -392,6 +393,7 @@ function AuthenticatedRoutes() {
         <Route path="/native-staking" component={NativeStaking} />
         <Route path="/ai-assistant" component={AiAssistant} />
         <Route path="/start" component={PrimeThePump} />
+        <Route path="/flows" component={FlowsPage} />
         <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/swap-any-pair" component={SwapAnyPair} />
         <Route path="/route-planner" component={RoutePlanner} />

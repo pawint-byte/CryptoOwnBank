@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { SeoHead } from "@/components/seo-head";
 import { InlineXrplConnect } from "@/components/inline-xrpl-connect";
@@ -45,6 +46,7 @@ import {
   Ban,
   Printer,
   Building2,
+  ListChecks,
 } from "lucide-react";
 import { useXrplStore } from "@/lib/xrpl-store";
 import { WalletPicker } from "@/components/wallet-picker";
@@ -299,6 +301,12 @@ export default function OwnBankInvoices() {
             onChange={(addr) => connect(addr, walletType || "xumm")}
             label="Active Wallet"
           />
+          <Link href="/flows?goal=get-paid&rail=xrpl">
+            <Button variant="outline" data-testid="button-guided-get-paid">
+              <ListChecks className="h-4 w-4 mr-2" />
+              Guided setup
+            </Button>
+          </Link>
           <Button
             onClick={() => { resetForm(); setCreateModalOpen(true); }}
             className="bg-[#00A4E4] text-white border-[#00A4E4]"

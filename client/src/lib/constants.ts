@@ -20,6 +20,12 @@ export const RLUSD = {
   symbol: "RLUSD",
 } as const;
 
+export const STELLAR_USDC = {
+  code: "USDC",
+  issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+  symbol: "USDC",
+} as const;
+
 export const TIERS = {
   free: { name: "Free", monthlyPrice: 0, yearlyPrice: 0 },
   premium: { name: "Premium", monthlyPrice: 29, yearlyPrice: 199 },
