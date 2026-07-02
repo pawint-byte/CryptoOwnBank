@@ -101,3 +101,27 @@ id = "qpKUspI5NK5rryghNXn3U"
 uri = "file://.local/announcements/cockpit-launch-email.md"
 type = "text"
 title = "Cockpit — Email (long-form reference)"
+
+[[outputs]]
+id = "9Hhv2QCD3hjQh2amsssok"
+uri = "file://attached_assets/merch/merch-preview.png"
+type = "image"
+title = "Preview — all 3 designs on garment colors"
+
+[[outputs]]
+id = "H_B0l2lpxhmJ88E7TiW8z"
+uri = "file://attached_assets/merch/tee-dark-print.png"
+type = "image"
+title = "Dark shirt print file (transparent PNG)"
+
+[[outputs]]
+id = "ZktkOGoN4wy9nbJlFOdcI"
+uri = "file://attached_assets/merch/tee-light-print.png"
+type = "image"
+title = "Light shirt print file (transparent PNG)"
+
+[[outputs]]
+id = "bLfHrVoTABgZAMEvA4kQd"
+uri = "file://attached_assets/merch/mug-print.png"
+type = "image"
+title = "Mug wrap print file (transparent PNG)"
