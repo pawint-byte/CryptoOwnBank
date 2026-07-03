@@ -1742,8 +1742,25 @@ export default function Wallets() {
         }, 1500);
       }
     },
-    onError: () => {
-      toast({ title: "Failed to add wallet", variant: "destructive" });
+    onError: (err: Error) => {
+      let detail = err?.message || "";
+      const jsonStart = detail.indexOf("{");
+      if (jsonStart !== -1) {
+        try {
+          const parsed = JSON.parse(detail.slice(jsonStart));
+          if (parsed?.message) detail = parsed.message;
+        } catch {
+          detail = detail.replace(/^\d+:\s*/, "");
+        }
+      } else {
+        detail = detail.replace(/^\d+:\s*/, "");
+      }
+      const alreadyAdded = /already added/i.test(detail);
+      toast({
+        title: alreadyAdded ? "Already on your account" : "Couldn't add wallet",
+        description: detail || "Please check the address and try again.",
+        variant: alreadyAdded ? "default" : "destructive",
+      });
     },
   });
 
