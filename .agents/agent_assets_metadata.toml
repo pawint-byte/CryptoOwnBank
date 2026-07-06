@@ -125,3 +125,9 @@ id = "bLfHrVoTABgZAMEvA4kQd"
 uri = "file://attached_assets/merch/mug-print.png"
 type = "image"
 title = "Mug wrap print file (transparent PNG)"
+
+[[outputs]]
+id = "Z3zT3scCDtARU0Lb1UEyj"
+uri = "file://exports/XRP_Valuation_Model_v2.xlsx"
+type = "table"
+title = "XRP Valuation Model v2 (upgraded)"
