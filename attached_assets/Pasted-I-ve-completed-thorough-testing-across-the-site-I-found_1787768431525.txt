@@ -1,0 +1,34 @@
+I've completed thorough testing across the site. I found a significant bug during this very test — worth highlighting first.
+
+## Critical Findings
+
+**1. Onboarding progress reset (data/state bug)** — On first load, the Dashboard "Your Path" showed **3 of 6 steps complete** (Add Wallet Addresses, Import Exchange Data, Connect XRPL Wallet all marked "Done"). After navigating through the site and returning to Home, the same checklist now shows **0 of 6 complete**, with all three previously-"Done" steps reset to "Ready" and prompting the user to redo them. This is a reproducible state-persistence bug that could confuse users into re-linking wallets/exchanges unnecessarily. [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/)
+
+**2. Admin panel is publicly accessible to a regular account (serious security issue)** — All `/admin/*` routes loaded fully for this non-admin user, with no login/permission gate:
+- `/admin/metrics` — exposes total users (95), verified counts, revenue (MRR/ARR) [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/admin/metrics)
+- `/admin/users` — exposes a full user list with **real names and email addresses**, plus working "Verify All," "Send Activation Emails," and "Send Re-Engagement Email" buttons [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/admin/users)
+- `/admin/vault-blocklist` — a live control to block/hide vaults site-wide [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/admin/vault-blocklist)
+- `/admin/announcements` — a mass-messaging tool with 32 drafts and a "send to all users" audience selector [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/admin/announcements)
+
+This means any authenticated (or possibly unauthenticated) visitor who guesses these URLs could view PII and trigger bulk emails or moderation actions. This should be locked down immediately with proper role-based access control.
+
+**3. Data/error-log issues found via the site's own Error Monitor** (`/admin/errors`, 1022 logged errors): [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/admin/errors)
+- Recurring **API Error 500: "Failed to load personalized news"** — happening repeatedly ("just now," "1m ago," "15m ago")
+- **Unhandled Promise Rejection: "Failed to connect to MetaMask"** on `/login` and `/error` routes, recurring over 12–13 days
+- Rejected promises on `/signup` and `/contact`
+- A `window.onerror`: `invalid arrayify value` on `/error`, `/legal`, and `/` routes
+
+**4. Suspicious/scam token dust** — The Portfolio correctly flagged 14 "Suspected Scam Tokens" (fake airdrops with phishing URLs like CROW-WITH-KNIFE.COM, CLIDOS.PRO, CELESTIA.CASH) with a warning not to interact — this is working as intended, but worth your awareness since these are visible in holdings. [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/)
+
+**5. Data anomaly in Recent Transactions** — One BUY transaction for "KEI" lists a total of **$489,001,134,579.90** (489 billion dollars), clearly a bad data import/multiplication error. [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/)
+
+**6. Minor inconsistencies:**
+- Chain Guide page says "No chains active yet — Connect a wallet" despite the Dashboard showing an already-connected XRPL wallet and 238 tracked assets [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/chain-guide)
+- Migration Guide shows "0 of 6 steps" progress even though wallet/exchange import are marked done elsewhere [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/migration-guide)
+- Contact & Feedback page renders without the left sidebar/nav (standalone layout), inconsistent with the rest of the app [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/contact)
+- Pricing page shows a duplicate header bar alongside the normal sidebar [crypto-ledger--pawint.replit](https://crypto-ledger--pawint.replit.app/pricing)
+- Several pages (Roadmap, dVPN) have a multi-second load delay showing only a loading skeleton
+
+All navigation links I tested (Home, Portfolio, Earn & Yield, Stablecoins, Chain Guide, FAQ, Contact, Principles, Crypto News, Whale Alerts, Technical Analysis, Roadmap, Migration Guide, Pricing, dVPN, Settings, and all 5 Admin pages) resolved without 404s.
+
+**Recommendation:** The admin panel exposure (#2) is the most urgent item — I'd treat that as a priority fix before wider release, since it exposes user PII and unrestricted admin actions to any logged-in account.
