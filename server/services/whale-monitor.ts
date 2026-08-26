@@ -4,12 +4,7 @@ import { db } from "../db";
 import { priceCache as priceCacheTable } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { setSharedXrplClient, resolveWalletLabels } from "./wallet-identity-resolver";
-
-const XRPL_SERVERS = [
-  "wss://xrplcluster.com",
-  "wss://s1.ripple.com",
-  "wss://s2.ripple.com",
-];
+import { connectXrplClient } from "./xrpl-connection";
 
 const RLUSD_CURRENCY_HEX = "524C555344000000000000000000000000000000";
 const RLUSD_ISSUER = "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De";
@@ -20,6 +15,7 @@ const CAPTURE_RLUSD_THRESHOLD = 10_000;
 let whaleClient: Client | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let isRunning = false;
+let isConnecting = false;
 
 function parseAmount(amountField: any): { amount: number; currency: string } | null {
   if (!amountField) return null;
@@ -174,39 +170,47 @@ async function handleTransaction(tx: any) {
 }
 
 async function connectAndSubscribe() {
-  for (const server of XRPL_SERVERS) {
-    try {
-      whaleClient = new Client(server);
-      await whaleClient.connect();
+  if (isConnecting || whaleClient?.isConnected()) return;
+  isConnecting = true;
+  let client: Client | null = null;
+  try {
+    const connection = await connectXrplClient();
+    client = connection.client;
+    const subscribeReq: SubscribeRequest = {
+      command: "subscribe",
+      streams: ["transactions"],
+    };
+    await client.request(subscribeReq);
 
-      const subscribeReq: SubscribeRequest = {
-        command: "subscribe",
-        streams: ["transactions"],
-      };
-      await whaleClient.request(subscribeReq);
+    client.on("transaction", (tx: any) => {
+      handleTransaction(tx).catch(() => {});
+    });
 
-      whaleClient.on("transaction", (tx: any) => {
-        handleTransaction(tx).catch(() => {});
-      });
-
-      whaleClient.on("disconnected", () => {
+    client.on("disconnected", () => {
+      if (whaleClient === client) {
+        whaleClient = null;
+        setSharedXrplClient(null);
         console.log("[whale-monitor] Disconnected, will reconnect in 2min");
         scheduleReconnect();
-      });
-
-      setSharedXrplClient(whaleClient);
-      console.log(`[whale-monitor] Connected to ${server}, monitoring whale transactions`);
-      return;
-    } catch (err: any) {
-      console.error(`[whale-monitor] Failed to connect to ${server}:`, err?.message);
-      if (whaleClient) {
-        try { await whaleClient.disconnect(); } catch {}
-        whaleClient = null;
       }
+    });
+
+    whaleClient = client;
+    setSharedXrplClient(client);
+    console.log(`[whale-monitor] Connected to ${connection.server}, monitoring whale transactions`);
+  } catch (err: any) {
+    if (client) {
+      try {
+        await client.disconnect();
+      } catch {}
     }
+    if (whaleClient === client) whaleClient = null;
+    setSharedXrplClient(null);
+    console.error("[whale-monitor] All servers failed:", err?.message);
+    scheduleReconnect(60_000);
+  } finally {
+    isConnecting = false;
   }
-  console.error("[whale-monitor] All servers failed, retrying in 60s");
-  scheduleReconnect(60_000);
 }
 
 function scheduleReconnect(delay = 120_000) {
@@ -251,8 +255,7 @@ async function backfillHistoricalWhales() {
     }
 
     console.log("[whale-monitor] Backfilling historical whale transactions...");
-    const backfillClient = new Client("wss://xrplcluster.com");
-    await backfillClient.connect();
+    const { client: backfillClient } = await connectXrplClient();
 
     let totalImported = 0;
 
@@ -261,7 +264,7 @@ async function backfillHistoricalWhales() {
       "rMsYhifdvPdHfMxWC62acPf7z6FE9KWBGA",
     ];
 
-    const allAccounts = [...new Set([...KNOWN_WHALE_ACCOUNTS, ...escrowAccounts])];
+    const allAccounts = Array.from(new Set([...KNOWN_WHALE_ACCOUNTS, ...escrowAccounts]));
 
     for (const account of allAccounts) {
       try {
@@ -521,4 +524,5 @@ export function stopWhaleMonitor() {
     whaleClient.disconnect().catch(() => {});
     whaleClient = null;
   }
+  setSharedXrplClient(null);
 }

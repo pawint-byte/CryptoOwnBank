@@ -811,7 +811,7 @@ export function registerChainsRoutes(app: Express) {
   };
 
   const CHAIN_RPC_URLS: Record<number, string[]> = {
-    1: ["https://ethereum-rpc.publicnode.com", "https://eth.llamarpc.com", "https://1rpc.io/eth"],
+    1: ["https://ethereum-rpc.publicnode.com", "https://eth.drpc.org", "https://1rpc.io/eth"],
     137: ["https://polygon-rpc.com", "https://polygon-bor-rpc.publicnode.com"],
     42161: ["https://arb1.arbitrum.io/rpc", "https://arbitrum-one-rpc.publicnode.com"],
     10: ["https://mainnet.optimism.io", "https://optimism-rpc.publicnode.com"],

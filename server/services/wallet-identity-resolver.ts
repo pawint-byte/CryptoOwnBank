@@ -11,7 +11,7 @@ const DB_CACHE_STALE_MS = 24 * 60 * 60 * 1000;
 
 let sharedXrplClient: Client | null = null;
 
-export function setSharedXrplClient(client: Client) {
+export function setSharedXrplClient(client: Client | null) {
   sharedXrplClient = client;
 }
 

@@ -24,6 +24,7 @@ import fs from "fs";
 import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
+import { normalizeNewsFields } from "../services/sync-data-normalization";
 
 export async function registerMarketRoutes(app: Express) {
   app.patch("/api/statement-sources/:id", isAuthenticated, async (req: any, res) => {
@@ -480,10 +481,16 @@ export async function registerMarketRoutes(app: Express) {
     try {
       const userId = req.user.claims.sub;
       const balances = await db.select({
-        symbol: walletBalances.symbol,
+        symbol: walletBalances.assetSymbol,
       }).from(walletBalances).where(eq(walletBalances.userId, userId));
 
-      const heldSymbols = [...new Set(balances.map(b => b.symbol?.toUpperCase()).filter(Boolean))];
+      const heldSymbols = Array.from(
+        new Set(
+          balances
+            .map((balance) => balance.symbol?.trim().toUpperCase())
+            .filter((symbol): symbol is string => Boolean(symbol)),
+        ),
+      );
 
       const allKeywords: { keyword: string; asset: string }[] = [];
       for (const symbol of heldSymbols) {
@@ -502,14 +509,14 @@ export async function registerMarketRoutes(app: Express) {
       const forYou: (NewsItem & { matchedAssets: string[]; relevanceScore: number })[] = [];
 
       for (const item of allItems) {
-        const searchText = `${item.title} ${item.snippet} ${item.categories.join(" ")}`.toLowerCase();
+        const { title, searchText } = normalizeNewsFields(item);
         const matched = new Set<string>();
         let score = 0;
 
         for (const { keyword, asset } of allKeywords) {
           if (searchText.includes(keyword)) {
             matched.add(asset);
-            if (item.title.toLowerCase().includes(keyword)) {
+            if (title.toLowerCase().includes(keyword)) {
               score += 3;
             } else {
               score += 1;

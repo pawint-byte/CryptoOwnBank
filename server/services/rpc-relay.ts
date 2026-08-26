@@ -58,10 +58,9 @@ const CHAINS: Record<ChainKey, ChainConfig> = {
     kind: "json-rpc",
     timeoutMs: 12000,
     endpoints: [
-      "https://eth.llamarpc.com",
       "https://ethereum-rpc.publicnode.com",
-      "https://rpc.ankr.com/eth",
       "https://eth.drpc.org",
+      "https://rpc.ankr.com/eth",
       "https://cloudflare-eth.com",
     ],
   },

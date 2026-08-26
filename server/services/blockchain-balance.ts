@@ -10,6 +10,35 @@ interface TokenBalance {
   usdValue: number;
 }
 
+const ETHEREUM_RPC_ENDPOINTS = [
+  "https://ethereum-rpc.publicnode.com",
+  "https://eth.drpc.org",
+] as const;
+
+async function fetchJsonRpc(
+  endpoints: readonly string[],
+  method: string,
+  params: unknown[],
+): Promise<any> {
+  let lastError: unknown;
+  for (const endpoint of endpoints) {
+    try {
+      const data = await fetchJson(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      });
+      if (data?.error || data?.result === undefined) {
+        throw new Error(data?.error?.message || "Invalid JSON-RPC response");
+      }
+      return data;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("All JSON-RPC providers failed");
+}
+
 const XRPL_HEX_CURRENCIES: Record<string, string> = {
   "524C555344000000000000000000000000000000": "RLUSD",
   "4156415800000000000000000000000000000000": "AVAX",
@@ -285,18 +314,7 @@ export async function getEthereumBalance(address: string): Promise<ChainBalance[
   const balances: ChainBalance[] = [];
 
   try {
-    const data = await fetchJson(
-      `https://eth.llamarpc.com`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "eth_getBalance",
-          params: [address, "latest"],
-        }),
-      }
-    );
+    const data = await fetchJsonRpc(ETHEREUM_RPC_ENDPOINTS, "eth_getBalance", [address, "latest"]);
 
     const hexBalance = data.result;
     if (hexBalance && hexBalance !== "0x0") {
@@ -771,8 +789,10 @@ export async function getCardanoBalance(address: string): Promise<ChainBalance[]
   } catch (err) {
     console.error("Cardano balance fetch error:", err);
     try {
+      const blockfrostKey = process.env.BLOCKFROST_API_KEY;
+      if (!blockfrostKey) return [];
       const data = await fetchJson(`https://cardano-mainnet.blockfrost.io/api/v0/addresses/${address}`, {
-        headers: { project_id: process.env.BLOCKFROST_API_KEY || "" },
+        headers: { project_id: blockfrostKey },
       });
       const lovelace = data.amount?.find((a: any) => a.unit === "lovelace")?.quantity || "0";
       const ada = Number(lovelace) / 1e6;
@@ -1078,12 +1098,18 @@ export async function getHederaBalance(address: string): Promise<ChainBalance[]>
 }
 
 export async function getPolkadotBalance(address: string): Promise<ChainBalance[]> {
+  const subscanKey = process.env.SUBSCAN_API_KEY;
+  if (!subscanKey) return [];
+
   try {
     const data = await fetchJson(
       `https://polkadot.api.subscan.io/api/v2/scan/search`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": subscanKey,
+        },
         body: JSON.stringify({ key: address }),
       }
     );
@@ -1264,11 +1290,9 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
   }
 
   try {
-    const data = await fetchJson(
-      `https://cronos.org/explorer/api?module=account&action=balance&address=${address}`
-    );
+    const data = await fetchJsonRpc(["https://evm.cronos.org"], "eth_getBalance", [address, "latest"]);
 
-    if (data.status === "1" && data.result && data.result !== "0") {
+    if (data.result && data.result !== "0x0") {
       const wei = BigInt(data.result);
       const cro = Number(wei / 10n ** 12n) / 1e6;
       if (cro > 0) {
@@ -1280,35 +1304,6 @@ export async function getCronosBalance(address: string): Promise<ChainBalance[]>
         });
       }
     }
-
-    try {
-      const tokenData = await fetchJson(
-        `https://cronos.org/explorer/api?module=account&action=tokenlist&address=${address}`
-      );
-      if (tokenData.status === "1" && Array.isArray(tokenData.result)) {
-        for (const token of tokenData.result) {
-          const symbol = (token.symbol || "").toUpperCase();
-          const decimals = parseInt(token.decimals || "18");
-          const rawBalance = token.balance || "0";
-          if (!symbol || rawBalance === "0") continue;
-          const rawBal = BigInt(rawBalance);
-          let bal: number;
-          if (decimals <= 6) {
-            bal = Number(rawBal) / Math.pow(10, decimals);
-          } else {
-            bal = Number(rawBal / (10n ** BigInt(decimals - 6))) / 1e6;
-          }
-          if (bal > 0.000001) {
-            const stablecoins = new Set(["USDT", "USDC", "DAI"]);
-            balances.push({
-              symbol,
-              balance: bal,
-              usdValue: stablecoins.has(symbol) ? bal : 0,
-            });
-          }
-        }
-      }
-    } catch {}
 
     console.log(`Cronos EVM scan: found ${balances.length} assets for ${address}`);
   } catch (err) {
@@ -1518,16 +1513,16 @@ export async function getXdcBalance(address: string): Promise<ChainBalance[]> {
 
   try {
     const tokenData = await fetchJson(
-      `https://xdc.blocksscan.io/api/tokens/holding/${xdcAddress}?page=1&limit=50`
+      `https://xdc.blocksscan.io/api?module=account&action=tokenlist&address=${xdcAddress}`
     );
-    const items = tokenData?.items || tokenData?.data || [];
+    const items = tokenData?.result || [];
     if (Array.isArray(items)) {
       const stablecoins = new Set(["USDT", "USDC", "FXUSD"]);
       for (const item of items) {
         const token = item.token || item;
-        const symbol = (token.symbol || "").toUpperCase();
-        const decimals = parseInt(token.decimals || "18");
-        const rawBalance = item.quantity || item.balance || "0";
+        const symbol = (token.TokenSymbol || token.symbol || "").toUpperCase();
+        const decimals = parseInt(token.TokenDivisor || token.decimals || "18");
+        const rawBalance = token.TokenQuantity || item.quantity || item.balance || "0";
         if (!symbol || rawBalance === "0") continue;
         try {
           const rawBal = BigInt(rawBalance);
@@ -1924,16 +1919,13 @@ async function getFetBalance(address: string): Promise<ChainBalance[]> {
       return balances;
     }
     if (address.startsWith("0x")) {
-      const resp = await fetch("https://eth.llamarpc.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0", id: 1, method: "eth_call",
-          params: [{ to: "0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85", data: "0x70a08231" + address.slice(2).toLowerCase().padStart(64, "0") }, "latest"],
-        }),
-        signal: AbortSignal.timeout(15000),
-      });
-      const json = await resp.json();
+      const json = await fetchJsonRpc(ETHEREUM_RPC_ENDPOINTS, "eth_call", [
+        {
+          to: "0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85",
+          data: "0x70a08231" + address.slice(2).toLowerCase().padStart(64, "0"),
+        },
+        "latest",
+      ]);
       if (json.result) {
         const balance = Number(BigInt(json.result)) / 1e18;
         const cgId = COINGECKO_IDS["FET"];

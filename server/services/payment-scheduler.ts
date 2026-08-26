@@ -5,6 +5,7 @@ import { users, walletBalances, userSettings, autoWithdrawLogs, dcaOrders, legac
 import { eq, and, sql } from "drizzle-orm";
 import { sendLegacyBeneficiaryDelivery } from "../email";
 import { Client } from "xrpl";
+import { connectXrplClient } from "./xrpl-connection";
 import { XummSdk } from "xumm-sdk";
 
 export function getNextRunDate(currentDate: Date, frequency: string, preferredDay?: number | null): Date {
@@ -94,17 +95,7 @@ async function getXrplOrderBookPrice(
   buyCurrency: string,
   buyIssuer: string | null,
 ): Promise<number> {
-  const xrplServers = ["wss://xrplcluster.com", "wss://s1.ripple.com", "wss://s2.ripple.com"];
-  let client: Client | null = null;
-  for (const server of xrplServers) {
-    try {
-      const c = new Client(server, { connectionTimeout: 15000 });
-      await c.connect();
-      client = c;
-      break;
-    } catch {}
-  }
-  if (!client) throw new Error("Cannot connect to XRPL");
+  const { client } = await connectXrplClient();
 
   try {
     const takerPays = buyCurrency === "XRP"
@@ -890,17 +881,12 @@ async function scanVaultInterest(walletAddress: string, customVaults: CustomVaul
     vaultNames[cv.address] = cv.name;
   }
 
-  const xrplServers = ["wss://xrplcluster.com", "wss://s1.ripple.com", "wss://s2.ripple.com"];
-  let client: Client | null = null;
-  for (const server of xrplServers) {
-    try {
-      const c = new Client(server, { connectionTimeout: 15000 });
-      await c.connect();
-      client = c;
-      break;
-    } catch {}
+  let client: Client;
+  try {
+    client = (await connectXrplClient()).client;
+  } catch {
+    return [];
   }
-  if (!client) return [];
 
   const deposits: Array<{ address: string; amount: number; date: string }> = [];
   const withdrawals: Array<{ address: string; amount: number }> = [];

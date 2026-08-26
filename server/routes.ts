@@ -33,6 +33,7 @@ import { registerAgentRoutes } from "./routes/agent";
 import { registerMarketRoutes } from "./routes/market";
 import { registerAdminSubscriptionsRoutes } from "./routes/admin-subscriptions";
 import { registerBillingRoutes } from "./routes/billing";
+import { normalizeWalletBalance } from "./services/sync-data-normalization";
 import { registerHoldingsRoutes } from "./routes/holdings";
 import { registerVaultsRoutes } from "./routes/vaults";
 import { registerPortfolioRoutes } from "./routes/portfolio";
@@ -3253,23 +3254,17 @@ Rules you MUST follow:
             }
           }
 
-          const existingBalances = await storage.getWalletBalances(wallet.id);
-          const existingMap = new Map(existingBalances.map(b => [b.assetSymbol, b]));
-
           for (const bal of balances) {
-            const existing = existingMap.get(bal.symbol);
-            if (existing) {
-              await db.update(walletBalances)
-                .set({ balance: bal.balance.toString(), usdValue: bal.usdValue.toString(), updatedAt: new Date() })
-                .where(eq(walletBalances.id, existing.id));
-            } else {
-              await storage.createWalletBalance({
-                walletId: wallet.id,
-                assetSymbol: bal.symbol,
-                balance: bal.balance.toString(),
-                usdValue: bal.usdValue.toString(),
-              });
+            const normalized = normalizeWalletBalance(bal);
+            if (!normalized) {
+              console.warn(`[auto-sync] Skipping invalid balance for wallet ${wallet.id}`);
+              continue;
             }
+            await storage.upsertWalletBalance({
+              walletId: wallet.id,
+              userId,
+              ...normalized,
+            });
           }
 
           await storage.updateWalletSyncTime(wallet.id);
