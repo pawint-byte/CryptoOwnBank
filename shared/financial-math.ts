@@ -222,13 +222,52 @@ function normalizeSymbolForPriceLookup(sym: string): string {
 export function scanForHarvestOpportunities(
   positions: { assetSymbol: string; quantity: string; totalCostBasis: string; isAddressed?: boolean }[],
   priceLookup: Record<string, number>,
-  lots?: { assetSymbol: string; acquiredDate: string; remainingQuantity: string }[]
+  lots?: { assetSymbol: string; acquiredDate: string; remainingQuantity: string; costBasisPerUnit?: string }[]
 ): HarvestOpportunity[] {
   const opportunities: HarvestOpportunity[] = [];
+  const positionsByAsset = new Map<string, { assetSymbol: string; quantity: number; totalCostBasis: number }>();
 
   for (const pos of positions) {
     if (pos.isAddressed) continue;
-    const qty = parseFloat(pos.quantity) || 0;
+    const assetSymbol = pos.assetSymbol.toUpperCase();
+    const existing = positionsByAsset.get(assetSymbol) || {
+      assetSymbol,
+      quantity: 0,
+      totalCostBasis: 0,
+    };
+    existing.quantity += parseFloat(pos.quantity) || 0;
+    existing.totalCostBasis += parseFloat(pos.totalCostBasis) || 0;
+    positionsByAsset.set(assetSymbol, existing);
+  }
+
+  for (const pos of Array.from(positionsByAsset.values())) {
+    let qty = pos.quantity;
+    let costBasis = pos.totalCostBasis;
+    const assetLots = lots?.filter(
+      (lot) => lot.assetSymbol.toUpperCase() === pos.assetSymbol,
+    );
+    const activeAssetLots = assetLots?.filter(
+      (lot) => (parseFloat(lot.remainingQuantity) || 0) > 0,
+    ) || [];
+
+    if (assetLots && assetLots.length > 0) {
+      const lotQuantity = activeAssetLots.reduce(
+        (sum, lot) => sum + (parseFloat(lot.remainingQuantity) || 0),
+        0,
+      );
+      const lotCostBasis = activeAssetLots.reduce(
+        (sum, lot) => sum
+          + (parseFloat(lot.remainingQuantity) || 0)
+          * (parseFloat(lot.costBasisPerUnit || "0") || 0),
+        0,
+      );
+
+      qty = Math.min(qty, lotQuantity);
+      costBasis = lotQuantity > qty && lotQuantity > 0
+        ? lotCostBasis * (qty / lotQuantity)
+        : lotCostBasis;
+    }
+
     if (qty <= 0) continue;
 
     const rawSym = pos.assetSymbol.toUpperCase();
@@ -236,7 +275,6 @@ export function scanForHarvestOpportunities(
     const price = priceLookup[rawSym] || priceLookup[normalizedSym] || 0;
     if (price <= 0) continue;
 
-    const costBasis = parseFloat(pos.totalCostBasis) || 0;
     if (costBasis <= 0) continue;
 
     const currentValue = round2(qty * price);
@@ -245,15 +283,12 @@ export function scanForHarvestOpportunities(
     const loss = round2(costBasis - currentValue);
 
     let holdingPeriod: "short" | "long" | "mixed" = "short";
-    if (lots) {
-      const assetLots = lots.filter(l => l.assetSymbol.toUpperCase() === pos.assetSymbol.toUpperCase() && parseFloat(l.remainingQuantity) > 0);
-      if (assetLots.length > 0) {
+    if (activeAssetLots.length > 0) {
         const oneYear = 365 * 24 * 60 * 60 * 1000;
         const now = Date.now();
-        const hasShort = assetLots.some(l => (now - new Date(l.acquiredDate).getTime()) < oneYear);
-        const hasLong = assetLots.some(l => (now - new Date(l.acquiredDate).getTime()) >= oneYear);
+        const hasShort = activeAssetLots.some(l => (now - new Date(l.acquiredDate).getTime()) < oneYear);
+        const hasLong = activeAssetLots.some(l => (now - new Date(l.acquiredDate).getTime()) >= oneYear);
         holdingPeriod = hasShort && hasLong ? "mixed" : hasLong ? "long" : "short";
-      }
     }
 
     opportunities.push({

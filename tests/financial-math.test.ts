@@ -6,6 +6,7 @@ import {
   calculateSale,
   calculateAverageCost,
   calculatePortfolioValue,
+  scanForHarvestOpportunities,
   calculateGainLossPercent,
   isLongTermHolding,
   type TaxLot,
@@ -403,5 +404,58 @@ describe("precision rounding", () => {
     expect(typeof result.totalGainLossPercent).toBe("number");
     const decimalPlaces = result.totalGainLossPercent.toString().split(".")[1]?.length || 0;
     expect(decimalPlaces).toBeLessThanOrEqual(2);
+  });
+});
+
+describe("scanForHarvestOpportunities", () => {
+  const prices = { XRP: 1 };
+  const position = [{
+    assetSymbol: "XRP",
+    quantity: "100",
+    totalCostBasis: "200",
+  }];
+
+  it("removes a fully harvested asset even when its position snapshot is stale", () => {
+    const result = scanForHarvestOpportunities(position, prices, [{
+      assetSymbol: "XRP",
+      acquiredDate: "2024-01-01",
+      remainingQuantity: "0",
+      costBasisPerUnit: "2",
+    }]);
+
+    expect(result).toEqual([]);
+  });
+
+  it("shows only the unsold quantity and basis after a partial harvest", () => {
+    const result = scanForHarvestOpportunities(position, prices, [{
+      assetSymbol: "XRP",
+      acquiredDate: "2024-01-01",
+      remainingQuantity: "40",
+      costBasisPerUnit: "2",
+    }]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      assetSymbol: "XRP",
+      quantity: 40,
+      totalCostBasis: 80,
+      currentValue: 40,
+      unrealizedLoss: 40,
+    });
+  });
+
+  it("aggregates duplicate position rows without duplicating an opportunity", () => {
+    const result = scanForHarvestOpportunities([
+      { assetSymbol: "XRP", quantity: "60", totalCostBasis: "120" },
+      { assetSymbol: "XRP", quantity: "40", totalCostBasis: "80" },
+    ], prices, [{
+      assetSymbol: "XRP",
+      acquiredDate: "2024-01-01",
+      remainingQuantity: "100",
+      costBasisPerUnit: "2",
+    }]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].quantity).toBe(100);
   });
 });

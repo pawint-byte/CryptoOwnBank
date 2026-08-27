@@ -53,3 +53,4 @@
 - [New-user onboarding gating](new-user-onboarding-gating.md) — gate first-run welcome/checklist on per-user server state (useUserData), not localStorage (bleeds across accounts in same browser); "new" = no wallets AND no exchange/portfolio.
 - [BYOB video series contract](byob-video-series.md) — episodes may only instruct steps the site can walk (Ep3 gated on buy-wizard); Ep5 drill is video-guided only, no site feature; videos can't be hotfixed.
 - [Founding onboarding wallet-source contract](founding-onboarding-wallet-source.md) — kit-gen step 2 must gate on the SAME wallet source as step 1 (getWalletsByUser), not the kit-display merge (excludes normal-chain portfolio wallets) or members stick forever.
+- [Unknown token pricing](unknown-token-pricing.md) — never substitute ETH/XRP/BTC price for an unpriced token; unknown market value stays zero/unknown or dust balances become billion-dollar portfolios.

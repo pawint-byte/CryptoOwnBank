@@ -4,6 +4,37 @@ export interface NormalizedWalletBalance {
   usdValue: string;
 }
 
+export type WalletSyncStatus = "unavailable" | "partial" | "complete";
+
+const PARTIAL_ENUMERATION_CHAINS = new Set([
+  "ethereum",
+  "solana",
+  "xrp",
+  "flare",
+  "cardano",
+  "avalanche",
+  "bsc",
+  "cosmos",
+  "tron",
+  "hedera",
+  "cronos",
+  "ton",
+  "stellar",
+  "xdc",
+  "polygon",
+  "base",
+  "arbitrum",
+  "optimism",
+]);
+
+export function classifyWalletSyncResult(
+  chain: string,
+  validBalanceCount: number,
+): WalletSyncStatus {
+  if (validBalanceCount === 0) return "unavailable";
+  return PARTIAL_ENUMERATION_CHAINS.has(chain.toLowerCase()) ? "partial" : "complete";
+}
+
 export function normalizeWalletBalance(
   input: { symbol?: unknown; balance?: unknown; usdValue?: unknown },
 ): NormalizedWalletBalance | null {

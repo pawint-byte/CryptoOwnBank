@@ -424,6 +424,7 @@ export function registerTaxRoutes(app: Express) {
         assetSymbol: l.assetSymbol,
         acquiredDate: l.acquiredDate instanceof Date ? l.acquiredDate.toISOString() : String(l.acquiredDate),
         remainingQuantity: l.remainingQuantity,
+        costBasisPerUnit: l.costBasisPerUnit,
       }));
 
       const opportunities = scanForHarvestOpportunities(positionsData, priceLookup, lotsForScan);

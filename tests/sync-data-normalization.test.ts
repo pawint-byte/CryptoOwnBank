@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  classifyWalletSyncResult,
   normalizeNewsFields,
   normalizeWalletBalance,
 } from "../server/services/sync-data-normalization";
@@ -53,5 +54,22 @@ describe("normalizeNewsFields", () => {
       categories: ["Payments"],
       searchText: "xrp adoption rlusd expands payments",
     });
+  });
+});
+
+describe("classifyWalletSyncResult", () => {
+  it("treats an empty provider response as unavailable, never verified empty", () => {
+    expect(classifyWalletSyncResult("polkadot", 0)).toBe("unavailable");
+  });
+
+  it("marks token-enumerating chains as partial so missing tokens are preserved", () => {
+    expect(classifyWalletSyncResult("cronos", 1)).toBe("partial");
+    expect(classifyWalletSyncResult("ethereum", 1)).toBe("partial");
+    expect(classifyWalletSyncResult("xrp", 1)).toBe("partial");
+    expect(classifyWalletSyncResult("cosmos", 1)).toBe("partial");
+  });
+
+  it("marks a non-empty native-only chain result complete", () => {
+    expect(classifyWalletSyncResult("bitcoin", 1)).toBe("complete");
   });
 });

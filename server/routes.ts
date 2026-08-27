@@ -33,7 +33,8 @@ import { registerAgentRoutes } from "./routes/agent";
 import { registerMarketRoutes } from "./routes/market";
 import { registerAdminSubscriptionsRoutes } from "./routes/admin-subscriptions";
 import { registerBillingRoutes } from "./routes/billing";
-import { normalizeWalletBalance } from "./services/sync-data-normalization";
+import { classifyWalletSyncResult, normalizeWalletBalance } from "./services/sync-data-normalization";
+import { resolveWalletValuation } from "./services/portfolio-valuation";
 import { registerHoldingsRoutes } from "./routes/holdings";
 import { registerVaultsRoutes } from "./routes/vaults";
 import { registerPortfolioRoutes } from "./routes/portfolio";
@@ -952,9 +953,10 @@ ${sections}
         "hsl(var(--chart-5))",
       ];
 
-      const [priceCacheRows, allAssetsPortfolio] = await Promise.all([
+      const [priceCacheRows, allAssetsPortfolio, portfolioTaxLots] = await Promise.all([
         db.select().from(priceCacheTable),
         storage.getAllAssets(),
+        storage.getTaxLotsByUser(userId),
       ]);
       const priceCacheLookup: Record<string, number> = {};
       for (const row of priceCacheRows) {
@@ -999,35 +1001,40 @@ ${sections}
       const rawWalletBalsForPortfolio = await storage.getWalletBalancesByUser(userId);
       const enrichedWalletBals = await enrichWalletBalances(rawWalletBalsForPortfolio);
       const userWalletsForPortfolio = await storage.getWalletsByUser(userId);
+      const linkedLotBasisByWalletBalance = new Map<string, number>();
+      for (const lot of portfolioTaxLots) {
+        if (!lot.walletBalanceId) continue;
+        const remainingQuantity = parseFloat(lot.remainingQuantity) || 0;
+        const costBasisPerUnit = parseFloat(lot.costBasisPerUnit) || 0;
+        const lotBasis = remainingQuantity > 0 && costBasisPerUnit > 0
+          ? remainingQuantity * costBasisPerUnit
+          : 0;
+        linkedLotBasisByWalletBalance.set(
+          lot.walletBalanceId,
+          (linkedLotBasisByWalletBalance.get(lot.walletBalanceId) || 0) + lotBasis,
+        );
+      }
 
       const positionAssets = new Set(positionsData.filter(p => !p.isAddressed).map(p => p.assetSymbol.toUpperCase()));
 
       const walletPositions = await Promise.all(enrichedWalletBals.map(async (wb) => {
         const wallet = userWalletsForPortfolio.find((w: any) => w.id === wb.walletId);
-        let usdVal = parseFloat(wb.usdValue || "0") || 0;
-        const bal = parseFloat(wb.balance) || 0;
-        const avgCost = parseFloat(wb.averageCost || "0") || 0;
-        const costBasis = parseFloat(wb.totalCostBasis || "0") || 0;
-
-        if (usdVal === 0 && bal > 0) {
-          const sym = wb.assetSymbol.toUpperCase();
-          let resolvedPrice = portfolioAssetPrices[sym] || 0;
-          if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
-            resolvedPrice = priceCacheLookup[sym] || 0;
-          }
-          if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
-            resolvedPrice = avgCost;
-          }
-          if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
-            resolvedPrice = bal > 0 && costBasis > 0 ? costBasis / bal : 0;
-          }
-          if (Number.isFinite(resolvedPrice) && resolvedPrice > 0) {
-            usdVal = bal * resolvedPrice;
-          }
-        }
-
-        const safeUsdVal = Number.isFinite(usdVal) ? usdVal : 0;
-        const price = bal > 0 ? safeUsdVal / bal : 0;
+        const sym = wb.assetSymbol.toUpperCase();
+        const marketPrice = portfolioAssetPrices[sym] || priceCacheLookup[sym] || 0;
+        const valuation = resolveWalletValuation({
+          balance: wb.balance,
+          reportedUsdValue: wb.usdValue,
+          marketPrice,
+          storedCostBasis: wb.totalCostBasis,
+          linkedLotCostBasis: linkedLotBasisByWalletBalance.has(wb.id)
+            ? linkedLotBasisByWalletBalance.get(wb.id)
+            : undefined,
+        });
+        const bal = valuation.balance;
+        const avgCost = bal > 0 ? valuation.costBasis / bal : 0;
+        const costBasis = valuation.costBasis;
+        const safeUsdVal = valuation.currentValue;
+        const price = valuation.currentPrice;
         const alreadyInPositions = positionAssets.has(wb.assetSymbol.toUpperCase());
         const usableCostBasis = alreadyInPositions ? 0 : costBasis;
         const usableValue = alreadyInPositions ? 0 : safeUsdVal;
@@ -1046,7 +1053,7 @@ ${sections}
           storedCostBasis: costBasis.toFixed(2),
           updatedAt: wb.updatedAt,
           currentPrice: price,
-          currentValue: usdVal,
+          currentValue: safeUsdVal,
           gainLoss,
           gainLossPercent,
           source: wallet?.label || wallet?.chain || "Wallet",
@@ -3254,6 +3261,7 @@ Rules you MUST follow:
             }
           }
 
+          let validBalanceCount = 0;
           for (const bal of balances) {
             const normalized = normalizeWalletBalance(bal);
             if (!normalized) {
@@ -3265,9 +3273,15 @@ Rules you MUST follow:
               userId,
               ...normalized,
             });
+            validBalanceCount++;
           }
 
-          await storage.updateWalletSyncTime(wallet.id);
+          const syncStatus = classifyWalletSyncResult(chain, validBalanceCount);
+          if (syncStatus === "complete") {
+            await storage.updateWalletSyncTime(wallet.id);
+          } else {
+            console.warn(`[auto-sync] ${syncStatus} ${chain} balance result for wallet ${wallet.id}; preserving cached balances and last successful sync time`);
+          }
 
           if (SYNCABLE_CHAINS.has(chain)) {
             try {
@@ -3318,7 +3332,6 @@ Rules you MUST follow:
 
                 const STABLECOINS_AUTO = new Set(["RLUSD", "USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD"]);
                 const MAX_PRICE_LOOKUPS = 60;
-                const nativeAssetAuto = chain === "ethereum" ? "ETH" : chain === "xrp" ? "XRP" : "BTC";
                 const priceMapSync = new Map<string, number>();
 
                 const uniqueAssetDatesAuto = new Map<string, { asset: string; date: Date }>();
@@ -3332,8 +3345,7 @@ Rules you MUST follow:
                 let lookupCount = 0;
                 for (const [key, { asset: txAsset, date }] of uniqueAssetDatesAuto) {
                   if (lookupCount >= MAX_PRICE_LOOKUPS) break;
-                  const lookupSymbol = txAsset === nativeAssetAuto || txAsset === "XRP" || txAsset === "ETH" || txAsset === "BTC" ? txAsset : nativeAssetAuto;
-                  const price = await getHistoricalPrice(lookupSymbol, date);
+                  const price = await getHistoricalPrice(txAsset, date);
                   priceMapSync.set(key, price);
                   lookupCount++;
                   if (lookupCount < uniqueAssetDatesAuto.size) await new Promise(r => setTimeout(r, 2500));
@@ -3915,7 +3927,6 @@ Rules you MUST follow:
 
       let chain = wallet.chain as any;
       let balances: Awaited<ReturnType<typeof fetchChainBalances>> = [];
-      let fetchError = false;
       let correctedChain: string | null = null;
 
       if (isExchangeDeposit) {
@@ -3955,43 +3966,29 @@ Rules you MUST follow:
           balances = await fetchChainBalances(wallet.chain as any, wallet.address);
         } catch (err) {
           console.error(`Sync fetch error for ${wallet.chain} wallet ${wallet.id}:`, err);
-          fetchError = true;
         }
       }
 
-      if (fetchError) {
-        console.log(`Sync: keeping existing balances for ${chain} wallet ${wallet.id} (fetch error, preserving cached data)`);
-        await storage.updateWalletSyncTime(wallet.id);
-      } else if (balances.length === 0) {
-        const existingBalances = await storage.getWalletBalances(wallet.id);
-        if (existingBalances.length > 0) {
-          console.log(`Sync: clearing ${existingBalances.length} stale balance(s) for ${chain} wallet ${wallet.id} (API returned 0 results)`);
-          for (const existing of existingBalances) {
-            await db.delete(walletBalances).where(eq(walletBalances.id, existing.id));
-          }
+      let validBalanceCount = 0;
+      for (const bal of balances) {
+        const normalized = normalizeWalletBalance(bal);
+        if (!normalized) {
+          console.warn(`Sync: skipping invalid balance for ${chain} wallet ${wallet.id}`);
+          continue;
         }
-        await storage.updateWalletSyncTime(wallet.id);
-      } else {
-        const existingBalances = await storage.getWalletBalances(wallet.id);
-        const activeSymbols = new Set(balances.map(b => b.symbol));
-
-        for (const existing of existingBalances) {
-          if (!activeSymbols.has(existing.assetSymbol)) {
-            await db.delete(walletBalances).where(eq(walletBalances.id, existing.id));
-          }
-        }
-
-        for (const bal of balances) {
           await storage.upsertWalletBalance({
             walletId: wallet.id,
             userId,
-            assetSymbol: bal.symbol,
-            balance: bal.balance.toString(),
-            usdValue: bal.usdValue.toString(),
+            ...normalized,
           });
-        }
+        validBalanceCount++;
+      }
 
+      const balanceSyncStatus = classifyWalletSyncResult(chain, validBalanceCount);
+      if (balanceSyncStatus === "complete") {
         await storage.updateWalletSyncTime(wallet.id);
+      } else {
+        console.warn(`Sync: ${balanceSyncStatus} ${chain} balance result for wallet ${wallet.id}; preserving cached balances and last successful sync time`);
       }
 
       let newTransactions = 0;
@@ -4049,7 +4046,6 @@ Rules you MUST follow:
             const STABLECOINS_SET = new Set(["RLUSD", "USDT", "USDC", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "LUSD", "GUSD"]);
             const MAX_PRICE_LOOKUPS = 60;
             const priceMapByAssetDay = new Map<string, number>();
-            const nativeAsset = chain === "ethereum" ? "ETH" : chain === "xrp" ? "XRP" : "BTC";
 
             const uniqueAssetDates = new Map<string, { asset: string; date: Date }>();
             for (const tx of blockchainTxs) {
@@ -4065,10 +4061,7 @@ Rules you MUST follow:
                 console.warn(`Capping price lookups at ${MAX_PRICE_LOOKUPS} for wallet ${wallet.id}`);
                 break;
               }
-              let price = await getHistoricalPrice(txAsset, date);
-              if (price === 0 && txAsset !== nativeAsset) {
-                price = await getHistoricalPrice(nativeAsset, date);
-              }
+              const price = await getHistoricalPrice(txAsset, date);
               priceMapByAssetDay.set(key, price);
               lookupCount++;
               if (lookupCount < uniqueAssetDates.size) await new Promise(r => setTimeout(r, 2500));
@@ -4245,7 +4238,13 @@ Rules you MUST follow:
 
       const updatedWallet = await storage.getWallet(wallet.id);
       const updatedBalances = await storage.getWalletBalances(wallet.id);
-      res.json({ ...updatedWallet, balances: updatedBalances, newTransactions, correctedChain: correctedChain || undefined });
+      res.json({
+        ...updatedWallet,
+        balances: updatedBalances,
+        newTransactions,
+        correctedChain: correctedChain || undefined,
+        syncStatus: balanceSyncStatus,
+      });
     } catch (error) {
       console.error("Sync wallet error:", error);
       res.status(500).json({ message: "Failed to sync wallet" });
@@ -5832,38 +5831,82 @@ function startPriceAlertChecker() {
       }
 
       if (fixCount > 0) {
-        console.log(`[startup-fix-erc20] Fixed ${fixCount} corrupted tax lots. Recalculating positions...`);
-        const allUsers = await db.execute(sql`SELECT DISTINCT user_id FROM tax_lots`);
-        for (const row of allUsers.rows) {
-          const uid = row.user_id as string;
-          const lots = await storage.getTaxLotsByUser(uid);
-          const positionsData = await storage.getPositionsByUser(uid);
+        console.log(`[startup-fix-erc20] Fixed ${fixCount} corrupted tax lots.`);
+      } else {
+        console.log("[startup-fix-erc20] No corrupted tax lots found.");
+      }
 
+      const allUsers = await db.execute(sql`SELECT DISTINCT user_id FROM tax_lots`);
+      for (const row of allUsers.rows) {
+        const uid = row.user_id as string;
+        const lots = await storage.getTaxLotsByUser(uid);
+
+        if (fixCount > 0) {
+          const positionsData = await storage.getPositionsByUser(uid);
           const lotTotals: Record<string, { qty: number; costBasis: number }> = {};
           for (const lot of lots) {
             const sym = lot.assetSymbol;
             if (!lotTotals[sym]) lotTotals[sym] = { qty: 0, costBasis: 0 };
-            const qty = parseFloat(lot.remainingQuantity);
-            const price = parseFloat(lot.costBasisPerUnit);
+            const qty = parseFloat(lot.remainingQuantity) || 0;
+            const price = parseFloat(lot.costBasisPerUnit) || 0;
             lotTotals[sym].qty += qty;
             lotTotals[sym].costBasis += qty * price;
           }
 
           for (const pos of positionsData) {
             const lotData = lotTotals[pos.assetSymbol];
-            if (lotData) {
-              const newCostBasis = lotData.costBasis.toFixed(2);
-              const newAvgCost = lotData.qty > 0 ? (lotData.costBasis / lotData.qty).toFixed(8) : "0";
-              await storage.updatePosition(pos.id, {
-                totalCostBasis: newCostBasis,
-                averageCost: newAvgCost,
-              });
-            }
+            if (!lotData) continue;
+            const newCostBasis = lotData.costBasis.toFixed(2);
+            const newAvgCost = lotData.qty > 0 ? (lotData.costBasis / lotData.qty).toFixed(8) : "0";
+            await storage.updatePosition(pos.id, {
+              totalCostBasis: newCostBasis,
+              averageCost: newAvgCost,
+            });
           }
-          console.log(`[startup-fix-erc20] Recalculated positions for user ${uid}`);
         }
-      } else {
-        console.log("[startup-fix-erc20] No corrupted tax lots found.");
+
+        const walletLotTotals = new Map<string, { qty: number; costBasis: number }>();
+        const transactionLotTotals = new Map<string, { qty: number; costBasis: number }>();
+        for (const lot of lots) {
+          const remainingQty = parseFloat(lot.remainingQuantity) || 0;
+          const originalQty = parseFloat(lot.originalQuantity) || 0;
+          const price = parseFloat(lot.costBasisPerUnit) || 0;
+          if (lot.walletBalanceId) {
+            const total = walletLotTotals.get(lot.walletBalanceId) || { qty: 0, costBasis: 0 };
+            total.qty += remainingQty;
+            total.costBasis += remainingQty * price;
+            walletLotTotals.set(lot.walletBalanceId, total);
+          }
+          if (lot.transactionId) {
+            const total = transactionLotTotals.get(lot.transactionId) || { qty: 0, costBasis: 0 };
+            total.qty += originalQty;
+            total.costBasis += originalQty * price;
+            transactionLotTotals.set(lot.transactionId, total);
+          }
+        }
+
+        for (const [walletBalanceId, total] of Array.from(walletLotTotals.entries())) {
+          const averageCost = total.qty > 0 ? total.costBasis / total.qty : 0;
+          await storage.updateWalletBalanceCostData(
+            walletBalanceId,
+            averageCost.toFixed(8),
+            total.costBasis.toFixed(2),
+          );
+        }
+
+        const userTransactions = await storage.getTransactionsByUser(uid);
+        const transactionsById = new Map(userTransactions.map((transaction) => [transaction.id, transaction]));
+        for (const [transactionId, total] of Array.from(transactionLotTotals.entries())) {
+          const transaction = transactionsById.get(transactionId);
+          const notes = transaction?.notes || "";
+          const isAutoSynced = notes.includes("auto-synced") || notes.startsWith("Imported from ");
+          if (!transaction || transaction.transactionType !== "buy" || !isAutoSynced) continue;
+          const pricePerUnit = total.qty > 0 ? total.costBasis / total.qty : 0;
+          await storage.updateTransaction(transactionId, {
+            pricePerUnit: pricePerUnit.toFixed(8),
+            totalValue: total.costBasis.toFixed(2),
+          });
+        }
       }
     } catch (err) {
       console.error("[startup-fix-erc20] Error:", err);
