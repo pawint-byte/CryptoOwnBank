@@ -1127,7 +1127,9 @@ export default function Transactions() {
                     {isCol("account") && <TableHead className="hidden sm:table-cell">Account</TableHead>}
                     {isCol("source") && <TableHead className="hidden sm:table-cell">Source</TableHead>}
                     {isCol("hash") && <TableHead>Tx Link</TableHead>}
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="sticky right-0 z-20 min-w-[112px] bg-background text-right shadow-[-8px_0_12px_-12px_rgba(0,0,0,0.35)]">
+                      Edit
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1229,19 +1231,20 @@ export default function Transactions() {
                           )}
                         </TableCell>
                       )}
-                      <TableCell className="text-right">
+                      <TableCell className="sticky right-0 z-10 min-w-[112px] bg-background text-right shadow-[-8px_0_12px_-12px_rgba(0,0,0,0.35)]">
                         {isEditable(tx) ? (
                           <div className="flex justify-end gap-1">
                             {(tx.direction === "buy" || tx.direction === "income") && (
                               <Button
                                 variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
+                                size="sm"
+                                className="h-8 px-2"
                                 onClick={() => openEdit(tx)}
                                 data-testid={`button-edit-${tx.id}`}
                                 aria-label="Edit transaction"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Pencil className="mr-1 h-4 w-4" />
+                                Edit
                               </Button>
                             )}
                             <Button
