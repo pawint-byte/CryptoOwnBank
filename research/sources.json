@@ -1,0 +1,68 @@
+[
+  {
+    "key": "xrpl-known-amendments",
+    "title": "Known Amendments",
+    "url": "https://xrpl.org/resources/known-amendments",
+    "tier": "primary"
+  },
+  {
+    "key": "xrpl-escrow",
+    "title": "Escrow",
+    "url": "https://xrpl.org/docs/concepts/payment-types/escrow",
+    "tier": "primary"
+  },
+  {
+    "key": "ripple-rlusd-xrpl",
+    "title": "RLUSD on the XRP Ledger",
+    "url": "https://docs.ripple.com/products/stablecoin/developer-resources/rlusd-on-the-xrpl",
+    "tier": "primary"
+  },
+  {
+    "key": "flare-fxrp-mainnet",
+    "title": "FAssets FXRP Is Live on Mainnet",
+    "url": "https://flare.network/news/fassets-fxrp-is-live-on-mainnet",
+    "tier": "official vendor"
+  },
+  {
+    "key": "flare-earnxrp",
+    "title": "earnXRP Launches on Flare",
+    "url": "https://flare.network/news/earnxrp-launches-on-flare-the-first-xrp-denominated-yield-product",
+    "tier": "official vendor"
+  },
+  {
+    "key": "ripple-xls66",
+    "title": "XLS-66 Lending Protocol",
+    "url": "https://opensource.ripple.com/docs/xls-66-lending-protocol",
+    "tier": "primary"
+  },
+  {
+    "key": "franklin-fobxx",
+    "title": "Franklin OnChain U.S. Government Money Fund",
+    "url": "https://www.franklintempleton.com/investments/options/money-market-funds/products/29386/SINGLCLASS/franklin-onchain-u-s-government-money-fund/FOBXX",
+    "tier": "official issuer"
+  },
+  {
+    "key": "ethereum-pectra",
+    "title": "Pectra Upgrade",
+    "url": "https://ethereum.org/roadmap/pectra/",
+    "tier": "primary"
+  },
+  {
+    "key": "w3c-vc-20",
+    "title": "Verifiable Credentials Data Model 2.0",
+    "url": "https://www.w3.org/TR/vc-data-model-2.0/",
+    "tier": "primary standard"
+  },
+  {
+    "key": "erc4337",
+    "title": "ERC-4337 Account Abstraction",
+    "url": "https://eips.ethereum.org/EIPS/eip-4337",
+    "tier": "primary standard"
+  },
+  {
+    "key": "irs-digital-assets",
+    "title": "Digital Assets",
+    "url": "https://www.irs.gov/filing/digital-assets",
+    "tier": "government"
+  }
+]

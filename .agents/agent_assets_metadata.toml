@@ -29,105 +29,137 @@ id = "5SYBb-a6hAnLWmo2e9Esi"
 uri = "file://attached_assets/cryptoownbank_thumbnail.png"
 type = "image"
 title = "CryptoOwnBank - SCF Project Thumbnail"
+logical_id = "f4a3eca9-fe3f-4d47-a129-218eccc42a2e"
 
 [[outputs]]
 id = "54wLVQmy-7g8Tw02B6Lup"
 uri = "file://attached_assets/cryptoownbank-logo-v2.png"
 type = "image"
 title = "Option 2 — Vault + Blockchain Logo"
+logical_id = "94d89d8e-d5cf-4e40-9585-fff3fccfb6ff"
 
 [[outputs]]
 id = "BlofMdCehfou5KKHdTmsO"
 uri = "file://INTEGRATIONS_REFERENCE.md"
 type = "text"
 title = "CryptoOwnBank Integration Reference Guide"
+logical_id = "2738d37b-4995-4c2b-b953-c9388063389d"
 
 [[outputs]]
 id = "uubCLgywzpDvfJJDXm4qz"
 uri = "file://docs/announcements/2026-04-wallets-first-and-family.md"
 type = "text"
 title = "Email announcement: Wallets-first + Family mode"
+logical_id = "25127bda-31b5-445c-8a07-17340c1d25be"
 
 [[outputs]]
 id = "rTVxOaplgUHamAKFqiAUH"
 uri = "file://attached_assets/generated_images/pwa_mockup_home_icon.png"
 type = "image"
 title = "1. Home-screen icon — what your app looks like installed next to native apps"
+logical_id = "171e2d60-4a20-4458-8f7c-3474b0e9e788"
 
 [[outputs]]
 id = "TUWSw88-cu0KAbxWket6y"
 uri = "file://attached_assets/generated_images/pwa_mockup_install_prompt.png"
 type = "image"
 title = "2. Install prompt — first-visit banner inviting the user to add to home screen"
+logical_id = "7efb6321-b210-4cca-8121-54a763bbddb0"
 
 [[outputs]]
 id = "wIygcB5tAsaQRcQ22FKfn"
 uri = "file://attached_assets/generated_images/pwa_mockup_fullscreen_dashboard.png"
 type = "image"
 title = "3. Fullscreen launch — dashboard with no browser bar, native bottom tab bar"
+logical_id = "d2a0acfd-ea33-4562-91bc-d471a9cd8d5b"
 
 [[outputs]]
 id = "JAglI_km70R6ug1rdyCFd"
 uri = "file://attached_assets/generated_images/pwa_mockup_bottom_sheet.png"
 type = "image"
 title = "4. Bottom sheet dialog — Pay With Crypto sliding up like a native iOS modal"
+logical_id = "fe59c7ba-7a8c-44fa-962c-9489b92e3e00"
 
 [[outputs]]
 id = "DXGXj3U0acj1B3Kh45w0I"
 uri = "file://.local/announcements/founding-member-heygen-script.md"
 type = "text"
 title = "Founding Members — HeyGen Video Script"
+logical_id = "aaf682a6-553a-4eb9-a417-fa508c95f1de"
 
 [[outputs]]
 id = "HeKo9sRQH7cORkzqgvwH4"
 uri = "file://docs/cockpit-thesis.md"
 type = "text"
 title = "The Cockpit Thesis"
+logical_id = "736fdef7-d9cd-4a22-a96c-bf0eb9d8f1bf"
 
 [[outputs]]
 id = "a5tqRcBd-pmd3LPsnHj2L"
 uri = "file://.local/announcements/cockpit-launch-heygen-script.md"
 type = "text"
 title = "Cockpit — HeyGen Video Script"
+logical_id = "8ddbae52-63ad-4ac2-baf3-2f1bc13e93b3"
 
 [[outputs]]
 id = "a5asZNq5Bryy0cPsbgzLA"
 uri = "file://.local/announcements/cockpit-launch-social-post.md"
 type = "text"
 title = "Cockpit — Social Media Posts"
+logical_id = "6211d2b1-f908-442b-9491-a6e8a7c7d625"
 
 [[outputs]]
 id = "qpKUspI5NK5rryghNXn3U"
 uri = "file://.local/announcements/cockpit-launch-email.md"
 type = "text"
 title = "Cockpit — Email (long-form reference)"
+logical_id = "b9834db0-b2e0-4706-915a-20c338f58f0f"
 
 [[outputs]]
 id = "9Hhv2QCD3hjQh2amsssok"
 uri = "file://attached_assets/merch/merch-preview.png"
 type = "image"
 title = "Preview — all 3 designs on garment colors"
+logical_id = "3411a122-fd8a-45c5-a8d3-af09e0352103"
 
 [[outputs]]
 id = "H_B0l2lpxhmJ88E7TiW8z"
 uri = "file://attached_assets/merch/tee-dark-print.png"
 type = "image"
 title = "Dark shirt print file (transparent PNG)"
+logical_id = "30ea4be6-ee65-4a01-9a11-537e8bdd5498"
 
 [[outputs]]
 id = "ZktkOGoN4wy9nbJlFOdcI"
 uri = "file://attached_assets/merch/tee-light-print.png"
 type = "image"
 title = "Light shirt print file (transparent PNG)"
+logical_id = "fdc30697-022b-4b42-a79e-800ebdc68d2e"
 
 [[outputs]]
 id = "bLfHrVoTABgZAMEvA4kQd"
 uri = "file://attached_assets/merch/mug-print.png"
 type = "image"
 title = "Mug wrap print file (transparent PNG)"
+logical_id = "08bf47d2-500a-4b9a-a502-08864fe49595"
 
 [[outputs]]
 id = "Z3zT3scCDtARU0Lb1UEyj"
 uri = "file://exports/XRP_Valuation_Model_v2.xlsx"
 type = "table"
 title = "XRP Valuation Model v2 (upgraded)"
+logical_id = "1d25cc74-90a5-4d58-95e4-af8124e93e35"
+
+[[outputs]]
+id = "5_TR71oWluowAR8hcOy6n"
+uri = "file://research/notes.md"
+type = "text"
+title = "On-chain Opportunity Scan"
+description = "Research plan and running findings for actionable CryptoOwnBank opportunities."
+logical_id = "43af34f1-8884-461b-8b0b-a5e8e41c411a"
+content_hash = "sha256:149a66d12e4690bded1494307802430c7f6a93492858fcd86512961895f98364"
+size = 1488
+mtime_ms = 1788446767316
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:803dbb6f-bc6e-4d16-8dab-da23c27c28c7/43af34f1-8884-461b-8b0b-a5e8e41c411a/ce622a9b-87aa-46d2-9961-957dc3434a69"
+storage_version_token = "1788446772743327"
+content_type = "text/markdown"
