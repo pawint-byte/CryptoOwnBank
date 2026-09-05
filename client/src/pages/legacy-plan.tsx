@@ -2634,7 +2634,7 @@ export default function LegacyPlanPage() {
           </div>
           <Tabs value={planView} onValueChange={(v) => { setPlanView(v as "wallets" | "people"); try { localStorage.setItem("legacy-plan-view", v); } catch {} }} className="mt-3">
             <TabsList>
-              <TabsTrigger value="wallets" data-testid="tab-view-wallets">Wallets ({beneficiaries.length})</TabsTrigger>
+              <TabsTrigger value="wallets" data-testid="tab-view-wallets">Wallets</TabsTrigger>
               <TabsTrigger value="people" data-testid="tab-view-people">People ({new Set(beneficiaries.map(b => (b.email || "").toLowerCase()).filter(Boolean)).size})</TabsTrigger>
             </TabsList>
           </Tabs>

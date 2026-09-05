@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Wallet, Users, AlertCircle, CheckCircle2, Pencil, Plus, Trash2, Share2, KeyRound, Eye } from "lucide-react";
+import { Wallet, Users, AlertCircle, CheckCircle2, Pencil, Plus, Trash2, Share2, KeyRound, ChevronDown, HardDrive } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,6 +60,13 @@ type WalletAsset = {
   assets: { symbol: string; balance: string; usdValue: string | null }[];
 };
 
+type AssignmentDetail = {
+  assignment: WalletAssignment;
+  portfolioWallet: WalletAsset | null;
+  brand: ColdBrand | null;
+  identity: string | null;
+};
+
 const RECOVERY_MODES = [
   { value: "solo", label: "Solo — one person can recover alone", icon: KeyRound },
   { value: "joint_threshold", label: "Joint — multiple people each hold a piece, must cooperate", icon: Share2 },
@@ -89,6 +96,27 @@ function buildAssetSummary(w: WalletAsset): string {
   return lines.join("\n");
 }
 
+type ColdBrand = "Ledger Nano X" | "Cypherock X1" | "Arculus" | "ELLIPAL" | "SafePal";
+
+const COLD_BRANDS: Array<{ brand: ColdBrand; pattern: RegExp }> = [
+  { brand: "Ledger Nano X", pattern: /\bledger(?:\s+nano\s+x)?\b/i },
+  { brand: "Cypherock X1", pattern: /\bcyphe?rock(?:\s+x1)?\b/i },
+  { brand: "Arculus", pattern: /\barculus\b/i },
+  { brand: "ELLIPAL", pattern: /\bellipal\b/i },
+  { brand: "SafePal", pattern: /\bsafepal\b/i },
+];
+
+function coldBrandFrom(...labels: Array<string | null | undefined>): ColdBrand | null {
+  const source = labels.filter(Boolean).join(" ");
+  return COLD_BRANDS.find(({ pattern }) => pattern.test(source))?.brand ?? null;
+}
+
+function normalizedAccountIdentity(chain?: string | null, address?: string | null): string | null {
+  if (!chain || !address) return null;
+  const normalizedAddress = address.trim().replace(/\s+/g, "").toLowerCase();
+  return normalizedAddress ? `${chain.trim().toLowerCase()}:${normalizedAddress}` : null;
+}
+
 interface Props {
   beneficiaries: Beneficiary[];
 }
@@ -113,6 +141,51 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
     [walletAssets, assignedWalletIds]
   );
 
+  const assignmentDetails = useMemo<AssignmentDetail[]>(() => assignments.map((assignment) => {
+    const portfolioWallet = assignment.walletId ? walletAssets.find(w => w.walletId === assignment.walletId) ?? null : null;
+    const brand = coldBrandFrom(
+      assignment.walletType,
+      assignment.walletLabel,
+      portfolioWallet?.hardwareDevice,
+      portfolioWallet?.label,
+    );
+    return {
+      assignment,
+      portfolioWallet,
+      brand,
+      identity: normalizedAccountIdentity(assignment.chain ?? portfolioWallet?.chain, portfolioWallet?.address),
+    };
+  }), [assignments, walletAssets]);
+
+  const duplicateIdentities = useMemo(() => {
+    const seen = new Map<string, number>();
+    assignmentDetails.forEach(({ identity }) => { if (identity) seen.set(identity, (seen.get(identity) ?? 0) + 1); });
+    unassignedWallets.forEach((wallet) => {
+      const identity = normalizedAccountIdentity(wallet.chain, wallet.address);
+      if (identity) seen.set(identity, (seen.get(identity) ?? 0) + 1);
+    });
+    return new Set(Array.from(seen.entries()).filter(([, count]) => count > 1).map(([identity]) => identity));
+  }, [assignmentDetails]);
+
+  const coldGroups = useMemo(() => {
+    const groups = new Map<ColdBrand, AssignmentDetail[]>();
+    assignmentDetails.filter(detail => detail.brand).forEach((detail) => {
+      const brand = detail.brand!;
+      groups.set(brand, [...(groups.get(brand) ?? []), detail]);
+    });
+    return groups;
+  }, [assignmentDetails]);
+
+  const existingAssignments = useMemo(() => assignmentDetails.filter(detail => !detail.brand), [assignmentDetails]);
+  const uniqueAssignedIdentities = new Set(assignmentDetails.map(detail => detail.identity ?? `assignment:${detail.assignment.id}`)).size;
+  const uniqueUnassignedIdentities = new Set(unassignedWallets.map(wallet => normalizedAccountIdentity(wallet.chain, wallet.address) ?? `wallet:${wallet.walletId}`)).size;
+  const uniqueWalletIdentities = new Set([
+    ...assignmentDetails.map(detail => detail.identity ?? `assignment:${detail.assignment.id}`),
+    ...unassignedWallets.map(wallet => normalizedAccountIdentity(wallet.chain, wallet.address) ?? `wallet:${wallet.walletId}`),
+  ]).size;
+  const coldAccountCount = Array.from(coldGroups.values()).reduce((total, group) => total + group.length, 0);
+  const coldUniqueAccountCount = Array.from(coldGroups.values()).reduce((total, group) =>
+    total + new Set(group.map(detail => detail.identity ?? `assignment:${detail.assignment.id}`)).size, 0);
   const totalAssigned = assignments.length;
   const totalReviewed = assignments.filter(a => !a.autoAssigned || a.reviewedAt).length;
   const totalUnassigned = unassignedWallets.length;
@@ -135,14 +208,23 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
           <div className="text-xs text-muted-foreground">Need review</div>
         </div>
         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-unassigned">
-          <div className="text-2xl font-bold text-red-600">{totalUnassigned}</div>
+          <div className="text-2xl font-bold text-red-600">{uniqueUnassignedIdentities}</div>
           <div className="text-xs text-muted-foreground">Not yet assigned</div>
         </div>
         <div className="rounded-lg border p-3 text-center">
-          <div className="text-2xl font-bold">{totalAssigned + totalUnassigned}</div>
-          <div className="text-xs text-muted-foreground">Total wallets</div>
+          <div className="text-2xl font-bold">{uniqueWalletIdentities}</div>
+          <div className="text-xs text-muted-foreground">Unique wallet records</div>
         </div>
       </div>
+
+      {coldAccountCount > 0 && (
+        <Alert className="border-sky-200 bg-sky-50/60 dark:border-sky-900 dark:bg-sky-950/20" data-testid="cold-wallet-summary">
+          <HardDrive className="h-4 w-4 text-sky-700 dark:text-sky-300" />
+          <AlertDescription className="text-sky-950 dark:text-sky-100">
+            <strong>{coldGroups.size} cold device{coldGroups.size === 1 ? "" : "s"}</strong> organize {coldAccountCount} recorded account{coldAccountCount === 1 ? "" : "s"} across {coldUniqueAccountCount} unique chain/address account{coldUniqueAccountCount === 1 ? "" : "s"}. Multiple chain accounts can belong to one physical device.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Unassigned wallets — call to action */}
       {unassignedWallets.length > 0 && (
@@ -173,6 +255,9 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
                     <div className="text-[10px] text-red-600 font-medium">UNASSIGNED</div>
                   </div>
                 </div>
+                {duplicateIdentities.has(normalizedAccountIdentity(w.chain, w.address) ?? "") && (
+                  <div className="mt-2 text-[10px] font-medium text-amber-700 dark:text-amber-300">Duplicate chain + address record — retained for review</div>
+                )}
                 <Button size="sm" className="w-full mt-2" variant="outline" onClick={(e) => { e.stopPropagation(); setCreating(w); }} data-testid={`button-assign-wallet-${w.walletId}`}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Assign beneficiaries
                 </Button>
@@ -186,69 +271,28 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
       {assignments.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Assigned wallets ({assignments.length})</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Assigned wallets ({uniqueAssignedIdentities} unique)</h3>
             <Button size="sm" variant="outline" onClick={() => setCreating("blank")} data-testid="button-add-custom-wallet">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add custom (off-portfolio) wallet
             </Button>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {assignments.map(a => {
-              const portfolioWallet = a.walletId ? walletAssets.find(w => w.walletId === a.walletId) : null;
-              const usd = portfolioWallet ? walletTotalUsd(portfolioWallet) : null;
-              const needsReview = a.autoAssigned && !a.reviewedAt;
-              const noPeople = a.beneficiaries.length === 0;
-              const statusColor = noPeople ? "border-red-300" : needsReview ? "border-amber-300" : "border-green-300";
-              return (
-                <div key={a.id} className={`rounded-lg border-2 ${statusColor} p-3 hover-elevate`} data-testid={`card-assignment-${a.id}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <Wallet className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="font-semibold text-sm truncate" data-testid={`text-wallet-label-${a.id}`}>{a.walletLabel}</div>
-                        {a.chain && <Badge variant="outline" className="text-[10px]">{a.chain.toUpperCase()}</Badge>}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <Badge variant="secondary" className="text-[10px]">
-                          {modeLabel(a.recoveryMode)}
-                          {a.recoveryMode === "joint_threshold" && a.thresholdK && a.thresholdN ? ` ${a.thresholdK}-of-${a.thresholdN}` : ""}
-                        </Badge>
-                        {a.walletType && <Badge variant="outline" className="text-[10px] capitalize">{a.walletType}</Badge>}
-                        {needsReview && <Badge className="text-[10px] bg-amber-500">Review</Badge>}
-                        {noPeople && <Badge variant="destructive" className="text-[10px]">No heirs</Badge>}
-                        {!noPeople && !needsReview && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
-                      </div>
-                    </div>
-                    {usd !== null && (
-                      <div className="text-right text-sm font-semibold flex-shrink-0">${usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                    )}
-                  </div>
-
-                  {a.beneficiaries.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {a.beneficiaries.map(b => (
-                        <div key={b.id} className="flex items-center gap-1.5 text-xs" data-testid={`text-assigned-${b.id}`}>
-                          <Users className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium">{b.name}</span>
-                          {b.relationship && <span className="text-muted-foreground">({b.relationship})</span>}
-                          {b.pieceDescription && <span className="text-muted-foreground italic truncate">— {b.pieceDescription}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {a.wishesText && (
-                    <div className="mt-2 text-xs italic text-muted-foreground border-l-2 border-blue-300 pl-2 line-clamp-2">
-                      "{a.wishesText}"
-                    </div>
-                  )}
-
-                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => setEditing(a)} data-testid={`button-edit-assignment-${a.id}`}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+          {coldGroups.size > 0 && (
+            <div className="space-y-2" data-testid="section-cold-wallets">
+              <h4 className="text-xs font-semibold text-sky-800 dark:text-sky-300 uppercase tracking-wide">Cold wallets by physical device</h4>
+              {Array.from(coldGroups.entries()).map(([brand, records]) => (
+                <ColdDeviceSection key={brand} brand={brand} records={records} duplicateIdentities={duplicateIdentities} onEdit={setEditing} />
+              ))}
+            </div>
+          )}
+          {existingAssignments.length > 0 && (
+            <div className="space-y-2 pt-1" data-testid="section-existing-wallets">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Existing wallets ({existingAssignments.length})</h4>
+              <p className="text-xs text-muted-foreground">Hot, exchange, manual, and unrecognized records remain separate and unchanged.</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {existingAssignments.map(detail => <AssignmentCard key={detail.assignment.id} detail={detail} isDuplicate={!!detail.identity && duplicateIdentities.has(detail.identity)} onEdit={setEditing} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -280,6 +324,112 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
           onClose={() => setEditing(null)}
         />
       )}
+    </div>
+  );
+}
+
+function ColdDeviceSection({
+  brand,
+  records,
+  duplicateIdentities,
+  onEdit,
+}: {
+  brand: ColdBrand;
+  records: AssignmentDetail[];
+  duplicateIdentities: Set<string>;
+  onEdit: (assignment: WalletAssignment) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const uniqueAccounts = new Set(records.map(record => record.identity ?? `assignment:${record.assignment.id}`)).size;
+
+  return (
+    <section className="rounded-lg border border-sky-200 bg-sky-50/30 dark:border-sky-900 dark:bg-sky-950/10" data-testid={`cold-device-${brand.toLowerCase().replace(/\s+/g, "-")}`}>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 p-3 text-left hover-elevate rounded-lg"
+        onClick={() => setOpen(value => !value)}
+        aria-expanded={open}
+        data-testid={`button-toggle-cold-device-${brand.toLowerCase().replace(/\s+/g, "-")}`}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <HardDrive className="h-4 w-4 shrink-0 text-sky-700 dark:text-sky-300" />
+          <span className="font-semibold text-sm">{brand}</span>
+          <Badge variant="outline" className="border-sky-300 bg-background/60 text-[10px]">{records.length} recorded</Badge>
+          <Badge variant="secondary" className="text-[10px]">{uniqueAccounts} unique account{uniqueAccounts === 1 ? "" : "s"}</Badge>
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="grid gap-3 border-t border-sky-200 p-3 md:grid-cols-2 dark:border-sky-900">
+          {records.map(detail => (
+            <AssignmentCard
+              key={detail.assignment.id}
+              detail={detail}
+              isDuplicate={!!detail.identity && duplicateIdentities.has(detail.identity)}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AssignmentCard({
+  detail,
+  isDuplicate,
+  onEdit,
+}: {
+  detail: AssignmentDetail;
+  isDuplicate: boolean;
+  onEdit: (assignment: WalletAssignment) => void;
+}) {
+  const { assignment: a, portfolioWallet, brand } = detail;
+  const usd = portfolioWallet ? walletTotalUsd(portfolioWallet) : null;
+  const needsReview = a.autoAssigned && !a.reviewedAt;
+  const noPeople = a.beneficiaries.length === 0;
+  const statusColor = noPeople ? "border-red-300" : needsReview ? "border-amber-300" : "border-green-300";
+  const displayedType = a.walletType || brand;
+
+  return (
+    <div className={`rounded-lg border-2 ${statusColor} p-3 hover-elevate`} data-testid={`card-assignment-${a.id}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Wallet className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <div className="font-semibold text-sm truncate" data-testid={`text-wallet-label-${a.id}`}>{a.walletLabel}</div>
+            {a.chain && <Badge variant="outline" className="text-[10px]">{a.chain.toUpperCase()}</Badge>}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <Badge variant="secondary" className="text-[10px]">
+              {modeLabel(a.recoveryMode)}
+              {a.recoveryMode === "joint_threshold" && a.thresholdK && a.thresholdN ? ` ${a.thresholdK}-of-${a.thresholdN}` : ""}
+            </Badge>
+            {displayedType && <Badge variant="outline" className="text-[10px] capitalize">{displayedType}</Badge>}
+            {needsReview && <Badge className="text-[10px] bg-amber-500">Review</Badge>}
+            {noPeople && <Badge variant="destructive" className="text-[10px]">No heirs</Badge>}
+            {!noPeople && !needsReview && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
+          </div>
+        </div>
+        {usd !== null && <div className="text-right text-sm font-semibold flex-shrink-0">${usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>}
+      </div>
+      {isDuplicate && <div className="mt-2 text-[10px] font-medium text-amber-700 dark:text-amber-300">Duplicate chain + address record — retained for review</div>}
+      {a.beneficiaries.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {a.beneficiaries.map(b => (
+            <div key={b.id} className="flex items-center gap-1.5 text-xs" data-testid={`text-assigned-${b.id}`}>
+              <Users className="h-3 w-3 text-muted-foreground" />
+              <span className="font-medium">{b.name}</span>
+              {b.relationship && <span className="text-muted-foreground">({b.relationship})</span>}
+              {b.pieceDescription && <span className="text-muted-foreground italic truncate">— {b.pieceDescription}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {a.wishesText && <div className="mt-2 text-xs italic text-muted-foreground border-l-2 border-blue-300 pl-2 line-clamp-2">"{a.wishesText}"</div>}
+      <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => onEdit(a)} data-testid={`button-edit-assignment-${a.id}`}>
+        <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+      </Button>
     </div>
   );
 }
