@@ -41,6 +41,8 @@ import {
   Cpu,
   Zap,
   Coins,
+  Lightbulb,
+  UserPlus,
 } from "lucide-react";
 
 type RoadmapStatus =
@@ -421,8 +423,8 @@ export default function Roadmap() {
   return (
     <div className="min-h-screen bg-background">
       <SeoHead
-        title="Roadmap — What Should We Build Next? | CryptoOwnBank"
-        description="Member-voted roadmap. You vote, we listen, and we give a real public answer within 30 days. One verified account, one vote, ten active picks at a time."
+        title="Roadmap — Leave Your Mark on What Comes Next | CryptoOwnBank"
+        description="Explore the CryptoOwnBank pipeline, vote for the ideas that matter to you, and tell us what is missing. Create a free account to leave your mark."
         path="/roadmap"
       />
 
@@ -450,21 +452,44 @@ export default function Roadmap() {
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Hero / intro */}
         <section className="mb-12">
+          <Badge variant="outline" className="mb-4">Open member roadmap</Badge>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6" data-testid="heading-roadmap">
-            What Should We Build Next?
+            Come See What We're Thinking. Leave Your Mark.
           </h1>
           <div className="space-y-4 text-lg leading-relaxed text-muted-foreground">
             <p>
-              We don't decide alone. We decide with you. You tell us what matters most for your family,
-              your village, your daily life — and we tell you back, in plain words, what we can do and when.
+              Financial independence means different things to different people. Browse the full pipeline,
+              support the ideas that speak to your life, and tell us what we have not thought of yet.
             </p>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <a href="#ideas">
+                <Button size="lg" className="w-full sm:w-auto" data-testid="button-explore-ideas">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Explore the ideas
+                </Button>
+              </a>
+              {!viewer?.isAuthed && (
+                <a href="/signup">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-signup-to-vote">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Create a free account to vote
+                  </Button>
+                </a>
+              )}
+              <a href="mailto:hello@cryptoownbank.com?subject=An%20idea%20for%20CryptoOwnBank">
+                <Button size="lg" variant="ghost" className="w-full sm:w-auto" data-testid="button-suggest-idea-top">
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Suggest what is missing
+                </Button>
+              </a>
+            </div>
             <div>
               <p className="font-semibold text-foreground mb-2">How it works:</p>
               <ul className="list-disc pl-6 space-y-1">
-                <li>Everything here is in plain English, no tech talk.</li>
-                <li>You vote with one account. No big companies, no bots, no paid tier gets extra say. Everyone is equal.</li>
-                <li>You can support up to 10 ideas at a time, so you have to choose what matters most.</li>
-                <li>When something gets enough support, the team gives a real public answer within 30 days — yes, no, or "here's why not yet."</li>
+                <li>Anyone can look. A free, verified account lets you vote.</li>
+                <li>No company, bot, or paid plan gets extra influence. Every member gets the same voice.</li>
+                <li>You can support up to 10 ideas and change your choices whenever your priorities change.</li>
+                <li>Come back to watch ideas move from interest to review, planning, construction, or a public explanation of why not.</li>
               </ul>
             </div>
             <p>
@@ -474,13 +499,14 @@ export default function Roadmap() {
               where your voice comes in.
             </p>
             <p>
-              <span className="font-semibold text-foreground">Some things won't be possible:</span> if an idea
-              conflicts with our Principles (we never custody your money, we never score your coins, we never
-              decide who you can send to), we'll tell you so plainly. We won't quietly disappear it.
+              <span className="font-semibold text-foreground">What your vote means:</span> it tells us where
+              real interest exists. It is not a promise to build blindly. Every idea still has to preserve
+              member control, pass our safety principles, and work from beginning to end. If it cannot, we
+              will explain why instead of quietly making it disappear.
             </p>
             <p>
-              Scroll down to see what's already on the list. Vote for what would help you or your family the
-              most. Or propose something we haven't thought of yet.
+              The list is intentionally wide. Come find your interest, leave your mark, or ask us to add
+              something that is not here. Then stay to see what the community helps move forward.
             </p>
           </div>
         </section>
@@ -573,7 +599,7 @@ export default function Roadmap() {
         </section>
 
         {/* Items list */}
-        <section className="space-y-10">
+        <section id="ideas" className="space-y-10 scroll-mt-24">
           {isLoading && (
             <div className="text-center text-muted-foreground py-12" data-testid="text-loading">
               Loading roadmap…
@@ -755,8 +781,22 @@ export default function Roadmap() {
           ))}
         </section>
 
-        <section className="mt-16 text-center text-sm text-muted-foreground">
-          Want to suggest something not on this list? Email <a className="underline" href="mailto:hello@cryptoownbank.com">hello@cryptoownbank.com</a>.
+        <section className="mt-16 rounded-xl border-2 border-primary/20 bg-primary/5 p-6 md:p-8 text-center">
+          <Lightbulb className="h-8 w-8 text-primary mx-auto mb-3" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">What are we missing?</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-5">
+            The next important idea may not be ours yet. Tell us what would give you, your family, or your
+            community more control over your financial future.
+          </p>
+          <a href="mailto:hello@cryptoownbank.com?subject=An%20idea%20for%20CryptoOwnBank">
+            <Button data-testid="button-suggest-idea-bottom">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Tell us your idea
+            </Button>
+          </a>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Or email <a className="underline" href="mailto:hello@cryptoownbank.com">hello@cryptoownbank.com</a>.
+          </p>
         </section>
       </main>
 

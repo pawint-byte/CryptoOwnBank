@@ -5059,6 +5059,39 @@ async function seedRoadmapStarterItems() {
     }
     const refreshedItems: { slug: string; title?: string; description?: string; category?: string }[] = [
       {
+        slug: "phone-walkthrough",
+        description: "A calm voice walks you through wallet setup in your language. Designed for people who prefer speaking and listening over reading screens; availability would depend on the support partners and phone access we can provide.",
+      },
+      {
+        slug: "flip-phone-payments",
+        description: "Explore low-bandwidth ways to send and receive digital money from basic phones. Similar systems work in some regions today, but coverage would depend on local mobile networks, payment partners, and the rails available in each country.",
+      },
+      {
+        slug: "diaspora-send",
+        description: "A guided path for sending small amounts to family across borders using the simplest available wallet or payment rail. Recipient requirements can vary by provider, country, and cash-out method; CryptoOwnBank would show those requirements before anyone starts.",
+      },
+      {
+        slug: "satellite-receiver",
+        description: "Explore ways to receive blockchain information when ordinary internet access is cut or censored. Satellite broadcasting exists for some networks, but hardware, coverage, sending capability, and cost would need to be verified before this could become a CryptoOwnBank feature.",
+      },
+      {
+        slug: "bitcoin-lightning-priority",
+        description: "Move Bitcoin self-custody and Lightning support higher on the priority list. Lightning can make eligible payments faster and less expensive, while availability, liquidity, routing, and wallet support still vary.",
+      },
+      {
+        slug: "cash-swap-map",
+        description: "Explore a directory of independent places that may help people exchange cash and digital money. CryptoOwnBank would not hold funds or certify a person as trustworthy; identity, safety, licensing, and availability would have to be addressed before launch.",
+      },
+      {
+        slug: "picture-and-voice-mode",
+        description: "Use large pictures, spoken guidance, and audio confirmations to make important CryptoOwnBank journeys easier for people who prefer not to rely on text. Device and language support would expand over time.",
+      },
+      {
+        slug: "lightning-bitcoin-swaps",
+        title: "Exchange Bitcoin and digital dollars from your own wallet",
+        description: "Explore wallet-signed exchanges between Bitcoin and supported digital dollars using Lightning-compatible rails. CryptoOwnBank would not take custody, but speed, fees, liquidity, provider availability, and regional eligibility would be shown honestly before a member proceeds.",
+      },
+      {
         slug: "headless-onramp-applepay",
         category: "access",
         title: "Buy Crypto — the front door: fiat in, your own wallet out, no exchange in the middle",

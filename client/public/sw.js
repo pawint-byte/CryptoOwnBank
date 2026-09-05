@@ -3,7 +3,7 @@
 // cache-first for static assets (icons, fonts, images).
 // Bumping CACHE_VERSION forces all clients to refresh on next load.
 
-const CACHE_VERSION = "cob-v68";
+const CACHE_VERSION = "cob-v69";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
