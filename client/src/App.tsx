@@ -143,6 +143,7 @@ import CryptoDebitCards from "@/pages/crypto-debit-cards";
 import DecryptPage from "@/pages/decrypt";
 import AiAssistant from "@/pages/ai-assistant";
 import { OfflineBanner } from "@/components/offline-banner";
+import PublicInformation from "@/pages/public-information";
 
 const TOS_LAST_UPDATED = new Date("2026-03-21T00:00:00Z");
 
@@ -447,6 +448,24 @@ function Router() {
   if (!user) {
     return (
       <Switch>
+        <Route path="/features" component={PublicInformation} />
+        <Route path="/features/legacy-plan" component={PublicInformation} />
+        <Route path="/features/legacy-plan/split-delivery" component={PublicInformation} />
+        <Route path="/features/portfolio-tracker" component={PublicInformation} />
+        <Route path="/features/decentralized-trading" component={PublicInformation} />
+        <Route path="/features/yield-tracking" component={PublicInformation} />
+        <Route path="/features/global-remittance" component={PublicInformation} />
+        <Route path="/solutions" component={PublicInformation} />
+        <Route path="/solutions/family-estate-planning" component={PublicInformation} />
+        <Route path="/solutions/self-custody-security" component={PublicInformation} />
+        <Route path="/solutions/active-crypto-investors" component={PublicInformation} />
+        <Route path="/learn" component={PublicInformation} />
+        <Route path="/learn/guides" component={PublicInformation} />
+        <Route path="/learn/glossary" component={PublicInformation} />
+        <Route path="/security" component={PublicInformation} />
+        <Route path="/security/non-custodial-architecture" component={PublicInformation} />
+        <Route path="/security/legacy-plan-check-ins" component={PublicInformation} />
+        <Route path="/security/faq" component={PublicInformation} />
         <Route path="/legal" component={Legal} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/principles" component={Principles} />
@@ -516,6 +535,24 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/features" component={PublicInformation} />
+      <Route path="/features/legacy-plan" component={PublicInformation} />
+      <Route path="/features/legacy-plan/split-delivery" component={PublicInformation} />
+      <Route path="/features/portfolio-tracker" component={PublicInformation} />
+      <Route path="/features/decentralized-trading" component={PublicInformation} />
+      <Route path="/features/yield-tracking" component={PublicInformation} />
+      <Route path="/features/global-remittance" component={PublicInformation} />
+      <Route path="/solutions" component={PublicInformation} />
+      <Route path="/solutions/family-estate-planning" component={PublicInformation} />
+      <Route path="/solutions/self-custody-security" component={PublicInformation} />
+      <Route path="/solutions/active-crypto-investors" component={PublicInformation} />
+      <Route path="/learn" component={PublicInformation} />
+      <Route path="/learn/guides" component={PublicInformation} />
+      <Route path="/learn/glossary" component={PublicInformation} />
+      <Route path="/security" component={PublicInformation} />
+      <Route path="/security/non-custodial-architecture" component={PublicInformation} />
+      <Route path="/security/legacy-plan-check-ins" component={PublicInformation} />
+      <Route path="/security/faq" component={PublicInformation} />
       <Route path="/legal" component={Legal} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/principles" component={Principles} />
