@@ -25,6 +25,11 @@ import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
 import { entropyHexToSlip39MasterSecret } from "../lib/slip39-master-secret";
+import {
+  getStalePassphraseBeneficiaries,
+  groupUniqueLegacyBeneficiaries,
+  summarizeLegacyBeneficiaries,
+} from "../lib/legacy-beneficiary-readiness";
 
 export function registerLegacyRoutes(app: Express) {
   app.patch("/api/wallets/:id/label", isAuthenticated, async (req: any, res) => {
@@ -917,6 +922,8 @@ export function registerLegacyRoutes(app: Express) {
       const plan = await storage.getLegacyPlan(userId);
       if (!plan) return res.json({ score: 0, checks: [{ id: "no-plan", severity: "critical", title: "Create your Legacy Plan", message: "You haven't created a Legacy Plan yet.", fixUrl: "/legacy-plan", fixLabel: "Get started" }] });
       const beneficiaries = await storage.getLegacyBeneficiaries(plan.id);
+      const beneficiarySummary = summarizeLegacyBeneficiaries(beneficiaries);
+      const uniqueBeneficiaries = beneficiarySummary.uniqueBeneficiaries;
       const userWallets = await storage.getWalletsByUser(userId);
       const dismissed = (plan as any).readinessDismissedTips ? String((plan as any).readinessDismissedTips).split(",") : [];
 
@@ -941,7 +948,7 @@ export function registerLegacyRoutes(app: Express) {
 
       const checks: Array<{ id: string; severity: "critical" | "warning" | "tip"; title: string; message: string; fixUrl?: string; fixLabel?: string }> = [];
 
-      if (beneficiaries.length === 0) {
+      if (beneficiarySummary.totalBeneficiaries === 0) {
         checks.push({ id: "no-beneficiaries", severity: "critical", title: "Add at least one beneficiary", message: "Without a beneficiary, the plan can never deliver anything when triggered.", fixUrl: "/legacy-plan", fixLabel: "Add beneficiary" });
       }
 
@@ -951,10 +958,16 @@ export function registerLegacyRoutes(app: Express) {
       }
 
       const SIX_MONTHS = 180 * 86400000;
-      const staleVerifications = beneficiaries.filter((b: any) => b.encryptedVault && b.vaultVerificationCapsule && (!b.vaultVerifiedAt || (Date.now() - new Date(b.vaultVerifiedAt).getTime()) > SIX_MONTHS));
+      const staleVerifications = getStalePassphraseBeneficiaries(
+        uniqueBeneficiaries,
+        Date.now(),
+        SIX_MONTHS,
+      );
       if (staleVerifications.length > 0) {
-        const names = staleVerifications.map((b: any) => b.name).join(", ");
-        const allUnverified = staleVerifications.every((b: any) => !b.vaultVerifiedAt);
+        const names = staleVerifications.map((beneficiary) => beneficiary.name).join(", ");
+        const allUnverified = staleVerifications.every((beneficiary) =>
+          beneficiary.rows.every((row) => !row.vaultVerifiedAt),
+        );
         checks.push({
           id: "stale-passphrase-verification",
           severity: "warning",
@@ -984,14 +997,23 @@ export function registerLegacyRoutes(app: Express) {
         }
       }
 
-      const pendingOld = beneficiaries.filter((b: any) => b.confirmationStatus === "pending" && b.confirmationSentAt && (Date.now() - new Date(b.confirmationSentAt).getTime()) > 14 * 86400000);
+      const pendingOld = uniqueBeneficiaries.filter((beneficiary) =>
+        !beneficiary.rows.some((row: any) => row.confirmationStatus === "confirmed") &&
+        beneficiary.rows.some((row: any) =>
+          row.confirmationStatus === "pending" &&
+          row.confirmationSentAt &&
+          (Date.now() - new Date(row.confirmationSentAt).getTime()) > 14 * 86400000
+        ),
+      );
       if (pendingOld.length > 0) {
-        checks.push({ id: "pending-beneficiaries", severity: "warning", title: `${pendingOld.length} beneficiary email${pendingOld.length > 1 ? "s" : ""} unconfirmed > 14 days`, message: `${pendingOld.map((b: any) => b.name).join(", ")} never clicked the confirmation link. They may have wrong/dead email addresses.`, fixUrl: "/legacy-plan", fixLabel: "Resend or fix" });
+        checks.push({ id: "pending-beneficiaries", severity: "warning", title: `${pendingOld.length} beneficiary email${pendingOld.length > 1 ? "s" : ""} unconfirmed > 14 days`, message: `${pendingOld.map((beneficiary) => beneficiary.name).join(", ")} never clicked the confirmation link. They may have wrong/dead email addresses.`, fixUrl: "/legacy-plan", fixLabel: "Resend or fix" });
       }
 
-      const declined = beneficiaries.filter((b: any) => b.confirmationStatus === "declined");
+      const declined = uniqueBeneficiaries.filter((beneficiary) =>
+        beneficiary.rows.some((row) => row.confirmationStatus === "declined"),
+      );
       if (declined.length > 0) {
-        checks.push({ id: "declined-beneficiaries", severity: "warning", title: `${declined.length} beneficiary declined`, message: `${declined.map((b: any) => b.name).join(", ")} declined the role. Replace them or your plan has a hole.`, fixUrl: "/legacy-plan", fixLabel: "Replace" });
+        checks.push({ id: "declined-beneficiaries", severity: "warning", title: `${declined.length} beneficiar${declined.length > 1 ? "ies" : "y"} declined`, message: `${declined.map((beneficiary) => beneficiary.name).join(", ")} declined the role. Replace them or your plan has a hole.`, fixUrl: "/legacy-plan", fixLabel: "Replace" });
       }
 
       if (!plan.secondaryContactEmail) {
@@ -1014,7 +1036,7 @@ export function registerLegacyRoutes(app: Express) {
         checks.push({ id: "personal-message", severity: "tip", title: "Write a personal message", message: "A short note to your survivors is the human touch they will remember most. Even one sentence helps.", fixUrl: "/legacy-plan", fixLabel: "Write message" });
       }
 
-      if (!slip39Total && !dismissed.includes("slip39-tip") && beneficiaries.length >= 2) {
+      if (!slip39Total && !dismissed.includes("slip39-tip") && beneficiarySummary.totalBeneficiaries >= 2) {
         checks.push({ id: "slip39-tip", severity: "tip", title: "Consider SLIP-39 splitting", message: "Splitting a seed across multiple beneficiaries removes the single-point-of-failure risk. With 2+ beneficiaries you can use 2-of-3 or 3-of-5.", fixUrl: "/slip39-setup", fixLabel: "Learn more" });
       }
 
@@ -1034,8 +1056,8 @@ export function registerLegacyRoutes(app: Express) {
         score,
         totalWallets: walletInfos.length,
         coveredWallets: referencedAddrs.size,
-        totalBeneficiaries: beneficiaries.length,
-        confirmedBeneficiaries: beneficiaries.filter((b: any) => b.confirmationStatus === "confirmed").length,
+        totalBeneficiaries: beneficiarySummary.totalBeneficiaries,
+        confirmedBeneficiaries: beneficiarySummary.confirmedBeneficiaries,
         slip39: slip39Total ? { total: slip39Total, threshold: slip39Threshold, assigned: beneficiaries.filter((b: any) => Number.isFinite(b.shardIndex)).length } : null,
         checks,
       });
@@ -1367,7 +1389,7 @@ ${getSovereigntyKitStyles()}
 <h1>CryptoOwnBank Legacy Plan — Survivability Export</h1>
 <p><strong>Owner:</strong> ${escapeHtml(ownerName)} (${escapeHtml(owner?.email || "")})</p>
 <p><strong>Generated:</strong> ${now.toLocaleString()}</p>
-<p><strong>Beneficiaries:</strong> ${beneficiaries.length}</p>
+<p><strong>Beneficiaries:</strong> ${groupUniqueLegacyBeneficiaries(beneficiaries).length}</p>
 
 <div class="warning">
   <strong>This file contains the location of recovery materials and (if you set them) encrypted recovery vaults.</strong> It does NOT contain plaintext seed phrases. Treat this file like you would treat the materials it points to: store it physically (fireproof safe, safe deposit box, with your attorney). Do not email it. Do not store it in plain cloud sync. If your encrypted vaults use weak passphrases, this file is only as secure as those passphrases.
