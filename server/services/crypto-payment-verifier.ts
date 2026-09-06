@@ -1,7 +1,7 @@
 import { storage } from "../storage";
 import type { CryptoPayment } from "@shared/schema";
 import { ADMIN_EMAILS } from "@shared/constants";
-import { sendCryptoPaymentReceivedEmail, sendPremiumWelcomeEmail, sendLegacyPlanReceiptEmail } from "../email";
+import { sendCryptoPaymentReceivedEmail, sendPremiumWelcomeEmail, sendLegacyPlanReceiptEmail, sendSubscriptionReceiptEmail } from "../email";
 
 const CHAIN_TO_ASSET: Record<string, string> = {
   bitcoin: "BTC",
@@ -856,6 +856,26 @@ export async function activateSubscription(payment: CryptoPayment) {
     stripeSubscriptionId: existing?.stripeSubscriptionId || null,
   });
   console.log(`[crypto-verify] Activated ${billingCycle} ${tier} for user ${payment.userId} via ${payment.chain} payment ${payment.id}, expires ${expiresAt.toISOString()}`);
+
+  try {
+    const { db } = await import("../db");
+    const { users } = await import("@shared/models/auth");
+    const { eq } = await import("drizzle-orm");
+    const [buyer] = await db.select().from(users).where(eq(users.id, payment.userId));
+    if (buyer?.email) {
+      const asset = CHAIN_TO_ASSET[payment.chain] || payment.expectedAsset || payment.chain.toUpperCase();
+      await sendSubscriptionReceiptEmail(buyer.email, {
+        tierName: tier === "pro" ? "Pro" : "Premium",
+        billingCycle,
+        amountPaid: `${payment.expectedAmount} ${asset} (~$${payment.usdAmount} USD)`,
+        paymentMethodLabel: `Crypto — ${asset}`,
+        paymentMethod: "crypto",
+        expiresAt,
+      });
+    }
+  } catch (err) {
+    console.error("[crypto-verify] Failed to send subscription receipt:", err);
+  }
 
   // Conversion-gated referral reward: credit the referrer (if any) on a real
   // paid crypto upgrade to Premium/Pro. We require an EXPLICIT known paid plan

@@ -650,6 +650,76 @@ export async function sendPremiumWelcomeEmail(to: string, plan: string) {
   await sendEmail(to, "Welcome to CryptoOwnBank Premium!", html);
 }
 
+export async function sendSubscriptionReceiptEmail(
+  to: string,
+  details: {
+    tierName: "Premium" | "Pro";
+    billingCycle: "monthly" | "yearly";
+    amountPaid: string;
+    paymentMethodLabel: string;
+    paymentMethod: "card" | "crypto";
+    expiresAt: Date | null;
+    purchasedAt?: Date;
+  },
+) {
+  const purchasedAt = details.purchasedAt || new Date();
+  let renewalLabel: string;
+  let renewalLine: string;
+
+  if (details.paymentMethod === "card") {
+    const next = new Date(purchasedAt);
+    if (details.billingCycle === "yearly") next.setFullYear(next.getFullYear() + 1);
+    else next.setDate(next.getDate() + 30);
+    renewalLabel = `Renews ${formatReceiptDate(next)}`;
+    renewalLine = `Your subscription renews automatically on <strong>${formatReceiptDate(next)}</strong>. You can cancel anytime from your account.`;
+  } else {
+    const expiry = details.expiresAt || (() => {
+      const next = new Date(purchasedAt);
+      if (details.billingCycle === "yearly") next.setFullYear(next.getFullYear() + 1);
+      else next.setDate(next.getDate() + 30);
+      return next;
+    })();
+    renewalLabel = `Expires ${formatReceiptDate(expiry)}`;
+    renewalLine = `You prepaid this term with crypto, so it does not auto-renew. It stays active until <strong>${formatReceiptDate(expiry)}</strong>.`;
+  }
+
+  const planName = `${details.tierName} ${details.billingCycle === "yearly" ? "Annual" : "Monthly"}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #10b981;">
+        <h1 style="color: #00A4E4; margin: 0;">CryptoOwnBank</h1>
+        <p style="color: #10b981; margin: 5px 0 0; font-weight: 600;">Subscription Purchase Receipt</p>
+      </div>
+      <div style="padding: 30px 0;">
+        <h2 style="color: #333; margin-top: 0;">Thank you for your purchase</h2>
+        <p style="color: #555; line-height: 1.6;">
+          Your <strong>${escapeHtml(planName)}</strong> subscription is now active. Keep this email for your records.
+        </p>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;margin:20px 0;">
+          <tr style="background:#f9fafb;"><td style="padding:10px 12px;color:#999;font-size:13px;">Plan</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;">${escapeHtml(planName)}</td></tr>
+          <tr><td style="padding:10px 12px;color:#999;font-size:13px;">Amount paid</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;">${escapeHtml(details.amountPaid)}</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:10px 12px;color:#999;font-size:13px;">Payment method</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;">${escapeHtml(details.paymentMethodLabel)}</td></tr>
+          <tr><td style="padding:10px 12px;color:#999;font-size:13px;">Purchased</td><td style="padding:10px 12px;font-size:13px;text-align:right;">${formatReceiptDate(purchasedAt)}</td></tr>
+          <tr style="background:#f9fafb;"><td style="padding:10px 12px;color:#999;font-size:13px;">Renewal</td><td style="padding:10px 12px;font-size:13px;text-align:right;font-weight:600;color:#00A4E4;">${escapeHtml(renewalLabel)}</td></tr>
+        </table>
+        <div style="background: #f0f9ff; border-left: 4px solid #00A4E4; padding: 15px; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0; color: #555; line-height: 1.6;">${renewalLine}</p>
+        </div>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="https://cryptoownbank.com/settings" style="display: inline-block; background: #00A4E4; color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            Manage your subscription
+          </a>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 12px;">
+        <p style="margin: 0 0 6px 0;">This is not financial advice. Not a bank. You control your keys and funds at all times.</p>
+        <p style="margin: 0;">CryptoOwnBank is operated by Wint Enterprises Inc. AGPL-3.0 source available.</p>
+      </div>
+    </div>
+  `;
+  await sendEmail(to, `Your CryptoOwnBank ${details.tierName} receipt`, html);
+}
+
 export async function sendReEngagementEmail(to: string, name: string) {
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

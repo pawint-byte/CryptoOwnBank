@@ -6,6 +6,8 @@ const getWalletsByUser = vi.fn(async () => [] as any[]);
 const upsertUserSettings = vi.fn(async (settings: any) => settings);
 const attributeReferralConversion = vi.fn(async () => undefined);
 const getCryptoPaymentAddresses = vi.fn(async () => [] as any[]);
+const sendSubscriptionReceiptEmail = vi.fn(async () => undefined);
+let dbRows: any[] = [];
 
 vi.mock("../server/storage", () => ({
   storage: {
@@ -21,13 +23,14 @@ vi.mock("../server/email", () => ({
   sendCryptoPaymentReceivedEmail: vi.fn(async () => undefined),
   sendPremiumWelcomeEmail: vi.fn(async () => undefined),
   sendLegacyPlanReceiptEmail: vi.fn(async () => undefined),
+  sendSubscriptionReceiptEmail: (...args: any[]) => sendSubscriptionReceiptEmail(...args),
 }));
 
 vi.mock("../server/db", () => ({
   db: {
     select: () => ({
       from: () => ({
-        where: vi.fn(async () => []),
+        where: vi.fn(async () => dbRows),
       }),
     }),
   },
@@ -76,6 +79,7 @@ describe("crypto verifier — Premium/Pro activation", () => {
     vi.clearAllMocks();
     getUserSettings.mockResolvedValue(undefined);
     getWalletsByUser.mockResolvedValue([]);
+    dbRows = [{ id: "user-1", email: "buyer@example.com" }];
   });
 
   it.each(EXPECTED_PLANS)(
@@ -107,6 +111,16 @@ describe("crypto verifier — Premium/Pro activation", () => {
         expect(settings.subscriptionExpiresAt.getTime()).toBeGreaterThanOrEqual(minExpiry.getTime());
         expect(settings.subscriptionExpiresAt.getTime()).toBeLessThanOrEqual(maxExpiry.getTime());
       }
+
+      expect(sendSubscriptionReceiptEmail).toHaveBeenCalledTimes(1);
+      expect(sendSubscriptionReceiptEmail).toHaveBeenCalledWith("buyer@example.com", expect.objectContaining({
+        tierName: tier === "pro" ? "Pro" : "Premium",
+        billingCycle: cycle,
+        amountPaid: "0.001 BTC (~$100 USD)",
+        paymentMethodLabel: "Crypto — BTC",
+        paymentMethod: "crypto",
+        expiresAt: settings.subscriptionExpiresAt,
+      }));
     },
   );
 });
@@ -119,6 +133,8 @@ function checkoutEvent(plan: (typeof EXPECTED_PLANS)[number]) {
         id: `checkout-${plan.key}`,
         customer: `customer-${plan.key}`,
         subscription: `subscription-${plan.key}`,
+        amount_total: plan.amount,
+        created: 1_788_729_600,
         metadata: {
           userId: "user-1",
           plan: plan.key,
@@ -161,6 +177,7 @@ describe("Stripe webhook — Premium/Pro activation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getUserSettings.mockResolvedValue(undefined);
+    dbRows = [{ id: "user-1", email: "buyer@example.com" }];
   });
 
   it.each(EXPECTED_PLANS)(
@@ -183,6 +200,16 @@ describe("Stripe webhook — Premium/Pro activation", () => {
         stripeCustomerId: `customer-${plan.key}`,
         stripeSubscriptionId: `subscription-${plan.key}`,
       });
+      expect(sendSubscriptionReceiptEmail).toHaveBeenCalledTimes(1);
+      expect(sendSubscriptionReceiptEmail).toHaveBeenCalledWith("buyer@example.com", expect.objectContaining({
+        tierName: plan.tier === "pro" ? "Pro" : "Premium",
+        billingCycle: plan.cycle,
+        amountPaid: `$${(plan.amount / 100).toFixed(2)}`,
+        paymentMethodLabel: "Credit / debit card",
+        paymentMethod: "card",
+        expiresAt: null,
+        purchasedAt: new Date(1_788_729_600_000),
+      }));
     },
   );
 });

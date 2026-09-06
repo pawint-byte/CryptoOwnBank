@@ -171,6 +171,7 @@ vi.mock("../server/email", () => ({
   sendCryptoPaymentReceivedEmail: vi.fn(async () => undefined),
   sendPremiumWelcomeEmail: vi.fn(async () => undefined),
   sendLegacyPlanReceiptEmail: (...args: any[]) => sendLegacyPlanReceiptEmail(...args),
+  sendSubscriptionReceiptEmail: vi.fn(async () => undefined),
 }));
 
 vi.mock("../server/db", () => ({

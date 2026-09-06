@@ -3,8 +3,8 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { userAddons as userAddonsTable, userSettings as userSettingsTable } from "@shared/schema";
 import { users } from "@shared/models/auth";
-import { isLegacyAddon, computeLegacyAddonExpiry, ADDONS } from "./stripe";
-import { sendLegacyPlanReceiptEmail } from "./email";
+import { isLegacyAddon, computeLegacyAddonExpiry, ADDONS, PLANS } from "./stripe";
+import { sendLegacyPlanReceiptEmail, sendSubscriptionReceiptEmail } from "./email";
 
 // Shared handler for Stripe webhook events. The route is responsible for
 // obtaining/verifying the event (signed when STRIPE_WEBHOOK_SECRET is set,
@@ -79,6 +79,25 @@ export async function handleStripeWebhookEvent(event: any): Promise<void> {
         stripeCustomerId: session.customer,
         stripeSubscriptionId: session.subscription,
       });
+      try {
+        const [buyer] = await db.select().from(users).where(eq(users.id, userId));
+        const planConfig = PLANS[plan as keyof typeof PLANS];
+        if (buyer?.email && planConfig && (tier === "premium" || tier === "pro")) {
+          const purchasedAt = session.created ? new Date(session.created * 1000) : new Date();
+          const amount = typeof session.amount_total === "number" ? session.amount_total : planConfig.amount;
+          await sendSubscriptionReceiptEmail(buyer.email, {
+            tierName: tier === "pro" ? "Pro" : "Premium",
+            billingCycle,
+            amountPaid: `$${(amount / 100).toFixed(2)}`,
+            paymentMethodLabel: "Credit / debit card",
+            paymentMethod: "card",
+            expiresAt: null,
+            purchasedAt,
+          });
+        }
+      } catch (err) {
+        console.error("[stripe-webhook] Failed to send subscription receipt:", err);
+      }
       // Conversion-gated referral reward: credit the referrer (if any) on a
       // real paid upgrade to Premium/Pro. We require an EXPLICIT paid tier in
       // the checkout metadata — a missing/unknown tier must never credit a
