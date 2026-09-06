@@ -55,3 +55,4 @@
 - [Founding onboarding wallet-source contract](founding-onboarding-wallet-source.md) — kit-gen step 2 must gate on the SAME wallet source as step 1 (getWalletsByUser), not the kit-display merge (excludes normal-chain portfolio wallets) or members stick forever.
 - [Unknown token pricing](unknown-token-pricing.md) — never substitute ETH/XRP/BTC price for an unpriced token; unknown market value stays zero/unknown or dust balances become billion-dollar portfolios.
 - [Roadmap as an open invitation](roadmap-engagement-purpose.md) — keep the voting list broad: its primary job is to invite people in, let them leave a mark or request what is missing, and return to watch progress.
+- [SLIP-39 master-secret input](slip39-master-secret-input.md) — slip39.fromArray must receive a plain number[]; Node Buffer corrupts the recovered secret even when shard recovery appears successful.

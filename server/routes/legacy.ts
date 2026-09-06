@@ -24,6 +24,7 @@ import fs from "fs";
 import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
+import { entropyHexToSlip39MasterSecret } from "../lib/slip39-master-secret";
 
 export function registerLegacyRoutes(app: Express) {
   app.patch("/api/wallets/:id/label", isAuthenticated, async (req: any, res) => {
@@ -1639,7 +1640,7 @@ ${kitBody}
       }
 
       const masterSecretHex = bip39.mnemonicToEntropy(mnemonic);
-      const masterSecret = Buffer.from(masterSecretHex, "hex");
+      const masterSecret = entropyHexToSlip39MasterSecret(masterSecretHex);
 
       const groups: Array<[number, number, string]> = groupsInput
         .filter((g: any) => g && typeof g === "object")
