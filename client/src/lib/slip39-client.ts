@@ -59,6 +59,16 @@ export function generateShards(input: GenerateInput): GenerateResult {
 
 export function combineShards(mnemonics: string[], passphrase = ""): string {
   const cleaned = mnemonics.map((s) => s.trim().toLowerCase().replace(/\s+/g, " "));
+  const wordCounts = cleaned.map((mnemonic) => mnemonic.split(" ").filter(Boolean).length);
+  const invalidWordCount = wordCounts.find((count) => count !== 20 && count !== 33);
+  if (invalidWordCount !== undefined) {
+    throw new Error(
+      `Invalid SLIP-39 shard length: found ${invalidWordCount} words. Expected 20 words for a 128-bit secret or 33 words for a 256-bit secret.`,
+    );
+  }
+  if (new Set(wordCounts).size > 1) {
+    throw new Error("SLIP-39 shards from the same set must all have the same word length.");
+  }
   const recovered = (Slip39 as any).recoverSecret(cleaned, passphrase);
   return arrayToHex(recovered);
 }

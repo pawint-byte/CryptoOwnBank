@@ -186,7 +186,7 @@ function ShardCombineForm() {
         msg.includes("threshold") || msg.includes("Insufficient")
           ? "Not enough valid shards yet — collect more from the other holders, then try again."
           : msg.toLowerCase().includes("checksum") || msg.toLowerCase().includes("typo")
-          ? "One or more shards have a typo — check word spelling. SLIP-39 shards are exactly 20 words each."
+          ? "One or more shards has a typo — check word spelling. SLIP-39 shards are 20 words for 128-bit secrets or 33 words for 256-bit secrets."
           : msg.toLowerCase().includes("passphrase")
           ? "The passphrase doesn't match the one used at split time."
           : msg;
@@ -256,7 +256,7 @@ function ShardCombineForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Layers className="h-5 w-5" /> Combine SLIP-39 Shards</CardTitle>
         <CardDescription>
-          Paste each 20-word shard you received. Enter the threshold number — extras are fine but missing one will fail.
+          Paste each SLIP-39 shard you received. Valid shares are 20 words for 128-bit secrets or 33 words for 256-bit secrets. Enter the threshold number — extras are fine but missing one will fail.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -273,7 +273,7 @@ function ShardCombineForm() {
             <Textarea
               value={s}
               onChange={(e) => updateShard(i, e.target.value)}
-              placeholder="word1 word2 word3 ... (20 words)"
+              placeholder="word1 word2 word3 ... (20 or 33 words)"
               rows={2}
               className="font-mono text-xs"
               data-testid={`input-shard-${i}`}
@@ -342,7 +342,7 @@ export default function DecryptPage() {
           <AlertTitle>Two ways to recover</AlertTitle>
           <AlertDescription className="text-xs space-y-1">
             <p><strong>Encrypted Vault:</strong> a single block of text decrypted with a passphrase. The legacy holder gave you both pieces.</p>
-            <p><strong>SLIP-39 Shards:</strong> two or more 20-word "shards" handed to different people. Combine the threshold to reveal the original wallet seed.</p>
+            <p><strong>SLIP-39 Shards:</strong> two or more 20-word (128-bit) or 33-word (256-bit) "shards" handed to different people. Combine the threshold to reveal the original wallet seed.</p>
           </AlertDescription>
         </Alert>
 

@@ -227,9 +227,10 @@ export default function LearnSlip39() {
                   identical to the full secret space.
                 </p>
                 <p>
-                  Each SLIP-39 shard is encoded as a 20-word mnemonic from a specialized 1024-word list
-                  (different from the BIP-39 list). Shards include checksums, identifier metadata, and
-                  group/member indices so combining tools can validate consistency.
+                  Each SLIP-39 shard is encoded as a mnemonic from a specialized 1024-word list
+                  (different from the BIP-39 list): 20 words for a 128-bit secret or 33 words for a
+                  256-bit secret. Shards include checksums, identifier metadata, and group/member indices
+                  so combining tools can validate consistency.
                 </p>
                 <p>
                   Compared to a naive word split (giving each party a slice of the original BIP-39 words):
@@ -459,7 +460,7 @@ export default function LearnSlip39() {
             <div className="rounded-md border p-3 bg-muted/30">
               <p className="font-medium mb-1">SLIP-39 in CryptoOwnBank</p>
               <ul className="list-disc ml-5 text-xs space-y-1 text-muted-foreground">
-                <li>Software-based: shards are 20-word mnemonics you can write on cards or metal</li>
+                <li>Software-based: shards are 20 words for 128-bit secrets or 33 words for 256-bit secrets, and can be written on cards or metal</li>
                 <li>Configurable: any M-of-N up to 16 (3-of-5, 2-of-3, 4-of-7, etc.)</li>
                 <li>Built into the dead-man switch — one shard auto-released after trigger</li>
                 <li>No extra hardware required</li>

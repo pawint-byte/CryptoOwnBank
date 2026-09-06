@@ -55,6 +55,7 @@ import {
   HardDrive,
   Globe,
 } from "lucide-react";
+import { getSplitDeliveryCohort } from "@/lib/split-delivery-cohort";
 
 type LegacyPlanData = {
   plan: {
@@ -2255,6 +2256,15 @@ function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["p
 
   const assignedBeneficiaries = beneficiaries.filter(b => b.splitPieces);
   const unassignedBeneficiaries = beneficiaries.filter(b => !b.splitPieces);
+  const activeSplitCohort = getSplitDeliveryCohort(beneficiaries);
+  const splitCohortSize = activeSplitCohort.length;
+  const displayedSplitThreshold = splitCohortSize >= 2
+    ? Math.min(Math.max(splitThreshold, 2), splitCohortSize)
+    : splitThreshold;
+  const thresholdOptions = Array.from(
+    { length: Math.max(0, splitCohortSize - 1) },
+    (_, index) => index + 2,
+  );
 
   return (
     <Card data-testid="card-split-delivery">
@@ -2306,16 +2316,22 @@ function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["p
             {splitMode === "threshold" && (
               <div className="space-y-1">
                 <Label className="text-xs">Threshold — how many beneficiaries must collaborate?</Label>
-                <Select value={String(splitThreshold)} onValueChange={(v) => updateSplitSettings.mutate({ splitDeliveryThreshold: parseInt(v) })}>
+                <Select
+                  value={String(displayedSplitThreshold)}
+                  onValueChange={(v) => updateSplitSettings.mutate({ splitDeliveryThreshold: parseInt(v) })}
+                  disabled={splitCohortSize < 2}
+                >
                   <SelectTrigger data-testid="select-split-threshold"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[2, 3, 4, 5].filter(n => n <= beneficiaries.length || n === 2).map(n => (
-                      <SelectItem key={n} value={String(n)}>{n} of {Math.max(beneficiaries.length, n)} beneficiaries</SelectItem>
+                    {thresholdOptions.map(n => (
+                      <SelectItem key={n} value={String(n)}>{n} of {splitCohortSize} beneficiaries</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Like Shamir Secret Sharing — any {splitThreshold} of your {beneficiaries.length} beneficiaries can reconstruct the full instructions by combining their pieces.
+                  {splitCohortSize >= 2
+                    ? <>Like Shamir Secret Sharing — any {displayedSplitThreshold} of the {splitCohortSize} unique beneficiaries in this split-delivery cohort can reconstruct the full instructions by combining their pieces.</>
+                    : <>Assign split pieces to at least 2 unique beneficiaries before choosing a threshold.</>}
                 </p>
               </div>
             )}

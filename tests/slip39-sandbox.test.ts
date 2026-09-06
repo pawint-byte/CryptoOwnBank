@@ -25,6 +25,11 @@ describe("SLIP-39 sandbox generation and recovery", () => {
       slip.fromPath("r/0/0").mnemonics[0],
       slip.fromPath("r/0/1").mnemonics[0],
     ];
+    const expectedShareWords = entropyHex.length === 32 ? 20 : 33;
+    expect(thresholdShares.map((share) => share.split(/\s+/).length)).toEqual([
+      expectedShareWords,
+      expectedShareWords,
+    ]);
     const recovered = (Slip39 as any).recoverSecret(thresholdShares, "");
     const recoveredMnemonic = bip39.entropyToMnemonic(
       Buffer.from(recovered).toString("hex"),
