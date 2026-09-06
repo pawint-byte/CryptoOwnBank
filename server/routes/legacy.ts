@@ -1708,10 +1708,8 @@ ${kitBody}
         return res.status(400).json({ message: "Provide at least one shard to attempt recovery." });
       }
 
-      const sharesArrays = shards.map((s: string) => s.split(" "));
-
       try {
-        const recovered = (Slip39 as any).recoverSecret(sharesArrays, passphrase);
+        const recovered = (Slip39 as any).recoverSecret(shards, passphrase);
         const hex = Buffer.from(recovered).toString("hex");
         let mnemonic: string | null = null;
         try { mnemonic = bip39.entropyToMnemonic(hex); } catch { mnemonic = null; }
