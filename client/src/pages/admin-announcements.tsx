@@ -81,7 +81,7 @@ const SAVED_DRAFTS: AnnouncementDraft[] = [
   },
   {
     title: "Introducing the Legacy Plan — Protect Your Crypto for Your Family",
-    description: "Your crypto shouldn't disappear if something happens to you. Our new Legacy Plan is a dead-man switch that automatically delivers your wallet recovery instructions to the people you trust.\n\n• Set your check-in schedule (weekly, biweekly, monthly, or quarterly)\n• Add multiple beneficiaries with wallet-specific recovery instructions\n• Split delivery mode — split instructions across beneficiaries so they must collaborate\n• Annual review reminders to keep your plan current\n• Works with CypheRock, Ledger, Trezor, Xaman, Tangem, and more\n\nCompetitors charge $40–$250/year for crypto inheritance alone. Get it as a $9.99/mo add-on, or free with Pro.",
+    description: "Your crypto shouldn't disappear if something happens to you. Our new Legacy Plan is a dead-man switch that automatically delivers your wallet recovery instructions to the people you trust.\n\n• Set your check-in schedule (weekly, biweekly, monthly, or quarterly)\n• Add multiple beneficiaries with wallet-specific recovery instructions\n• Split delivery mode — split instructions across beneficiaries so they must collaborate\n• Annual review reminders to keep your plan current\n• Works with CypheRock, Ledger, Trezor, Xaman, Tangem, and more\n\nCompetitors charge $40–$250/year for crypto inheritance alone. Get it as a $29/year add-on ($99/5yr or $499 lifetime), or free with Pro.",
     ctaLabel: "Set Up Your Legacy Plan",
     ctaUrl: "https://cryptoownbank.com/legacy-plan",
     audienceTier: "all",
