@@ -1128,7 +1128,7 @@ ${sections}
         const isDefi = account?.accountType === "defi";
         return {
           ...p,
-          source: account?.accountName || "Exchange",
+          source: p.location || account?.accountName || "Exchange",
           isImport,
           isDefi,
           isExchange: !isImport && !isDefi,

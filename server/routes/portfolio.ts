@@ -241,7 +241,7 @@ export function registerPortfolioRoutes(app: Express) {
           currentValue: value,
           gainLoss,
           gainLossPercent: costBasis > 0 ? (gainLoss / costBasis) * 100 : 0,
-          source: account?.accountName || "",
+          source: pos.location || account?.accountName || "",
           isImport: isImport || account?.provider === "manual",
           isAddressed: pos.isAddressed || false,
         });
@@ -265,7 +265,7 @@ export function registerPortfolioRoutes(app: Express) {
       if (position.userId !== userId) {
         return res.status(403).json({ message: "Not authorized" });
       }
-      const { quantity, averageCost, totalCostBasis, assetSymbol } = req.body;
+      const { quantity, averageCost, totalCostBasis, assetSymbol, location } = req.body;
       const updates: any = {};
       if (quantity !== undefined) {
         const qty = parseFloat(quantity);
@@ -286,6 +286,34 @@ export function registerPortfolioRoutes(app: Express) {
         const sym = String(assetSymbol).toUpperCase().trim();
         if (!sym || sym.length > 20) return res.status(400).json({ message: "Invalid symbol" });
         updates.assetSymbol = sym;
+      }
+      if (location !== undefined) {
+        const account = await storage.getAccount(position.accountId);
+        if (
+          !account
+          || account.userId !== userId
+          || (account.accountType !== "import" && account.provider !== "manual")
+        ) {
+          return res.status(400).json({ message: "Connected holding locations cannot be changed" });
+        }
+        const normalizedLocation = String(location).trim().replace(/\s+/g, " ");
+        if (!normalizedLocation || normalizedLocation.length > 100) {
+          return res.status(400).json({ message: "Location must be between 1 and 100 characters" });
+        }
+
+        const [userPositions, userAccounts, userWallets] = await Promise.all([
+          storage.getPositionsByUser(userId),
+          storage.getAccountsByUser(userId),
+          storage.getWalletsByUser(userId),
+        ]);
+        const existingLocations = [
+          ...userPositions.map(p => p.location).filter((value): value is string => !!value),
+          ...userAccounts.map(a => a.accountName).filter((value): value is string => !!value),
+          ...userWallets.map(w => w.label).filter((value): value is string => !!value),
+        ];
+        updates.location = existingLocations.find(
+          existing => existing.toLocaleLowerCase() === normalizedLocation.toLocaleLowerCase(),
+        ) || normalizedLocation;
       }
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ message: "No valid fields to update" });

@@ -33,7 +33,7 @@ interface PositionWithMarket extends Position {
   gainLossPercent?: number;
   source?: string;
   isImport?: boolean;
-  isAddressed?: boolean;
+  isAddressed: boolean | null;
   isWallet?: boolean;
   storedCostBasis?: string;
   isDuplicate?: boolean;
@@ -72,12 +72,17 @@ interface PropertyEntry {
 
 type ViewMode = "holdings" | "consolidated" | "category";
 
-function EditPositionDialog({ position, onClose }: { position: PositionWithMarket; onClose: () => void }) {
+function EditPositionDialog({ position, existingLocations, onClose }: {
+  position: PositionWithMarket;
+  existingLocations: string[];
+  onClose: () => void;
+}) {
   const { toast } = useToast();
   const baselineCostBasisRaw = position.storedCostBasis ?? position.totalCostBasis;
   const [quantity, setQuantity] = useState(parseFloat(position.quantity).toString());
   const [averageCost, setAverageCost] = useState(position.averageCost ? parseFloat(position.averageCost).toString() : "0");
   const [totalCostBasis, setTotalCostBasis] = useState(baselineCostBasisRaw ? parseFloat(baselineCostBasisRaw).toString() : "0");
+  const [holdingLocation, setHoldingLocation] = useState(position.source || "");
 
   const isWalletPosition = !!position.isWallet;
 
@@ -118,6 +123,9 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
     if (!isNaN(newQty) && newQty.toString() !== parseFloat(position.quantity).toString()) updates.quantity = newQty.toString();
     if (!isNaN(newAvg) && newAvg.toString() !== (position.averageCost ? parseFloat(position.averageCost).toString() : "0")) updates.averageCost = newAvg.toString();
     if (!isNaN(newCost) && newCost.toString() !== (baselineCostBasisRaw ? parseFloat(baselineCostBasisRaw).toString() : "0")) updates.totalCostBasis = newCost.toString();
+    if (!isWalletPosition && position.isImport && holdingLocation.trim() !== (position.source || "").trim()) {
+      updates.location = holdingLocation.trim();
+    }
     if (Object.keys(updates).length === 0) {
       onClose();
       return;
@@ -131,6 +139,26 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
         <DialogTitle>Edit {position.assetSymbol} Position</DialogTitle>
       </DialogHeader>
       <div className="space-y-4 py-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={`edit-location-${position.id}`}>Where it's held</Label>
+          <Input
+            id={`edit-location-${position.id}`}
+            value={holdingLocation}
+            onChange={(e) => setHoldingLocation(e.target.value)}
+            list={position.isImport && !isWalletPosition ? `holding-locations-${position.id}` : undefined}
+            readOnly={!position.isImport || isWalletPosition}
+            maxLength={100}
+            aria-readonly={!position.isImport || isWalletPosition}
+            data-testid="input-edit-location"
+          />
+          {position.isImport && !isWalletPosition ? (
+            <datalist id={`holding-locations-${position.id}`}>
+              {existingLocations.map(location => <option key={location.toLocaleLowerCase()} value={location} />)}
+            </datalist>
+          ) : (
+            <p className="text-xs text-muted-foreground">This location comes from the connected wallet or account.</p>
+          )}
+        </div>
         <div className="space-y-1.5">
           <Label>Quantity</Label>
           <Input
@@ -177,7 +205,11 @@ function EditPositionDialog({ position, onClose }: { position: PositionWithMarke
         )}
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose} data-testid="button-cancel-edit">Cancel</Button>
-          <Button onClick={handleSave} disabled={editMutation.isPending} data-testid="button-save-position">
+          <Button
+            onClick={handleSave}
+            disabled={editMutation.isPending || (position.isImport && !isWalletPosition && !holdingLocation.trim())}
+            data-testid="button-save-position"
+          >
             {editMutation.isPending ? "Saving..." : "Save"}
           </Button>
         </div>
@@ -309,12 +341,19 @@ export default function Portfolio() {
   });
 
   const existingLocations = useMemo(() => {
-    const labels = new Set<string>();
+    const labels = new Map<string, string>();
+    const addLabel = (label?: string | null) => {
+      const normalized = label?.trim().replace(/\s+/g, " ");
+      if (normalized && !labels.has(normalized.toLocaleLowerCase())) {
+        labels.set(normalized.toLocaleLowerCase(), normalized);
+      }
+    };
     userWallets.forEach(w => {
-      if (w.label) labels.add(w.label);
+      addLabel(w.label);
     });
-    return Array.from(labels).sort((a, b) => a.localeCompare(b));
-  }, [userWallets]);
+    dbPositions.forEach(position => addLabel(position.source));
+    return Array.from(labels.values()).sort((a, b) => a.localeCompare(b));
+  }, [userWallets, dbPositions]);
 
   const filteredLocations = useMemo(() => {
     const search = manualForm.location.toLowerCase().trim();
@@ -1859,7 +1898,11 @@ export default function Portfolio() {
 
       <Dialog open={!!editingPosition} onOpenChange={(open) => { if (!open) setEditingPosition(null); }}>
         {editingPosition && (
-          <EditPositionDialog position={editingPosition} onClose={() => setEditingPosition(null)} />
+          <EditPositionDialog
+            position={editingPosition}
+            existingLocations={existingLocations}
+            onClose={() => setEditingPosition(null)}
+          />
         )}
       </Dialog>
 
