@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, CheckCircle2, Clock, AlertCircle, Pencil, ShieldCheck, Send, FlaskConical } from "lucide-react";
+import { Users, Mail, CheckCircle2, Clock, AlertCircle, Pencil, ShieldCheck, Send, FlaskConical, Merge } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +23,7 @@ type Beneficiary = {
   vaultVerificationCapsule?: string | null;
   confirmationStatus?: string;
   backupBeneficiaryId?: string | null;
+  assignmentId?: string | null;
 };
 
 function relativeTime(iso: string): string {
@@ -107,6 +108,34 @@ export function LegacyPeopleView({
     },
     onError: (e: any) => toast({ title: "Couldn't generate test link", description: e?.message || "Try again in a moment.", variant: "destructive" }),
   });
+  const mergePerson = useMutation({
+    mutationFn: ({ source, target }: { source: Person; target: Person }) => {
+      const expectedSourceAssignments = new Set(
+        source.beneficiaries
+          .map((beneficiary) => beneficiary.assignmentId)
+          .filter((id): id is string => !!id),
+      ).size;
+      return apiRequest("POST", "/api/legacy-beneficiaries/merge-by-email", {
+        sourceEmail: source.email,
+        targetEmail: target.email,
+        expectedSourceRows: source.beneficiaries.length,
+        expectedSourceAssignments,
+      });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan/readiness"] });
+      toast({
+        title: "Duplicate beneficiary merged",
+        description: `All wallet entries now belong to ${variables.target.email}.`,
+      });
+    },
+    onError: (e: any) => toast({
+      title: "Merge stopped safely",
+      description: e?.message || "Reload and review both records before trying again.",
+      variant: "destructive",
+    }),
+  });
 
   if (people.length === 0) {
     return (
@@ -164,6 +193,34 @@ export function LegacyPeopleView({
                 )}
               </div>
             </div>
+
+            {people
+              .filter(
+                (candidate) =>
+                  candidate.email !== person.email &&
+                  candidate.name.trim().toLowerCase() === person.name.trim().toLowerCase() &&
+                  (candidate.relationship || "").trim().toLowerCase() ===
+                    (person.relationship || "").trim().toLowerCase(),
+              )
+              .map((candidate) => (
+                <Button
+                  key={candidate.email}
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs"
+                  disabled={mergePerson.isPending}
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      `Merge ${person.email} into ${candidate.email}?\n\nEvery wallet entry and its packet data will be preserved. The old email will disappear from People.`,
+                    );
+                    if (confirmed) mergePerson.mutate({ source: person, target: candidate });
+                  }}
+                  data-testid={`button-merge-${person.email}-into-${candidate.email}`}
+                >
+                  <Merge className="h-3 w-3 mr-1" />
+                  Merge into {candidate.email}
+                </Button>
+              ))}
 
             {(() => {
               const backupIds = Array.from(new Set(person.beneficiaries.map(b => b.backupBeneficiaryId).filter((x): x is string => !!x)));

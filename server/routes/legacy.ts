@@ -3,7 +3,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "../replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, legacyBeneficiaries, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "../stripe";
 import { handleStripeWebhookEvent } from "../stripe-webhook";
@@ -30,6 +30,7 @@ import {
   groupUniqueLegacyBeneficiaries,
   summarizeLegacyBeneficiaries,
 } from "../lib/legacy-beneficiary-readiness";
+import { planLegacyBeneficiaryMerge } from "../lib/legacy-beneficiary-merge";
 
 export function registerLegacyRoutes(app: Express) {
   app.patch("/api/wallets/:id/label", isAuthenticated, async (req: any, res) => {
@@ -2130,6 +2131,76 @@ ${kitBody}
     } catch (error) {
       console.error("Delete beneficiary error:", error);
       res.status(500).json({ message: "Failed to delete beneficiary" });
+    }
+  });
+
+  app.post("/api/legacy-beneficiaries/merge-by-email", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      if (!await hasLegacyAccess(userId)) {
+        return res.status(403).json({ message: "Legacy Plan access required" });
+      }
+      const plan = await storage.getLegacyPlan(userId);
+      if (!plan) return res.status(404).json({ message: "No legacy plan found" });
+
+      const request = {
+        sourceEmail: String(req.body?.sourceEmail || ""),
+        targetEmail: String(req.body?.targetEmail || ""),
+        expectedSourceRows: Number(req.body?.expectedSourceRows),
+        expectedSourceAssignments: Number(req.body?.expectedSourceAssignments),
+      };
+
+      const result = await db.transaction(async (tx) => {
+        const lockedRows = await tx
+          .select()
+          .from(legacyBeneficiaries)
+          .where(eq(legacyBeneficiaries.legacyPlanId, plan.id))
+          .for("update");
+        const merge = planLegacyBeneficiaryMerge(lockedRows, request);
+
+        await tx
+          .update(legacyBeneficiaries)
+          .set({ email: merge.targetEmail })
+          .where(
+            and(
+              eq(legacyBeneficiaries.legacyPlanId, plan.id),
+              sql`lower(trim(${legacyBeneficiaries.email})) = ${merge.sourceEmail}`,
+            ),
+          );
+
+        const remainingSource = await tx
+          .select({ id: legacyBeneficiaries.id })
+          .from(legacyBeneficiaries)
+          .where(
+            and(
+              eq(legacyBeneficiaries.legacyPlanId, plan.id),
+              sql`lower(trim(${legacyBeneficiaries.email})) = ${merge.sourceEmail}`,
+            ),
+          );
+        if (remainingSource.length > 0) {
+          throw new Error("Source beneficiary still has rows after merge");
+        }
+
+        return merge;
+      });
+
+      res.json({
+        success: true,
+        sourceEmailRemoved: result.sourceEmail,
+        targetEmail: result.targetEmail,
+        movedAssignments: result.movedAssignments,
+        preservedRows: result.preservedRows,
+      });
+    } catch (error: any) {
+      const message = error?.message || "Failed to merge beneficiaries";
+      const isValidationError =
+        message.includes("aborted") ||
+        message.includes("required") ||
+        message.includes("not found") ||
+        message.includes("Choose") ||
+        message.includes("changed");
+      console.error("Merge beneficiaries error:", error);
+      res.status(isValidationError ? 409 : 500).json({ message });
     }
   });
 
