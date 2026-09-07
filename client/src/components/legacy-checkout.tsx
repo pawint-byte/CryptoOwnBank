@@ -104,13 +104,18 @@ export function LegacyCheckout({
   });
 
   const cryptoPurchase = useMutation({
-    mutationFn: () =>
-      apiRequest("POST", "/api/addons/crypto-purchase", {
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/addons/crypto-purchase", {
         addonKey: tier.addonKey,
         chain: selectedChain,
-      }),
-    onSuccess: async (res) => {
-      const data = await res.json();
+      });
+      const data = await response.json();
+      if (!data?.toAddress) {
+        throw new Error("Payment setup did not return a destination address. No payment was created on this screen; please try again.");
+      }
+      return data as PendingPayment;
+    },
+    onSuccess: (data) => {
       setPending(data);
     },
     onError: (err) =>

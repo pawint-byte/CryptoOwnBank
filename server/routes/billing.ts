@@ -6,7 +6,7 @@ import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "../repl
 import { registerTaxRoutes } from "./tax";
 import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
-import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "../stripe";
+import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "../stripe";
 import { handleStripeWebhookEvent } from "../stripe-webhook";
 import { createOnrampSession, isValidAddressForNetwork, isSupportedOnrampPair } from "../stripe-onramp";
 import { createAnonpaySession, getAnonpayStatus } from "../trocador";
@@ -27,6 +27,11 @@ import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getActiveCampaigns, getActiveCryptoBonus } from "@shared/promo-calendar";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
+import {
+  createPendingCryptoPayment,
+  CryptoPaymentCreationError,
+  toPendingCryptoPaymentJson,
+} from "../lib/crypto-payment-creator";
 
 export function registerBillingRoutes(app: Express) {
   app.get("/api/stellar/address", isAuthenticated, async (req: any, res) => {
@@ -394,94 +399,19 @@ export function registerBillingRoutes(app: Express) {
 
       const addonConfig = ADDONS[addonKey as AddonKey];
       const [addonUser] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId));
-      const usdAmount = applyCryptoDiscount(addonConfig.amount / 100, chain, { joinDate: addonUser?.createdAt ?? null });
-
-      const ALL_SUPPORTED_CHAINS = [
-        "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
-        "cardano", "avalanche", "algorand", "cosmos", "tron", "hedera",
-        "polkadot", "vechain", "digibyte", "casper", "cronos", "nervos",
-        "zilliqa", "ton", "stellar", "verge", "xdc", "polygon",
-      ];
-      if (!ALL_SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
-        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
-      }
-
-      const addresses = await storage.getCryptoPaymentAddresses(true);
-      const paymentAddr = addresses.find(a => a.chain.toLowerCase() === chain.toLowerCase());
-      if (!paymentAddr) {
-        return res.status(400).json({ message: `No payment address configured for ${chain}.` });
-      }
-
-      const CHAIN_TO_COINGECKO: Record<string, string> = {
-        bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",
-        xrp: "ripple", rlusd: "ripple-usd", dogecoin: "dogecoin", litecoin: "litecoin",
-        cardano: "cardano", avalanche: "avalanche-2", algorand: "algorand",
-        cosmos: "cosmos", tron: "tron", hedera: "hedera-hashgraph",
-        polkadot: "polkadot", vechain: "vechain", stellar: "stellar",
-        ton: "the-open-network", polygon: "matic-network", cronos: "crypto-com-chain",
-        xdc: "xdce-crowd-sale", digibyte: "digibyte", casper: "casper-network",
-        nervos: "nervos-network", zilliqa: "zilliqa", verge: "verge",
-      };
-
-      const coingeckoId = CHAIN_TO_COINGECKO[chain.toLowerCase()];
-      if (!coingeckoId) {
-        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
-      }
-
-      const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoId}&vs_currencies=usd`);
-      const priceData = await priceRes.json();
-      const price = priceData[coingeckoId]?.usd;
-      if (!price || price <= 0) {
-        return res.status(500).json({ message: "Failed to fetch current price." });
-      }
-
-      let cryptoAmount = usdAmount / price;
-      const uniqueSuffix = Math.floor(Math.random() * 900 + 100) / 1e8;
-      cryptoAmount += uniqueSuffix;
-
-      const CHAIN_TO_ASSET: Record<string, string> = {
-        bitcoin: "BTC", ethereum: "ETH", solana: "SOL", xrp: "XRP", rlusd: "RLUSD",
-        dogecoin: "DOGE", litecoin: "LTC", cardano: "ADA", avalanche: "AVAX",
-        algorand: "ALGO", cosmos: "ATOM", tron: "TRX", hedera: "HBAR",
-        polkadot: "DOT", vechain: "VET", stellar: "XLM", ton: "TON",
-        polygon: "MATIC", cronos: "CRO", xdc: "XDC", digibyte: "DGB",
-        casper: "CSPR", nervos: "CKB", zilliqa: "ZIL", verge: "XVG",
-      };
-
-      let destinationTag: number | null = null;
-      if (chain.toLowerCase() === "xrp" || chain.toLowerCase() === "rlusd") {
-        destinationTag = Math.floor(Math.random() * 2_000_000_000) + 1;
-      }
-
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-
-      const payment = await storage.createCryptoPayment({
+      const payment = await createPendingCryptoPayment({
         userId,
         plan: `addon:${addonKey}`,
-        chain: chain.toLowerCase(),
-        toAddress: paymentAddr.address,
-        expectedAmount: cryptoAmount.toFixed(8),
-        expectedAsset: CHAIN_TO_ASSET[chain.toLowerCase()] || chain.toUpperCase(),
-        usdAmount: usdAmount.toFixed(2),
-        destinationTag,
-        status: "pending",
-        expiresAt,
+        chain,
+        fullUsdAmount: addonConfig.amount / 100,
+        joinDate: addonUser?.createdAt ?? null,
       });
-
-      res.json({
-        id: payment.id,
-        toAddress: payment.toAddress,
-        expectedAmount: payment.expectedAmount,
-        expectedAsset: payment.expectedAsset,
-        usdAmount: payment.usdAmount,
-        destinationTag: payment.destinationTag,
-        expiresAt: payment.expiresAt,
-        status: payment.status,
-        chain: payment.chain,
-        addonKey,
-      });
+      res.json(toPendingCryptoPaymentJson(payment));
     } catch (error) {
       console.error("Addon crypto purchase error:", error);
+      if (error instanceof CryptoPaymentCreationError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to create addon crypto payment" });
     }
   });
@@ -559,22 +489,6 @@ export function registerBillingRoutes(app: Express) {
         return res.status(400).json({ message: "Chain is required." });
       }
 
-      const ALL_SUPPORTED_CHAINS = [
-        "xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "litecoin",
-        "cardano", "avalanche", "algorand", "cosmos", "tron", "hedera",
-        "polkadot", "vechain", "digibyte", "casper", "cronos", "nervos",
-        "zilliqa", "ton", "stellar", "verge", "xdc", "polygon",
-      ];
-      if (!ALL_SUPPORTED_CHAINS.includes(chain.toLowerCase())) {
-        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
-      }
-
-      const addresses = await storage.getCryptoPaymentAddresses(true);
-      const paymentAddr = addresses.find(a => a.chain.toLowerCase() === chain.toLowerCase());
-      if (!paymentAddr) {
-        return res.status(400).json({ message: `No payment address configured for ${chain}.` });
-      }
-
       const FULL_USD: Record<string, number> = {
         monthly: 29,
         yearly: 199,
@@ -582,62 +496,12 @@ export function registerBillingRoutes(app: Express) {
         "pro-yearly": 799,
       };
       const [planUser] = await db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId));
-      const usdAmount = applyCryptoDiscount(FULL_USD[plan], chain, { joinDate: planUser?.createdAt ?? null });
-
-      const CHAIN_TO_COINGECKO: Record<string, string> = {
-        bitcoin: "bitcoin", ethereum: "ethereum", solana: "solana",
-        xrp: "ripple", rlusd: "ripple-usd", dogecoin: "dogecoin", litecoin: "litecoin",
-        cardano: "cardano", avalanche: "avalanche-2", algorand: "algorand",
-        cosmos: "cosmos", tron: "tron", hedera: "hedera-hashgraph",
-        polkadot: "polkadot", vechain: "vechain", stellar: "stellar",
-        ton: "the-open-network", polygon: "matic-network", cronos: "crypto-com-chain",
-        xdc: "xdce-crowd-sale", digibyte: "digibyte", casper: "casper-network",
-        nervos: "nervos-network", zilliqa: "zilliqa", verge: "verge",
-      };
-
-      const coingeckoId = CHAIN_TO_COINGECKO[chain.toLowerCase()];
-      if (!coingeckoId) {
-        return res.status(400).json({ message: `Unsupported chain: ${chain}` });
-      }
-
-      const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoId}&vs_currencies=usd`);
-      const priceData = await priceRes.json();
-      const price = priceData[coingeckoId]?.usd;
-      if (!price || price <= 0) {
-        return res.status(500).json({ message: "Failed to fetch current price." });
-      }
-
-      let cryptoAmount = usdAmount / price;
-      const uniqueSuffix = Math.floor(Math.random() * 900 + 100) / 1e8;
-      cryptoAmount += uniqueSuffix;
-
-      const CHAIN_TO_ASSET: Record<string, string> = {
-        bitcoin: "BTC", ethereum: "ETH", solana: "SOL", xrp: "XRP", rlusd: "RLUSD",
-        dogecoin: "DOGE", litecoin: "LTC", cardano: "ADA", avalanche: "AVAX",
-        algorand: "ALGO", cosmos: "ATOM", tron: "TRX", hedera: "HBAR",
-        polkadot: "DOT", vechain: "VET", stellar: "XLM", ton: "TON",
-        polygon: "MATIC", cronos: "CRO", xdc: "XDC", digibyte: "DGB",
-        casper: "CSPR", nervos: "CKB", zilliqa: "ZIL", verge: "XVG",
-      };
-
-      let destinationTag: number | null = null;
-      if (chain.toLowerCase() === "xrp" || chain.toLowerCase() === "rlusd") {
-        destinationTag = Math.floor(Math.random() * 2_000_000_000) + 1;
-      }
-
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-
-      const payment = await storage.createCryptoPayment({
+      const payment = await createPendingCryptoPayment({
         userId,
         plan,
-        chain: chain.toLowerCase(),
-        toAddress: paymentAddr.address,
-        expectedAmount: cryptoAmount.toFixed(8),
-        expectedAsset: CHAIN_TO_ASSET[chain.toLowerCase()] || chain.toUpperCase(),
-        usdAmount: usdAmount.toFixed(2),
-        destinationTag,
-        status: "pending",
-        expiresAt,
+        chain,
+        fullUsdAmount: FULL_USD[plan],
+        joinDate: planUser?.createdAt ?? null,
       });
 
       const refCode = `COB-${payment.id.toString().padStart(4, "0")}`;
@@ -657,6 +521,9 @@ export function registerBillingRoutes(app: Express) {
       });
     } catch (error) {
       console.error("Crypto payment create error:", error);
+      if (error instanceof CryptoPaymentCreationError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to create crypto payment" });
     }
   });
