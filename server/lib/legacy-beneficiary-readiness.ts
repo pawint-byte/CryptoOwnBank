@@ -20,10 +20,35 @@ export function groupUniqueLegacyBeneficiaries<T extends LegacyBeneficiaryReadin
   rows: T[],
 ): UniqueLegacyBeneficiary<T>[] {
   const groups = new Map<string, T[]>();
+  const canonicalKeyByEmail = new Map<string, string>();
+  const canonicalKeyByName = new Map<string, string>();
 
-  for (const row of rows) {
+  const meaningfulRows = rows.filter((row) => row.name.trim() || row.email.trim());
+  const canonicalRows = meaningfulRows.filter((row) => !row.assignmentId);
+  const assignmentRows = meaningfulRows.filter((row) => row.assignmentId);
+
+  for (const row of canonicalRows) {
+    const normalizedName = row.name.trim();
     const normalizedEmail = row.email.trim().toLowerCase();
-    const key = normalizedEmail ? `email:${normalizedEmail}` : `id:${row.id}`;
+    const normalizedNameKey = normalizedName.toLowerCase();
+    const existingKey = normalizedEmail
+      ? canonicalKeyByEmail.get(normalizedEmail)
+      : canonicalKeyByName.get(normalizedNameKey);
+    const key = existingKey ?? (normalizedEmail ? `email:${normalizedEmail}` : `id:${row.id}`);
+    const existing = groups.get(key);
+    if (existing) existing.push(row);
+    else groups.set(key, [row]);
+    if (normalizedEmail) canonicalKeyByEmail.set(normalizedEmail, key);
+    if (normalizedNameKey) canonicalKeyByName.set(normalizedNameKey, key);
+  }
+
+  for (const row of assignmentRows) {
+    const normalizedName = row.name.trim().toLowerCase();
+    const normalizedEmail = row.email.trim().toLowerCase();
+    const key =
+      canonicalKeyByEmail.get(normalizedEmail) ??
+      canonicalKeyByName.get(normalizedName) ??
+      (normalizedEmail ? `email:${normalizedEmail}` : `id:${row.id}`);
     const existing = groups.get(key);
     if (existing) existing.push(row);
     else groups.set(key, [row]);

@@ -10,9 +10,11 @@ describe("Legacy Plan beneficiary readiness counts", () => {
     { id: "assignment-1a", name: "Kid 1", email: "KID1@example.test", assignmentId: "wallet-1", confirmationStatus: "confirmed", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: null },
     { id: "assignment-1b", name: "Kid 1", email: " kid1@example.test ", assignmentId: "wallet-2", confirmationStatus: "confirmed", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: null },
     { id: "kid-2", name: "Kid 2", email: "kid2@example.test", assignmentId: null, confirmationStatus: "confirmed", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: "2026-08-01T00:00:00.000Z" },
-    { id: "assignment-2a", name: "Kid 2", email: "kid2@example.test", assignmentId: "wallet-3", confirmationStatus: "pending", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: null },
+    { id: "assignment-2a", name: "Kid 2", email: "kid2+stale-slot@example.test", assignmentId: "wallet-3", confirmationStatus: "pending", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: null },
     { id: "kid-3", name: "Kid 3", email: "kid3@example.test", assignmentId: null, confirmationStatus: "pending", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: null },
     { id: "assignment-3a", name: "Kid 3", email: "kid3@example.test", assignmentId: "wallet-4", confirmationStatus: "pending", encryptedVault: "vault", vaultVerificationCapsule: "capsule", vaultVerifiedAt: null },
+    { id: "empty-slot-1", name: "", email: "", assignmentId: null, confirmationStatus: null, encryptedVault: null, vaultVerificationCapsule: null, vaultVerifiedAt: null },
+    { id: "empty-slot-2", name: "  ", email: "  ", assignmentId: "wallet-5", confirmationStatus: null, encryptedVault: null, vaultVerificationCapsule: null, vaultVerifiedAt: null },
   ];
 
   it("counts many assignment rows as exactly three beneficiaries", () => {

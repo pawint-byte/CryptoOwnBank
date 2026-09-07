@@ -5443,7 +5443,7 @@ async function fetchCurrentPricesWithChange(assets: string[]): Promise<Record<st
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds.join(",")}&vs_currencies=usd&include_24hr_change=true`;
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
       if (response.status === 429 && attempt < maxRetries) {
         const backoff = (attempt + 1) * 10000;
         console.log(`[price-cache] Rate limited (429), retrying in ${backoff / 1000}s...`);

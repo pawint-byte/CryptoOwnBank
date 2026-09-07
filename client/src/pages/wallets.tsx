@@ -61,6 +61,7 @@ import {
 import { Cell, Pie, PieChart, ResponsiveContainer, Bar, BarChart, XAxis, YAxis, CartesianGrid } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { fetchJsonWithTimeout, RequestTimeoutError } from "@/lib/fetch-json-with-timeout";
 import {
   Plus,
   RefreshCw,
@@ -1538,8 +1539,19 @@ export default function Wallets() {
 
   const [restoringWallets, setRestoringWallets] = useState(false);
 
-  const { data: userWallets = [], isLoading } = useQuery<WalletWithBalances[]>({
+  const {
+    data: userWallets = [],
+    isLoading,
+    isError: walletsLoadFailed,
+    error: walletsLoadError,
+    refetch: retryWalletsLoad,
+    isFetching: walletsFetching,
+  } = useQuery<WalletWithBalances[]>({
     queryKey: ["/api/wallets"],
+    queryFn: ({ signal }) => fetchJsonWithTimeout<WalletWithBalances[]>(
+      "/api/wallets",
+      { timeoutMs: 15_000, signal },
+    ),
   });
 
   useEffect(() => {
@@ -2132,6 +2144,35 @@ export default function Wallets() {
     );
   }
 
+  if (walletsLoadFailed) {
+    const timedOut = walletsLoadError instanceof RequestTimeoutError;
+    return (
+      <Card className="border-destructive/40" data-testid="wallets-error-state">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            {timedOut ? "Wallets took too long to load" : "Wallets couldn't load"}
+          </CardTitle>
+          <CardDescription>
+            {timedOut
+              ? "The request was cancelled instead of leaving this page stuck. Your saved wallet data was not changed."
+              : "The wallet service returned an error. Your saved wallet data was not changed."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={() => void retryWalletsLoad()}
+            disabled={walletsFetching}
+            data-testid="button-retry-wallets"
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", walletsFetching && "animate-spin")} />
+            {walletsFetching ? "Trying again..." : "Try again"}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -2489,6 +2530,31 @@ export default function Wallets() {
           </Dialog>
         </div>
       </div>
+
+      {userWallets.length === 0 && !restoringWallets && (
+        <Card className="border-dashed" data-testid="wallets-empty-state">
+          <CardContent className="flex flex-col items-start gap-3 py-8 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Wallet className="mt-0.5 h-6 w-6 text-muted-foreground" />
+              <div>
+                <p className="font-semibold">No wallet addresses yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Add a public address to track it. CryptoOwnBank never needs your seed phrase or private keys.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setIsDialogOpen(true)}
+              disabled={walletAtLimit}
+              data-testid="button-empty-add-wallet"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Address
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {walletAtLimit && (
         <UpgradePrompt
