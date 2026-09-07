@@ -28,6 +28,9 @@ import {
   Landmark,
   ArrowRight,
   FileText,
+  HeartHandshake,
+  Repeat,
+  Send,
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Transaction } from "@shared/schema";
@@ -224,6 +227,43 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      <Card className="border-[#00A4E4]/25 bg-[#00A4E4]/5" data-testid="card-member-get-started">
+        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{hasData ? "Continue setup" : "Get started"}</p>
+            <p className="text-xs text-muted-foreground">
+              Add what you already control, prepare your continuity tools, or choose an action to review and approve in your own wallet.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link href="/wallets">
+              <Button variant="outline" size="sm" data-testid="button-setup-add-wallet">
+                <Wallet className="mr-1.5 h-4 w-4" />
+                Add a wallet
+              </Button>
+            </Link>
+            <Link href="/legacy-plan">
+              <Button variant="outline" size="sm" data-testid="button-setup-legacy-plan">
+                <HeartHandshake className="mr-1.5 h-4 w-4" />
+                Set up Legacy Plan
+              </Button>
+            </Link>
+            <Link href="/ownbank/send">
+              <Button variant="outline" size="sm" data-testid="button-setup-send">
+                <Send className="mr-1.5 h-4 w-4" />
+                Send
+              </Button>
+            </Link>
+            <Link href="/swap-any-pair">
+              <Button variant="outline" size="sm" data-testid="button-setup-swap">
+                <Repeat className="mr-1.5 h-4 w-4" />
+                Swap Any Pair
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       <SovereigntyReminderBanner hasWallets={(walletsData?.length ?? 0) > 0} />
 

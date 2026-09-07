@@ -206,6 +206,15 @@ const allItems: NavItem[] = [
   { title: "Contact & Feedback", url: "/contact", icon: MessageSquare, group: "learn" },
 ];
 
+const memberShortcuts: NavItem[] = [
+  { title: "Home", url: "/", icon: LayoutDashboard },
+  { title: "Portfolio", url: "/portfolio", icon: PieChart },
+  { title: "Add wallet", url: "/wallets", icon: Wallet, color: "#00A4E4" },
+  { title: "Legacy Plan", url: "/legacy-plan", icon: HeartHandshake, color: "#f59e0b" },
+  { title: "Send", url: "/ownbank/send", icon: Send, color: "#16a34a" },
+  { title: "Swap Any Pair", url: "/swap-any-pair", icon: Repeat, color: "#16a34a" },
+];
+
 const DEFAULT_FAVORITES = ["/", "/portfolio", "/rwa-yields", "/stablecoins", "/chain-guide"];
 
 function useFavorites() {
@@ -499,6 +508,20 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            <span className="flex items-center gap-2">
+              <Rocket className="h-3 w-3 text-[#00A4E4]" />
+              Quick access
+            </span>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {memberShortcuts.map((item) => renderItem(item, "quick-access", false))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {favoriteItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>
