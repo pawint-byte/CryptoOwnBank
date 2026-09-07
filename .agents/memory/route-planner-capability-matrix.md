@@ -15,9 +15,12 @@ The Route Planner is a **route selector**: for a chosen destination coin it gene
   - `/ownbank/cross-chain` (LI.FI): EVM↔EVM only — no native BTC/XRP/SOL destinations.
   - `/ownbank/xrpl-bridge` (Squid/Axelar): EVM asset → native XRP. The right tool for XRP, not the generic cross-chain page.
   - `/swap-any-pair` (Trocador all-pairs): the catch-all from any crypto you already hold to almost any grid coin; a third party briefly holds funds in-flight (we never custody).
-  - `/own-privately`: external no-KYC handoff for XMR/ZEC — privacy coins stay on this boundary and are NEVER routed through the Trocador aggregator.
+  - `/own-privately` and the pre-filled Trocador AnonPay handoff are the external boundary for XMR; never pretend XMR is an in-app EVM/THOR swap.
+- A guided leg may only claim its destination is locked when the receiving address is encoded in the rail handoff (for example THORSwap `recipient` or Trocador AnonPay `address`). A page that opens with defaults is guidance, not an executable guided leg.
 - **Use ETH as the card-buyable intermediate** for cash-start routes (buy ETH → bridge/swap). It's in the grid, Stripe-buyable, and EVM — so both the buy leg and the next hop are executable. (Avoid USDC as the intermediate: not in the grid.)
 
 **Member-first scoring (honesty requirement):** for EVM↔EVM pairs the on-chain DEX route must out-rank the Swap Any Pair (Trocador) route under Balanced/Cheapest — the selector steers members to the cheaper, self-custodial rail, NOT the one we earn affiliate revenue from. `costScore` (cheaper=higher) + self-custody bonus drive this; verify it holds if weights change.
 
 **Tax nuance:** buying with a card is not a taxable disposal; swaps/bridges are (they realize gain/loss on the coin sold). The "Lowest tax bill" priority biases toward card buys / not selling held coins. XRP/XMR have no card rail straight to the final coin, so at least one swap/bridge is unavoidable for them.
+
+For chained execution, only auto-record a disposal after the exact source wallet decreased and the exact locked destination wallet increased; make that notification idempotent per session leg. A manual “continue” fallback must never create a tax record because it has no verified quantity.

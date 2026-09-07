@@ -3,7 +3,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin, registerAuthRoutes } from "./replit_integrations/auth";
-import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
+import { insertTransactionSchema, insertApiCredentialSchema, userSettings as userSettingsTable, users, insertPriceAlertSchema, insertWalletSchema, priceCache as priceCacheTable, walletBalances, wallets, xamanConnections, taxLots, gainEvents, featureAnnouncements, legacyPlans, autoWithdrawLogs, type CustomVault, properties, insertPropertySchema, dismissedRecommendations, transactions, aiChatMessages, scheduledPayments, offChainHoldings, insertOffChainHoldingSchema, OFF_CHAIN_ASSET_TYPES, OFF_CHAIN_STATUSES, ROADMAP_STATUSES, ROADMAP_CATEGORIES, type RoadmapStatus, type InsertRoadmapItem, insertWhisperSchema, positions } from "@shared/schema";
 import OpenAI from "openai";
 import { createCheckoutSession, createAddonCheckoutSession, PLANS, ADDONS, type AddonKey, getCryptoDiscountRate, applyCryptoDiscount, isHouseChain, isLegacyAddon, LEGACY_ADDON_KEYS, isLegacyAddonActive } from "./stripe";
 import { handleStripeWebhookEvent } from "./stripe-webhook";
@@ -2484,7 +2484,17 @@ Rules you MUST follow:
   app.post("/api/send/disposal-notification", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { chain, assetSymbol, quantity, walletAddress, recipient, pricePerUnit, memo } = req.body;
+      const { chain, assetSymbol, quantity, walletAddress, recipient, pricePerUnit, memo, disposalType, idempotencyKey } = req.body;
+      const normalizedDisposalType = disposalType === "swap" ? "swap" : "send";
+      const disposalNote = normalizedDisposalType === "swap"
+        ? `Swapped ${assetSymbol} on ${chain || "unknown"}${memo ? ` — ${memo}` : ""}${idempotencyKey ? ` [${idempotencyKey}]` : ""}`
+        : `Sent ${assetSymbol} on ${chain || "unknown"} to ${recipient || "external"}${memo ? ` — ${memo}` : ""}`;
+      if (idempotencyKey) {
+        const existing = await db.select({ id: gainEvents.id }).from(gainEvents)
+          .where(and(eq(gainEvents.userId, userId), eq(gainEvents.disposalNote, disposalNote)))
+          .limit(1);
+        if (existing.length > 0) return res.json({ recorded: true, duplicate: true });
+      }
       const qty = parseFloat(quantity);
       let price = parseFloat(pricePerUnit || "0");
       if (!assetSymbol || !qty || qty <= 0 || !walletAddress) {
@@ -2531,7 +2541,8 @@ Rules you MUST follow:
           proceeds: proceeds.toFixed(2), costBasis: costBasis.toFixed(2),
           gainLoss: gainLoss.toFixed(2), isLongTerm,
           taxMethod: "FIFO", soldDate: sellDate, acquiredDate: new Date(lot.acquiredDate),
-          disposalType: "send", disposalNote: `Sent ${assetSymbol} on ${chain || "unknown"} to ${recipient || "external"}${memo ? ` — ${memo}` : ""}`,
+          disposalType: normalizedDisposalType,
+          disposalNote,
         });
         await storage.updateTaxLot(lot.id, { remainingQuantity: (lotRemaining - used).toFixed(8) });
         totalGain += gainLoss;
@@ -2542,11 +2553,32 @@ Rules you MUST follow:
       const totalCostBasis = updatedLots.reduce((s, l) => s + parseFloat(l.remainingQuantity) * parseFloat(l.costBasisPerUnit), 0);
       const avgCost = totalRemaining > 0 ? totalCostBasis / totalRemaining : 0;
       await storage.updateWalletBalanceCostData(balance.id, avgCost.toFixed(8), totalCostBasis.toFixed(2));
-      console.log(`[send-disposal] Recorded disposal of ${qty} ${assetSymbol} via send on ${chain}`);
+      console.log(`[send-disposal] Recorded disposal of ${qty} ${assetSymbol} via ${normalizedDisposalType} on ${chain}`);
       res.json({ recorded: true, disposed: qty - remaining, gain: totalGain.toFixed(2) });
     } catch (error: any) {
       console.error("[send-disposal] Error:", error?.message);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/thorchain/status", async (_req, res) => {
+    try {
+      const inbound = await getThorInboundAddresses();
+      res.json({
+        chains: Object.fromEntries(inbound.map((row) => [
+          row.chain.toUpperCase(),
+          {
+            halted: !!(row.halted || row.global_trading_paused || row.chain_trading_paused),
+            reason: row.global_trading_paused
+              ? "THORChain trading is globally paused"
+              : row.chain_trading_paused || row.halted
+                ? `${row.chain} trading is temporarily paused`
+                : null,
+          },
+        ])),
+      });
+    } catch (error: any) {
+      res.status(502).json({ message: error?.message || "Could not check THORChain status" });
     }
   });
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import guideTab from "@assets/guide/guide-1-tab.png";
 import guideSwap from "@assets/guide/guide-2-swap.png";
 import guideAddress from "@assets/guide/guide-3-address.png";
 import guideSend from "@assets/guide/guide-4-send.png";
+import { GuidedBuyWizard } from "@/components/guided-buy-wizard";
 
 interface PrivacyProvider {
   id: string;
@@ -173,6 +175,7 @@ function ProviderCard({ p }: { p: PrivacyProvider }) {
 }
 
 export default function OwnPrivately() {
+  const [guidedOpen, setGuidedOpen] = useState(false);
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <SeoHead
@@ -221,6 +224,13 @@ export default function OwnPrivately() {
           </Button>
         </CardContent>
       </Card>
+      <Card className="mb-8 border-primary/40" data-testid="card-private-guided-route">
+        <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div><h2 className="text-xl font-bold">Want a different token?</h2><p className="text-sm text-muted-foreground">Tell us where you want to land. We'll use a coin you already hold or map a card-first route, with an honest external path when in-app rails cannot reach it.</p></div>
+          <Button onClick={() => setGuidedOpen(true)} className="shrink-0">Build my private-buy route <ArrowRight className="ml-2 h-4 w-4" /></Button>
+        </CardContent>
+      </Card>
+      <GuidedBuyWizard open={guidedOpen} onOpenChange={setGuidedOpen} initialTarget="XMR" />
 
       <Card className="mb-8 border-primary/30 bg-primary/5" data-testid="card-how-to-steps">
         <CardHeader>

@@ -49,6 +49,7 @@ import {
   Banknote,
   Coins,
   Download,
+  Route,
 } from "lucide-react";
 import { createOnrampSessionAndRedirect, getWalletAppBuysForChain } from "@/lib/stripe-onramp";
 import {
@@ -60,6 +61,7 @@ import {
   getRegionGuidance,
 } from "@/lib/region";
 import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn } from "@/lib/xumm-connector";
+import { GuidedBuyWizard } from "@/components/guided-buy-wizard";
 
 type Step = "coin" | "method" | "destination" | "checkout";
 
@@ -1189,6 +1191,7 @@ export default function BuyCrypto() {
   const [showFaq, setShowFaq] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("");
+  const [guidedOpen, setGuidedOpen] = useState(false);
 
   // Member location → localizes every on-ramp link (fiat currency / country) and
   // surfaces the right payment hint. Detected from the browser locale (which a VPN
@@ -1233,6 +1236,10 @@ export default function BuyCrypto() {
     const params = new URLSearchParams(window.location.search);
     const coin = params.get("coin")?.toUpperCase();
     const method = params.get("method")?.toLowerCase();
+    const address = params.get("address")?.trim();
+    const from = params.get("from")?.toUpperCase();
+    if (address) setNewAddress(address);
+    if (from) setTrocadorFromCoin(from);
     if (coin && tokens.some((t) => t.symbol === coin)) {
       if (method === "aggregator") {
         setSelectedToken(coin);
@@ -1783,6 +1790,17 @@ export default function BuyCrypto() {
           </Button>
         )}
       </div>
+
+      <Card className="border-2 border-primary/50 bg-primary/5" data-testid="card-guided-buy">
+        <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="font-bold text-lg flex items-center gap-2"><Route className="h-5 w-5 text-primary" /> Tell us the token. We'll map every hop.</h2>
+            <p className="text-sm text-muted-foreground">Uses what you already hold when possible; otherwise starts with a card-buyable bridge coin. One approval per leg, always in your custody.</p>
+          </div>
+          <Button onClick={() => setGuidedOpen(true)} className="shrink-0" data-testid="button-open-guided-buy">Build my route <ArrowRight className="ml-2 h-4 w-4" /></Button>
+        </CardContent>
+      </Card>
+      <GuidedBuyWizard open={guidedOpen} onOpenChange={setGuidedOpen} initialTarget={selectedToken || undefined} />
 
       <div className="rounded-lg border bg-muted/40 p-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-3 gap-y-2" data-testid="region-banner">
         <div className="flex items-center gap-2 shrink-0">
