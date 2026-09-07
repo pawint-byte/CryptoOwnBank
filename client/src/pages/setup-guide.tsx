@@ -535,7 +535,7 @@ const toolkits: Toolkit[] = [
         number: 2,
         icon: Download,
         title: "Download Xaman — Your Wallet Is Your Bank Account",
-        description: "Install the Xaman wallet app. This replaces a bank account, debit card, and savings account — all in one.",
+        description: "Install the Xaman wallet app to hold and move XRP in self-custody — one practical step toward being your own bank.",
         details: [
           'Download <a href="https://xaman.app" target="_blank" rel="noopener noreferrer" class="text-[#00A4E4] underline hover:text-[#0090c9]">Xaman</a> (formerly Xumm) from the App Store (iPhone) or Google Play (Android)',
           "Open the app and create a new account — takes about 2 minutes",

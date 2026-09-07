@@ -57,3 +57,4 @@
 - [Roadmap as an open invitation](roadmap-engagement-purpose.md) — keep the voting list broad: its primary job is to invite people in, let them leave a mark or request what is missing, and return to watch progress.
 - [SLIP-39 master-secret input](slip39-master-secret-input.md) — slip39.fromArray must receive a plain number[]; Node Buffer corrupts the recovered secret even when shard recovery appears successful.
 - [GitHub backup authorization](github-backup-authorization.md) — connector OAuth and Git CLI credentials are separate; verify repository `permissions.push` before attempting an API fallback.
+- [Inheritance readiness claims](inheritance-readiness-claims.md) — 3/3 beneficiaries is not full coverage; only claim readiness when wallets and any configured SLIP-39 shards are complete.

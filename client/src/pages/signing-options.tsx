@@ -358,7 +358,7 @@ export default function SigningOptions() {
               <a href="/legacy-plan" data-testid="link-legacy-from-signing">Set Up Legacy Plan</a>
             </Button>
             <p className="text-xs text-muted-foreground">
-              From <strong>$9.99/mo</strong> as an add-on, or <strong>included free with Pro</strong>
+              <strong>$29/year</strong>, <strong>$99/5 years</strong>, or <strong>$499 lifetime</strong> — included free with Pro
             </p>
           </div>
         </CardContent>

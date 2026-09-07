@@ -33,7 +33,7 @@ export default function HelpLegacyTier() {
         },
         {
           title: "Pay your way",
-          body: <>Check out with a normal card, or pay with crypto for <span className="font-medium text-foreground">10% off</span> (a bit more on Bitcoin, Ethereum, Solana, XRP, and RLUSD). Your choice.</>,
+          body: <>Check out with a normal card, or pay with any supported cryptocurrency for <span className="font-medium text-foreground">10% off</span>. House Tier coins are preferred coins, but receive the same 10% discount.</>,
           imageAlt: "Checkout screen with card and crypto payment options",
         },
         {

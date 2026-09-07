@@ -118,16 +118,6 @@ type LegacyPlanData = {
 };
 
 function ProGate() {
-  const { toast } = useToast();
-  const buyAddon = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/addons/stripe-checkout", { addonKey: "legacy-plan" }),
-    onSuccess: async (res) => {
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    },
-    onError: () => toast({ title: "Error", description: "Failed to start checkout", variant: "destructive" }),
-  });
-
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-8" data-testid="legacy-pro-gate">
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
@@ -137,6 +127,10 @@ function ProGate() {
         <h1 className="text-3xl font-bold">Legacy Plan — crypto inheritance</h1>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
           A non-custodial dead-man switch so your crypto doesn't die with you. Pick the plan that fits.
+        </p>
+        <p className="text-sm text-amber-700 dark:text-amber-300 max-w-xl mx-auto">
+          Confirmed beneficiaries alone do not mean complete coverage. Your plan is fully ready only
+          when every intended wallet has recovery instructions and any SLIP-39 shard setup is complete.
         </p>
       </div>
 
@@ -173,19 +167,6 @@ function ProGate() {
       </div>
 
       <div className="space-y-3 max-w-md text-sm text-muted-foreground">
-        <p>
-          Prefer to pay month to month? You can{" "}
-          <button
-            type="button"
-            className="text-primary underline"
-            onClick={() => buyAddon.mutate()}
-            disabled={buyAddon.isPending}
-            data-testid="button-buy-addon"
-          >
-            add Legacy Plan for $9.99/month
-          </button>{" "}
-          instead.
-        </p>
         <p>
           Or get it free with <a href="/settings" className="text-primary underline" data-testid="link-upgrade-pro">Pro ($99/month)</a>,
           which includes Member for Life plus 15+ other features.

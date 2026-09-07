@@ -1331,7 +1331,7 @@ export default function Landing() {
       name: "CryptoOwnBank",
       operatingSystem: "Web",
       applicationCategory: "FinanceApplication",
-      description: "Non-custodial crypto platform that solves inheritance, earns stablecoin yield, enables global payments, and replaces your bank. Connect your cold wallet, track across 32+ blockchains, earn 5-8% APR on RLUSD, trade on XRPL & Stellar DEXs, send remittances globally, and protect your crypto for your family with the Legacy Plan.",
+      description: "Non-custodial crypto platform for inheritance planning, stablecoin yield, and global payments. Connect your cold wallet, track across 32+ blockchains, explore RLUSD yield, trade on XRPL & Stellar DEXs, send remittances globally, and keep control of your keys while building your own recovery plan.",
       featureList: "Crypto Inheritance (Legacy Plan), RLUSD Yield Vaults (5-8% APR), XRPL DEX Trading, Stellar Payments & Remittances, Cold Wallet Portfolio Tracker, DCA Orders, EVM Swaps via 1inch, Cross-Chain Bridging, Whale Alerts, Technical Analysis, Tax Reports",
       offers: [
         { "@type": "Offer", price: "0", priceCurrency: "USD", description: "Free tier — forever free" },
@@ -1345,7 +1345,7 @@ export default function Landing() {
       "@context": "https://schema.org",
       "@type": "VideoObject",
       name: "CryptoOwnBank Legacy Plan — What Happens to Your Crypto When You Die?",
-      description: "Your crypto shouldn't disappear if something happens to you. CryptoOwnBank's Legacy Plan is an automated dead-man's switch that passes your wallets to your family — non-custodial, no lawyers, no probate, works in any country. Available in English, Spanish, Portuguese, Hindi, and Mandarin.",
+      description: "CryptoOwnBank's Legacy Plan is a non-custodial dead-man's switch that releases the recovery instructions you set up for your beneficiaries. Complete wallet instructions and any required SLIP-39 shards before treating the plan as fully ready. Available in English, Spanish, Portuguese, Hindi, and Mandarin.",
       thumbnailUrl: "https://cryptoownbank.com/og-image.png",
       uploadDate: "2026-03-26",
       contentUrl: "https://cryptoownbank.com/assets/legacy-plan-video-en.mp4",
@@ -1378,7 +1378,7 @@ export default function Landing() {
           name: "What happens to my crypto when I die?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "CryptoOwnBank's Legacy Plan is an automated dead-man's switch. If you stop responding, your wallets automatically pass to your designated beneficiaries. 100% non-custodial — no lawyers, no probate, no third parties. Works in any country.",
+            text: "CryptoOwnBank's Legacy Plan is a non-custodial dead-man's switch. If you stop responding, it releases the recovery instructions you prepared for your designated beneficiaries. Confirmed beneficiaries alone do not make the plan complete: every intended wallet needs instructions, and any SLIP-39 setup needs enough correctly assigned shards.",
           },
         },
         {
@@ -1440,7 +1440,7 @@ export default function Landing() {
         title="CryptoOwnBank — Self-Custody Crypto Platform | Inherit, Earn Yield, Send Globally"
         description="Non-custodial crypto platform with automated inheritance (Legacy Plan), 5-8% RLUSD yield vaults, XRPL & Stellar DEX trading, global remittances, and cold wallet portfolio tracking. Your keys, your crypto — even after you're gone."
         ogTitle="CryptoOwnBank — Be Your Own Bank"
-        ogDescription="The only self-custody crypto dashboard that solves inheritance, earns 5-8% stablecoin yield, and replaces your bank. Non-custodial. 190+ countries. Free to start."
+        ogDescription="A self-custody crypto dashboard for inheritance planning, stablecoin yield, and global payments. Keep control of your keys and be your own bank. Free to start."
         path="/"
         jsonLd={landingJsonLd}
       />

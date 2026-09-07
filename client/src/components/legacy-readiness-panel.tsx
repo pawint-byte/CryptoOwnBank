@@ -72,7 +72,10 @@ export function LegacyReadinessPanel() {
   const critical = data.checks.filter(c => c.severity === "critical");
   const warnings = data.checks.filter(c => c.severity === "warning");
   const tips = data.checks.filter(c => c.severity === "tip");
-  const allClear = data.checks.length === 0;
+  const walletsComplete = data.totalWallets > 0 && data.coveredWallets >= data.totalWallets;
+  const slip39Complete = !data.slip39 || data.slip39.assigned >= data.slip39.total;
+  const inheritanceCoverageComplete = walletsComplete && slip39Complete;
+  const allClear = data.checks.length === 0 && inheritanceCoverageComplete;
 
   return (
     <Card className="border-2" data-testid="card-readiness-panel">
@@ -111,6 +114,17 @@ export function LegacyReadinessPanel() {
             <div className="font-semibold">{critical.length + warnings.length} blocking, {tips.length} tips</div>
           </div>
         </div>
+
+        {!inheritanceCoverageComplete && (
+          <div className="flex items-start gap-2 rounded border border-amber-500/40 bg-amber-500/5 p-3 text-sm" data-testid="text-coverage-incomplete">
+            <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+            <span>
+              Beneficiary confirmation can be complete while inheritance coverage is still incomplete.
+              Cover every intended wallet and finish any configured SLIP-39 shard assignments before
+              treating the plan as fully ready.
+            </span>
+          </div>
+        )}
 
         {allClear && (
           <div className="flex items-center gap-2 rounded border border-green-500/40 bg-green-500/5 p-3 text-sm" data-testid="text-all-clear">
