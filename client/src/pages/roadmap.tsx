@@ -436,9 +436,11 @@ export default function Roadmap() {
             <span className="font-bold">CryptoOwnBank</span>
           </a>
           <div className="flex items-center gap-3">
-            <a href="/principles" className="text-sm hover:underline" data-testid="link-principles-header">
-              Our Principles
-            </a>
+            <nav className="hidden items-center gap-3 text-sm md:flex" aria-label="Public documentation">
+              <a href="/principles" className="hover:underline" data-testid="link-principles-header">Principles</a>
+              <a href="/guardrails" className="hover:underline">Guardrails</a>
+              <a href="/security" className="hover:underline">Security</a>
+            </nav>
             <ThemeToggle />
             <a href="/">
               <Button variant="ghost" size="sm" data-testid="button-back-home">
@@ -501,7 +503,7 @@ export default function Roadmap() {
             <p>
               <span className="font-semibold text-foreground">What your vote means:</span> it tells us where
               real interest exists. It is not a promise to build blindly. Every idea still has to preserve
-              member control, pass our safety principles, and work from beginning to end. If it cannot, we
+              member control, pass our <a href="/guardrails" className="underline underline-offset-4 hover:text-foreground">product guardrails</a>, and work from beginning to end. If it cannot, we
               will explain why instead of quietly making it disappear.
             </p>
             <p>
@@ -798,6 +800,15 @@ export default function Roadmap() {
             Or email <a className="underline" href="mailto:hello@cryptoownbank.com">hello@cryptoownbank.com</a>.
           </p>
         </section>
+
+        <footer className="mt-12 border-t pt-6 text-center text-sm text-muted-foreground">
+          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2" aria-label="Public documentation footer">
+            <a href="/principles" className="hover:text-foreground">Principles</a>
+            <a href="/guardrails" className="hover:text-foreground">Guardrails</a>
+            <a href="/security" className="hover:text-foreground">Security</a>
+            <a href="/roadmap" className="hover:text-foreground">Roadmap</a>
+          </nav>
+        </footer>
       </main>
 
       {/* Vote dialog (optional comment) */}

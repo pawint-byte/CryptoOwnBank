@@ -69,6 +69,11 @@ export default function Principles() {
               <span className="text-lg font-semibold">CryptoOwnBank</span>
             </a>
             <div className="flex items-center gap-4">
+              <nav className="hidden items-center gap-4 text-sm text-muted-foreground md:flex" aria-label="Public documentation">
+                <a href="/guardrails" className="hover:text-foreground">Guardrails</a>
+                <a href="/security" className="hover:text-foreground">Security</a>
+                <a href="/roadmap" className="hover:text-foreground">Roadmap</a>
+              </nav>
               <ThemeToggle />
               <a href="/">
                 <Button variant="outline" size="sm" data-testid="button-back-home">
@@ -159,6 +164,25 @@ export default function Principles() {
             </CardContent>
           </Card>
 
+          <Card className="border-[#00A4E4]/30 bg-[#00A4E4]/5 mb-12" data-testid="card-guardrails">
+            <CardContent className="p-6 flex gap-4 items-start">
+              <div className="flex-shrink-0 h-10 w-10 rounded-md bg-[#00A4E4]/15 text-[#00A4E4] flex items-center justify-center">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-base mb-2">Our guardrails are not optional.</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                  We never custody funds or recovery credentials, ask for real seed phrases, bypass
+                  wallet approval, promise returns, imply deposit insurance, or act as a bank,
+                  broker, exchange custodian, money transmitter, or portfolio manager.
+                </p>
+                <a href="/guardrails" className="text-sm font-semibold text-[#007eae] hover:underline">
+                  Read the full product guardrails
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 mb-12" data-testid="card-honest-part">
             <CardContent className="p-6 flex gap-4 items-start">
               <div className="flex-shrink-0 h-10 w-10 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center">
@@ -219,6 +243,14 @@ export default function Principles() {
               </Button>
             </a>
           </div>
+          <footer className="mt-12 border-t pt-6 text-center text-sm text-muted-foreground">
+            <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2" aria-label="Public documentation footer">
+              <a href="/principles" className="hover:text-foreground">Principles</a>
+              <a href="/guardrails" className="hover:text-foreground">Guardrails</a>
+              <a href="/security" className="hover:text-foreground">Security</a>
+              <a href="/roadmap" className="hover:text-foreground">Roadmap</a>
+            </nav>
+          </footer>
         </div>
       </main>
     </div>

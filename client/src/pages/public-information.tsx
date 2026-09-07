@@ -24,9 +24,58 @@ type Page = {
   practical: string[];
   links: { label: string; href: string; note: string }[];
   faq?: { q: string; a: string }[];
+  boundaries?: { can: string[]; mustNot: string[] };
 };
 
 const pages: Page[] = [
+  {
+    path: "/guardrails",
+    eyebrow: "Product guardrails",
+    title: "Tools can help prepare. Only you can approve.",
+    description: "Read CryptoOwnBank's non-negotiable product guardrails for custody, wallet approval, payments, recovery material, financial claims, and credential safety.",
+    intro: "These boundaries define what CryptoOwnBank is and what it must never become. We provide non-custodial software and education for self-directed members. We do not take possession, make financial decisions for members, or turn a prepared action into an approved one.",
+    boundaries: {
+      can: [
+        "Provide self-custody wallet tools to connect and view wallets, compare routes, and prepare DEX trades, swaps, DCA orders, and sends while keys and signatures remain under the user's control.",
+        "Charge clearly disclosed prices and subscriptions for CryptoOwnBank software plans.",
+        "Help members set up a Legacy Plan with beneficiaries, check-ins, and instructions.",
+        "Teach SLIP-39 and provide a sandbox using throwaway practice secrets only—never a real seed phrase.",
+        "Show payment addresses and open Stripe Checkout for software-plan payments that the member explicitly completes.",
+        "Teach members about destination memos and tags, hardware wallets, compatible wallet approval, and vault safety.",
+      ],
+      mustNot: [
+        "Custody, hold, pool, or control private keys, seed phrases, crypto, fiat, or any member funds.",
+        "Request or accept a real seed phrase, private key, or other wallet-recovery credential.",
+        "Send, trade, bridge, or sign without explicit approval in the member's compatible wallet.",
+        "Complete a payment without an explicit Stripe Checkout or wallet action by the member.",
+        "Bypass hardware-wallet, Xaman, MetaMask, or other compatible-wallet approval gates.",
+        "Act or present itself as a bank, broker, exchange custodian, money transmitter, portfolio manager, or licensed VASP; solicit deposits; or hold or pool assets.",
+        "Promise yields or returns, imply FDIC or SIPC protection, provide investment advice, guarantee outcomes, or claim to manage a member's portfolio.",
+        "Expose beneficiary recovery material outside the designed SLIP-39 split-delivery flow.",
+        "Use announcements, support messages, or product tools to phish for credentials.",
+      ],
+    },
+    points: [
+      {
+        title: "The line is control",
+        body: "CryptoOwnBank can explain, organize, display, and prepare. The member keeps the keys, reviews the complete action, and decides whether to authorize it.",
+      },
+      {
+        title: "A prepared action is not an approved action",
+        body: "Routes, transaction details, payment addresses, and checkout sessions are tools for review. Nothing is complete until the member takes the explicit action required by Stripe or their own wallet.",
+      },
+    ],
+    practical: [
+      "Never enter a real seed phrase into a website or support conversation.",
+      "Read the complete wallet or Stripe prompt before approving.",
+      "Stop if an action, destination, amount, permission, or claim differs from what you expected.",
+    ],
+    links: [
+      { label: "Our principles", href: "/principles", note: "The commitments behind these boundaries" },
+      { label: "Security overview", href: "/security", note: "How member-controlled signing works" },
+      { label: "Roadmap", href: "/roadmap", note: "Ideas must pass these guardrails" },
+    ],
+  },
   {
     path: "/features",
     eyebrow: "What the operating system does",
@@ -289,15 +338,15 @@ const pages: Page[] = [
     description: "Learn CryptoOwnBank's practical security approach: non-custodial architecture, member-controlled signing, legacy check-ins, and clear operational limits.",
     intro: "CryptoOwnBank is designed to help self-directed members organize and prepare. It is not a custodian, and it cannot remove the risks that come with self-custody, networks, wallets, or third-party protocols.",
     points: [
-      { title: "Member-controlled signing", body: "Actions requiring wallet authorization are reviewed and signed through the member’s compatible wallet." },
+      { title: "Member-controlled signing", body: "Actions requiring wallet authorization are reviewed and signed through the member’s compatible wallet. CryptoOwnBank does not bypass hardware-wallet, Xaman, MetaMask, or other compatible-wallet approval gates." },
       { title: "Clear limits", body: "No security model is absolute. Devices, wallets, networks, recipients, and human decisions all matter." },
-      { title: "Practical continuity", body: "Legacy features help organize instructions and check-ins. They are not a substitute for legal planning or a guarantee of any outcome." },
+      { title: "Protected recovery material", body: "CryptoOwnBank never asks for a real seed phrase. Legacy features organize instructions and check-ins without exposing beneficiary recovery material beyond the designed SLIP-39 split-delivery flow." },
     ],
     practical: ["Use security controls available in your wallet.", "Be skeptical of urgency and unsolicited support.", "Revisit your setup as circumstances change."],
     links: [
       { label: "Non-custodial architecture", href: "/security/non-custodial-architecture", note: "What remains outside our control" },
       { label: "Legacy Plan check-ins", href: "/security/legacy-plan-check-ins", note: "How the signal works" },
-      { label: "Security FAQ", href: "/security/faq", note: "Direct answers" },
+      { label: "Product guardrails", href: "/guardrails", note: "Our non-negotiable boundaries" },
     ],
   },
   {
@@ -362,7 +411,7 @@ const pages: Page[] = [
   },
 ];
 
-const iconFor = (path: string) => path.includes("security") ? ShieldCheck : path.includes("learn") ? BookOpen : path.includes("legacy") ? Split : path.includes("portfolio") ? WalletCards : path.includes("solutions") ? Compass : Landmark;
+const iconFor = (path: string) => path.includes("security") || path.includes("guardrails") ? ShieldCheck : path.includes("learn") ? BookOpen : path.includes("legacy") ? Split : path.includes("portfolio") ? WalletCards : path.includes("solutions") ? Compass : Landmark;
 
 export default function PublicInformation() {
   const [location] = useLocation();
@@ -387,7 +436,7 @@ export default function PublicInformation() {
       <header className="sticky top-0 z-30 border-b border-[#183338]/10 bg-[#f4f3ec]/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight"><span className="grid h-8 w-8 place-items-center rounded-full bg-[#183338] text-[#d8eadf]"><LockKeyhole className="h-4 w-4" /></span>CryptoOwnBank</Link>
-          <div className="flex items-center gap-3"><Link href="/learn" className="hidden text-sm font-medium text-[#46636a] hover:text-[#183338] sm:block">Learn</Link><Link href="/security" className="hidden text-sm font-medium text-[#46636a] hover:text-[#183338] sm:block">Security</Link><ThemeToggle /><Link href="/signup" className="rounded-full bg-[#d56b45] px-4 py-2 text-sm font-semibold text-[#fff8ed] transition-transform hover:-translate-y-0.5">Create account</Link></div>
+          <nav className="flex items-center gap-3" aria-label="Public documentation"><Link href="/principles" className="hidden text-sm font-medium text-[#46636a] hover:text-[#183338] lg:block">Principles</Link><Link href="/guardrails" className="hidden text-sm font-medium text-[#46636a] hover:text-[#183338] sm:block">Guardrails</Link><Link href="/security" className="hidden text-sm font-medium text-[#46636a] hover:text-[#183338] sm:block">Security</Link><Link href="/roadmap" className="hidden text-sm font-medium text-[#46636a] hover:text-[#183338] lg:block">Roadmap</Link><ThemeToggle /><Link href="/signup" className="rounded-full bg-[#d56b45] px-4 py-2 text-sm font-semibold text-[#fff8ed] transition-transform hover:-translate-y-0.5">Create account</Link></nav>
         </div>
       </header>
       <main>
@@ -400,13 +449,31 @@ export default function PublicInformation() {
             <div className="mt-9 flex flex-wrap gap-3"><Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-[#183338] px-5 py-3 text-sm font-semibold text-[#f4f3ec] transition-transform hover:-translate-y-0.5">Start with your own wallet <ArrowRight className="h-4 w-4" /></Link><Link href="/principles" className="inline-flex items-center gap-2 rounded-full border border-[#183338]/20 px-5 py-3 text-sm font-semibold transition-colors hover:bg-[#e7e4d8]">Read our principles <ChevronRight className="h-4 w-4" /></Link></div>
           </div>
         </section>
+        {page.boundaries && (
+          <section className="mx-auto grid max-w-6xl gap-5 px-5 pt-16 md:grid-cols-2 md:pt-24" data-testid="section-guardrail-boundaries">
+            <article className="rounded-2xl border border-emerald-900/15 bg-[#d8eadf] p-6 md:p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.17em] text-emerald-800">CAN</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">What the software can do</h2>
+              <ul className="mt-6 space-y-4 text-sm leading-6 text-[#294d45]">
+                {page.boundaries.can.map((item) => <li key={item} className="flex gap-3"><span aria-hidden="true" className="mt-1 font-bold text-emerald-700">✓</span><span>{item}</span></li>)}
+              </ul>
+            </article>
+            <article className="rounded-2xl border border-red-900/15 bg-[#f5ded5] p-6 md:p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.17em] text-[#9a3f28]">MUST NOT</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">Lines CryptoOwnBank cannot cross</h2>
+              <ul className="mt-6 space-y-4 text-sm leading-6 text-[#63372c]">
+                {page.boundaries.mustNot.map((item) => <li key={item} className="flex gap-3"><span aria-hidden="true" className="mt-1 font-bold text-[#b45231]">×</span><span>{item}</span></li>)}
+              </ul>
+            </article>
+          </section>
+        )}
         <section className="mx-auto grid max-w-6xl gap-12 px-5 py-16 md:grid-cols-[0.8fr_1.2fr] md:py-24">
           <aside><p className="text-xs font-bold uppercase tracking-[0.17em] text-[#b45231]">In practice</p><ol className="mt-5 space-y-5 border-l border-[#183338]/15 pl-5">{page.practical.map((item, index) => <li key={item} className="text-sm leading-6 text-[#46636a]"><span className="mr-2 font-mono text-xs text-[#b45231]">0{index + 1}</span>{item}</li>)}</ol></aside>
           <div className="space-y-8">{page.points.map((point, index) => <article key={point.title} className="group border-b border-[#183338]/10 pb-8"><span className="font-mono text-xs text-[#b45231]">0{index + 1}</span><h2 className="mt-2 text-2xl font-semibold tracking-tight">{point.title}</h2><p className="mt-3 max-w-xl leading-7 text-[#46636a]">{point.body}</p></article>)}</div>
         </section>
         <section className="bg-[#183338] px-5 py-16 text-[#f4f3ec] md:py-20"><div className="mx-auto max-w-6xl"><p className="text-xs font-bold uppercase tracking-[0.17em] text-[#d8eadf]">Keep exploring</p><div className="mt-7 grid gap-px overflow-hidden rounded-2xl bg-[#f4f3ec]/20 md:grid-cols-3">{page.links.map((link) => <Link key={link.href} href={link.href} className="group bg-[#183338] p-6 transition-colors hover:bg-[#25474b]"><p className="flex items-center justify-between font-semibold">{link.label}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></p><p className="mt-2 text-sm leading-6 text-[#d8eadf]">{link.note}</p></Link>)}</div></div></section>
       </main>
-      <footer className="border-t border-[#183338]/10 px-5 py-10"><div className="mx-auto flex max-w-6xl flex-col justify-between gap-5 text-sm text-[#46636a] md:flex-row"><p>CryptoOwnBank helps members organize, explain, construct, monitor, and record. Members decide and sign.</p><nav className="flex flex-wrap gap-x-5 gap-y-2"><Link href="/features">Features</Link><Link href="/solutions">Solutions</Link><Link href="/learn">Learn</Link><Link href="/security">Security</Link><Link href="/contact">Contact</Link></nav></div><p className="mx-auto mt-6 max-w-6xl text-xs leading-5 text-[#46636a]">CryptoOwnBank is non-custodial software and education for self-directed users. It does not provide legal, tax, or investment advice. Digital assets and third-party protocols involve risk.</p></footer>
+      <footer className="border-t border-[#183338]/10 px-5 py-10"><div className="mx-auto flex max-w-6xl flex-col justify-between gap-5 text-sm text-[#46636a] md:flex-row"><p>CryptoOwnBank helps members organize, explain, construct, monitor, and record. Members decide and sign.</p><nav className="flex flex-wrap gap-x-5 gap-y-2"><Link href="/principles">Principles</Link><Link href="/guardrails">Guardrails</Link><Link href="/security">Security</Link><Link href="/roadmap">Roadmap</Link><Link href="/contact">Contact</Link></nav></div><p className="mx-auto mt-6 max-w-6xl text-xs leading-5 text-[#46636a]">CryptoOwnBank is non-custodial software and education for self-directed users. It does not hold funds or recovery credentials, provide legal, tax, or investment advice, promise returns, or imply FDIC or SIPC protection. Digital assets and third-party protocols involve risk.</p></footer>
     </div>
   );
 }

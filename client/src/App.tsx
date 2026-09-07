@@ -309,6 +309,12 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
                   {" "}&middot;{" "}
                   <a href="/principles" className="hover:text-foreground transition-colors underline-offset-4 hover:underline" data-testid="link-principles-footer-app">Our Principles</a>
                   {" "}&middot;{" "}
+                  <a href="/guardrails" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Guardrails</a>
+                  {" "}&middot;{" "}
+                  <a href="/security" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Security</a>
+                  {" "}&middot;{" "}
+                  <a href="/roadmap" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Roadmap</a>
+                  {" "}&middot;{" "}
                   <a href="/sovereignty" className="hover:text-foreground transition-colors underline-offset-4 hover:underline" data-testid="link-sovereignty-footer-app">Sovereignty</a>
                   {" "}&middot;{" "}
                   <a href="/legal" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">Legal</a>
@@ -480,6 +486,7 @@ function Router() {
         <Route path="/learn/guides" component={PublicInformation} />
         <Route path="/learn/glossary" component={PublicInformation} />
         <Route path="/security" component={PublicInformation} />
+        <Route path="/guardrails" component={PublicInformation} />
         <Route path="/security/non-custodial-architecture" component={PublicInformation} />
         <Route path="/security/legacy-plan-check-ins" component={PublicInformation} />
         <Route path="/security/faq" component={PublicInformation} />
@@ -570,6 +577,7 @@ function Router() {
       <Route path="/learn/guides" component={PublicInformation} />
       <Route path="/learn/glossary" component={PublicInformation} />
       <Route path="/security" component={PublicInformation} />
+      <Route path="/guardrails" component={PublicInformation} />
       <Route path="/security/non-custodial-architecture" component={PublicInformation} />
       <Route path="/security/legacy-plan-check-ins" component={PublicInformation} />
       <Route path="/security/faq" component={PublicInformation} />
