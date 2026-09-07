@@ -232,41 +232,65 @@ export function applyCryptoDiscount(usdAmount: number, chain: string, ctx?: Cryp
 
 export type AddonKey = keyof typeof ADDONS;
 
-export async function createCheckoutSession(
+export function buildCheckoutSessionParams(
   userId: string,
   plan: PlanKey,
   successUrl: string,
-  cancelUrl: string
-) {
+  cancelUrl: string,
+  addonKey?: AddonKey,
+): Stripe.Checkout.SessionCreateParams {
   const planConfig = PLANS[plan];
+  const addonConfig = addonKey ? ADDONS[addonKey] : null;
+  if (addonKey && !(plan === "monthly" && addonKey === "legacy-plan")) {
+    throw new Error("Only Premium Monthly and Legacy Plan Monthly can share checkout.");
+  }
 
-  const session = await stripe.checkout.sessions.create({
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [{
+    price_data: {
+      currency: "usd",
+      product_data: { name: planConfig.name, description: planConfig.description },
+      unit_amount: planConfig.amount,
+      recurring: { interval: planConfig.interval },
+    },
+    quantity: 1,
+  }];
+  if (addonConfig) {
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        product_data: { name: addonConfig.name, description: addonConfig.description },
+        unit_amount: addonConfig.amount,
+        recurring: { interval: "month" },
+      },
+      quantity: 1,
+    });
+  }
+
+  return {
     mode: "subscription",
     payment_method_types: ["card"],
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: planConfig.name,
-            description: planConfig.description,
-          },
-          unit_amount: planConfig.amount,
-          recurring: {
-            interval: planConfig.interval,
-          },
-        },
-        quantity: 1,
-      },
-    ],
+    line_items: lineItems,
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: {
       userId,
       plan,
       tier: planConfig.tier,
+      ...(addonConfig ? { addonKey, addonType: addonConfig.type } : {}),
     },
-  });
+  };
+}
+
+export async function createCheckoutSession(
+  userId: string,
+  plan: PlanKey,
+  successUrl: string,
+  cancelUrl: string,
+  addonKey?: AddonKey,
+) {
+  const session = await stripe.checkout.sessions.create(
+    buildCheckoutSessionParams(userId, plan, successUrl, cancelUrl, addonKey),
+  );
 
   return session;
 }

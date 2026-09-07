@@ -379,6 +379,39 @@ describe("POST /api/stripe/webhook — card Legacy Plan activation", () => {
     expect(arg.expiresAt).toBeNull();
   });
 
+  it("activates Premium and Legacy Monthly from one combined Stripe session", async () => {
+    const res = await post({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_premium_plus_legacy",
+          customer: "cus_1",
+          subscription: "sub_combined",
+          amount_total: 3899,
+          metadata: {
+            userId: "user-1",
+            plan: "monthly",
+            tier: "premium",
+            addonKey: "legacy-plan",
+            addonType: "legacy_plan",
+          },
+        },
+      },
+    });
+    expect(res.status).toBe(200);
+    expect(upsertUserSettings).toHaveBeenCalledWith(expect.objectContaining({
+      subscriptionTier: "premium",
+      subscriptionBillingCycle: "monthly",
+      stripeSubscriptionId: "sub_combined",
+    }));
+    expect(activateLegacyAddon).toHaveBeenCalledWith(expect.objectContaining({
+      addonKey: "legacy-plan",
+      paymentMethod: "stripe",
+      stripeSubscriptionId: "sub_combined",
+      externalRef: "stripe:cs_premium_plus_legacy",
+    }));
+  });
+
   it("emails the buyer a card receipt with tier, USD amount, method, and null expiry", async () => {
     await post(checkoutEvent("legacy-plan-yearly"));
     expect(sendLegacyPlanReceiptEmail).toHaveBeenCalledTimes(1);

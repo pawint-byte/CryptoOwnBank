@@ -6,6 +6,29 @@ import {
 } from "../server/lib/crypto-payment-creator";
 
 describe("shared crypto payment creator", () => {
+  it("returns the same required pending XRP shape for Premium and Pro", async () => {
+    const make = async (plan: "monthly" | "pro-monthly") => {
+      const payment = await createPendingCryptoPayment(
+        { userId: "user-1", plan, chain: "XRP", fullUsdAmount: plan === "monthly" ? 29 : 99 },
+        {
+          getPaymentAddresses: vi.fn(async () => [
+            { id: 1, chain: "xrp", address: "rPaymentAddress", label: null, isActive: true, createdAt: new Date() },
+          ]),
+          createPayment: vi.fn(async (row: any) => ({ id: `payment-${plan}`, ...row })),
+          fetchPriceUsd: vi.fn(async () => 2),
+          random: vi.fn(() => 0.5),
+          now: vi.fn(() => new Date("2026-03-01T00:00:00.000Z")),
+        },
+      );
+      return toPendingCryptoPaymentJson(payment);
+    };
+    const premium = await make("monthly");
+    const pro = await make("pro-monthly");
+    expect(Object.keys(premium)).toEqual(Object.keys(pro));
+    expect(premium).toMatchObject({ status: "pending", expectedAsset: "XRP", toAddress: "rPaymentAddress" });
+    expect(pro).toMatchObject({ status: "pending", expectedAsset: "XRP", toAddress: "rPaymentAddress" });
+  });
+
   it.each(LEGACY_ADDON_KEYS)(
     "creates a pending payment row for %s with the main-flow JSON contract",
     async (addonKey) => {

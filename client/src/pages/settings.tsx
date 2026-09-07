@@ -595,7 +595,12 @@ export default function SettingsPage() {
   const handleUpgrade = async (plan: "monthly" | "yearly" | "pro-monthly" | "pro-yearly") => {
     setCheckoutLoading(plan);
     try {
-      const res = await apiRequest("POST", "/api/stripe/create-checkout", { plan });
+      const res = await apiRequest("POST", "/api/stripe/create-checkout", {
+        plan,
+        ...(plan === "monthly" && selectedAddons.has("legacy-plan")
+          ? { addonKey: "legacy-plan" }
+          : {}),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

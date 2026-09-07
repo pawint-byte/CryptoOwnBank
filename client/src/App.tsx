@@ -20,6 +20,20 @@ import { Shield } from "lucide-react";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { PromoBanner } from "@/components/promo-banner";
 
+export const ROUTE_ALIASES = {
+  "/execute": "/route-planner",
+  "/trade": "/ownbank/dex",
+  "/swap": "/swap-any-pair",
+} as const;
+
+function AliasRedirect({ to }: { to: string }) {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    setLocation(to, { replace: true });
+  }, [setLocation, to]);
+  return null;
+}
+
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import FAQ from "@/pages/faq";
@@ -397,6 +411,9 @@ function AuthenticatedRoutes() {
         <Route path="/flows" component={FlowsPage} />
         <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/swap-any-pair" component={SwapAnyPair} />
+        {Object.entries(ROUTE_ALIASES).map(([from, to]) => (
+          <Route key={from} path={from}>{() => <AliasRedirect to={to} />}</Route>
+        ))}
         <Route path="/route-planner" component={RoutePlanner} />
         <Route path="/own-privately" component={OwnPrivately} />
         <Route path="/home-or-away" component={HomeOrAway} />
@@ -495,6 +512,9 @@ function Router() {
         <Route path="/start" component={PrimeThePump} />
         <Route path="/buy-crypto" component={BuyCrypto} />
         <Route path="/swap-any-pair" component={SwapAnyPair} />
+        {Object.entries(ROUTE_ALIASES).map(([from, to]) => (
+          <Route key={from} path={from}>{() => <AliasRedirect to={to} />}</Route>
+        ))}
         <Route path="/route-planner" component={RoutePlanner} />
         <Route path="/own-privately" component={OwnPrivately} />
         <Route path="/home-or-away" component={HomeOrAway} />

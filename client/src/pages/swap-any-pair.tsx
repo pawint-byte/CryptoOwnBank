@@ -30,6 +30,7 @@ import {
   TROCADOR_DONE_STATES,
   buildTrocadorUrl,
 } from "@/pages/buy-crypto";
+import { normalizeSwapMemo, SWAP_MEMO_REQUIRED_SYMBOLS, validateSwapMemo } from "@shared/swap-memo";
 
 type Step = "coin" | "wallet" | "swap";
 
@@ -49,11 +50,14 @@ export default function SwapAnyPair() {
   const [coinSearch, setCoinSearch] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [selectedSavedAddress, setSelectedSavedAddress] = useState("");
+  const [memo, setMemo] = useState("");
+  const [memoError, setMemoError] = useState<string | null>(null);
 
   const [sessionUrl, setSessionUrl] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionAddress, setSessionAddress] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [sessionMemo, setSessionMemo] = useState<string | undefined>(undefined);
 
   const { data: prices } = useQuery<Record<string, { usd: number; usd_24h_change: number }>>({
     queryKey: ["/api/public/market-prices"],
@@ -115,17 +119,19 @@ export default function SwapAnyPair() {
   const sessionValid =
     !!sessionUrl &&
     sessionAddress === effectiveAddress &&
-    sessionToken === selectedToken;
+    sessionToken === selectedToken &&
+    sessionMemo === normalizeSwapMemo(selectedToken, memo);
 
   function resetSession() {
     setSessionId(null);
     setSessionUrl(null);
     setSessionAddress(null);
     setSessionToken(null);
+    setSessionMemo(undefined);
   }
 
   const startSwapMutation = useMutation({
-    mutationFn: async (vars: { tickerTo: string; networkTo: string; address: string }) => {
+    mutationFn: async (vars: { tickerTo: string; networkTo: string; address: string; memo?: string }) => {
       const res = await apiRequest("POST", "/api/trocador/anonpay-session", vars);
       return (await res.json()) as { id: string; url: string };
     },
@@ -134,6 +140,7 @@ export default function SwapAnyPair() {
       setSessionUrl(data.url);
       setSessionAddress(variables.address);
       setSessionToken(variables.tickerTo);
+      setSessionMemo(variables.memo);
     },
     onError: (err: any) => {
       toast({
@@ -158,6 +165,8 @@ export default function SwapAnyPair() {
   function handlePickCoin(symbol: string) {
     setSelectedToken(symbol);
     setNewAddress("");
+    setMemo(SWAP_MEMO_REQUIRED_SYMBOLS.has(symbol) ? "0" : "");
+    setMemoError(null);
     resetSession();
     setStep("wallet");
   }
@@ -171,16 +180,32 @@ export default function SwapAnyPair() {
       });
       return;
     }
+    const validation = validateSwapMemo(selectedToken, memo);
+    if (validation) {
+      setMemoError(validation);
+      toast({ title: "Check the destination tag or memo", description: validation, variant: "destructive" });
+      return;
+    }
+    setMemoError(null);
     resetSession();
     setStep("swap");
   }
 
   function handleStartSwap() {
     if (!effectiveAddress || !selectedToken) return;
+    const validation = validateSwapMemo(selectedToken, memo);
+    if (validation) {
+      setMemoError(validation);
+      toast({ title: "Check the destination tag or memo", description: validation, variant: "destructive" });
+      return;
+    }
+    const normalizedMemo = normalizeSwapMemo(selectedToken, memo);
+    setMemoError(null);
     startSwapMutation.mutate({
       tickerTo: selectedToken,
       networkTo: TROCADOR_NETWORK[selectedToken] || "Mainnet",
       address: effectiveAddress,
+      memo: normalizedMemo,
     });
   }
 
@@ -196,6 +221,8 @@ export default function SwapAnyPair() {
   function handleStartOver() {
     setSelectedToken(null);
     setNewAddress("");
+    setMemo("");
+    setMemoError(null);
     setCoinSearch("");
     resetSession();
     setStep("coin");
@@ -355,6 +382,10 @@ export default function SwapAnyPair() {
                     onClick={() => {
                       setSelectedSavedAddress(w.address);
                       setNewAddress("");
+                      if (SWAP_MEMO_REQUIRED_SYMBOLS.has(selectedToken)) {
+                        setMemo(String(w.destinationTag ?? "0"));
+                        setMemoError(null);
+                      }
                     }}
                     className={`w-full rounded-lg border p-3 text-left transition-colors ${
                       selectedSavedAddress === w.address && !newAddress
@@ -384,10 +415,27 @@ export default function SwapAnyPair() {
                 className="font-mono text-sm"
                 data-testid="input-new-address"
               />
-              {(selectedToken === "XRP" || selectedToken === "XLM") && (
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  If your wallet shows a destination tag / memo, you'll add it on the swap screen too.
-                </p>
+              {SWAP_MEMO_REQUIRED_SYMBOLS.has(selectedToken) && (
+                <div className="space-y-1.5">
+                  <p className="text-sm font-medium">
+                    {selectedToken === "XRP" ? "Destination tag" : "Memo"}
+                  </p>
+                  <Input
+                    value={memo}
+                    onChange={(e) => {
+                      setMemo(e.target.value);
+                      setMemoError(validateSwapMemo(selectedToken, e.target.value));
+                      resetSession();
+                    }}
+                    placeholder="0"
+                    inputMode={selectedToken === "XRP" ? "numeric" : "text"}
+                    aria-invalid={!!memoError}
+                    data-testid="input-swap-memo"
+                  />
+                  <p className={memoError ? "text-xs text-destructive" : "text-xs text-amber-700 dark:text-amber-400"}>
+                    {memoError || `Use the tag or memo shown by your receiving wallet. If it does not provide one, keep the default 0.`}
+                  </p>
+                </div>
               )}
             </div>
 
@@ -430,6 +478,14 @@ export default function SwapAnyPair() {
               <div>
                 <p className="text-muted-foreground mb-1">Your {selectedToken} lands here — your own wallet:</p>
                 <p className="font-mono break-all" data-testid="text-receiving-address">{effectiveAddress}</p>
+                {normalizeSwapMemo(selectedToken, memo) && (
+                  <p className="mt-1 text-xs">
+                    {selectedToken === "XRP" ? "Destination tag" : "Memo"}:{" "}
+                    <span className="font-mono" data-testid="text-swap-memo">
+                      {normalizeSwapMemo(selectedToken, memo)}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
 

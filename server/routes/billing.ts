@@ -26,6 +26,7 @@ import fs from "fs";
 import path from "path";
 import { RLUSD, ADMIN_EMAILS } from "@shared/constants";
 import { getActiveCampaigns, getActiveCryptoBonus } from "@shared/promo-calendar";
+import { normalizeSwapMemo, validateSwapMemo } from "@shared/swap-memo";
 import { getEffectiveTier, safeServerDate, detectChainMismatch, SOIL_VAULT_ADDRESSES, SOIL_VAULT_ADDRESS, RLUSD_CURRENCY_HEX } from "./shared";
 import {
   createPendingCryptoPayment,
@@ -107,11 +108,14 @@ export function registerBillingRoutes(app: Express) {
   app.post("/api/stripe/create-checkout", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { plan } = req.body;
+      const { plan, addonKey } = req.body;
 
       const validPlans = ["monthly", "yearly", "pro-monthly", "pro-yearly"];
       if (!plan || !validPlans.includes(plan)) {
         return res.status(400).json({ message: "Invalid plan. Use 'monthly', 'yearly', 'pro-monthly', or 'pro-yearly'." });
+      }
+      if (addonKey != null && !(plan === "monthly" && addonKey === "legacy-plan")) {
+        return res.status(400).json({ message: "Only Legacy Plan Monthly can be combined with Premium Monthly checkout." });
       }
 
       const host = req.headers.host || "localhost:5000";
@@ -122,7 +126,8 @@ export function registerBillingRoutes(app: Express) {
         userId,
         plan as "monthly" | "yearly" | "pro-monthly" | "pro-yearly",
         `${baseUrl}/settings?subscription=success`,
-        `${baseUrl}/settings?subscription=cancelled`
+        `${baseUrl}/settings?subscription=cancelled`,
+        addonKey
       );
 
       res.json({ url: session.url });
@@ -174,12 +179,17 @@ export function registerBillingRoutes(app: Express) {
       if (!address || typeof address !== "string" || address.trim().length < 10) {
         return res.status(400).json({ message: "A valid receiving address is required" });
       }
+      const normalizedMemo = normalizeSwapMemo(tickerTo, typeof memo === "string" ? memo : "");
+      const memoValidation = validateSwapMemo(tickerTo, normalizedMemo || "");
+      if (memoValidation) {
+        return res.status(400).json({ message: memoValidation });
+      }
       const amt = amount != null ? Number(amount) : undefined;
       const session = await createAnonpaySession({
         tickerTo: tickerTo.trim(),
         networkTo: typeof networkTo === "string" && networkTo.trim() ? networkTo.trim() : "Mainnet",
         address: address.trim(),
-        memo: typeof memo === "string" && memo.trim() ? memo.trim() : undefined,
+        memo: normalizedMemo,
         amount: amt && !isNaN(amt) && amt > 0 ? amt : undefined,
         fiatEquiv: typeof fiatEquiv === "string" && fiatEquiv.trim() ? fiatEquiv.trim() : undefined,
         tickerFrom: typeof tickerFrom === "string" && tickerFrom.trim() ? tickerFrom.trim() : undefined,

@@ -79,6 +79,18 @@ export async function handleStripeWebhookEvent(event: any): Promise<void> {
         stripeCustomerId: session.customer,
         stripeSubscriptionId: session.subscription,
       });
+      const combinedAddonKey = session.metadata?.addonKey;
+      if (combinedAddonKey === "legacy-plan") {
+        await storage.activateLegacyAddon({
+          userId,
+          addonType: session.metadata?.addonType || ADDONS[combinedAddonKey].type,
+          addonKey: combinedAddonKey,
+          paymentMethod: "stripe",
+          stripeSubscriptionId: session.subscription || null,
+          externalRef: session.id ? `stripe:${session.id}` : null,
+          expiresAt: computeLegacyAddonExpiry(combinedAddonKey, "stripe"),
+        });
+      }
       try {
         const [buyer] = await db.select().from(users).where(eq(users.id, userId));
         const planConfig = PLANS[plan as keyof typeof PLANS];
