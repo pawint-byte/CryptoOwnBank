@@ -174,7 +174,7 @@ export function LegacyPlanSummary() {
     pending: boolean;
   };
   const collapsed = new Map<string, CollapsedGroup>();
-  for (const [, rows] of Array.from(prelim.entries())) {
+  for (const [, rows] of prelim) {
     const unique = dedupeMembers(rows);
     const device = normalizeDevice(rows[0]);
     const key = stableCollapseKey(device, unique);
@@ -196,7 +196,7 @@ export function LegacyPlanSummary() {
   }
 
   const sentences: { id: string; text: string; pending: boolean }[] = [];
-  for (const group of Array.from(collapsed.values())) {
+  for (const group of collapsed.values()) {
     const sample = group.sample;
     const wallet = walletLabel(sample);
     const names = group.members.map((m) => m.name);

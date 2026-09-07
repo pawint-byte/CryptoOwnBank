@@ -119,6 +119,16 @@ type LegacyPlanData = {
 };
 
 function ProGate() {
+  const { toast } = useToast();
+  const buyAddon = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/addons/stripe-checkout", { addonKey: "legacy-plan" }),
+    onSuccess: async (res) => {
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    },
+    onError: () => toast({ title: "Error", description: "Failed to start checkout", variant: "destructive" }),
+  });
+
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-8" data-testid="legacy-pro-gate">
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
@@ -128,10 +138,6 @@ function ProGate() {
         <h1 className="text-3xl font-bold">Legacy Plan — crypto inheritance</h1>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">
           A non-custodial dead-man switch so your crypto doesn't die with you. Pick the plan that fits.
-        </p>
-        <p className="text-sm text-amber-700 dark:text-amber-300 max-w-xl mx-auto">
-          Confirmed beneficiaries alone do not mean complete coverage. Your plan is fully ready only
-          when every intended wallet has recovery instructions and any SLIP-39 shard setup is complete.
         </p>
       </div>
 
@@ -169,11 +175,24 @@ function ProGate() {
 
       <div className="space-y-3 max-w-md text-sm text-muted-foreground">
         <p>
+          Prefer to pay month to month? You can{" "}
+          <button
+            type="button"
+            className="text-primary underline"
+            onClick={() => buyAddon.mutate()}
+            disabled={buyAddon.isPending}
+            data-testid="button-buy-addon"
+          >
+            add Legacy Plan for $29/yrnth
+          </button>{" "}
+          instead.
+        </p>
+        <p>
           Or get it free with <a href="/settings" className="text-primary underline" data-testid="link-upgrade-pro">Pro ($99/month)</a>,
           which includes Member for Life plus 15+ other features.
         </p>
         <p className="text-xs">
-          Only one Legacy Plan is active at a time. Every supported cryptocurrency gets 10% off.
+          Only one Legacy Plan is active at a time. Crypto payments get 10% off (15% on BTC, ETH, SOL, XRP, RLUSD).
         </p>
       </div>
     </div>
@@ -855,7 +874,7 @@ async function encryptVault(plaintext: string, passphrase: string): Promise<stri
   combined.set(salt, 0);
   combined.set(iv, salt.length);
   combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
-  return btoa(String.fromCharCode(...Array.from(combined)));
+  return btoa(String.fromCharCode(...combined));
 }
 
 function BeneficiaryCard({ beneficiary, onDelete, onEdit }: { beneficiary: LegacyPlanData["beneficiaries"][0]; onDelete: () => void; onEdit: () => void }) {
