@@ -56,3 +56,4 @@
 - [Unknown token pricing](unknown-token-pricing.md) — never substitute ETH/XRP/BTC price for an unpriced token; unknown market value stays zero/unknown or dust balances become billion-dollar portfolios.
 - [Roadmap as an open invitation](roadmap-engagement-purpose.md) — keep the voting list broad: its primary job is to invite people in, let them leave a mark or request what is missing, and return to watch progress.
 - [SLIP-39 master-secret input](slip39-master-secret-input.md) — slip39.fromArray must receive a plain number[]; Node Buffer corrupts the recovered secret even when shard recovery appears successful.
+- [GitHub backup authorization](github-backup-authorization.md) — connector OAuth and Git CLI credentials are separate; verify repository `permissions.push` before attempting an API fallback.
