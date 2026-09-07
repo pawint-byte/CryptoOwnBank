@@ -49,8 +49,6 @@ const CHAIN_LABELS: Record<string, string> = {
   verge: "Verge (XVG)",
 };
 
-const HOUSE_CHAINS = ["xrp", "rlusd", "bitcoin", "ethereum", "solana"];
-
 function parseError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
   const match = raw.match(/^\d+:\s*([\s\S]*)$/);
@@ -168,10 +166,8 @@ export function LegacyCheckout({
     );
   }
 
-  const isHouse = HOUSE_CHAINS.includes(selectedChain);
-  const discountPct = isHouse ? "15% off" : "10% off";
   const numericPrice = Number(tier.price.replace(/[^0-9.]/g, "")) || 0;
-  const discountedUsd = (numericPrice * (isHouse ? 0.85 : 0.9)).toFixed(2);
+  const discountedUsd = (numericPrice * 0.9).toFixed(2);
 
   return (
     <div className="space-y-2">
@@ -205,8 +201,7 @@ export function LegacyCheckout({
           <DialogHeader>
             <DialogTitle>Pay with crypto — {tier.name}</DialogTitle>
             <DialogDescription>
-              {tier.price} {tier.cadence}. Crypto payments get 10% off (15% off on BTC, ETH, SOL,
-              XRP, RLUSD).
+              {tier.price} {tier.cadence}. Every supported cryptocurrency gets 10% off.
             </DialogDescription>
           </DialogHeader>
 
@@ -239,8 +234,7 @@ export function LegacyCheckout({
                   <>
                     Pay ${discountedUsd}{" "}
                     <span className="ml-1 text-xs opacity-75">
-                      ({discountPct}
-                      {isHouse ? " · House Tier" : ""})
+                      (10% off)
                     </span>
                   </>
                 ) : (

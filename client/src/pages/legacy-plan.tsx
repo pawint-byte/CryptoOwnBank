@@ -191,7 +191,7 @@ function ProGate() {
           which includes Member for Life plus 15+ other features.
         </p>
         <p className="text-xs">
-          Only one Legacy Plan is active at a time. Crypto payments get 10% off (15% on BTC, ETH, SOL, XRP, RLUSD).
+          Only one Legacy Plan is active at a time. Every supported cryptocurrency gets 10% off.
         </p>
       </div>
     </div>

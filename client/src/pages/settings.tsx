@@ -1948,11 +1948,8 @@ export default function SettingsPage() {
                                 <Coins className="h-4 w-4 mr-2" />
                               )}
                               {(() => {
-                                const isHouse = ["xrp","rlusd","bitcoin","ethereum","solana"].includes(selectedChain || "");
-                                const rate = isHouse ? 0.85 : 0.90;
-                                const pct = isHouse ? "15% off" : "10% off";
                                 const base = billingCycle === "yearly" ? tierPrices[selectedTier].yearly : tierPrices[selectedTier].monthly;
-                                return <>Pay ${(base * rate).toFixed(2)} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"} <span className="ml-1 text-xs opacity-75">({pct}{isHouse ? " · House Tier" : ""})</span></>;
+                                return <>Pay ${(base * 0.9).toFixed(2)} with {selectedChain ? (CHAIN_LABELS[selectedChain]?.split(" ")[0] || selectedChain) : "Crypto"} <span className="ml-1 text-xs opacity-75">(10% off)</span></>;
                               })()}
                             </Button>
                           </>
@@ -2122,11 +2119,8 @@ export default function SettingsPage() {
                   >
                     {addonCryptoLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Coins className="h-3 w-3 mr-1" />}
                     {(() => {
-                      const isHouse = ["xrp","rlusd","bitcoin","ethereum","solana"].includes(addonSelectedChain);
-                      const rate = isHouse ? 0.85 : 0.90;
-                      const pct = isHouse ? "15% off" : "10% off";
-                      const amt = (addonCatalog[pendingAddonPayment.addonKey]?.amount * rate / 100);
-                      return <>Pay ${amt.toFixed(2)} <span className="ml-1 text-xs opacity-75">({pct}{isHouse ? " · House Tier" : ""})</span></>;
+                      const amt = (addonCatalog[pendingAddonPayment.addonKey]?.amount * 0.9 / 100);
+                      return <>Pay ${amt.toFixed(2)} <span className="ml-1 text-xs opacity-75">(10% off)</span></>;
                     })()}
                   </Button>
                   <Button

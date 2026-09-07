@@ -1,11 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { ADDONS, LEGACY_ADDON_KEYS } from "../server/stripe";
+import { ADDONS, LEGACY_ADDON_KEYS, getCryptoDiscountRate } from "../server/stripe";
 import {
   createPendingCryptoPayment,
   toPendingCryptoPaymentJson,
 } from "../server/lib/crypto-payment-creator";
 
 describe("shared crypto payment creator", () => {
+  it.each(["xrp", "rlusd", "bitcoin", "ethereum", "solana", "dogecoin", "stellar"])(
+    "uses the same 10% base crypto discount for %s",
+    (chain) => {
+      expect(getCryptoDiscountRate(chain)).toBe(0.10);
+    },
+  );
+
   it("returns the same required pending XRP shape for Premium and Pro", async () => {
     const make = async (plan: "monthly" | "pro-monthly") => {
       const payment = await createPendingCryptoPayment(
@@ -56,7 +63,7 @@ describe("shared crypto payment creator", () => {
       );
 
       const expectedDiscountedUsd = (
-        Math.round((ADDONS[addonKey].amount / 100) * 0.85 * 100) / 100
+        Math.round((ADDONS[addonKey].amount / 100) * 0.90 * 100) / 100
       ).toFixed(2);
       expect(createPayment).toHaveBeenCalledWith(expect.objectContaining({
         plan: `addon:${addonKey}`,

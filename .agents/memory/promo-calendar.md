@@ -9,7 +9,7 @@ The promotional calendar anchors campaigns to crypto dates to drive FREE signups
 
 **Discount doctrine (non-negotiable):**
 - The free signup / Founding-seat claim is NEVER gated by any promo or discount. The crypto-payment bonus is a carrot on a PAID upgrade only.
-- The per-date bonus is additive on top of the base crypto discount (10%, or 15% house chains) and the TOTAL is capped (currently 30%) in `getEffectiveCryptoDiscountRate` so stacking can never run away.
+- The per-date bonus is additive on top of the universal 10% base crypto discount and the TOTAL is capped (currently 30%) in `getEffectiveCryptoDiscountRate` so stacking can never run away. House Tier is only preferred-coin and Founder Badge positioning; it never changes the percentage.
 - `applyCryptoDiscount(usd, chain, ctx?)` is backward compatible: existing 2-arg callers still work and auto-pick-up active GLOBAL windows; the personal join-anniversary window only applies when billing passes `{ joinDate }` (fetched from `users.createdAt`).
 
 **Date math:** windows are UTC, check current + previous year so year-boundary windows work; member-anniversary skips roughly the first year so a brand-new signup isn't "celebrating".

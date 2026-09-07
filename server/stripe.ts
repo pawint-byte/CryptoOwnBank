@@ -195,16 +195,15 @@ export function isLegacyAddonActive(
   return new Date(addon.expiresAt) > now;
 }
 
-// "House Tier" chains get an extra 5% off (15% total vs 10% baseline) — they're
-// the assets we actually want to hold in treasury (BTC/ETH/SOL appreciate;
-// XRP/RLUSD are our home chain where the yield vaults run).
+// "House Tier" identifies preferred treasury coins and qualifies Legacy Lifetime
+// purchases for Founder Badge positioning. It does not change the crypto discount.
 export const HOUSE_CHAINS = ["xrp", "rlusd", "bitcoin", "ethereum", "solana"] as const;
 export type HouseChain = typeof HOUSE_CHAINS[number];
 export function isHouseChain(chain: string): chain is HouseChain {
   return (HOUSE_CHAINS as readonly string[]).includes(chain.toLowerCase());
 }
-export function getCryptoDiscountRate(chain: string): number {
-  return isHouseChain(chain) ? 0.15 : 0.10;
+export function getCryptoDiscountRate(_chain: string): number {
+  return 0.10;
 }
 
 // Promo-calendar windows can add an EXTRA crypto-payment discount on top of the

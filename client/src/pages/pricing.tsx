@@ -260,7 +260,7 @@ export default function Pricing() {
             </div>
             <p className="text-center text-xs text-muted-foreground mt-4">
               Pro members get <strong>Member for Life</strong> included free. Crypto
-              payments get 10% off (15% on Bitcoin, Ethereum, Solana, XRP, and RLUSD).
+              payments get 10% off with every supported coin.
             </p>
           </div>
 
