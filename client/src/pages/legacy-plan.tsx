@@ -855,7 +855,7 @@ async function encryptVault(plaintext: string, passphrase: string): Promise<stri
   combined.set(salt, 0);
   combined.set(iv, salt.length);
   combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
-  return btoa(String.fromCharCode(...Array.from(combined)));
+  return btoa(String.fromCharCode(...combined));
 }
 
 function BeneficiaryCard({ beneficiary, onDelete, onEdit }: { beneficiary: LegacyPlanData["beneficiaries"][0]; onDelete: () => void; onEdit: () => void }) {
