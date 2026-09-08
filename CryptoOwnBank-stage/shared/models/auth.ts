@@ -1,0 +1,46 @@
+import { sql } from "drizzle-orm";
+import { boolean, index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)]
+);
+
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  passwordHash: varchar("password_hash"),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  emailVerifyToken: varchar("email_verify_token"),
+  passwordResetToken: varchar("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  authProvider: varchar("auth_provider", { length: 20 }).default("email").notNull(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  xrplWalletAddress: varchar("xrpl_wallet_address"),
+  xrplWalletType: varchar("xrpl_wallet_type", { length: 20 }),
+  lastLoginAt: timestamp("last_login_at"),
+  lastReminderSentAt: timestamp("last_reminder_sent_at"),
+  securityPhrase: varchar("security_phrase"),
+  unsubscribedFromAnnouncements: boolean("unsubscribed_from_announcements").default(false),
+  tosAcceptedAt: timestamp("tos_accepted_at"),
+  utmSource: varchar("utm_source"),
+  utmMedium: varchar("utm_medium"),
+  utmCampaign: varchar("utm_campaign"),
+  /** Self-reported signup channel: tiktok|x|reddit|youtube|friend|search|other */
+  heardVia: varchar("heard_via", { length: 40 }),
+  /** Free text when heardVia === "other" */
+  heardViaDetail: varchar("heard_via_detail", { length: 200 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
