@@ -1,0 +1,1381 @@
+diff --git a/client/src/components/app-sidebar.tsx b/client/src/components/app-sidebar.tsx
+index dcb19e5..61a2ceb 100644
+--- a/client/src/components/app-sidebar.tsx
++++ b/client/src/components/app-sidebar.tsx
+@@ -87,6 +87,8 @@ import {
+ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+ import { Badge } from "@/components/ui/badge";
+ import { useAuth } from "@/hooks/use-auth";
++import { LanguageSwitcher } from "@/components/language-switcher";
++import { useTranslations } from "@/i18n";
+ 
+ type NavItem = {
+   title: string;
+@@ -311,6 +313,7 @@ function NavItemRow({
+   onToggleFav: () => void;
+ }) {
+   const [hovered, setHovered] = useState(false);
++  const t = useTranslations();
+   const Icon = item.icon;
+   const chainColor = item.chain ? CHAIN_COLORS[item.chain] : item.color;
+ 
+@@ -352,7 +355,7 @@ function NavItemRow({
+             }}
+             className="absolute right-1 p-1 rounded hover:bg-accent transition-colors z-10"
+             data-testid={`fav-toggle-${item.url.replace(/\//g, "-")}`}
+-            title={isFavorite ? "Unpin from My Tools" : "Pin to My Tools"}
++            title={isFavorite ? t.app.unpinFromMyTools : t.app.pinToMyTools}
+           >
+             {isFavorite ? (
+               <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+@@ -397,6 +400,7 @@ function ChainSwitcher({ chain, setChain }: { chain: "all" | "xrpl" | "stellar";
+ export function AppSidebar() {
+   const [location] = useLocation();
+   const { user, logout } = useAuth();
++  const t = useTranslations();
+   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
+     queryKey: ["/api/admin/status"],
+     enabled: !!user,
+@@ -502,8 +506,8 @@ export function AppSidebar() {
+           <img src="/logo.png" alt="CryptoOwnBank" className="h-9 w-9 rounded-md" />
+           <div className="flex flex-col">
+             <span className="text-sm font-semibold">CryptoOwnBank</span>
+-            <span className="text-[10px] text-muted-foreground">Be Your Own Bank</span>
+-            <span className="text-[9px] italic text-muted-foreground/70">Value Flows Free. You Own the Flow.</span>
++            <span className="text-[10px] text-muted-foreground">{t.tagline}</span>
++            <span className="text-[9px] italic text-muted-foreground/70">{t.motto}</span>
+           </div>
+         </div>
+       </SidebarHeader>
+@@ -512,12 +516,22 @@ export function AppSidebar() {
+           <SidebarGroupLabel>
+             <span className="flex items-center gap-2">
+               <Rocket className="h-3 w-3 text-[#00A4E4]" />
+-              Quick access
++              {t.app.quickAccess}
+             </span>
+           </SidebarGroupLabel>
+           <SidebarGroupContent>
+             <SidebarMenu>
+-              {memberShortcuts.map((item) => renderItem(item, "quick-access", false))}
++              {memberShortcuts.map((item) => {
++                const labels: Record<string, string> = {
++                  "/": t.app.home,
++                  "/portfolio": t.app.portfolio,
++                  "/wallets": t.app.addWallet,
++                  "/legacy-plan": t.app.legacyPlan,
++                  "/ownbank/send": t.app.send,
++                  "/swap-any-pair": t.app.swap,
++                };
++                return renderItem({ ...item, title: labels[item.url] || item.title }, "quick-access", false);
++              })}
+             </SidebarMenu>
+           </SidebarGroupContent>
+         </SidebarGroup>
+@@ -527,7 +541,7 @@ export function AppSidebar() {
+             <SidebarGroupLabel>
+               <span className="flex items-center gap-2">
+                 <Pin className="h-3 w-3 text-amber-500" />
+-                My Tools
++                {t.app.myTools}
+               </span>
+             </SidebarGroupLabel>
+             <SidebarGroupContent>
+@@ -693,7 +707,7 @@ export function AppSidebar() {
+                 >
+                   <Link href="/settings">
+                     <Settings className="h-4 w-4" />
+-                    <span>Settings</span>
++                    <span>{t.app.settings}</span>
+                   </Link>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
+@@ -703,12 +717,12 @@ export function AppSidebar() {
+       </SidebarContent>
+       <SidebarFooter className="border-t border-sidebar-border p-4">
+         <div className="flex items-center justify-between gap-3">
+-          <div className="flex items-center gap-3">
++          <div className="flex items-center gap-3 min-w-0">
+             <Avatar className="h-8 w-8">
+               <AvatarImage src={user?.profileImageUrl || undefined} />
+               <AvatarFallback className="text-xs">{getInitials()}</AvatarFallback>
+             </Avatar>
+-            <div className="flex flex-col">
++            <div className="flex flex-col min-w-0">
+               <span className="text-sm font-medium truncate max-w-[120px]">
+                 {user?.firstName || user?.email?.split("@")[0] || "User"}
+               </span>
+@@ -717,14 +731,19 @@ export function AppSidebar() {
+               </span>
+             </div>
+           </div>
+-          <SidebarMenuButton
+-            size="sm"
+-            className="h-8 w-8 p-0"
+-            onClick={() => logout()}
+-            data-testid="button-logout"
+-          >
+-            <LogOut className="h-4 w-4" />
+-          </SidebarMenuButton>
++          <div className="flex items-center gap-1 shrink-0">
++            <LanguageSwitcher />
++            <SidebarMenuButton
++              size="sm"
++              className="h-8 w-8 p-0"
++              onClick={() => logout()}
++              data-testid="button-logout"
++              title={t.app.signOut}
++              aria-label={t.app.signOut}
++            >
++              <LogOut className="h-4 w-4" />
++            </SidebarMenuButton>
++          </div>
+         </div>
+       </SidebarFooter>
+     </Sidebar>
+diff --git a/client/src/components/legacy-checkin-card.tsx b/client/src/components/legacy-checkin-card.tsx
+index e390888..7b64d03 100644
+--- a/client/src/components/legacy-checkin-card.tsx
++++ b/client/src/components/legacy-checkin-card.tsx
+@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
+ import { Button } from "@/components/ui/button";
+ import { useToast } from "@/hooks/use-toast";
+ import { CheckCircle2, AlertTriangle, ShieldCheck, ChevronRight } from "lucide-react";
++import { useTranslations } from "@/i18n";
+ 
+ type LegacyCheckInData = {
+   plan: {
+@@ -19,20 +20,29 @@ const DAY_MS = 1000 * 60 * 60 * 24;
+ 
+ export function LegacyCheckInCard() {
+   const { toast } = useToast();
++  const t = useTranslations();
+ 
+   const { data } = useQuery<LegacyCheckInData>({
+     queryKey: ["/api/legacy-plan"],
+     retry: false,
+   });
+ 
++  const { data: readiness } = useQuery<{
++    score: number;
++    checks: Array<{ severity: string }>;
++  }>({
++    queryKey: ["/api/legacy-plan/readiness"],
++    retry: false,
++  });
++
+   const checkIn = useMutation({
+     mutationFn: () => apiRequest("POST", "/api/legacy-plan/check-in"),
+     onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
+       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+-      toast({ title: "Checked in!", description: "Your Legacy Plan timer has been reset." });
++      toast({ title: t.legacy.checkedInToast, description: t.legacy.checkedInDesc });
+     },
+-    onError: () => toast({ title: "Error", description: "Check-in failed", variant: "destructive" }),
++    onError: () => toast({ title: t.legacy.error, description: t.legacy.checkInFailed, variant: "destructive" }),
+   });
+ 
+   const plan = data?.plan;
+@@ -53,40 +63,55 @@ export function LegacyCheckInCard() {
+     graceDaysLeft = Math.ceil((graceEnd.getTime() - now.getTime()) / DAY_MS);
+   }
+ 
++  const readinessNeedsAttention = !!readiness && (
++    readiness.score < 85 ||
++    readiness.checks.some((c) => c.severity === "critical" || c.severity === "warning")
++  );
++  const showAttention = !isDue && !isSoon && readinessNeedsAttention;
++
+   const tone = isDue
+     ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+-    : isSoon
++    : isSoon || showAttention
+       ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+       : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800";
+ 
+-  const Icon = isDue ? AlertTriangle : isSoon ? AlertTriangle : ShieldCheck;
+-  const iconTone = isDue ? "text-red-500" : isSoon ? "text-amber-500" : "text-green-600";
++  const Icon = isDue || isSoon || showAttention ? AlertTriangle : ShieldCheck;
++  const iconTone = isDue ? "text-red-500" : isSoon || showAttention ? "text-amber-500" : "text-green-600";
+   const titleTone = isDue
+     ? "text-red-800 dark:text-red-200"
+-    : isSoon
++    : isSoon || showAttention
+       ? "text-amber-800 dark:text-amber-200"
+       : "text-green-800 dark:text-green-200";
+   const subTone = isDue
+     ? "text-red-700 dark:text-red-300"
+-    : isSoon
++    : isSoon || showAttention
+       ? "text-amber-700 dark:text-amber-300"
+       : "text-green-700 dark:text-green-300";
+ 
+   const title = isGrace
+-    ? "Legacy Plan: check in now"
++    ? t.legacy.checkInNow
+     : isDue
+-      ? "Legacy Plan: check-in due now"
++      ? t.legacy.checkInDueNow
+       : isSoon
+-        ? `Legacy Plan: check-in due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}`
+-        : "Legacy Plan: you're all set";
++        ? (daysUntilDue === 1
++            ? t.legacy.checkInDueInOneDay
++            : t.legacy.checkInDueInDays.replace("{days}", String(daysUntilDue)))
++        : showAttention
++          ? t.legacy.needsAttention
++          : t.legacy.allSet;
+ 
+   const subtitle = isGrace
+-    ? `You missed a check-in. ${graceDaysLeft !== null && graceDaysLeft > 0 ? `${graceDaysLeft} day${graceDaysLeft !== 1 ? "s" : ""} left` : "Expiring soon"} before your beneficiaries are notified.`
++    ? (graceDaysLeft !== null && graceDaysLeft > 0
++        ? t.legacy.subtitleGrace.replace("{days}", String(graceDaysLeft))
++        : t.legacy.subtitleGraceExpiring)
+     : isDue
+-      ? "Confirm you're active to reset your timer."
+-      : daysUntilDue !== null
+-        ? `Next check-in due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}.${plan.lastCheckIn ? ` Last: ${new Date(plan.lastCheckIn).toLocaleDateString()}.` : ""}`
+-        : "Tap to confirm you're active and reset your timer.";
++      ? t.legacy.subtitleDue
++      : showAttention
++        ? t.legacy.subtitleAttention
++        : daysUntilDue !== null
++          ? ((daysUntilDue === 1 ? t.legacy.subtitleNextDueOne : t.legacy.subtitleNextDue.replace("{days}", String(daysUntilDue)))
++              + (plan.lastCheckIn ? ` ${new Date(plan.lastCheckIn).toLocaleDateString()}.` : ""))
++          : t.legacy.subtitleDefault;
+ 
+   const btnTone = isDue
+     ? "bg-red-600 hover:bg-red-700 text-white"
+@@ -115,11 +140,11 @@ export function LegacyCheckInCard() {
+           data-testid="button-dashboard-checkin"
+         >
+           <CheckCircle2 className="h-4 w-4 mr-1.5" />
+-          {checkIn.isPending ? "Checking in..." : "I'm Still Here"}
++          {checkIn.isPending ? t.app.checkingIn : t.app.checkIn}
+         </Button>
+         <Link href="/legacy-plan">
+           <Button variant="ghost" size="sm" data-testid="link-manage-legacy-plan">
+-            Manage
++            {showAttention ? t.legacy.reviewPlan : t.legacy.manage}
+             <ChevronRight className="h-4 w-4 ml-0.5" />
+           </Button>
+         </Link>
+diff --git a/client/src/components/legacy-critical-alerts.tsx b/client/src/components/legacy-critical-alerts.tsx
+new file mode 100644
+index 0000000..b0c9e61
+--- /dev/null
++++ b/client/src/components/legacy-critical-alerts.tsx
+@@ -0,0 +1,77 @@
++import { useQuery } from "@tanstack/react-query";
++import { Link } from "wouter";
++import { AlertTriangle, ShieldAlert, ArrowRight } from "lucide-react";
++import { Button } from "@/components/ui/button";
++import { useTranslations } from "@/i18n";
++
++type Severity = "critical" | "warning" | "tip";
++
++type Check = {
++  id: string;
++  severity: Severity;
++  title: string;
++  message: string;
++  fixUrl?: string;
++  fixLabel?: string;
++};
++
++type Readiness = {
++  score: number;
++  checks: Check[];
++};
++
++/**
++ * Above-the-fold strip of critical/warning readiness checks only.
++ * Tips stay in LegacyReadinessPanel. Renders nothing when clear.
++ */
++export function LegacyCriticalAlerts() {
++  const t = useTranslations();
++  const { data, isLoading } = useQuery<Readiness>({
++    queryKey: ["/api/legacy-plan/readiness"],
++    refetchInterval: 60000,
++  });
++
++  if (isLoading || !data) return null;
++
++  const alerts = data.checks.filter(
++    (c) => c.severity === "critical" || c.severity === "warning",
++  );
++  if (alerts.length === 0) return null;
++
++  return (
++    <div className="space-y-2" data-testid="legacy-critical-alerts">
++      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.legacy.criticalAlertsHeading}</p>
++      {alerts.map((check) => {
++        const isCritical = check.severity === "critical";
++        const Icon = isCritical ? ShieldAlert : AlertTriangle;
++        const borderCls = isCritical
++          ? "border-red-500/50 bg-red-500/5"
++          : "border-amber-500/50 bg-amber-500/5";
++        const iconCls = isCritical ? "text-red-500" : "text-amber-500";
++        return (
++          <div
++            key={check.id}
++            className={`rounded-lg border ${borderCls} px-3 py-2.5 flex items-start gap-2.5`}
++            data-testid={`legacy-alert-${check.id}`}
++          >
++            <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${iconCls}`} />
++            <div className="min-w-0 flex-1">
++              <div className="text-sm font-semibold leading-snug">{check.title}</div>
++              {check.message && (
++                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{check.message}</p>
++              )}
++            </div>
++            {check.fixUrl?.startsWith("/") && (
++              <Link href={check.fixUrl}>
++                <Button size="sm" variant="outline" className="shrink-0 h-7 text-xs" data-testid={`button-alert-fix-${check.id}`}>
++                  {check.fixLabel || t.legacy.fix}
++                  <ArrowRight className="h-3 w-3 ml-1" />
++                </Button>
++              </Link>
++            )}
++          </div>
++        );
++      })}
++    </div>
++  );
++}
+diff --git a/client/src/components/legacy-readiness-panel.tsx b/client/src/components/legacy-readiness-panel.tsx
+index 1d404a1..dbdd323 100644
+--- a/client/src/components/legacy-readiness-panel.tsx
++++ b/client/src/components/legacy-readiness-panel.tsx
+@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
+ import { Progress } from "@/components/ui/progress";
+ import { Skeleton } from "@/components/ui/skeleton";
+ import { CheckCircle2, AlertTriangle, Lightbulb, ShieldAlert, X, ArrowRight } from "lucide-react";
++import { useTranslations } from "@/i18n";
+ import { Link } from "wouter";
+ 
+ type Severity = "critical" | "warning" | "tip";
+@@ -50,6 +51,7 @@ function scoreLabel(score: number) {
+ }
+ 
+ export function LegacyReadinessPanel() {
++  const t = useTranslations();
+   const { data, isLoading } = useQuery<Readiness>({
+     queryKey: ["/api/legacy-plan/readiness"],
+     refetchInterval: 60000,
+@@ -63,7 +65,7 @@ export function LegacyReadinessPanel() {
+   if (isLoading || !data) {
+     return (
+       <Card data-testid="card-readiness-loading">
+-        <CardHeader><CardTitle>Plan Readiness</CardTitle></CardHeader>
++        <CardHeader><CardTitle>{t.legacy.planReadiness}</CardTitle></CardHeader>
+         <CardContent><Skeleton className="h-32 w-full" /></CardContent>
+       </Card>
+     );
+@@ -81,7 +83,7 @@ export function LegacyReadinessPanel() {
+           <div>
+             <CardTitle className="flex items-center gap-2">
+               <ShieldAlert className="h-5 w-5" />
+-              Plan Readiness
++              {t.legacy.planReadiness}
+             </CardTitle>
+             <CardDescription>One score that tells you if your plan will actually work when it has to.</CardDescription>
+           </div>
+diff --git a/client/src/components/legacy-wallets-view.tsx b/client/src/components/legacy-wallets-view.tsx
+index 3b54ab0..2236d95 100644
+--- a/client/src/components/legacy-wallets-view.tsx
++++ b/client/src/components/legacy-wallets-view.tsx
+@@ -9,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ import { Checkbox } from "@/components/ui/checkbox";
+ import { Alert, AlertDescription } from "@/components/ui/alert";
++import { Skeleton } from "@/components/ui/skeleton";
+ import { Wallet, Users, AlertCircle, CheckCircle2, Pencil, Plus, Trash2, Share2, KeyRound, ChevronDown, HardDrive } from "lucide-react";
+ import { apiRequest, queryClient } from "@/lib/queryClient";
+ import { useToast } from "@/hooks/use-toast";
++import { useTranslations } from "@/i18n";
+ 
+ type Beneficiary = {
+   id: string;
+@@ -123,6 +125,7 @@ interface Props {
+ 
+ export function LegacyWalletsView({ beneficiaries }: Props) {
+   const { toast } = useToast();
++  const t = useTranslations();
+   const [editing, setEditing] = useState<WalletAssignment | null>(null);
+   const [creating, setCreating] = useState<WalletAsset | "blank" | null>(null);
+ 
+@@ -134,6 +137,13 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
+     queryKey: ["/api/legacy-plan/wallet-assets"],
+   });
+ 
++  const { data: readiness, isLoading: readinessLoading } = useQuery<{
++    coveredWallets: number;
++    totalWallets: number;
++  }>({
++    queryKey: ["/api/legacy-plan/readiness"],
++  });
++
+   const assignedWalletIds = useMemo(() => new Set(assignments.map(a => a.walletId).filter(Boolean) as string[]), [assignments]);
+ 
+   const unassignedWallets = useMemo(
+@@ -201,19 +211,35 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-green">
+           <div className="text-2xl font-bold text-green-600">{greenCount}</div>
+-          <div className="text-xs text-muted-foreground">Wallets covered</div>
++          <div className="text-xs text-muted-foreground">{t.legacy.assignedToHeirs}</div>
+         </div>
+         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-review">
+           <div className="text-2xl font-bold text-amber-600">{totalAssigned - totalReviewed}</div>
+-          <div className="text-xs text-muted-foreground">Need review</div>
++          <div className="text-xs text-muted-foreground">{t.legacy.needReview}</div>
+         </div>
+         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-unassigned">
+           <div className="text-2xl font-bold text-red-600">{uniqueUnassignedIdentities}</div>
+-          <div className="text-xs text-muted-foreground">Not yet assigned</div>
++          <div className="text-xs text-muted-foreground">{t.legacy.notYetAssigned}</div>
+         </div>
+         <div className="rounded-lg border p-3 text-center">
+           <div className="text-2xl font-bold">{uniqueWalletIdentities}</div>
+-          <div className="text-xs text-muted-foreground">Unique wallet records</div>
++          <div className="text-xs text-muted-foreground">{t.legacy.uniqueWalletRecords}</div>
++        </div>
++      </div>
++
++      <div className="rounded-lg border px-3 py-2" data-testid="stat-survivor-instructions">
++        <div className="text-sm font-medium">
++          {t.legacy.survivorInstructions}:{" "}
++          {readinessLoading || !readiness ? (
++            <Skeleton className="inline-block h-4 w-16 align-middle" />
++          ) : (
++            <span data-testid="text-survivor-instructions-count">
++              {readiness.coveredWallets}/{readiness.totalWallets}
++            </span>
++          )}
++        </div>
++        <div className="text-xs text-muted-foreground mt-0.5">
++          {t.legacy.survivorInstructionsHint}
+         </div>
+       </div>
+ 
+@@ -231,7 +257,7 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
+         <Alert variant="destructive">
+           <AlertCircle className="h-4 w-4" />
+           <AlertDescription>
+-            <strong>{unassignedWallets.length} wallet(s) in your portfolio are not yet covered by your Legacy Plan.</strong> Click any of them below to assign beneficiaries.
++            <strong>{unassignedWallets.length} wallet(s) in your portfolio are not yet assigned.</strong> Click any of them below to assign beneficiaries.
+           </AlertDescription>
+         </Alert>
+       )}
+diff --git a/client/src/components/upgrade-prompt.tsx b/client/src/components/upgrade-prompt.tsx
+index 98ade25..150eae6 100644
+--- a/client/src/components/upgrade-prompt.tsx
++++ b/client/src/components/upgrade-prompt.tsx
+@@ -2,6 +2,7 @@ import { Lock, Crown, Check, CalendarClock, Building2, Plus } from "lucide-react
+ import { Button } from "@/components/ui/button";
+ import { Card, CardContent } from "@/components/ui/card";
+ import { Link } from "wouter";
++import { useTranslations } from "@/i18n";
+ 
+ interface UpgradePromptProps {
+   feature: string;
+@@ -50,14 +51,15 @@ const ADDON_BENEFITS = [
+ ];
+ 
+ export function UpgradePrompt({ feature, compact = false, variant = "premium", addonName }: UpgradePromptProps) {
++  const t = useTranslations();
+   const isAnnual = variant === "annual";
+   const isPro = variant === "pro";
+   const isAddon = variant === "addon";
+   const benefits = isAddon ? ADDON_BENEFITS : isPro ? PRO_BENEFITS : isAnnual ? ANNUAL_BENEFITS : PREMIUM_BENEFITS;
+-  const title = isAddon ? "Add-On Available" : isPro ? "Pro Feature" : isAnnual ? "Annual Plan Feature" : "Premium Feature";
++  const title = isAddon ? t.billing.addonAvailable : isPro ? t.billing.proFeature : isAnnual ? t.billing.annualPlanFeature : t.billing.premiumFeature;
+   const buttonText = isAddon
+-    ? `Get ${addonName || "Add-On"}`
+-    : isPro ? "Upgrade to Pro — $99/mo" : isAnnual ? "Switch to Annual — $199/yr" : "Upgrade to Premium — $29/mo";
++    ? (addonName ? `${t.billing.getAddon}: ${addonName}` : t.billing.getAddon)
++    : isPro ? t.billing.upgradePro : isAnnual ? t.billing.switchAnnual : t.billing.upgradePremium;
+   const Icon = isAddon ? Plus : isPro ? Building2 : isAnnual ? CalendarClock : Lock;
+   const borderColor = isAddon ? "border-blue-200 dark:border-blue-800" : "border-amber-200 dark:border-amber-800";
+   const bgColor = isAddon ? "bg-blue-50 dark:bg-blue-950/20" : "bg-amber-50 dark:bg-amber-950/20";
+@@ -75,7 +77,7 @@ export function UpgradePrompt({ feature, compact = false, variant = "premium", a
+         <Button size="sm" asChild data-testid="button-upgrade">
+           <Link href="/settings">
+             {isAddon ? <Plus className="h-3.5 w-3.5 mr-1.5" /> : <Crown className="h-3.5 w-3.5 mr-1.5" />}
+-            {isAddon ? "Get Add-On" : isAnnual ? "Go Annual" : "Upgrade"}
++            {isAddon ? t.billing.getAddon : isAnnual ? t.billing.goAnnual : t.billing.upgrade}
+           </Link>
+         </Button>
+       </div>
+diff --git a/client/src/i18n/en.ts b/client/src/i18n/en.ts
+index 762a12a..07bd4ae 100644
+--- a/client/src/i18n/en.ts
++++ b/client/src/i18n/en.ts
+@@ -72,6 +72,86 @@ export const en = {
+   beta: "Beta \u2014 Early Access \u00B7 We're actively building. Your feedback shapes the product.",
+   tagline: "Be Your Own Bank",
+   motto: "Value Flows Free. You Own the Flow.",
++
++  app: {
++    quickAccess: "Quick access",
++    myTools: "My Tools",
++    home: "Home",
++    portfolio: "Portfolio",
++    addWallet: "Add wallet",
++    legacyPlan: "Legacy Plan",
++    send: "Send",
++    swap: "Swap",
++    settings: "Settings",
++    signOut: "Sign out",
++    checkIn: "I'm Still Here",
++    checkingIn: "Checking in...",
++    pinToMyTools: "Pin to My Tools",
++    unpinFromMyTools: "Unpin from My Tools",
++  },
++  dashboard: {
++    title: "Dashboard",
++    subtitle: "Your crypto holdings at a glance",
++    getStarted: "Get started",
++    continueSetup: "Continue setup",
++    getStartedHint: "Add what you already control, prepare your continuity tools, or choose an action to review and approve in your own wallet.",
++    addAWallet: "Add a wallet",
++    setUpLegacyPlan: "Set up Legacy Plan",
++    send: "Send",
++    swapAnyPair: "Swap Any Pair",
++    refresh: "Refresh",
++    statement: "Statement",
++    generating: "Generating...",
++    addTransaction: "Add Transaction",
++  },
++  legacy: {
++    title: "Legacy Plan",
++    subtitle: "Member for Life \u2014 Dead-Man Switch",
++    memberForLife: "Member for Life",
++    planReadiness: "Plan Readiness",
++    tabWallets: "Wallets",
++    tabPeople: "People",
++    assignedToHeirs: "Assigned to heirs",
++    needReview: "Need review",
++    notYetAssigned: "Not yet assigned",
++    uniqueWalletRecords: "Unique wallet records",
++    survivorInstructions: "Survivor instructions",
++    survivorInstructionsHint: "Assigned \u2260 instructions written for survivors.",
++    criticalAlertsHeading: "Needs attention",
++    fix: "Fix",
++    checkInCardTitle: "Check In",
++    checkInNow: "Legacy Plan: check in now",
++    checkInDueNow: "Legacy Plan: check-in due now",
++    checkInDueInDays: "Legacy Plan: check-in due in {days} days",
++    checkInDueInOneDay: "Legacy Plan: check-in due in 1 day",
++    needsAttention: "Legacy Plan needs attention",
++    allSet: "Legacy Plan: you're all set",
++    subtitleGrace: "You missed a check-in. {days} day(s) left before your beneficiaries are notified.",
++    subtitleGraceExpiring: "You missed a check-in. Expiring soon before your beneficiaries are notified.",
++    subtitleDue: "Confirm you're active to reset your timer.",
++    subtitleAttention: "Review readiness warnings on your Legacy Plan.",
++    subtitleNextDue: "Next check-in due in {days} days.",
++    subtitleNextDueOne: "Next check-in due in 1 day.",
++    subtitleDefault: "Tap to confirm you're active and reset your timer.",
++    manage: "Manage",
++    reviewPlan: "Review plan",
++    checkedInToast: "Checked in!",
++    checkedInDesc: "Your Legacy Plan timer has been reset.",
++    checkInFailed: "Check-in failed",
++    error: "Error",
++  },
++  billing: {
++    premiumFeature: "Premium Feature",
++    proFeature: "Pro Feature",
++    annualPlanFeature: "Annual Plan Feature",
++    addonAvailable: "Add-On Available",
++    upgrade: "Upgrade",
++    goAnnual: "Go Annual",
++    getAddon: "Get Add-On",
++    upgradePremium: "Upgrade to Premium \u2014 $29/mo",
++    upgradePro: "Upgrade to Pro \u2014 $99/mo",
++    switchAnnual: "Switch to Annual \u2014 $199/yr",
++  },
+   faq: {
+     title: "Frequently Asked Questions",
+     subtitle: "Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, XRPL tools, payments for consumers and businesses, RLUSD vaults, yield optimization, and keeping control of your crypto.",
+diff --git a/client/src/i18n/es.ts b/client/src/i18n/es.ts
+index 516e9f2..d5fad65 100644
+--- a/client/src/i18n/es.ts
++++ b/client/src/i18n/es.ts
+@@ -72,6 +72,86 @@ export const es = {
+   beta: "Beta \u2014 Acceso Anticipado \u00B7 Estamos construyendo activamente. Tu opinion da forma al producto.",
+   tagline: "Se Tu Propio Banco",
+   motto: "El Valor Fluye Libre. Tu Controlas el Flujo.",
++
++  app: {
++    quickAccess: "Acceso rápido",
++    myTools: "Mis herramientas",
++    home: "Inicio",
++    portfolio: "Cartera",
++    addWallet: "Añadir billetera",
++    legacyPlan: "Plan Legacy",
++    send: "Enviar",
++    swap: "Intercambiar",
++    settings: "Ajustes",
++    signOut: "Cerrar sesión",
++    checkIn: "Sigo aquí",
++    checkingIn: "Confirmando...",
++    pinToMyTools: "Fijar en Mis herramientas",
++    unpinFromMyTools: "Quitar de Mis herramientas",
++  },
++  dashboard: {
++    title: "Panel",
++    subtitle: "Tus cripto de un vistazo",
++    getStarted: "Empezar",
++    continueSetup: "Continuar configuración",
++    getStartedHint: "Añade lo que ya controlas, prepara tus herramientas de continuidad o elige una acción para revisar y aprobar en tu propia billetera.",
++    addAWallet: "Añadir una billetera",
++    setUpLegacyPlan: "Configurar Plan Legacy",
++    send: "Enviar",
++    swapAnyPair: "Intercambiar cualquier par",
++    refresh: "Actualizar",
++    statement: "Extracto",
++    generating: "Generando...",
++    addTransaction: "Añadir transacción",
++  },
++  legacy: {
++    title: "Plan Legacy",
++    subtitle: "Miembro de por vida — Interruptor de hombre muerto",
++    memberForLife: "Miembro de por vida",
++    planReadiness: "Preparación del plan",
++    tabWallets: "Billeteras",
++    tabPeople: "Personas",
++    assignedToHeirs: "Asignadas a herederos",
++    needReview: "Necesitan revisión",
++    notYetAssigned: "Aún no asignadas",
++    uniqueWalletRecords: "Registros únicos de billeteras",
++    survivorInstructions: "Instrucciones para sobrevivientes",
++    survivorInstructionsHint: "Asignado ≠ instrucciones escritas para sobrevivientes.",
++    criticalAlertsHeading: "Requiere atención",
++    fix: "Corregir",
++    checkInCardTitle: "Check-in",
++    checkInNow: "Plan Legacy: haz check-in ahora",
++    checkInDueNow: "Plan Legacy: check-in vencido ahora",
++    checkInDueInDays: "Plan Legacy: check-in en {days} días",
++    checkInDueInOneDay: "Plan Legacy: check-in en 1 día",
++    needsAttention: "El Plan Legacy necesita atención",
++    allSet: "Plan Legacy: todo listo",
++    subtitleGrace: "Te faltó un check-in. Quedan {days} día(s) antes de notificar a tus beneficiarios.",
++    subtitleGraceExpiring: "Te faltó un check-in. Expira pronto antes de notificar a tus beneficiarios.",
++    subtitleDue: "Confirma que estás activo para reiniciar el temporizador.",
++    subtitleAttention: "Revisa las alertas de preparación de tu Plan Legacy.",
++    subtitleNextDue: "Próximo check-in en {days} días.",
++    subtitleNextDueOne: "Próximo check-in en 1 día.",
++    subtitleDefault: "Toca para confirmar que estás activo y reiniciar el temporizador.",
++    manage: "Administrar",
++    reviewPlan: "Revisar plan",
++    checkedInToast: "¡Check-in hecho!",
++    checkedInDesc: "Se reinició el temporizador de tu Plan Legacy.",
++    checkInFailed: "Error en el check-in",
++    error: "Error",
++  },
++  billing: {
++    premiumFeature: "Función Premium",
++    proFeature: "Función Pro",
++    annualPlanFeature: "Función del plan anual",
++    addonAvailable: "Complemento disponible",
++    upgrade: "Mejorar plan",
++    goAnnual: "Pasar a anual",
++    getAddon: "Obtener complemento",
++    upgradePremium: "Pasar a Premium — $29/mes",
++    upgradePro: "Pasar a Pro — $99/mes",
++    switchAnnual: "Cambiar a anual — $199/año",
++  },
+   faq: {
+     title: "Preguntas Frecuentes",
+     subtitle: "Todo lo que necesitas saber sobre CryptoOwnBank: seguimiento de portafolio, herramientas XRPL, pagos para consumidores y empresas, boveda RLUSD, optimizacion de rendimiento y mantener el control de tu cripto.",
+diff --git a/client/src/i18n/fr.ts b/client/src/i18n/fr.ts
+index ce76e90..9852e73 100644
+--- a/client/src/i18n/fr.ts
++++ b/client/src/i18n/fr.ts
+@@ -72,6 +72,86 @@ export const fr = {
+   beta: "Beta \u2014 Acces Anticipe \u00B7 Nous construisons activement. Vos retours faconnent le produit.",
+   tagline: "Soyez Votre Propre Banque",
+   motto: "La Valeur Circule Librement. Vous Possedez le Flux.",
++
++  app: {
++    quickAccess: "Accès rapide",
++    myTools: "Mes outils",
++    home: "Accueil",
++    portfolio: "Portefeuille",
++    addWallet: "Ajouter un portefeuille",
++    legacyPlan: "Plan Legacy",
++    send: "Envoyer",
++    swap: "Échanger",
++    settings: "Paramètres",
++    signOut: "Se déconnecter",
++    checkIn: "Je suis toujours là",
++    checkingIn: "Confirmation...",
++    pinToMyTools: "Épingler dans Mes outils",
++    unpinFromMyTools: "Retirer de Mes outils",
++  },
++  dashboard: {
++    title: "Tableau de bord",
++    subtitle: "Vos crypto en un coup d’œil",
++    getStarted: "Commencer",
++    continueSetup: "Continuer la configuration",
++    getStartedHint: "Ajoutez ce que vous contrôlez déjà, préparez vos outils de continuité, ou choisissez une action à examiner et approuver dans votre propre portefeuille.",
++    addAWallet: "Ajouter un portefeuille",
++    setUpLegacyPlan: "Configurer le Plan Legacy",
++    send: "Envoyer",
++    swapAnyPair: "Échanger n’importe quelle paire",
++    refresh: "Actualiser",
++    statement: "Relevé",
++    generating: "Génération...",
++    addTransaction: "Ajouter une transaction",
++  },
++  legacy: {
++    title: "Plan Legacy",
++    subtitle: "Membre à vie — Interrupteur homme mort",
++    memberForLife: "Membre à vie",
++    planReadiness: "Préparation du plan",
++    tabWallets: "Portefeuilles",
++    tabPeople: "Personnes",
++    assignedToHeirs: "Attribués aux héritiers",
++    needReview: "À revoir",
++    notYetAssigned: "Pas encore attribués",
++    uniqueWalletRecords: "Enregistrements uniques de portefeuilles",
++    survivorInstructions: "Instructions pour les survivants",
++    survivorInstructionsHint: "Attribué ≠ instructions rédigées pour les survivants.",
++    criticalAlertsHeading: "Nécessite une attention",
++    fix: "Corriger",
++    checkInCardTitle: "Check-in",
++    checkInNow: "Plan Legacy : faites le check-in maintenant",
++    checkInDueNow: "Plan Legacy : check-in dû maintenant",
++    checkInDueInDays: "Plan Legacy : check-in dans {days} jours",
++    checkInDueInOneDay: "Plan Legacy : check-in dans 1 jour",
++    needsAttention: "Le Plan Legacy nécessite une attention",
++    allSet: "Plan Legacy : tout est prêt",
++    subtitleGrace: "Vous avez manqué un check-in. Il reste {days} jour(s) avant la notification de vos bénéficiaires.",
++    subtitleGraceExpiring: "Vous avez manqué un check-in. Expiration imminente avant la notification de vos bénéficiaires.",
++    subtitleDue: "Confirmez que vous êtes actif pour réinitialiser le minuteur.",
++    subtitleAttention: "Consultez les alertes de préparation de votre Plan Legacy.",
++    subtitleNextDue: "Prochain check-in dans {days} jours.",
++    subtitleNextDueOne: "Prochain check-in dans 1 jour.",
++    subtitleDefault: "Appuyez pour confirmer que vous êtes actif et réinitialiser le minuteur.",
++    manage: "Gérer",
++    reviewPlan: "Revoir le plan",
++    checkedInToast: "Check-in effectué !",
++    checkedInDesc: "Le minuteur de votre Plan Legacy a été réinitialisé.",
++    checkInFailed: "Échec du check-in",
++    error: "Erreur",
++  },
++  billing: {
++    premiumFeature: "Fonctionnalité Premium",
++    proFeature: "Fonctionnalité Pro",
++    annualPlanFeature: "Fonctionnalité du forfait annuel",
++    addonAvailable: "Module complémentaire disponible",
++    upgrade: "Passer à un forfait supérieur",
++    goAnnual: "Passer à l’annuel",
++    getAddon: "Obtenir le module",
++    upgradePremium: "Passer à Premium — $29/mois",
++    upgradePro: "Passer à Pro — $99/mois",
++    switchAnnual: "Passer à l’annuel — $199/an",
++  },
+   faq: {
+     title: "Questions Frequentes",
+     subtitle: "Tout ce que vous devez savoir sur CryptoOwnBank : suivi de portefeuille, outils XRPL, paiements pour particuliers et entreprises, coffres RLUSD, optimisation des rendements et garder le controle de vos cryptos.",
+diff --git a/client/src/i18n/hi.ts b/client/src/i18n/hi.ts
+index 38ec524..1e53198 100644
+--- a/client/src/i18n/hi.ts
++++ b/client/src/i18n/hi.ts
+@@ -72,4 +72,115 @@ export const hi = {
+   beta: "Beta \u2014 \u0905\u0930\u094D\u0932\u0940 \u090F\u0915\u094D\u0938\u0947\u0938 \u00B7 \u0939\u092E \u0938\u0915\u094D\u0930\u093F\u092F \u0930\u0942\u092A \u0938\u0947 \u0928\u093F\u0930\u094D\u092E\u093E\u0923 \u0915\u0930 \u0930\u0939\u0947 \u0939\u0948\u0902\u0964 \u0906\u092A\u0915\u0940 \u092A\u094D\u0930\u0924\u093F\u0915\u094D\u0930\u093F\u092F\u093E \u0909\u0924\u094D\u092A\u093E\u0926 \u0915\u094B \u0906\u0915\u093E\u0930 \u0926\u0947\u0924\u0940 \u0939\u0948\u0964",
+   tagline: "\u0905\u092A\u0928\u093E \u0916\u0941\u0926 \u0915\u093E \u092C\u0948\u0902\u0915 \u092C\u0928\u0947\u0902",
+   motto: "\u092E\u0942\u0932\u094D\u092F \u0938\u094D\u0935\u0924\u0902\u0924\u094D\u0930 \u092C\u0939\u0924\u093E \u0939\u0948\u0964 \u092A\u094D\u0930\u0935\u093E\u0939 \u0906\u092A\u0915\u093E \u0939\u0948\u0964",
++
++  app: {
++    quickAccess: "त्वरित पहुँच",
++    myTools: "मेरे टूल",
++    home: "होम",
++    portfolio: "पोर्टफोलियो",
++    addWallet: "वॉलेट जोड़ें",
++    legacyPlan: "Legacy प्लान",
++    send: "भेजें",
++    swap: "स्वैप",
++    settings: "सेटिंग्स",
++    signOut: "साइन आउट",
++    checkIn: "मैं अभी भी यहाँ हूँ",
++    checkingIn: "चेक-इन हो रहा है...",
++    pinToMyTools: "मेरे टूल में पिन करें",
++    unpinFromMyTools: "मेरे टूल से हटाएँ",
++  },
++  dashboard: {
++    title: "डैशबोर्ड",
++    subtitle: "आपकी क्रिप्टो होल्डिंग्स एक नज़र में",
++    getStarted: "शुरू करें",
++    continueSetup: "सेटअप जारी रखें",
++    getStartedHint: "जो आप पहले से नियंत्रित करते हैं उसे जोड़ें, अपनी निरंतरता टूल तैयार करें, या अपने वॉलेट में समीक्षा और स्वीकृति के लिए कोई कार्रवाई चुनें।",
++    addAWallet: "वॉलेट जोड़ें",
++    setUpLegacyPlan: "Legacy प्लान सेट करें",
++    send: "भेजें",
++    swapAnyPair: "कोई भी जोड़ी स्वैप करें",
++    refresh: "रिफ़्रेश",
++    statement: "स्टेटमेंट",
++    generating: "बनाया जा रहा है...",
++    addTransaction: "लेनदेन जोड़ें",
++  },
++  legacy: {
++    title: "Legacy प्लान",
++    subtitle: "आजीवन सदस्य — डेड-मैन स्विच",
++    memberForLife: "आजीवन सदस्य",
++    planReadiness: "प्लान की तैयारी",
++    tabWallets: "वॉलेट",
++    tabPeople: "लोग",
++    assignedToHeirs: "वारिसों को असाइन किए गए",
++    needReview: "समीक्षा ज़रूरी",
++    notYetAssigned: "अभी असाइन नहीं",
++    uniqueWalletRecords: "अद्वितीय वॉलेट रिकॉर्ड",
++    survivorInstructions: "उत्तरजीवियों के लिए निर्देश",
++    survivorInstructionsHint: "असाइन ≠ उत्तरजीवियों के लिए लिखे निर्देश।",
++    criticalAlertsHeading: "ध्यान दें",
++    fix: "ठीक करें",
++    checkInCardTitle: "चेक-इन",
++    checkInNow: "Legacy प्लान: अभी चेक-इन करें",
++    checkInDueNow: "Legacy प्लान: चेक-इन अभी देय",
++    checkInDueInDays: "Legacy प्लान: चेक-इन {days} दिनों में",
++    checkInDueInOneDay: "Legacy प्लान: चेक-इन 1 दिन में",
++    needsAttention: "Legacy प्लान पर ध्यान दें",
++    allSet: "Legacy प्लान: सब तैयार",
++    subtitleGrace: "आपने एक चेक-इन मिस किया। लाभार्थियों को सूचित करने से पहले {days} दिन बचे हैं।",
++    subtitleGraceExpiring: "आपने एक चेक-इन मिस किया। लाभार्थियों को सूचित करने से पहले जल्द समाप्त हो रहा है।",
++    subtitleDue: "टाइमर रीसेट करने के लिए पुष्टि करें कि आप सक्रिय हैं।",
++    subtitleAttention: "अपने Legacy प्लान की तैयारी चेतावनियाँ देखें।",
++    subtitleNextDue: "अगला चेक-इन {days} दिनों में।",
++    subtitleNextDueOne: "अगला चेक-इन 1 दिन में।",
++    subtitleDefault: "सक्रिय होने की पुष्टि और टाइमर रीसेट के लिए टैप करें।",
++    manage: "प्रबंधित करें",
++    reviewPlan: "प्लान देखें",
++    checkedInToast: "चेक-इन हो गया!",
++    checkedInDesc: "आपके Legacy प्लान का टाइमर रीसेट हो गया।",
++    checkInFailed: "चेक-इन विफल",
++    error: "त्रुटि",
++  },
++  billing: {
++    premiumFeature: "प्रीमियम सुविधा",
++    proFeature: "प्रो सुविधा",
++    annualPlanFeature: "वार्षिक प्लान सुविधा",
++    addonAvailable: "ऐड-ऑन उपलब्ध",
++    upgrade: "अपग्रेड",
++    goAnnual: "वार्षिक पर जाएँ",
++    getAddon: "ऐड-ऑन लें",
++    upgradePremium: "Premium में अपग्रेड — $29/माह",
++    upgradePro: "Pro में अपग्रेड — $99/माह",
++    switchAnnual: "वार्षिक पर स्विच — $199/वर्ष",
++  },
++  faq: {
++    title: "Frequently Asked Questions",
++    subtitle: "Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, XRPL tools, payments for consumers and businesses, RLUSD vaults, yield optimization, and keeping control of your crypto.",
++    searchPlaceholder: "Search FAQ \u2014 try 'trustline', 'Xaman', 'cold wallet', 'staking'...",
++    noResults: "No results for",
++    noResultsHint: "try different keywords",
++    resultOne: "result for",
++    resultMany: "results for",
++    englishNotice: "Detailed answers are currently shown in English. Translation is in progress.",
++    groups: {
++      "about": "About CryptoOwnBank",
++      "wallet-security": "Wallet & Security Basics",
++      "exchange-risks": "Exchange Risks & Exit Strategies",
++      "yield-vaults": "Yield Vaults (Soil, Doppler & Blend)",
++      "stablecoins": "Stablecoins & Real-World Assets",
++      "exchange-imports": "Importing Exchange Data",
++      "statements": "Statement Uploads",
++      "getting-started": "Getting Started & Transfers",
++      "pricing": "Pricing & Plans",
++      "recommendations": "Recommendations & Yield Optimization",
++      "tax": "Tax Reporting & Filing",
++      "xrpl-tools": "XRPL Tools",
++      "token-research": "Token Research",
++      "payments": "Payments & Business",
++      "amm-flare": "XRPL AMM Pools & Flare FTSO",
++      "mobile": "Mobile App & PWA",
++      "learn-more": "Learn More",
++      "secure-storage": "Secure Crypto Storage Options",
++      "safety": "Safety & Disclaimers",
++    },
++  },
+ };
+diff --git a/client/src/i18n/pt.ts b/client/src/i18n/pt.ts
+index 83a8210..1fa8d42 100644
+--- a/client/src/i18n/pt.ts
++++ b/client/src/i18n/pt.ts
+@@ -72,6 +72,86 @@ export const pt = {
+   beta: "Beta \u2014 Acesso Antecipado \u00B7 Estamos construindo ativamente. Sua opiniao molda o produto.",
+   tagline: "Seja Seu Proprio Banco",
+   motto: "O Valor Flui Livre. Voce Controla o Fluxo.",
++
++  app: {
++    quickAccess: "Acesso rápido",
++    myTools: "Minhas ferramentas",
++    home: "Início",
++    portfolio: "Portfólio",
++    addWallet: "Adicionar carteira",
++    legacyPlan: "Plano Legacy",
++    send: "Enviar",
++    swap: "Trocar",
++    settings: "Configurações",
++    signOut: "Sair",
++    checkIn: "Ainda estou aqui",
++    checkingIn: "Confirmando...",
++    pinToMyTools: "Fixar em Minhas ferramentas",
++    unpinFromMyTools: "Desafixar de Minhas ferramentas",
++  },
++  dashboard: {
++    title: "Painel",
++    subtitle: "Suas criptos em um olhar",
++    getStarted: "Começar",
++    continueSetup: "Continuar configuração",
++    getStartedHint: "Adicione o que você já controla, prepare suas ferramentas de continuidade ou escolha uma ação para revisar e aprovar na sua própria carteira.",
++    addAWallet: "Adicionar uma carteira",
++    setUpLegacyPlan: "Configurar Plano Legacy",
++    send: "Enviar",
++    swapAnyPair: "Trocar qualquer par",
++    refresh: "Atualizar",
++    statement: "Extrato",
++    generating: "Gerando...",
++    addTransaction: "Adicionar transação",
++  },
++  legacy: {
++    title: "Plano Legacy",
++    subtitle: "Membro para a vida — Interruptor de homem morto",
++    memberForLife: "Membro para a vida",
++    planReadiness: "Prontidão do plano",
++    tabWallets: "Carteiras",
++    tabPeople: "Pessoas",
++    assignedToHeirs: "Atribuídas a herdeiros",
++    needReview: "Precisam de revisão",
++    notYetAssigned: "Ainda não atribuídas",
++    uniqueWalletRecords: "Registros únicos de carteiras",
++    survivorInstructions: "Instruções para sobreviventes",
++    survivorInstructionsHint: "Atribuído ≠ instruções escritas para sobreviventes.",
++    criticalAlertsHeading: "Precisa de atenção",
++    fix: "Corrigir",
++    checkInCardTitle: "Check-in",
++    checkInNow: "Plano Legacy: faça check-in agora",
++    checkInDueNow: "Plano Legacy: check-in devido agora",
++    checkInDueInDays: "Plano Legacy: check-in em {days} dias",
++    checkInDueInOneDay: "Plano Legacy: check-in em 1 dia",
++    needsAttention: "O Plano Legacy precisa de atenção",
++    allSet: "Plano Legacy: tudo certo",
++    subtitleGrace: "Você perdeu um check-in. Restam {days} dia(s) antes de notificar seus beneficiários.",
++    subtitleGraceExpiring: "Você perdeu um check-in. Expira em breve antes de notificar seus beneficiários.",
++    subtitleDue: "Confirme que está ativo para reiniciar o temporizador.",
++    subtitleAttention: "Revise os avisos de prontidão do seu Plano Legacy.",
++    subtitleNextDue: "Próximo check-in em {days} dias.",
++    subtitleNextDueOne: "Próximo check-in em 1 dia.",
++    subtitleDefault: "Toque para confirmar que está ativo e reiniciar o temporizador.",
++    manage: "Gerenciar",
++    reviewPlan: "Revisar plano",
++    checkedInToast: "Check-in feito!",
++    checkedInDesc: "O temporizador do seu Plano Legacy foi reiniciado.",
++    checkInFailed: "Falha no check-in",
++    error: "Erro",
++  },
++  billing: {
++    premiumFeature: "Recurso Premium",
++    proFeature: "Recurso Pro",
++    annualPlanFeature: "Recurso do plano anual",
++    addonAvailable: "Complemento disponível",
++    upgrade: "Fazer upgrade",
++    goAnnual: "Ir para anual",
++    getAddon: "Obter complemento",
++    upgradePremium: "Upgrade para Premium — $29/mês",
++    upgradePro: "Upgrade para Pro — $99/mês",
++    switchAnnual: "Mudar para anual — $199/ano",
++  },
+   faq: {
+     title: "Perguntas Frequentes",
+     subtitle: "Tudo o que voce precisa saber sobre o CryptoOwnBank: rastreamento de portfolio, ferramentas XRPL, pagamentos para consumidores e empresas, cofres RLUSD, otimizacao de rendimento e manter o controle do seu cripto.",
+diff --git a/client/src/i18n/tr.ts b/client/src/i18n/tr.ts
+index 524b7d9..0d91800 100644
+--- a/client/src/i18n/tr.ts
++++ b/client/src/i18n/tr.ts
+@@ -72,6 +72,86 @@ export const tr = {
+   beta: "Beta \u2014 Erken Erisim \u00B7 Aktif olarak gelistiriyoruz. Geri bildiriminiz urunu sekillendiriyor.",
+   tagline: "Kendi Bankan Ol",
+   motto: "Deger Ozgurce Akar. Akisi Sen Kontrol Edersin.",
++
++  app: {
++    quickAccess: "Hızlı erişim",
++    myTools: "Araçlarım",
++    home: "Ana sayfa",
++    portfolio: "Portföy",
++    addWallet: "Cüzdan ekle",
++    legacyPlan: "Legacy Planı",
++    send: "Gönder",
++    swap: "Takas",
++    settings: "Ayarlar",
++    signOut: "Çıkış yap",
++    checkIn: "Hâlâ buradayım",
++    checkingIn: "Kontrol ediliyor...",
++    pinToMyTools: "Araçlarıma sabitle",
++    unpinFromMyTools: "Araçlarımdan kaldır",
++  },
++  dashboard: {
++    title: "Kontrol paneli",
++    subtitle: "Kripto varlıklarınıza bir bakışta",
++    getStarted: "Başlayın",
++    continueSetup: "Kuruluma devam et",
++    getStartedHint: "Zaten kontrol ettiğinizi ekleyin, süreklilik araçlarınızı hazırlayın veya kendi cüzdanınızda inceleyip onaylayacağınız bir işlem seçin.",
++    addAWallet: "Cüzdan ekle",
++    setUpLegacyPlan: "Legacy Planını kur",
++    send: "Gönder",
++    swapAnyPair: "Herhangi bir çifti takas et",
++    refresh: "Yenile",
++    statement: "Ekstre",
++    generating: "Oluşturuluyor...",
++    addTransaction: "İşlem ekle",
++  },
++  legacy: {
++    title: "Legacy Planı",
++    subtitle: "Ömür boyu üye — Ölü adam anahtarı",
++    memberForLife: "Ömür boyu üye",
++    planReadiness: "Plan hazırlığı",
++    tabWallets: "Cüzdanlar",
++    tabPeople: "Kişiler",
++    assignedToHeirs: "Mirasçılara atanmış",
++    needReview: "İnceleme gerekli",
++    notYetAssigned: "Henüz atanmamış",
++    uniqueWalletRecords: "Benzersiz cüzdan kayıtları",
++    survivorInstructions: "Hayatta kalanlar için talimatlar",
++    survivorInstructionsHint: "Atanmış ≠ hayatta kalanlar için yazılmış talimatlar.",
++    criticalAlertsHeading: "Dikkat gerekli",
++    fix: "Düzelt",
++    checkInCardTitle: "Check-in",
++    checkInNow: "Legacy Planı: şimdi check-in yapın",
++    checkInDueNow: "Legacy Planı: check-in süresi doldu",
++    checkInDueInDays: "Legacy Planı: check-in {days} gün içinde",
++    checkInDueInOneDay: "Legacy Planı: check-in 1 gün içinde",
++    needsAttention: "Legacy Planı dikkat gerektiriyor",
++    allSet: "Legacy Planı: her şey hazır",
++    subtitleGrace: "Bir check-in’i kaçırdınız. Yararlanıcılarınıza bildirim yapılmadan önce {days} gün kaldı.",
++    subtitleGraceExpiring: "Bir check-in’i kaçırdınız. Yararlanıcılarınıza bildirim yapılmadan önce süresi yakında doluyor.",
++    subtitleDue: "Zamanlayıcıyı sıfırlamak için aktif olduğunuzu onaylayın.",
++    subtitleAttention: "Legacy Planı hazırlık uyarılarını gözden geçirin.",
++    subtitleNextDue: "Sonraki check-in {days} gün içinde.",
++    subtitleNextDueOne: "Sonraki check-in 1 gün içinde.",
++    subtitleDefault: "Aktif olduğunuzu onaylamak ve zamanlayıcıyı sıfırlamak için dokunun.",
++    manage: "Yönet",
++    reviewPlan: "Planı incele",
++    checkedInToast: "Check-in yapıldı!",
++    checkedInDesc: "Legacy Planı zamanlayıcınız sıfırlandı.",
++    checkInFailed: "Check-in başarısız",
++    error: "Hata",
++  },
++  billing: {
++    premiumFeature: "Premium özellik",
++    proFeature: "Pro özellik",
++    annualPlanFeature: "Yıllık plan özelliği",
++    addonAvailable: "Eklenti mevcut",
++    upgrade: "Yükselt",
++    goAnnual: "Yıllığa geç",
++    getAddon: "Eklenti al",
++    upgradePremium: "Premium’a yükselt — $29/ay",
++    upgradePro: "Pro’ya yükselt — $99/ay",
++    switchAnnual: "Yıllığa geç — $199/yıl",
++  },
+   faq: {
+     title: "Sikca Sorulan Sorular",
+     subtitle: "CryptoOwnBank hakkinda bilmeniz gereken her sey: portfoy takibi, XRPL araclari, bireyler ve isletmeler icin odemeler, RLUSD kasalari, getiri optimizasyonu ve kriptonuzun kontrolunu elinizde tutmak.",
+diff --git a/client/src/i18n/zh.ts b/client/src/i18n/zh.ts
+index 0e4c896..253ba6f 100644
+--- a/client/src/i18n/zh.ts
++++ b/client/src/i18n/zh.ts
+@@ -72,4 +72,115 @@ export const zh = {
+   beta: "Beta \u2014 \u65E9\u671F\u8BBF\u95EE \u00B7 \u6211\u4EEC\u6B63\u5728\u79EF\u6781\u5EFA\u8BBE\u3002\u60A8\u7684\u53CD\u9988\u5851\u9020\u4EA7\u54C1\u3002",
+   tagline: "\u505A\u81EA\u5DF1\u7684\u94F6\u884C",
+   motto: "\u4EF7\u503C\u81EA\u7531\u6D41\u52A8\u3002\u4F60\u62E5\u6709\u6D41\u52A8\u3002",
++
++  app: {
++    quickAccess: "快捷入口",
++    myTools: "我的工具",
++    home: "首页",
++    portfolio: "资产组合",
++    addWallet: "添加钱包",
++    legacyPlan: "Legacy 计划",
++    send: "发送",
++    swap: "兑换",
++    settings: "设置",
++    signOut: "退出登录",
++    checkIn: "我还在这里",
++    checkingIn: "正在签到...",
++    pinToMyTools: "固定到我的工具",
++    unpinFromMyTools: "从我的工具取消固定",
++  },
++  dashboard: {
++    title: "仪表盘",
++    subtitle: "一览您的加密资产",
++    getStarted: "开始",
++    continueSetup: "继续设置",
++    getStartedHint: "添加您已掌控的资产，准备连续性工具，或选择一项操作以便在您自己的钱包中审核并批准。",
++    addAWallet: "添加钱包",
++    setUpLegacyPlan: "设置 Legacy 计划",
++    send: "发送",
++    swapAnyPair: "兑换任意交易对",
++    refresh: "刷新",
++    statement: "账单",
++    generating: "生成中...",
++    addTransaction: "添加交易",
++  },
++  legacy: {
++    title: "Legacy 计划",
++    subtitle: "终身会员 — 死人开关",
++    memberForLife: "终身会员",
++    planReadiness: "计划就绪度",
++    tabWallets: "钱包",
++    tabPeople: "人员",
++    assignedToHeirs: "已分配给继承人",
++    needReview: "需要审核",
++    notYetAssigned: "尚未分配",
++    uniqueWalletRecords: "唯一钱包记录",
++    survivorInstructions: "留给幸存者的说明",
++    survivorInstructionsHint: "已分配 ≠ 已为幸存者写好说明。",
++    criticalAlertsHeading: "需要关注",
++    fix: "修复",
++    checkInCardTitle: "签到",
++    checkInNow: "Legacy 计划：立即签到",
++    checkInDueNow: "Legacy 计划：签到已到期",
++    checkInDueInDays: "Legacy 计划：{days} 天后需签到",
++    checkInDueInOneDay: "Legacy 计划：1 天后需签到",
++    needsAttention: "Legacy 计划需要关注",
++    allSet: "Legacy 计划：一切就绪",
++    subtitleGrace: "您错过了一次签到。距通知受益人还剩 {days} 天。",
++    subtitleGraceExpiring: "您错过了一次签到。即将到期，之后将通知受益人。",
++    subtitleDue: "确认您仍活跃以重置计时器。",
++    subtitleAttention: "请查看 Legacy 计划的就绪警告。",
++    subtitleNextDue: "下次签到还有 {days} 天。",
++    subtitleNextDueOne: "下次签到还有 1 天。",
++    subtitleDefault: "点按确认您仍活跃并重置计时器。",
++    manage: "管理",
++    reviewPlan: "查看计划",
++    checkedInToast: "已签到！",
++    checkedInDesc: "您的 Legacy 计划计时器已重置。",
++    checkInFailed: "签到失败",
++    error: "错误",
++  },
++  billing: {
++    premiumFeature: "高级功能",
++    proFeature: "专业版功能",
++    annualPlanFeature: "年付计划功能",
++    addonAvailable: "可用附加项",
++    upgrade: "升级",
++    goAnnual: "改为年付",
++    getAddon: "获取附加项",
++    upgradePremium: "升级至 Premium — $29/月",
++    upgradePro: "升级至 Pro — $99/月",
++    switchAnnual: "改为年付 — $199/年",
++  },
++  faq: {
++    title: "Frequently Asked Questions",
++    subtitle: "Everything you need to know about CryptoOwnBank \u2014 portfolio tracking, XRPL tools, payments for consumers and businesses, RLUSD vaults, yield optimization, and keeping control of your crypto.",
++    searchPlaceholder: "Search FAQ \u2014 try 'trustline', 'Xaman', 'cold wallet', 'staking'...",
++    noResults: "No results for",
++    noResultsHint: "try different keywords",
++    resultOne: "result for",
++    resultMany: "results for",
++    englishNotice: "Detailed answers are currently shown in English. Translation is in progress.",
++    groups: {
++      "about": "About CryptoOwnBank",
++      "wallet-security": "Wallet & Security Basics",
++      "exchange-risks": "Exchange Risks & Exit Strategies",
++      "yield-vaults": "Yield Vaults (Soil, Doppler & Blend)",
++      "stablecoins": "Stablecoins & Real-World Assets",
++      "exchange-imports": "Importing Exchange Data",
++      "statements": "Statement Uploads",
++      "getting-started": "Getting Started & Transfers",
++      "pricing": "Pricing & Plans",
++      "recommendations": "Recommendations & Yield Optimization",
++      "tax": "Tax Reporting & Filing",
++      "xrpl-tools": "XRPL Tools",
++      "token-research": "Token Research",
++      "payments": "Payments & Business",
++      "amm-flare": "XRPL AMM Pools & Flare FTSO",
++      "mobile": "Mobile App & PWA",
++      "learn-more": "Learn More",
++      "secure-storage": "Secure Crypto Storage Options",
++      "safety": "Safety & Disclaimers",
++    },
++  },
+ };
+diff --git a/client/src/pages/dashboard.tsx b/client/src/pages/dashboard.tsx
+index d00ee24..edc4ec5 100644
+--- a/client/src/pages/dashboard.tsx
++++ b/client/src/pages/dashboard.tsx
+@@ -33,6 +33,7 @@ import {
+   Send,
+ } from "lucide-react";
+ import { Link } from "wouter";
++import { useTranslations } from "@/i18n";
+ import type { Transaction } from "@shared/schema";
+ 
+ interface DashboardData {
+@@ -49,6 +50,7 @@ interface DashboardData {
+ }
+ 
+ export default function Dashboard() {
++  const t = useTranslations();
+   const { data, isLoading, refetch, isFetching } = useQuery<DashboardData>({
+     queryKey: ["/api/dashboard"],
+   });
+@@ -191,9 +193,9 @@ export default function Dashboard() {
+       <WelcomeModal hasData={hasData} dataReady={!walletsLoading && !portfolioLoading} />
+       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+         <div>
+-          <h1 className="text-2xl font-bold">Dashboard</h1>
++          <h1 className="text-2xl font-bold">{t.dashboard.title}</h1>
+           <p className="text-muted-foreground">
+-            Your crypto holdings at a glance
++            {t.dashboard.subtitle}
+           </p>
+         </div>
+         <div className="flex gap-2">
+@@ -206,7 +208,7 @@ export default function Dashboard() {
+               data-testid="button-download-statement-dashboard"
+             >
+               <FileText className={`h-4 w-4 mr-2 ${downloadingStatement ? "animate-pulse" : ""}`} />
+-              {downloadingStatement ? "Generating..." : "Statement"}
++              {downloadingStatement ? t.dashboard.generating : t.dashboard.statement}
+             </Button>
+           )}
+           <Button
+@@ -217,12 +219,12 @@ export default function Dashboard() {
+             data-testid="button-refresh-dashboard"
+           >
+             <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+-            Refresh
++            {t.dashboard.refresh}
+           </Button>
+           <Link href="/transactions">
+             <Button size="sm" data-testid="button-add-transaction">
+               <Plus className="h-4 w-4 mr-2" />
+-              Add Transaction
++              {t.dashboard.addTransaction}
+             </Button>
+           </Link>
+         </div>
+@@ -231,34 +233,34 @@ export default function Dashboard() {
+       <Card className="border-[#00A4E4]/25 bg-[#00A4E4]/5" data-testid="card-member-get-started">
+         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+           <div className="min-w-0">
+-            <p className="text-sm font-semibold">{hasData ? "Continue setup" : "Get started"}</p>
++            <p className="text-sm font-semibold">{hasData ? t.dashboard.continueSetup : t.dashboard.getStarted}</p>
+             <p className="text-xs text-muted-foreground">
+-              Add what you already control, prepare your continuity tools, or choose an action to review and approve in your own wallet.
++              {t.dashboard.getStartedHint}
+             </p>
+           </div>
+           <div className="flex shrink-0 flex-wrap gap-2">
+             <Link href="/wallets">
+               <Button variant="outline" size="sm" data-testid="button-setup-add-wallet">
+                 <Wallet className="mr-1.5 h-4 w-4" />
+-                Add a wallet
++                {t.dashboard.addAWallet}
+               </Button>
+             </Link>
+             <Link href="/legacy-plan">
+               <Button variant="outline" size="sm" data-testid="button-setup-legacy-plan">
+                 <HeartHandshake className="mr-1.5 h-4 w-4" />
+-                Set up Legacy Plan
++                {t.dashboard.setUpLegacyPlan}
+               </Button>
+             </Link>
+             <Link href="/ownbank/send">
+               <Button variant="outline" size="sm" data-testid="button-setup-send">
+                 <Send className="mr-1.5 h-4 w-4" />
+-                Send
++                {t.dashboard.send}
+               </Button>
+             </Link>
+             <Link href="/swap-any-pair">
+               <Button variant="outline" size="sm" data-testid="button-setup-swap">
+                 <Repeat className="mr-1.5 h-4 w-4" />
+-                Swap Any Pair
++                {t.dashboard.swapAnyPair}
+               </Button>
+             </Link>
+           </div>
+diff --git a/client/src/pages/legacy-plan.tsx b/client/src/pages/legacy-plan.tsx
+index 55dca3c..09c097d 100644
+--- a/client/src/pages/legacy-plan.tsx
++++ b/client/src/pages/legacy-plan.tsx
+@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
+ import { queryClient, apiRequest } from "@/lib/queryClient";
+ import { useToast } from "@/hooks/use-toast";
+ import { LegacyReadinessPanel } from "@/components/legacy-readiness-panel";
++import { LegacyCriticalAlerts } from "@/components/legacy-critical-alerts";
+ import { LegacyPlanSummary } from "@/components/legacy-plan-summary";
+ import { LegacyPeopleView } from "@/components/legacy-people-view";
+ import { LegacyWalletsView } from "@/components/legacy-wallets-view";
+@@ -22,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
+ import { Switch } from "@/components/ui/switch";
+ import { Checkbox } from "@/components/ui/checkbox";
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { useTranslations } from "@/i18n";
+ import { legacyTiers } from "@/lib/pricing-data";
+ import { LegacyCheckout } from "@/components/legacy-checkout";
+ import {
+@@ -2416,6 +2418,7 @@ function SplitDeliverySection({ plan, beneficiaries }: { plan: LegacyPlanData["p
+ 
+ export default function LegacyPlanPage() {
+   const { toast } = useToast();
++  const t = useTranslations();
+   const [editingSettings, setEditingSettings] = useState(false);
+   const [editFrequency, setEditFrequency] = useState("");
+   const [editGraceDays, setEditGraceDays] = useState("");
+@@ -2491,15 +2494,17 @@ export default function LegacyPlanPage() {
+             <HeartHandshake className="h-5 w-5 text-white" />
+           </div>
+           <div>
+-            <h1 className="text-2xl font-bold" data-testid="text-legacy-title">Legacy Plan</h1>
+-            <p className="text-sm text-muted-foreground">Member for Life — Dead-Man Switch</p>
++            <h1 className="text-2xl font-bold" data-testid="text-legacy-title">{t.legacy.title}</h1>
++            <p className="text-sm text-muted-foreground">{t.legacy.subtitle}</p>
+           </div>
+         </div>
+-        <Badge className="bg-amber-500 text-white" data-testid="badge-member-for-life">Member for Life</Badge>
++        <Badge className="bg-amber-500 text-white" data-testid="badge-member-for-life">{t.legacy.memberForLife}</Badge>
+       </div>
+ 
+       <StatusBanner plan={plan} />
+ 
++      <LegacyCriticalAlerts />
++
+       <LegacyReadinessPanel />
+ 
+       <LegacyPlanSummary />
+@@ -2507,7 +2512,7 @@ export default function LegacyPlanPage() {
+       <div className="grid gap-4 md:grid-cols-2">
+         <Card>
+           <CardHeader className="pb-3">
+-            <CardTitle className="text-lg flex items-center gap-2"><RefreshCw className="h-4 w-4" /> Check In</CardTitle>
++            <CardTitle className="text-lg flex items-center gap-2"><RefreshCw className="h-4 w-4" /> {t.legacy.checkInCardTitle}</CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-3">
+             <p className="text-sm text-muted-foreground">
+@@ -2521,7 +2526,7 @@ export default function LegacyPlanPage() {
+               data-testid="button-check-in"
+             >
+               <CheckCircle2 className="h-5 w-5 mr-2" />
+-              {checkIn.isPending ? "Checking in..." : "I'm Still Here"}
++              {checkIn.isPending ? t.app.checkingIn : t.app.checkIn}
+             </Button>
+             {checkIns.length > 0 && (
+               <div className="pt-2">
+@@ -2650,8 +2655,8 @@ export default function LegacyPlanPage() {
+           </div>
+           <Tabs value={planView} onValueChange={(v) => { setPlanView(v as "wallets" | "people"); try { localStorage.setItem("legacy-plan-view", v); } catch {} }} className="mt-3">
+             <TabsList>
+-              <TabsTrigger value="wallets" data-testid="tab-view-wallets">Wallets</TabsTrigger>
+-              <TabsTrigger value="people" data-testid="tab-view-people">People ({new Set(beneficiaries.map(b => (b.email || "").toLowerCase()).filter(Boolean)).size})</TabsTrigger>
++              <TabsTrigger value="wallets" data-testid="tab-view-wallets">{t.legacy.tabWallets}</TabsTrigger>
++              <TabsTrigger value="people" data-testid="tab-view-people">{t.legacy.tabPeople} ({new Set(beneficiaries.map(b => (b.email || "").toLowerCase()).filter(Boolean)).size})</TabsTrigger>
+             </TabsList>
+           </Tabs>
+         </CardHeader>

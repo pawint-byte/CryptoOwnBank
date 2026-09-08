@@ -87,6 +87,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useTranslations } from "@/i18n";
 
 type NavItem = {
   title: string;
@@ -311,6 +313,7 @@ function NavItemRow({
   onToggleFav: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const t = useTranslations();
   const Icon = item.icon;
   const chainColor = item.chain ? CHAIN_COLORS[item.chain] : item.color;
 
@@ -352,7 +355,7 @@ function NavItemRow({
             }}
             className="absolute right-1 p-1 rounded hover:bg-accent transition-colors z-10"
             data-testid={`fav-toggle-${item.url.replace(/\//g, "-")}`}
-            title={isFavorite ? "Unpin from My Tools" : "Pin to My Tools"}
+            title={isFavorite ? t.app.unpinFromMyTools : t.app.pinToMyTools}
           >
             {isFavorite ? (
               <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
@@ -397,6 +400,7 @@ function ChainSwitcher({ chain, setChain }: { chain: "all" | "xrpl" | "stellar";
 export function AppSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const t = useTranslations();
   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
     enabled: !!user,
@@ -502,8 +506,8 @@ export function AppSidebar() {
           <img src="/logo.png" alt="CryptoOwnBank" className="h-9 w-9 rounded-md" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">CryptoOwnBank</span>
-            <span className="text-[10px] text-muted-foreground">Be Your Own Bank</span>
-            <span className="text-[9px] italic text-muted-foreground/70">Value Flows Free. You Own the Flow.</span>
+            <span className="text-[10px] text-muted-foreground">{t.tagline}</span>
+            <span className="text-[9px] italic text-muted-foreground/70">{t.motto}</span>
           </div>
         </div>
       </SidebarHeader>
@@ -512,12 +516,22 @@ export function AppSidebar() {
           <SidebarGroupLabel>
             <span className="flex items-center gap-2">
               <Rocket className="h-3 w-3 text-[#00A4E4]" />
-              Quick access
+              {t.app.quickAccess}
             </span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {memberShortcuts.map((item) => renderItem(item, "quick-access", false))}
+              {memberShortcuts.map((item) => {
+                const labels: Record<string, string> = {
+                  "/": t.app.home,
+                  "/portfolio": t.app.portfolio,
+                  "/wallets": t.app.addWallet,
+                  "/legacy-plan": t.app.legacyPlan,
+                  "/ownbank/send": t.app.send,
+                  "/swap-any-pair": t.app.swap,
+                };
+                return renderItem({ ...item, title: labels[item.url] || item.title }, "quick-access", false);
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -527,7 +541,7 @@ export function AppSidebar() {
             <SidebarGroupLabel>
               <span className="flex items-center gap-2">
                 <Pin className="h-3 w-3 text-amber-500" />
-                My Tools
+                {t.app.myTools}
               </span>
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -693,7 +707,7 @@ export function AppSidebar() {
                 >
                   <Link href="/settings">
                     <Settings className="h-4 w-4" />
-                    <span>Settings</span>
+                    <span>{t.app.settings}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -703,12 +717,12 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.profileImageUrl || undefined} />
               <AvatarFallback className="text-xs">{getInitials()}</AvatarFallback>
             </Avatar>
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className="text-sm font-medium truncate max-w-[120px]">
                 {user?.firstName || user?.email?.split("@")[0] || "User"}
               </span>
@@ -717,14 +731,19 @@ export function AppSidebar() {
               </span>
             </div>
           </div>
-          <SidebarMenuButton
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => logout()}
-            data-testid="button-logout"
-          >
-            <LogOut className="h-4 w-4" />
-          </SidebarMenuButton>
+          <div className="flex items-center gap-1 shrink-0">
+            <LanguageSwitcher />
+            <SidebarMenuButton
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => logout()}
+              data-testid="button-logout"
+              title={t.app.signOut}
+              aria-label={t.app.signOut}
+            >
+              <LogOut className="h-4 w-4" />
+            </SidebarMenuButton>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

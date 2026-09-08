@@ -9,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, Users, AlertCircle, CheckCircle2, Pencil, Plus, Trash2, Share2, KeyRound, ChevronDown, HardDrive } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslations } from "@/i18n";
 
 type Beneficiary = {
   id: string;
@@ -123,6 +125,7 @@ interface Props {
 
 export function LegacyWalletsView({ beneficiaries }: Props) {
   const { toast } = useToast();
+  const t = useTranslations();
   const [editing, setEditing] = useState<WalletAssignment | null>(null);
   const [creating, setCreating] = useState<WalletAsset | "blank" | null>(null);
 
@@ -132,6 +135,13 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
 
   const { data: walletAssets = [] } = useQuery<WalletAsset[]>({
     queryKey: ["/api/legacy-plan/wallet-assets"],
+  });
+
+  const { data: readiness, isLoading: readinessLoading } = useQuery<{
+    coveredWallets: number;
+    totalWallets: number;
+  }>({
+    queryKey: ["/api/legacy-plan/readiness"],
   });
 
   const assignedWalletIds = useMemo(() => new Set(assignments.map(a => a.walletId).filter(Boolean) as string[]), [assignments]);
@@ -201,19 +211,35 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-green">
           <div className="text-2xl font-bold text-green-600">{greenCount}</div>
-          <div className="text-xs text-muted-foreground">Wallets covered</div>
+          <div className="text-xs text-muted-foreground">{t.legacy.assignedToHeirs}</div>
         </div>
         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-review">
           <div className="text-2xl font-bold text-amber-600">{totalAssigned - totalReviewed}</div>
-          <div className="text-xs text-muted-foreground">Need review</div>
+          <div className="text-xs text-muted-foreground">{t.legacy.needReview}</div>
         </div>
         <div className="rounded-lg border p-3 text-center" data-testid="stat-wallets-unassigned">
           <div className="text-2xl font-bold text-red-600">{uniqueUnassignedIdentities}</div>
-          <div className="text-xs text-muted-foreground">Not yet assigned</div>
+          <div className="text-xs text-muted-foreground">{t.legacy.notYetAssigned}</div>
         </div>
         <div className="rounded-lg border p-3 text-center">
           <div className="text-2xl font-bold">{uniqueWalletIdentities}</div>
-          <div className="text-xs text-muted-foreground">Unique wallet records</div>
+          <div className="text-xs text-muted-foreground">{t.legacy.uniqueWalletRecords}</div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border px-3 py-2" data-testid="stat-survivor-instructions">
+        <div className="text-sm font-medium">
+          {t.legacy.survivorInstructions}:{" "}
+          {readinessLoading || !readiness ? (
+            <Skeleton className="inline-block h-4 w-16 align-middle" />
+          ) : (
+            <span data-testid="text-survivor-instructions-count">
+              {readiness.coveredWallets}/{readiness.totalWallets}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {t.legacy.survivorInstructionsHint}
         </div>
       </div>
 
@@ -231,7 +257,7 @@ export function LegacyWalletsView({ beneficiaries }: Props) {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>{unassignedWallets.length} wallet(s) in your portfolio are not yet covered by your Legacy Plan.</strong> Click any of them below to assign beneficiaries.
+            <strong>{unassignedWallets.length} wallet(s) in your portfolio are not yet assigned.</strong> Click any of them below to assign beneficiaries.
           </AlertDescription>
         </Alert>
       )}

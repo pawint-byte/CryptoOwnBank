@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, AlertTriangle, Lightbulb, ShieldAlert, X, ArrowRight } from "lucide-react";
+import { useTranslations } from "@/i18n";
 import { Link } from "wouter";
 
 type Severity = "critical" | "warning" | "tip";
@@ -50,6 +51,7 @@ function scoreLabel(score: number) {
 }
 
 export function LegacyReadinessPanel() {
+  const t = useTranslations();
   const { data, isLoading } = useQuery<Readiness>({
     queryKey: ["/api/legacy-plan/readiness"],
     refetchInterval: 60000,
@@ -63,7 +65,7 @@ export function LegacyReadinessPanel() {
   if (isLoading || !data) {
     return (
       <Card data-testid="card-readiness-loading">
-        <CardHeader><CardTitle>Plan Readiness</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t.legacy.planReadiness}</CardTitle></CardHeader>
         <CardContent><Skeleton className="h-32 w-full" /></CardContent>
       </Card>
     );
@@ -84,7 +86,7 @@ export function LegacyReadinessPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5" />
-              Plan Readiness
+              {t.legacy.planReadiness}
             </CardTitle>
             <CardDescription>One score that tells you if your plan will actually work when it has to.</CardDescription>
           </div>

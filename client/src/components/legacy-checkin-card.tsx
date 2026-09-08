@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, AlertTriangle, ShieldCheck, ChevronRight } from "lucide-react";
+import { useTranslations } from "@/i18n";
 
 type LegacyCheckInData = {
   plan: {
@@ -19,9 +20,18 @@ const DAY_MS = 1000 * 60 * 60 * 24;
 
 export function LegacyCheckInCard() {
   const { toast } = useToast();
+  const t = useTranslations();
 
   const { data } = useQuery<LegacyCheckInData>({
     queryKey: ["/api/legacy-plan"],
+    retry: false,
+  });
+
+  const { data: readiness } = useQuery<{
+    score: number;
+    checks: Array<{ severity: string }>;
+  }>({
+    queryKey: ["/api/legacy-plan/readiness"],
     retry: false,
   });
 
@@ -30,9 +40,9 @@ export function LegacyCheckInCard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/legacy-plan"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Checked in!", description: "Your Legacy Plan timer has been reset." });
+      toast({ title: t.legacy.checkedInToast, description: t.legacy.checkedInDesc });
     },
-    onError: () => toast({ title: "Error", description: "Check-in failed", variant: "destructive" }),
+    onError: () => toast({ title: t.legacy.error, description: t.legacy.checkInFailed, variant: "destructive" }),
   });
 
   const plan = data?.plan;
@@ -53,40 +63,55 @@ export function LegacyCheckInCard() {
     graceDaysLeft = Math.ceil((graceEnd.getTime() - now.getTime()) / DAY_MS);
   }
 
+  const readinessNeedsAttention = !!readiness && (
+    readiness.score < 85 ||
+    readiness.checks.some((c) => c.severity === "critical" || c.severity === "warning")
+  );
+  const showAttention = !isDue && !isSoon && readinessNeedsAttention;
+
   const tone = isDue
     ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
-    : isSoon
+    : isSoon || showAttention
       ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
       : "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800";
 
-  const Icon = isDue ? AlertTriangle : isSoon ? AlertTriangle : ShieldCheck;
-  const iconTone = isDue ? "text-red-500" : isSoon ? "text-amber-500" : "text-green-600";
+  const Icon = isDue || isSoon || showAttention ? AlertTriangle : ShieldCheck;
+  const iconTone = isDue ? "text-red-500" : isSoon || showAttention ? "text-amber-500" : "text-green-600";
   const titleTone = isDue
     ? "text-red-800 dark:text-red-200"
-    : isSoon
+    : isSoon || showAttention
       ? "text-amber-800 dark:text-amber-200"
       : "text-green-800 dark:text-green-200";
   const subTone = isDue
     ? "text-red-700 dark:text-red-300"
-    : isSoon
+    : isSoon || showAttention
       ? "text-amber-700 dark:text-amber-300"
       : "text-green-700 dark:text-green-300";
 
   const title = isGrace
-    ? "Legacy Plan: check in now"
+    ? t.legacy.checkInNow
     : isDue
-      ? "Legacy Plan: check-in due now"
+      ? t.legacy.checkInDueNow
       : isSoon
-        ? `Legacy Plan: check-in due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}`
-        : "Legacy Plan: you're all set";
+        ? (daysUntilDue === 1
+            ? t.legacy.checkInDueInOneDay
+            : t.legacy.checkInDueInDays.replace("{days}", String(daysUntilDue)))
+        : showAttention
+          ? t.legacy.needsAttention
+          : t.legacy.allSet;
 
   const subtitle = isGrace
-    ? `You missed a check-in. ${graceDaysLeft !== null && graceDaysLeft > 0 ? `${graceDaysLeft} day${graceDaysLeft !== 1 ? "s" : ""} left` : "Expiring soon"} before your beneficiaries are notified.`
+    ? (graceDaysLeft !== null && graceDaysLeft > 0
+        ? t.legacy.subtitleGrace.replace("{days}", String(graceDaysLeft))
+        : t.legacy.subtitleGraceExpiring)
     : isDue
-      ? "Confirm you're active to reset your timer."
-      : daysUntilDue !== null
-        ? `Next check-in due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}.${plan.lastCheckIn ? ` Last: ${new Date(plan.lastCheckIn).toLocaleDateString()}.` : ""}`
-        : "Tap to confirm you're active and reset your timer.";
+      ? t.legacy.subtitleDue
+      : showAttention
+        ? t.legacy.subtitleAttention
+        : daysUntilDue !== null
+          ? ((daysUntilDue === 1 ? t.legacy.subtitleNextDueOne : t.legacy.subtitleNextDue.replace("{days}", String(daysUntilDue)))
+              + (plan.lastCheckIn ? ` ${new Date(plan.lastCheckIn).toLocaleDateString()}.` : ""))
+          : t.legacy.subtitleDefault;
 
   const btnTone = isDue
     ? "bg-red-600 hover:bg-red-700 text-white"
@@ -115,11 +140,11 @@ export function LegacyCheckInCard() {
           data-testid="button-dashboard-checkin"
         >
           <CheckCircle2 className="h-4 w-4 mr-1.5" />
-          {checkIn.isPending ? "Checking in..." : "I'm Still Here"}
+          {checkIn.isPending ? t.app.checkingIn : t.app.checkIn}
         </Button>
         <Link href="/legacy-plan">
           <Button variant="ghost" size="sm" data-testid="link-manage-legacy-plan">
-            Manage
+            {showAttention ? t.legacy.reviewPlan : t.legacy.manage}
             <ChevronRight className="h-4 w-4 ml-0.5" />
           </Button>
         </Link>

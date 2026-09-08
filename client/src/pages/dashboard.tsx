@@ -33,6 +33,7 @@ import {
   Send,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useTranslations } from "@/i18n";
 import type { Transaction } from "@shared/schema";
 
 interface DashboardData {
@@ -49,6 +50,7 @@ interface DashboardData {
 }
 
 export default function Dashboard() {
+  const t = useTranslations();
   const { data, isLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
   });
@@ -191,9 +193,9 @@ export default function Dashboard() {
       <WelcomeModal hasData={hasData} dataReady={!walletsLoading && !portfolioLoading} />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">{t.dashboard.title}</h1>
           <p className="text-muted-foreground">
-            Your crypto holdings at a glance
+            {t.dashboard.subtitle}
           </p>
         </div>
         <div className="flex gap-2">
@@ -206,7 +208,7 @@ export default function Dashboard() {
               data-testid="button-download-statement-dashboard"
             >
               <FileText className={`h-4 w-4 mr-2 ${downloadingStatement ? "animate-pulse" : ""}`} />
-              {downloadingStatement ? "Generating..." : "Statement"}
+              {downloadingStatement ? t.dashboard.generating : t.dashboard.statement}
             </Button>
           )}
           <Button
@@ -217,12 +219,12 @@ export default function Dashboard() {
             data-testid="button-refresh-dashboard"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
-            Refresh
+            {t.dashboard.refresh}
           </Button>
           <Link href="/transactions">
             <Button size="sm" data-testid="button-add-transaction">
               <Plus className="h-4 w-4 mr-2" />
-              Add Transaction
+              {t.dashboard.addTransaction}
             </Button>
           </Link>
         </div>
@@ -231,34 +233,34 @@ export default function Dashboard() {
       <Card className="border-[#00A4E4]/25 bg-[#00A4E4]/5" data-testid="card-member-get-started">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold">{hasData ? "Continue setup" : "Get started"}</p>
+            <p className="text-sm font-semibold">{hasData ? t.dashboard.continueSetup : t.dashboard.getStarted}</p>
             <p className="text-xs text-muted-foreground">
-              Add what you already control, prepare your continuity tools, or choose an action to review and approve in your own wallet.
+              {t.dashboard.getStartedHint}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <Link href="/wallets">
               <Button variant="outline" size="sm" data-testid="button-setup-add-wallet">
                 <Wallet className="mr-1.5 h-4 w-4" />
-                Add a wallet
+                {t.dashboard.addAWallet}
               </Button>
             </Link>
             <Link href="/legacy-plan">
               <Button variant="outline" size="sm" data-testid="button-setup-legacy-plan">
                 <HeartHandshake className="mr-1.5 h-4 w-4" />
-                Set up Legacy Plan
+                {t.dashboard.setUpLegacyPlan}
               </Button>
             </Link>
             <Link href="/ownbank/send">
               <Button variant="outline" size="sm" data-testid="button-setup-send">
                 <Send className="mr-1.5 h-4 w-4" />
-                Send
+                {t.dashboard.send}
               </Button>
             </Link>
             <Link href="/swap-any-pair">
               <Button variant="outline" size="sm" data-testid="button-setup-swap">
                 <Repeat className="mr-1.5 h-4 w-4" />
-                Swap Any Pair
+                {t.dashboard.swapAnyPair}
               </Button>
             </Link>
           </div>

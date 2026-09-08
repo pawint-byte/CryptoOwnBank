@@ -2,6 +2,7 @@ import { Lock, Crown, Check, CalendarClock, Building2, Plus } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { useTranslations } from "@/i18n";
 
 interface UpgradePromptProps {
   feature: string;
@@ -50,14 +51,15 @@ const ADDON_BENEFITS = [
 ];
 
 export function UpgradePrompt({ feature, compact = false, variant = "premium", addonName }: UpgradePromptProps) {
+  const t = useTranslations();
   const isAnnual = variant === "annual";
   const isPro = variant === "pro";
   const isAddon = variant === "addon";
   const benefits = isAddon ? ADDON_BENEFITS : isPro ? PRO_BENEFITS : isAnnual ? ANNUAL_BENEFITS : PREMIUM_BENEFITS;
-  const title = isAddon ? "Add-On Available" : isPro ? "Pro Feature" : isAnnual ? "Annual Plan Feature" : "Premium Feature";
+  const title = isAddon ? t.billing.addonAvailable : isPro ? t.billing.proFeature : isAnnual ? t.billing.annualPlanFeature : t.billing.premiumFeature;
   const buttonText = isAddon
-    ? `Get ${addonName || "Add-On"}`
-    : isPro ? "Upgrade to Pro — $99/mo" : isAnnual ? "Switch to Annual — $199/yr" : "Upgrade to Premium — $29/mo";
+    ? (addonName ? `${t.billing.getAddon}: ${addonName}` : t.billing.getAddon)
+    : isPro ? t.billing.upgradePro : isAnnual ? t.billing.switchAnnual : t.billing.upgradePremium;
   const Icon = isAddon ? Plus : isPro ? Building2 : isAnnual ? CalendarClock : Lock;
   const borderColor = isAddon ? "border-blue-200 dark:border-blue-800" : "border-amber-200 dark:border-amber-800";
   const bgColor = isAddon ? "bg-blue-50 dark:bg-blue-950/20" : "bg-amber-50 dark:bg-amber-950/20";
@@ -75,7 +77,7 @@ export function UpgradePrompt({ feature, compact = false, variant = "premium", a
         <Button size="sm" asChild data-testid="button-upgrade">
           <Link href="/settings">
             {isAddon ? <Plus className="h-3.5 w-3.5 mr-1.5" /> : <Crown className="h-3.5 w-3.5 mr-1.5" />}
-            {isAddon ? "Get Add-On" : isAnnual ? "Go Annual" : "Upgrade"}
+            {isAddon ? t.billing.getAddon : isAnnual ? t.billing.goAnnual : t.billing.upgrade}
           </Link>
         </Button>
       </div>
