@@ -17,6 +17,8 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [heardVia, setHeardVia] = useState("");
+  const [heardViaDetail, setHeardViaDetail] = useState("");
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -39,6 +41,8 @@ export default function Signup() {
           utmSource: localStorage.getItem("utm_source") || undefined,
           utmMedium: localStorage.getItem("utm_medium") || undefined,
           utmCampaign: localStorage.getItem("utm_campaign") || undefined,
+          heardVia: heardVia || undefined,
+          heardViaDetail: heardVia === "other" ? heardViaDetail.trim() || undefined : undefined,
           referralCode: referredBy || undefined,
         }),
       });
@@ -259,6 +263,47 @@ export default function Signup() {
                   <p className="text-xs text-destructive" data-testid="error-confirm-password">
                     {fieldErrors.confirmPassword || "Passwords do not match"}
                   </p>
+                )}
+              </div>
+
+
+              <div className="space-y-2" data-testid="section-heard-via">
+                <Label>
+                  How did you hear about us? <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: "tiktok", label: "TikTok" },
+                    { id: "x", label: "X" },
+                    { id: "reddit", label: "Reddit" },
+                    { id: "youtube", label: "YouTube" },
+                    { id: "friend", label: "Friend" },
+                    { id: "search", label: "Search" },
+                    { id: "other", label: "Other" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setHeardVia((prev) => (prev === opt.id ? "" : opt.id))}
+                      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                        heardVia === opt.id
+                          ? "bg-[#00A4E4] text-white border-[#00A4E4]"
+                          : "bg-background text-muted-foreground border-border hover:border-[#00A4E4]/50"
+                      }`}
+                      data-testid={`button-heard-via-${opt.id}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {heardVia === "other" && (
+                  <Input
+                    placeholder="Tell us more (optional)"
+                    value={heardViaDetail}
+                    onChange={(e) => setHeardViaDetail(e.target.value)}
+                    maxLength={200}
+                    data-testid="input-heard-via-detail"
+                  />
                 )}
               </div>
 

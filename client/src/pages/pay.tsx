@@ -153,13 +153,18 @@ export default function PayPage() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-8 pb-8 text-center space-y-4">
             <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
-            <h2 className="text-xl font-bold" data-testid="text-pay-error">Invalid Payment Link</h2>
+            <h2 className="text-xl font-bold" data-testid="text-pay-error">Payment link incomplete</h2>
             <p className="text-sm text-muted-foreground">
-              This payment link is missing a destination address. Please check the link and try again.
+              This URL is missing a destination wallet (`?to=`). Open a payment link from My Card, an invoice, or a QR your merchant shared — bare <code className="text-xs">/pay</code> is not a checkout page by itself.
             </p>
-            <a href="/" className="inline-block">
-              <Button variant="outline" data-testid="link-pay-home">Go to CryptoOwnBank</Button>
-            </a>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <a href="/my-card" className="inline-block">
+                <Button data-testid="link-pay-my-card">Create a pay link (My Card)</Button>
+              </a>
+              <a href="/" className="inline-block">
+                <Button variant="outline" data-testid="link-pay-home">Go to CryptoOwnBank</Button>
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -59,7 +59,7 @@ export function registerAuthRoutes(app: Express): void {
 
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, firstName, lastName, utmSource, utmMedium, utmCampaign, referralCode } = req.body;
+      const { email, password, firstName, lastName, utmSource, utmMedium, utmCampaign, heardVia, heardViaDetail, referralCode } = req.body;
 
       if (!email || !password || !firstName) {
         return res.status(400).json({ message: "Email, password, and first name are required" });
@@ -103,6 +103,8 @@ export function registerAuthRoutes(app: Express): void {
           utmSource: utmSource || null,
           utmMedium: utmMedium || null,
           utmCampaign: utmCampaign || null,
+          heardVia: (typeof heardVia === "string" && ["tiktok","x","reddit","youtube","friend","search","other"].includes(heardVia.toLowerCase()) ? heardVia.toLowerCase() : null),
+          heardViaDetail: (typeof heardVia === "string" && heardVia.toLowerCase() === "other" && typeof heardViaDetail === "string" ? heardViaDetail.trim().slice(0, 200) || null : null),
         })
         .returning();
 
@@ -393,6 +395,8 @@ export function registerAuthRoutes(app: Express): void {
           utmSource: users.utmSource,
           utmMedium: users.utmMedium,
           utmCampaign: users.utmCampaign,
+          heardVia: users.heardVia,
+          heardViaDetail: users.heardViaDetail,
         })
         .from(users);
 
@@ -468,6 +472,8 @@ export function registerAuthRoutes(app: Express): void {
             utmSource: u.utmSource || null,
             utmMedium: u.utmMedium || null,
             utmCampaign: u.utmCampaign || null,
+            heardVia: u.heardVia || null,
+            heardViaDetail: u.heardViaDetail || null,
           };
         });
 
@@ -475,6 +481,12 @@ export function registerAuthRoutes(app: Express): void {
       for (const u of allUsers) {
         const src = u.utmSource || "direct";
         utmSources[src] = (utmSources[src] || 0) + 1;
+      }
+
+      const heardViaSources: Record<string, number> = {};
+      for (const u of allUsers) {
+        const hv = (u as any).heardVia || "unspecified";
+        heardViaSources[hv] = (heardViaSources[hv] || 0) + 1;
       }
 
       let revenue = {
@@ -567,6 +579,7 @@ export function registerAuthRoutes(app: Express): void {
         revenue,
         signupTrend,
         utmSources,
+        heardViaSources,
         users: userList,
       });
     } catch (error) {

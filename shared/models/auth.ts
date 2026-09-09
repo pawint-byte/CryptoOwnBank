@@ -34,6 +34,10 @@ export const users = pgTable("users", {
   utmSource: varchar("utm_source"),
   utmMedium: varchar("utm_medium"),
   utmCampaign: varchar("utm_campaign"),
+  /** Self-reported signup channel: tiktok|x|reddit|youtube|friend|search|other */
+  heardVia: varchar("heard_via", { length: 40 }),
+  /** Free text when heardVia === "other" */
+  heardViaDetail: varchar("heard_via_detail", { length: 200 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

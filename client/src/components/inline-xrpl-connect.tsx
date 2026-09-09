@@ -3,15 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useXrplStore } from "@/lib/xrpl-store";
-import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn } from "@/lib/xumm-connector";
+import { connectXumm, hasPendingXummSignIn, completePendingXummSignIn, isXummConfigured } from "@/lib/xumm-connector";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export function InlineXrplConnect() {
   const [connecting, setConnecting] = useState(false);
+  const [configured, setConfigured] = useState<boolean | null>(null);
   const { connect } = useXrplStore();
   const { toast } = useToast();
 
   useEffect(() => {
+    let cancelled = false;
+    isXummConfigured().then((ok) => {
+      if (!cancelled) setConfigured(ok);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (configured === false) return;
     if (hasPendingXummSignIn()) {
       setConnecting(true);
       completePendingXummSignIn().then(result => {
@@ -25,7 +35,7 @@ export function InlineXrplConnect() {
         setConnecting(false);
       });
     }
-  }, []);
+  }, [configured]);
 
   async function saveWallet(address: string) {
     try {
@@ -44,6 +54,7 @@ export function InlineXrplConnect() {
   }
 
   async function handleConnect() {
+    if (configured === false) return;
     setConnecting(true);
     try {
       const result = await connectXumm();
@@ -60,6 +71,35 @@ export function InlineXrplConnect() {
     } finally {
       setConnecting(false);
     }
+  }
+
+  if (configured === null) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <p className="text-muted-foreground text-center text-sm">Checking wallet connect…</p>
+        <Button disabled className="bg-[#00A4E4] text-white opacity-70" data-testid="button-inline-xrpl-connect">
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />Checking…
+        </Button>
+      </div>
+    );
+  }
+
+  if (configured === false) {
+    return (
+      <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
+        <p className="text-muted-foreground text-center text-sm" data-testid="text-xaman-unavailable">
+          Xaman wallet connect is temporarily unavailable. You can still use CryptoOwnBank without connecting a wallet — send/receive links work once an admin finishes Xaman setup.
+        </p>
+        <Button
+          disabled
+          variant="outline"
+          className="opacity-60"
+          data-testid="button-inline-xrpl-connect"
+        >
+          <Smartphone className="h-4 w-4 mr-2" />Xaman unavailable
+        </Button>
+      </div>
+    );
   }
 
   return (

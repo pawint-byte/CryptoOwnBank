@@ -74,9 +74,9 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
   // Crawler-friendly FAQ: server-rendered plain HTML so AI fetchers (Perplexity,
   // ChatGPT, Grok, etc.) that don't execute JavaScript can read the full FAQ.
   // The interactive React version at /faq stays as-is.
-  // ?lang= localizes <html lang> + title/description/canonical only; FAQ body stays English.
+  // ?lang= localizes <html lang> + title/description/canonical, and P0 FAQ Q&A via localizeFaqGroups; remaining FAQ stays English.
   {
-    const { faqGroups } = await import("@shared/faq-data");
+    const { localizeFaqGroups } = await import("@shared/faq-p0-i18n");
     const { pickLang, getSeoMeta } = await import("./seo-localize");
     const escapeHtml = (s: string) =>
       s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -98,11 +98,12 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
           lang === "en"
             ? "https://cryptoownbank.com/faq"
             : `https://cryptoownbank.com/faq?lang=${lang}`;
+        const groups = localizeFaqGroups(lang);
         const langNote =
           lang === "en"
             ? ""
-            : `<p><em>Content currently in English; language preference recorded for crawlers.</em></p>\n`;
-        const sections = faqGroups
+            : `<p><em>Priority FAQ answers are shown in this language; other entries remain in English.</em></p>\n`;
+        const sections = groups
           .map((group) => {
             const items = group.items
               .map(
@@ -116,7 +117,7 @@ Sitemap: https://cryptoownbank.com/sitemap.xml
         const jsonLd = {
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: faqGroups.flatMap((g) =>
+          mainEntity: groups.flatMap((g) =>
             g.items.map((it) => ({
               "@type": "Question",
               name: it.q,
@@ -156,11 +157,12 @@ ${sections}
     app.get("/faq.txt", (req, res) => {
       try {
         const lang = pickLang(req);
+        const groups = localizeFaqGroups(lang);
         const langNote =
           lang === "en"
             ? ""
-            : `Note: Content currently in English; language preference (?lang=${lang}) recorded for crawlers.\n\n`;
-        const body = faqGroups
+            : `Note: Priority FAQ answers are shown in this language (?lang=${lang}); other entries remain in English.\n\n`;
+        const body = groups
           .map((group) => {
             const items = group.items
               .map((it) => `Q: ${it.q}\nA: ${stripHtml(it.a)}`)
@@ -2347,6 +2349,10 @@ Rules you MUST follow:
   if (xummApiKey && xummApiSecret) {
     xummSdk = new XummSdk(xummApiKey, xummApiSecret);
   }
+
+  app.get("/api/xumm/configured", (_req, res) => {
+    res.json({ configured: !!xummSdk });
+  });
 
   app.post("/api/xumm/signin", async (_req, res) => {
     try {

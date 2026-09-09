@@ -66,6 +66,18 @@ export function clearPendingXummPayment(): void {
   sessionStorage.removeItem(XUMM_PENDING_PAYMENT_KEY);
 }
 
+
+export async function isXummConfigured(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/xumm/configured", { credentials: "include" });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data.configured;
+  } catch {
+    return false;
+  }
+}
+
 export async function createXummSignIn(): Promise<XummSignInPayload> {
   const res = await apiRequest("POST", "/api/xumm/signin");
   return res.json();

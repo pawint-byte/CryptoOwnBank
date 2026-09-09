@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import type { ReactNode } from "react";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SeoHead } from "@/components/seo-head";
 
-import { faqGroups } from "@shared/faq-data";
+import { localizeFaqGroups } from "@shared/faq-p0-i18n";
+import { useLangStore } from "@/i18n/store";
+import { useTranslations } from "@/i18n";
 
 
 function FAQItem({ q, a, forceOpen, highlight }: { q: string; a: string; forceOpen?: boolean; highlight?: string }) {
@@ -50,6 +51,10 @@ function FAQItem({ q, a, forceOpen, highlight }: { q: string; a: string; forceOp
 }
 
 export default function FAQ() {
+  const lang = useLangStore((s) => s.lang);
+  const t = useTranslations();
+  const groups = useMemo(() => localizeFaqGroups(lang), [lang]);
+
   const [search, setSearch] = useState(() => {
     if (typeof window === "undefined") return "";
     const params = new URLSearchParams(window.location.search);
@@ -70,7 +75,7 @@ export default function FAQ() {
   const faqJsonLd = useMemo(() => ({
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqGroups.flatMap((group) =>
+    mainEntity: groups.flatMap((group) =>
       group.items.map((item) => ({
         "@type": "Question",
         name: item.q,
@@ -80,13 +85,13 @@ export default function FAQ() {
         },
       }))
     ),
-  }), []);
+  }), [groups]);
 
   const searchTerm = search.trim().toLowerCase();
 
   const filteredGroups = useMemo(() => {
-    if (!searchTerm || searchTerm.length < 2) return faqGroups;
-    return faqGroups
+    if (!searchTerm || searchTerm.length < 2) return groups;
+    return groups
       .map((group) => ({
         ...group,
         items: group.items.filter(
@@ -96,7 +101,7 @@ export default function FAQ() {
         ),
       }))
       .filter((group) => group.items.length > 0);
-  }, [searchTerm]);
+  }, [searchTerm, groups]);
 
   const totalResults = filteredGroups.reduce((s, g) => s + g.items.length, 0);
   const isSearching = searchTerm.length >= 2;
@@ -110,14 +115,19 @@ export default function FAQ() {
         jsonLd={faqJsonLd}
       />
       <div>
-        <h1 className="text-3xl font-bold" data-testid="faq-title">Frequently Asked Questions</h1>
-        <p className="text-muted-foreground mt-2">Everything you need to know about CryptoOwnBank — portfolio tracking, XRPL tools, payments for consumers and businesses, RLUSD vaults, yield optimization, and keeping control of your crypto.</p>
+        <h1 className="text-3xl font-bold" data-testid="faq-title">{t.faq.title}</h1>
+        <p className="text-muted-foreground mt-2">{t.faq.subtitle}</p>
+        {lang !== "en" && (
+          <p className="text-sm text-muted-foreground mt-2 italic" data-testid="faq-english-notice">
+            {t.faq.englishNotice}
+          </p>
+        )}
       </div>
 
       <div className="relative" data-testid="faq-search-container">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search FAQ — try 'trustline', 'Xaman', 'cold wallet', 'staking'..."
+          placeholder={t.faq.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10 pr-10"
@@ -139,14 +149,16 @@ export default function FAQ() {
       {isSearching && (
         <p className="text-sm text-muted-foreground" data-testid="text-faq-search-results">
           {totalResults === 0
-            ? `No results for "${search}" — try different keywords`
-            : `${totalResults} result${totalResults !== 1 ? "s" : ""} for "${search}"`}
+            ? `${t.faq.noResults} "${search}" — ${t.faq.noResultsHint}`
+            : `${totalResults} ${totalResults !== 1 ? t.faq.resultMany : t.faq.resultOne} "${search}"`}
         </p>
       )}
 
       {filteredGroups.map((group, groupIndex) => (
-        <div key={groupIndex} className="space-y-1">
-          <h2 className="text-xl font-semibold text-foreground mb-2" data-testid={`faq-group-${groupIndex}`}>{group.heading}</h2>
+        <div key={group.groupKey || groupIndex} className="space-y-1">
+          <h2 className="text-xl font-semibold text-foreground mb-2" data-testid={`faq-group-${groupIndex}`}>
+            {(t.faq.groups as Record<string, string>)[group.groupKey] || group.heading}
+          </h2>
           <div className="rounded-lg border bg-card">
             {group.items.map((faq, index) => (
               <FAQItem
